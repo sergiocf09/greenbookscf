@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,8 +8,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { queretaroCourses } from '@/data/queretaroCourses';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useGolfCourses } from '@/hooks/useGolfCourses';
 
 interface CourseSelectProps {
   selectedCourseId: string | null;
@@ -24,7 +24,29 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   teeColor = 'white',
   onTeeColorChange,
 }) => {
-  const selectedCourse = queretaroCourses.find(c => c.id === selectedCourseId);
+  const { courses, loading, error, getCourseById } = useGolfCourses();
+  const selectedCourse = selectedCourseId ? getCourseById(selectedCourseId) : null;
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Campo de Golf</Label>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Cargando campos...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Campo de Golf</Label>
+        <p className="text-sm text-destructive">Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -35,7 +57,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
           <SelectValue placeholder="Selecciona un campo" />
         </SelectTrigger>
         <SelectContent>
-          {queretaroCourses.map((course) => (
+          {courses.map((course) => (
             <SelectItem key={course.id} value={course.id}>
               <div className="flex items-center gap-2">
                 <span>{course.name}</span>
