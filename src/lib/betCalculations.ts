@@ -136,8 +136,8 @@ export const calculatePressureBets = (
   const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
   
-  // Total 18 (Match) is calculated as front + back
-  const calculatedTotalAmount = config.pressures.frontAmount + config.pressures.backAmount;
+  // Total 18 (Match) uses its own configured amount
+  const totalMatchAmount = config.pressures.totalAmount;
   
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -205,9 +205,9 @@ export const calculatePressureBets = (
       }
       
       // Back 9 - Apply carry multiplier if front was tied
-      // When carry: back value = 2x front amount + calculatedTotalAmount
+      // When carry: back value = 2x front amount + totalMatchAmount
       const backMultiplier = frontIsTied ? 2 : 1;
-      const carryBonus = frontIsTied ? calculatedTotalAmount : 0;
+      const carryBonus = frontIsTied ? totalMatchAmount : 0;
       const effectiveBackValue = (config.pressures.backAmount * backMultiplier) + carryBonus;
       
       const backBetsWonA = backBets.filter(b => b > 0).length;
@@ -238,19 +238,19 @@ export const calculatePressureBets = (
       }
       
       // Match 18: Only if front 9 was NOT tied
-      // Total amount = front + back
-      if (!frontIsTied && calculatedTotalAmount > 0) {
+      // Uses its own configured totalAmount
+      if (!frontIsTied && totalMatchAmount > 0) {
         const total18Balance = frontBets[0] + backBets[0];
         
         let matchWinner = 0;
         if (total18Balance > 0) matchWinner = 1;
         else if (total18Balance < 0) matchWinner = -1;
         
-        const totalAmountA = matchWinner * calculatedTotalAmount;
+        const totalAmountA = matchWinner * totalMatchAmount;
         
-        const frontStr = (frontBets[0] >= 0 ? '+' : '') + frontBets[0];
-        const backStr = (backBets[0] >= 0 ? '+' : '') + backBets[0];
-        const total18Str = (total18Balance >= 0 ? '+' : '') + total18Balance;
+        // Only show the final balance result, not the sum formula
+        const total18Str = total18Balance === 0 ? 'Even' : ((total18Balance >= 0 ? '+' : '') + total18Balance);
+        const total18StrB = (-total18Balance) === 0 ? 'Even' : (((-total18Balance) >= 0 ? '+' : '') + (-total18Balance));
         
         if (matchWinner !== 0) {
           summaries.push({
@@ -259,7 +259,7 @@ export const calculatePressureBets = (
             betType: 'Presiones Match 18',
             amount: totalAmountA,
             segment: 'total',
-            description: `${frontStr} ${backStr} = ${total18Str}`,
+            description: total18Str,
           });
           summaries.push({
             playerId: playerB.id,
@@ -267,7 +267,7 @@ export const calculatePressureBets = (
             betType: 'Presiones Match 18',
             amount: -totalAmountA,
             segment: 'total',
-            description: `${(-frontBets[0]) >= 0 ? '+' : ''}${-frontBets[0]} ${(-backBets[0]) >= 0 ? '+' : ''}${-backBets[0]} = ${(-total18Balance) >= 0 ? '+' : ''}${-total18Balance}`,
+            description: total18StrB,
           });
         } else {
           // Tie in Match 18
@@ -277,7 +277,7 @@ export const calculatePressureBets = (
             betType: 'Presiones Match 18',
             amount: 0,
             segment: 'total',
-            description: `${frontStr} ${backStr} = Even`,
+            description: 'Even',
           });
           summaries.push({
             playerId: playerB.id,
@@ -285,10 +285,10 @@ export const calculatePressureBets = (
             betType: 'Presiones Match 18',
             amount: 0,
             segment: 'total',
-            description: `${(-frontBets[0]) >= 0 ? '+' : ''}${-frontBets[0]} ${(-backBets[0]) >= 0 ? '+' : ''}${-backBets[0]} = Even`,
+            description: 'Even',
           });
         }
-      } else if (frontIsTied && calculatedTotalAmount > 0) {
+      } else if (frontIsTied && totalMatchAmount > 0) {
         // When there's a carry, Match 18 is cancelled
         summaries.push({
           playerId: playerA.id,
