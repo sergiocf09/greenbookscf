@@ -326,11 +326,9 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                     </div>
                     <Input
                       type="number"
-                      value={player.teamHandicap ?? player.handicap}
+                      value={config.carritos.teamHandicaps?.[playerId] ?? player.handicap}
                       onChange={(e) => {
-                        // Update player's teamHandicap - this would need to be managed at parent level
                         const newVal = parseInt(e.target.value) || 0;
-                        // For now we'll store in carritos config
                         const handicaps = config.carritos.teamHandicaps || {};
                         updateBet('carritos', { 
                           teamHandicaps: { ...handicaps, [playerId]: newVal }
@@ -357,7 +355,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                     </div>
                     <Input
                       type="number"
-                      value={player.teamHandicap ?? player.handicap}
+                      value={config.carritos.teamHandicaps?.[playerId] ?? player.handicap}
                       onChange={(e) => {
                         const newVal = parseInt(e.target.value) || 0;
                         const handicaps = config.carritos.teamHandicaps || {};
