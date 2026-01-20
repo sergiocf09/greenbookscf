@@ -36,10 +36,10 @@ export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', points: 1 },
 ];
 
-// Manual stain markers (shown on putts row)
+// Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'ladies', icon: Skull, label: 'Ladies', description: 'Tiro de damas', type: 'mancha' },
-  { key: 'swingBlanco', icon: Bird, label: 'Swing Blanco', description: 'Swing en blanco', type: 'mancha' },
+  { key: 'ladies', icon: Skull, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
   { key: 'trampa', icon: AlertTriangle, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
