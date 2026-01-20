@@ -1,4 +1,4 @@
-// Complete Bet Dashboard with editable bilateral handicaps
+// Complete Bet Dashboard with simplified bilateral handicaps
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
@@ -16,7 +16,7 @@ import {
   ChevronDown, 
   ChevronUp,
   Settings2,
-  X
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,12 +35,18 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-interface BilateralHandicapOverride {
+// Simplified: One handicap override per player pair for ALL individual bets
+interface BilateralHandicap {
   playerAId: string;
   playerBId: string;
-  betType: string;
   playerAHandicap: number;
   playerBHandicap: number;
+}
+
+// Separate handicap for Carritos (team bets)
+interface CarritosHandicap {
+  teamAHandicap: number;
+  teamBHandicap: number;
 }
 
 interface BetDashboardProps {
@@ -62,7 +68,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
-  const [handicapOverrides, setHandicapOverrides] = useState<BilateralHandicapOverride[]>([]);
+  // One handicap per pair of players (applies to ALL individual bets)
+  const [bilateralHandicaps, setBilateralHandicaps] = useState<BilateralHandicap[]>([]);
+  // Separate handicap for Carritos
+  const [carritosHandicap, setCarritosHandicap] = useState<CarritosHandicap | null>(null);
   
   // Filter scores to only include confirmed holes
   const confirmedScores = useMemo(() => {
@@ -86,6 +95,30 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     setExpandedTypes(prev => 
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
+  };
+  
+  // Get bilateral handicap for a pair
+  const getBilateralHandicap = (playerAId: string, playerBId: string): BilateralHandicap | undefined => {
+    return bilateralHandicaps.find(
+      h => (h.playerAId === playerAId && h.playerBId === playerBId) ||
+           (h.playerAId === playerBId && h.playerBId === playerAId)
+    );
+  };
+  
+  // Update bilateral handicap for a pair
+  const updateBilateralHandicap = (handicap: BilateralHandicap) => {
+    setBilateralHandicaps(prev => {
+      const existingIdx = prev.findIndex(
+        h => (h.playerAId === handicap.playerAId && h.playerBId === handicap.playerBId) ||
+             (h.playerAId === handicap.playerBId && h.playerBId === handicap.playerAId)
+      );
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = handicap;
+        return updated;
+      }
+      return [...prev, handicap];
+    });
   };
   
   // Get balance for base player vs each rival
@@ -118,6 +151,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     if (betConfig.manchas.enabled) types.add('Manchas');
     if (betConfig.culebras.enabled) types.add('Culebras');
     if (betConfig.pinguinos.enabled) types.add('Pingüinos');
+    if (betConfig.carritos.enabled) types.add('Carritos');
     return types;
   }, [betConfig]);
   
@@ -135,18 +169,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             {rivals.map(rival => {
               const balance = getRivalBalance(rival.id);
               const isSelected = selectedRival === rival.id;
+              const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
+              const hasOverride = !!pairHandicap;
               
               return (
                 <button
                   key={rival.id}
                   onClick={() => setSelectedRival(isSelected ? null : rival.id)}
                   className={cn(
-                    'flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px]',
+                    'flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px] relative',
                     isSelected 
                       ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
                       : 'bg-muted/50 hover:bg-muted'
                   )}
                 >
+                  {hasOverride && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
+                  )}
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mb-1"
                     style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
@@ -178,75 +217,58 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           totalBalance={getRivalBalance(selectedRival)}
           expandedTypes={expandedTypes}
           onToggleExpand={toggleExpanded}
-          handicapOverrides={handicapOverrides}
-          onUpdateOverride={(override) => {
-            setHandicapOverrides(prev => {
-              const existing = prev.findIndex(
-                o => o.playerAId === override.playerAId && 
-                     o.playerBId === override.playerBId && 
-                     o.betType === override.betType
-              );
-              if (existing >= 0) {
-                const updated = [...prev];
-                updated[existing] = override;
-                return updated;
-              }
-              return [...prev, override];
-            });
-          }}
+          bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
+          onUpdateBilateralHandicap={updateBilateralHandicap}
+          carritosHandicap={carritosHandicap}
+          onUpdateCarritosHandicap={setCarritosHandicap}
+          betConfig={betConfig}
         />
       )}
       
       {/* General Leaderboard */}
       <Card>
-        <CardHeader className="py-3 bg-primary/5">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Tabla General
-          </CardTitle>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">Tabla General</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-border">
-            {sortedPlayers.map((player, index) => {
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            {sortedPlayers.map((player, idx) => {
               const balance = getPlayerBalance(player.id, betSummaries);
-              const isBase = player.id === basePlayer?.id;
+              const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               
               return (
                 <div 
-                  key={player.id} 
+                  key={player.id}
                   className={cn(
-                    'flex items-center justify-between p-3',
-                    isBase && 'bg-primary/5'
+                    'flex items-center justify-between p-2 rounded-lg',
+                    isBase ? 'bg-primary/10 border border-primary/30' : 'bg-muted/30'
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <span className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                      index === 1 ? 'bg-gray-300 text-gray-700' :
-                      index === 2 ? 'bg-amber-600 text-amber-50' :
+                      idx === 0 ? 'bg-golf-gold text-golf-gold-foreground' :
+                      idx === sortedPlayers.length - 1 ? 'bg-destructive text-destructive-foreground' :
                       'bg-muted text-muted-foreground'
                     )}>
-                      {index + 1}
+                      {idx + 1}
                     </span>
                     <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
                       style={{ backgroundColor: player.color }}
                     >
                       {player.initials}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{player.name}</p>
-                      <p className="text-[10px] text-muted-foreground">HCP {player.handicap}</p>
+                      <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                      <span className="text-[10px] text-muted-foreground ml-1">HCP {player.handicap}</span>
                     </div>
                   </div>
                   <div className={cn(
-                    'text-lg font-bold flex items-center gap-1',
+                    'text-lg font-bold',
                     balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                   )}>
-                    {balance > 0 && <TrendingUp className="h-4 w-4" />}
-                    {balance < 0 && <TrendingDown className="h-4 w-4" />}
-                    {balance >= 0 ? '+' : ''}{balance}
+                    {balance >= 0 ? '+' : ''}${balance}
                   </div>
                 </div>
               );
@@ -254,7 +276,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           </div>
           
           {/* Verification */}
-          <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t">
+          <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
             Σ = ${sortedPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries), 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
@@ -281,8 +303,11 @@ interface BilateralDetailProps {
   totalBalance: number;
   expandedTypes: string[];
   onToggleExpand: (type: string) => void;
-  handicapOverrides: BilateralHandicapOverride[];
-  onUpdateOverride: (override: BilateralHandicapOverride) => void;
+  bilateralHandicap?: BilateralHandicap;
+  onUpdateBilateralHandicap: (handicap: BilateralHandicap) => void;
+  carritosHandicap: CarritosHandicap | null;
+  onUpdateCarritosHandicap: (handicap: CarritosHandicap) => void;
+  betConfig: BetConfig;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -292,10 +317,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   totalBalance,
   expandedTypes,
   onToggleExpand,
-  handicapOverrides,
-  onUpdateOverride,
+  bilateralHandicap,
+  onUpdateBilateralHandicap,
+  carritosHandicap,
+  onUpdateCarritosHandicap,
+  betConfig,
 }) => {
-  const [editingBet, setEditingBet] = useState<string | null>(null);
+  const [editingHandicap, setEditingHandicap] = useState(false);
+  const [editingCarritos, setEditingCarritos] = useState(false);
   
   const betTypeLabels: Record<string, string> = {
     'Medal Front 9': 'Medal Front',
@@ -310,6 +339,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     'Culebras': 'Culebras',
     'Pingüinos': 'Pingüinos',
   };
+  
+  // Effective handicaps (with override or original)
+  const effectivePlayerHcp = bilateralHandicap?.playerAHandicap ?? player.handicap;
+  const effectiveRivalHcp = bilateralHandicap?.playerBHandicap ?? rival.handicap;
+  const hasOverride = !!bilateralHandicap;
   
   return (
     <Card>
@@ -339,6 +373,106 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             ${Math.abs(totalBalance)}
           </div>
         </div>
+        
+        {/* Bilateral Handicap Editor - applies to ALL individual bets */}
+        <div className="mt-3 p-2 bg-muted/30 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium">Handicaps Bilaterales</span>
+              {hasOverride && (
+                <span className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+                  Modificado
+                </span>
+              )}
+            </div>
+            <Dialog open={editingHandicap} onOpenChange={setEditingHandicap}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs">
+                  Editar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Handicaps para {player.name} vs {rival.name}</DialogTitle>
+                </DialogHeader>
+                <BilateralHandicapEditor
+                  player={player}
+                  rival={rival}
+                  currentHandicap={bilateralHandicap}
+                  onSave={(h) => {
+                    onUpdateBilateralHandicap(h);
+                    setEditingHandicap(false);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <div className="flex justify-between mt-2 text-xs">
+            <div className="flex items-center gap-1">
+              <div 
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                style={{ backgroundColor: player.color }}
+              >
+                {player.initials}
+              </div>
+              <span className={cn(hasOverride && 'text-accent font-medium')}>
+                HCP {effectivePlayerHcp}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className={cn(hasOverride && 'text-accent font-medium')}>
+                HCP {effectiveRivalHcp}
+              </span>
+              <div 
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                style={{ backgroundColor: rival.color }}
+              >
+                {rival.initials}
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-[10px] text-muted-foreground mt-1 text-center">
+            Aplica a todas las apuestas individuales
+          </p>
+        </div>
+        
+        {/* Carritos Handicap - separate */}
+        {betConfig.carritos.enabled && (
+          <div className="mt-2 p-2 bg-primary/10 rounded-lg border border-primary/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-primary">Carritos (Equipos)</span>
+              </div>
+              <Dialog open={editingCarritos} onOpenChange={setEditingCarritos}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs">
+                    Editar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Handicaps para Carritos</DialogTitle>
+                  </DialogHeader>
+                  <CarritosHandicapEditor
+                    betConfig={betConfig}
+                    currentHandicap={carritosHandicap}
+                    onSave={(h) => {
+                      onUpdateCarritosHandicap(h);
+                      setEditingCarritos(false);
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Handicap separado para apuestas por equipos
+            </p>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="pt-0 space-y-1">
@@ -365,41 +499,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     </button>
                   </CollapsibleTrigger>
                   
-                  <div className="flex items-center gap-2">
-                    {/* Edit Handicaps Button */}
-                    <Dialog open={editingBet === betType} onOpenChange={(open) => setEditingBet(open ? betType : null)}>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Settings2 className="h-3 w-3" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Handicaps para {label}</DialogTitle>
-                        </DialogHeader>
-                        <HandicapEditor
-                          player={player}
-                          rival={rival}
-                          betType={betType}
-                          currentOverride={handicapOverrides.find(
-                            o => o.playerAId === player.id && o.playerBId === rival.id && o.betType === betType
-                          )}
-                          onSave={(override) => {
-                            onUpdateOverride(override);
-                            setEditingBet(null);
-                          }}
-                          onClose={() => setEditingBet(null)}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    
-                    <span className={cn(
-                      'text-sm font-bold min-w-[60px] text-right',
-                      total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {total >= 0 ? '+' : ''}${total}
-                    </span>
-                  </div>
+                  <span className={cn(
+                    'text-sm font-bold min-w-[60px] text-right',
+                    total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  )}>
+                    {total >= 0 ? '+' : ''}${total}
+                  </span>
                 </div>
                 
                 <CollapsibleContent>
@@ -428,40 +533,47 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   );
 };
 
-// Handicap Editor Component
-interface HandicapEditorProps {
+// Bilateral Handicap Editor - single handicap for all individual bets
+interface BilateralHandicapEditorProps {
   player: Player;
   rival: Player;
-  betType: string;
-  currentOverride?: BilateralHandicapOverride;
-  onSave: (override: BilateralHandicapOverride) => void;
-  onClose: () => void;
+  currentHandicap?: BilateralHandicap;
+  onSave: (handicap: BilateralHandicap) => void;
 }
 
-const HandicapEditor: React.FC<HandicapEditorProps> = ({
+const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
   player,
   rival,
-  betType,
-  currentOverride,
+  currentHandicap,
   onSave,
-  onClose,
 }) => {
   const [playerAHcp, setPlayerAHcp] = useState(
-    currentOverride?.playerAHandicap ?? player.handicap
+    currentHandicap?.playerAHandicap ?? player.handicap
   );
   const [playerBHcp, setPlayerBHcp] = useState(
-    currentOverride?.playerBHandicap ?? rival.handicap
+    currentHandicap?.playerBHandicap ?? rival.handicap
   );
+  
+  const difference = Math.abs(playerAHcp - playerBHcp);
+  const playerReceives = playerAHcp > playerBHcp;
   
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Ajusta los handicaps específicos para esta apuesta bilateral
+        Este handicap se usará para <strong>todas las apuestas individuales</strong> entre estos dos jugadores (Medal, Presiones, Skins, Caros, Unidades, Manchas, etc.)
       </p>
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-xs">{player.name}</Label>
+          <Label className="text-xs flex items-center gap-2">
+            <div 
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+              style={{ backgroundColor: player.color }}
+            >
+              {player.initials}
+            </div>
+            {player.name}
+          </Label>
           <Input
             type="number"
             value={playerAHcp}
@@ -473,7 +585,15 @@ const HandicapEditor: React.FC<HandicapEditorProps> = ({
           </p>
         </div>
         <div>
-          <Label className="text-xs">{rival.name}</Label>
+          <Label className="text-xs flex items-center gap-2">
+            <div 
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+              style={{ backgroundColor: rival.color }}
+            >
+              {rival.initials}
+            </div>
+            {rival.name}
+          </Label>
           <Input
             type="number"
             value={playerBHcp}
@@ -486,6 +606,15 @@ const HandicapEditor: React.FC<HandicapEditorProps> = ({
         </div>
       </div>
       
+      {difference > 0 && (
+        <div className="bg-muted/50 p-3 rounded-lg text-center">
+          <p className="text-sm">
+            <strong>{playerReceives ? player.name : rival.name}</strong> recibe{' '}
+            <span className="text-lg font-bold text-primary">{difference}</span> golpes
+          </p>
+        </div>
+      )}
+      
       <div className="flex gap-2">
         <Button
           variant="outline"
@@ -495,15 +624,93 @@ const HandicapEditor: React.FC<HandicapEditorProps> = ({
           }}
           className="flex-1"
         >
-          Restaurar
+          Restaurar Originales
         </Button>
         <Button
           onClick={() => onSave({
             playerAId: player.id,
             playerBId: rival.id,
-            betType,
             playerAHandicap: playerAHcp,
             playerBHandicap: playerBHcp,
+          })}
+          className="flex-1"
+        >
+          Guardar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Carritos Handicap Editor - separate from bilateral
+interface CarritosHandicapEditorProps {
+  betConfig: BetConfig;
+  currentHandicap: CarritosHandicap | null;
+  onSave: (handicap: CarritosHandicap) => void;
+}
+
+const CarritosHandicapEditor: React.FC<CarritosHandicapEditorProps> = ({
+  betConfig,
+  currentHandicap,
+  onSave,
+}) => {
+  const [teamAHcp, setTeamAHcp] = useState(currentHandicap?.teamAHandicap ?? 0);
+  const [teamBHcp, setTeamBHcp] = useState(currentHandicap?.teamBHandicap ?? 0);
+  
+  const difference = Math.abs(teamAHcp - teamBHcp);
+  
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Handicap específico para las apuestas de <strong>Carritos</strong> (equipos). 
+        Este es independiente del handicap bilateral individual.
+      </p>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-xs">Equipo A</Label>
+          <Input
+            type="number"
+            value={teamAHcp}
+            onChange={(e) => setTeamAHcp(Number(e.target.value))}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Equipo B</Label>
+          <Input
+            type="number"
+            value={teamBHcp}
+            onChange={(e) => setTeamBHcp(Number(e.target.value))}
+            className="mt-1"
+          />
+        </div>
+      </div>
+      
+      {difference > 0 && (
+        <div className="bg-muted/50 p-3 rounded-lg text-center">
+          <p className="text-sm">
+            <strong>Equipo {teamAHcp > teamBHcp ? 'A' : 'B'}</strong> recibe{' '}
+            <span className="text-lg font-bold text-primary">{difference}</span> golpes
+          </p>
+        </div>
+      )}
+      
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setTeamAHcp(0);
+            setTeamBHcp(0);
+          }}
+          className="flex-1"
+        >
+          Reiniciar
+        </Button>
+        <Button
+          onClick={() => onSave({
+            teamAHandicap: teamAHcp,
+            teamBHandicap: teamBHcp,
           })}
           className="flex-1"
         >
