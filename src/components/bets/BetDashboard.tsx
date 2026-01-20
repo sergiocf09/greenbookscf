@@ -259,14 +259,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
                   )}
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mb-1"
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-1"
                     style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
                   >
-                    {rival.initials}
+                    {getPlayerAbbr(rival)}
                   </div>
-                  <span className="text-[10px] font-medium mb-0.5">{getPlayerAbbr(rival)}</span>
                   <div className={cn(
-                    'text-xs font-bold flex items-center gap-0.5',
+                    'text-sm font-bold flex items-center gap-0.5',
                     isSelected ? '' : balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                   )}>
                     {balance !== 0 && (
@@ -426,17 +425,23 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
   const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
   
-  // Payment: each losing player pays 50% to each winning player
+  // Payment: each losing player pays 50% of total to EACH winning player
+  // If Team A wins $200 total, each loser (C and D) pays $100 to each winner (A and B)
+  // So C pays: $100 to A, $100 to B = $200 total
+  // And D pays: $100 to A, $100 to B = $200 total
+  // Each winner receives: $100 from C + $100 from D = $200
   const getPaymentBreakdown = () => {
     if (results.moneyA === 0) return null;
     
     const winningTeam = results.moneyA > 0 ? teamAPlayers : teamBPlayers;
     const losingTeam = results.moneyA > 0 ? teamBPlayers : teamAPlayers;
     const totalWon = Math.abs(results.moneyA);
-    const perPlayerPayment = totalWon / 2; // Each loser pays this total
-    const toEachWinner = perPlayerPayment / 2; // Split between 2 winners
     
-    return { winningTeam, losingTeam, perPlayerPayment, toEachWinner, totalWon };
+    // Each loser pays (totalWon / 2) to EACH winner
+    // So total from each loser = totalWon (split to 2 winners)
+    const perLoserPayToEachWinner = totalWon / 2;
+    
+    return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon };
   };
   
   const payment = getPaymentBreakdown();
@@ -523,10 +528,10 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         {/* Payment breakdown */}
         {payment && (
           <div className="text-[10px] text-muted-foreground bg-muted/20 rounded p-2">
-            <p className="font-medium mb-1">Desglose de pago (50% c/u):</p>
+            <p className="font-medium mb-1">Desglose de pago (cada perdedor paga a cada ganador):</p>
             {payment.losingTeam.map(loser => (
               <p key={loser.id}>
-                {loser.name.split(' ')[0]} paga ${payment.toEachWinner} a cada ganador
+                {loser.name.split(' ')[0]} paga ${payment.perLoserPayToEachWinner} a {payment.winningTeam[0].name.split(' ')[0]} y ${payment.perLoserPayToEachWinner} a {payment.winningTeam[1].name.split(' ')[0]}
               </p>
             ))}
           </div>
@@ -676,7 +681,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             segmentKey === 'pressure_back' ? 'Presiones Back' : 'Presiones Total';
           const summary = groupedSummaries[summaryKey];
           const description = summary?.details?.[0]?.description || '';
-          // Extract bet wins from description
+          return {
+            playerNet: 0, // Not used for pressures
+            rivalNet: 0,
+            amount: summary?.total || 0,
+            description, // This now contains +X +Y format
+          };
+        },
+      });
+    }
+    
+    // Skins - Now bilateral with net holes won
+    if (betConfig.skins.enabled) {
+      groups.push({
+        key: 'skins',
+        label: 'Skins',
+        segments: [
+          { label: 'Front 9', key: 'skins_front' },
+          { label: 'Back 9', key: 'skins_back' },
+        ],
+        getTotal: () => {
+          const front = groupedSummaries['Skins Front']?.total || 0;
+          const back = groupedSummaries['Skins Back']?.total || 0;
+          return front + back;
+        },
+        getSegmentData: (segmentKey) => {
+          const summaryKey = segmentKey === 'skins_front' ? 'Skins Front' : 'Skins Back';
+          const summary = groupedSummaries[summaryKey];
+          const description = summary?.details?.[0]?.description || '';
+          // Extract holes won from description "X vs Y hoyos"
           const match = description.match(/(\d+) vs (\d+)/);
           return {
             playerNet: match ? parseInt(match[1]) : 0,
@@ -688,37 +721,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Skins
-    if (betConfig.skins.enabled) {
-      groups.push({
-        key: 'skins',
-        label: 'Skins',
-        segments: [
-          { label: 'Front 9', key: 'skins_front' },
-          { label: 'Back 9', key: 'skins_back' },
-        ],
-        getTotal: () => groupedSummaries['Skin']?.total || 0,
-        getSegmentData: (segmentKey) => {
-          const skinDetails = groupedSummaries['Skin']?.details || [];
-          const segment = segmentKey === 'skins_front' ? 'front' : 'back';
-          const segmentSkins = skinDetails.filter(d => 
-            segment === 'front' 
-              ? (d.holeNumber && d.holeNumber <= 9)
-              : (d.holeNumber && d.holeNumber > 9)
-          );
-          const segmentAmount = segmentSkins.reduce((sum, d) => sum + d.amount, 0);
-          const playerWins = segmentSkins.filter(d => d.amount > 0).length;
-          const rivalWins = segmentSkins.filter(d => d.amount < 0).length;
-          return {
-            playerNet: playerWins,
-            rivalNet: rivalWins,
-            amount: segmentAmount,
-          };
-        },
-      });
-    }
-    
-    // Caros
+    // Caros - Single amount, not per hole
     if (betConfig.caros.enabled) {
       groups.push({
         key: 'caros',
@@ -726,15 +729,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         segments: [
           { label: 'Hoyos 15-18', key: 'caros_all' },
         ],
-        getTotal: () => groupedSummaries['Caro']?.total || 0,
+        getTotal: () => groupedSummaries['Caros']?.total || 0,
         getSegmentData: () => {
-          const caroDetails = groupedSummaries['Caro']?.details || [];
-          const playerWins = caroDetails.filter(d => d.amount > 0).length;
-          const rivalWins = caroDetails.filter(d => d.amount < 0).length;
+          const summary = groupedSummaries['Caros'];
+          const description = summary?.details?.[0]?.description || '';
+          // Extract net scores from description "X vs Y"
+          const match = description.match(/(\d+) vs (\d+)/);
           return {
-            playerNet: playerWins,
-            rivalNet: rivalWins,
-            amount: groupedSummaries['Caro']?.total || 0,
+            playerNet: match ? parseInt(match[1]) : 0,
+            rivalNet: match ? parseInt(match[2]) : 0,
+            amount: summary?.total || 0,
+            description,
           };
         },
       });
@@ -1003,29 +1008,33 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
                               {/* Score comparison */}
                               <div className="flex items-center gap-1 text-xs">
-                                <span className={cn(
-                                  'font-medium min-w-[24px] text-center',
-                                  data.playerNet < data.rivalNet ? 'text-green-500' : 
-                                  data.playerNet > data.rivalNet ? 'text-destructive' : ''
-                                )}>
-                                  {group.key === 'skins' || group.key === 'caros' 
-                                    ? `${data.playerNet}W` 
-                                    : group.key === 'pressures'
-                                    ? `${data.playerNet} ap`
-                                    : data.playerNet || '-'}
-                                </span>
-                                <span className="text-muted-foreground">vs</span>
-                                <span className={cn(
-                                  'font-medium min-w-[24px] text-center',
-                                  data.rivalNet < data.playerNet ? 'text-green-500' : 
-                                  data.rivalNet > data.playerNet ? 'text-destructive' : ''
-                                )}>
-                                  {group.key === 'skins' || group.key === 'caros' 
-                                    ? `${data.rivalNet}W` 
-                                    : group.key === 'pressures'
-                                    ? `${data.rivalNet} ap`
-                                    : data.rivalNet || '-'}
-                                </span>
+                                {group.key === 'pressures' ? (
+                                  // For pressures, show the description directly (+X +Y format)
+                                  <span className={cn(
+                                    'font-medium',
+                                    data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : ''
+                                  )}>
+                                    {data.description || '-'}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <span className={cn(
+                                      'font-medium min-w-[24px] text-center',
+                                      data.playerNet < data.rivalNet ? 'text-green-500' : 
+                                      data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                                    )}>
+                                      {group.key === 'skins' ? `${data.playerNet}` : data.playerNet || '-'}
+                                    </span>
+                                    <span className="text-muted-foreground">vs</span>
+                                    <span className={cn(
+                                      'font-medium min-w-[24px] text-center',
+                                      data.rivalNet < data.playerNet ? 'text-green-500' : 
+                                      data.rivalNet > data.playerNet ? 'text-destructive' : ''
+                                    )}>
+                                      {group.key === 'skins' ? `${data.rivalNet}` : data.rivalNet || '-'}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
                             <span className={cn(
