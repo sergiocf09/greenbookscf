@@ -205,10 +205,11 @@ export const calculatePressureBets = (
       }
       
       // Back 9 - Apply carry multiplier if front was tied
-      // When carry: back value = 2x front amount + totalMatchAmount
-      const backMultiplier = frontIsTied ? 2 : 1;
-      const carryBonus = frontIsTied ? totalMatchAmount : 0;
-      const effectiveBackValue = (config.pressures.backAmount * backMultiplier) + carryBonus;
+      // When carry: back value = 2x frontAmount + totalMatchAmount (NOT backAmount)
+      // Example: frontAmount=50, totalAmount=50 -> carry = 2*50+50 = 150
+      const effectiveBackValue = frontIsTied 
+        ? (2 * config.pressures.frontAmount + totalMatchAmount)
+        : config.pressures.backAmount;
       
       const backBetsWonA = backBets.filter(b => b > 0).length;
       const backBetsLostA = backBets.filter(b => b < 0).length;
