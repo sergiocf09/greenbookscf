@@ -165,9 +165,9 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       id: `carritos-${Date.now()}`,
       teamA: ['', ''],
       teamB: ['', ''],
-      frontAmount: 100,
-      backAmount: 100,
-      totalAmount: 200,
+      frontAmount: 25,
+      backAmount: 25,
+      totalAmount: 25,
       scoringType: 'lowBall',
       teamHandicaps: {},
       enabled: true,
@@ -535,40 +535,34 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Front 9</Label>
         <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-muted-foreground" />
-          <Input
-            type="number"
-            value={frontAmount}
-            onChange={(e) => onUpdate({ frontAmount: parseInt(e.target.value) || 0 })}
-            className="h-7 w-20 text-sm text-right"
-            min={0}
-          />
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ frontAmount: Math.max(0, frontAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <div className="flex items-center gap-0.5">
+            <DollarSign className="h-3 w-3 text-muted-foreground" />
+            <Input type="number" value={frontAmount} onChange={(e) => onUpdate({ frontAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+          </div>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ frontAmount: frontAmount + 25 })}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Back 9</Label>
         <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-muted-foreground" />
-          <Input
-            type="number"
-            value={backAmount}
-            onChange={(e) => onUpdate({ backAmount: parseInt(e.target.value) || 0 })}
-            className="h-7 w-20 text-sm text-right"
-            min={0}
-          />
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ backAmount: Math.max(0, backAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <div className="flex items-center gap-0.5">
+            <DollarSign className="h-3 w-3 text-muted-foreground" />
+            <Input type="number" value={backAmount} onChange={(e) => onUpdate({ backAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+          </div>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ backAmount: backAmount + 25 })}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Total 18</Label>
         <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-muted-foreground" />
-          <Input
-            type="number"
-            value={totalAmount}
-            onChange={(e) => onUpdate({ totalAmount: parseInt(e.target.value) || 0 })}
-            className="h-7 w-20 text-sm text-right"
-            min={0}
-          />
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ totalAmount: Math.max(0, totalAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <div className="flex items-center gap-0.5">
+            <DollarSign className="h-3 w-3 text-muted-foreground" />
+            <Input type="number" value={totalAmount} onChange={(e) => onUpdate({ totalAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+          </div>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ totalAmount: totalAmount + 25 })}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
 
