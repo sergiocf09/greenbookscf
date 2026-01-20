@@ -24,6 +24,7 @@ interface PlayerScoreInputProps {
   onPuttsChange: (putts: number) => void;
   onMarkersChange: (markers: MarkerState) => void;
   handicapStrokes?: number;
+  isBasePlayer?: boolean;
 }
 
 export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
@@ -39,6 +40,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   onPuttsChange,
   onMarkersChange,
   handicapStrokes = 0,
+  isBasePlayer = false,
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   
@@ -65,7 +67,10 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 space-y-2">
+    <div className={cn(
+      "bg-card border rounded-xl p-3 space-y-2",
+      isBasePlayer ? "border-primary border-2" : "border-border"
+    )}>
       {/* Player Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

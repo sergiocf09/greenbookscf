@@ -38,9 +38,9 @@ export const manualUnitMarkers: MarkerConfig[] = [
 
 // Manual stain markers (shown on putts row)
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'pinkie', icon: Skull, label: 'Pinkie', description: 'Bola en agua tee shot', type: 'mancha' },
-  { key: 'paloma', icon: Bird, label: 'Paloma', description: 'OB desde tee', type: 'mancha' },
-  { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe repetido', type: 'mancha' },
+  { key: 'ladies', icon: Skull, label: 'Ladies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'swingBlanco', icon: Bird, label: 'Swing Blanco', description: 'Swing en blanco', type: 'mancha' },
+  { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
   { key: 'trampa', icon: AlertTriangle, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces OB', type: 'mancha' },
