@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Golf Premium Colors
+        golf: {
+          green: "hsl(var(--golf-green))",
+          "green-light": "hsl(var(--golf-green-light))",
+          gold: "hsl(var(--golf-gold))",
+          "gold-muted": "hsl(var(--golf-gold-muted))",
+          cream: "hsl(var(--golf-cream))",
+          dark: "hsl(var(--golf-dark))",
+          fairway: "hsl(var(--golf-fairway))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
