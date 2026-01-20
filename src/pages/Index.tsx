@@ -7,7 +7,7 @@ import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
-import { getCourseById } from '@/data/queretaroCourses';
+import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +35,7 @@ const Index = () => {
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
+  const { getCourseById } = useGolfCourses();
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
   // Initialize base player from profile
