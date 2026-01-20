@@ -304,16 +304,100 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             </div>
           </div>
 
+          {/* Handicaps individuales para Carritos */}
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-3">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <span>Handicaps para Carritos</span>
+              <span className="text-muted-foreground">(por jugador)</span>
+            </Label>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Team A players */}
+              {config.carritos.teamA.map((playerId, idx) => {
+                const player = players.find(p => p.id === playerId);
+                if (!player) return null;
+                return (
+                  <div key={`teamA-${idx}`} className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0"
+                      style={{ backgroundColor: player.color }}
+                    >
+                      {player.initials}
+                    </div>
+                    <Input
+                      type="number"
+                      value={player.teamHandicap ?? player.handicap}
+                      onChange={(e) => {
+                        // Update player's teamHandicap - this would need to be managed at parent level
+                        const newVal = parseInt(e.target.value) || 0;
+                        // For now we'll store in carritos config
+                        const handicaps = config.carritos.teamHandicaps || {};
+                        updateBet('carritos', { 
+                          teamHandicaps: { ...handicaps, [playerId]: newVal }
+                        });
+                      }}
+                      className="h-7 w-16 text-xs text-center"
+                      min={0}
+                    />
+                  </div>
+                );
+              })}
+              
+              {/* Team B players */}
+              {config.carritos.teamB.map((playerId, idx) => {
+                const player = players.find(p => p.id === playerId);
+                if (!player) return null;
+                return (
+                  <div key={`teamB-${idx}`} className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0"
+                      style={{ backgroundColor: player.color }}
+                    >
+                      {player.initials}
+                    </div>
+                    <Input
+                      type="number"
+                      value={player.teamHandicap ?? player.handicap}
+                      onChange={(e) => {
+                        const newVal = parseInt(e.target.value) || 0;
+                        const handicaps = config.carritos.teamHandicaps || {};
+                        updateBet('carritos', { 
+                          teamHandicaps: { ...handicaps, [playerId]: newVal }
+                        });
+                      }}
+                      className="h-7 w-16 text-xs text-center"
+                      min={0}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            
+            <p className="text-[10px] text-muted-foreground">
+              Handicap base de ronda vs handicap para Carritos
+            </p>
+          </div>
+
           <AmountInput label="Front 9" value={config.carritos.frontAmount} onChange={(v) => updateBet('carritos', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.carritos.backAmount} onChange={(v) => updateBet('carritos', { backAmount: v })} />
           <AmountInput label="Total 18" value={config.carritos.totalAmount} onChange={(v) => updateBet('carritos', { totalAmount: v })} />
 
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Usar handicaps de equipo</Label>
-            <Switch
-              checked={config.carritos.useTeamHandicaps}
-              onCheckedChange={(v) => updateBet('carritos', { useTeamHandicaps: v })}
-            />
+            <Label className="text-xs text-muted-foreground">Tipo de puntuación</Label>
+            <Select
+              value={config.carritos.scoringType}
+              onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => updateBet('carritos', { scoringType: v })}
+            >
+              <SelectTrigger className="h-7 w-28 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lowBall">Low Ball</SelectItem>
+                <SelectItem value="highBall">High Ball</SelectItem>
+                <SelectItem value="combined">Combinado</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </BetSection>
       )}
@@ -339,5 +423,6 @@ export const defaultBetConfig: BetConfig = {
     totalAmount: 200,
     useTeamHandicaps: false,
     scoringType: 'lowBall',
+    teamHandicaps: {},
   },
 };
