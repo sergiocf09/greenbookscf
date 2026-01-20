@@ -335,8 +335,8 @@ export const calculateSkinsBets = (
       const playerB = players[j];
       
       // Process front 9
-      let frontSkinsA = 0;
-      let frontSkinsB = 0;
+      let frontSkinsABase = 0;  // Skins won in holes 1-9 only
+      let frontSkinsBBase = 0;
       let frontAccumulated = 0;
       let frontCarryToBack = 0;
       let frontHolesWithWinner = 0;
@@ -356,12 +356,12 @@ export const calculateSkinsBets = (
         frontAccumulated++; // Add current hole to pot
         
         if (scoreA < scoreB) {
-          frontSkinsA += frontAccumulated;
+          frontSkinsABase += frontAccumulated;
           frontAccumulated = 0;
           frontHolesWithWinner++;
           frontHolesWonByA++;
         } else if (scoreB < scoreA) {
-          frontSkinsB += frontAccumulated;
+          frontSkinsBBase += frontAccumulated;
           frontAccumulated = 0;
           frontHolesWithWinner++;
           frontHolesWonByB++;
@@ -371,7 +371,7 @@ export const calculateSkinsBets = (
         // Tie = accumulate
       }
       
-      // If carry over is enabled, remaining accumulated skins go to back 9
+      // If carry over is enabled, remaining accumulated skins go to back 9 to be resolved
       if (config.skins.carryOver) {
         frontCarryToBack = frontAccumulated;
         frontAccumulated = 0;
@@ -379,11 +379,11 @@ export const calculateSkinsBets = (
       // If not carry over, remaining accumulated skins are void (no payout)
       
       // Process back 9
-      // Track carried skins separately - they use FRONT 9 rate when won
+      // Carried skins from front are resolved by first winner in back, but COUNT toward front 9 result
       let backSkinsA = 0;  // Skins won purely in back 9 (holes 10-18)
       let backSkinsB = 0;
-      let carriedSkinsWonByA = 0;  // Carried skins won by A (use front rate)
-      let carriedSkinsWonByB = 0;  // Carried skins won by B (use front rate)
+      let carriedSkinsWonByA = 0;  // Carried skins won by A - add to FRONT result
+      let carriedSkinsWonByB = 0;  // Carried skins won by B - add to FRONT result
       let backAccumulated = 0;  // Only track back 9 accumulation
       let pendingCarrySkins = frontCarryToBack;  // Carried from front, waiting to be won
       let backHolesWithWinner = 0;
@@ -404,7 +404,7 @@ export const calculateSkinsBets = (
         
         if (scoreA < scoreB) {
           // Player A wins this hole
-          // Award pending carried skins (at front rate)
+          // Award pending carried skins - these go to FRONT result
           if (pendingCarrySkins > 0) {
             carriedSkinsWonByA += pendingCarrySkins;
             pendingCarrySkins = 0;
@@ -416,7 +416,7 @@ export const calculateSkinsBets = (
           backHolesWonByA++;
         } else if (scoreB < scoreA) {
           // Player B wins this hole
-          // Award pending carried skins (at front rate)
+          // Award pending carried skins - these go to FRONT result
           if (pendingCarrySkins > 0) {
             carriedSkinsWonByB += pendingCarrySkins;
             pendingCarrySkins = 0;
@@ -433,6 +433,10 @@ export const calculateSkinsBets = (
       }
       // Remaining accumulated at end of back 9 = void (no payout)
       // Remaining pending carry skins at end = void (no payout)
+      
+      // FINAL FRONT 9 SKINS = base + carried skins resolved in back 9
+      const frontSkinsA = frontSkinsABase + carriedSkinsWonByA;
+      const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
       
       // DOUBLING LOGIC:
       // Perfect sweep: Won all 9 holes in the nine
@@ -453,19 +457,27 @@ export const calculateSkinsBets = (
       const backDoubleMultiplierA = (backPerfectSweepA || backProgressiveDoubleA) ? 2 : 1;
       const backDoubleMultiplierB = (backPerfectSweepB || backProgressiveDoubleB) ? 2 : 1;
       
-      // Calculate money for front 9
+      // Calculate money for front 9 (includes carried skins resolved in back, at front rate)
       const netSkinsFront = frontSkinsA - frontSkinsB;
       if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
         const multiplier = netSkinsFront > 0 ? frontDoubleMultiplierA : frontDoubleMultiplierB;
         const frontAmount = netSkinsFront * config.skins.frontValue * multiplier;
         const doubleLabel = multiplier === 2 ? ' (x2)' : '';
+        // Show breakdown if there were carried skins
+        const hasCarried = carriedSkinsWonByA > 0 || carriedSkinsWonByB > 0;
+        const descA = hasCarried 
+          ? `${frontSkinsA} vs ${frontSkinsB} skins${doubleLabel} (inc. ${frontCarryToBack} carry)`
+          : `${frontSkinsA} vs ${frontSkinsB} skins${doubleLabel}`;
+        const descB = hasCarried
+          ? `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel} (inc. ${frontCarryToBack} carry)`
+          : `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel}`;
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Skins Front',
           amount: frontAmount,
           segment: 'front',
-          description: `${frontSkinsA} vs ${frontSkinsB} skins${doubleLabel}`,
+          description: descA,
         });
         summaries.push({
           playerId: playerB.id,
@@ -473,58 +485,33 @@ export const calculateSkinsBets = (
           betType: 'Skins Front',
           amount: -frontAmount,
           segment: 'front',
-          description: `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel}`,
+          description: descB,
         });
       }
       
-      // Calculate money for back 9 - SEPARATE carried skins (front rate) from pure back skins (back rate)
-      // Carried skins from front 9 use FRONT rate
-      const netCarriedSkins = carriedSkinsWonByA - carriedSkinsWonByB;
-      const carriedSkinsAmount = netCarriedSkins * config.skins.frontValue;
-      
-      // Pure back 9 skins use BACK rate
+      // Calculate money for back 9 - ONLY pure back 9 skins (holes 10-18)
+      // Carried skins are already included in front 9 result above
       const netPureBackSkins = backSkinsA - backSkinsB;
-      const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
-      const pureBackAmount = netPureBackSkins * config.skins.backValue * pureBackMultiplier;
-      const doubleLabel = pureBackMultiplier === 2 ? ' (x2)' : '';
-      
-      // Total back amount = carried (at front rate) + pure back (at back rate)
-      const totalBackAmount = carriedSkinsAmount + pureBackAmount;
-      
-      if (totalBackAmount !== 0 || netCarriedSkins !== 0 || netPureBackSkins !== 0) {
-        // Build description showing breakdown
-        let descParts: string[] = [];
-        if (netPureBackSkins !== 0) {
-          descParts.push(`${backSkinsA} vs ${backSkinsB} skins${doubleLabel}`);
-        }
-        if (netCarriedSkins !== 0) {
-          const carriedWinner = netCarriedSkins > 0 ? 'A' : 'B';
-          descParts.push(`+${frontCarryToBack} carry @Front`);
-        }
-        
-        const description = descParts.length > 0 ? descParts.join(' ') : `${backSkinsA} vs ${backSkinsB} skins`;
-        const descriptionB = descParts.length > 0 
-          ? descParts.map(p => p.includes('carry') ? p : `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}`).join(' ')
-          : `${backSkinsB} vs ${backSkinsA} skins`;
-        
-        if (totalBackAmount !== 0) {
-          summaries.push({
-            playerId: playerA.id,
-            vsPlayer: playerB.id,
-            betType: 'Skins Back',
-            amount: totalBackAmount,
-            segment: 'back',
-            description: description,
-          });
-          summaries.push({
-            playerId: playerB.id,
-            vsPlayer: playerA.id,
-            betType: 'Skins Back',
-            amount: -totalBackAmount,
-            segment: 'back',
-            description: descriptionB,
-          });
-        }
+      if (netPureBackSkins !== 0 && config.skins.backValue > 0) {
+        const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
+        const backAmount = netPureBackSkins * config.skins.backValue * pureBackMultiplier;
+        const doubleLabel = pureBackMultiplier === 2 ? ' (x2)' : '';
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Skins Back',
+          amount: backAmount,
+          segment: 'back',
+          description: `${backSkinsA} vs ${backSkinsB} skins${doubleLabel}`,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Skins Back',
+          amount: -backAmount,
+          segment: 'back',
+          description: `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}`,
+        });
       }
     }
   }
