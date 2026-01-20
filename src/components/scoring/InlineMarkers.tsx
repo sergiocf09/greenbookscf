@@ -3,14 +3,13 @@ import {
   Flag,
   Waves,
   Target,
-  Skull,
   Bird,
   Repeat,
-  AlertTriangle,
   Droplets,
   XCircle,
   CircleDot,
-  Frown,
+  Hourglass,
+  Footprints,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -40,10 +39,10 @@ export const manualUnitMarkers: MarkerConfig[] = [
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
 // Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'ladies', icon: Skull, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'ladies', icon: Footprints, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
-  { key: 'trampa', icon: AlertTriangle, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
+  { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces OB', type: 'mancha' },
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },

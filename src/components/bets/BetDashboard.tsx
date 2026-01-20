@@ -283,6 +283,28 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return total;
   };
   
+  // Get carritos balance between two specific players
+  // Returns the balance from playerA's perspective vs playerB
+  const getCarritosBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
+    let total = 0;
+    allCarritosResults.forEach(result => {
+      const teamAHasPlayerA = result.teamA.includes(playerAId);
+      const teamBHasPlayerA = result.teamB.includes(playerAId);
+      const teamAHasPlayerB = result.teamA.includes(playerBId);
+      const teamBHasPlayerB = result.teamB.includes(playerBId);
+      
+      // If they're on opposite teams, calculate the 50% split
+      if ((teamAHasPlayerA && teamBHasPlayerB) || (teamBHasPlayerA && teamAHasPlayerB)) {
+        // PlayerA and PlayerB are opponents - 50% of team result
+        const playerAMoney = teamAHasPlayerA ? result.moneyA : result.moneyB;
+        // Each player pays/receives 50% to/from each opponent
+        total += playerAMoney / 2;
+      }
+      // If they're on the same team, no money changes between them
+    });
+    return total;
+  };
+  
   // Cancel carritos bet
   const cancelCarritos = (carritosId?: string) => {
     if (!onBetConfigChange) return;
@@ -442,11 +464,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     </div>
                   </div>
                   
-                  {/* Expanded view: balance vs each other player + carritos */}
+                  {/* Expanded view: balance vs each other player + carritos per rival */}
                   {isExpanded && (
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
-                        const vsBalance = getBilateralBalance(player.id, other.id, betSummaries);
+                        const vsIndividualBalance = getBilateralBalance(player.id, other.id, betSummaries);
+                        const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
+                        
                         return (
                           <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
                             <div className="flex items-center gap-2">
@@ -456,33 +481,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               >
                                 {getPlayerAbbr(other)}
                               </div>
-                              <span className="text-xs text-muted-foreground">vs {getPlayerAbbr(other)}</span>
+                              <div className="flex flex-col">
+                                <span className="text-xs text-muted-foreground">vs {getPlayerAbbr(other)}</span>
+                                {vsCarritosBalance !== 0 && (
+                                  <span className="text-[9px] text-muted-foreground">
+                                    Ind: ${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance} | Car: ${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <span className={cn(
                               'font-bold',
-                              vsBalance > 0 ? 'text-green-500' : vsBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                              vsTotalBalance > 0 ? 'text-green-500' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {vsBalance >= 0 ? '+' : ''}${vsBalance}
+                              {vsTotalBalance >= 0 ? '+' : ''}${vsTotalBalance}
                             </span>
                           </div>
                         );
                       })}
-                      
-                      {/* Carritos section in detail */}
-                      {carritosBalance !== 0 && (
-                        <div className="flex items-center justify-between px-2 py-1 bg-accent/20 rounded text-sm border-t border-border/50 mt-1">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-medium">Carritos</span>
-                          </div>
-                          <span className={cn(
-                            'font-bold',
-                            carritosBalance > 0 ? 'text-green-500' : carritosBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {carritosBalance >= 0 ? '+' : ''}${carritosBalance}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1221,14 +1237,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     ) : (
                       group.segments.map((segment) => {
                         const data = group.getSegmentData(segment.key);
-                        if (data.amount === 0 && data.playerNet === 0 && data.rivalNet === 0) {
-                          return (
-                            <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                              <span className="text-xs text-muted-foreground">{segment.label}</span>
-                              <span className="text-xs text-muted-foreground">-</span>
-                            </div>
-                          );
-                        }
+                        
+                        // For pressures, show "Even" when tied (amount is 0 or description indicates no activity)
+                        const isPressures = group.key === 'pressures';
+                        const isPressureEven = isPressures && data.amount === 0 && 
+                          (!data.description || data.description === '' || data.description === '+0');
                         
                         return (
                           <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
@@ -1239,9 +1252,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 {group.key === 'pressures' ? (
                                   <span className={cn(
                                     'font-medium',
-                                    data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : ''
+                                    data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                                   )}>
-                                    {data.description || '-'}
+                                    {isPressureEven ? 'Even' : (data.description || 'Even')}
                                   </span>
                                 ) : (
                                   <>
@@ -1268,7 +1281,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               'text-sm font-bold min-w-[50px] text-right',
                               data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {data.amount >= 0 ? '+' : ''}${data.amount}
+                              {isPressureEven ? 'Even' : `${data.amount >= 0 ? '+' : ''}$${data.amount}`}
                             </span>
                           </div>
                         );
