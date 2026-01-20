@@ -439,17 +439,29 @@ export const calculateSkinsBets = (
       const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
       
       // DOUBLING LOGIC:
-      // Perfect sweep: Won all 9 holes in the nine
-      const frontPerfectSweepA = frontHolesWonByA === 9 && frontHolesWonByB === 0;
-      const frontPerfectSweepB = frontHolesWonByB === 9 && frontHolesWonByA === 0;
-      const backPerfectSweepA = backHolesWonByA === 9 && backHolesWonByB === 0;
-      const backPerfectSweepB = backHolesWonByB === 9 && backHolesWonByA === 0;
+      // IMPORTANT: Doubling should only be applied once the segment is finished (hole 9 / 18 recorded),
+      // otherwise we'd incorrectly show x2 early (e.g. after winning just one hole).
+      const frontSegmentFinished =
+        getHoleScore(playerA.id, 9, scores) !== null && getHoleScore(playerB.id, 9, scores) !== null;
+      const backSegmentFinished =
+        getHoleScore(playerA.id, 18, scores) !== null && getHoleScore(playerB.id, 18, scores) !== null;
+
+      // Perfect sweep: Won all 9 holes in the nine (only meaningful when segment finished)
+      const frontPerfectSweepA = frontSegmentFinished && frontHolesWonByA === 9 && frontHolesWonByB === 0;
+      const frontPerfectSweepB = frontSegmentFinished && frontHolesWonByB === 9 && frontHolesWonByA === 0;
+      const backPerfectSweepA = backSegmentFinished && backHolesWonByA === 9 && backHolesWonByB === 0;
+      const backPerfectSweepB = backSegmentFinished && backHolesWonByB === 9 && backHolesWonByA === 0;
       
-      // Progressive doubling: Winning all holes that have had a winner, stops if opponent wins or ties 9/18
-      const frontProgressiveDoubleA = frontHolesWithWinner > 0 && frontHolesWonByA === frontHolesWithWinner && !frontHole9Tied;
-      const frontProgressiveDoubleB = frontHolesWithWinner > 0 && frontHolesWonByB === frontHolesWithWinner && !frontHole9Tied;
-      const backProgressiveDoubleA = backHolesWithWinner > 0 && backHolesWonByA === backHolesWithWinner && !backHole18Tied;
-      const backProgressiveDoubleB = backHolesWithWinner > 0 && backHolesWonByB === backHolesWithWinner && !backHole18Tied;
+      // Progressive doubling: Winning all holes that have had a winner, stops if opponent wins or ties 9/18.
+      // Apply only when segment finished.
+      const frontProgressiveDoubleA =
+        frontSegmentFinished && frontHolesWithWinner > 0 && frontHolesWonByA === frontHolesWithWinner && !frontHole9Tied;
+      const frontProgressiveDoubleB =
+        frontSegmentFinished && frontHolesWithWinner > 0 && frontHolesWonByB === frontHolesWithWinner && !frontHole9Tied;
+      const backProgressiveDoubleA =
+        backSegmentFinished && backHolesWithWinner > 0 && backHolesWonByA === backHolesWithWinner && !backHole18Tied;
+      const backProgressiveDoubleB =
+        backSegmentFinished && backHolesWithWinner > 0 && backHolesWonByB === backHolesWithWinner && !backHole18Tied;
       
       // Apply doubling: perfect sweep (all 9) or progressive (all decided, no tie on 9/18)
       const frontDoubleMultiplierA = (frontPerfectSweepA || frontProgressiveDoubleA) ? 2 : 1;
