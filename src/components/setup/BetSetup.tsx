@@ -221,6 +221,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       >
         <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => updateBet('pressures', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => updateBet('pressures', { backAmount: v })} />
+        <AmountInput label="Match 18" value={config.pressures.totalAmount} onChange={(v) => updateBet('pressures', { totalAmount: v })} />
       </BetSection>
 
       {/* Skins */}
@@ -589,7 +590,7 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 50 },
-  pressures: { enabled: true, frontAmount: 25, backAmount: 25 },
+  pressures: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 25 },
   skins: { enabled: true, frontValue: 25, backValue: 25, carryOver: false },
   caros: { enabled: true, amount: 25 },
   units: { enabled: true, valuePerPoint: 25 },

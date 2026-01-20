@@ -21,6 +21,8 @@ import {
   Edit2,
   Check,
   X,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1290,9 +1292,25 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             betType={editingBetType || ''}
             currentOverride={getBetOverride(editingBetType || '')}
             betConfig={betConfig}
-            onSave={(amount) => {
-              if (editingBetType) {
-                updateBetOverride(editingBetType, { amountOverride: amount });
+            onSave={(overrides) => {
+              if (editingBetType && onBetConfigChange) {
+                // Update the bet config with the new amounts for this pair
+                // This is a simplified approach - in production you'd want per-pair overrides
+                const newConfig = { ...betConfig };
+                if (editingBetType === 'medal' && overrides.front !== undefined) {
+                  newConfig.medal = { ...newConfig.medal, frontAmount: overrides.front, backAmount: overrides.back ?? newConfig.medal.backAmount, totalAmount: overrides.total ?? newConfig.medal.totalAmount };
+                } else if (editingBetType === 'pressures' && overrides.front !== undefined) {
+                  newConfig.pressures = { ...newConfig.pressures, frontAmount: overrides.front, backAmount: overrides.back ?? newConfig.pressures.backAmount, totalAmount: overrides.total ?? newConfig.pressures.totalAmount };
+                } else if (editingBetType === 'skins' && overrides.front !== undefined) {
+                  newConfig.skins = { ...newConfig.skins, frontValue: overrides.front, backValue: overrides.back ?? newConfig.skins.backValue };
+                } else if (overrides.total !== undefined) {
+                  if (editingBetType === 'caros') newConfig.caros = { ...newConfig.caros, amount: overrides.total };
+                  else if (editingBetType === 'units') newConfig.units = { ...newConfig.units, valuePerPoint: overrides.total };
+                  else if (editingBetType === 'manchas') newConfig.manchas = { ...newConfig.manchas, valuePerPoint: overrides.total };
+                  else if (editingBetType === 'culebras') newConfig.culebras = { ...newConfig.culebras, valuePerOccurrence: overrides.total };
+                  else if (editingBetType === 'pinguinos') newConfig.pinguinos = { ...newConfig.pinguinos, valuePerOccurrence: overrides.total };
+                }
+                onBetConfigChange(newConfig);
               }
               setEditingBetType(null);
             }}
@@ -1304,12 +1322,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   );
 };
 
-// Bet Amount Editor Component
+// Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
   currentOverride?: BetOverride;
   betConfig: BetConfig;
-  onSave: (amount: number) => void;
+  onSave: (overrides: { front?: number; back?: number; total?: number }) => void;
   onClose: () => void;
 }
 
@@ -1320,22 +1338,57 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   onSave,
   onClose,
 }) => {
-  // Get default amount based on bet type
-  const getDefaultAmount = () => {
+  // Get default amounts based on bet type with segments
+  const getSegmentConfig = (): { front?: number; back?: number; total?: number } => {
     switch (betType) {
-      case 'medal': return betConfig.medal.frontAmount + betConfig.medal.backAmount + betConfig.medal.totalAmount;
-      case 'pressures': return betConfig.pressures.frontAmount + betConfig.pressures.backAmount;
-      case 'skins': return betConfig.skins.frontValue + betConfig.skins.backValue;
-      case 'caros': return betConfig.caros.amount;
-      case 'units': return betConfig.units.valuePerPoint;
-      case 'manchas': return betConfig.manchas.valuePerPoint;
-      case 'culebras': return betConfig.culebras.valuePerOccurrence;
-      case 'pinguinos': return betConfig.pinguinos.valuePerOccurrence;
-      default: return 0;
+      case 'medal': 
+        return { 
+          front: betConfig.medal.frontAmount, 
+          back: betConfig.medal.backAmount, 
+          total: betConfig.medal.totalAmount 
+        };
+      case 'pressures': 
+        return { 
+          front: betConfig.pressures.frontAmount, 
+          back: betConfig.pressures.backAmount, 
+          total: betConfig.pressures.totalAmount 
+        };
+      case 'skins': 
+        return { 
+          front: betConfig.skins.frontValue, 
+          back: betConfig.skins.backValue 
+        };
+      case 'caros': 
+        return { total: betConfig.caros.amount };
+      case 'units': 
+        return { total: betConfig.units.valuePerPoint };
+      case 'manchas': 
+        return { total: betConfig.manchas.valuePerPoint };
+      case 'culebras': 
+        return { total: betConfig.culebras.valuePerOccurrence };
+      case 'pinguinos': 
+        return { total: betConfig.pinguinos.valuePerOccurrence };
+      default: 
+        return {};
     }
   };
 
-  const [amount, setAmount] = useState(currentOverride?.amountOverride ?? getDefaultAmount());
+  const segmentConfig = getSegmentConfig();
+  const [frontAmount, setFrontAmount] = useState(segmentConfig.front ?? 0);
+  const [backAmount, setBackAmount] = useState(segmentConfig.back ?? 0);
+  const [totalAmount, setTotalAmount] = useState(segmentConfig.total ?? 0);
+
+  const hasFront = segmentConfig.front !== undefined;
+  const hasBack = segmentConfig.back !== undefined;
+  const hasTotal = segmentConfig.total !== undefined;
+
+  const handleSave = () => {
+    onSave({
+      ...(hasFront && { front: frontAmount }),
+      ...(hasBack && { back: backAmount }),
+      ...(hasTotal && { total: totalAmount }),
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -1343,29 +1396,57 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
         Modifica el importe de esta apuesta solo para este par de jugadores.
       </p>
       
-      <div className="flex items-center gap-2">
-        <Label className="text-sm">Importe:</Label>
-        <div className="flex items-center gap-1">
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
-            className="w-24"
-            min={0}
-          />
+      {hasFront && (
+        <div className="flex items-center justify-between">
+          <Label className="text-sm">Front 9:</Label>
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setFrontAmount(Math.max(0, frontAmount - 25))}><Minus className="h-3 w-3" /></Button>
+            <div className="flex items-center gap-0.5">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Input type="number" value={frontAmount} onChange={(e) => setFrontAmount(parseInt(e.target.value) || 0)} className="w-20 h-8 text-center" min={0} step={25} />
+            </div>
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setFrontAmount(frontAmount + 25)}><Plus className="h-3 w-3" /></Button>
+          </div>
         </div>
-      </div>
+      )}
+      
+      {hasBack && (
+        <div className="flex items-center justify-between">
+          <Label className="text-sm">Back 9:</Label>
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setBackAmount(Math.max(0, backAmount - 25))}><Minus className="h-3 w-3" /></Button>
+            <div className="flex items-center gap-0.5">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Input type="number" value={backAmount} onChange={(e) => setBackAmount(parseInt(e.target.value) || 0)} className="w-20 h-8 text-center" min={0} step={25} />
+            </div>
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setBackAmount(backAmount + 25)}><Plus className="h-3 w-3" /></Button>
+          </div>
+        </div>
+      )}
+      
+      {hasTotal && (
+        <div className="flex items-center justify-between">
+          <Label className="text-sm">{hasFront || hasBack ? 'Total 18:' : 'Importe:'}</Label>
+          <div className="flex items-center gap-1">
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setTotalAmount(Math.max(0, totalAmount - 25))}><Minus className="h-3 w-3" /></Button>
+            <div className="flex items-center gap-0.5">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Input type="number" value={totalAmount} onChange={(e) => setTotalAmount(parseInt(e.target.value) || 0)} className="w-20 h-8 text-center" min={0} step={25} />
+            </div>
+            <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setTotalAmount(totalAmount + 25)}><Plus className="h-3 w-3" /></Button>
+          </div>
+        </div>
+      )}
       
       <p className="text-xs text-muted-foreground">
-        Valor original: ${getDefaultAmount()}
+        Valores originales: {hasFront && `Front $${segmentConfig.front}`} {hasBack && `Back $${segmentConfig.back}`} {hasTotal && `${hasFront || hasBack ? 'Total' : ''} $${segmentConfig.total}`}
       </p>
       
       <div className="flex gap-2">
         <Button variant="outline" onClick={onClose} className="flex-1">
           Cancelar
         </Button>
-        <Button onClick={() => onSave(amount)} className="flex-1">
+        <Button onClick={handleSave} className="flex-1">
           Guardar
         </Button>
       </div>

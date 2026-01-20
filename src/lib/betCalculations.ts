@@ -121,7 +121,7 @@ export const calculateMedalBets = (
 
 // PRESSURES: Cascading bet system - CORRECTED LOGIC
 // - Each pressure bet only counts 1x the bet value (not multiplied by score)
-// - When front 9 is tied ("Even"), it's a "carry" - back 9 pressures are worth 2x + match value
+// - When front 9 is tied ("Even"), it's a "carry" - back 9 pressures are worth 2x front + totalAmount
 // - Match 18 is cancelled when there's a carry
 export const calculatePressureBets = (
   players: Player[],
@@ -132,26 +132,16 @@ export const calculatePressureBets = (
   
   const summaries: BetSummary[] = [];
   
-  const segments: Array<{ key: 'front' | 'back'; amount: number; holes: number[] }> = [
-    { key: 'front', amount: config.pressures.frontAmount, holes: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
-    { key: 'back', amount: config.pressures.backAmount, holes: [10, 11, 12, 13, 14, 15, 16, 17, 18] },
-  ];
+  const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
   
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
       
-      // Track first bet result from each segment for total 18
-      const firstBetResults: Record<'front' | 'back', number> = { front: 0, back: 0 };
-      const allBetBalances: Record<'front' | 'back', number[]> = { front: [], back: [] };
-      let frontIsTied = false;
-      
-      segments.forEach(({ key, amount, holes }) => {
-        if (amount <= 0) return;
-        
-        // Each bet has its own balance that keeps accumulating
-        // When a bet hits +2 or -2, a new bet opens (but existing bets continue)
+      // Process a nine and return bets array
+      const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0]; // Start with first bet at 0
         
         holes.forEach(holeNum => {
@@ -160,17 +150,14 @@ export const calculatePressureBets = (
           
           if (scoreA === null || scoreB === null) return;
           
-          let holeResult = 0; // +1 for A win, -1 for B win, 0 for tie
+          let holeResult = 0;
           if (scoreA < scoreB) holeResult = 1;
           else if (scoreB < scoreA) holeResult = -1;
           
-          // Apply hole result to ALL active bets
           bets = bets.map(bal => bal + holeResult);
           
-          // Check if any bet just reached ±2 - open new bet if not last hole
           const justReachedTwo = bets.some(bal => Math.abs(bal) === 2);
           if (justReachedTwo && holeNum !== holes[holes.length - 1]) {
-            // Check if there's no bet at 0 already
             const hasZeroBet = bets.some(bal => bal === 0);
             if (!hasZeroBet) {
               bets.push(0);
@@ -178,69 +165,86 @@ export const calculatePressureBets = (
           }
         });
         
-        // Store all bet balances for display
-        allBetBalances[key] = bets;
-        
-        // First bet's final balance is used for total 18
-        firstBetResults[key] = bets[0] || 0;
-        
-        // Check if front 9 is tied (first bet = 0)
-        if (key === 'front' && bets[0] === 0) {
-          frontIsTied = true;
-        }
-        
-        // CORRECTED: Each bet result contributes ONLY 1x the bet value (win/loss)
-        // Count how many bets player A wins (positive) and loses (negative)
-        const betsWonA = bets.filter(b => b > 0).length;
-        const betsLostA = bets.filter(b => b < 0).length;
-        const netBets = betsWonA - betsLostA;
-        
-        // Apply carry multiplier if front 9 was tied and this is back 9
-        const multiplier = (key === 'back' && frontIsTied) ? 2 : 1;
-        const segmentAmountA = netBets * amount * multiplier;
-        
-        // Create description showing each bet's balance
-        const betBalanceStr = bets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
-        const displayStr = key === 'front' && bets[0] === 0 && bets.length === 1 
-          ? 'Even (Carry)' 
-          : betBalanceStr;
-        
-        if (segmentAmountA !== 0 || bets.length > 0) {
-          summaries.push({
-            playerId: playerA.id,
-            vsPlayer: playerB.id,
-            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}${frontIsTied && key === 'back' ? ' (x2)' : ''}`,
-            amount: segmentAmountA,
-            segment: key,
-            description: displayStr,
-          });
-          summaries.push({
-            playerId: playerB.id,
-            vsPlayer: playerA.id,
-            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}${frontIsTied && key === 'back' ? ' (x2)' : ''}`,
-            amount: -segmentAmountA,
-            segment: key,
-            description: bets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
-          });
-        }
-      });
+        return bets;
+      };
       
-      // Total 18 (Match 18): Only if front 9 was NOT tied
-      // Winner = whoever has positive first bet from front + first bet from back
-      // Value = 1x the average bet amount (not multiplied by score)
-      if (!frontIsTied && config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
-        const total18Balance = firstBetResults.front + firstBetResults.back;
-        const avgAmount = (config.pressures.frontAmount + config.pressures.backAmount) / 2;
+      const frontBets = processNine(frontHoles);
+      const backBets = processNine(backHoles);
+      
+      const frontIsTied = frontBets[0] === 0 && frontBets.length === 1;
+      
+      // Front 9 - Each bet result contributes ONLY 1x the bet value
+      const frontBetsWonA = frontBets.filter(b => b > 0).length;
+      const frontBetsLostA = frontBets.filter(b => b < 0).length;
+      const frontNetBets = frontBetsWonA - frontBetsLostA;
+      const frontAmountA = frontNetBets * config.pressures.frontAmount;
+      
+      const frontDisplayStr = frontIsTied ? 'Even (Carry)' : frontBets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
+      
+      if (frontAmountA !== 0 || frontBets.length > 0) {
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Presiones Front',
+          amount: frontAmountA,
+          segment: 'front',
+          description: frontDisplayStr,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Presiones Front',
+          amount: -frontAmountA,
+          segment: 'front',
+          description: frontBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+        });
+      }
+      
+      // Back 9 - Apply carry multiplier if front was tied
+      // When carry: back value = 2x front amount + totalAmount
+      const backMultiplier = frontIsTied ? 2 : 1;
+      const carryBonus = frontIsTied ? config.pressures.totalAmount : 0;
+      const effectiveBackValue = (config.pressures.backAmount * backMultiplier) + carryBonus;
+      
+      const backBetsWonA = backBets.filter(b => b > 0).length;
+      const backBetsLostA = backBets.filter(b => b < 0).length;
+      const backNetBets = backBetsWonA - backBetsLostA;
+      const backAmountA = backNetBets * effectiveBackValue;
+      
+      const backLabel = frontIsTied ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
+      const backDisplayStr = backBets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
+      
+      if (backAmountA !== 0 || backBets.length > 0) {
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: backLabel,
+          amount: backAmountA,
+          segment: 'back',
+          description: backDisplayStr,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: backLabel,
+          amount: -backAmountA,
+          segment: 'back',
+          description: backBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+        });
+      }
+      
+      // Match 18: Only if front 9 was NOT tied
+      if (!frontIsTied && config.pressures.totalAmount > 0) {
+        const total18Balance = frontBets[0] + backBets[0];
         
-        // Match 18 only pays 1x the bet value regardless of margin
         let matchWinner = 0;
         if (total18Balance > 0) matchWinner = 1;
         else if (total18Balance < 0) matchWinner = -1;
         
-        const totalAmount = matchWinner * avgAmount;
+        const totalAmountA = matchWinner * config.pressures.totalAmount;
         
-        const frontStr = (firstBetResults.front >= 0 ? '+' : '') + firstBetResults.front;
-        const backStr = (firstBetResults.back >= 0 ? '+' : '') + firstBetResults.back;
+        const frontStr = (frontBets[0] >= 0 ? '+' : '') + frontBets[0];
+        const backStr = (backBets[0] >= 0 ? '+' : '') + backBets[0];
         const total18Str = (total18Balance >= 0 ? '+' : '') + total18Balance;
         
         if (matchWinner !== 0) {
@@ -248,7 +252,7 @@ export const calculatePressureBets = (
             playerId: playerA.id,
             vsPlayer: playerB.id,
             betType: 'Presiones Match 18',
-            amount: totalAmount,
+            amount: totalAmountA,
             segment: 'total',
             description: `${frontStr} ${backStr} = ${total18Str}`,
           });
@@ -256,20 +260,38 @@ export const calculatePressureBets = (
             playerId: playerB.id,
             vsPlayer: playerA.id,
             betType: 'Presiones Match 18',
-            amount: -totalAmount,
+            amount: -totalAmountA,
             segment: 'total',
-            description: `${(-firstBetResults.front) >= 0 ? '+' : ''}${-firstBetResults.front} ${(-firstBetResults.back) >= 0 ? '+' : ''}${-firstBetResults.back} = ${(-total18Balance) >= 0 ? '+' : ''}${-total18Balance}`,
+            description: `${(-frontBets[0]) >= 0 ? '+' : ''}${-frontBets[0]} ${(-backBets[0]) >= 0 ? '+' : ''}${-backBets[0]} = ${(-total18Balance) >= 0 ? '+' : ''}${-total18Balance}`,
+          });
+        } else {
+          // Tie in Match 18
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Presiones Match 18',
+            amount: 0,
+            segment: 'total',
+            description: `${frontStr} ${backStr} = Even`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Presiones Match 18',
+            amount: 0,
+            segment: 'total',
+            description: `${(-frontBets[0]) >= 0 ? '+' : ''}${-frontBets[0]} ${(-backBets[0]) >= 0 ? '+' : ''}${-backBets[0]} = Even`,
           });
         }
-      } else if (frontIsTied && config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
-        // When there's a carry, Match 18 is cancelled - add info summary
+      } else if (frontIsTied && config.pressures.totalAmount > 0) {
+        // When there's a carry, Match 18 is cancelled
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Presiones Match 18',
           amount: 0,
           segment: 'total',
-          description: 'Cancelado (Carry del Front)',
+          description: 'Cancelado (Carry)',
         });
         summaries.push({
           playerId: playerB.id,
@@ -277,7 +299,7 @@ export const calculatePressureBets = (
           betType: 'Presiones Match 18',
           amount: 0,
           segment: 'total',
-          description: 'Cancelado (Carry del Front)',
+          description: 'Cancelado (Carry)',
         });
       }
     }
