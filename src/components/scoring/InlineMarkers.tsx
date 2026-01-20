@@ -10,6 +10,7 @@ import {
   Droplets,
   XCircle,
   CircleDot,
+  Frown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -29,14 +30,14 @@ interface MarkerConfig {
   points?: number;
 }
 
-// Manual unit markers (shown on strokes row)
+// Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', points: 1 },
   { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', points: 1 },
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', points: 1 },
 ];
 
-// Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels
+// Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
 export const manualStainMarkers: MarkerConfig[] = [
   { key: 'ladies', icon: Skull, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
@@ -45,6 +46,7 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces OB', type: 'mancha' },
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },
+  { key: 'cuatriput', icon: Frown, label: 'Cuatriput', description: '4+ putts', type: 'mancha' },
 ];
 
 interface InlineMarkersProps {
@@ -65,7 +67,7 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1 flex-wrap">
       {markers.map(marker => {
         const Icon = marker.icon;
         const isActive = state[marker.key];
@@ -79,16 +81,19 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                   type="button"
                   onClick={() => toggleMarker(marker.key)}
                   className={cn(
-                    'rounded-full p-1 transition-all duration-150',
-                    'hover:scale-105 active:scale-95',
+                    'rounded-full transition-all duration-150',
+                    'hover:scale-110 active:scale-95',
+                    // LARGER SIZE for mobile - p-2 instead of p-1
+                    compact ? 'p-2' : 'p-2.5',
                     isActive
                       ? isUnidad
                         ? 'bg-golf-gold/90 text-golf-dark'
                         : 'bg-destructive/90 text-destructive-foreground'
-                      : 'bg-transparent text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/30'
+                      : 'bg-muted/50 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/80'
                   )}
                 >
-                  <Icon className={cn(compact ? 'h-3 w-3' : 'h-3.5 w-3.5')} />
+                  {/* LARGER ICONS - h-5 w-5 instead of h-3 w-3 */}
+                  <Icon className={cn(compact ? 'h-5 w-5' : 'h-6 w-6')} />
                 </button>
               </TooltipTrigger>
               <TooltipContent 
@@ -111,7 +116,7 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
 
 // Auto-detected badge component
 interface AutoDetectedBadgeProps {
-  type: 'birdie' | 'eagle' | 'albatross' | 'culebra' | 'dobleDigito';
+  type: 'birdie' | 'eagle' | 'albatross' | 'culebra' | 'dobleDigito' | 'cuatriput';
   show: boolean;
 }
 
@@ -124,6 +129,7 @@ export const AutoDetectedBadge: React.FC<AutoDetectedBadgeProps> = ({ type, show
     albatross: { label: 'Albatros', color: 'bg-gradient-to-r from-golf-gold to-yellow-300 text-golf-dark' },
     culebra: { label: '🐍', color: 'bg-destructive/80 text-destructive-foreground' },
     dobleDigito: { label: '10+', color: 'bg-destructive text-destructive-foreground' },
+    cuatriput: { label: '4+🕳️', color: 'bg-destructive text-destructive-foreground' },
   };
 
   const config = configs[type];

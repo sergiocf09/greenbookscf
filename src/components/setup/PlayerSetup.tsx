@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, X, User } from 'lucide-react';
+import { Plus, X, User, Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Player } from '@/types/golf';
+import { Player, PlayerGroup } from '@/types/golf';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const playerColors = [
   'bg-golf-green text-white',
@@ -13,20 +14,33 @@ const playerColors = [
   'bg-golf-dark text-white',
   'bg-blue-600 text-white',
   'bg-purple-600 text-white',
+  'bg-orange-600 text-white',
+  'bg-pink-600 text-white',
+  'bg-cyan-600 text-white',
+  'bg-red-600 text-white',
+  'bg-indigo-600 text-white',
+  'bg-teal-600 text-white',
 ];
 
 interface PlayerSetupProps {
   players: Player[];
   onChange: (players: Player[]) => void;
   maxPlayers?: number;
+  groups?: PlayerGroup[];
+  onGroupsChange?: (groups: PlayerGroup[]) => void;
+  multiGroupEnabled?: boolean;
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   players,
   onChange,
-  maxPlayers = 4,
+  maxPlayers = 6,
+  groups = [],
+  onGroupsChange,
+  multiGroupEnabled = false,
 }) => {
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(groups[0]?.id || null);
 
   const addPlayer = () => {
     if (!newPlayerName.trim() || players.length >= maxPlayers) return;
@@ -58,9 +72,76 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     onChange(players.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
+  const addGroup = () => {
+    if (!onGroupsChange) return;
+    const newGroup: PlayerGroup = {
+      id: `group-${Date.now()}`,
+      name: `Grupo ${groups.length + 1}`,
+      players: [],
+    };
+    onGroupsChange([...groups, newGroup]);
+    setActiveGroupId(newGroup.id);
+  };
+
+  const removeGroup = (groupId: string) => {
+    if (!onGroupsChange || groups.length <= 1) return;
+    const groupToRemove = groups.find(g => g.id === groupId);
+    if (groupToRemove) {
+      // Move players back to first group
+      const updatedGroups = groups.filter(g => g.id !== groupId);
+      if (updatedGroups.length > 0) {
+        updatedGroups[0].players = [...updatedGroups[0].players, ...groupToRemove.players];
+      }
+      onGroupsChange(updatedGroups);
+      setActiveGroupId(updatedGroups[0]?.id || null);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <Label className="text-sm font-medium">Jugadores ({players.length}/{maxPlayers})</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Jugadores ({players.length}/{maxPlayers})</Label>
+        {multiGroupEnabled && onGroupsChange && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={addGroup}
+            className="h-8 text-xs gap-1"
+          >
+            <Users2 className="h-3.5 w-3.5" />
+            Agregar Grupo
+          </Button>
+        )}
+      </div>
+
+      {/* Multi-group tabs */}
+      {multiGroupEnabled && groups.length > 0 && (
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {groups.map((group, idx) => (
+            <button
+              key={group.id}
+              onClick={() => setActiveGroupId(group.id)}
+              className={cn(
+                'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                activeGroupId === group.id 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              {group.name} ({group.players.length})
+              {groups.length > 1 && (
+                <X 
+                  className="h-3 w-3 ml-1 hover:text-destructive" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeGroup(group.id);
+                  }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
       
       {/* Player List */}
       <div className="space-y-2">
