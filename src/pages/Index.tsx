@@ -11,7 +11,7 @@ import { getCourseById } from '@/data/queretaroCourses';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   DropdownMenu,
@@ -31,6 +31,7 @@ const Index = () => {
   const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [currentHole, setCurrentHole] = useState(1);
   const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
+  const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
@@ -68,6 +69,7 @@ const Index = () => {
           markers: { ...defaultMarkerState },
           strokesReceived: strokesPerHole[i],
           netScore: holePar - strokesPerHole[i],
+          confirmed: false,
         };
       });
       initialScores.set(player.id, playerScores);
@@ -91,6 +93,27 @@ const Index = () => {
       return newScores;
     });
   }, []);
+
+  const confirmHole = useCallback((holeNumber: number) => {
+    // Mark all players' scores for this hole as confirmed
+    setScores(prev => {
+      const newScores = new Map(prev);
+      players.forEach(player => {
+        const playerScores = [...(newScores.get(player.id) || [])];
+        const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
+        if (idx >= 0) {
+          playerScores[idx] = { ...playerScores[idx], confirmed: true };
+        }
+        newScores.set(player.id, playerScores);
+      });
+      return newScores;
+    });
+    setConfirmedHoles(prev => new Set([...prev, holeNumber]));
+  }, [players]);
+
+  const isHoleConfirmed = (holeNumber: number): boolean => {
+    return confirmedHoles.has(holeNumber);
+  };
 
   const currentHoleInfo: HoleInfo | null = course?.holes[currentHole - 1] || null;
   const holePar = currentHoleInfo?.par || 4;
@@ -206,17 +229,21 @@ const Index = () => {
           <>
             {/* Hole Navigation */}
             <div className="flex gap-1 overflow-x-auto pb-2">
-              {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => (
-                <button
-                  key={hole}
-                  onClick={() => setCurrentHole(hole)}
-                  className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all
-                    ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
-                    ${hole === 9 ? 'mr-2' : ''}`}
-                >
-                  {hole}
-                </button>
-              ))}
+              {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
+                const confirmed = isHoleConfirmed(hole);
+                return (
+                  <button
+                    key={hole}
+                    onClick={() => setCurrentHole(hole)}
+                    className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
+                      ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
+                        confirmed ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
+                      ${hole === 9 ? 'mr-2' : ''}`}
+                  >
+                    {confirmed && currentHole !== hole ? <CheckCircle2 className="h-4 w-4 mx-auto" /> : hole}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Player Score Inputs */}
@@ -245,6 +272,19 @@ const Index = () => {
               );
             })}
 
+            {/* Confirm Button */}
+            <Button 
+              onClick={() => confirmHole(currentHole)}
+              disabled={isHoleConfirmed(currentHole)}
+              className={`w-full ${isHoleConfirmed(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
+            >
+              {isHoleConfirmed(currentHole) ? (
+                <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
+              ) : (
+                <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
+              )}
+            </Button>
+
             {/* Navigation Buttons */}
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1">
@@ -266,6 +306,7 @@ const Index = () => {
             onHoleClick={h => { setCurrentHole(h); setView('scoring'); }}
             basePlayerId={profile?.id}
             getStrokeIndicators={getStrokeIndicators}
+            confirmedHoles={confirmedHoles}
           />
         )}
 
@@ -276,6 +317,7 @@ const Index = () => {
             betConfig={betConfig}
             course={course}
             basePlayerId={profile?.id}
+            confirmedHoles={confirmedHoles}
           />
         )}
       </main>

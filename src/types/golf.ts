@@ -35,6 +35,7 @@ export interface PlayerScore {
   markers: MarkerState;
   strokesReceived: number; // Calculated from handicap
   netScore: number; // strokes - strokesReceived
+  confirmed: boolean; // Whether the score has been validated
 }
 
 export interface MarkerState {
