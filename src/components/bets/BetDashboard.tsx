@@ -1,4 +1,4 @@
-// Complete Bet Dashboard with simplified bilateral handicaps
+// Complete Bet Dashboard - reorganized with bet type rows
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
@@ -15,8 +15,7 @@ import {
   TrendingDown, 
   ChevronDown, 
   ChevronUp,
-  Settings2,
-  Users
+  Settings2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,12 +42,6 @@ interface BilateralHandicap {
   playerBHandicap: number;
 }
 
-// Separate handicap for Carritos (team bets)
-interface CarritosHandicap {
-  teamAHandicap: number;
-  teamBHandicap: number;
-}
-
 interface BetDashboardProps {
   players: Player[];
   scores: Map<string, PlayerScore[]>;
@@ -70,8 +63,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   // One handicap per pair of players (applies to ALL individual bets)
   const [bilateralHandicaps, setBilateralHandicaps] = useState<BilateralHandicap[]>([]);
-  // Separate handicap for Carritos
-  const [carritosHandicap, setCarritosHandicap] = useState<CarritosHandicap | null>(null);
   
   // Filter scores to only include confirmed holes
   const confirmedScores = useMemo(() => {
@@ -135,25 +126,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       getPlayerBalance(b.id, betSummaries) - getPlayerBalance(a.id, betSummaries)
     );
   }, [players, betSummaries]);
-  
-  // Count of active bet types
-  const activeBetTypes = useMemo(() => {
-    const types = new Set<string>();
-    if (betConfig.medal.enabled) {
-      if (betConfig.medal.frontAmount > 0) types.add('Medal Front');
-      if (betConfig.medal.backAmount > 0) types.add('Medal Back');
-      if (betConfig.medal.totalAmount > 0) types.add('Medal Total');
-    }
-    if (betConfig.pressures.enabled) types.add('Presiones');
-    if (betConfig.skins.enabled) types.add('Skins');
-    if (betConfig.caros.enabled) types.add('Caros');
-    if (betConfig.units.enabled) types.add('Unidades');
-    if (betConfig.manchas.enabled) types.add('Manchas');
-    if (betConfig.culebras.enabled) types.add('Culebras');
-    if (betConfig.pinguinos.enabled) types.add('Pingüinos');
-    if (betConfig.carritos.enabled) types.add('Carritos');
-    return types;
-  }, [betConfig]);
   
   return (
     <div className="space-y-4">
@@ -219,9 +191,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           onToggleExpand={toggleExpanded}
           bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
           onUpdateBilateralHandicap={updateBilateralHandicap}
-          carritosHandicap={carritosHandicap}
-          onUpdateCarritosHandicap={setCarritosHandicap}
           betConfig={betConfig}
+          confirmedScores={confirmedScores}
+          course={course}
         />
       )}
       
@@ -282,20 +254,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           </div>
         </CardContent>
       </Card>
-      
-      {/* Active Bets Summary */}
-      <Card>
-        <CardHeader className="py-2">
-          <CardTitle className="text-xs text-muted-foreground">
-            {activeBetTypes.size} apuestas activas: {Array.from(activeBetTypes).join(', ')}
-          </CardTitle>
-        </CardHeader>
-      </Card>
     </div>
   );
 };
 
-// Bilateral Detail Component
+// Bilateral Detail Component - Reorganized with bet type rows
 interface BilateralDetailProps {
   player: Player;
   rival: Player;
@@ -305,9 +268,9 @@ interface BilateralDetailProps {
   onToggleExpand: (type: string) => void;
   bilateralHandicap?: BilateralHandicap;
   onUpdateBilateralHandicap: (handicap: BilateralHandicap) => void;
-  carritosHandicap: CarritosHandicap | null;
-  onUpdateCarritosHandicap: (handicap: CarritosHandicap) => void;
   betConfig: BetConfig;
+  confirmedScores: Map<string, PlayerScore[]>;
+  course: GolfCourse;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -319,26 +282,190 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   onToggleExpand,
   bilateralHandicap,
   onUpdateBilateralHandicap,
-  carritosHandicap,
-  onUpdateCarritosHandicap,
   betConfig,
+  confirmedScores,
+  course,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
-  const [editingCarritos, setEditingCarritos] = useState(false);
   
-  const betTypeLabels: Record<string, string> = {
-    'Medal Front 9': 'Medal Front',
-    'Medal Back 9': 'Medal Back',
-    'Medal Total': 'Medal 18',
-    'Presiones Front': 'Presiones F9',
-    'Presiones Back': 'Presiones B9',
-    'Skin': 'Skins',
-    'Caro': 'Caros',
-    'Unidades': 'Unidades',
-    'Manchas': 'Manchas',
-    'Culebras': 'Culebras',
-    'Pingüinos': 'Pingüinos',
+  // Calculate net scores for display
+  const getNetScoreForSegment = (playerId: string, segment: 'front' | 'back' | 'total') => {
+    const scores = confirmedScores.get(playerId) || [];
+    let filtered: PlayerScore[];
+    if (segment === 'front') {
+      filtered = scores.filter(s => s.holeNumber >= 1 && s.holeNumber <= 9);
+    } else if (segment === 'back') {
+      filtered = scores.filter(s => s.holeNumber >= 10 && s.holeNumber <= 18);
+    } else {
+      filtered = scores;
+    }
+    return filtered.reduce((sum, s) => sum + s.netScore, 0);
   };
+  
+  // Group bet types for organized display
+  const betTypeGroups = useMemo(() => {
+    const groups: {
+      key: string;
+      label: string;
+      segments: { label: string; key: string }[];
+      getTotal: () => number;
+      getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number };
+    }[] = [];
+    
+    // Medal
+    if (betConfig.medal.enabled) {
+      groups.push({
+        key: 'medal',
+        label: 'Medal',
+        segments: [
+          { label: 'Front 9', key: 'medal_front' },
+          { label: 'Back 9', key: 'medal_back' },
+          { label: 'Total 18', key: 'medal_total' },
+        ],
+        getTotal: () => {
+          const front = groupedSummaries['Medal Front 9']?.total || 0;
+          const back = groupedSummaries['Medal Back 9']?.total || 0;
+          const total = groupedSummaries['Medal Total']?.total || 0;
+          return front + back + total;
+        },
+        getSegmentData: (segmentKey) => {
+          const segment = segmentKey === 'medal_front' ? 'front' : segmentKey === 'medal_back' ? 'back' : 'total';
+          const summaryKey = segmentKey === 'medal_front' ? 'Medal Front 9' : segmentKey === 'medal_back' ? 'Medal Back 9' : 'Medal Total';
+          return {
+            playerNet: getNetScoreForSegment(player.id, segment),
+            rivalNet: getNetScoreForSegment(rival.id, segment),
+            amount: groupedSummaries[summaryKey]?.total || 0,
+          };
+        },
+      });
+    }
+    
+    // Presiones
+    if (betConfig.pressures.enabled) {
+      groups.push({
+        key: 'pressures',
+        label: 'Presiones',
+        segments: [
+          { label: 'Front 9', key: 'pressure_front' },
+          { label: 'Back 9', key: 'pressure_back' },
+          { label: 'Total 18', key: 'pressure_total' },
+        ],
+        getTotal: () => {
+          const front = groupedSummaries['Presiones Front']?.total || 0;
+          const back = groupedSummaries['Presiones Back']?.total || 0;
+          return front + back;
+        },
+        getSegmentData: (segmentKey) => {
+          const summaryKey = segmentKey === 'pressure_front' ? 'Presiones Front' : segmentKey === 'pressure_back' ? 'Presiones Back' : '';
+          const segment = segmentKey === 'pressure_front' ? 'front' : segmentKey === 'pressure_back' ? 'back' : 'total';
+          return {
+            playerNet: getNetScoreForSegment(player.id, segment),
+            rivalNet: getNetScoreForSegment(rival.id, segment),
+            amount: groupedSummaries[summaryKey]?.total || 0,
+          };
+        },
+      });
+    }
+    
+    // Skins
+    if (betConfig.skins.enabled) {
+      groups.push({
+        key: 'skins',
+        label: 'Skins',
+        segments: [
+          { label: 'Front 9', key: 'skins_front' },
+          { label: 'Back 9', key: 'skins_back' },
+        ],
+        getTotal: () => groupedSummaries['Skin']?.total || 0,
+        getSegmentData: (segmentKey) => {
+          // Get skins count from details
+          const skinDetails = groupedSummaries['Skin']?.details || [];
+          const segment = segmentKey === 'skins_front' ? 'front' : 'back';
+          const segmentSkins = skinDetails.filter(d => 
+            segment === 'front' 
+              ? (d.holeNumber && d.holeNumber <= 9)
+              : (d.holeNumber && d.holeNumber > 9)
+          );
+          const segmentAmount = segmentSkins.reduce((sum, d) => sum + d.amount, 0);
+          const playerWins = segmentSkins.filter(d => d.amount > 0).length;
+          const rivalWins = segmentSkins.filter(d => d.amount < 0).length;
+          return {
+            playerNet: playerWins,
+            rivalNet: rivalWins,
+            amount: segmentAmount,
+          };
+        },
+      });
+    }
+    
+    // Caros
+    if (betConfig.caros.enabled) {
+      groups.push({
+        key: 'caros',
+        label: 'Caros',
+        segments: [
+          { label: 'Hoyos 15-18', key: 'caros_all' },
+        ],
+        getTotal: () => groupedSummaries['Caro']?.total || 0,
+        getSegmentData: () => {
+          const caroDetails = groupedSummaries['Caro']?.details || [];
+          const playerWins = caroDetails.filter(d => d.amount > 0).length;
+          const rivalWins = caroDetails.filter(d => d.amount < 0).length;
+          return {
+            playerNet: playerWins,
+            rivalNet: rivalWins,
+            amount: groupedSummaries['Caro']?.total || 0,
+          };
+        },
+      });
+    }
+    
+    // Unidades
+    if (betConfig.units.enabled) {
+      groups.push({
+        key: 'units',
+        label: 'Unidades',
+        segments: [],
+        getTotal: () => groupedSummaries['Unidades']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
+    
+    // Manchas
+    if (betConfig.manchas.enabled) {
+      groups.push({
+        key: 'manchas',
+        label: 'Manchas',
+        segments: [],
+        getTotal: () => groupedSummaries['Manchas']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
+    
+    // Culebras
+    if (betConfig.culebras.enabled) {
+      groups.push({
+        key: 'culebras',
+        label: 'Culebras',
+        segments: [],
+        getTotal: () => groupedSummaries['Culebras']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
+    
+    // Pingüinos
+    if (betConfig.pinguinos.enabled) {
+      groups.push({
+        key: 'pinguinos',
+        label: 'Pingüinos',
+        segments: [],
+        getTotal: () => groupedSummaries['Pingüinos']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
+    
+    return groups;
+  }, [betConfig, groupedSummaries, confirmedScores, player.id, rival.id]);
   
   // Effective handicaps (with override or original)
   const effectivePlayerHcp = bilateralHandicap?.playerAHandicap ?? player.handicap;
@@ -438,93 +565,101 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             Aplica a todas las apuestas individuales
           </p>
         </div>
-        
-        {/* Carritos Handicap - separate */}
-        {betConfig.carritos.enabled && (
-          <div className="mt-2 p-2 bg-primary/10 rounded-lg border border-primary/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-primary">Carritos (Equipos)</span>
-              </div>
-              <Dialog open={editingCarritos} onOpenChange={setEditingCarritos}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-xs">
-                    Editar
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Handicaps para Carritos</DialogTitle>
-                  </DialogHeader>
-                  <CarritosHandicapEditor
-                    betConfig={betConfig}
-                    currentHandicap={carritosHandicap}
-                    onSave={(h) => {
-                      onUpdateCarritosHandicap(h);
-                      setEditingCarritos(false);
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Handicap separado para apuestas por equipos
-            </p>
-          </div>
-        )}
       </CardHeader>
       
-      <CardContent className="pt-0 space-y-1">
-        {Object.keys(groupedSummaries).length === 0 ? (
+      <CardContent className="pt-0 space-y-2">
+        {betTypeGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
             Sin apuestas calculadas aún
           </p>
         ) : (
-          Object.entries(groupedSummaries).map(([betType, { total, details }]) => {
-            const isExpanded = expandedTypes.includes(betType);
-            const label = betTypeLabels[betType] || betType;
+          betTypeGroups.map((group) => {
+            const total = group.getTotal();
+            const isExpanded = expandedTypes.includes(group.key);
+            const hasSegments = group.segments.length > 0;
             
             return (
-              <Collapsible key={betType} open={isExpanded} onOpenChange={() => onToggleExpand(betType)}>
-                <div className="flex items-center justify-between py-2 border-b border-border/50">
-                  <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-2 text-left flex-1">
-                      {isExpanded ? (
+              <div key={group.key} className="border border-border/50 rounded-lg overflow-hidden">
+                {/* Main bet type row */}
+                <div 
+                  className={cn(
+                    'flex items-center justify-between p-3 bg-muted/30',
+                    hasSegments && 'cursor-pointer hover:bg-muted/50'
+                  )}
+                  onClick={() => hasSegments && onToggleExpand(group.key)}
+                >
+                  <div className="flex items-center gap-2">
+                    {hasSegments && (
+                      isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="font-medium text-sm">{label}</span>
-                    </button>
-                  </CollapsibleTrigger>
-                  
+                      )
+                    )}
+                    <span className="font-semibold text-sm">{group.label}</span>
+                  </div>
                   <span className={cn(
-                    'text-sm font-bold min-w-[60px] text-right',
+                    'text-lg font-bold',
                     total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
                   )}>
                     {total >= 0 ? '+' : ''}${total}
                   </span>
                 </div>
                 
-                <CollapsibleContent>
-                  <div className="pl-6 py-2 space-y-1 bg-muted/30 rounded-b-lg">
-                    {details.map((detail, idx) => (
-                      <div key={idx} className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">
-                          {detail.holeNumber ? `Hoyo ${detail.holeNumber}` : detail.description || detail.segment}
-                        </span>
-                        <span className={cn(
-                          'font-medium',
-                          detail.amount > 0 ? 'text-green-500' : detail.amount < 0 ? 'text-destructive' : ''
-                        )}>
-                          {detail.amount >= 0 ? '+' : ''}${detail.amount}
-                        </span>
-                      </div>
-                    ))}
+                {/* Segment rows */}
+                {hasSegments && isExpanded && (
+                  <div className="divide-y divide-border/30">
+                    {group.segments.map((segment) => {
+                      const data = group.getSegmentData(segment.key);
+                      // Skip if no data yet
+                      if (data.amount === 0 && data.playerNet === 0 && data.rivalNet === 0) {
+                        return (
+                          <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                            <span className="text-xs text-muted-foreground">{segment.label}</span>
+                            <span className="text-xs text-muted-foreground">-</span>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
+                            {/* Score comparison */}
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className={cn(
+                                'font-medium min-w-[24px] text-center',
+                                data.playerNet < data.rivalNet ? 'text-green-500' : 
+                                data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                              )}>
+                                {group.key === 'skins' || group.key === 'caros' 
+                                  ? `${data.playerNet}W` 
+                                  : data.playerNet || '-'}
+                              </span>
+                              <span className="text-muted-foreground">vs</span>
+                              <span className={cn(
+                                'font-medium min-w-[24px] text-center',
+                                data.rivalNet < data.playerNet ? 'text-green-500' : 
+                                data.rivalNet > data.playerNet ? 'text-destructive' : ''
+                              )}>
+                                {group.key === 'skins' || group.key === 'caros' 
+                                  ? `${data.rivalNet}W` 
+                                  : data.rivalNet || '-'}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={cn(
+                            'text-sm font-bold min-w-[50px] text-right',
+                            data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
+                            {data.amount >= 0 ? '+' : ''}${data.amount}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                )}
+              </div>
             );
           })
         )}
@@ -632,85 +767,6 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
             playerBId: rival.id,
             playerAHandicap: playerAHcp,
             playerBHandicap: playerBHcp,
-          })}
-          className="flex-1"
-        >
-          Guardar
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Carritos Handicap Editor - separate from bilateral
-interface CarritosHandicapEditorProps {
-  betConfig: BetConfig;
-  currentHandicap: CarritosHandicap | null;
-  onSave: (handicap: CarritosHandicap) => void;
-}
-
-const CarritosHandicapEditor: React.FC<CarritosHandicapEditorProps> = ({
-  betConfig,
-  currentHandicap,
-  onSave,
-}) => {
-  const [teamAHcp, setTeamAHcp] = useState(currentHandicap?.teamAHandicap ?? 0);
-  const [teamBHcp, setTeamBHcp] = useState(currentHandicap?.teamBHandicap ?? 0);
-  
-  const difference = Math.abs(teamAHcp - teamBHcp);
-  
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Handicap específico para las apuestas de <strong>Carritos</strong> (equipos). 
-        Este es independiente del handicap bilateral individual.
-      </p>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-xs">Equipo A</Label>
-          <Input
-            type="number"
-            value={teamAHcp}
-            onChange={(e) => setTeamAHcp(Number(e.target.value))}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-xs">Equipo B</Label>
-          <Input
-            type="number"
-            value={teamBHcp}
-            onChange={(e) => setTeamBHcp(Number(e.target.value))}
-            className="mt-1"
-          />
-        </div>
-      </div>
-      
-      {difference > 0 && (
-        <div className="bg-muted/50 p-3 rounded-lg text-center">
-          <p className="text-sm">
-            <strong>Equipo {teamAHcp > teamBHcp ? 'A' : 'B'}</strong> recibe{' '}
-            <span className="text-lg font-bold text-primary">{difference}</span> golpes
-          </p>
-        </div>
-      )}
-      
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setTeamAHcp(0);
-            setTeamBHcp(0);
-          }}
-          className="flex-1"
-        >
-          Reiniciar
-        </Button>
-        <Button
-          onClick={() => onSave({
-            teamAHandicap: teamAHcp,
-            teamBHandicap: teamBHcp,
           })}
           className="flex-1"
         >
