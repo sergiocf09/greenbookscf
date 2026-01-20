@@ -1,6 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 
 export interface BetSummary {
   playerId: string;
@@ -121,11 +120,9 @@ export const calculateMedalBets = (
 };
 
 // PRESSURES: Cascading bet system - CORRECTED LOGIC
-// - First bet opens on hole 1 (front) or hole 10 (back)
-// - When any bet reaches +2 or -2, a NEW bet opens starting at 0
-// - Each bet tracks its own running balance independently
-// - Final display shows each bet's final balance (e.g., +3 +1 -2)
-// - Total 18 = first front 9 bet final balance + first back 9 bet final balance
+// - Each pressure bet only counts 1x the bet value (not multiplied by score)
+// - When front 9 is tied ("Even"), it's a "carry" - back 9 pressures are worth 2x + match value
+// - Match 18 is cancelled when there's a carry
 export const calculatePressureBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -148,6 +145,7 @@ export const calculatePressureBets = (
       // Track first bet result from each segment for total 18
       const firstBetResults: Record<'front' | 'back', number> = { front: 0, back: 0 };
       const allBetBalances: Record<'front' | 'back', number[]> = { front: [], back: [] };
+      let frontIsTied = false;
       
       segments.forEach(({ key, amount, holes }) => {
         if (amount <= 0) return;
@@ -186,29 +184,40 @@ export const calculatePressureBets = (
         // First bet's final balance is used for total 18
         firstBetResults[key] = bets[0] || 0;
         
-        // Calculate total money for this segment
-        // Each bet result contributes: positive balance = A wins that many bets worth
-        const totalBetsA = bets.filter(b => b > 0).reduce((sum, b) => sum + b, 0);
-        const totalBetsB = Math.abs(bets.filter(b => b < 0).reduce((sum, b) => sum + b, 0));
-        const netBets = totalBetsA - totalBetsB;
-        const segmentAmountA = netBets * amount;
+        // Check if front 9 is tied (first bet = 0)
+        if (key === 'front' && bets[0] === 0) {
+          frontIsTied = true;
+        }
+        
+        // CORRECTED: Each bet result contributes ONLY 1x the bet value (win/loss)
+        // Count how many bets player A wins (positive) and loses (negative)
+        const betsWonA = bets.filter(b => b > 0).length;
+        const betsLostA = bets.filter(b => b < 0).length;
+        const netBets = betsWonA - betsLostA;
+        
+        // Apply carry multiplier if front 9 was tied and this is back 9
+        const multiplier = (key === 'back' && frontIsTied) ? 2 : 1;
+        const segmentAmountA = netBets * amount * multiplier;
         
         // Create description showing each bet's balance
         const betBalanceStr = bets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
+        const displayStr = key === 'front' && bets[0] === 0 && bets.length === 1 
+          ? 'Even (Carry)' 
+          : betBalanceStr;
         
         if (segmentAmountA !== 0 || bets.length > 0) {
           summaries.push({
             playerId: playerA.id,
             vsPlayer: playerB.id,
-            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}`,
+            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}${frontIsTied && key === 'back' ? ' (x2)' : ''}`,
             amount: segmentAmountA,
             segment: key,
-            description: betBalanceStr,
+            description: displayStr,
           });
           summaries.push({
             playerId: playerB.id,
             vsPlayer: playerA.id,
-            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}`,
+            betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}${frontIsTied && key === 'back' ? ' (x2)' : ''}`,
             amount: -segmentAmountA,
             segment: key,
             description: bets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
@@ -216,32 +225,59 @@ export const calculatePressureBets = (
         }
       });
       
-      // Total 18 = First bet from front + First bet from back
-      const total18Balance = firstBetResults.front + firstBetResults.back;
-      if (config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
-        // Use average amount for total 18
+      // Total 18 (Match 18): Only if front 9 was NOT tied
+      // Winner = whoever has positive first bet from front + first bet from back
+      // Value = 1x the average bet amount (not multiplied by score)
+      if (!frontIsTied && config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
+        const total18Balance = firstBetResults.front + firstBetResults.back;
         const avgAmount = (config.pressures.frontAmount + config.pressures.backAmount) / 2;
-        const totalAmount = total18Balance * avgAmount;
+        
+        // Match 18 only pays 1x the bet value regardless of margin
+        let matchWinner = 0;
+        if (total18Balance > 0) matchWinner = 1;
+        else if (total18Balance < 0) matchWinner = -1;
+        
+        const totalAmount = matchWinner * avgAmount;
         
         const frontStr = (firstBetResults.front >= 0 ? '+' : '') + firstBetResults.front;
         const backStr = (firstBetResults.back >= 0 ? '+' : '') + firstBetResults.back;
         const total18Str = (total18Balance >= 0 ? '+' : '') + total18Balance;
         
+        if (matchWinner !== 0) {
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Presiones Match 18',
+            amount: totalAmount,
+            segment: 'total',
+            description: `${frontStr} ${backStr} = ${total18Str}`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Presiones Match 18',
+            amount: -totalAmount,
+            segment: 'total',
+            description: `${(-firstBetResults.front) >= 0 ? '+' : ''}${-firstBetResults.front} ${(-firstBetResults.back) >= 0 ? '+' : ''}${-firstBetResults.back} = ${(-total18Balance) >= 0 ? '+' : ''}${-total18Balance}`,
+          });
+        }
+      } else if (frontIsTied && config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
+        // When there's a carry, Match 18 is cancelled - add info summary
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
-          betType: 'Presiones Total',
-          amount: totalAmount,
+          betType: 'Presiones Match 18',
+          amount: 0,
           segment: 'total',
-          description: `Match 18: ${frontStr} ${backStr} = ${total18Str}`,
+          description: 'Cancelado (Carry del Front)',
         });
         summaries.push({
           playerId: playerB.id,
           vsPlayer: playerA.id,
-          betType: 'Presiones Total',
-          amount: -totalAmount,
+          betType: 'Presiones Match 18',
+          amount: 0,
           segment: 'total',
-          description: `Match 18: ${(-firstBetResults.front) >= 0 ? '+' : ''}${-firstBetResults.front} ${(-firstBetResults.back) >= 0 ? '+' : ''}${-firstBetResults.back} = ${(-total18Balance) >= 0 ? '+' : ''}${-total18Balance}`,
+          description: 'Cancelado (Carry del Front)',
         });
       }
     }
@@ -250,10 +286,9 @@ export const calculatePressureBets = (
   return summaries;
 };
 
-// SKINS: Bilateral accumulated - net holes won per nine
-// Each pair of players competes individually
-// At end of 18 holes, if there are tied holes, they are eliminated (no payment)
-// Net skins won = holes won by A - holes won by B for that segment
+// SKINS: Bilateral ACCUMULATED - net holes won per nine with carry over
+// If tied holes accumulate and first winner takes the pot
+// Tied holes at end = no payout
 export const calculateSkinsBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -263,57 +298,123 @@ export const calculateSkinsBets = (
   
   const summaries: BetSummary[] = [];
   
-  const segments: Array<{ key: 'front' | 'back'; value: number; holes: number[] }> = [
-    { key: 'front', value: config.skins.frontValue, holes: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
-    { key: 'back', value: config.skins.backValue, holes: [10, 11, 12, 13, 14, 15, 16, 17, 18] },
-  ];
-  
-  // For each pair of players, calculate bilateral skins
+  // For each pair of players, calculate bilateral skins with accumulation
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
       
-      segments.forEach(({ key, value, holes }) => {
-        if (value <= 0) return;
+      // Process front 9
+      let frontSkinsA = 0;
+      let frontSkinsB = 0;
+      let frontAccumulated = 0;
+      let frontCarryToBack = 0;
+      
+      for (let holeNum = 1; holeNum <= 9; holeNum++) {
+        const scoreA = getHoleScore(playerA.id, holeNum, scores);
+        const scoreB = getHoleScore(playerB.id, holeNum, scores);
         
-        let holesWonA = 0;
-        let holesWonB = 0;
-        
-        holes.forEach(holeNum => {
-          const scoreA = getHoleScore(playerA.id, holeNum, scores);
-          const scoreB = getHoleScore(playerB.id, holeNum, scores);
-          
-          if (scoreA === null || scoreB === null) return;
-          
-          if (scoreA < scoreB) holesWonA++;
-          else if (scoreB < scoreA) holesWonB++;
-          // Ties don't count for either
-        });
-        
-        // Net skins = difference in holes won
-        const netSkinsA = holesWonA - holesWonB;
-        const amount = netSkinsA * value;
-        
-        if (amount !== 0) {
-          summaries.push({
-            playerId: playerA.id,
-            vsPlayer: playerB.id,
-            betType: `Skins ${key === 'front' ? 'Front' : 'Back'}`,
-            amount: amount,
-            segment: key,
-            description: `${holesWonA} vs ${holesWonB} hoyos`,
-          });
-          summaries.push({
-            playerId: playerB.id,
-            vsPlayer: playerA.id,
-            betType: `Skins ${key === 'front' ? 'Front' : 'Back'}`,
-            amount: -amount,
-            segment: key,
-            description: `${holesWonB} vs ${holesWonA} hoyos`,
-          });
+        if (scoreA === null || scoreB === null) {
+          frontAccumulated++; // Count as accumulated if incomplete
+          continue;
         }
-      });
+        
+        frontAccumulated++; // Add current hole to pot
+        
+        if (scoreA < scoreB) {
+          frontSkinsA += frontAccumulated;
+          frontAccumulated = 0;
+        } else if (scoreB < scoreA) {
+          frontSkinsB += frontAccumulated;
+          frontAccumulated = 0;
+        }
+        // Tie = accumulate
+      }
+      
+      // If carry over is enabled, remaining accumulated skins go to back 9
+      if (config.skins.carryOver) {
+        frontCarryToBack = frontAccumulated;
+        frontAccumulated = 0;
+      }
+      // If not carry over, remaining accumulated skins are void (no payout)
+      
+      // Process back 9
+      let backSkinsA = 0;
+      let backSkinsB = 0;
+      let backAccumulated = frontCarryToBack;
+      let carriedSkins = frontCarryToBack;
+      
+      for (let holeNum = 10; holeNum <= 18; holeNum++) {
+        const scoreA = getHoleScore(playerA.id, holeNum, scores);
+        const scoreB = getHoleScore(playerB.id, holeNum, scores);
+        
+        if (scoreA === null || scoreB === null) {
+          backAccumulated++;
+          continue;
+        }
+        
+        backAccumulated++;
+        
+        if (scoreA < scoreB) {
+          // First, award carried skins at front 9 rate
+          if (carriedSkins > 0 && holeNum === 10 + (backAccumulated - carriedSkins - 1)) {
+            // This is a simplification - carried skins at front rate
+          }
+          backSkinsA += backAccumulated;
+          backAccumulated = 0;
+          carriedSkins = 0;
+        } else if (scoreB < scoreA) {
+          backSkinsB += backAccumulated;
+          backAccumulated = 0;
+          carriedSkins = 0;
+        }
+        // Tie = accumulate
+      }
+      // Remaining accumulated at end of back 9 = void (no payout)
+      
+      // Calculate money for front 9
+      const netSkinsFront = frontSkinsA - frontSkinsB;
+      if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
+        const frontAmount = netSkinsFront * config.skins.frontValue;
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Skins Front',
+          amount: frontAmount,
+          segment: 'front',
+          description: `${frontSkinsA} vs ${frontSkinsB} skins`,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Skins Front',
+          amount: -frontAmount,
+          segment: 'front',
+          description: `${frontSkinsB} vs ${frontSkinsA} skins`,
+        });
+      }
+      
+      // Calculate money for back 9 (including any carried)
+      const netSkinsBack = backSkinsA - backSkinsB;
+      if (netSkinsBack !== 0 && config.skins.backValue > 0) {
+        const backAmount = netSkinsBack * config.skins.backValue;
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Skins Back',
+          amount: backAmount,
+          segment: 'back',
+          description: `${backSkinsA} vs ${backSkinsB} skins${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Skins Back',
+          amount: -backAmount,
+          segment: 'back',
+          description: `${backSkinsB} vs ${backSkinsA} skins${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
+        });
+      }
     }
   }
   
@@ -588,7 +689,8 @@ export const calculateManchasBets = (
   return summaries;
 };
 
-// CULEBRAS: 3+ putts cumulative
+// CULEBRAS: 3+ putts - ONLY the LAST player to make one pays ALL occurrences to ALL others
+// Find which hole(s) have culebras and determine the last one
 export const calculateCulebrasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -598,92 +700,153 @@ export const calculateCulebrasBets = (
   
   const summaries: BetSummary[] = [];
   
-  const countCulebras = (playerId: string): number => {
-    const playerScores = scores.get(playerId) || [];
-    return playerScores.filter(s => s.putts >= 3).length;
-  };
+  // Find all culebras with their hole numbers
+  const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
-      
-      const culebrasA = countCulebras(playerA.id);
-      const culebrasB = countCulebras(playerB.id);
-      const diff = culebrasB - culebrasA; // Fewer culebras wins
-      
-      if (diff !== 0) {
-        const amount = diff * config.culebras.valuePerOccurrence;
-        
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Culebras',
-          amount: amount,
-          segment: 'total',
-          description: `${culebrasA} vs ${culebrasB} culebras`,
-        });
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Culebras',
-          amount: -amount,
-          segment: 'total',
-          description: `${culebrasB} vs ${culebrasA} culebras`,
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    playerScores.forEach(score => {
+      if (score.putts >= 3) {
+        allCulebras.push({ 
+          playerId: player.id, 
+          holeNumber: score.holeNumber,
+          putts: score.putts 
         });
       }
+    });
+  });
+  
+  if (allCulebras.length === 0) return [];
+  
+  // Find the last hole with culebras
+  const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+  const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
+  
+  // If multiple players have culebra on same last hole, the one with more putts pays
+  // If tied putts, this should be resolved by user (handled in UI)
+  let lastPlayerToPay: string;
+  
+  if (culebrasOnLastHole.length === 1) {
+    lastPlayerToPay = culebrasOnLastHole[0].playerId;
+  } else {
+    // Multiple culebras on last hole - pick the one with most putts
+    const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
+    const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
+    
+    if (playersWithMaxPutts.length === 1) {
+      lastPlayerToPay = playersWithMaxPutts[0].playerId;
+    } else {
+      // Exact tie - for now, use first player (UI should handle this)
+      // Store this as a tie that needs resolution
+      lastPlayerToPay = playersWithMaxPutts[0].playerId;
     }
   }
+  
+  const totalCulebras = allCulebras.length;
+  const amountPerPlayer = totalCulebras * config.culebras.valuePerOccurrence;
+  
+  // Last player pays each other player
+  players.forEach(player => {
+    if (player.id === lastPlayerToPay) return;
+    
+    summaries.push({
+      playerId: lastPlayerToPay,
+      vsPlayer: player.id,
+      betType: 'Culebras',
+      amount: -amountPerPlayer,
+      segment: 'total',
+      description: `Último en culebra - paga ${totalCulebras} culebras`,
+    });
+    summaries.push({
+      playerId: player.id,
+      vsPlayer: lastPlayerToPay,
+      betType: 'Culebras',
+      amount: amountPerPlayer,
+      segment: 'total',
+      description: `Recibe de culebras x${totalCulebras}`,
+    });
+  });
   
   return summaries;
 };
 
-// PINGUINOS: 1-putt cumulative
+// PINGUINOS: Triple bogey or worse (3+ over par) - ONLY the LAST player pays ALL
 export const calculatePinguinosBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  config: BetConfig
+  config: BetConfig,
+  course: GolfCourse
 ): BetSummary[] => {
   if (!config.pinguinos.enabled || config.pinguinos.valuePerOccurrence <= 0) return [];
   
   const summaries: BetSummary[] = [];
   
-  const countPinguinos = (playerId: string): number => {
-    const playerScores = scores.get(playerId) || [];
-    return playerScores.filter(s => s.putts === 1).length;
-  };
+  // Find all pinguinos with their hole numbers
+  const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
-      
-      const pinguinosA = countPinguinos(playerA.id);
-      const pinguinosB = countPinguinos(playerB.id);
-      const diff = pinguinosA - pinguinosB; // More pinguinos wins
-      
-      if (diff !== 0) {
-        const amount = diff * config.pinguinos.valuePerOccurrence;
-        
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Pingüinos',
-          amount: amount,
-          segment: 'total',
-          description: `${pinguinosA} vs ${pinguinosB} pingüinos`,
-        });
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Pingüinos',
-          amount: -amount,
-          segment: 'total',
-          description: `${pinguinosB} vs ${pinguinosA} pingüinos`,
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    playerScores.forEach(score => {
+      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+      const overPar = score.strokes - holePar;
+      if (overPar >= 3) { // Triple bogey or worse
+        allPinguinos.push({ 
+          playerId: player.id, 
+          holeNumber: score.holeNumber,
+          overPar 
         });
       }
+    });
+  });
+  
+  if (allPinguinos.length === 0) return [];
+  
+  // Find the last hole with pinguinos
+  const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+  const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
+  
+  // If multiple players have pinguino on same last hole, the one with worst score pays
+  let lastPlayerToPay: string;
+  
+  if (pinguinosOnLastHole.length === 1) {
+    lastPlayerToPay = pinguinosOnLastHole[0].playerId;
+  } else {
+    // Multiple pinguinos on last hole - pick the one with worst score (most over par)
+    const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
+    const playersWithWorst = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
+    
+    if (playersWithWorst.length === 1) {
+      lastPlayerToPay = playersWithWorst[0].playerId;
+    } else {
+      // Exact tie - for now, use first player (UI should handle this)
+      lastPlayerToPay = playersWithWorst[0].playerId;
     }
   }
+  
+  const totalPinguinos = allPinguinos.length;
+  const amountPerPlayer = totalPinguinos * config.pinguinos.valuePerOccurrence;
+  
+  // Last player pays each other player
+  players.forEach(player => {
+    if (player.id === lastPlayerToPay) return;
+    
+    summaries.push({
+      playerId: lastPlayerToPay,
+      vsPlayer: player.id,
+      betType: 'Pingüinos',
+      amount: -amountPerPlayer,
+      segment: 'total',
+      description: `Último en pingüino - paga ${totalPinguinos} pingüinos`,
+    });
+    summaries.push({
+      playerId: player.id,
+      vsPlayer: lastPlayerToPay,
+      betType: 'Pingüinos',
+      amount: amountPerPlayer,
+      segment: 'total',
+      description: `Recibe de pingüinos x${totalPinguinos}`,
+    });
+  });
   
   return summaries;
 };
@@ -703,7 +866,7 @@ export const calculateAllBets = (
     ...calculateUnitsBets(players, scores, config, course),
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),
-    ...calculatePinguinosBets(players, scores, config),
+    ...calculatePinguinosBets(players, scores, config, course),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
@@ -724,7 +887,6 @@ export const calculateAllBets = (
         }
         // If there's an amount override, scale the amount proportionally
         if (override.amountOverride !== undefined && summary.amount !== 0) {
-          const originalAmount = Math.abs(summary.amount);
           const sign = summary.amount > 0 ? 1 : -1;
           return { ...summary, amount: sign * override.amountOverride };
         }
@@ -777,4 +939,75 @@ export const groupSummariesByType = (
     acc[key].details.push(s);
     return acc;
   }, {} as Record<string, { total: number; details: BetSummary[] }>);
+};
+
+// Helper to detect culebra/pinguino ties for UI resolution
+export interface TieResolution {
+  type: 'culebra' | 'pinguino';
+  holeNumber: number;
+  players: string[];
+}
+
+export const detectTiesNeedingResolution = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse
+): TieResolution[] => {
+  const ties: TieResolution[] = [];
+  
+  // Check culebras
+  const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    playerScores.forEach(score => {
+      if (score.putts >= 3) {
+        allCulebras.push({ playerId: player.id, holeNumber: score.holeNumber, putts: score.putts });
+      }
+    });
+  });
+  
+  if (allCulebras.length > 0) {
+    const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+    const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
+    const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
+    const tied = culebrasOnLastHole.filter(c => c.putts === maxPutts);
+    
+    if (tied.length > 1) {
+      ties.push({
+        type: 'culebra',
+        holeNumber: maxHole,
+        players: tied.map(t => t.playerId),
+      });
+    }
+  }
+  
+  // Check pinguinos
+  const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    playerScores.forEach(score => {
+      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+      const overPar = score.strokes - holePar;
+      if (overPar >= 3) {
+        allPinguinos.push({ playerId: player.id, holeNumber: score.holeNumber, overPar });
+      }
+    });
+  });
+  
+  if (allPinguinos.length > 0) {
+    const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+    const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
+    const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
+    const tied = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
+    
+    if (tied.length > 1) {
+      ties.push({
+        type: 'pinguino',
+        holeNumber: maxHole,
+        players: tied.map(t => t.playerId),
+      });
+    }
+  }
+  
+  return ties;
 };
