@@ -4,7 +4,7 @@ import { PlayerSetup } from '@/components/setup/PlayerSetup';
 import { CourseSelect } from '@/components/setup/CourseSelect';
 import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
 import { Scorecard } from '@/components/scorecard/Scorecard';
-import { GeneralBetTable, PlayerBetIcons, BetDetailView } from '@/components/bets/BetViews';
+import { BetDashboard } from '@/components/bets/BetDashboard';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { getCourseById } from '@/data/queretaroCourses';
@@ -31,7 +31,7 @@ const Index = () => {
   const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [currentHole, setCurrentHole] = useState(1);
   const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
-  const [selectedRival, setSelectedRival] = useState<string | null>(null);
+  
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
@@ -269,33 +269,14 @@ const Index = () => {
           />
         )}
 
-        {view === 'bets' && (
-          <>
-            {players.length > 0 && profile && (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Selecciona un rival</p>
-                  <PlayerBetIcons
-                    player={players.find(p => p.profileId === profile.id) || players[0]}
-                    allPlayers={players}
-                    betConfig={betConfig}
-                    betSummaries={[]}
-                    onPlayerClick={setSelectedRival}
-                    selectedRival={selectedRival}
-                  />
-                </div>
-                {selectedRival && (
-                  <BetDetailView
-                    player={players.find(p => p.profileId === profile.id) || players[0]}
-                    rival={players.find(p => p.id === selectedRival)!}
-                    summaries={[]}
-                    betConfig={betConfig}
-                  />
-                )}
-                <GeneralBetTable players={players} summaries={[]} />
-              </div>
-            )}
-          </>
+        {view === 'bets' && course && (
+          <BetDashboard
+            players={players}
+            scores={scores}
+            betConfig={betConfig}
+            course={course}
+            basePlayerId={profile?.id}
+          />
         )}
       </main>
     </div>
