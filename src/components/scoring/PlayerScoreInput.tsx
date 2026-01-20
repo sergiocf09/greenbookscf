@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
-import { Minus, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import React from 'react';
+import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
-  ScoreMarkers, 
-  InlineScoreMarkers, 
-  MarkerState, 
-  defaultMarkerState 
-} from './ScoreMarkers';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  InlineMarkers, 
+  AutoDetectedBadge,
+  manualUnitMarkers,
+  manualStainMarkers,
+} from './InlineMarkers';
+import { MarkerState, defaultMarkerState } from '@/types/golf';
+import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 
 interface PlayerScoreInputProps {
   playerName: string;
@@ -21,10 +18,10 @@ interface PlayerScoreInputProps {
   holeNumber: number;
   par: number;
   strokes: number;
-  putts?: number;
+  putts: number;
   markers: MarkerState;
   onStrokesChange: (strokes: number) => void;
-  onPuttsChange?: (putts: number) => void;
+  onPuttsChange: (putts: number) => void;
   onMarkersChange: (markers: MarkerState) => void;
   handicapStrokes?: number;
 }
@@ -43,187 +40,146 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   onMarkersChange,
   handicapStrokes = 0,
 }) => {
-  const [showAllMarkers, setShowAllMarkers] = useState(false);
-
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  
+  // Auto-detect score-based markers
+  const autoDetected = strokes > 0 ? detectScoreBasedMarkers(strokes, putts, par) : {};
+  const mergedMarkers = mergeMarkers(autoDetected, markers);
   
   const scoreToPar = strokes - par;
   const netScore = strokes - handicapStrokes;
   const netToPar = netScore - par;
 
   const getScoreColor = (toPar: number) => {
-    if (toPar <= -2) return 'text-golf-gold'; // Eagle or better
-    if (toPar === -1) return 'text-green-500'; // Birdie
-    if (toPar === 0) return 'text-foreground'; // Par
-    if (toPar === 1) return 'text-orange-500'; // Bogey
-    return 'text-destructive'; // Double bogey or worse
+    if (strokes === 0) return 'text-muted-foreground';
+    if (toPar <= -2) return 'text-golf-gold';
+    if (toPar === -1) return 'text-green-500';
+    if (toPar === 0) return 'text-foreground';
+    if (toPar === 1) return 'text-orange-500';
+    return 'text-destructive';
   };
 
-  const getScoreLabel = (toPar: number) => {
-    if (toPar <= -3) return 'Albatros';
-    if (toPar === -2) return 'Águila';
-    if (toPar === -1) return 'Birdie';
-    if (toPar === 0) return 'Par';
-    if (toPar === 1) return 'Bogey';
-    if (toPar === 2) return 'Doble';
-    if (toPar === 3) return 'Triple';
-    return `+${toPar}`;
+  const handleMarkersChange = (newMarkers: MarkerState) => {
+    // Only update manual markers, auto-detected ones are computed
+    onMarkersChange(newMarkers);
   };
-
-  const activeMarkersCount = Object.values(markers).filter(Boolean).length;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 space-y-3">
+    <div className="bg-card border border-border rounded-xl p-3 space-y-2">
       {/* Player Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className={cn(
-            'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold',
+            'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-sm',
             avatarColor,
-            'text-white shadow-sm'
           )}>
             {initials}
           </div>
           <div>
-            <p className="font-semibold text-foreground">{playerName}</p>
+            <p className="font-semibold text-sm text-foreground">{playerName}</p>
             {handicapStrokes > 0 && (
-              <p className="text-xs text-muted-foreground">
-                +{handicapStrokes} stroke{handicapStrokes > 1 ? 's' : ''} este hoyo
+              <p className="text-[10px] text-muted-foreground">
+                +{handicapStrokes} golpe{handicapStrokes > 1 ? 's' : ''}
               </p>
             )}
           </div>
         </div>
         
-        {/* Score Display */}
-        {strokes > 0 && (
-          <div className="text-right">
-            <p className={cn('text-2xl font-bold', getScoreColor(scoreToPar))}>
-              {strokes}
-            </p>
-            <p className={cn('text-xs font-medium', getScoreColor(scoreToPar))}>
-              {getScoreLabel(scoreToPar)}
-            </p>
-          </div>
-        )}
+        {/* Score Display with auto-detected badges */}
+        <div className="flex items-center gap-2">
+          {strokes > 0 && (
+            <>
+              <div className="flex gap-1">
+                <AutoDetectedBadge type="albatross" show={mergedMarkers.albatross} />
+                <AutoDetectedBadge type="eagle" show={mergedMarkers.eagle && !mergedMarkers.albatross} />
+                <AutoDetectedBadge type="birdie" show={mergedMarkers.birdie && !mergedMarkers.eagle} />
+                <AutoDetectedBadge type="dobleDigito" show={mergedMarkers.dobleDigito} />
+              </div>
+              <p className={cn('text-2xl font-bold', getScoreColor(scoreToPar))}>
+                {strokes}
+              </p>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Score Input */}
+      {/* Strokes Input Row with Unit Markers */}
       <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground w-16">Golpes</span>
+          <span className="text-xs text-muted-foreground w-12">Golpes</span>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-7 w-7 rounded-full"
               onClick={() => onStrokesChange(Math.max(1, strokes - 1))}
               disabled={strokes <= 1}
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-3 w-3" />
             </Button>
-            <div className="w-12 text-center">
-              <span className="text-xl font-bold">{strokes || '-'}</span>
+            <div className="w-10 text-center">
+              <span className="text-lg font-bold">{strokes || '-'}</span>
             </div>
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-7 w-7 rounded-full"
               onClick={() => onStrokesChange(strokes + 1)}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
         </div>
 
-        {/* Inline Quick Markers */}
-        <InlineScoreMarkers state={markers} onChange={onMarkersChange} />
+        {/* Manual Unit Markers on strokes row */}
+        <InlineMarkers 
+          state={markers} 
+          onChange={handleMarkersChange} 
+          markers={manualUnitMarkers}
+        />
       </div>
 
-      {/* Putts Input (optional) */}
-      {onPuttsChange && (
-        <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground w-16">Putts</span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                onClick={() => onPuttsChange(Math.max(0, (putts || 0) - 1))}
-                disabled={(putts || 0) <= 0}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <div className="w-12 text-center">
-                <span className="text-xl font-bold">{putts ?? '-'}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                onClick={() => onPuttsChange((putts || 0) + 1)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+      {/* Putts Input Row with Stain Markers */}
+      <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-12">Putts</span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => onPuttsChange(Math.max(0, putts - 1))}
+              disabled={putts <= 0}
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <div className="w-10 text-center flex items-center justify-center gap-1">
+              <span className="text-lg font-bold">{putts}</span>
+              {mergedMarkers.culebra && <AutoDetectedBadge type="culebra" show={true} />}
             </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => onPuttsChange(putts + 1)}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Expandable All Markers */}
-      <Collapsible open={showAllMarkers} onOpenChange={setShowAllMarkers}>
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-center gap-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            {showAllMarkers ? (
-              <>
-                <ChevronUp className="h-3 w-3" />
-                Ocultar marcadores
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3 w-3" />
-                Todos los marcadores
-                {activeMarkersCount > 0 && (
-                  <span className="bg-golf-gold text-golf-dark text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {activeMarkersCount}
-                  </span>
-                )}
-              </>
-            )}
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2">
-          <div className="space-y-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-golf-gold font-semibold mb-1.5">
-                Unidades
-              </p>
-              <ScoreMarkers
-                state={markers}
-                onChange={onMarkersChange}
-                showUnidades={true}
-                showManchas={false}
-              />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-destructive font-semibold mb-1.5">
-                Manchas
-              </p>
-              <ScoreMarkers
-                state={markers}
-                onChange={onMarkersChange}
-                showUnidades={false}
-                showManchas={true}
-              />
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+        {/* Manual Stain Markers on putts row */}
+        <InlineMarkers 
+          state={markers} 
+          onChange={handleMarkersChange} 
+          markers={manualStainMarkers}
+        />
+      </div>
 
       {/* Net Score Display */}
       {handicapStrokes > 0 && strokes > 0 && (
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <span className="text-xs text-muted-foreground">Score Neto</span>
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <span className="text-xs text-muted-foreground">Neto</span>
           <span className={cn('text-sm font-semibold', getScoreColor(netToPar))}>
             {netScore} ({netToPar >= 0 ? '+' : ''}{netToPar})
           </span>
@@ -232,3 +188,6 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
     </div>
   );
 };
+
+export { defaultMarkerState };
+export type { MarkerState };
