@@ -281,6 +281,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return total;
   };
   
+  // Cancel carritos bet
+  const cancelCarritos = (carritosId?: string) => {
+    if (!onBetConfigChange) return;
+    
+    if (!carritosId) {
+      // Primary carritos
+      onBetConfigChange({
+        ...betConfig,
+        carritos: { ...betConfig.carritos, enabled: false },
+      });
+    } else {
+      // Additional carritos
+      const teams = betConfig.carritosTeams || [];
+      onBetConfigChange({
+        ...betConfig,
+        carritosTeams: teams.map(t => t.id === carritosId ? { ...t, enabled: false } : t),
+      });
+    }
+  };
+  
   return (
     <div className="space-y-4">
       {/* All Carritos Results */}
@@ -291,6 +311,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           players={players}
           basePlayerId={basePlayer?.id}
           title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
+          onCancel={onBetConfigChange ? () => cancelCarritos(result.id) : undefined}
         />
       ))}
       
@@ -496,13 +517,15 @@ interface CarritosResultsCardProps {
     moneyA: number;
     moneyB: number;
     amount: number;
+    id?: string;
   };
   players: Player[];
   basePlayerId?: string;
   title?: string;
+  onCancel?: () => void;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)' }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel }) => {
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
@@ -530,9 +553,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   return (
     <Card className="border-accent/50">
       <CardHeader className="py-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          {title}
+        <CardTitle className="text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {title}
+          </div>
+          {onCancel && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={onCancel}
+              title="Cancelar Carritos"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -713,37 +749,42 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     return filtered.reduce((sum, s) => sum + s.netScore, 0);
   };
 
-  // Get units/manchas details for display - including Cuatriput in manchas
+  // Get units/manchas details for display - including Cuatriput in manchas with color coding
+  // Green = positive for base player (they receive), Red = negative for base player (they pay)
   const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
     const playerScores = allScores.get(playerId) || [];
-    const details: { holeNumber: number; marker: string; emoji: string }[] = [];
+    const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean }[] = [];
+    const isBasePlayer = playerId === player.id;
     
     playerScores.forEach(score => {
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
       const toPar = score.strokes - holePar;
       
       if (type === 'units') {
-        // Auto-detected units
-        if (toPar === -1) details.push({ holeNumber: score.holeNumber, marker: 'Birdie', emoji: '🐦' });
-        if (toPar === -2) details.push({ holeNumber: score.holeNumber, marker: 'Águila', emoji: '🦅' });
-        if (toPar <= -3) details.push({ holeNumber: score.holeNumber, marker: 'Albatros', emoji: '🦢' });
+        // Auto-detected units - positive for the player who got them
+        if (toPar === -1) details.push({ holeNumber: score.holeNumber, marker: 'Birdie', emoji: '🐦', isPositive: isBasePlayer });
+        if (toPar === -2) details.push({ holeNumber: score.holeNumber, marker: 'Águila', emoji: '🦅', isPositive: isBasePlayer });
+        if (toPar <= -3) details.push({ holeNumber: score.holeNumber, marker: 'Albatros', emoji: '🦢', isPositive: isBasePlayer });
         // Manual units
-        if (score.markers.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️' });
-        if (score.markers.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧' });
-        if (score.markers.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯' });
+        if (score.markers.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
+        if (score.markers.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
+        if (score.markers.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
       } else {
-        // Manchas - including Cuatriput
-        if (score.markers.ladies) details.push({ holeNumber: score.holeNumber, marker: 'Pinkies', emoji: '👠' });
-        if (score.markers.swingBlanco) details.push({ holeNumber: score.holeNumber, marker: 'Paloma', emoji: '💨' });
-        if (score.markers.retruje) details.push({ holeNumber: score.holeNumber, marker: 'Retruje', emoji: '↩️' });
-        if (score.markers.trampa) details.push({ holeNumber: score.holeNumber, marker: 'Trampa', emoji: '⚠️' });
-        if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊' });
-        if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫' });
-        if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣' });
-        if (score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟' });
-        // Cuatriput - 4+ putts
+        // Manchas - negative for the player who commits them
+        // When it's the base player's mancha, it's negative (red). When it's rival's mancha, it's positive (green).
+        const isManchaPositiveForBasePlayer = !isBasePlayer; // Rival's mancha = positive for base player
+        
+        if (score.markers.ladies) details.push({ holeNumber: score.holeNumber, marker: 'Pinkies', emoji: '👠', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.swingBlanco) details.push({ holeNumber: score.holeNumber, marker: 'Paloma', emoji: '💨', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.retruje) details.push({ holeNumber: score.holeNumber, marker: 'Retruje', emoji: '↩️', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.trampa) details.push({ holeNumber: score.holeNumber, marker: 'Trampa', emoji: '⚠️', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣', isPositive: isManchaPositiveForBasePlayer });
+        if (score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
+        // Cuatriput - 4+ putts - negative for the player who commits it
         if (score.putts >= 4 || score.markers.cuatriput) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱' });
+          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
       }
     });
@@ -949,38 +990,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   const effectiveRivalHcp = bilateralHandicap?.playerBHandicap ?? rival.handicap;
   const hasOverride = !!bilateralHandicap;
 
-  // Render units/manchas detail
+  // Render units/manchas detail with proper colors
   const renderMarkerDetail = (type: 'units' | 'manchas') => {
     const playerDetails = getMarkerDetails(player.id, type);
     const rivalDetails = getMarkerDetails(rival.id, type);
+    const allDetails = [...playerDetails, ...rivalDetails].sort((a, b) => a.holeNumber - b.holeNumber);
     
     return (
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
-        {/* Player markers - green */}
-        {playerDetails.length > 0 && (
+        {allDetails.length > 0 ? (
           <div className="flex flex-wrap gap-1">
-            {playerDetails.map((d, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-500/20 text-green-600 rounded text-[10px]">
+            {allDetails.map((d, i) => (
+              <span 
+                key={i} 
+                className={cn(
+                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]',
+                  d.isPositive 
+                    ? 'bg-green-500/20 text-green-600' 
+                    : 'bg-destructive/20 text-destructive'
+                )}
+              >
                 <span>H{d.holeNumber}</span>
                 <span>{d.emoji}</span>
                 <span className="hidden sm:inline">{d.marker}</span>
+                <span className="font-bold">{d.isPositive ? '+' : '-'}${betConfig[type === 'units' ? 'units' : 'manchas'].valuePerPoint}</span>
               </span>
             ))}
           </div>
-        )}
-        {/* Rival markers - red */}
-        {rivalDetails.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {rivalDetails.map((d, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-destructive/20 text-destructive rounded text-[10px]">
-                <span>H{d.holeNumber}</span>
-                <span>{d.emoji}</span>
-                <span className="hidden sm:inline">{d.marker}</span>
-              </span>
-            ))}
-          </div>
-        )}
-        {playerDetails.length === 0 && rivalDetails.length === 0 && (
+        ) : (
           <span className="text-xs text-muted-foreground">Sin {type === 'units' ? 'unidades' : 'manchas'} registradas</span>
         )}
       </div>

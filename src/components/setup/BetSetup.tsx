@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2, Minus } from 'lucide-react';
 import { BetConfig, Player, CarritosTeamBet } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -109,21 +109,54 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     label: string;
     value: number;
     onChange: (value: number) => void;
-  }> = ({ label, value, onChange }) => (
-    <div className="flex items-center justify-between">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div className="flex items-center gap-1">
-        <DollarSign className="h-3 w-3 text-muted-foreground" />
-        <Input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-          className="h-7 w-20 text-sm text-right"
-          min={0}
-        />
+    step?: number;
+  }> = ({ label, value, onChange, step = 25 }) => {
+    const handleIncrement = () => onChange(value + step);
+    const handleDecrement = () => onChange(Math.max(0, value - step));
+    
+    return (
+      <div className="flex items-center justify-between">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleDecrement}
+            disabled={value <= 0}
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+          <div className="flex items-center gap-0.5">
+            <DollarSign className="h-3 w-3 text-muted-foreground" />
+            <Input
+              type="number"
+              value={value}
+              onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+              onBlur={(e) => {
+                // Round to nearest step on blur
+                const rounded = Math.round((parseInt(e.target.value) || 0) / step) * step;
+                onChange(rounded);
+              }}
+              className="h-7 w-16 text-sm text-center px-1"
+              min={0}
+              step={step}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={handleIncrement}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Multiple carritos teams management
   const addCarritosTeam = () => {
@@ -561,21 +594,21 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 };
 
 export const defaultBetConfig: BetConfig = {
-  medal: { enabled: true, frontAmount: 50, backAmount: 50, totalAmount: 100 },
+  medal: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 50 },
   pressures: { enabled: true, frontAmount: 25, backAmount: 25 },
-  skins: { enabled: true, frontValue: 10, backValue: 20, carryOver: true },
-  caros: { enabled: true, amount: 50 },
+  skins: { enabled: true, frontValue: 25, backValue: 25, carryOver: false },
+  caros: { enabled: true, amount: 25 },
   units: { enabled: true, valuePerPoint: 25 },
   manchas: { enabled: true, valuePerPoint: 25 },
-  culebras: { enabled: true, valuePerOccurrence: 10 },
-  pinguinos: { enabled: false, valuePerOccurrence: 10 },
+  culebras: { enabled: true, valuePerOccurrence: 25 },
+  pinguinos: { enabled: false, valuePerOccurrence: 25 },
   carritos: { 
     enabled: false, 
     teamA: ['', ''], 
     teamB: ['', ''], 
-    frontAmount: 100, 
-    backAmount: 100, 
-    totalAmount: 200,
+    frontAmount: 25, 
+    backAmount: 25, 
+    totalAmount: 50,
     useTeamHandicaps: false,
     scoringType: 'lowBall',
     teamHandicaps: {},

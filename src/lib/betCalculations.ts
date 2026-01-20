@@ -474,7 +474,7 @@ export const calculateUnitsBets = (
   return summaries;
 };
 
-// MANCHAS: Negative markers
+// MANCHAS: Negative markers - Cuatriput pays to ALL other players
 export const calculateManchasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -486,6 +486,7 @@ export const calculateManchasBets = (
   
   const manchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana'] as const;
   
+  // Count regular manchas (not cuatriput)
   const countManchas = (playerId: string): number => {
     const playerScores = scores.get(playerId) || [];
     let manchas = 0;
@@ -494,12 +495,18 @@ export const calculateManchasBets = (
       manchaMarkers.forEach(marker => {
         if (score.markers[marker]) manchas += 1;
       });
-      if (score.markers.cuatriput) manchas += 1;
     });
     
     return manchas;
   };
   
+  // Count cuatriputs - these pay to ALL players
+  const countCuatriputs = (playerId: string): number => {
+    const playerScores = scores.get(playerId) || [];
+    return playerScores.filter(s => s.putts >= 4 || s.markers.cuatriput).length;
+  };
+  
+  // Calculate bilateral manchas (excluding cuatriput)
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
@@ -527,6 +534,52 @@ export const calculateManchasBets = (
           amount: -amount,
           segment: 'total',
           description: `${manchasB} vs ${manchasA} manchas`,
+        });
+      }
+      
+      // Add cuatriput payments - each cuatriput pays to each other player
+      const cuatriputsA = countCuatriputs(playerA.id);
+      const cuatriputsB = countCuatriputs(playerB.id);
+      
+      // Player A pays for their cuatriputs to player B
+      if (cuatriputsA > 0) {
+        const cuatriputAmount = cuatriputsA * config.manchas.valuePerPoint;
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Manchas',
+          amount: -cuatriputAmount,
+          segment: 'total',
+          description: `Cuatriput x${cuatriputsA}`,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Manchas',
+          amount: cuatriputAmount,
+          segment: 'total',
+          description: `Cuatriput rival x${cuatriputsA}`,
+        });
+      }
+      
+      // Player B pays for their cuatriputs to player A
+      if (cuatriputsB > 0) {
+        const cuatriputAmount = cuatriputsB * config.manchas.valuePerPoint;
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Manchas',
+          amount: -cuatriputAmount,
+          segment: 'total',
+          description: `Cuatriput x${cuatriputsB}`,
+        });
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Manchas',
+          amount: cuatriputAmount,
+          segment: 'total',
+          description: `Cuatriput rival x${cuatriputsB}`,
         });
       }
     }
@@ -635,14 +688,14 @@ export const calculatePinguinosBets = (
   return summaries;
 };
 
-// Calculate ALL bet summaries
+// Calculate ALL bet summaries with bet overrides applied
 export const calculateAllBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse
 ): BetSummary[] => {
-  return [
+  const allSummaries = [
     ...calculateMedalBets(players, scores, config),
     ...calculatePressureBets(players, scores, config),
     ...calculateSkinsBets(players, scores, config),
@@ -652,6 +705,39 @@ export const calculateAllBets = (
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config),
   ];
+  
+  // Apply bet overrides - cancel disabled bets and apply amount overrides
+  if (config.betOverrides && config.betOverrides.length > 0) {
+    return allSummaries.map(summary => {
+      // Find if there's an override for this pair and bet type
+      const override = config.betOverrides?.find(o => {
+        const matchesPair = (o.playerAId === summary.playerId && o.playerBId === summary.vsPlayer) ||
+                           (o.playerAId === summary.vsPlayer && o.playerBId === summary.playerId);
+        const matchesBetType = summary.betType.toLowerCase().includes(o.betType.toLowerCase());
+        return matchesPair && matchesBetType;
+      });
+      
+      if (override) {
+        // If bet is disabled, zero out the amount
+        if (override.enabled === false) {
+          return { ...summary, amount: 0 };
+        }
+        // If there's an amount override, scale the amount proportionally
+        if (override.amountOverride !== undefined && summary.amount !== 0) {
+          const originalAmount = Math.abs(summary.amount);
+          const sign = summary.amount > 0 ? 1 : -1;
+          return { ...summary, amount: sign * override.amountOverride };
+        }
+      }
+      return summary;
+    }).filter(s => s.amount !== 0 || !config.betOverrides?.some(o => 
+      o.enabled === false && 
+      ((o.playerAId === s.playerId && o.playerBId === s.vsPlayer) ||
+       (o.playerAId === s.vsPlayer && o.playerBId === s.playerId))
+    ));
+  }
+  
+  return allSummaries;
 };
 
 // Get player total balance from summaries

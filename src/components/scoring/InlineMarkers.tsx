@@ -38,6 +38,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
 ];
 
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
+// Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
   { key: 'ladies', icon: Skull, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
@@ -46,7 +47,6 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces OB', type: 'mancha' },
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },
-  { key: 'cuatriput', icon: Frown, label: 'Cuatriput', description: '4+ putts', type: 'mancha' },
 ];
 
 interface InlineMarkersProps {
