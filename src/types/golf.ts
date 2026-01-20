@@ -150,6 +150,7 @@ export interface PressureBetConfig {
   enabled: boolean;
   frontAmount: number;
   backAmount: number;
+  totalAmount: number; // Match 18 bet amount
 }
 
 export interface SkinsBetConfig {
