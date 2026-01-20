@@ -123,6 +123,7 @@ export const calculateMedalBets = (
 // - Each pressure bet only counts 1x the bet value (not multiplied by score)
 // - When front 9 is tied ("Even"), it's a "carry" - back 9 pressures are worth 2x front + totalAmount
 // - Match 18 is cancelled when there's a carry
+// - IMPORTANT: totalAmount for Match 18 is calculated as frontAmount + backAmount
 export const calculatePressureBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -134,6 +135,9 @@ export const calculatePressureBets = (
   
   const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+  
+  // Total 18 (Match) is calculated as front + back
+  const calculatedTotalAmount = config.pressures.frontAmount + config.pressures.backAmount;
   
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -201,9 +205,9 @@ export const calculatePressureBets = (
       }
       
       // Back 9 - Apply carry multiplier if front was tied
-      // When carry: back value = 2x front amount + totalAmount
+      // When carry: back value = 2x front amount + calculatedTotalAmount
       const backMultiplier = frontIsTied ? 2 : 1;
-      const carryBonus = frontIsTied ? config.pressures.totalAmount : 0;
+      const carryBonus = frontIsTied ? calculatedTotalAmount : 0;
       const effectiveBackValue = (config.pressures.backAmount * backMultiplier) + carryBonus;
       
       const backBetsWonA = backBets.filter(b => b > 0).length;
@@ -234,14 +238,15 @@ export const calculatePressureBets = (
       }
       
       // Match 18: Only if front 9 was NOT tied
-      if (!frontIsTied && config.pressures.totalAmount > 0) {
+      // Total amount = front + back
+      if (!frontIsTied && calculatedTotalAmount > 0) {
         const total18Balance = frontBets[0] + backBets[0];
         
         let matchWinner = 0;
         if (total18Balance > 0) matchWinner = 1;
         else if (total18Balance < 0) matchWinner = -1;
         
-        const totalAmountA = matchWinner * config.pressures.totalAmount;
+        const totalAmountA = matchWinner * calculatedTotalAmount;
         
         const frontStr = (frontBets[0] >= 0 ? '+' : '') + frontBets[0];
         const backStr = (backBets[0] >= 0 ? '+' : '') + backBets[0];
@@ -283,7 +288,7 @@ export const calculatePressureBets = (
             description: `${(-frontBets[0]) >= 0 ? '+' : ''}${-frontBets[0]} ${(-backBets[0]) >= 0 ? '+' : ''}${-backBets[0]} = Even`,
           });
         }
-      } else if (frontIsTied && config.pressures.totalAmount > 0) {
+      } else if (frontIsTied && calculatedTotalAmount > 0) {
         // When there's a carry, Match 18 is cancelled
         summaries.push({
           playerId: playerA.id,
@@ -311,6 +316,8 @@ export const calculatePressureBets = (
 // SKINS: Bilateral ACCUMULATED - net holes won per nine with carry over
 // If tied holes accumulate and first winner takes the pot
 // Tied holes at end = no payout
+// DOUBLING RULE: If a player wins ALL 9 holes of a nine, the bet amount DOUBLES
+// During play: if winning all decided holes, show as doubled - stops if opponent wins or ties hole 9/18
 export const calculateSkinsBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -331,6 +338,10 @@ export const calculateSkinsBets = (
       let frontSkinsB = 0;
       let frontAccumulated = 0;
       let frontCarryToBack = 0;
+      let frontHolesWithWinner = 0;
+      let frontHolesWonByA = 0;
+      let frontHolesWonByB = 0;
+      let frontHole9Tied = false;
       
       for (let holeNum = 1; holeNum <= 9; holeNum++) {
         const scoreA = getHoleScore(playerA.id, holeNum, scores);
@@ -346,9 +357,15 @@ export const calculateSkinsBets = (
         if (scoreA < scoreB) {
           frontSkinsA += frontAccumulated;
           frontAccumulated = 0;
+          frontHolesWithWinner++;
+          frontHolesWonByA++;
         } else if (scoreB < scoreA) {
           frontSkinsB += frontAccumulated;
           frontAccumulated = 0;
+          frontHolesWithWinner++;
+          frontHolesWonByB++;
+        } else if (holeNum === 9) {
+          frontHole9Tied = true;
         }
         // Tie = accumulate
       }
@@ -365,6 +382,10 @@ export const calculateSkinsBets = (
       let backSkinsB = 0;
       let backAccumulated = frontCarryToBack;
       let carriedSkins = frontCarryToBack;
+      let backHolesWithWinner = 0;
+      let backHolesWonByA = 0;
+      let backHolesWonByB = 0;
+      let backHole18Tied = false;
       
       for (let holeNum = 10; holeNum <= 18; holeNum++) {
         const scoreA = getHoleScore(playerA.id, holeNum, scores);
@@ -385,26 +406,53 @@ export const calculateSkinsBets = (
           backSkinsA += backAccumulated;
           backAccumulated = 0;
           carriedSkins = 0;
+          backHolesWithWinner++;
+          backHolesWonByA++;
         } else if (scoreB < scoreA) {
           backSkinsB += backAccumulated;
           backAccumulated = 0;
           carriedSkins = 0;
+          backHolesWithWinner++;
+          backHolesWonByB++;
+        } else if (holeNum === 18) {
+          backHole18Tied = true;
         }
         // Tie = accumulate
       }
       // Remaining accumulated at end of back 9 = void (no payout)
       
+      // DOUBLING LOGIC:
+      // Perfect sweep: Won all 9 holes in the nine
+      const frontPerfectSweepA = frontHolesWonByA === 9 && frontHolesWonByB === 0;
+      const frontPerfectSweepB = frontHolesWonByB === 9 && frontHolesWonByA === 0;
+      const backPerfectSweepA = backHolesWonByA === 9 && backHolesWonByB === 0;
+      const backPerfectSweepB = backHolesWonByB === 9 && backHolesWonByA === 0;
+      
+      // Progressive doubling: Winning all holes that have had a winner, stops if opponent wins or ties 9/18
+      const frontProgressiveDoubleA = frontHolesWithWinner > 0 && frontHolesWonByA === frontHolesWithWinner && !frontHole9Tied;
+      const frontProgressiveDoubleB = frontHolesWithWinner > 0 && frontHolesWonByB === frontHolesWithWinner && !frontHole9Tied;
+      const backProgressiveDoubleA = backHolesWithWinner > 0 && backHolesWonByA === backHolesWithWinner && !backHole18Tied;
+      const backProgressiveDoubleB = backHolesWithWinner > 0 && backHolesWonByB === backHolesWithWinner && !backHole18Tied;
+      
+      // Apply doubling: perfect sweep (all 9) or progressive (all decided, no tie on 9/18)
+      const frontDoubleMultiplierA = (frontPerfectSweepA || frontProgressiveDoubleA) ? 2 : 1;
+      const frontDoubleMultiplierB = (frontPerfectSweepB || frontProgressiveDoubleB) ? 2 : 1;
+      const backDoubleMultiplierA = (backPerfectSweepA || backProgressiveDoubleA) ? 2 : 1;
+      const backDoubleMultiplierB = (backPerfectSweepB || backProgressiveDoubleB) ? 2 : 1;
+      
       // Calculate money for front 9
       const netSkinsFront = frontSkinsA - frontSkinsB;
       if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
-        const frontAmount = netSkinsFront * config.skins.frontValue;
+        const multiplier = netSkinsFront > 0 ? frontDoubleMultiplierA : frontDoubleMultiplierB;
+        const frontAmount = netSkinsFront * config.skins.frontValue * multiplier;
+        const doubleLabel = multiplier === 2 ? ' (x2)' : '';
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Skins Front',
           amount: frontAmount,
           segment: 'front',
-          description: `${frontSkinsA} vs ${frontSkinsB} skins`,
+          description: `${frontSkinsA} vs ${frontSkinsB} skins${doubleLabel}`,
         });
         summaries.push({
           playerId: playerB.id,
@@ -412,21 +460,23 @@ export const calculateSkinsBets = (
           betType: 'Skins Front',
           amount: -frontAmount,
           segment: 'front',
-          description: `${frontSkinsB} vs ${frontSkinsA} skins`,
+          description: `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel}`,
         });
       }
       
       // Calculate money for back 9 (including any carried)
       const netSkinsBack = backSkinsA - backSkinsB;
       if (netSkinsBack !== 0 && config.skins.backValue > 0) {
-        const backAmount = netSkinsBack * config.skins.backValue;
+        const multiplier = netSkinsBack > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
+        const backAmount = netSkinsBack * config.skins.backValue * multiplier;
+        const doubleLabel = multiplier === 2 ? ' (x2)' : '';
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Skins Back',
           amount: backAmount,
           segment: 'back',
-          description: `${backSkinsA} vs ${backSkinsB} skins${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
+          description: `${backSkinsA} vs ${backSkinsB} skins${doubleLabel}${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
         });
         summaries.push({
           playerId: playerB.id,
@@ -434,7 +484,7 @@ export const calculateSkinsBets = (
           betType: 'Skins Back',
           amount: -backAmount,
           segment: 'back',
-          description: `${backSkinsB} vs ${backSkinsA} skins${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
+          description: `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}${frontCarryToBack > 0 ? ` (inc. ${frontCarryToBack} carry)` : ''}`,
         });
       }
     }
