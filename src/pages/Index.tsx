@@ -159,8 +159,13 @@ const Index = () => {
               <div className="text-right">
                 <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
                 <p className="text-[10px] text-primary-foreground/70">
-                  Par {holePar} • SI {holeStrokeIndex} {holeYards && `• ${holeYards}y`}
+                  Par {holePar} • SI {holeStrokeIndex}
                 </p>
+                {holeYards && (
+                  <p className="text-[10px] text-primary-foreground/70 font-medium">
+                    {holeYards} yardas
+                  </p>
+                )}
               </div>
             )}
             

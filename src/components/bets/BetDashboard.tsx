@@ -1,7 +1,7 @@
 // Complete Bet Dashboard - reorganized with bet type rows
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo } from '@/types/golf';
 import { 
   calculateAllBets, 
   getPlayerBalance, 
@@ -15,7 +15,8 @@ import {
   TrendingDown, 
   ChevronDown, 
   ChevronUp,
-  Settings2
+  Settings2,
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
+  const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   // One handicap per pair of players (applies to ALL individual bets)
   const [bilateralHandicaps, setBilateralHandicaps] = useState<BilateralHandicap[]>([]);
   
@@ -78,6 +80,92 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     calculateAllBets(players, confirmedScores, betConfig, course),
     [players, confirmedScores, betConfig, course]
   );
+  
+  // Calculate Carritos results if enabled
+  const carritosResults = useMemo(() => {
+    if (!betConfig.carritos.enabled) return null;
+    
+    const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps } = betConfig.carritos;
+    
+    // Get team scores per nine
+    const getTeamScore = (playerIds: [string, string], holes: number[]): number => {
+      let total = 0;
+      holes.forEach(holeNum => {
+        const scores1 = confirmedScores.get(playerIds[0])?.find(s => s.holeNumber === holeNum);
+        const scores2 = confirmedScores.get(playerIds[1])?.find(s => s.holeNumber === holeNum);
+        
+        if (!scores1 || !scores2) return;
+        
+        // Apply team handicaps if set
+        const hcp1 = teamHandicaps?.[playerIds[0]] ?? players.find(p => p.id === playerIds[0])?.handicap ?? 0;
+        const hcp2 = teamHandicaps?.[playerIds[1]] ?? players.find(p => p.id === playerIds[1])?.handicap ?? 0;
+        
+        const net1 = scores1.netScore;
+        const net2 = scores2.netScore;
+        
+        if (scoringType === 'lowBall') {
+          total += Math.min(net1, net2);
+        } else if (scoringType === 'highBall') {
+          total += Math.max(net1, net2);
+        } else if (scoringType === 'combined') {
+          total += net1 + net2;
+        } else { // 'all' - both count
+          total += net1 + net2;
+        }
+      });
+      return total;
+    };
+    
+    const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+    
+    const teamAFront = getTeamScore(teamA, frontHoles);
+    const teamBFront = getTeamScore(teamB, frontHoles);
+    const teamABack = getTeamScore(teamA, backHoles);
+    const teamBBack = getTeamScore(teamB, backHoles);
+    
+    // Points: lower score wins the segment
+    let pointsAFront = 0, pointsBFront = 0;
+    let pointsABack = 0, pointsBBack = 0;
+    
+    if (teamAFront < teamBFront) pointsAFront = 1;
+    else if (teamBFront < teamAFront) pointsBFront = 1;
+    
+    if (teamABack < teamBBack) pointsABack = 1;
+    else if (teamBBack < teamABack) pointsBBack = 1;
+    
+    // Money calculations
+    let moneyA = 0;
+    if (pointsAFront > pointsBFront) moneyA += frontAmount;
+    else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
+    
+    if (pointsABack > pointsBBack) moneyA += backAmount;
+    else if (pointsBBack > pointsABack) moneyA -= backAmount;
+    
+    // Total 18
+    const teamATotal = teamAFront + teamABack;
+    const teamBTotal = teamBFront + teamBBack;
+    if (teamATotal < teamBTotal) moneyA += totalAmount;
+    else if (teamBTotal < teamATotal) moneyA -= totalAmount;
+    
+    return {
+      teamA,
+      teamB,
+      teamAFront,
+      teamBFront,
+      teamABack,
+      teamBBack,
+      teamATotal,
+      teamBTotal,
+      pointsAFront,
+      pointsBFront,
+      pointsABack,
+      pointsBBack,
+      moneyA,
+      moneyB: -moneyA,
+      amount: frontAmount + backAmount + totalAmount,
+    };
+  }, [betConfig.carritos, confirmedScores, players]);
   
   const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId) || players[0];
   const rivals = players.filter(p => p.id !== basePlayer?.id);
@@ -126,9 +214,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       getPlayerBalance(b.id, betSummaries) - getPlayerBalance(a.id, betSummaries)
     );
   }, [players, betSummaries]);
+
+  // Get player name abbreviation (first 3 letters)
+  const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
   
   return (
     <div className="space-y-4">
+      {/* Carritos Results (if enabled) */}
+      {carritosResults && (
+        <CarritosResultsCard 
+          results={carritosResults} 
+          players={players}
+          basePlayerId={basePlayer?.id}
+        />
+      )}
+      
       {/* Rival Selector */}
       <Card>
         <CardHeader className="py-3">
@@ -164,6 +264,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   >
                     {rival.initials}
                   </div>
+                  <span className="text-[10px] font-medium mb-0.5">{getPlayerAbbr(rival)}</span>
                   <div className={cn(
                     'text-xs font-bold flex items-center gap-0.5',
                     isSelected ? '' : balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -194,10 +295,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           betConfig={betConfig}
           confirmedScores={confirmedScores}
           course={course}
+          allScores={scores}
         />
       )}
       
-      {/* General Leaderboard */}
+      {/* General Leaderboard - Expandable */}
       <Card>
         <CardHeader className="py-3">
           <CardTitle className="text-sm">Tabla General</CardTitle>
@@ -207,41 +309,76 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             {sortedPlayers.map((player, idx) => {
               const balance = getPlayerBalance(player.id, betSummaries);
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
+              const isExpanded = expandedLeaderboard === player.id;
+              const otherPlayers = players.filter(p => p.id !== player.id);
               
               return (
-                <div 
-                  key={player.id}
-                  className={cn(
-                    'flex items-center justify-between p-2 rounded-lg',
-                    isBase ? 'bg-primary/10 border border-primary/30' : 'bg-muted/30'
+                <div key={player.id}>
+                  <div 
+                    onClick={() => setExpandedLeaderboard(isExpanded ? null : player.id)}
+                    className={cn(
+                      'flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors',
+                      isBase ? 'bg-primary/10 border border-primary/30' : 'bg-muted/30 hover:bg-muted/50'
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                        idx === 0 ? 'bg-golf-gold text-golf-gold-foreground' :
+                        idx === sortedPlayers.length - 1 ? 'bg-destructive text-destructive-foreground' :
+                        'bg-muted text-muted-foreground'
+                      )}>
+                        {idx + 1}
+                      </span>
+                      <div 
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ backgroundColor: player.color }}
+                      >
+                        {player.initials}
+                      </div>
+                      <div>
+                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <span className="text-[10px] text-muted-foreground ml-1">HCP {player.handicap}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        'text-lg font-bold',
+                        balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {balance >= 0 ? '+' : ''}${balance}
+                      </div>
+                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </div>
+                  </div>
+                  
+                  {/* Expanded view: balance vs each other player */}
+                  {isExpanded && (
+                    <div className="ml-8 mt-1 space-y-1 pb-2">
+                      {otherPlayers.map(other => {
+                        const vsBalance = getBilateralBalance(player.id, other.id, betSummaries);
+                        return (
+                          <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                                style={{ backgroundColor: other.color }}
+                              >
+                                {other.initials}
+                              </div>
+                              <span className="text-xs text-muted-foreground">vs {getPlayerAbbr(other)}</span>
+                            </div>
+                            <span className={cn(
+                              'font-bold',
+                              vsBalance > 0 ? 'text-green-500' : vsBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            )}>
+                              {vsBalance >= 0 ? '+' : ''}${vsBalance}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      idx === 0 ? 'bg-golf-gold text-golf-gold-foreground' :
-                      idx === sortedPlayers.length - 1 ? 'bg-destructive text-destructive-foreground' :
-                      'bg-muted text-muted-foreground'
-                    )}>
-                      {idx + 1}
-                    </span>
-                    <div 
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
-                      style={{ backgroundColor: player.color }}
-                    >
-                      {player.initials}
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
-                      <span className="text-[10px] text-muted-foreground ml-1">HCP {player.handicap}</span>
-                    </div>
-                  </div>
-                  <div className={cn(
-                    'text-lg font-bold',
-                    balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                  )}>
-                    {balance >= 0 ? '+' : ''}${balance}
-                  </div>
                 </div>
               );
             })}
@@ -258,6 +395,147 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   );
 };
 
+// Carritos Results Card
+interface CarritosResultsCardProps {
+  results: {
+    teamA: [string, string];
+    teamB: [string, string];
+    teamAFront: number;
+    teamBFront: number;
+    teamABack: number;
+    teamBBack: number;
+    teamATotal: number;
+    teamBTotal: number;
+    pointsAFront: number;
+    pointsBFront: number;
+    pointsABack: number;
+    pointsBBack: number;
+    moneyA: number;
+    moneyB: number;
+    amount: number;
+  };
+  players: Player[];
+  basePlayerId?: string;
+}
+
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId }) => {
+  const getPlayer = (id: string) => players.find(p => p.id === id);
+  const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
+  const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
+  
+  const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
+  const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
+  
+  // Payment: each losing player pays 50% to each winning player
+  const getPaymentBreakdown = () => {
+    if (results.moneyA === 0) return null;
+    
+    const winningTeam = results.moneyA > 0 ? teamAPlayers : teamBPlayers;
+    const losingTeam = results.moneyA > 0 ? teamBPlayers : teamAPlayers;
+    const totalWon = Math.abs(results.moneyA);
+    const perPlayerPayment = totalWon / 2; // Each loser pays this total
+    const toEachWinner = perPlayerPayment / 2; // Split between 2 winners
+    
+    return { winningTeam, losingTeam, perPlayerPayment, toEachWinner, totalWon };
+  };
+  
+  const payment = getPaymentBreakdown();
+  
+  return (
+    <Card className="border-accent/50">
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Carritos (Equipos)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0 space-y-3">
+        {/* Team comparison */}
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="text-left">
+            <div className="flex items-center gap-1 mb-1">
+              {teamAPlayers.map(p => (
+                <div key={p.id} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: p.color }}>
+                  {p.initials}
+                </div>
+              ))}
+            </div>
+            <span className="text-muted-foreground">Equipo A</span>
+          </div>
+          <div className="text-muted-foreground self-center">vs</div>
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-1 mb-1">
+              {teamBPlayers.map(p => (
+                <div key={p.id} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: p.color }}>
+                  {p.initials}
+                </div>
+              ))}
+            </div>
+            <span className="text-muted-foreground">Equipo B</span>
+          </div>
+        </div>
+        
+        {/* Scores per nine */}
+        <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground w-16">Front 9</span>
+            <span className={cn('font-bold', results.teamAFront < results.teamBFront ? 'text-green-500' : results.teamAFront > results.teamBFront ? 'text-destructive' : '')}>
+              {results.teamAFront || '-'}
+            </span>
+            <span className="text-muted-foreground">vs</span>
+            <span className={cn('font-bold', results.teamBFront < results.teamAFront ? 'text-green-500' : results.teamBFront > results.teamAFront ? 'text-destructive' : '')}>
+              {results.teamBFront || '-'}
+            </span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground w-16">Back 9</span>
+            <span className={cn('font-bold', results.teamABack < results.teamBBack ? 'text-green-500' : results.teamABack > results.teamBBack ? 'text-destructive' : '')}>
+              {results.teamABack || '-'}
+            </span>
+            <span className="text-muted-foreground">vs</span>
+            <span className={cn('font-bold', results.teamBBack < results.teamABack ? 'text-green-500' : results.teamBBack > results.teamABack ? 'text-destructive' : '')}>
+              {results.teamBBack || '-'}
+            </span>
+          </div>
+          <div className="flex justify-between text-xs border-t border-border/50 pt-1">
+            <span className="text-muted-foreground w-16 font-medium">Total</span>
+            <span className={cn('font-bold', results.teamATotal < results.teamBTotal ? 'text-green-500' : results.teamATotal > results.teamBTotal ? 'text-destructive' : '')}>
+              {results.teamATotal || '-'}
+            </span>
+            <span className="text-muted-foreground">vs</span>
+            <span className={cn('font-bold', results.teamBTotal < results.teamATotal ? 'text-green-500' : results.teamBTotal > results.teamATotal ? 'text-destructive' : '')}>
+              {results.teamBTotal || '-'}
+            </span>
+          </div>
+        </div>
+        
+        {/* Money result */}
+        <div className="text-center">
+          <span className={cn(
+            'text-xl font-bold',
+            baseTeamMoney > 0 ? 'text-green-500' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground'
+          )}>
+            {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
+          </span>
+          <p className="text-[10px] text-muted-foreground">Tu equipo</p>
+        </div>
+        
+        {/* Payment breakdown */}
+        {payment && (
+          <div className="text-[10px] text-muted-foreground bg-muted/20 rounded p-2">
+            <p className="font-medium mb-1">Desglose de pago (50% c/u):</p>
+            {payment.losingTeam.map(loser => (
+              <p key={loser.id}>
+                {loser.name.split(' ')[0]} paga ${payment.toEachWinner} a cada ganador
+              </p>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 // Bilateral Detail Component - Reorganized with bet type rows
 interface BilateralDetailProps {
   player: Player;
@@ -271,6 +549,7 @@ interface BilateralDetailProps {
   betConfig: BetConfig;
   confirmedScores: Map<string, PlayerScore[]>;
   course: GolfCourse;
+  allScores: Map<string, PlayerScore[]>;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -285,6 +564,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   betConfig,
   confirmedScores,
   course,
+  allScores,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
   
@@ -301,6 +581,41 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     return filtered.reduce((sum, s) => sum + s.netScore, 0);
   };
+
+  // Get units/manchas details for display
+  const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
+    const playerScores = allScores.get(playerId) || [];
+    const details: { holeNumber: number; marker: string; emoji: string }[] = [];
+    
+    playerScores.forEach(score => {
+      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+      const toPar = score.strokes - holePar;
+      
+      if (type === 'units') {
+        // Auto-detected units
+        if (toPar === -1) details.push({ holeNumber: score.holeNumber, marker: 'Birdie', emoji: '🐦' });
+        if (toPar === -2) details.push({ holeNumber: score.holeNumber, marker: 'Águila', emoji: '🦅' });
+        if (toPar <= -3) details.push({ holeNumber: score.holeNumber, marker: 'Albatros', emoji: '🦢' });
+        // Manual units
+        if (score.markers.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️' });
+        if (score.markers.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧' });
+        if (score.markers.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯' });
+      } else {
+        // Manchas
+        if (score.markers.ladies) details.push({ holeNumber: score.holeNumber, marker: 'Pinkies', emoji: '👠' });
+        if (score.markers.swingBlanco) details.push({ holeNumber: score.holeNumber, marker: 'Paloma', emoji: '💨' });
+        if (score.markers.retruje) details.push({ holeNumber: score.holeNumber, marker: 'Retruje', emoji: '↩️' });
+        if (score.markers.trampa) details.push({ holeNumber: score.holeNumber, marker: 'Trampa', emoji: '⚠️' });
+        if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊' });
+        if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫' });
+        if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣' });
+        if (score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟' });
+        if (score.markers.cuatriput) details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱' });
+      }
+    });
+    
+    return details;
+  };
   
   // Group bet types for organized display
   const betTypeGroups = useMemo(() => {
@@ -309,7 +624,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       label: string;
       segments: { label: string; key: string }[];
       getTotal: () => number;
-      getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number };
+      getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
     }[] = [];
     
     // Medal
@@ -353,15 +668,21 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         getTotal: () => {
           const front = groupedSummaries['Presiones Front']?.total || 0;
           const back = groupedSummaries['Presiones Back']?.total || 0;
-          return front + back;
+          const total = groupedSummaries['Presiones Total']?.total || 0;
+          return front + back + total;
         },
         getSegmentData: (segmentKey) => {
-          const summaryKey = segmentKey === 'pressure_front' ? 'Presiones Front' : segmentKey === 'pressure_back' ? 'Presiones Back' : '';
-          const segment = segmentKey === 'pressure_front' ? 'front' : segmentKey === 'pressure_back' ? 'back' : 'total';
+          const summaryKey = segmentKey === 'pressure_front' ? 'Presiones Front' : 
+                            segmentKey === 'pressure_back' ? 'Presiones Back' : 'Presiones Total';
+          const summary = groupedSummaries[summaryKey];
+          const description = summary?.details?.[0]?.description || '';
+          // Extract bet wins from description
+          const match = description.match(/(\d+) vs (\d+)/);
           return {
-            playerNet: getNetScoreForSegment(player.id, segment),
-            rivalNet: getNetScoreForSegment(rival.id, segment),
-            amount: groupedSummaries[summaryKey]?.total || 0,
+            playerNet: match ? parseInt(match[1]) : 0,
+            rivalNet: match ? parseInt(match[2]) : 0,
+            amount: summary?.total || 0,
+            description,
           };
         },
       });
@@ -378,7 +699,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         ],
         getTotal: () => groupedSummaries['Skin']?.total || 0,
         getSegmentData: (segmentKey) => {
-          // Get skins count from details
           const skinDetails = groupedSummaries['Skin']?.details || [];
           const segment = segmentKey === 'skins_front' ? 'front' : 'back';
           const segmentSkins = skinDetails.filter(d => 
@@ -420,25 +740,41 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Unidades
+    // Unidades - with detail
     if (betConfig.units.enabled) {
       groups.push({
         key: 'units',
         label: 'Unidades',
-        segments: [],
+        segments: [{ label: 'Detalle', key: 'units_detail' }],
         getTotal: () => groupedSummaries['Unidades']?.total || 0,
-        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+        getSegmentData: () => {
+          const playerDetails = getMarkerDetails(player.id, 'units');
+          const rivalDetails = getMarkerDetails(rival.id, 'units');
+          return { 
+            playerNet: playerDetails.length, 
+            rivalNet: rivalDetails.length, 
+            amount: groupedSummaries['Unidades']?.total || 0 
+          };
+        },
       });
     }
     
-    // Manchas
+    // Manchas - with detail
     if (betConfig.manchas.enabled) {
       groups.push({
         key: 'manchas',
         label: 'Manchas',
-        segments: [],
+        segments: [{ label: 'Detalle', key: 'manchas_detail' }],
         getTotal: () => groupedSummaries['Manchas']?.total || 0,
-        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+        getSegmentData: () => {
+          const playerDetails = getMarkerDetails(player.id, 'manchas');
+          const rivalDetails = getMarkerDetails(rival.id, 'manchas');
+          return { 
+            playerNet: playerDetails.length, 
+            rivalNet: rivalDetails.length, 
+            amount: groupedSummaries['Manchas']?.total || 0 
+          };
+        },
       });
     }
     
@@ -465,12 +801,50 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     return groups;
-  }, [betConfig, groupedSummaries, confirmedScores, player.id, rival.id]);
+  }, [betConfig, groupedSummaries, confirmedScores, player.id, rival.id, allScores, course.holes]);
   
   // Effective handicaps (with override or original)
   const effectivePlayerHcp = bilateralHandicap?.playerAHandicap ?? player.handicap;
   const effectiveRivalHcp = bilateralHandicap?.playerBHandicap ?? rival.handicap;
   const hasOverride = !!bilateralHandicap;
+
+  // Render units/manchas detail
+  const renderMarkerDetail = (type: 'units' | 'manchas') => {
+    const playerDetails = getMarkerDetails(player.id, type);
+    const rivalDetails = getMarkerDetails(rival.id, type);
+    
+    return (
+      <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
+        {/* Player markers - green */}
+        {playerDetails.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {playerDetails.map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-500/20 text-green-600 rounded text-[10px]">
+                <span>H{d.holeNumber}</span>
+                <span>{d.emoji}</span>
+                <span className="hidden sm:inline">{d.marker}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {/* Rival markers - red */}
+        {rivalDetails.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {rivalDetails.map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-destructive/20 text-destructive rounded text-[10px]">
+                <span>H{d.holeNumber}</span>
+                <span>{d.emoji}</span>
+                <span className="hidden sm:inline">{d.marker}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {playerDetails.length === 0 && rivalDetails.length === 0 && (
+          <span className="text-xs text-muted-foreground">Sin {type === 'units' ? 'unidades' : 'manchas'} registradas</span>
+        )}
+      </div>
+    );
+  };
   
   return (
     <Card>
@@ -609,54 +983,61 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 {/* Segment rows */}
                 {hasSegments && isExpanded && (
                   <div className="divide-y divide-border/30">
-                    {group.segments.map((segment) => {
-                      const data = group.getSegmentData(segment.key);
-                      // Skip if no data yet
-                      if (data.amount === 0 && data.playerNet === 0 && data.rivalNet === 0) {
+                    {group.key === 'units' || group.key === 'manchas' ? (
+                      renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
+                    ) : (
+                      group.segments.map((segment) => {
+                        const data = group.getSegmentData(segment.key);
+                        if (data.amount === 0 && data.playerNet === 0 && data.rivalNet === 0) {
+                          return (
+                            <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                              <span className="text-xs text-muted-foreground">{segment.label}</span>
+                              <span className="text-xs text-muted-foreground">-</span>
+                            </div>
+                          );
+                        }
+                        
                         return (
                           <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                            <span className="text-xs text-muted-foreground">{segment.label}</span>
-                            <span className="text-xs text-muted-foreground">-</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
+                              {/* Score comparison */}
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className={cn(
+                                  'font-medium min-w-[24px] text-center',
+                                  data.playerNet < data.rivalNet ? 'text-green-500' : 
+                                  data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                                )}>
+                                  {group.key === 'skins' || group.key === 'caros' 
+                                    ? `${data.playerNet}W` 
+                                    : group.key === 'pressures'
+                                    ? `${data.playerNet} ap`
+                                    : data.playerNet || '-'}
+                                </span>
+                                <span className="text-muted-foreground">vs</span>
+                                <span className={cn(
+                                  'font-medium min-w-[24px] text-center',
+                                  data.rivalNet < data.playerNet ? 'text-green-500' : 
+                                  data.rivalNet > data.playerNet ? 'text-destructive' : ''
+                                )}>
+                                  {group.key === 'skins' || group.key === 'caros' 
+                                    ? `${data.rivalNet}W` 
+                                    : group.key === 'pressures'
+                                    ? `${data.rivalNet} ap`
+                                    : data.rivalNet || '-'}
+                                </span>
+                              </div>
+                            </div>
+                            <span className={cn(
+                              'text-sm font-bold min-w-[50px] text-right',
+                              data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            )}>
+                              {data.amount >= 0 ? '+' : ''}${data.amount}
+                            </span>
                           </div>
                         );
-                      }
-                      
-                      return (
-                        <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
-                            {/* Score comparison */}
-                            <div className="flex items-center gap-1 text-xs">
-                              <span className={cn(
-                                'font-medium min-w-[24px] text-center',
-                                data.playerNet < data.rivalNet ? 'text-green-500' : 
-                                data.playerNet > data.rivalNet ? 'text-destructive' : ''
-                              )}>
-                                {group.key === 'skins' || group.key === 'caros' 
-                                  ? `${data.playerNet}W` 
-                                  : data.playerNet || '-'}
-                              </span>
-                              <span className="text-muted-foreground">vs</span>
-                              <span className={cn(
-                                'font-medium min-w-[24px] text-center',
-                                data.rivalNet < data.playerNet ? 'text-green-500' : 
-                                data.rivalNet > data.playerNet ? 'text-destructive' : ''
-                              )}>
-                                {group.key === 'skins' || group.key === 'caros' 
-                                  ? `${data.rivalNet}W` 
-                                  : data.rivalNet || '-'}
-                              </span>
-                            </div>
-                          </div>
-                          <span className={cn(
-                            'text-sm font-bold min-w-[50px] text-right',
-                            data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {data.amount >= 0 ? '+' : ''}${data.amount}
-                          </span>
-                        </div>
-                      );
-                    })}
+                      })
+                    )}
                   </div>
                 )}
               </div>

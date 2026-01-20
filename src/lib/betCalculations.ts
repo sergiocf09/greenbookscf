@@ -120,7 +120,11 @@ export const calculateMedalBets = (
   return summaries;
 };
 
-// PRESSURES: Hole-by-hole with carry
+// PRESSURES: Cascading bet system
+// - Starts with bet 1 on hole 1 (or 10 for back 9)
+// - When a player reaches +2 advantage, a new bet opens
+// - Each bet is settled individually and each is worth the bet amount
+// - Front 9 result carries to combine with back 9 for total 18
 export const calculatePressureBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -140,11 +144,23 @@ export const calculatePressureBets = (
       const playerA = players[i];
       const playerB = players[j];
       
+      // Track results per segment for combining front+back into total
+      const segmentResults: Record<'front' | 'back', number> = { front: 0, back: 0 };
+      const segmentDetails: Record<'front' | 'back', { holesWonA: number; holesWonB: number; betsWonA: number; betsWonB: number }> = {
+        front: { holesWonA: 0, holesWonB: 0, betsWonA: 0, betsWonB: 0 },
+        back: { holesWonA: 0, holesWonB: 0, betsWonA: 0, betsWonB: 0 },
+      };
+      
       segments.forEach(({ key, amount, holes }) => {
         if (amount <= 0) return;
         
-        let pendingPresses = 1; // Start with base bet
-        let balanceA = 0;
+        // Track all active bets - each bet has a running balance
+        // When balance reaches +2 or -2, that bet is "closed" and a new one opens
+        let activeBets: number[] = [0]; // Start with one bet at 0
+        let totalBetsWonA = 0;
+        let totalBetsWonB = 0;
+        let holesWonA = 0;
+        let holesWonB = 0;
         
         holes.forEach(holeNum => {
           const scoreA = getHoleScore(playerA.id, holeNum, scores);
@@ -152,35 +168,97 @@ export const calculatePressureBets = (
           
           if (scoreA === null || scoreB === null) return;
           
+          let holeResult = 0; // +1 for A win, -1 for B win, 0 for tie
           if (scoreA < scoreB) {
-            balanceA += pendingPresses * amount;
-            pendingPresses = 1;
+            holeResult = 1;
+            holesWonA++;
           } else if (scoreB < scoreA) {
-            balanceA -= pendingPresses * amount;
-            pendingPresses = 1;
-          } else {
-            // Tie - carry over
-            pendingPresses++;
+            holeResult = -1;
+            holesWonB++;
+          }
+          
+          // Apply hole result to all active bets
+          activeBets = activeBets.map(betBalance => betBalance + holeResult);
+          
+          // Check if any bet reached ±2 (closed)
+          const closedBets = activeBets.filter(b => Math.abs(b) >= 2);
+          activeBets = activeBets.filter(b => Math.abs(b) < 2);
+          
+          // Count closed bets
+          closedBets.forEach(bet => {
+            if (bet >= 2) totalBetsWonA++;
+            if (bet <= -2) totalBetsWonB++;
+          });
+          
+          // If a bet was closed by reaching +2 or -2, open a new bet for remaining holes
+          if (closedBets.length > 0 && holeNum !== holes[holes.length - 1]) {
+            activeBets.push(0); // New bet starts fresh
           }
         });
         
-        if (balanceA !== 0) {
+        // At end of segment, settle remaining active bets
+        // Remaining active bets carry their current balance
+        let remainingBalance = activeBets.reduce((sum, b) => sum + b, 0);
+        
+        // Calculate total: closed bets + remaining balance contribution
+        // Each closed bet = 1 full bet won
+        // Remaining bets contribute their partial state
+        const netBetsA = totalBetsWonA - totalBetsWonB;
+        const segmentAmountA = (netBetsA * amount) + (remainingBalance * amount);
+        
+        segmentResults[key] = segmentAmountA;
+        segmentDetails[key] = { 
+          holesWonA, 
+          holesWonB, 
+          betsWonA: totalBetsWonA + (remainingBalance > 0 ? 1 : 0),
+          betsWonB: totalBetsWonB + (remainingBalance < 0 ? 1 : 0),
+        };
+        
+        if (segmentAmountA !== 0) {
           summaries.push({
             playerId: playerA.id,
             vsPlayer: playerB.id,
             betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}`,
-            amount: balanceA,
+            amount: segmentAmountA,
             segment: key,
+            description: `${segmentDetails[key].betsWonA} vs ${segmentDetails[key].betsWonB} apuestas`,
           });
           summaries.push({
             playerId: playerB.id,
             vsPlayer: playerA.id,
             betType: `Presiones ${key === 'front' ? 'Front' : 'Back'}`,
-            amount: -balanceA,
+            amount: -segmentAmountA,
             segment: key,
+            description: `${segmentDetails[key].betsWonB} vs ${segmentDetails[key].betsWonA} apuestas`,
           });
         }
       });
+      
+      // Total 18 = Front + Back combined
+      const totalAmount = segmentResults.front + segmentResults.back;
+      if (totalAmount !== 0 && config.pressures.frontAmount > 0 && config.pressures.backAmount > 0) {
+        const totalHolesA = segmentDetails.front.holesWonA + segmentDetails.back.holesWonA;
+        const totalHolesB = segmentDetails.front.holesWonB + segmentDetails.back.holesWonB;
+        const totalBetsA = segmentDetails.front.betsWonA + segmentDetails.back.betsWonA;
+        const totalBetsB = segmentDetails.front.betsWonB + segmentDetails.back.betsWonB;
+        
+        summaries.push({
+          playerId: playerA.id,
+          vsPlayer: playerB.id,
+          betType: 'Presiones Total',
+          amount: totalAmount,
+          segment: 'total',
+          description: `${totalBetsA} vs ${totalBetsB} apuestas (${totalHolesA}-${totalHolesB} hoyos)`,
+        });
+        summaries.push({
+          playerId: playerB.id,
+          vsPlayer: playerA.id,
+          betType: 'Presiones Total',
+          amount: -totalAmount,
+          segment: 'total',
+          description: `${totalBetsB} vs ${totalBetsA} apuestas (${totalHolesB}-${totalHolesA} hoyos)`,
+        });
+      }
     }
   }
   
