@@ -91,20 +91,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   );
   
   // Calculate ALL Carritos results (primary + additional teams)
+  // NEW SCORING: Per hole - lowball wins 1pt, highball wins 1pt, combined wins 1pt (0-3 pts per hole)
   const allCarritosResults = useMemo(() => {
     const results: Array<{
       teamA: [string, string];
       teamB: [string, string];
-      teamAFront: number;
-      teamBFront: number;
-      teamABack: number;
-      teamBBack: number;
-      teamATotal: number;
-      teamBTotal: number;
+      // Points per segment
       pointsAFront: number;
       pointsBFront: number;
       pointsABack: number;
       pointsBBack: number;
+      pointsATotal: number;
+      pointsBTotal: number;
+      // Accumulated points (running total)
+      pointsAAccumulated: number;
+      pointsBAccumulated: number;
       moneyA: number;
       moneyB: number;
       amount: number;
@@ -121,72 +122,88 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       teamHandicaps?: Record<string, number>,
       id?: string
     ) => {
-      const getTeamScore = (playerIds: [string, string], holes: number[]): number => {
-        let total = 0;
+      // Calculate points per hole: lowball 1pt, highball 1pt, combined 1pt
+      const calculatePointsForHoles = (holes: number[]): { pointsA: number; pointsB: number } => {
+        let pointsA = 0;
+        let pointsB = 0;
+        
         holes.forEach(holeNum => {
-          const scores1 = confirmedScores.get(playerIds[0])?.find(s => s.holeNumber === holeNum);
-          const scores2 = confirmedScores.get(playerIds[1])?.find(s => s.holeNumber === holeNum);
+          const scoresA1 = confirmedScores.get(teamA[0])?.find(s => s.holeNumber === holeNum);
+          const scoresA2 = confirmedScores.get(teamA[1])?.find(s => s.holeNumber === holeNum);
+          const scoresB1 = confirmedScores.get(teamB[0])?.find(s => s.holeNumber === holeNum);
+          const scoresB2 = confirmedScores.get(teamB[1])?.find(s => s.holeNumber === holeNum);
           
-          if (!scores1 || !scores2) return;
+          // Skip if not all scores are available
+          if (!scoresA1 || !scoresA2 || !scoresB1 || !scoresB2) return;
           
-          const net1 = scores1.netScore;
-          const net2 = scores2.netScore;
+          const netA1 = scoresA1.netScore;
+          const netA2 = scoresA2.netScore;
+          const netB1 = scoresB1.netScore;
+          const netB2 = scoresB2.netScore;
           
-          if (scoringType === 'lowBall') {
-            total += Math.min(net1, net2);
-          } else if (scoringType === 'highBall') {
-            total += Math.max(net1, net2);
-          } else if (scoringType === 'combined') {
-            total += net1 + net2;
-          } else {
-            total += net1 + net2;
-          }
+          // Lowball: best ball of each team
+          const lowballA = Math.min(netA1, netA2);
+          const lowballB = Math.min(netB1, netB2);
+          if (lowballA < lowballB) pointsA += 1;
+          else if (lowballB < lowballA) pointsB += 1;
+          
+          // Highball: worst ball of each team
+          const highballA = Math.max(netA1, netA2);
+          const highballB = Math.max(netB1, netB2);
+          if (highballA < highballB) pointsA += 1;
+          else if (highballB < highballA) pointsB += 1;
+          
+          // Combined: sum of both players
+          const combinedA = netA1 + netA2;
+          const combinedB = netB1 + netB2;
+          if (combinedA < combinedB) pointsA += 1;
+          else if (combinedB < combinedA) pointsB += 1;
         });
-        return total;
+        
+        return { pointsA, pointsB };
       };
       
       const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
       const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
       
-      const teamAFront = getTeamScore(teamA, frontHoles);
-      const teamBFront = getTeamScore(teamB, frontHoles);
-      const teamABack = getTeamScore(teamA, backHoles);
-      const teamBBack = getTeamScore(teamB, backHoles);
+      const frontPoints = calculatePointsForHoles(frontHoles);
+      const backPoints = calculatePointsForHoles(backHoles);
       
-      let pointsAFront = 0, pointsBFront = 0;
-      let pointsABack = 0, pointsBBack = 0;
+      const pointsAFront = frontPoints.pointsA;
+      const pointsBFront = frontPoints.pointsB;
+      const pointsABack = backPoints.pointsA;
+      const pointsBBack = backPoints.pointsB;
       
-      if (teamAFront < teamBFront) pointsAFront = 1;
-      else if (teamBFront < teamAFront) pointsBFront = 1;
+      // Total points (accumulated)
+      const pointsATotal = pointsAFront + pointsABack;
+      const pointsBTotal = pointsBFront + pointsBBack;
       
-      if (teamABack < teamBBack) pointsABack = 1;
-      else if (teamBBack < teamABack) pointsBBack = 1;
-      
+      // Money calculation based on who has more points per segment
       let moneyA = 0;
+      
+      // Front 9: who has more points wins
       if (pointsAFront > pointsBFront) moneyA += frontAmount;
       else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
       
+      // Back 9: who has more points wins
       if (pointsABack > pointsBBack) moneyA += backAmount;
       else if (pointsBBack > pointsABack) moneyA -= backAmount;
       
-      const teamATotal = teamAFront + teamABack;
-      const teamBTotal = teamBFront + teamBBack;
-      if (teamATotal < teamBTotal) moneyA += totalAmount;
-      else if (teamBTotal < teamATotal) moneyA -= totalAmount;
+      // Total 18: who has more accumulated points wins
+      if (pointsATotal > pointsBTotal) moneyA += totalAmount;
+      else if (pointsBTotal > pointsATotal) moneyA -= totalAmount;
       
       return {
         teamA,
         teamB,
-        teamAFront,
-        teamBFront,
-        teamABack,
-        teamBBack,
-        teamATotal,
-        teamBTotal,
         pointsAFront,
         pointsBFront,
         pointsABack,
         pointsBBack,
+        pointsATotal,
+        pointsBTotal,
+        pointsAAccumulated: pointsATotal,
+        pointsBAccumulated: pointsBTotal,
         moneyA,
         moneyB: -moneyA,
         amount: frontAmount + backAmount + totalAmount,
@@ -515,21 +532,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   );
 };
 
-// Carritos Results Card
+// Carritos Results Card - Updated for point-based scoring
 interface CarritosResultsCardProps {
   results: {
     teamA: [string, string];
     teamB: [string, string];
-    teamAFront: number;
-    teamBFront: number;
-    teamABack: number;
-    teamBBack: number;
-    teamATotal: number;
-    teamBTotal: number;
     pointsAFront: number;
     pointsBFront: number;
     pointsABack: number;
     pointsBBack: number;
+    pointsATotal: number;
+    pointsBTotal: number;
+    pointsAAccumulated: number;
+    pointsBAccumulated: number;
     moneyA: number;
     moneyB: number;
     amount: number;
@@ -549,6 +564,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   
   const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
   const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
+  const baseTeamPointsFront = isBaseInTeamA ? results.pointsAFront : results.pointsBFront;
+  const baseTeamPointsBack = isBaseInTeamA ? results.pointsABack : results.pointsBBack;
+  const baseTeamPointsTotal = isBaseInTeamA ? results.pointsATotal : results.pointsBTotal;
   
   // Payment: each losing player pays 50% of total to EACH winning player
   const getPaymentBreakdown = () => {
@@ -613,36 +631,39 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           </div>
         </div>
         
-        {/* Scores per nine */}
+        {/* Points per segment - NEW DISPLAY */}
         <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+          <div className="text-[10px] text-muted-foreground text-center mb-1">
+            Puntos: LowBall + HighBall + Combinado (0-3 pts/hoyo)
+          </div>
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground w-16">Front 9</span>
-            <span className={cn('font-bold', results.teamAFront < results.teamBFront ? 'text-green-500' : results.teamAFront > results.teamBFront ? 'text-destructive' : '')}>
-              {results.teamAFront || '-'}
+            <span className={cn('font-bold', results.pointsAFront > results.pointsBFront ? 'text-green-500' : results.pointsAFront < results.pointsBFront ? 'text-destructive' : '')}>
+              {results.pointsAFront} pts
             </span>
             <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.teamBFront < results.teamAFront ? 'text-green-500' : results.teamBFront > results.teamAFront ? 'text-destructive' : '')}>
-              {results.teamBFront || '-'}
+            <span className={cn('font-bold', results.pointsBFront > results.pointsAFront ? 'text-green-500' : results.pointsBFront < results.pointsAFront ? 'text-destructive' : '')}>
+              {results.pointsBFront} pts
             </span>
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground w-16">Back 9</span>
-            <span className={cn('font-bold', results.teamABack < results.teamBBack ? 'text-green-500' : results.teamABack > results.teamBBack ? 'text-destructive' : '')}>
-              {results.teamABack || '-'}
+            <span className={cn('font-bold', results.pointsABack > results.pointsBBack ? 'text-green-500' : results.pointsABack < results.pointsBBack ? 'text-destructive' : '')}>
+              {results.pointsABack} pts
             </span>
             <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.teamBBack < results.teamABack ? 'text-green-500' : results.teamBBack > results.teamABack ? 'text-destructive' : '')}>
-              {results.teamBBack || '-'}
+            <span className={cn('font-bold', results.pointsBBack > results.pointsABack ? 'text-green-500' : results.pointsBBack < results.pointsABack ? 'text-destructive' : '')}>
+              {results.pointsBBack} pts
             </span>
           </div>
           <div className="flex justify-between text-xs border-t border-border/50 pt-1">
             <span className="text-muted-foreground w-16 font-medium">Total</span>
-            <span className={cn('font-bold', results.teamATotal < results.teamBTotal ? 'text-green-500' : results.teamATotal > results.teamBTotal ? 'text-destructive' : '')}>
-              {results.teamATotal || '-'}
+            <span className={cn('font-bold', results.pointsATotal > results.pointsBTotal ? 'text-green-500' : results.pointsATotal < results.pointsBTotal ? 'text-destructive' : '')}>
+              {results.pointsATotal} pts
             </span>
             <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.teamBTotal < results.teamATotal ? 'text-green-500' : results.teamBTotal > results.teamATotal ? 'text-destructive' : '')}>
-              {results.teamBTotal || '-'}
+            <span className={cn('font-bold', results.pointsBTotal > results.pointsATotal ? 'text-green-500' : results.pointsBTotal < results.pointsATotal ? 'text-destructive' : '')}>
+              {results.pointsBTotal} pts
             </span>
           </div>
         </div>
@@ -655,7 +676,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           )}>
             {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
           </span>
-          <p className="text-[10px] text-muted-foreground">Tu equipo</p>
+          <p className="text-[10px] text-muted-foreground">Tu equipo ({baseTeamPointsTotal} pts)</p>
         </div>
         
         {/* Payment breakdown */}
