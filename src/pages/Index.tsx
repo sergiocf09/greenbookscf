@@ -323,6 +323,7 @@ const Index = () => {
             course={course}
             basePlayerId={profile?.id}
             confirmedHoles={confirmedHoles}
+            onBetConfigChange={setBetConfig}
           />
         )}
       </main>

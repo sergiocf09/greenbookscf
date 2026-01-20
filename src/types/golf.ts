@@ -102,6 +102,28 @@ export const markerInfo: Record<keyof MarkerState, { label: string; emoji: strin
   culebra: { label: 'Culebra', emoji: '🐍', isUnit: false, autoDetected: true },
 };
 
+// Bet override for individual pair bets
+export interface BetOverride {
+  playerAId: string;
+  playerBId: string;
+  betType: string; // 'medal_front', 'skins_back', etc.
+  enabled: boolean;
+  amountOverride?: number;
+}
+
+// Carritos team bet config
+export interface CarritosTeamBet {
+  id: string;
+  teamA: [string, string];
+  teamB: [string, string];
+  frontAmount: number;
+  backAmount: number;
+  totalAmount: number;
+  scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
+  teamHandicaps?: Record<string, number>;
+  enabled: boolean;
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -113,6 +135,8 @@ export interface BetConfig {
   culebras: CumulativeBetConfig;
   pinguinos: CumulativeBetConfig;
   carritos: CarritosBetConfig;
+  carritosTeams?: CarritosTeamBet[]; // Multiple team bets
+  betOverrides?: BetOverride[]; // Individual bet overrides
 }
 
 export interface MedalBetConfig {
@@ -176,6 +200,13 @@ export interface Round {
   scores: PlayerScore[];
   betConfig: BetConfig;
   status: 'setup' | 'inProgress' | 'completed';
+}
+
+// Player group for multi-group rounds
+export interface PlayerGroup {
+  id: string;
+  name: string;
+  players: Player[];
 }
 
 // Bet pair for bilateral calculations

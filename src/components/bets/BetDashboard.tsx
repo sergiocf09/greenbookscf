@@ -1,7 +1,7 @@
-// Complete Bet Dashboard - reorganized with bet type rows
+// Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet } from '@/types/golf';
 import { 
   calculateAllBets, 
   getPlayerBalance, 
@@ -16,12 +16,17 @@ import {
   ChevronDown, 
   ChevronUp,
   Settings2,
-  Users
+  Users,
+  XCircle,
+  Edit2,
+  Check,
+  X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Collapsible,
   CollapsibleContent,
@@ -50,6 +55,7 @@ interface BetDashboardProps {
   course: GolfCourse;
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
+  onBetConfigChange?: (config: BetConfig) => void;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -59,6 +65,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   course,
   basePlayerId,
   confirmedHoles = new Set(),
+  onBetConfigChange,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -81,91 +88,134 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     [players, confirmedScores, betConfig, course]
   );
   
-  // Calculate Carritos results if enabled
-  const carritosResults = useMemo(() => {
-    if (!betConfig.carritos.enabled) return null;
-    
-    const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps } = betConfig.carritos;
-    
-    // Get team scores per nine
-    const getTeamScore = (playerIds: [string, string], holes: number[]): number => {
-      let total = 0;
-      holes.forEach(holeNum => {
-        const scores1 = confirmedScores.get(playerIds[0])?.find(s => s.holeNumber === holeNum);
-        const scores2 = confirmedScores.get(playerIds[1])?.find(s => s.holeNumber === holeNum);
-        
-        if (!scores1 || !scores2) return;
-        
-        // Apply team handicaps if set
-        const hcp1 = teamHandicaps?.[playerIds[0]] ?? players.find(p => p.id === playerIds[0])?.handicap ?? 0;
-        const hcp2 = teamHandicaps?.[playerIds[1]] ?? players.find(p => p.id === playerIds[1])?.handicap ?? 0;
-        
-        const net1 = scores1.netScore;
-        const net2 = scores2.netScore;
-        
-        if (scoringType === 'lowBall') {
-          total += Math.min(net1, net2);
-        } else if (scoringType === 'highBall') {
-          total += Math.max(net1, net2);
-        } else if (scoringType === 'combined') {
-          total += net1 + net2;
-        } else { // 'all' - both count
-          total += net1 + net2;
-        }
-      });
-      return total;
+  // Calculate ALL Carritos results (primary + additional teams)
+  const allCarritosResults = useMemo(() => {
+    const results: Array<{
+      teamA: [string, string];
+      teamB: [string, string];
+      teamAFront: number;
+      teamBFront: number;
+      teamABack: number;
+      teamBBack: number;
+      teamATotal: number;
+      teamBTotal: number;
+      pointsAFront: number;
+      pointsBFront: number;
+      pointsABack: number;
+      pointsBBack: number;
+      moneyA: number;
+      moneyB: number;
+      amount: number;
+      id?: string;
+    }> = [];
+
+    const calculateCarritosResult = (
+      teamA: [string, string], 
+      teamB: [string, string], 
+      frontAmount: number, 
+      backAmount: number, 
+      totalAmount: number, 
+      scoringType: string,
+      teamHandicaps?: Record<string, number>,
+      id?: string
+    ) => {
+      const getTeamScore = (playerIds: [string, string], holes: number[]): number => {
+        let total = 0;
+        holes.forEach(holeNum => {
+          const scores1 = confirmedScores.get(playerIds[0])?.find(s => s.holeNumber === holeNum);
+          const scores2 = confirmedScores.get(playerIds[1])?.find(s => s.holeNumber === holeNum);
+          
+          if (!scores1 || !scores2) return;
+          
+          const net1 = scores1.netScore;
+          const net2 = scores2.netScore;
+          
+          if (scoringType === 'lowBall') {
+            total += Math.min(net1, net2);
+          } else if (scoringType === 'highBall') {
+            total += Math.max(net1, net2);
+          } else if (scoringType === 'combined') {
+            total += net1 + net2;
+          } else {
+            total += net1 + net2;
+          }
+        });
+        return total;
+      };
+      
+      const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+      
+      const teamAFront = getTeamScore(teamA, frontHoles);
+      const teamBFront = getTeamScore(teamB, frontHoles);
+      const teamABack = getTeamScore(teamA, backHoles);
+      const teamBBack = getTeamScore(teamB, backHoles);
+      
+      let pointsAFront = 0, pointsBFront = 0;
+      let pointsABack = 0, pointsBBack = 0;
+      
+      if (teamAFront < teamBFront) pointsAFront = 1;
+      else if (teamBFront < teamAFront) pointsBFront = 1;
+      
+      if (teamABack < teamBBack) pointsABack = 1;
+      else if (teamBBack < teamABack) pointsBBack = 1;
+      
+      let moneyA = 0;
+      if (pointsAFront > pointsBFront) moneyA += frontAmount;
+      else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
+      
+      if (pointsABack > pointsBBack) moneyA += backAmount;
+      else if (pointsBBack > pointsABack) moneyA -= backAmount;
+      
+      const teamATotal = teamAFront + teamABack;
+      const teamBTotal = teamBFront + teamBBack;
+      if (teamATotal < teamBTotal) moneyA += totalAmount;
+      else if (teamBTotal < teamATotal) moneyA -= totalAmount;
+      
+      return {
+        teamA,
+        teamB,
+        teamAFront,
+        teamBFront,
+        teamABack,
+        teamBBack,
+        teamATotal,
+        teamBTotal,
+        pointsAFront,
+        pointsBFront,
+        pointsABack,
+        pointsBBack,
+        moneyA,
+        moneyB: -moneyA,
+        amount: frontAmount + backAmount + totalAmount,
+        id,
+      };
     };
-    
-    const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
-    
-    const teamAFront = getTeamScore(teamA, frontHoles);
-    const teamBFront = getTeamScore(teamB, frontHoles);
-    const teamABack = getTeamScore(teamA, backHoles);
-    const teamBBack = getTeamScore(teamB, backHoles);
-    
-    // Points: lower score wins the segment
-    let pointsAFront = 0, pointsBFront = 0;
-    let pointsABack = 0, pointsBBack = 0;
-    
-    if (teamAFront < teamBFront) pointsAFront = 1;
-    else if (teamBFront < teamAFront) pointsBFront = 1;
-    
-    if (teamABack < teamBBack) pointsABack = 1;
-    else if (teamBBack < teamABack) pointsBBack = 1;
-    
-    // Money calculations
-    let moneyA = 0;
-    if (pointsAFront > pointsBFront) moneyA += frontAmount;
-    else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
-    
-    if (pointsABack > pointsBBack) moneyA += backAmount;
-    else if (pointsBBack > pointsABack) moneyA -= backAmount;
-    
-    // Total 18
-    const teamATotal = teamAFront + teamABack;
-    const teamBTotal = teamBFront + teamBBack;
-    if (teamATotal < teamBTotal) moneyA += totalAmount;
-    else if (teamBTotal < teamATotal) moneyA -= totalAmount;
-    
-    return {
-      teamA,
-      teamB,
-      teamAFront,
-      teamBFront,
-      teamABack,
-      teamBBack,
-      teamATotal,
-      teamBTotal,
-      pointsAFront,
-      pointsBFront,
-      pointsABack,
-      pointsBBack,
-      moneyA,
-      moneyB: -moneyA,
-      amount: frontAmount + backAmount + totalAmount,
-    };
-  }, [betConfig.carritos, confirmedScores, players]);
+
+    // Primary carritos
+    if (betConfig.carritos.enabled) {
+      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps } = betConfig.carritos;
+      results.push(calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps));
+    }
+
+    // Additional carritos teams
+    betConfig.carritosTeams?.forEach(team => {
+      if (team.enabled) {
+        results.push(calculateCarritosResult(
+          team.teamA, 
+          team.teamB, 
+          team.frontAmount, 
+          team.backAmount, 
+          team.totalAmount, 
+          team.scoringType, 
+          team.teamHandicaps,
+          team.id
+        ));
+      }
+    });
+
+    return results;
+  }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players]);
   
   const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId) || players[0];
   const rivals = players.filter(p => p.id !== basePlayer?.id);
@@ -217,17 +267,32 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Get player name abbreviation (first 3 letters)
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
+
+  // Get carritos balance for a specific player
+  const getCarritosBalanceForPlayer = (playerId: string): number => {
+    let total = 0;
+    allCarritosResults.forEach(result => {
+      if (result.teamA.includes(playerId)) {
+        total += result.moneyA / 2; // Each player gets half
+      } else if (result.teamB.includes(playerId)) {
+        total += result.moneyB / 2;
+      }
+    });
+    return total;
+  };
   
   return (
     <div className="space-y-4">
-      {/* Carritos Results (if enabled) */}
-      {carritosResults && (
+      {/* All Carritos Results */}
+      {allCarritosResults.map((result, idx) => (
         <CarritosResultsCard 
-          results={carritosResults} 
+          key={result.id || idx}
+          results={result} 
           players={players}
           basePlayerId={basePlayer?.id}
+          title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
         />
-      )}
+      ))}
       
       {/* Rival Selector */}
       <Card>
@@ -259,7 +324,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
                   )}
                   <div 
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-1"
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold mb-1"
                     style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
                   >
                     {getPlayerAbbr(rival)}
@@ -295,6 +360,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           confirmedScores={confirmedScores}
           course={course}
           allScores={scores}
+          onBetConfigChange={onBetConfigChange}
         />
       )}
       
@@ -307,6 +373,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="space-y-2">
             {sortedPlayers.map((player, idx) => {
               const balance = getPlayerBalance(player.id, betSummaries);
+              const carritosBalance = getCarritosBalanceForPlayer(player.id);
+              const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
               const otherPlayers = players.filter(p => p.id !== player.id);
@@ -330,10 +398,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         {idx + 1}
                       </span>
                       <div 
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
                         style={{ backgroundColor: player.color }}
                       >
-                        {player.initials}
+                        {getPlayerAbbr(player)}
                       </div>
                       <div>
                         <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
@@ -343,15 +411,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         'text-lg font-bold',
-                        balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        totalBalance > 0 ? 'text-green-500' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {balance >= 0 ? '+' : ''}${balance}
+                        {totalBalance >= 0 ? '+' : ''}${totalBalance}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </div>
                   
-                  {/* Expanded view: balance vs each other player */}
+                  {/* Expanded view: balance vs each other player + carritos */}
                   {isExpanded && (
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
@@ -360,10 +428,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
                             <div className="flex items-center gap-2">
                               <div 
-                                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
                                 style={{ backgroundColor: other.color }}
                               >
-                                {other.initials}
+                                {getPlayerAbbr(other)}
                               </div>
                               <span className="text-xs text-muted-foreground">vs {getPlayerAbbr(other)}</span>
                             </div>
@@ -376,6 +444,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           </div>
                         );
                       })}
+                      
+                      {/* Carritos section in detail */}
+                      {carritosBalance !== 0 && (
+                        <div className="flex items-center justify-between px-2 py-1 bg-accent/20 rounded text-sm border-t border-border/50 mt-1">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs font-medium">Carritos</span>
+                          </div>
+                          <span className={cn(
+                            'font-bold',
+                            carritosBalance > 0 ? 'text-green-500' : carritosBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
+                            {carritosBalance >= 0 ? '+' : ''}${carritosBalance}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -385,7 +469,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${sortedPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries), 0)} 
+            Σ = ${sortedPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>
@@ -415,10 +499,12 @@ interface CarritosResultsCardProps {
   };
   players: Player[];
   basePlayerId?: string;
+  title?: string;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)' }) => {
   const getPlayer = (id: string) => players.find(p => p.id === id);
+  const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
   
@@ -426,10 +512,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
   
   // Payment: each losing player pays 50% of total to EACH winning player
-  // If Team A wins $200 total, each loser (C and D) pays $100 to each winner (A and B)
-  // So C pays: $100 to A, $100 to B = $200 total
-  // And D pays: $100 to A, $100 to B = $200 total
-  // Each winner receives: $100 from C + $100 from D = $200
   const getPaymentBreakdown = () => {
     if (results.moneyA === 0) return null;
     
@@ -438,7 +520,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     const totalWon = Math.abs(results.moneyA);
     
     // Each loser pays (totalWon / 2) to EACH winner
-    // So total from each loser = totalWon (split to 2 winners)
     const perLoserPayToEachWinner = totalWon / 2;
     
     return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon };
@@ -451,7 +532,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Users className="h-4 w-4" />
-          Carritos (Equipos)
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -460,8 +541,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="text-left">
             <div className="flex items-center gap-1 mb-1">
               {teamAPlayers.map(p => (
-                <div key={p.id} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: p.color }}>
-                  {p.initials}
+                <div key={p.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: p.color }}>
+                  {getPlayerAbbr(p)}
                 </div>
               ))}
             </div>
@@ -471,8 +552,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="text-right">
             <div className="flex items-center justify-end gap-1 mb-1">
               {teamBPlayers.map(p => (
-                <div key={p.id} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: p.color }}>
-                  {p.initials}
+                <div key={p.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: p.color }}>
+                  {getPlayerAbbr(p)}
                 </div>
               ))}
             </div>
@@ -541,7 +622,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   );
 };
 
-// Bilateral Detail Component - Reorganized with bet type rows
+// Bilateral Detail Component - Reorganized with bet type rows and override capability
 interface BilateralDetailProps {
   player: Player;
   rival: Player;
@@ -555,6 +636,7 @@ interface BilateralDetailProps {
   confirmedScores: Map<string, PlayerScore[]>;
   course: GolfCourse;
   allScores: Map<string, PlayerScore[]>;
+  onBetConfigChange?: (config: BetConfig) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -570,8 +652,52 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   confirmedScores,
   course,
   allScores,
+  onBetConfigChange,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
+  const [editingBetType, setEditingBetType] = useState<string | null>(null);
+  
+  const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
+
+  // Get bet override for this pair
+  const getBetOverride = (betType: string): BetOverride | undefined => {
+    return betConfig.betOverrides?.find(
+      o => o.betType === betType && 
+      ((o.playerAId === player.id && o.playerBId === rival.id) ||
+       (o.playerAId === rival.id && o.playerBId === player.id))
+    );
+  };
+
+  // Update bet override
+  const updateBetOverride = (betType: string, updates: Partial<BetOverride>) => {
+    if (!onBetConfigChange) return;
+    
+    const overrides = [...(betConfig.betOverrides || [])];
+    const existingIdx = overrides.findIndex(
+      o => o.betType === betType && 
+      ((o.playerAId === player.id && o.playerBId === rival.id) ||
+       (o.playerAId === rival.id && o.playerBId === player.id))
+    );
+
+    if (existingIdx >= 0) {
+      overrides[existingIdx] = { ...overrides[existingIdx], ...updates };
+    } else {
+      overrides.push({
+        playerAId: player.id,
+        playerBId: rival.id,
+        betType,
+        enabled: true,
+        ...updates,
+      });
+    }
+
+    onBetConfigChange({ ...betConfig, betOverrides: overrides });
+  };
+
+  // Toggle bet enabled/disabled
+  const toggleBetEnabled = (betType: string, enabled: boolean) => {
+    updateBetOverride(betType, { enabled });
+  };
   
   // Calculate net scores for display
   const getNetScoreForSegment = (playerId: string, segment: 'front' | 'back' | 'total') => {
@@ -587,7 +713,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     return filtered.reduce((sum, s) => sum + s.netScore, 0);
   };
 
-  // Get units/manchas details for display
+  // Get units/manchas details for display - including Cuatriput in manchas
   const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
     const playerScores = allScores.get(playerId) || [];
     const details: { holeNumber: number; marker: string; emoji: string }[] = [];
@@ -606,7 +732,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧' });
         if (score.markers.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯' });
       } else {
-        // Manchas
+        // Manchas - including Cuatriput
         if (score.markers.ladies) details.push({ holeNumber: score.holeNumber, marker: 'Pinkies', emoji: '👠' });
         if (score.markers.swingBlanco) details.push({ holeNumber: score.holeNumber, marker: 'Paloma', emoji: '💨' });
         if (score.markers.retruje) details.push({ holeNumber: score.holeNumber, marker: 'Retruje', emoji: '↩️' });
@@ -615,7 +741,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫' });
         if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣' });
         if (score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟' });
-        if (score.markers.cuatriput) details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱' });
+        // Cuatriput - 4+ putts
+        if (score.putts >= 4 || score.markers.cuatriput) {
+          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱' });
+        }
       }
     });
     
@@ -630,6 +759,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       segments: { label: string; key: string }[];
       getTotal: () => number;
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
+      configKey: string;
     }[] = [];
     
     // Medal
@@ -637,6 +767,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       groups.push({
         key: 'medal',
         label: 'Medal',
+        configKey: 'medal',
         segments: [
           { label: 'Front 9', key: 'medal_front' },
           { label: 'Back 9', key: 'medal_back' },
@@ -665,6 +796,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       groups.push({
         key: 'pressures',
         label: 'Presiones',
+        configKey: 'pressures',
         segments: [
           { label: 'Front 9', key: 'pressure_front' },
           { label: 'Back 9', key: 'pressure_back' },
@@ -682,20 +814,21 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           const summary = groupedSummaries[summaryKey];
           const description = summary?.details?.[0]?.description || '';
           return {
-            playerNet: 0, // Not used for pressures
+            playerNet: 0,
             rivalNet: 0,
             amount: summary?.total || 0,
-            description, // This now contains +X +Y format
+            description,
           };
         },
       });
     }
     
-    // Skins - Now bilateral with net holes won
+    // Skins
     if (betConfig.skins.enabled) {
       groups.push({
         key: 'skins',
         label: 'Skins',
+        configKey: 'skins',
         segments: [
           { label: 'Front 9', key: 'skins_front' },
           { label: 'Back 9', key: 'skins_back' },
@@ -709,7 +842,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           const summaryKey = segmentKey === 'skins_front' ? 'Skins Front' : 'Skins Back';
           const summary = groupedSummaries[summaryKey];
           const description = summary?.details?.[0]?.description || '';
-          // Extract holes won from description "X vs Y hoyos"
           const match = description.match(/(\d+) vs (\d+)/);
           return {
             playerNet: match ? parseInt(match[1]) : 0,
@@ -721,11 +853,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Caros - Single amount, not per hole
+    // Caros
     if (betConfig.caros.enabled) {
       groups.push({
         key: 'caros',
         label: 'Caros',
+        configKey: 'caros',
         segments: [
           { label: 'Hoyos 15-18', key: 'caros_all' },
         ],
@@ -733,7 +866,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         getSegmentData: () => {
           const summary = groupedSummaries['Caros'];
           const description = summary?.details?.[0]?.description || '';
-          // Extract net scores from description "X vs Y"
           const match = description.match(/(\d+) vs (\d+)/);
           return {
             playerNet: match ? parseInt(match[1]) : 0,
@@ -745,11 +877,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Unidades - with detail
+    // Unidades
     if (betConfig.units.enabled) {
       groups.push({
         key: 'units',
         label: 'Unidades',
+        configKey: 'units',
         segments: [{ label: 'Detalle', key: 'units_detail' }],
         getTotal: () => groupedSummaries['Unidades']?.total || 0,
         getSegmentData: () => {
@@ -764,11 +897,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Manchas - with detail
+    // Manchas
     if (betConfig.manchas.enabled) {
       groups.push({
         key: 'manchas',
         label: 'Manchas',
+        configKey: 'manchas',
         segments: [{ label: 'Detalle', key: 'manchas_detail' }],
         getTotal: () => groupedSummaries['Manchas']?.total || 0,
         getSegmentData: () => {
@@ -788,6 +922,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       groups.push({
         key: 'culebras',
         label: 'Culebras',
+        configKey: 'culebras',
         segments: [],
         getTotal: () => groupedSummaries['Culebras']?.total || 0,
         getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
@@ -799,6 +934,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       groups.push({
         key: 'pinguinos',
         label: 'Pingüinos',
+        configKey: 'pinguinos',
         segments: [],
         getTotal: () => groupedSummaries['Pingüinos']?.total || 0,
         getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
@@ -857,17 +993,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
               style={{ backgroundColor: player.color }}
             >
-              {player.initials}
+              {getPlayerAbbr(player)}
             </div>
             <span className="text-muted-foreground text-sm">vs</span>
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
               style={{ backgroundColor: rival.color }}
             >
-              {rival.initials}
+              {getPlayerAbbr(rival)}
             </div>
           </div>
           <div className={cn(
@@ -880,7 +1016,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </div>
         </div>
         
-        {/* Bilateral Handicap Editor - applies to ALL individual bets */}
+        {/* Bilateral Handicap Editor */}
         <div className="mt-3 p-2 bg-muted/30 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -918,10 +1054,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           <div className="flex justify-between mt-2 text-xs">
             <div className="flex items-center gap-1">
               <div 
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
                 style={{ backgroundColor: player.color }}
               >
-                {player.initials}
+                {getPlayerAbbr(player)}
               </div>
               <span className={cn(hasOverride && 'text-accent font-medium')}>
                 HCP {effectivePlayerHcp}
@@ -932,10 +1068,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 HCP {effectiveRivalHcp}
               </span>
               <div 
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
                 style={{ backgroundColor: rival.color }}
               >
-                {rival.initials}
+                {getPlayerAbbr(rival)}
               </div>
             </div>
           </div>
@@ -956,37 +1092,90 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             const total = group.getTotal();
             const isExpanded = expandedTypes.includes(group.key);
             const hasSegments = group.segments.length > 0;
+            const override = getBetOverride(group.key);
+            const isDisabled = override?.enabled === false;
             
             return (
-              <div key={group.key} className="border border-border/50 rounded-lg overflow-hidden">
+              <div 
+                key={group.key} 
+                className={cn(
+                  'border border-border/50 rounded-lg overflow-hidden',
+                  isDisabled && 'opacity-50'
+                )}
+              >
                 {/* Main bet type row */}
                 <div 
                   className={cn(
                     'flex items-center justify-between p-3 bg-muted/30',
-                    hasSegments && 'cursor-pointer hover:bg-muted/50'
+                    hasSegments && !isDisabled && 'cursor-pointer hover:bg-muted/50'
                   )}
-                  onClick={() => hasSegments && onToggleExpand(group.key)}
+                  onClick={() => hasSegments && !isDisabled && onToggleExpand(group.key)}
                 >
                   <div className="flex items-center gap-2">
-                    {hasSegments && (
+                    {/* Cancel/Enable toggle */}
+                    {onBetConfigChange && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleBetEnabled(group.key, isDisabled);
+                        }}
+                        className={cn(
+                          'p-1 rounded-full transition-colors',
+                          isDisabled 
+                            ? 'text-muted-foreground hover:text-green-500' 
+                            : 'text-muted-foreground hover:text-destructive'
+                        )}
+                        title={isDisabled ? 'Habilitar apuesta' : 'Cancelar apuesta'}
+                      >
+                        {isDisabled ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                      </button>
+                    )}
+                    
+                    {hasSegments && !isDisabled && (
                       isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       )
                     )}
-                    <span className="font-semibold text-sm">{group.label}</span>
+                    <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
+                      {group.label}
+                    </span>
+                    {isDisabled && (
+                      <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                        Cancelada
+                      </span>
+                    )}
                   </div>
-                  <span className={cn(
-                    'text-lg font-bold',
-                    total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
-                  )}>
-                    {total >= 0 ? '+' : ''}${total}
-                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Edit amount button */}
+                    {onBetConfigChange && !isDisabled && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingBetType(group.key);
+                        }}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                    
+                    <span className={cn(
+                      'text-lg font-bold',
+                      isDisabled ? 'text-muted-foreground' :
+                      total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
+                    )}>
+                      {isDisabled ? '$0' : `${total >= 0 ? '+' : ''}$${total}`}
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Segment rows */}
-                {hasSegments && isExpanded && (
+                {hasSegments && isExpanded && !isDisabled && (
                   <div className="divide-y divide-border/30">
                     {group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
@@ -1009,7 +1198,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               {/* Score comparison */}
                               <div className="flex items-center gap-1 text-xs">
                                 {group.key === 'pressures' ? (
-                                  // For pressures, show the description directly (+X +Y format)
                                   <span className={cn(
                                     'font-medium',
                                     data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : ''
@@ -1054,11 +1242,101 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           })
         )}
       </CardContent>
+
+      {/* Edit Amount Dialog */}
+      <Dialog open={!!editingBetType} onOpenChange={() => setEditingBetType(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modificar importe de apuesta</DialogTitle>
+          </DialogHeader>
+          <BetAmountEditor
+            betType={editingBetType || ''}
+            currentOverride={getBetOverride(editingBetType || '')}
+            betConfig={betConfig}
+            onSave={(amount) => {
+              if (editingBetType) {
+                updateBetOverride(editingBetType, { amountOverride: amount });
+              }
+              setEditingBetType(null);
+            }}
+            onClose={() => setEditingBetType(null)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
 
-// Bilateral Handicap Editor - single handicap for all individual bets
+// Bet Amount Editor Component
+interface BetAmountEditorProps {
+  betType: string;
+  currentOverride?: BetOverride;
+  betConfig: BetConfig;
+  onSave: (amount: number) => void;
+  onClose: () => void;
+}
+
+const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
+  betType,
+  currentOverride,
+  betConfig,
+  onSave,
+  onClose,
+}) => {
+  // Get default amount based on bet type
+  const getDefaultAmount = () => {
+    switch (betType) {
+      case 'medal': return betConfig.medal.frontAmount + betConfig.medal.backAmount + betConfig.medal.totalAmount;
+      case 'pressures': return betConfig.pressures.frontAmount + betConfig.pressures.backAmount;
+      case 'skins': return betConfig.skins.frontValue + betConfig.skins.backValue;
+      case 'caros': return betConfig.caros.amount;
+      case 'units': return betConfig.units.valuePerPoint;
+      case 'manchas': return betConfig.manchas.valuePerPoint;
+      case 'culebras': return betConfig.culebras.valuePerOccurrence;
+      case 'pinguinos': return betConfig.pinguinos.valuePerOccurrence;
+      default: return 0;
+    }
+  };
+
+  const [amount, setAmount] = useState(currentOverride?.amountOverride ?? getDefaultAmount());
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Modifica el importe de esta apuesta solo para este par de jugadores.
+      </p>
+      
+      <div className="flex items-center gap-2">
+        <Label className="text-sm">Importe:</Label>
+        <div className="flex items-center gap-1">
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(parseInt(e.target.value) || 0)}
+            className="w-24"
+            min={0}
+          />
+        </div>
+      </div>
+      
+      <p className="text-xs text-muted-foreground">
+        Valor original: ${getDefaultAmount()}
+      </p>
+      
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onClose} className="flex-1">
+          Cancelar
+        </Button>
+        <Button onClick={() => onSave(amount)} className="flex-1">
+          Guardar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Bilateral Handicap Editor
 interface BilateralHandicapEditorProps {
   player: Player;
   rival: Player;
@@ -1079,6 +1357,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
     currentHandicap?.playerBHandicap ?? rival.handicap
   );
   
+  const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
   const difference = Math.abs(playerAHcp - playerBHcp);
   const playerReceives = playerAHcp > playerBHcp;
   
@@ -1092,10 +1371,10 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
         <div>
           <Label className="text-xs flex items-center gap-2">
             <div 
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
               style={{ backgroundColor: player.color }}
             >
-              {player.initials}
+              {getPlayerAbbr(player)}
             </div>
             {player.name}
           </Label>
@@ -1112,10 +1391,10 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
         <div>
           <Label className="text-xs flex items-center gap-2">
             <div 
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
               style={{ backgroundColor: rival.color }}
             >
-              {rival.initials}
+              {getPlayerAbbr(rival)}
             </div>
             {rival.name}
           </Label>
