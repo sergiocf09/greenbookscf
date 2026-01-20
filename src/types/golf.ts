@@ -11,7 +11,10 @@ export interface HoleInfo {
   number: number;
   par: number;
   handicapIndex: number; // Stroke index for handicap distribution
-  yards?: number;
+  yardsBlue?: number;
+  yardsWhite?: number;
+  yardsYellow?: number;
+  yardsRed?: number;
 }
 
 export interface Player {
@@ -21,6 +24,7 @@ export interface Player {
   color: string;
   handicap: number; // General handicap for the round
   teamHandicap?: number; // Specific handicap for team bets (Carritos)
+  profileId?: string; // Link to database profile
 }
 
 export interface PlayerScore {
@@ -43,10 +47,10 @@ export interface MarkerState {
   sandyPar: boolean;
   aquaPar: boolean;
   holeOut: boolean;
-  // Manually toggleable - Manchas
-  pinkie: boolean;
-  paloma: boolean;
-  retruje: boolean;
+  // Manually toggleable - Manchas (UPDATED NAMES)
+  ladies: boolean;        // was pinkie - tiro de damas
+  swingBlanco: boolean;   // was paloma - swing en blanco
+  retruje: boolean;       // golpe para atrás
   trampa: boolean;
   dobleAgua: boolean;
   dobleOB: boolean;
@@ -64,8 +68,8 @@ export const defaultMarkerState: MarkerState = {
   sandyPar: false,
   aquaPar: false,
   holeOut: false,
-  pinkie: false,
-  paloma: false,
+  ladies: false,
+  swingBlanco: false,
   retruje: false,
   trampa: false,
   dobleAgua: false,
@@ -74,6 +78,27 @@ export const defaultMarkerState: MarkerState = {
   dobleDigito: false,
   moreliana: false,
   culebra: false,
+};
+
+// Marker display info
+export const markerInfo: Record<keyof MarkerState, { label: string; emoji: string; isUnit: boolean; autoDetected: boolean }> = {
+  birdie: { label: 'Birdie', emoji: '🐦', isUnit: true, autoDetected: true },
+  eagle: { label: 'Águila', emoji: '🦅', isUnit: true, autoDetected: true },
+  albatross: { label: 'Albatros', emoji: '🦢', isUnit: true, autoDetected: true },
+  cuatriput: { label: 'Cuatriput', emoji: '😱', isUnit: false, autoDetected: true },
+  sandyPar: { label: 'Sandy Par', emoji: '🏖️', isUnit: true, autoDetected: false },
+  aquaPar: { label: 'Aqua Par', emoji: '💧', isUnit: true, autoDetected: false },
+  holeOut: { label: 'Hole Out', emoji: '🎯', isUnit: true, autoDetected: false },
+  ladies: { label: 'Ladies', emoji: '👠', isUnit: false, autoDetected: false },
+  swingBlanco: { label: 'Swing Blanco', emoji: '💨', isUnit: false, autoDetected: false },
+  retruje: { label: 'Retruje', emoji: '↩️', isUnit: false, autoDetected: false },
+  trampa: { label: 'Trampa', emoji: '⚠️', isUnit: false, autoDetected: false },
+  dobleAgua: { label: 'Doble Agua', emoji: '🌊', isUnit: false, autoDetected: false },
+  dobleOB: { label: 'Doble OB', emoji: '🚫', isUnit: false, autoDetected: false },
+  par3GirMas3: { label: 'Par3 +3 GIR', emoji: '3️⃣', isUnit: false, autoDetected: false },
+  dobleDigito: { label: 'Doble Dígito', emoji: '🔟', isUnit: false, autoDetected: false },
+  moreliana: { label: 'Moreliana', emoji: '🎭', isUnit: false, autoDetected: false },
+  culebra: { label: 'Culebra', emoji: '🐍', isUnit: false, autoDetected: true },
 };
 
 // Bet configuration types
@@ -168,4 +193,11 @@ export interface LedgerEntry {
   segment: 'front' | 'back' | 'total' | 'hole';
   holeNumber?: number;
   timestamp: string;
+}
+
+// Per-bet handicap override
+export interface BetHandicapOverride {
+  betType: string;
+  playerAHandicap: number;
+  playerBHandicap: number;
 }

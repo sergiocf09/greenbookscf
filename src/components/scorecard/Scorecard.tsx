@@ -6,9 +6,11 @@ import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
 interface ScorecardProps {
   players: Player[];
   course: GolfCourse;
-  scores: Map<string, PlayerScore[]>; // playerId -> scores for all holes
+  scores: Map<string, PlayerScore[]>;
   currentHole: number;
   onHoleClick?: (hole: number) => void;
+  basePlayerId?: string;
+  getStrokeIndicators?: (rivalId: string, holeNumber: number) => { receiving: boolean; giving: boolean };
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -17,6 +19,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   scores,
   currentHole,
   onHoleClick,
+  basePlayerId,
+  getStrokeIndicators,
 }) => {
   const getPlayerScoreForHole = (playerId: string, holeNumber: number): PlayerScore | undefined => {
     return scores.get(playerId)?.find(s => s.holeNumber === holeNumber);
