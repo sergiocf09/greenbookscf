@@ -49,6 +49,7 @@ interface BetDashboardProps {
   betConfig: BetConfig;
   course: GolfCourse;
   basePlayerId?: string;
+  confirmedHoles?: Set<number>;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -57,15 +58,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   betConfig,
   course,
   basePlayerId,
+  confirmedHoles = new Set(),
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [handicapOverrides, setHandicapOverrides] = useState<BilateralHandicapOverride[]>([]);
   
-  // Calculate all bets
+  // Filter scores to only include confirmed holes
+  const confirmedScores = useMemo(() => {
+    const filtered = new Map<string, PlayerScore[]>();
+    scores.forEach((playerScores, playerId) => {
+      filtered.set(playerId, playerScores.filter(s => confirmedHoles.has(s.holeNumber)));
+    });
+    return filtered;
+  }, [scores, confirmedHoles]);
+
+  // Calculate all bets using only confirmed scores
   const betSummaries = useMemo(() => 
-    calculateAllBets(players, scores, betConfig, course),
-    [players, scores, betConfig, course]
+    calculateAllBets(players, confirmedScores, betConfig, course),
+    [players, confirmedScores, betConfig, course]
   );
   
   const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId) || players[0];

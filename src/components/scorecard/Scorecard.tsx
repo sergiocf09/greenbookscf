@@ -11,6 +11,7 @@ interface ScorecardProps {
   onHoleClick?: (hole: number) => void;
   basePlayerId?: string;
   getStrokeIndicators?: (rivalId: string, holeNumber: number) => { receiving: boolean; giving: boolean };
+  confirmedHoles?: Set<number>;
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -21,7 +22,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   onHoleClick,
   basePlayerId,
   getStrokeIndicators,
+  confirmedHoles = new Set(),
 }) => {
+  const isHoleConfirmed = (holeNumber: number): boolean => {
+    return confirmedHoles.has(holeNumber);
+  };
+
   const getPlayerScoreForHole = (playerId: string, holeNumber: number): PlayerScore | undefined => {
     return scores.get(playerId)?.find(s => s.holeNumber === holeNumber);
   };
@@ -29,6 +35,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   const getPlayerTotal = (playerId: string, startHole: number, endHole: number): number => {
     let total = 0;
     for (let h = startHole; h <= endHole; h++) {
+      // Only count confirmed holes
+      if (!isHoleConfirmed(h)) continue;
       const score = getPlayerScoreForHole(playerId, h);
       if (score && score.strokes > 0) {
         total += score.strokes;
@@ -37,7 +45,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     return total;
   };
 
-  const getScoreColor = (strokes: number, par: number): string => {
+  const getScoreColor = (strokes: number, par: number, confirmed: boolean): string => {
+    if (!confirmed) return 'text-muted-foreground/40';
     if (strokes === 0) return 'text-muted-foreground';
     const toPar = strokes - par;
     if (toPar <= -2) return 'text-golf-gold font-bold';
@@ -48,7 +57,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     return 'text-foreground';
   };
 
-  const getScoreBg = (strokes: number, par: number): string => {
+  const getScoreBg = (strokes: number, par: number, confirmed: boolean): string => {
+    if (!confirmed) return '';
     if (strokes === 0) return '';
     const toPar = strokes - par;
     if (toPar <= -2) return 'bg-golf-gold/20 rounded';
@@ -113,17 +123,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 {frontNine.map(hole => {
                   const score = getPlayerScoreForHole(player.id, hole.number);
                   const strokes = score?.strokes || 0;
+                  const confirmed = isHoleConfirmed(hole.number);
                   return (
                     <td 
                       key={hole.number}
                       onClick={() => onHoleClick?.(hole.number)}
                       className={cn(
                         'text-center px-1.5 py-1.5 cursor-pointer',
-                        getScoreColor(strokes, hole.par),
-                        getScoreBg(strokes, hole.par)
+                        getScoreColor(strokes, hole.par, confirmed),
+                        getScoreBg(strokes, hole.par, confirmed)
                       )}
                     >
-                      {strokes > 0 ? strokes : '-'}
+                      {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
                     </td>
                   );
                 })}
@@ -188,17 +199,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   {backNine.map(hole => {
                     const score = getPlayerScoreForHole(player.id, hole.number);
                     const strokes = score?.strokes || 0;
+                    const confirmed = isHoleConfirmed(hole.number);
                     return (
                       <td 
                         key={hole.number}
                         onClick={() => onHoleClick?.(hole.number)}
                         className={cn(
                           'text-center px-1.5 py-1.5 cursor-pointer',
-                          getScoreColor(strokes, hole.par),
-                          getScoreBg(strokes, hole.par)
+                          getScoreColor(strokes, hole.par, confirmed),
+                          getScoreBg(strokes, hole.par, confirmed)
                         )}
                       >
-                        {strokes > 0 ? strokes : '-'}
+                        {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
                       </td>
                     );
                   })}
