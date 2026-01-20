@@ -475,20 +475,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         return (
                           <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
                             <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">vs</span>
                               <div 
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
                                 style={{ backgroundColor: other.color }}
                               >
                                 {getPlayerAbbr(other)}
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs text-muted-foreground">vs {getPlayerAbbr(other)}</span>
-                                {vsCarritosBalance !== 0 && (
-                                  <span className="text-[9px] text-muted-foreground">
-                                    Ind: ${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance} | Car: ${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}
-                                  </span>
-                                )}
-                              </div>
+                              {vsCarritosBalance !== 0 && (
+                                <span className="text-[9px] text-muted-foreground">
+                                  Ind: ${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance} | Car: ${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}
+                                </span>
+                              )}
                             </div>
                             <span className={cn(
                               'font-bold',
@@ -863,13 +861,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         ],
         getTotal: () => {
           const front = groupedSummaries['Presiones Front']?.total || 0;
-          const back = groupedSummaries['Presiones Back']?.total || 0;
-          const total = groupedSummaries['Presiones Total']?.total || 0;
+          // Back can be regular or carry
+          const backRegular = groupedSummaries['Presiones Back']?.total || 0;
+          const backCarry = groupedSummaries['Presiones Back (Carry x2+Match)']?.total || 0;
+          const back = backRegular + backCarry;
+          const total = groupedSummaries['Presiones Match 18']?.total || 0;
           return front + back + total;
         },
         getSegmentData: (segmentKey) => {
-          const summaryKey = segmentKey === 'pressure_front' ? 'Presiones Front' : 
-                            segmentKey === 'pressure_back' ? 'Presiones Back' : 'Presiones Total';
+          let summaryKey: string;
+          if (segmentKey === 'pressure_front') {
+            summaryKey = 'Presiones Front';
+          } else if (segmentKey === 'pressure_back') {
+            // Check for carry version first
+            const carryKey = 'Presiones Back (Carry x2+Match)';
+            if (groupedSummaries[carryKey]) {
+              summaryKey = carryKey;
+            } else {
+              summaryKey = 'Presiones Back';
+            }
+          } else {
+            summaryKey = 'Presiones Match 18';
+          }
           const summary = groupedSummaries[summaryKey];
           const description = summary?.details?.[0]?.description || '';
           return {
