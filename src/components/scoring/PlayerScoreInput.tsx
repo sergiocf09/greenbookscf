@@ -160,7 +160,10 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             </Button>
             <div className="w-10 text-center flex items-center justify-center gap-1">
               <span className="text-lg font-bold">{putts}</span>
-              {mergedMarkers.culebra && <AutoDetectedBadge type="culebra" show={true} />}
+              {/* Show culebra badge for 3+ putts */}
+              {mergedMarkers.culebra && !mergedMarkers.cuatriput && <AutoDetectedBadge type="culebra" show={true} />}
+              {/* Show cuatriput badge for 4+ putts */}
+              {mergedMarkers.cuatriput && <AutoDetectedBadge type="cuatriput" show={true} />}
             </div>
             <Button
               variant="outline"
