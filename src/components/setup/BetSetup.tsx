@@ -111,8 +111,16 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     onChange: (value: number) => void;
     step?: number;
   }> = ({ label, value, onChange, step = 25 }) => {
-    const handleIncrement = () => onChange(value + step);
-    const handleDecrement = () => onChange(Math.max(0, value - step));
+    const handleIncrement = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onChange(value + step);
+    };
+    const handleDecrement = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onChange(Math.max(0, value - step));
+    };
     
     return (
       <div className="flex items-center justify-between">
@@ -124,6 +132,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             size="icon"
             className="h-7 w-7"
             onClick={handleDecrement}
+            onMouseDown={(e) => e.stopPropagation()}
             disabled={value <= 0}
           >
             <Minus className="h-3 w-3" />
@@ -134,11 +143,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
               type="number"
               value={value}
               onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-              onBlur={(e) => {
-                // Round to nearest step on blur
-                const rounded = Math.round((parseInt(e.target.value) || 0) / step) * step;
-                onChange(rounded);
-              }}
+              onFocus={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               className="h-7 w-16 text-sm text-center px-1"
               min={0}
               step={step}
@@ -150,6 +156,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             size="icon"
             className="h-7 w-7"
             onClick={handleIncrement}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <Plus className="h-3 w-3" />
           </Button>
@@ -536,34 +543,34 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Front 9</Label>
         <div className="flex items-center gap-1">
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ frontAmount: Math.max(0, frontAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ frontAmount: Math.max(0, frontAmount - 25) }); }} onMouseDown={(e) => e.stopPropagation()}><Minus className="h-3 w-3" /></Button>
           <div className="flex items-center gap-0.5">
             <DollarSign className="h-3 w-3 text-muted-foreground" />
-            <Input type="number" value={frontAmount} onChange={(e) => onUpdate({ frontAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+            <Input type="number" value={frontAmount} onChange={(e) => onUpdate({ frontAmount: parseInt(e.target.value) || 0 })} onClick={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
           </div>
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ frontAmount: frontAmount + 25 })}><Plus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ frontAmount: frontAmount + 25 }); }} onMouseDown={(e) => e.stopPropagation()}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Back 9</Label>
         <div className="flex items-center gap-1">
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ backAmount: Math.max(0, backAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ backAmount: Math.max(0, backAmount - 25) }); }} onMouseDown={(e) => e.stopPropagation()}><Minus className="h-3 w-3" /></Button>
           <div className="flex items-center gap-0.5">
             <DollarSign className="h-3 w-3 text-muted-foreground" />
-            <Input type="number" value={backAmount} onChange={(e) => onUpdate({ backAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+            <Input type="number" value={backAmount} onChange={(e) => onUpdate({ backAmount: parseInt(e.target.value) || 0 })} onClick={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
           </div>
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ backAmount: backAmount + 25 })}><Plus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ backAmount: backAmount + 25 }); }} onMouseDown={(e) => e.stopPropagation()}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">Total 18</Label>
         <div className="flex items-center gap-1">
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ totalAmount: Math.max(0, totalAmount - 25) })}><Minus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ totalAmount: Math.max(0, totalAmount - 25) }); }} onMouseDown={(e) => e.stopPropagation()}><Minus className="h-3 w-3" /></Button>
           <div className="flex items-center gap-0.5">
             <DollarSign className="h-3 w-3 text-muted-foreground" />
-            <Input type="number" value={totalAmount} onChange={(e) => onUpdate({ totalAmount: parseInt(e.target.value) || 0 })} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
+            <Input type="number" value={totalAmount} onChange={(e) => onUpdate({ totalAmount: parseInt(e.target.value) || 0 })} onClick={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()} className="h-7 w-16 text-sm text-center px-1" min={0} step={25} />
           </div>
-          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => onUpdate({ totalAmount: totalAmount + 25 })}><Plus className="h-3 w-3" /></Button>
+          <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdate({ totalAmount: totalAmount + 25 }); }} onMouseDown={(e) => e.stopPropagation()}><Plus className="h-3 w-3" /></Button>
         </div>
       </div>
 
