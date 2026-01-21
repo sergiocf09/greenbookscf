@@ -9,6 +9,7 @@ import {
   groupSummariesByType,
   BetSummary 
 } from '@/lib/betCalculations';
+import { getOyesesDisplayData } from '@/lib/oyesesCalculations';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -1346,6 +1347,121 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   <div className="divide-y divide-border/30">
                     {group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
+                    ) : group.key === 'oyeses' ? (
+                      // Oyeses detail - show proximity order per player per hole
+                      (() => {
+                        const oyesesData = getOyesesDisplayData(
+                          player.id,
+                          rival.id,
+                          allScores,
+                          betConfig,
+                          course
+                        );
+                        const { playerAHoles, playerBHoles } = oyesesData;
+                        
+                        if (playerAHoles.length === 0) {
+                          return (
+                            <div className="px-4 py-2 pl-10 bg-background/50 text-xs text-muted-foreground">
+                              Sin datos de Oyeses registrados
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
+                            {/* Header row with hole numbers */}
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <div className="w-12 shrink-0 font-medium text-muted-foreground">Jugador</div>
+                              <div className="flex gap-1 overflow-x-auto">
+                                {playerAHoles.map(h => (
+                                  <div key={h.holeNumber} className="w-8 text-center font-medium text-muted-foreground">
+                                    H{h.holeNumber}
+                                  </div>
+                                ))}
+                                <div className="w-12 text-center font-bold text-muted-foreground">Total</div>
+                              </div>
+                            </div>
+                            
+                            {/* Player A row */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <div 
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                                style={{ backgroundColor: player.color }}
+                              >
+                                {player.name.substring(0, 3).toUpperCase()}
+                              </div>
+                              <div className="flex gap-1 overflow-x-auto">
+                                {playerAHoles.map(h => (
+                                  <div 
+                                    key={h.holeNumber} 
+                                    className={cn(
+                                      'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
+                                      h.isWin ? 'bg-green-500/20 text-green-600' :
+                                      h.isLoss ? 'bg-destructive/20 text-destructive' :
+                                      h.isAccumulated ? 'bg-accent/30 text-accent-foreground' :
+                                      'bg-muted/30 text-muted-foreground'
+                                    )}
+                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
+                                  >
+                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '✗'}
+                                  </div>
+                                ))}
+                                <div className={cn(
+                                  'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
+                                  (groupedSummaries['Oyes']?.total || 0) > 0 ? 'bg-green-500/20 text-green-600' :
+                                  (groupedSummaries['Oyes']?.total || 0) < 0 ? 'bg-destructive/20 text-destructive' :
+                                  'bg-muted/30 text-muted-foreground'
+                                )}>
+                                  ${Math.abs(groupedSummaries['Oyes']?.total || 0)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Player B row */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <div 
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                                style={{ backgroundColor: rival.color }}
+                              >
+                                {rival.name.substring(0, 3).toUpperCase()}
+                              </div>
+                              <div className="flex gap-1 overflow-x-auto">
+                                {playerBHoles.map(h => (
+                                  <div 
+                                    key={h.holeNumber} 
+                                    className={cn(
+                                      'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
+                                      h.isWin ? 'bg-green-500/20 text-green-600' :
+                                      h.isLoss ? 'bg-destructive/20 text-destructive' :
+                                      h.isAccumulated ? 'bg-accent/30 text-accent-foreground' :
+                                      'bg-muted/30 text-muted-foreground'
+                                    )}
+                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
+                                  >
+                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '✗'}
+                                  </div>
+                                ))}
+                                <div className={cn(
+                                  'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
+                                  (groupedSummaries['Oyes']?.total || 0) < 0 ? 'bg-green-500/20 text-green-600' :
+                                  (groupedSummaries['Oyes']?.total || 0) > 0 ? 'bg-destructive/20 text-destructive' :
+                                  'bg-muted/30 text-muted-foreground'
+                                )}>
+                                  ${Math.abs(groupedSummaries['Oyes']?.total || 0)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Legend */}
+                            <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/30">
+                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/20"></span>Ganado</span>
+                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/20"></span>Perdido</span>
+                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-accent/30"></span>Acumulado</span>
+                              <span className="flex items-center gap-1">✗ = Sin green</span>
+                            </div>
+                          </div>
+                        );
+                      })()
                     ) : (
                       group.segments.map((segment) => {
                         const data = group.getSegmentData(segment.key);
@@ -1418,7 +1534,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             currentOverride={getBetOverride(editingBetType || '')}
             betConfig={betConfig}
             onSave={(overrides) => {
-              if (editingBetType && onBetConfigChange) {
+                if (editingBetType && onBetConfigChange) {
                 // Update the bet config with the new amounts for this pair
                 // This is a simplified approach - in production you'd want per-pair overrides
                 const newConfig = { ...betConfig };
@@ -1430,6 +1546,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   newConfig.skins = { ...newConfig.skins, frontValue: overrides.front, backValue: overrides.back ?? newConfig.skins.backValue };
                 } else if (overrides.total !== undefined) {
                   if (editingBetType === 'caros') newConfig.caros = { ...newConfig.caros, amount: overrides.total };
+                  else if (editingBetType === 'oyeses') newConfig.oyeses = { ...newConfig.oyeses, amount: overrides.total };
                   else if (editingBetType === 'units') newConfig.units = { ...newConfig.units, valuePerPoint: overrides.total };
                   else if (editingBetType === 'manchas') newConfig.manchas = { ...newConfig.manchas, valuePerPoint: overrides.total };
                   else if (editingBetType === 'culebras') newConfig.culebras = { ...newConfig.culebras, valuePerOccurrence: overrides.total };
@@ -1485,6 +1602,8 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
         };
       case 'caros': 
         return { total: betConfig.caros.amount };
+      case 'oyeses':
+        return { total: betConfig.oyeses.amount };
       case 'units': 
         return { total: betConfig.units.valuePerPoint };
       case 'manchas': 
