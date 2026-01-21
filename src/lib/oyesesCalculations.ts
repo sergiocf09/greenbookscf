@@ -149,6 +149,8 @@ export const getOyesesDisplayData = (
  * - Sangrón mode: Everyone MUST be assigned a number for each Par 3.
  *   No accumulation - bet is always settled on each Par 3.
  * - Each pair settles independently (Player A vs B is separate from A vs C)
+ * - **100% RULE**: If a player wins ALL Par 3 holes against a rival (100%), 
+ *   the total is DOUBLED.
  */
 export const calculateOyesesBets = (
   players: Player[],
@@ -192,6 +194,14 @@ export const calculateOyesesBets = (
       // Track accumulation for this specific pair
       let accumulated = 0;
       
+      // Track wins/losses for 100% rule
+      let winsA = 0;
+      let winsB = 0;
+      let settledHoles = 0; // Count holes that were settled (not accumulated)
+      
+      // Temporary storage for pair's summaries (to apply 100% doubling)
+      const pairSummaries: BetSummary[] = [];
+      
       // Process each Par 3 hole
       for (const holeNum of par3Holes) {
         const scoresA = scores.get(playerA.id) || [];
@@ -218,10 +228,12 @@ export const calculateOyesesBets = (
           
           // At least one has a number - settle
           const totalAmount = amount + accumulated;
+          settledHoles++;
           
           if (hasNumberA && !hasNumberB) {
             // A wins (has number, B doesn't)
-            summaries.push({
+            winsA++;
+            pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
               betType: 'Oyes',
@@ -230,7 +242,7 @@ export const calculateOyesesBets = (
               holeNumber: holeNum,
               description: `#${proximityA} vs ✗${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
-            summaries.push({
+            pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
               betType: 'Oyes',
@@ -241,7 +253,8 @@ export const calculateOyesesBets = (
             });
           } else if (!hasNumberA && hasNumberB) {
             // B wins (has number, A doesn't)
-            summaries.push({
+            winsB++;
+            pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
               betType: 'Oyes',
@@ -250,7 +263,7 @@ export const calculateOyesesBets = (
               holeNumber: holeNum,
               description: `#${proximityB} vs ✗${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
-            summaries.push({
+            pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
               betType: 'Oyes',
@@ -263,7 +276,8 @@ export const calculateOyesesBets = (
             // Both have numbers - compare proximity (lower wins)
             if (proximityA! < proximityB!) {
               // A is closer
-              summaries.push({
+              winsA++;
+              pairSummaries.push({
                 playerId: playerA.id,
                 vsPlayer: playerB.id,
                 betType: 'Oyes',
@@ -272,7 +286,7 @@ export const calculateOyesesBets = (
                 holeNumber: holeNum,
                 description: `#${proximityA} vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
-              summaries.push({
+              pairSummaries.push({
                 playerId: playerB.id,
                 vsPlayer: playerA.id,
                 betType: 'Oyes',
@@ -283,7 +297,8 @@ export const calculateOyesesBets = (
               });
             } else if (proximityB! < proximityA!) {
               // B is closer
-              summaries.push({
+              winsB++;
+              pairSummaries.push({
                 playerId: playerB.id,
                 vsPlayer: playerA.id,
                 betType: 'Oyes',
@@ -292,7 +307,7 @@ export const calculateOyesesBets = (
                 holeNumber: holeNum,
                 description: `#${proximityB} vs #${proximityA}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
-              summaries.push({
+              pairSummaries.push({
                 playerId: playerA.id,
                 vsPlayer: playerB.id,
                 betType: 'Oyes',
@@ -302,7 +317,7 @@ export const calculateOyesesBets = (
                 description: `#${proximityA} vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
             }
-            // Tie = no money changes hands
+            // Tie = no winner, no money changes hands
           }
           
           // Reset accumulation after settlement attempt (even on tie)
@@ -317,9 +332,12 @@ export const calculateOyesesBets = (
             continue;
           }
           
+          settledHoles++;
+          
           if (proximityA < proximityB) {
             // A is closer
-            summaries.push({
+            winsA++;
+            pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
               betType: 'Oyes',
@@ -328,7 +346,7 @@ export const calculateOyesesBets = (
               holeNumber: holeNum,
               description: `#${proximityA} vs #${proximityB}`,
             });
-            summaries.push({
+            pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
               betType: 'Oyes',
@@ -339,7 +357,8 @@ export const calculateOyesesBets = (
             });
           } else if (proximityB < proximityA) {
             // B is closer
-            summaries.push({
+            winsB++;
+            pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
               betType: 'Oyes',
@@ -348,7 +367,7 @@ export const calculateOyesesBets = (
               holeNumber: holeNum,
               description: `#${proximityB} vs #${proximityA}`,
             });
-            summaries.push({
+            pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
               betType: 'Oyes',
@@ -361,6 +380,24 @@ export const calculateOyesesBets = (
           // Tie = no money changes hands
         }
       }
+      
+      // Check for 100% win rule: if one player won ALL settled holes, DOUBLE the amounts
+      const hasHundredPercentWinner = settledHoles > 0 && 
+        (winsA === settledHoles || winsB === settledHoles);
+      
+      if (hasHundredPercentWinner && pairSummaries.length > 0) {
+        // Double all amounts for this pair
+        for (const summary of pairSummaries) {
+          summary.amount *= 2;
+          // Add indicator to description
+          if (!summary.description?.includes('(100% x2)')) {
+            summary.description = (summary.description || '') + ' (100% x2)';
+          }
+        }
+      }
+      
+      // Add pair summaries to main list
+      summaries.push(...pairSummaries);
     }
   }
   
