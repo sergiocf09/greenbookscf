@@ -156,6 +156,17 @@ export interface BilateralHandicap {
   playerBHandicap: number;
 }
 
+// Rayas bet config - aggregator bet
+export type RayasSkinVariant = 'acumulados' | 'sinAcumulacion';
+
+export interface RayasBetConfig {
+  enabled: boolean;
+  frontValue: number;     // Value per raya in Front 9
+  backValue: number;      // Value per raya in Back 9
+  medalTotalValue: number; // Value for the Medal Total raya
+  skinVariant: RayasSkinVariant; // Whether skins accumulate in Rayas
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -167,6 +178,7 @@ export interface BetConfig {
   manchas: ManchasBetConfig;
   culebras: CumulativeBetConfig;
   pinguinos: CumulativeBetConfig;
+  rayas: RayasBetConfig;
   carritos: CarritosBetConfig;
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides

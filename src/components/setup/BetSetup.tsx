@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2, Minus } from 'lucide-react';
-import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality, RayasSkinVariant } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -433,6 +433,65 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => updateBet('pinguinos', { valuePerOccurrence: v })} />
       </BetSection>
 
+      {/* Rayas - Aggregator bet */}
+      <BetSection
+        id="rayas"
+        title="Rayas"
+        description="Agregador: Skins + Unidades + Oyes + Medal"
+        enabled={config.rayas.enabled}
+        onToggle={(enabled) => updateBet('rayas', { enabled })}
+        color="gold"
+      >
+        <AmountInput label="Front 9 (por raya)" value={config.rayas.frontValue} onChange={(v) => updateBet('rayas', { frontValue: v })} />
+        <AmountInput label="Back 9 (por raya)" value={config.rayas.backValue} onChange={(v) => updateBet('rayas', { backValue: v })} />
+        <AmountInput label="Medal Total (raya extra)" value={config.rayas.medalTotalValue} onChange={(v) => updateBet('rayas', { medalTotalValue: v })} />
+        
+        <div className="flex items-center justify-between mt-2" onClick={(e) => e.stopPropagation()}>
+          <Label className="text-xs text-muted-foreground">Variante Skins</Label>
+          <div 
+            className="flex gap-1"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('rayas', { skinVariant: 'acumulados' as RayasSkinVariant });
+              }}
+              className={cn(
+                "px-2 py-1 text-[10px] rounded transition-colors",
+                config.rayas.skinVariant === 'acumulados' 
+                  ? "bg-golf-gold text-golf-dark font-medium" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              Acum
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('rayas', { skinVariant: 'sinAcumulacion' as RayasSkinVariant });
+              }}
+              className={cn(
+                "px-2 py-1 text-[10px] rounded transition-colors",
+                config.rayas.skinVariant === 'sinAcumulacion' 
+                  ? "bg-primary text-primary-foreground font-medium" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              Sin Acum
+            </button>
+          </div>
+        </div>
+        
+        <p className="text-[9px] text-muted-foreground mt-2">
+          Rayas = Skins ganados + Unidades (+) + Oyes (el más cercano gana a todos) + Medal por segmento
+        </p>
+      </BetSection>
+
       {/* Carritos (Teams) - Now supports 4+ players and multiple team bets */}
       {players.length >= 4 && (
         <BetSection
@@ -729,6 +788,7 @@ export const defaultBetConfig: BetConfig = {
   manchas: { enabled: true, valuePerPoint: 25 },
   culebras: { enabled: true, valuePerOccurrence: 25 },
   pinguinos: { enabled: false, valuePerOccurrence: 25 },
+  rayas: { enabled: false, frontValue: 25, backValue: 25, medalTotalValue: 50, skinVariant: 'acumulados' },
   carritos: { 
     enabled: false, 
     teamA: ['', ''], 
