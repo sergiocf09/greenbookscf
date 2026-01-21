@@ -1,7 +1,7 @@
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap } from '@/types/golf';
 import { 
   calculateAllBets, 
   getPlayerBalance, 
@@ -42,13 +42,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-// Simplified: One handicap override per player pair for ALL individual bets
-interface BilateralHandicap {
-  playerAId: string;
-  playerBId: string;
-  playerAHandicap: number;
-  playerBHandicap: number;
-}
+// BilateralHandicap is now imported from types/golf.ts
 
 interface BetDashboardProps {
   players: Player[];
@@ -72,8 +66,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
-  // One handicap per pair of players (applies to ALL individual bets)
-  const [bilateralHandicaps, setBilateralHandicaps] = useState<BilateralHandicap[]>([]);
+  // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
   
   // Filter scores to only include confirmed holes
   const confirmedScores = useMemo(() => {
@@ -245,28 +238,32 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     );
   };
   
-  // Get bilateral handicap for a pair
+  // Get bilateral handicap for a pair (from betConfig)
   const getBilateralHandicap = (playerAId: string, playerBId: string): BilateralHandicap | undefined => {
-    return bilateralHandicaps.find(
+    const handicaps = betConfig.bilateralHandicaps || [];
+    return handicaps.find(
       h => (h.playerAId === playerAId && h.playerBId === playerBId) ||
            (h.playerAId === playerBId && h.playerBId === playerAId)
     );
   };
   
-  // Update bilateral handicap for a pair
+  // Update bilateral handicap for a pair (persisted via onBetConfigChange)
   const updateBilateralHandicap = (handicap: BilateralHandicap) => {
-    setBilateralHandicaps(prev => {
-      const existingIdx = prev.findIndex(
-        h => (h.playerAId === handicap.playerAId && h.playerBId === handicap.playerBId) ||
-             (h.playerAId === handicap.playerBId && h.playerBId === handicap.playerAId)
-      );
-      if (existingIdx >= 0) {
-        const updated = [...prev];
-        updated[existingIdx] = handicap;
-        return updated;
-      }
-      return [...prev, handicap];
-    });
+    if (!onBetConfigChange) return;
+    
+    const handicaps = [...(betConfig.bilateralHandicaps || [])];
+    const existingIdx = handicaps.findIndex(
+      h => (h.playerAId === handicap.playerAId && h.playerBId === handicap.playerBId) ||
+           (h.playerAId === handicap.playerBId && h.playerBId === handicap.playerAId)
+    );
+    
+    if (existingIdx >= 0) {
+      handicaps[existingIdx] = handicap;
+    } else {
+      handicaps.push(handicap);
+    }
+    
+    onBetConfigChange({ ...betConfig, bilateralHandicaps: handicaps });
   };
   
   // Get balance for base player vs each rival
