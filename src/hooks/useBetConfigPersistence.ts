@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BetConfig, RayasBetConfig } from '@/types/golf';
+import { BetConfig, RayasBetConfig, BilateralHandicap, BetOverride } from '@/types/golf';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -25,7 +25,8 @@ interface RoundBetConfig {
       enabled: boolean;
     }>;
   };
-  // Add other bet configs as needed
+  bilateralHandicaps?: BilateralHandicap[];
+  betOverrides?: BetOverride[];
 }
 
 export const useBetConfigPersistence = ({
@@ -79,6 +80,16 @@ export const useBetConfigPersistence = ({
             };
           }
           
+          // Apply bilateral handicaps if exist
+          if (dbConfig.bilateralHandicaps) {
+            newConfig.bilateralHandicaps = dbConfig.bilateralHandicaps;
+          }
+          
+          // Apply bet overrides if exist
+          if (dbConfig.betOverrides) {
+            newConfig.betOverrides = dbConfig.betOverrides;
+          }
+          
           return newConfig;
         });
         
@@ -95,8 +106,8 @@ export const useBetConfigPersistence = ({
     if (!roundId) return;
 
     try {
-      // Build the config object to store (cast to unknown then to expected type for Supabase)
-      const configToSave = {
+      // Build the config object to store
+      const configToSave: RoundBetConfig = {
         rayas: {
           enabled: config.rayas.enabled,
           frontValue: config.rayas.frontValue,
@@ -109,6 +120,8 @@ export const useBetConfigPersistence = ({
           amount: config.oyeses.amount,
           playerConfigs: config.oyeses.playerConfigs,
         },
+        bilateralHandicaps: config.bilateralHandicaps || [],
+        betOverrides: config.betOverrides || [],
       };
 
       const { error } = await supabase

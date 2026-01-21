@@ -1567,7 +1567,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         );
                       })()
                     ) : group.key === 'rayas' ? (
-                      // Rayas detail - show breakdown by source
+                      // Rayas detail - show net won per source (skins, unidades, oyes, medal)
                       (() => {
                         const rayasResult = getRayasDetailForPair(
                           player,
@@ -1577,7 +1577,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           course
                         );
                         
-                        // Group details by source
+                        // Group details by source - counting net rayas won (positive = player wins)
                         const sourceGroups: Record<string, { front: number; back: number; total: number }> = {
                           skins: { front: 0, back: 0, total: 0 },
                           units: { front: 0, back: 0, total: 0 },
@@ -1599,13 +1599,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const backValue = betConfig.rayas?.backValue || 0;
                         const medalValue = betConfig.rayas?.medalTotalValue || 0;
                         
-                        const sourceLabels: Record<string, { label: string; emoji: string }> = {
-                          skins: { label: 'Skins', emoji: '🏌️' },
-                          units: { label: 'Unidades', emoji: '🐦' },
-                          oyes: { label: 'Oyes', emoji: '🎯' },
-                          medal: { label: 'Medal', emoji: '🏅' },
-                        };
-                        
                         // Include Oyes summaries from groupedSummaries
                         const oyesFrontAmount = groupedSummaries['Rayas Oyes']?.details
                           ?.filter(d => d.segment === 'front')
@@ -1614,108 +1607,145 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           ?.filter(d => d.segment === 'back')
                           .reduce((s, d) => s + d.amount, 0) || 0;
                         
+                        // Calculate oyes rayas count from amount
+                        const oyesFrontRayas = frontValue > 0 ? Math.round(oyesFrontAmount / frontValue) : 0;
+                        const oyesBackRayas = backValue > 0 ? Math.round(oyesBackAmount / backValue) : 0;
+                        
+                        // Calculate net rayas per source for display
+                        const getSourceNet = (source: string) => {
+                          const data = sourceGroups[source];
+                          if (source === 'oyes') {
+                            return {
+                              front: oyesFrontRayas,
+                              back: oyesBackRayas,
+                              total: oyesFrontRayas + oyesBackRayas,
+                            };
+                          }
+                          return {
+                            front: data.front,
+                            back: data.back,
+                            total: data.front + data.back + data.total,
+                          };
+                        };
+                        
+                        const skinsNet = getSourceNet('skins');
+                        const unitsNet = getSourceNet('units');
+                        const oyesNet = getSourceNet('oyes');
+                        const medalNet = getSourceNet('medal');
+                        
+                        // Calculate total rayas per segment
+                        const frontTotalRayas = skinsNet.front + unitsNet.front + oyesNet.front + medalNet.front;
+                        const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
+                        const totalRayasAll = frontTotalRayas + backTotalRayas;
+                        
+                        // Calculate amounts
+                        const frontTotalAmount = frontTotalRayas * frontValue;
+                        const backTotalAmount = backTotalRayas * backValue;
+                        const medalTotalAmount = rayasResult.medalTotalAmountA;
+                        const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
+                        
+                        // Check if we have all 18 holes confirmed
+                        const confirmedHolesCount = confirmedScores.get(player.id)?.length || 0;
+                        const hasAll18 = confirmedHolesCount >= 18;
+                        
                         return (
-                          <div className="px-4 py-3 pl-6 bg-background/50 space-y-3">
-                            {/* Summary header */}
-                            <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-muted-foreground border-b border-border/30 pb-2">
+                          <div className="px-4 py-3 pl-6 bg-background/50 space-y-2">
+                            {/* Header row */}
+                            <div className="grid grid-cols-5 gap-1 text-[10px] font-medium text-muted-foreground border-b border-border/30 pb-1">
                               <div>Fuente</div>
-                              <div className="text-center">Front</div>
-                              <div className="text-center">Back</div>
-                              <div className="text-right">Importe</div>
+                              <div className="text-center">Skins</div>
+                              <div className="text-center">Unidades</div>
+                              <div className="text-center">Oyes</div>
+                              <div className="text-center">Medal</div>
                             </div>
                             
-                            {/* Source breakdown rows */}
-                            {Object.entries(sourceGroups).map(([source, data]) => {
-                              const label = sourceLabels[source];
-                              const frontRayas = data.front;
-                              const backRayas = data.back;
-                              const totalRayas = data.total;
-                              
-                              let amount = 0;
-                              if (source === 'medal') {
-                                amount = (frontRayas * frontValue) + (backRayas * backValue) + (totalRayas * medalValue);
-                              } else if (source === 'oyes') {
-                                amount = oyesFrontAmount + oyesBackAmount;
-                              } else {
-                                amount = (frontRayas * frontValue) + (backRayas * backValue);
-                              }
-                              
-                              const hasData = frontRayas !== 0 || backRayas !== 0 || totalRayas !== 0;
-                              if (!hasData && source === 'oyes') {
-                                if (oyesFrontAmount === 0 && oyesBackAmount === 0) return null;
-                              } else if (!hasData && amount === 0) {
-                                return null;
-                              }
-                              
-                              return (
-                                <div key={source} className="grid grid-cols-4 gap-2 items-center text-xs py-1 border-b border-border/20">
-                                  <div className="flex items-center gap-1.5">
-                                    <span>{label.emoji}</span>
-                                    <span className="font-medium">{label.label}</span>
-                                  </div>
-                                  <div className={cn(
-                                    'text-center font-medium',
-                                    (source === 'oyes' ? oyesFrontAmount : frontRayas * frontValue) > 0 ? 'text-green-500' :
-                                    (source === 'oyes' ? oyesFrontAmount : frontRayas * frontValue) < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                  )}>
-                                    {source === 'oyes' 
-                                      ? (oyesFrontAmount !== 0 ? `${oyesFrontAmount >= 0 ? '+' : ''}$${oyesFrontAmount}` : '-')
-                                      : (frontRayas !== 0 ? `${frontRayas}r` : '-')
-                                    }
-                                  </div>
-                                  <div className={cn(
-                                    'text-center font-medium',
-                                    (source === 'oyes' ? oyesBackAmount : backRayas * backValue) > 0 ? 'text-green-500' :
-                                    (source === 'oyes' ? oyesBackAmount : backRayas * backValue) < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                  )}>
-                                    {source === 'oyes'
-                                      ? (oyesBackAmount !== 0 ? `${oyesBackAmount >= 0 ? '+' : ''}$${oyesBackAmount}` : '-')
-                                      : (backRayas !== 0 ? `${backRayas}r` : '-')
-                                    }
-                                    {source === 'medal' && totalRayas !== 0 && (
-                                      <span className="ml-1 text-[9px]">(+{totalRayas}r T18)</span>
-                                    )}
-                                  </div>
-                                  <div className={cn(
-                                    'text-right font-bold',
-                                    amount > 0 ? 'text-green-500' : amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                  )}>
-                                    {amount !== 0 ? `${amount >= 0 ? '+' : ''}$${amount}` : '-'}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                            {/* Front 9 row */}
+                            <div className="grid grid-cols-5 gap-1 items-center text-xs py-1">
+                              <div className="font-medium text-muted-foreground">Front 9</div>
+                              <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-500' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {skinsNet.front !== 0 ? skinsNet.front : '-'}
+                              </div>
+                              <div className={cn('text-center font-bold', unitsNet.front > 0 ? 'text-green-500' : unitsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {unitsNet.front !== 0 ? unitsNet.front : '-'}
+                              </div>
+                              <div className={cn('text-center font-bold', oyesNet.front > 0 ? 'text-green-500' : oyesNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {oyesNet.front !== 0 ? oyesNet.front : '-'}
+                              </div>
+                              <div className={cn('text-center font-bold', medalNet.front > 0 ? 'text-green-500' : medalNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {medalNet.front !== 0 ? medalNet.front : '-'}
+                              </div>
+                            </div>
                             
-                            {/* Totals row */}
-                            <div className="grid grid-cols-4 gap-2 items-center text-xs pt-2 border-t border-border/50">
-                              <div className="font-bold">TOTAL</div>
-                              <div className={cn(
-                                'text-center font-bold',
-                                rayasResult.frontAmountA + oyesFrontAmount > 0 ? 'text-green-500' :
-                                rayasResult.frontAmountA + oyesFrontAmount < 0 ? 'text-destructive' : ''
-                              )}>
-                                {rayasResult.frontRayasA} vs {rayasResult.frontRayasB}r
+                            {/* Front 9 total */}
+                            <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Total Front:</span>
+                                <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-500' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
+                                  {frontTotalRayas}
+                                </span>
+                                <span className="text-muted-foreground">× ${frontValue} =</span>
                               </div>
-                              <div className={cn(
-                                'text-center font-bold',
-                                rayasResult.backAmountA + oyesBackAmount > 0 ? 'text-green-500' :
-                                rayasResult.backAmountA + oyesBackAmount < 0 ? 'text-destructive' : ''
-                              )}>
-                                {rayasResult.backRayasA} vs {rayasResult.backRayasB}r
+                              <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-500' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
+                                {frontTotalAmount >= 0 ? '+' : ''}${frontTotalAmount}
+                              </span>
+                            </div>
+                            
+                            {/* Back 9 row */}
+                            <div className="grid grid-cols-5 gap-1 items-center text-xs py-1 border-t border-border/20 pt-2">
+                              <div className="font-medium text-muted-foreground">Back 9</div>
+                              <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-500' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
-                              <div className={cn(
-                                'text-right font-bold text-base',
-                                rayasResult.totalAmountA + oyesFrontAmount + oyesBackAmount > 0 ? 'text-green-500' :
-                                rayasResult.totalAmountA + oyesFrontAmount + oyesBackAmount < 0 ? 'text-destructive' : ''
-                              )}>
-                                {rayasResult.totalAmountA + oyesFrontAmount + oyesBackAmount >= 0 ? '+' : ''}${rayasResult.totalAmountA + oyesFrontAmount + oyesBackAmount}
+                              <div className={cn('text-center font-bold', unitsNet.back > 0 ? 'text-green-500' : unitsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {unitsNet.back !== 0 ? unitsNet.back : '-'}
                               </div>
+                              <div className={cn('text-center font-bold', oyesNet.back > 0 ? 'text-green-500' : oyesNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {oyesNet.back !== 0 ? oyesNet.back : '-'}
+                              </div>
+                              <div className={cn('text-center font-bold', medalNet.back > 0 ? 'text-green-500' : medalNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {medalNet.back !== 0 ? medalNet.back : '-'}
+                              </div>
+                            </div>
+                            
+                            {/* Back 9 total */}
+                            <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Total Back:</span>
+                                <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-500' : backTotalRayas < 0 ? 'text-destructive' : '')}>
+                                  {backTotalRayas}
+                                </span>
+                                <span className="text-muted-foreground">× ${backValue} =</span>
+                              </div>
+                              <span className={cn('font-bold', backTotalAmount > 0 ? 'text-green-500' : backTotalAmount < 0 ? 'text-destructive' : '')}>
+                                {backTotalAmount >= 0 ? '+' : ''}${backTotalAmount}
+                              </span>
+                            </div>
+                            
+                            {/* Medal Total row - only show when all 18 holes confirmed */}
+                            {hasAll18 && medalTotalAmount !== 0 && (
+                              <div className="flex items-center justify-between text-xs bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Medal Total</span>
+                                  <span className="text-muted-foreground text-[10px]">(1 raya)</span>
+                                </div>
+                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-500' : 'text-destructive')}>
+                                  {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Grand Total */}
+                            <div className="flex items-center justify-between text-sm font-bold border-t border-border/50 pt-2 mt-2">
+                              <span>TOTAL RAYAS</span>
+                              <span className={cn(grandTotal > 0 ? 'text-green-500' : grandTotal < 0 ? 'text-destructive' : '')}>
+                                {grandTotal >= 0 ? '+' : ''}${grandTotal}
+                              </span>
                             </div>
                             
                             {/* Variant indicator */}
                             <div className="text-[9px] text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                              Variante: {betConfig.rayas?.skinVariant === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'} | 
-                              Valores: Front ${frontValue}/r, Back ${backValue}/r, Medal ${medalValue}
+                              {betConfig.rayas?.skinVariant === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'} | 
+                              Front ${frontValue}, Back ${backValue}, Medal ${medalValue}
                             </div>
                           </div>
                         );
