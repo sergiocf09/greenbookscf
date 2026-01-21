@@ -425,6 +425,113 @@ const calculateRayasForPair = (
 };
 
 /**
+ * Process a single Oyes hole and return results
+ */
+const processOyesHole = (
+  holeNum: number,
+  segment: 'front' | 'back',
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  accumulatedOyes: number,
+  segmentValue: number,
+  summaries: BetSummary[],
+  detailsByPair: Map<string, RayaDetail[]>,
+  carriedFromFront: number = 0,
+  frontValue: number = 0
+): { won: boolean; winnerId: string | null } => {
+  // Find who has proximity numbers on this hole
+  const proximities: { playerId: string; proximity: number }[] = [];
+  
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    const holeScore = playerScores.find(s => s.holeNumber === holeNum);
+    if (holeScore?.oyesProximity) {
+      proximities.push({ playerId: player.id, proximity: holeScore.oyesProximity });
+    }
+  });
+  
+  if (proximities.length === 0) {
+    // Nobody on the green - accumulate
+    return { won: false, winnerId: null };
+  }
+  
+  // Find the absolute closest (lowest proximity number)
+  proximities.sort((a, b) => a.proximity - b.proximity);
+  const closestPlayer = proximities[0];
+  
+  // Calculate Oyes won: 1 (current) + accumulated for this segment
+  const currentSegmentOyes = 1 + accumulatedOyes;
+  
+  // The closest player wins rayas against ALL other players
+  players.forEach(rival => {
+    if (rival.id === closestPlayer.playerId) return;
+    
+    const pairKey = [closestPlayer.playerId, rival.id].sort().join('-');
+    
+    // Current segment Oyes
+    if (currentSegmentOyes > 0) {
+      summaries.push({
+        playerId: closestPlayer.playerId,
+        vsPlayer: rival.id,
+        betType: 'Rayas Oyes',
+        amount: currentSegmentOyes * segmentValue,
+        segment: segment,
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum}${currentSegmentOyes > 1 ? ` (${currentSegmentOyes} acum)` : ''}`,
+      });
+      summaries.push({
+        playerId: rival.id,
+        vsPlayer: closestPlayer.playerId,
+        betType: 'Rayas Oyes',
+        amount: -currentSegmentOyes * segmentValue,
+        segment: segment,
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum}`,
+      });
+    }
+    
+    // Carried Front Oyes (paid at front value, only in Back 9)
+    if (segment === 'back' && carriedFromFront > 0) {
+      summaries.push({
+        playerId: closestPlayer.playerId,
+        vsPlayer: rival.id,
+        betType: 'Rayas Oyes',
+        amount: carriedFromFront * frontValue,
+        segment: 'front',
+        holeNumber: holeNum,
+        description: `Oyes Carry del Front (${carriedFromFront})`,
+      });
+      summaries.push({
+        playerId: rival.id,
+        vsPlayer: closestPlayer.playerId,
+        betType: 'Rayas Oyes',
+        amount: -carriedFromFront * frontValue,
+        segment: 'front',
+        holeNumber: holeNum,
+        description: `Oyes Carry del Front`,
+      });
+    }
+    
+    // Add to details for audit
+    const totalOyesWon = currentSegmentOyes + (segment === 'back' ? carriedFromFront : 0);
+    if (!detailsByPair.has(pairKey)) {
+      detailsByPair.set(pairKey, []);
+    }
+    detailsByPair.get(pairKey)!.push({
+      source: 'oyes',
+      segment: segment,
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}${totalOyesWon > 1 ? ` (+${totalOyesWon - 1} acum)` : ''}`,
+      rayasCount: closestPlayer.playerId < rival.id ? totalOyesWon : -totalOyesWon,
+      valuePerRaya: segmentValue,
+      appliedSegment: segment,
+    });
+  });
+  
+  return { won: true, winnerId: closestPlayer.playerId };
+};
+
+/**
  * Calculate Oyes rayas for all players (absolute closest wins vs ALL)
  * Returns additional BetSummary entries for Oyes rayas
  */
@@ -441,122 +548,38 @@ const calculateOyesRayasForAll = (
   const frontValue = config.rayas.frontValue;
   const backValue = config.rayas.backValue;
   
+  // Separate Par 3s by segment
+  const frontPar3s = par3Holes.filter(h => h <= 9);
+  const backPar3s = par3Holes.filter(h => h > 9);
+  
   // Track accumulated Oyes per segment
   let frontAccumulatedOyes = 0;
-  let pendingFrontOyes = 0; // Carry to back
+  let backAccumulatedOyes = 0;
   
-  // Process each Par 3
-  par3Holes.forEach(holeNum => {
-    const segment = holeNum <= 9 ? 'front' : 'back';
-    const valuePerRaya = segment === 'front' ? frontValue : backValue;
-    
-    // Find who has proximity numbers on this hole
-    const proximities: { playerId: string; proximity: number }[] = [];
-    
-    players.forEach(player => {
-      const playerScores = scores.get(player.id) || [];
-      const holeScore = playerScores.find(s => s.holeNumber === holeNum);
-      if (holeScore?.oyesProximity) {
-        proximities.push({ playerId: player.id, proximity: holeScore.oyesProximity });
-      }
-    });
-    
-    if (proximities.length === 0) {
-      // Nobody on the green - accumulate
-      if (segment === 'front') {
-        frontAccumulatedOyes++;
-      } else {
-        pendingFrontOyes++; // This accumulates in back
-      }
-      return;
-    }
-    
-    // Find the absolute closest (lowest proximity number)
-    proximities.sort((a, b) => a.proximity - b.proximity);
-    const closestPlayer = proximities[0];
-    
-    // Calculate total Oyes won (current + accumulated)
-    let oyesWon = 1;
-    let carriedFromFront = 0;
-    
-    if (segment === 'front') {
-      oyesWon += frontAccumulatedOyes;
+  // Process Front 9 Par 3s first
+  frontPar3s.forEach(holeNum => {
+    const result = processOyesHole(holeNum, 'front', players, scores, frontAccumulatedOyes, frontValue, summaries, detailsByPair);
+    if (result.won) {
       frontAccumulatedOyes = 0;
     } else {
-      // Back 9
-      oyesWon += pendingFrontOyes;
-      carriedFromFront = pendingFrontOyes;
-      pendingFrontOyes = 0;
+      frontAccumulatedOyes++;
     }
-    
-    // The closest player wins rayas against ALL other players
-    players.forEach(rival => {
-      if (rival.id === closestPlayer.playerId) return;
-      
-      const pairKey = [closestPlayer.playerId, rival.id].sort().join('-');
-      
-      // Back Oyes
-      const backOyesCount = segment === 'back' ? (oyesWon - carriedFromFront) : 0;
-      if (backOyesCount > 0) {
-        summaries.push({
-          playerId: closestPlayer.playerId,
-          vsPlayer: rival.id,
-          betType: 'Rayas Oyes',
-          amount: backOyesCount * backValue,
-          segment: 'back',
-          holeNumber: holeNum,
-          description: `Oyes H${holeNum}${backOyesCount > 1 ? ` (${backOyesCount} acum)` : ''}`,
-        });
-        summaries.push({
-          playerId: rival.id,
-          vsPlayer: closestPlayer.playerId,
-          betType: 'Rayas Oyes',
-          amount: -backOyesCount * backValue,
-          segment: 'back',
-          holeNumber: holeNum,
-          description: `Oyes H${holeNum}`,
-        });
-      }
-      
-      // Front Oyes (or carried from front to back)
-      const frontOyesCount = segment === 'front' ? oyesWon : carriedFromFront;
-      if (frontOyesCount > 0) {
-        summaries.push({
-          playerId: closestPlayer.playerId,
-          vsPlayer: rival.id,
-          betType: 'Rayas Oyes',
-          amount: frontOyesCount * frontValue,
-          segment: 'front',
-          holeNumber: holeNum,
-          description: segment === 'front' 
-            ? `Oyes H${holeNum}${frontOyesCount > 1 ? ` (${frontOyesCount} acum)` : ''}`
-            : `Oyes Carry del Front (${frontOyesCount})`,
-        });
-        summaries.push({
-          playerId: rival.id,
-          vsPlayer: closestPlayer.playerId,
-          betType: 'Rayas Oyes',
-          amount: -frontOyesCount * frontValue,
-          segment: 'front',
-          holeNumber: holeNum,
-          description: segment === 'front' ? `Oyes H${holeNum}` : `Oyes Carry del Front`,
-        });
-      }
-      
-      // Add to details
-      if (!detailsByPair.has(pairKey)) {
-        detailsByPair.set(pairKey, []);
-      }
-      detailsByPair.get(pairKey)!.push({
-        source: 'oyes',
-        segment: segment,
-        holeNumber: holeNum,
-        description: `Oyes H${holeNum}${oyesWon > 1 ? ` (+${oyesWon - 1} acum)` : ''}`,
-        rayasCount: closestPlayer.playerId < rival.id ? oyesWon : -oyesWon,
-        valuePerRaya: valuePerRaya,
-        appliedSegment: segment,
-      });
-    });
+  });
+  
+  // Carry any unresolved Front Oyes to Back
+  const pendingFrontCarry = frontAccumulatedOyes;
+  
+  // Process Back 9 Par 3s
+  let frontCarryUsed = false;
+  backPar3s.forEach(holeNum => {
+    const carryToApply = !frontCarryUsed ? pendingFrontCarry : 0;
+    const result = processOyesHole(holeNum, 'back', players, scores, backAccumulatedOyes, backValue, summaries, detailsByPair, carryToApply, frontValue);
+    if (result.won) {
+      backAccumulatedOyes = 0;
+      if (!frontCarryUsed) frontCarryUsed = true;
+    } else {
+      backAccumulatedOyes++;
+    }
   });
   
   return { summaries, details: detailsByPair };
