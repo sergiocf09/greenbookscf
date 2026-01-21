@@ -15,7 +15,7 @@ export interface BetSummary {
 }
 
 // Get bilateral handicap for a specific pair of players
-const getBilateralHandicapForPair = (
+export const getBilateralHandicapForPair = (
   playerAId: string,
   playerBId: string,
   bilateralHandicaps?: BilateralHandicap[]
@@ -29,7 +29,7 @@ const getBilateralHandicapForPair = (
 
 // Recalculate net scores for a pair based on bilateral handicap overrides
 // Returns a new scores map with recalculated net scores for the pair
-const getAdjustedScoresForPair = (
+export const getAdjustedScoresForPair = (
   playerA: Player,
   playerB: Player,
   scores: Map<string, PlayerScore[]>,
@@ -1054,7 +1054,7 @@ export const calculateAllBets = (
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config, course),
-    ...calculateRayasBets(players, scores, config, course),
+    ...calculateRayasBets(players, scores, config, course, bilateralHandicaps),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides

@@ -13,8 +13,8 @@
  * - Skins accumulated from Front pay at Front rate when resolved in Back
  */
 
-import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { BetSummary } from './betCalculations';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
+import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair } from './betCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
 
 // Detailed raya tracking for audit
@@ -123,9 +123,13 @@ const calculateRayasForPair = (
   playerB: Player,
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): RayasPairResult => {
   const details: RayaDetail[] = [];
+  
+  // Get adjusted scores for this pair based on bilateral handicap overrides
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
   
   let frontRayasA = 0;
   let frontRayasB = 0;
@@ -141,8 +145,8 @@ const calculateRayasForPair = (
   // Front 9 skins
   let frontAccumulated = 0;
   for (let holeNum = 1; holeNum <= 9; holeNum++) {
-    const netA = getHoleNetScore(playerA.id, holeNum, scores);
-    const netB = getHoleNetScore(playerB.id, holeNum, scores);
+    const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
+    const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
     
     if (netA === null || netB === null) {
       if (useAccumulation) frontAccumulated++;
@@ -186,8 +190,8 @@ const calculateRayasForPair = (
   let pendingFrontCarry = useAccumulation ? frontAccumulated : 0;
   
   for (let holeNum = 10; holeNum <= 18; holeNum++) {
-    const netA = getHoleNetScore(playerA.id, holeNum, scores);
-    const netB = getHoleNetScore(playerB.id, holeNum, scores);
+    const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
+    const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
     
     if (netA === null || netB === null) {
       if (useAccumulation) backAccumulated++;
@@ -322,8 +326,8 @@ const calculateRayasForPair = (
   
   // =========== 4. MEDAL RAYAS ===========
   // Front medal
-  const frontTotalA = getSegmentNetTotal(playerA.id, scores, 'front');
-  const frontTotalB = getSegmentNetTotal(playerB.id, scores, 'front');
+  const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front');
+  const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front');
   if (frontTotalA < frontTotalB) {
     frontRayasA += 1;
     details.push({
@@ -347,8 +351,8 @@ const calculateRayasForPair = (
   }
   
   // Back medal
-  const backTotalA = getSegmentNetTotal(playerA.id, scores, 'back');
-  const backTotalB = getSegmentNetTotal(playerB.id, scores, 'back');
+  const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back');
+  const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back');
   if (backTotalA < backTotalB) {
     backRayasA += 1;
     details.push({
@@ -372,8 +376,8 @@ const calculateRayasForPair = (
   }
   
   // Medal Total (additional raya)
-  const totalA = getSegmentNetTotal(playerA.id, scores, 'total');
-  const totalB = getSegmentNetTotal(playerB.id, scores, 'total');
+  const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total');
+  const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total');
   let medalTotalRayaWinner: string | null = null;
   let medalTotalAmountA = 0;
   
@@ -592,7 +596,8 @@ export const calculateRayasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.rayas?.enabled) return [];
   
@@ -608,7 +613,7 @@ export const calculateRayasBets = (
       const playerA = players[i];
       const playerB = players[j];
       
-      const result = calculateRayasForPair(playerA, playerB, scores, config, course);
+      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
@@ -683,9 +688,10 @@ export const getRayasDetailForPair = (
   playerB: Player,
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): RayasPairResult => {
-  return calculateRayasForPair(playerA, playerB, scores, config, course);
+  return calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
 };
 
 /**
@@ -697,13 +703,14 @@ export const getRayasSummaryBySource = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  players: Player[]
+  players: Player[],
+  bilateralHandicaps?: BilateralHandicap[]
 ): { source: string; frontRayas: number; backRayas: number; totalRayas: number }[] => {
   const playerA = players.find(p => p.id === playerAId);
   const playerB = players.find(p => p.id === playerBId);
   if (!playerA || !playerB) return [];
   
-  const result = calculateRayasForPair(playerA, playerB, scores, config, course);
+  const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
   
   const sources: Record<string, { front: number; back: number; total: number }> = {
     skins: { front: 0, back: 0, total: 0 },
