@@ -78,11 +78,13 @@ export const getOyesesPairResult = (
     
     if (!scoreA || !scoreB) continue;
     
-    totalPlayedHoles++;
     const proximityA = scoreA.oyesProximity;
     const proximityB = scoreB.oyesProximity;
     
     if (pairModality === 'acumulados') {
+      // In Acumulados, a hole counts as played even if both miss (it can carry).
+      totalPlayedHoles++;
+
       const hasNumberA = proximityA !== null && proximityA !== undefined;
       const hasNumberB = proximityB !== null && proximityB !== undefined;
       
@@ -120,11 +122,14 @@ export const getOyesesPairResult = (
       pendingAccumulatedHoles = 0;
       
     } else {
-      // Sangrón: Direct comparison on every hole
+      // Sangrón: A hole only counts once BOTH players have a proximity value.
+      // (Prevents an unentered/missing Par 3 from blocking Zapato.)
       if (proximityA === null || proximityA === undefined ||
           proximityB === null || proximityB === undefined) {
         continue;
       }
+
+      totalPlayedHoles++;
       
       if (proximityA < proximityB) {
         holesWonByA++;
@@ -359,11 +364,13 @@ export const calculateOyesesBets = (
         
         if (!scoreA || !scoreB) continue;
         
-        totalPlayedHoles++;
         const proximityA = scoreA.oyesProximity;
         const proximityB = scoreB.oyesProximity;
         
-        if (pairModality === 'acumulados') {
+         if (pairModality === 'acumulados') {
+           // In Acumulados, the hole counts as played even if both miss (carry).
+           totalPlayedHoles++;
+
           // Acumulados: null proximity means didn't reach green in 1
           const hasNumberA = proximityA !== null && proximityA !== undefined;
           const hasNumberB = proximityB !== null && proximityB !== undefined;
@@ -473,7 +480,7 @@ export const calculateOyesesBets = (
           accumulated = 0;
           pendingAccumulatedHoles = 0;
           
-        } else {
+         } else {
           // Sangrón: No accumulation, everyone should have a number
           // In Sangrón mode, bet ALWAYS settles - players MUST have a number
           if (proximityA === null || proximityA === undefined ||
@@ -481,6 +488,9 @@ export const calculateOyesesBets = (
             // Skip if not yet entered (but UI should enforce entry in Sangrón)
             continue;
           }
+
+           // Only count as played once BOTH proximities exist.
+           totalPlayedHoles++;
           
           if (proximityA < proximityB) {
             // A is closer
