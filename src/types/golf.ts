@@ -148,6 +148,14 @@ export interface OyesHoleResult {
   reachedGreen: boolean; // Only relevant for acumulados mode
 }
 
+// Bilateral handicap override for a player pair
+export interface BilateralHandicap {
+  playerAId: string;
+  playerBId: string;
+  playerAHandicap: number;
+  playerBHandicap: number;
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -162,6 +170,7 @@ export interface BetConfig {
   carritos: CarritosBetConfig;
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
+  bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
 }
 
 export interface MedalBetConfig {

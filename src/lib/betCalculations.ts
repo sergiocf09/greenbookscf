@@ -1,5 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
-import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 
 export interface BetSummary {
@@ -10,14 +10,6 @@ export interface BetSummary {
   segment: 'front' | 'back' | 'total' | 'hole';
   holeNumber?: number;
   description?: string;
-}
-
-export interface BilateralHandicap {
-  playerAId: string;
-  playerBId: string;
-  betType: string;
-  playerAHandicap: number;
-  playerBHandicap: number;
 }
 
 // Calculate net score for a segment (front 9, back 9, or total)
