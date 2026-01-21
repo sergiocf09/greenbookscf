@@ -2,10 +2,141 @@
 import { Player, PlayerScore, BetConfig, GolfCourse, OyesModality } from '@/types/golf';
 import { BetSummary } from './betCalculations';
 
-interface OyesAccumulation {
-  pairKey: string; // "playerA-playerB"
-  accumulated: number;
+/**
+ * Oyeses result per player per hole for display
+ */
+export interface OyesHoleDisplay {
+  holeNumber: number;
+  playerOrder: number | null; // proximity order (1=closest), null = no green / not set
+  isAccumulated: boolean; // true if this hole added to accumulation
+  isWin: boolean; // true if player won this hole vs the rival
+  isLoss: boolean; // true if player lost this hole vs the rival
+  accumulatedAmount?: number; // if won with accumulation, shows total amount
 }
+
+/**
+ * Get Oyeses display data for a specific player pair
+ * Shows the proximity order per hole and accumulation status
+ */
+export const getOyesesDisplayData = (
+  playerAId: string,
+  playerBId: string,
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse
+): { playerAHoles: OyesHoleDisplay[]; playerBHoles: OyesHoleDisplay[] } => {
+  const playerAHoles: OyesHoleDisplay[] = [];
+  const playerBHoles: OyesHoleDisplay[] = [];
+  
+  if (!config.oyeses.enabled) return { playerAHoles, playerBHoles };
+  
+  const amount = config.oyeses.amount;
+  
+  // Find Par 3 holes
+  const par3Holes = course.holes
+    .filter(h => h.par === 3)
+    .map(h => h.number);
+  
+  // Get player modalities
+  const getPlayerModality = (playerId: string): OyesModality | null => {
+    const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === playerId);
+    if (!playerConfig?.enabled) return null;
+    return playerConfig.modality;
+  };
+  
+  const modalityA = getPlayerModality(playerAId);
+  const modalityB = getPlayerModality(playerBId);
+  
+  // Skip if either player doesn't have Oyeses enabled
+  if (!modalityA || !modalityB) return { playerAHoles, playerBHoles };
+  
+  // Determine the pair's effective modality
+  // If both same → that modality. If mixed → Sangrón takes precedence (no accumulation)
+  const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
+  
+  let accumulated = 0;
+  
+  for (const holeNum of par3Holes) {
+    const scoresA = scores.get(playerAId) || [];
+    const scoresB = scores.get(playerBId) || [];
+    
+    const scoreA = scoresA.find(s => s.holeNumber === holeNum);
+    const scoreB = scoresB.find(s => s.holeNumber === holeNum);
+    
+    const proximityA = scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximity ?? null;
+    
+    let holeA: OyesHoleDisplay = {
+      holeNumber: holeNum,
+      playerOrder: proximityA,
+      isAccumulated: false,
+      isWin: false,
+      isLoss: false,
+    };
+    
+    let holeB: OyesHoleDisplay = {
+      holeNumber: holeNum,
+      playerOrder: proximityB,
+      isAccumulated: false,
+      isWin: false,
+      isLoss: false,
+    };
+    
+    if (pairModality === 'acumulados') {
+      // Acumulados: null means didn't reach green in 1, accumulates
+      const hasNumberA = proximityA !== null;
+      const hasNumberB = proximityB !== null;
+      
+      if (!hasNumberA && !hasNumberB) {
+        // Neither reached green - accumulate
+        accumulated += amount;
+        holeA.isAccumulated = true;
+        holeB.isAccumulated = true;
+      } else if (hasNumberA && !hasNumberB) {
+        // A wins (has number, B doesn't)
+        holeA.isWin = true;
+        holeA.accumulatedAmount = amount + accumulated;
+        holeB.isLoss = true;
+        accumulated = 0;
+      } else if (!hasNumberA && hasNumberB) {
+        // B wins
+        holeB.isWin = true;
+        holeB.accumulatedAmount = amount + accumulated;
+        holeA.isLoss = true;
+        accumulated = 0;
+      } else {
+        // Both have numbers - compare
+        if (proximityA! < proximityB!) {
+          holeA.isWin = true;
+          holeA.accumulatedAmount = amount + accumulated;
+          holeB.isLoss = true;
+        } else if (proximityB! < proximityA!) {
+          holeB.isWin = true;
+          holeB.accumulatedAmount = amount + accumulated;
+          holeA.isLoss = true;
+        }
+        // Tie = no winner, but accumulation resets
+        accumulated = 0;
+      }
+    } else {
+      // Sangrón: Everyone always has a number, no accumulation
+      if (proximityA !== null && proximityB !== null) {
+        if (proximityA < proximityB) {
+          holeA.isWin = true;
+          holeB.isLoss = true;
+        } else if (proximityB < proximityA) {
+          holeB.isWin = true;
+          holeA.isLoss = true;
+        }
+      }
+    }
+    
+    playerAHoles.push(holeA);
+    playerBHoles.push(holeB);
+  }
+  
+  return { playerAHoles, playerBHoles };
+};
 
 /**
  * Calculate Oyeses bets for all player pairs
@@ -13,10 +144,11 @@ interface OyesAccumulation {
  * Rules:
  * - Only applies to Par 3 holes
  * - Acumulados mode: Must reach green in 1 stroke to get a number. 
- *   If no one reaches green, bet accumulates to next Par 3.
- * - Sangrón mode: Everyone gets a number, no accumulation.
- * - Hierarchy: 1 beats all, 2 beats 3,4,5..., etc.
- * - Each pair settles independently
+ *   If neither player reaches green, bet accumulates to next Par 3.
+ *   Winner is the one with lower proximity number (1 beats 2, 2 beats 3, etc.)
+ * - Sangrón mode: Everyone MUST be assigned a number for each Par 3.
+ *   No accumulation - bet is always settled on each Par 3.
+ * - Each pair settles independently (Player A vs B is separate from A vs C)
  */
 export const calculateOyesesBets = (
   players: Player[],
@@ -41,11 +173,6 @@ export const calculateOyesesBets = (
     return playerConfig.modality;
   };
   
-  // Track accumulations per pair (for Acumulados mode)
-  const accumulations = new Map<string, number>();
-  
-  const getPairKey = (a: string, b: string) => [a, b].sort().join('-');
-  
   // Process each pair of players
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -58,11 +185,12 @@ export const calculateOyesesBets = (
       // Skip if either player doesn't have Oyeses enabled
       if (!modalityA || !modalityB) continue;
       
-      const pairKey = getPairKey(playerA.id, playerB.id);
-      
       // Determine the pair's effective modality
       // If both same → that modality. If mixed → Sangrón takes precedence (no accumulation)
       const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
+      
+      // Track accumulation for this specific pair
+      let accumulated = 0;
       
       // Process each Par 3 hole
       for (const holeNum of par3Holes) {
@@ -77,22 +205,19 @@ export const calculateOyesesBets = (
         const proximityA = scoreA.oyesProximity;
         const proximityB = scoreB.oyesProximity;
         
-        // Current accumulation for this pair
-        const currentAccum = accumulations.get(pairKey) || 0;
-        
         if (pairModality === 'acumulados') {
-          // Acumulados: null proximity means no green in 1, loses to anyone with number
+          // Acumulados: null proximity means didn't reach green in 1
           const hasNumberA = proximityA !== null && proximityA !== undefined;
           const hasNumberB = proximityB !== null && proximityB !== undefined;
           
           if (!hasNumberA && !hasNumberB) {
             // Neither reached green - accumulate
-            accumulations.set(pairKey, currentAccum + amount);
+            accumulated += amount;
             continue;
           }
           
           // At least one has a number - settle
-          const totalAmount = amount + currentAccum;
+          const totalAmount = amount + accumulated;
           
           if (hasNumberA && !hasNumberB) {
             // A wins (has number, B doesn't)
@@ -103,7 +228,7 @@ export const calculateOyesesBets = (
               amount: totalAmount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityA} vs Sin Green${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+              description: `#${proximityA} vs ✗${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
             summaries.push({
               playerId: playerB.id,
@@ -112,7 +237,7 @@ export const calculateOyesesBets = (
               amount: -totalAmount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `Sin Green vs #${proximityA}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+              description: `✗ vs #${proximityA}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
           } else if (!hasNumberA && hasNumberB) {
             // B wins (has number, A doesn't)
@@ -123,7 +248,7 @@ export const calculateOyesesBets = (
               amount: totalAmount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityB} vs Sin Green${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+              description: `#${proximityB} vs ✗${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
             summaries.push({
               playerId: playerA.id,
@@ -132,10 +257,10 @@ export const calculateOyesesBets = (
               amount: -totalAmount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `Sin Green vs #${proximityB}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+              description: `✗ vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
           } else {
-            // Both have numbers - compare proximity
+            // Both have numbers - compare proximity (lower wins)
             if (proximityA! < proximityB!) {
               // A is closer
               summaries.push({
@@ -145,7 +270,7 @@ export const calculateOyesesBets = (
                 amount: totalAmount,
                 segment: 'hole',
                 holeNumber: holeNum,
-                description: `#${proximityA} vs #${proximityB}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+                description: `#${proximityA} vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
               summaries.push({
                 playerId: playerB.id,
@@ -154,7 +279,7 @@ export const calculateOyesesBets = (
                 amount: -totalAmount,
                 segment: 'hole',
                 holeNumber: holeNum,
-                description: `#${proximityB} vs #${proximityA}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+                description: `#${proximityB} vs #${proximityA}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
             } else if (proximityB! < proximityA!) {
               // B is closer
@@ -165,7 +290,7 @@ export const calculateOyesesBets = (
                 amount: totalAmount,
                 segment: 'hole',
                 holeNumber: holeNum,
-                description: `#${proximityB} vs #${proximityA}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+                description: `#${proximityB} vs #${proximityA}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
               summaries.push({
                 playerId: playerA.id,
@@ -174,20 +299,21 @@ export const calculateOyesesBets = (
                 amount: -totalAmount,
                 segment: 'hole',
                 holeNumber: holeNum,
-                description: `#${proximityA} vs #${proximityB}${currentAccum > 0 ? ` (+$${currentAccum} acum)` : ''}`,
+                description: `#${proximityA} vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
             }
-            // Tie = no money changes hands, but accumulation resets
+            // Tie = no money changes hands
           }
           
-          // Reset accumulation after settlement
-          accumulations.set(pairKey, 0);
+          // Reset accumulation after settlement attempt (even on tie)
+          accumulated = 0;
           
         } else {
           // Sangrón: No accumulation, everyone should have a number
-          // Skip if either doesn't have a number (shouldn't happen in Sangrón)
+          // In Sangrón mode, bet ALWAYS settles - players MUST have a number
           if (proximityA === null || proximityA === undefined ||
               proximityB === null || proximityB === undefined) {
+            // Skip if not yet entered (but UI should enforce entry in Sangrón)
             continue;
           }
           
@@ -200,7 +326,7 @@ export const calculateOyesesBets = (
               amount: amount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityA} vs #${proximityB} (Sangrón)`,
+              description: `#${proximityA} vs #${proximityB}`,
             });
             summaries.push({
               playerId: playerB.id,
@@ -209,7 +335,7 @@ export const calculateOyesesBets = (
               amount: -amount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityB} vs #${proximityA} (Sangrón)`,
+              description: `#${proximityB} vs #${proximityA}`,
             });
           } else if (proximityB < proximityA) {
             // B is closer
@@ -220,7 +346,7 @@ export const calculateOyesesBets = (
               amount: amount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityB} vs #${proximityA} (Sangrón)`,
+              description: `#${proximityB} vs #${proximityA}`,
             });
             summaries.push({
               playerId: playerA.id,
@@ -229,7 +355,7 @@ export const calculateOyesesBets = (
               amount: -amount,
               segment: 'hole',
               holeNumber: holeNum,
-              description: `#${proximityA} vs #${proximityB} (Sangrón)`,
+              description: `#${proximityA} vs #${proximityB}`,
             });
           }
           // Tie = no money changes hands
