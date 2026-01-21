@@ -1350,20 +1350,21 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     ) : group.key === 'oyeses' ? (
                       // Oyeses detail - show proximity order per player per hole
                       (() => {
+                        // Use confirmedScores for display to match calculation
                         const oyesesData = getOyesesDisplayData(
                           player.id,
                           rival.id,
-                          allScores,
+                          confirmedScores,
                           betConfig,
                           course
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
-                        // Get zapato (100% bonus) data
+                        // Get zapato (100% bonus) data - also use confirmedScores
                         const pairResult = getOyesesPairResult(
                           player.id,
                           rival.id,
-                          allScores,
+                          confirmedScores,
                           betConfig,
                           course
                         );
@@ -1491,6 +1492,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 )}>
                                   {isPlayerZapatoWinner ? '+' : '-'}${zapatoBonus}
                                 </div>
+                              </div>
+                            )}
+                            
+                            {/* Debug info - shows wins/settled for verification */}
+                            {pairResult && (
+                              <div className="text-[9px] text-muted-foreground bg-muted/20 p-1 rounded mb-1">
+                                Ganados: {player.name.substring(0,3)}={pairResult.winsA}, {rival.name.substring(0,3)}={pairResult.winsB} | 
+                                Resueltos: {pairResult.settledHoles} | 
+                                Zapato: {pairResult.hasZapato ? `Sí ($${pairResult.zapatoBonus})` : 'No'}
                               </div>
                             )}
                             
