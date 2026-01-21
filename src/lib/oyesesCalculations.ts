@@ -15,6 +15,135 @@ export interface OyesHoleDisplay {
 }
 
 /**
+ * Oyeses pair result summary for 100% bonus display
+ */
+export interface OyesesPairResult {
+  playerAId: string;
+  playerBId: string;
+  winsA: number;
+  winsB: number;
+  settledHoles: number;
+  baseTotal: number; // Total before 100% bonus
+  hasZapato: boolean; // true if someone won 100%
+  zapatoWinnerId: string | null; // who got the zapato bonus
+  zapatoBonus: number; // the bonus amount (equal to base, making total 2x)
+}
+
+/**
+ * Get Oyeses pair result for zapato detection
+ */
+export const getOyesesPairResult = (
+  playerAId: string,
+  playerBId: string,
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse
+): OyesesPairResult | null => {
+  if (!config.oyeses.enabled) return null;
+  
+  const amount = config.oyeses.amount;
+  
+  // Find Par 3 holes
+  const par3Holes = course.holes
+    .filter(h => h.par === 3)
+    .map(h => h.number);
+  
+  // Get player modalities
+  const getPlayerModality = (playerId: string): OyesModality | null => {
+    const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === playerId);
+    if (!playerConfig?.enabled) return null;
+    return playerConfig.modality;
+  };
+  
+  const modalityA = getPlayerModality(playerAId);
+  const modalityB = getPlayerModality(playerBId);
+  
+  if (!modalityA || !modalityB) return null;
+  
+  const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
+  
+  let accumulated = 0;
+  let winsA = 0;
+  let winsB = 0;
+  let settledHoles = 0;
+  let baseTotal = 0; // Total amount won by A (positive) or B (negative)
+  
+  for (const holeNum of par3Holes) {
+    const scoresA = scores.get(playerAId) || [];
+    const scoresB = scores.get(playerBId) || [];
+    
+    const scoreA = scoresA.find(s => s.holeNumber === holeNum);
+    const scoreB = scoresB.find(s => s.holeNumber === holeNum);
+    
+    if (!scoreA || !scoreB) continue;
+    
+    const proximityA = scoreA.oyesProximity;
+    const proximityB = scoreB.oyesProximity;
+    
+    if (pairModality === 'acumulados') {
+      const hasNumberA = proximityA !== null && proximityA !== undefined;
+      const hasNumberB = proximityB !== null && proximityB !== undefined;
+      
+      if (!hasNumberA && !hasNumberB) {
+        accumulated += amount;
+        continue;
+      }
+      
+      const totalAmount = amount + accumulated;
+      settledHoles++;
+      
+      if (hasNumberA && !hasNumberB) {
+        winsA++;
+        baseTotal += totalAmount;
+      } else if (!hasNumberA && hasNumberB) {
+        winsB++;
+        baseTotal -= totalAmount;
+      } else {
+        if (proximityA! < proximityB!) {
+          winsA++;
+          baseTotal += totalAmount;
+        } else if (proximityB! < proximityA!) {
+          winsB++;
+          baseTotal -= totalAmount;
+        }
+      }
+      accumulated = 0;
+    } else {
+      if (proximityA === null || proximityA === undefined ||
+          proximityB === null || proximityB === undefined) {
+        continue;
+      }
+      
+      settledHoles++;
+      
+      if (proximityA < proximityB) {
+        winsA++;
+        baseTotal += amount;
+      } else if (proximityB < proximityA) {
+        winsB++;
+        baseTotal -= amount;
+      }
+    }
+  }
+  
+  const hasZapato = settledHoles > 0 && (winsA === settledHoles || winsB === settledHoles);
+  const zapatoWinnerId = hasZapato ? (winsA === settledHoles ? playerAId : playerBId) : null;
+  const zapatoBonus = hasZapato ? Math.abs(baseTotal) : 0;
+  
+  return {
+    playerAId,
+    playerBId,
+    winsA,
+    winsB,
+    settledHoles,
+    baseTotal: Math.abs(baseTotal),
+    hasZapato,
+    zapatoWinnerId,
+    zapatoBonus,
+  };
+};
+
+/**
  * Get Oyeses display data for a specific player pair
  * Shows the proximity order per hole and accumulation status
  */
@@ -381,19 +510,37 @@ export const calculateOyesesBets = (
         }
       }
       
-      // Check for 100% win rule: if one player won ALL settled holes, DOUBLE the amounts
+      // Check for 100% win rule: if one player won ALL settled holes, add Zapato bonus
       const hasHundredPercentWinner = settledHoles > 0 && 
         (winsA === settledHoles || winsB === settledHoles);
       
       if (hasHundredPercentWinner && pairSummaries.length > 0) {
-        // Double all amounts for this pair
-        for (const summary of pairSummaries) {
-          summary.amount *= 2;
-          // Add indicator to description
-          if (!summary.description?.includes('(100% x2)')) {
-            summary.description = (summary.description || '') + ' (100% x2)';
-          }
-        }
+        // Calculate the base total for this pair
+        const baseTotal = pairSummaries
+          .filter(s => s.playerId === playerA.id)
+          .reduce((sum, s) => sum + s.amount, 0);
+        
+        const zapatoWinnerId = winsA === settledHoles ? playerA.id : playerB.id;
+        const zapatoLoserId = zapatoWinnerId === playerA.id ? playerB.id : playerA.id;
+        const zapatoBonus = Math.abs(baseTotal);
+        
+        // Add Zapato bonus as separate entry
+        pairSummaries.push({
+          playerId: zapatoWinnerId,
+          vsPlayer: zapatoLoserId,
+          betType: 'Oyes',
+          amount: zapatoBonus,
+          segment: 'total',
+          description: '🥾 Zapato (100%)',
+        });
+        pairSummaries.push({
+          playerId: zapatoLoserId,
+          vsPlayer: zapatoWinnerId,
+          betType: 'Oyes',
+          amount: -zapatoBonus,
+          segment: 'total',
+          description: '🥾 Zapato (100%)',
+        });
       }
       
       // Add pair summaries to main list

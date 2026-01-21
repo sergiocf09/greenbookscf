@@ -9,7 +9,7 @@ import {
   groupSummariesByType,
   BetSummary 
 } from '@/lib/betCalculations';
-import { getOyesesDisplayData } from '@/lib/oyesesCalculations';
+import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -1359,6 +1359,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
+                        // Get zapato (100% bonus) data
+                        const pairResult = getOyesesPairResult(
+                          player.id,
+                          rival.id,
+                          allScores,
+                          betConfig,
+                          course
+                        );
+                        
                         if (playerAHoles.length === 0) {
                           return (
                             <div className="px-4 py-2 pl-10 bg-background/50 text-xs text-muted-foreground">
@@ -1366,6 +1375,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
                           );
                         }
+                        
+                        const oyesTotal = groupedSummaries['Oyes']?.total || 0;
+                        const hasZapato = pairResult?.hasZapato || false;
+                        const zapatoBonus = pairResult?.zapatoBonus || 0;
+                        const zapatoWinnerId = pairResult?.zapatoWinnerId;
+                        const isPlayerZapatoWinner = zapatoWinnerId === player.id;
+                        
+                        // Base amount is total minus zapato bonus (which is half of total when zapato is active)
+                        const baseAmount = hasZapato ? Math.abs(oyesTotal) / 2 : Math.abs(oyesTotal);
                         
                         return (
                           <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
@@ -1408,11 +1426,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 ))}
                                 <div className={cn(
                                   'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                  (groupedSummaries['Oyes']?.total || 0) > 0 ? 'bg-green-500/20 text-green-600' :
-                                  (groupedSummaries['Oyes']?.total || 0) < 0 ? 'bg-destructive/20 text-destructive' :
+                                  oyesTotal > 0 ? 'bg-green-500/20 text-green-600' :
+                                  oyesTotal < 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${Math.abs(groupedSummaries['Oyes']?.total || 0)}
+                                  ${Math.abs(oyesTotal)}
                                 </div>
                               </div>
                             </div>
@@ -1443,14 +1461,38 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 ))}
                                 <div className={cn(
                                   'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                  (groupedSummaries['Oyes']?.total || 0) < 0 ? 'bg-green-500/20 text-green-600' :
-                                  (groupedSummaries['Oyes']?.total || 0) > 0 ? 'bg-destructive/20 text-destructive' :
+                                  oyesTotal < 0 ? 'bg-green-500/20 text-green-600' :
+                                  oyesTotal > 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${Math.abs(groupedSummaries['Oyes']?.total || 0)}
+                                  ${Math.abs(oyesTotal)}
                                 </div>
                               </div>
                             </div>
+                            
+                            {/* Zapato bonus display when 100% winner */}
+                            {hasZapato && (
+                              <div className={cn(
+                                'flex items-center justify-between p-2 rounded-lg border',
+                                isPlayerZapatoWinner 
+                                  ? 'bg-green-500/10 border-green-500/30' 
+                                  : 'bg-destructive/10 border-destructive/30'
+                              )}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">🥾</span>
+                                  <div>
+                                    <span className="font-bold text-sm">Zapato</span>
+                                    <span className="text-xs text-muted-foreground ml-1">(100% ganados)</span>
+                                  </div>
+                                </div>
+                                <div className={cn(
+                                  'font-bold text-sm',
+                                  isPlayerZapatoWinner ? 'text-green-600' : 'text-destructive'
+                                )}>
+                                  {isPlayerZapatoWinner ? '+' : '-'}${zapatoBonus}
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Legend */}
                             <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/30">
@@ -1458,6 +1500,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/20"></span>Perdido</span>
                               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-accent/30"></span>Acumulado</span>
                               <span className="flex items-center gap-1">✗ = Sin green</span>
+                              {hasZapato && <span className="flex items-center gap-1">🥾 = Bonus 100%</span>}
                             </div>
                           </div>
                         );
