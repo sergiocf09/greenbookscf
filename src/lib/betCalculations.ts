@@ -962,6 +962,7 @@ export const calculateAllBets = (
     ...calculatePressureBets(players, scores, config),
     ...calculateSkinsBets(players, scores, config),
     ...calculateCarosBets(players, scores, config),
+    ...calculateOyesesBets(players, scores, config, course),
     ...calculateUnitsBets(players, scores, config, course),
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),

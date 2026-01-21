@@ -988,6 +988,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
+    // Oyeses (before Units as per spec)
+    if (betConfig.oyeses.enabled) {
+      groups.push({
+        key: 'oyeses',
+        label: 'Oyeses',
+        configKey: 'oyeses',
+        segments: [{ label: 'Par 3s', key: 'oyeses_detail' }],
+        getTotal: () => groupedSummaries['Oyes']?.total || 0,
+        getSegmentData: () => {
+          const oyesSummary = groupedSummaries['Oyes'];
+          const details = oyesSummary?.details || [];
+          const wins = details.filter(d => d.amount > 0).length;
+          const losses = details.filter(d => d.amount < 0).length;
+          return { 
+            playerNet: wins, 
+            rivalNet: losses, 
+            amount: oyesSummary?.total || 0 
+          };
+        },
+      });
+    }
+    
     // Unidades
     if (betConfig.units.enabled) {
       groups.push({
