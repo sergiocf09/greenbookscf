@@ -542,6 +542,7 @@ export type Database = {
       }
       rounds: {
         Row: {
+          bet_config: Json | null
           course_id: string
           created_at: string
           date: string
@@ -552,6 +553,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bet_config?: Json | null
           course_id: string
           created_at?: string
           date?: string
@@ -562,6 +564,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bet_config?: Json | null
           course_id?: string
           created_at?: string
           date?: string
@@ -702,6 +705,10 @@ export type Database = {
         | "carritos_front"
         | "carritos_back"
         | "carritos_total"
+        | "rayas_front"
+        | "rayas_back"
+        | "rayas_medal_total"
+        | "rayas_oyes"
       marker_type:
         | "birdie"
         | "eagle"
@@ -864,6 +871,10 @@ export const Constants = {
         "carritos_front",
         "carritos_back",
         "carritos_total",
+        "rayas_front",
+        "rayas_back",
+        "rayas_medal_total",
+        "rayas_oyes",
       ],
       marker_type: [
         "birdie",
