@@ -787,18 +787,59 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     updateBetOverride(betType, { enabled });
   };
   
-  // Calculate net scores for display
-  const getNetScoreForSegment = (playerId: string, segment: 'front' | 'back' | 'total') => {
-    const scores = confirmedScores.get(playerId) || [];
-    let filtered: PlayerScore[];
+  // Calculate net scores for display with bilateral handicap overrides
+  const getNetScoreForSegmentWithBilateral = (
+    playerId: string, 
+    rivalId: string, 
+    segment: 'front' | 'back' | 'total'
+  ): number => {
+    const playerScores = confirmedScores.get(playerId) || [];
+    
+    // Check if there's a bilateral handicap override for this pair
+    const override = betConfig.bilateralHandicaps?.find(
+      h => (h.playerAId === playerId && h.playerBId === rivalId) ||
+           (h.playerAId === rivalId && h.playerBId === playerId)
+    );
+    
+    let filtered = playerScores;
     if (segment === 'front') {
-      filtered = scores.filter(s => s.holeNumber >= 1 && s.holeNumber <= 9);
+      filtered = playerScores.filter(s => s.holeNumber >= 1 && s.holeNumber <= 9);
     } else if (segment === 'back') {
-      filtered = scores.filter(s => s.holeNumber >= 10 && s.holeNumber <= 18);
-    } else {
-      filtered = scores;
+      filtered = playerScores.filter(s => s.holeNumber >= 10 && s.holeNumber <= 18);
     }
-    return filtered.reduce((sum, s) => sum + s.netScore, 0);
+    
+    // If no override, use existing net scores
+    if (!override) {
+      return filtered.reduce((sum, s) => sum + s.netScore, 0);
+    }
+    
+    // Apply bilateral handicap override
+    const isPlayerA = override.playerAId === playerId;
+    const overrideHandicap = isPlayerA ? override.playerAHandicap : override.playerBHandicap;
+    
+    // Import calculateStrokesPerHole logic inline to recalculate
+    const strokesPerHole = new Array(18).fill(0);
+    const sortedHoles = [...course.holes].sort((a, b) => a.handicapIndex - b.handicapIndex);
+    let remainingStrokes = Math.round(overrideHandicap);
+    
+    // First pass
+    for (const hole of sortedHoles) {
+      if (remainingStrokes <= 0) break;
+      strokesPerHole[hole.number - 1] += 1;
+      remainingStrokes--;
+    }
+    // Second pass for handicaps > 18
+    for (const hole of sortedHoles) {
+      if (remainingStrokes <= 0) break;
+      strokesPerHole[hole.number - 1] += 1;
+      remainingStrokes--;
+    }
+    
+    // Calculate net with overridden strokes received
+    return filtered.reduce((sum, s) => {
+      const adjustedNet = s.strokes - strokesPerHole[s.holeNumber - 1];
+      return sum + adjustedNet;
+    }, 0);
   };
 
   // Get units/manchas details for display - including Cuatriput in manchas with color coding
@@ -876,8 +917,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           const segment = segmentKey === 'medal_front' ? 'front' : segmentKey === 'medal_back' ? 'back' : 'total';
           const summaryKey = segmentKey === 'medal_front' ? 'Medal Front 9' : segmentKey === 'medal_back' ? 'Medal Back 9' : 'Medal Total';
           return {
-            playerNet: getNetScoreForSegment(player.id, segment),
-            rivalNet: getNetScoreForSegment(rival.id, segment),
+            playerNet: getNetScoreForSegmentWithBilateral(player.id, rival.id, segment),
+            rivalNet: getNetScoreForSegmentWithBilateral(rival.id, player.id, segment),
             amount: groupedSummaries[summaryKey]?.total || 0,
           };
         },
