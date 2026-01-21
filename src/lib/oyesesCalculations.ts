@@ -63,10 +63,11 @@ export const getOyesesPairResult = (
   const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
   
   let accumulated = 0;
-  let winsA = 0;
-  let winsB = 0;
-  let settledHoles = 0;
-  let baseTotal = 0; // Total amount won by A (positive) or B (negative)
+  let pendingAccumulatedHoles = 0; // Holes accumulated but not yet won
+  let holesWonByA = 0; // Total holes "owned" by A (including accumulated ones when won)
+  let holesWonByB = 0; // Total holes "owned" by B
+  let totalPlayedHoles = 0; // Total Par 3s that have been played
+  let baseTotal = 0; // Money won by A (positive) or B (negative)
   
   for (const holeNum of par3Holes) {
     const scoresA = scores.get(playerAId) || [];
@@ -77,6 +78,7 @@ export const getOyesesPairResult = (
     
     if (!scoreA || !scoreB) continue;
     
+    totalPlayedHoles++;
     const proximityA = scoreA.oyesProximity;
     const proximityB = scoreB.oyesProximity;
     
@@ -85,57 +87,72 @@ export const getOyesesPairResult = (
       const hasNumberB = proximityB !== null && proximityB !== undefined;
       
       if (!hasNumberA && !hasNumberB) {
+        // Both miss - accumulate this hole
         accumulated += amount;
+        pendingAccumulatedHoles++;
         continue;
       }
       
       const totalAmount = amount + accumulated;
-      settledHoles++;
+      const holesBeingWon = 1 + pendingAccumulatedHoles; // This hole + accumulated holes
       
       if (hasNumberA && !hasNumberB) {
-        winsA++;
+        // A wins - gets this hole plus all accumulated
+        holesWonByA += holesBeingWon;
         baseTotal += totalAmount;
       } else if (!hasNumberA && hasNumberB) {
-        winsB++;
+        // B wins
+        holesWonByB += holesBeingWon;
         baseTotal -= totalAmount;
       } else {
+        // Both have numbers - compare
         if (proximityA! < proximityB!) {
-          winsA++;
+          holesWonByA += holesBeingWon;
           baseTotal += totalAmount;
         } else if (proximityB! < proximityA!) {
-          winsB++;
+          holesWonByB += holesBeingWon;
           baseTotal -= totalAmount;
         }
+        // Tie: no one wins these holes (they're "lost")
       }
+      
       accumulated = 0;
+      pendingAccumulatedHoles = 0;
+      
     } else {
+      // Sangrón: Direct comparison on every hole
       if (proximityA === null || proximityA === undefined ||
           proximityB === null || proximityB === undefined) {
         continue;
       }
       
-      settledHoles++;
-      
       if (proximityA < proximityB) {
-        winsA++;
+        holesWonByA++;
         baseTotal += amount;
       } else if (proximityB < proximityA) {
-        winsB++;
+        holesWonByB++;
         baseTotal -= amount;
       }
+      // Tie: no one wins this hole
     }
   }
   
-  const hasZapato = settledHoles > 0 && (winsA === settledHoles || winsB === settledHoles);
-  const zapatoWinnerId = hasZapato ? (winsA === settledHoles ? playerAId : playerBId) : null;
+  // Zapato: One player won ALL played holes, with no pending accumulations
+  // For Acumulados: pendingAccumulatedHoles must be 0 (all resolved)
+  // For Sangrón: every hole has a clear winner going to one player
+  const hasZapato = totalPlayedHoles > 0 && 
+    pendingAccumulatedHoles === 0 &&
+    (holesWonByA === totalPlayedHoles || holesWonByB === totalPlayedHoles);
+  
+  const zapatoWinnerId = hasZapato ? (holesWonByA === totalPlayedHoles ? playerAId : playerBId) : null;
   const zapatoBonus = hasZapato ? Math.abs(baseTotal) : 0;
   
   return {
     playerAId,
     playerBId,
-    winsA,
-    winsB,
-    settledHoles,
+    winsA: holesWonByA,
+    winsB: holesWonByB,
+    settledHoles: totalPlayedHoles,
     baseTotal: Math.abs(baseTotal),
     hasZapato,
     zapatoWinnerId,
@@ -322,13 +339,14 @@ export const calculateOyesesBets = (
       
       // Track accumulation for this specific pair
       let accumulated = 0;
+      let pendingAccumulatedHoles = 0; // Holes waiting to be won
       
-      // Track wins/losses for 100% rule
-      let winsA = 0;
-      let winsB = 0;
-      let settledHoles = 0; // Count holes that were settled (not accumulated)
+      // Track holes won for 100% rule (including accumulated holes when won)
+      let holesWonByA = 0;
+      let holesWonByB = 0;
+      let totalPlayedHoles = 0;
       
-      // Temporary storage for pair's summaries (to apply 100% doubling)
+      // Temporary storage for pair's summaries (to apply Zapato bonus)
       const pairSummaries: BetSummary[] = [];
       
       // Process each Par 3 hole
@@ -341,6 +359,7 @@ export const calculateOyesesBets = (
         
         if (!scoreA || !scoreB) continue;
         
+        totalPlayedHoles++;
         const proximityA = scoreA.oyesProximity;
         const proximityB = scoreB.oyesProximity;
         
@@ -350,18 +369,19 @@ export const calculateOyesesBets = (
           const hasNumberB = proximityB !== null && proximityB !== undefined;
           
           if (!hasNumberA && !hasNumberB) {
-            // Neither reached green - accumulate
+            // Neither reached green - accumulate this hole
             accumulated += amount;
+            pendingAccumulatedHoles++;
             continue;
           }
           
           // At least one has a number - settle
           const totalAmount = amount + accumulated;
-          settledHoles++;
+          const holesBeingWon = 1 + pendingAccumulatedHoles; // This hole + accumulated
           
           if (hasNumberA && !hasNumberB) {
-            // A wins (has number, B doesn't)
-            winsA++;
+            // A wins - gets this hole plus all accumulated
+            holesWonByA += holesBeingWon;
             pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
@@ -381,8 +401,8 @@ export const calculateOyesesBets = (
               description: `✗ vs #${proximityA}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
             });
           } else if (!hasNumberA && hasNumberB) {
-            // B wins (has number, A doesn't)
-            winsB++;
+            // B wins
+            holesWonByB += holesBeingWon;
             pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
@@ -405,7 +425,7 @@ export const calculateOyesesBets = (
             // Both have numbers - compare proximity (lower wins)
             if (proximityA! < proximityB!) {
               // A is closer
-              winsA++;
+              holesWonByA += holesBeingWon;
               pairSummaries.push({
                 playerId: playerA.id,
                 vsPlayer: playerB.id,
@@ -426,7 +446,7 @@ export const calculateOyesesBets = (
               });
             } else if (proximityB! < proximityA!) {
               // B is closer
-              winsB++;
+              holesWonByB += holesBeingWon;
               pairSummaries.push({
                 playerId: playerB.id,
                 vsPlayer: playerA.id,
@@ -446,11 +466,12 @@ export const calculateOyesesBets = (
                 description: `#${proximityA} vs #${proximityB}${accumulated > 0 ? ` (+$${accumulated} acum)` : ''}`,
               });
             }
-            // Tie = no winner, no money changes hands
+            // Tie = no one wins these holes
           }
           
-          // Reset accumulation after settlement attempt (even on tie)
+          // Reset accumulation after settlement
           accumulated = 0;
+          pendingAccumulatedHoles = 0;
           
         } else {
           // Sangrón: No accumulation, everyone should have a number
@@ -461,11 +482,9 @@ export const calculateOyesesBets = (
             continue;
           }
           
-          settledHoles++;
-          
           if (proximityA < proximityB) {
             // A is closer
-            winsA++;
+            holesWonByA++;
             pairSummaries.push({
               playerId: playerA.id,
               vsPlayer: playerB.id,
@@ -486,7 +505,7 @@ export const calculateOyesesBets = (
             });
           } else if (proximityB < proximityA) {
             // B is closer
-            winsB++;
+            holesWonByB++;
             pairSummaries.push({
               playerId: playerB.id,
               vsPlayer: playerA.id,
@@ -506,21 +525,24 @@ export const calculateOyesesBets = (
               description: `#${proximityA} vs #${proximityB}`,
             });
           }
-          // Tie = no money changes hands
+          // Tie = no one wins this hole
         }
       }
       
-      // Check for 100% win rule: if one player won ALL settled holes, add Zapato bonus
-      const hasHundredPercentWinner = settledHoles > 0 && 
-        (winsA === settledHoles || winsB === settledHoles);
+      // Check for Zapato (100% win rule):
+      // - All played holes must be resolved (no pending accumulations)
+      // - One player must have won ALL the holes
+      const hasZapato = totalPlayedHoles > 0 && 
+        pendingAccumulatedHoles === 0 &&
+        (holesWonByA === totalPlayedHoles || holesWonByB === totalPlayedHoles);
       
-      if (hasHundredPercentWinner && pairSummaries.length > 0) {
+      if (hasZapato && pairSummaries.length > 0) {
         // Calculate the base total for this pair
         const baseTotal = pairSummaries
           .filter(s => s.playerId === playerA.id)
           .reduce((sum, s) => sum + s.amount, 0);
         
-        const zapatoWinnerId = winsA === settledHoles ? playerA.id : playerB.id;
+        const zapatoWinnerId = holesWonByA === totalPlayedHoles ? playerA.id : playerB.id;
         const zapatoLoserId = zapatoWinnerId === playerA.id ? playerB.id : playerA.id;
         const zapatoBonus = Math.abs(baseTotal);
         

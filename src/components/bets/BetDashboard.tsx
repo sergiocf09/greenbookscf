@@ -1495,12 +1495,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               </div>
                             )}
                             
-                            {/* Debug info - shows wins/settled for verification */}
+                            {/* Debug info - shows holes won per player for verification */}
                             {pairResult && (
                               <div className="text-[9px] text-muted-foreground bg-muted/20 p-1 rounded mb-1">
-                                Ganados: {player.name.substring(0,3)}={pairResult.winsA}, {rival.name.substring(0,3)}={pairResult.winsB} | 
-                                Resueltos: {pairResult.settledHoles} | 
-                                Zapato: {pairResult.hasZapato ? `Sí ($${pairResult.zapatoBonus})` : 'No'}
+                                Hoyos ganados: {player.name.substring(0,3)}={pairResult.winsA}, {rival.name.substring(0,3)}={pairResult.winsB} | 
+                                Total jugados: {pairResult.settledHoles} | 
+                                Zapato: {pairResult.hasZapato ? `Sí (+$${pairResult.zapatoBonus})` : 'No'}
                               </div>
                             )}
                             
