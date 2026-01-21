@@ -1,6 +1,7 @@
 // Bet Calculations Engine - All bilateral calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
+import { calculateRayasBets } from './rayasCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
 
 export interface BetSummary {
@@ -1053,6 +1054,7 @@ export const calculateAllBets = (
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config, course),
+    ...calculateRayasBets(players, scores, config, course),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
