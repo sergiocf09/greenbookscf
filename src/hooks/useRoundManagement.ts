@@ -61,14 +61,35 @@ export const useRoundManagement = ({
       return null;
     }
 
+    // Verify we have an active session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      return null;
+    }
+
+    // Verify profile ID matches what the server will expect
+    const { data: serverProfileId } = await supabase.rpc('get_my_profile_id');
+    console.log('Profile comparison:', {
+      clientProfileId: profile.id,
+      serverProfileId,
+      authUserId: session.user.id,
+      match: profile.id === serverProfileId
+    });
+
+    if (!serverProfileId) {
+      toast.error('Error de sincronización. Intenta cerrar sesión y volver a entrar.');
+      return null;
+    }
+
     setIsLoading(true);
     try {
-      // Create round
+      // Use the server-verified profile ID
       const { data: round, error: roundError } = await supabase
         .from('rounds')
         .insert({
           course_id: courseId,
-          organizer_id: profile.id,
+          organizer_id: serverProfileId, // Use server-verified profile ID
           tee_color: teeColor,
           date: date.toISOString().split('T')[0],
           status: 'setup',
@@ -77,7 +98,10 @@ export const useRoundManagement = ({
         .select()
         .single();
 
-      if (roundError) throw roundError;
+      if (roundError) {
+        console.error('Round creation error:', roundError);
+        throw roundError;
+      }
 
       // Create default group
       const { data: group, error: groupError } = await supabase
