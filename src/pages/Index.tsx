@@ -8,11 +8,18 @@ import { BetDashboard } from '@/components/bets/BetDashboard';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
+import { useRoundManagement } from '@/hooks/useRoundManagement';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +45,27 @@ const Index = () => {
   const { getCourseById } = useGolfCourses();
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
+  // Round management hook
+  const {
+    roundState,
+    isLoading,
+    isRoundStarted,
+    createRound,
+    startRound: startRoundInDb,
+    closeScorecard,
+    setRoundDate,
+    copyShareLink,
+    getShareableLink,
+  } = useRoundManagement({
+    players,
+    setPlayers,
+    scores,
+    setScores,
+    setConfirmedHoles,
+    betConfig,
+    course,
+  });
+
   // Initialize base player from profile
   useEffect(() => {
     if (profile && players.length === 0) {
@@ -55,18 +83,19 @@ const Index = () => {
 
   const canStartRound = players.length >= 2 && course !== null;
 
-  const startRound = () => {
-    // Initialize scores for all players with defaults
+  // Initialize scores locally (for when continuing or starting)
+  const initializeScores = useCallback(() => {
+    if (!course) return;
     const initialScores = new Map<string, PlayerScore[]>();
     players.forEach(player => {
-      const strokesPerHole = calculateStrokesPerHole(player.handicap, course!);
+      const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
       const playerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
-        const holePar = course!.holes[i]?.par || 4;
+        const holePar = course.holes[i]?.par || 4;
         return {
           playerId: player.id,
           holeNumber: i + 1,
-          strokes: holePar, // Default to par
-          putts: 2, // Default to 2 putts
+          strokes: holePar,
+          putts: 2,
           markers: { ...defaultMarkerState },
           strokesReceived: strokesPerHole[i],
           netScore: holePar - strokesPerHole[i],
@@ -76,6 +105,27 @@ const Index = () => {
       initialScores.set(player.id, playerScores);
     });
     setScores(initialScores);
+  }, [course, players]);
+
+  const handleStartRound = async () => {
+    if (!course || !selectedCourseId) return;
+    
+    // Create round in database first if not exists
+    if (!roundState.id) {
+      const roundId = await createRound(selectedCourseId, teeColor, roundState.date);
+      if (!roundId) return;
+    }
+    
+    // Initialize scores and start
+    initializeScores();
+    const success = await startRoundInDb();
+    if (success) {
+      setView('scoring');
+    }
+  };
+
+  const handleContinueRound = () => {
+    // Just navigate to scoring without reinitializing
     setView('scoring');
   };
 
@@ -218,6 +268,34 @@ const Index = () => {
       <main className="max-w-md mx-auto p-4 space-y-4">
         {view === 'setup' && (
           <>
+            {/* Date Picker */}
+            <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
+              <span className="text-sm font-medium">Fecha de la Ronda</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !roundState.date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(roundState.date, "d 'de' MMMM, yyyy", { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={roundState.date}
+                    onSelect={(date) => date && setRoundDate(date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
             <CourseSelect 
               selectedCourseId={selectedCourseId} 
               onChange={setSelectedCourseId}
@@ -225,10 +303,52 @@ const Index = () => {
               onTeeColorChange={setTeeColor}
             />
             <PlayerSetup players={players} onChange={setPlayers} maxPlayers={6} />
+            
+            {/* Share Link Button - only show when round is started */}
+            {isRoundStarted && (
+              <Button 
+                variant="outline" 
+                onClick={copyShareLink}
+                className="w-full"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Copiar Link para Invitar Jugadores
+              </Button>
+            )}
+
             {players.length >= 2 && <BetSetup config={betConfig} onChange={setBetConfig} players={players} />}
-            <Button onClick={startRound} disabled={!canStartRound} className="w-full">
-              Iniciar Ronda
-            </Button>
+            
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              {!isRoundStarted ? (
+                <Button 
+                  onClick={handleStartRound} 
+                  disabled={!canStartRound || isLoading} 
+                  className="w-full"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Iniciar Ronda
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleContinueRound}
+                    className="w-full"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Continuar Ronda
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    disabled
+                    className="w-full opacity-50"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Ronda Iniciada
+                  </Button>
+                </>
+              )}
+            </div>
           </>
         )}
 
@@ -327,15 +447,44 @@ const Index = () => {
         )}
 
         {view === 'bets' && course && (
-          <BetDashboard
-            players={players}
-            scores={scores}
-            betConfig={betConfig}
-            course={course}
-            basePlayerId={profile?.id}
-            confirmedHoles={confirmedHoles}
-            onBetConfigChange={setBetConfig}
-          />
+          <>
+            <BetDashboard
+              players={players}
+              scores={scores}
+              betConfig={betConfig}
+              course={course}
+              basePlayerId={profile?.id}
+              confirmedHoles={confirmedHoles}
+              onBetConfigChange={setBetConfig}
+            />
+            
+            {/* Close Scorecard Button */}
+            {isRoundStarted && roundState.status !== 'completed' && (
+              <Button 
+                variant="destructive"
+                onClick={async () => {
+                  // TODO: Collect all bet results from BetDashboard
+                  const allBetResults: any[] = [];
+                  const success = await closeScorecard(allBetResults);
+                  if (success) {
+                    toast.success('Tarjeta cerrada exitosamente');
+                  }
+                }}
+                disabled={isLoading}
+                className="w-full mt-4"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Cerrar Tarjeta y Guardar
+              </Button>
+            )}
+            
+            {roundState.status === 'completed' && (
+              <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
+                <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                Tarjeta cerrada y guardada
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
