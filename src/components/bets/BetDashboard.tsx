@@ -631,41 +631,59 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           </div>
         </div>
         
-        {/* Points per segment - NEW DISPLAY */}
+        {/* Points per segment - Net score display */}
         <div className="bg-muted/30 rounded-lg p-2 space-y-1">
           <div className="text-[10px] text-muted-foreground text-center mb-1">
             Puntos: LowBall + HighBall + Combinado (0-3 pts/hoyo)
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground w-16">Front 9</span>
-            <span className={cn('font-bold', results.pointsAFront > results.pointsBFront ? 'text-green-500' : results.pointsAFront < results.pointsBFront ? 'text-destructive' : '')}>
-              {results.pointsAFront} pts
-            </span>
-            <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.pointsBFront > results.pointsAFront ? 'text-green-500' : results.pointsBFront < results.pointsAFront ? 'text-destructive' : '')}>
-              {results.pointsBFront} pts
-            </span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground w-16">Back 9</span>
-            <span className={cn('font-bold', results.pointsABack > results.pointsBBack ? 'text-green-500' : results.pointsABack < results.pointsBBack ? 'text-destructive' : '')}>
-              {results.pointsABack} pts
-            </span>
-            <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.pointsBBack > results.pointsABack ? 'text-green-500' : results.pointsBBack < results.pointsABack ? 'text-destructive' : '')}>
-              {results.pointsBBack} pts
-            </span>
-          </div>
-          <div className="flex justify-between text-xs border-t border-border/50 pt-1">
-            <span className="text-muted-foreground w-16 font-medium">Total</span>
-            <span className={cn('font-bold', results.pointsATotal > results.pointsBTotal ? 'text-green-500' : results.pointsATotal < results.pointsBTotal ? 'text-destructive' : '')}>
-              {results.pointsATotal} pts
-            </span>
-            <span className="text-muted-foreground">vs</span>
-            <span className={cn('font-bold', results.pointsBTotal > results.pointsATotal ? 'text-green-500' : results.pointsBTotal < results.pointsATotal ? 'text-destructive' : '')}>
-              {results.pointsBTotal} pts
-            </span>
-          </div>
+          {/* Front 9 */}
+          {(() => {
+            const netFrontA = results.pointsAFront - results.pointsBFront;
+            const netFrontB = results.pointsBFront - results.pointsAFront;
+            return (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground w-16">Front 9</span>
+                <span className={cn('font-bold', netFrontA > 0 ? 'text-green-500' : netFrontA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsAFront} - {results.pointsBFront} → {netFrontA >= 0 ? '+' : ''}{netFrontA} pts
+                </span>
+                <span className={cn('font-bold', netFrontB > 0 ? 'text-green-500' : netFrontB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsBFront} - {results.pointsAFront} → {netFrontB >= 0 ? '+' : ''}{netFrontB} pts
+                </span>
+              </div>
+            );
+          })()}
+          {/* Back 9 */}
+          {(() => {
+            const netBackA = results.pointsABack - results.pointsBBack;
+            const netBackB = results.pointsBBack - results.pointsABack;
+            return (
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground w-16">Back 9</span>
+                <span className={cn('font-bold', netBackA > 0 ? 'text-green-500' : netBackA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsABack} - {results.pointsBBack} → {netBackA >= 0 ? '+' : ''}{netBackA} pts
+                </span>
+                <span className={cn('font-bold', netBackB > 0 ? 'text-green-500' : netBackB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsBBack} - {results.pointsABack} → {netBackB >= 0 ? '+' : ''}{netBackB} pts
+                </span>
+              </div>
+            );
+          })()}
+          {/* Total 18 */}
+          {(() => {
+            const netTotalA = results.pointsATotal - results.pointsBTotal;
+            const netTotalB = results.pointsBTotal - results.pointsATotal;
+            return (
+              <div className="flex justify-between items-center text-xs border-t border-border/50 pt-1">
+                <span className="text-muted-foreground w-16 font-medium">Total</span>
+                <span className={cn('font-bold', netTotalA > 0 ? 'text-green-500' : netTotalA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsATotal} - {results.pointsBTotal} → {netTotalA >= 0 ? '+' : ''}{netTotalA} pts
+                </span>
+                <span className={cn('font-bold', netTotalB > 0 ? 'text-green-500' : netTotalB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {results.pointsBTotal} - {results.pointsATotal} → {netTotalB >= 0 ? '+' : ''}{netTotalB} pts
+                </span>
+              </div>
+            );
+          })()}
         </div>
         
         {/* Money result */}
