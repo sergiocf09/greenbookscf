@@ -34,6 +34,7 @@ export interface PlayerScore {
   putts: number;
   markers: MarkerState;
   strokesReceived: number; // Calculated from handicap
+  oyesProximity?: number | null; // Oyeses proximity order (1=closest, null=no number)
   netScore: number; // strokes - strokesReceived
   confirmed: boolean; // Whether the score has been validated
 }
@@ -124,12 +125,36 @@ export interface CarritosTeamBet {
   enabled: boolean;
 }
 
+// Oyeses (Closest to the Pin) configuration
+export type OyesModality = 'acumulados' | 'sangron';
+
+export interface OyesesPlayerConfig {
+  playerId: string;
+  modality: OyesModality;
+  enabled: boolean;
+}
+
+export interface OyesesBetConfig {
+  enabled: boolean;
+  amount: number;
+  playerConfigs: OyesesPlayerConfig[];
+}
+
+// Oyeses hole result - captures proximity order per player per hole
+export interface OyesHoleResult {
+  playerId: string;
+  holeNumber: number;
+  proximityOrder: number | null; // 1 = closest, null = no green in 1 (acumulados) or not set
+  reachedGreen: boolean; // Only relevant for acumulados mode
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
   pressures: PressureBetConfig;
   skins: SkinsBetConfig;
   caros: CarosBetConfig;
+  oyeses: OyesesBetConfig;
   units: UnitsBetConfig;
   manchas: ManchasBetConfig;
   culebras: CumulativeBetConfig;

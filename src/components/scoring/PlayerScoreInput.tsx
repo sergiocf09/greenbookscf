@@ -25,6 +25,11 @@ interface PlayerScoreInputProps {
   onMarkersChange: (markers: MarkerState) => void;
   handicapStrokes?: number;
   isBasePlayer?: boolean;
+  // Oyeses props
+  isPar3?: boolean;
+  oyesEnabled?: boolean;
+  oyesProximity?: number | null;
+  onOyesProximityChange?: (proximity: number | null) => void;
 }
 
 export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
@@ -41,6 +46,11 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   onMarkersChange,
   handicapStrokes = 0,
   isBasePlayer = false,
+  // Oyeses props
+  isPar3 = false,
+  oyesEnabled = false,
+  oyesProximity,
+  onOyesProximityChange,
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   
@@ -108,7 +118,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         </div>
       </div>
 
-      {/* Strokes Input Row with Unit Markers */}
+      {/* Strokes Input Row with Oyeses and Unit Markers */}
       <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground w-12">Golpes</span>
@@ -136,12 +146,42 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
           </div>
         </div>
 
-        {/* Manual Unit Markers on strokes row */}
-        <InlineMarkers 
-          state={markers} 
-          onChange={handleMarkersChange} 
-          markers={manualUnitMarkers}
-        />
+        <div className="flex items-center gap-2">
+          {/* Oyeses Proximity Input - only on Par 3 holes */}
+          {isPar3 && oyesEnabled && onOyesProximityChange && (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground">🎯</span>
+              <select
+                value={oyesProximity ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onOyesProximityChange(val === '' ? null : parseInt(val));
+                }}
+                className={cn(
+                  "h-7 w-10 text-xs text-center rounded border bg-background",
+                  oyesProximity 
+                    ? "border-golf-gold text-golf-gold font-bold" 
+                    : "border-muted-foreground/30 text-muted-foreground"
+                )}
+              >
+                <option value="">-</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+          )}
+
+          {/* Manual Unit Markers on strokes row */}
+          <InlineMarkers 
+            state={markers} 
+            onChange={handleMarkersChange} 
+            markers={manualUnitMarkers}
+          />
+        </div>
       </div>
 
       {/* Putts Input Row with Stain Markers */}
