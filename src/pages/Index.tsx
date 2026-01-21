@@ -149,26 +149,28 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          {/* Left: Logo */}
-          <div className="flex-shrink-0 w-20">
+        <div className="max-w-md mx-auto flex items-center">
+          {/* Left: Logo - fixed width */}
+          <div className="w-16 flex-shrink-0">
             <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
             <p className="text-[10px] text-primary-foreground/70">by SCF</p>
           </div>
           
-          {/* Center: Hole Info */}
-          {view !== 'setup' && course && currentHoleInfo && (
-            <div className="flex-1 text-center">
-              <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
-              <p className="text-[10px] text-primary-foreground/70">
-                Par {holePar} • SI {holeStrokeIndex}
-                {holeYards && <span> • {holeYards} yds</span>}
-              </p>
-            </div>
-          )}
+          {/* Center: Hole Info - takes remaining space */}
+          <div className="flex-1 text-center">
+            {view !== 'setup' && course && currentHoleInfo && (
+              <>
+                <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
+                <p className="text-[10px] text-primary-foreground/70">
+                  Par {holePar} • SI {holeStrokeIndex}
+                  {holeYards && <span> • {holeYards} yds</span>}
+                </p>
+              </>
+            )}
+          </div>
           
-          {/* Right: Profile Menu */}
-          <div className="flex-shrink-0 w-20 flex justify-end">
+          {/* Right: Profile Menu - fixed width to match left */}
+          <div className="w-16 flex-shrink-0 flex justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
