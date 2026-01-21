@@ -219,10 +219,12 @@ export type Database = {
       }
       hole_scores: {
         Row: {
+          confirmed: boolean
           created_at: string
           hole_number: number
           id: string
           net_score: number | null
+          oyes_proximity: number | null
           putts: number | null
           round_player_id: string
           strokes: number | null
@@ -230,10 +232,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          confirmed?: boolean
           created_at?: string
           hole_number: number
           id?: string
           net_score?: number | null
+          oyes_proximity?: number | null
           putts?: number | null
           round_player_id: string
           strokes?: number | null
@@ -241,10 +245,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          confirmed?: boolean
           created_at?: string
           hole_number?: number
           id?: string
           net_score?: number | null
+          oyes_proximity?: number | null
           putts?: number | null
           round_player_id?: string
           strokes?: number | null
