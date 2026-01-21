@@ -1,6 +1,7 @@
 // Bet Calculations Engine - All bilateral calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
+import { calculateStrokesPerHole } from './handicapUtils';
 
 export interface BetSummary {
   playerId: string;
@@ -11,6 +12,67 @@ export interface BetSummary {
   holeNumber?: number;
   description?: string;
 }
+
+// Get bilateral handicap for a specific pair of players
+const getBilateralHandicapForPair = (
+  playerAId: string,
+  playerBId: string,
+  bilateralHandicaps?: BilateralHandicap[]
+): BilateralHandicap | undefined => {
+  if (!bilateralHandicaps) return undefined;
+  return bilateralHandicaps.find(
+    h => (h.playerAId === playerAId && h.playerBId === playerBId) ||
+         (h.playerAId === playerBId && h.playerBId === playerAId)
+  );
+};
+
+// Recalculate net scores for a pair based on bilateral handicap overrides
+// Returns a new scores map with recalculated net scores for the pair
+const getAdjustedScoresForPair = (
+  playerA: Player,
+  playerB: Player,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
+): Map<string, PlayerScore[]> => {
+  const override = getBilateralHandicapForPair(playerA.id, playerB.id, bilateralHandicaps);
+  
+  // If no override, return original scores
+  if (!override) return scores;
+  
+  // Determine which player is A and which is B in the override
+  const isPlayerAFirst = override.playerAId === playerA.id;
+  const handicapA = isPlayerAFirst ? override.playerAHandicap : override.playerBHandicap;
+  const handicapB = isPlayerAFirst ? override.playerBHandicap : override.playerAHandicap;
+  
+  // Calculate strokes per hole for each player with overridden handicaps
+  const strokesPerHoleA = calculateStrokesPerHole(handicapA, course);
+  const strokesPerHoleB = calculateStrokesPerHole(handicapB, course);
+  
+  // Create new scores map with adjusted net scores
+  const adjustedScores = new Map<string, PlayerScore[]>();
+  
+  // Copy all scores, adjusting only for playerA and playerB
+  scores.forEach((playerScores, playerId) => {
+    if (playerId === playerA.id) {
+      adjustedScores.set(playerId, playerScores.map(score => ({
+        ...score,
+        strokesReceived: strokesPerHoleA[score.holeNumber - 1],
+        netScore: score.strokes - strokesPerHoleA[score.holeNumber - 1]
+      })));
+    } else if (playerId === playerB.id) {
+      adjustedScores.set(playerId, playerScores.map(score => ({
+        ...score,
+        strokesReceived: strokesPerHoleB[score.holeNumber - 1],
+        netScore: score.strokes - strokesPerHoleB[score.holeNumber - 1]
+      })));
+    } else {
+      adjustedScores.set(playerId, playerScores);
+    }
+  });
+  
+  return adjustedScores;
+};
 
 // Calculate net score for a segment (front 9, back 9, or total)
 const getSegmentNetTotal = (
@@ -44,7 +106,8 @@ export const calculateMedalBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  handicapOverrides?: BilateralHandicap[]
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.medal.enabled) return [];
   
@@ -61,11 +124,14 @@ export const calculateMedalBets = (
       const playerA = players[i];
       const playerB = players[j];
       
+      // Get adjusted scores for this pair based on bilateral handicap overrides
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      
       segments.forEach(({ key, amount, label }) => {
         if (amount <= 0) return;
         
-        const netA = getSegmentNetTotal(playerA.id, scores, key);
-        const netB = getSegmentNetTotal(playerB.id, scores, key);
+        const netA = getSegmentNetTotal(playerA.id, adjustedScores, key);
+        const netB = getSegmentNetTotal(playerB.id, adjustedScores, key);
         
         if (netA < netB) {
           // Player A wins
@@ -120,7 +186,9 @@ export const calculateMedalBets = (
 export const calculatePressureBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  config: BetConfig
+  config: BetConfig,
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.pressures.enabled) return [];
   
@@ -137,13 +205,16 @@ export const calculatePressureBets = (
       const playerA = players[i];
       const playerB = players[j];
       
+      // Get adjusted scores for this pair based on bilateral handicap overrides
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      
       // Process a nine and return bets array
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0]; // Start with first bet at 0
         
         holes.forEach(holeNum => {
-          const scoreA = getHoleScore(playerA.id, holeNum, scores);
-          const scoreB = getHoleScore(playerB.id, holeNum, scores);
+          const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+          const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
           
           if (scoreA === null || scoreB === null) return;
           
@@ -315,7 +386,9 @@ export const calculatePressureBets = (
 export const calculateSkinsBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  config: BetConfig
+  config: BetConfig,
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.skins.enabled) return [];
   
@@ -326,6 +399,9 @@ export const calculateSkinsBets = (
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
+      
+      // Get adjusted scores for this pair based on bilateral handicap overrides
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       
       // Process front 9
       let frontSkinsABase = 0;  // Skins won in holes 1-9 only
@@ -338,8 +414,8 @@ export const calculateSkinsBets = (
       let frontHole9Tied = false;
       
       for (let holeNum = 1; holeNum <= 9; holeNum++) {
-        const scoreA = getHoleScore(playerA.id, holeNum, scores);
-        const scoreB = getHoleScore(playerB.id, holeNum, scores);
+        const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+        const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
         
         if (scoreA === null || scoreB === null) {
           frontAccumulated++; // Count as accumulated if incomplete
@@ -517,7 +593,9 @@ export const calculateSkinsBets = (
 export const calculateCarosBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  config: BetConfig
+  config: BetConfig,
+  course: GolfCourse,
+  bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.caros.enabled || config.caros.amount <= 0) return [];
   
@@ -529,14 +607,17 @@ export const calculateCarosBets = (
       const playerA = players[i];
       const playerB = players[j];
       
+      // Get adjusted scores for this pair based on bilateral handicap overrides
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      
       // Calculate total net scores for holes 15-18
       let totalA = 0;
       let totalB = 0;
       let hasAllScores = true;
       
       caroHoles.forEach(holeNum => {
-        const scoreA = getHoleScore(playerA.id, holeNum, scores);
-        const scoreB = getHoleScore(playerB.id, holeNum, scores);
+        const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+        const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
         
         if (scoreA === null || scoreB === null) {
           hasAllScores = false;
@@ -942,18 +1023,20 @@ export const calculatePinguinosBets = (
   return summaries;
 };
 
-// Calculate ALL bet summaries with bet overrides applied
+// Calculate ALL bet summaries with bet overrides and bilateral handicap overrides applied
 export const calculateAllBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse
 ): BetSummary[] => {
+  const bilateralHandicaps = config.bilateralHandicaps;
+  
   const allSummaries = [
-    ...calculateMedalBets(players, scores, config),
-    ...calculatePressureBets(players, scores, config),
-    ...calculateSkinsBets(players, scores, config),
-    ...calculateCarosBets(players, scores, config),
+    ...calculateMedalBets(players, scores, config, course, bilateralHandicaps),
+    ...calculatePressureBets(players, scores, config, course, bilateralHandicaps),
+    ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps),
+    ...calculateCarosBets(players, scores, config, course, bilateralHandicaps),
     ...calculateOyesesBets(players, scores, config, course),
     ...calculateUnitsBets(players, scores, config, course),
     ...calculateManchasBets(players, scores, config),
