@@ -81,7 +81,9 @@ const Index = () => {
     }
   }, [profile, players.length]);
 
-  const canStartRound = players.length >= 2 && course !== null;
+  // Can create round with just 1 player (the logged-in user), need 2+ to start scoring
+  const canCreateRound = players.length >= 1 && course !== null;
+  const canStartScoring = players.length >= 2 && course !== null;
 
   // Initialize scores locally (for when continuing or starting)
   const initializeScores = useCallback(() => {
@@ -107,8 +109,18 @@ const Index = () => {
     setScores(initialScores);
   }, [course, players]);
 
-  const handleStartRound = async () => {
+  // Create round in database (can do with 1 player to get share link)
+  const handleCreateRound = async () => {
     if (!course || !selectedCourseId) return;
+    
+    if (!roundState.id) {
+      await createRound(selectedCourseId, teeColor, roundState.date);
+    }
+  };
+
+  // Start scoring (needs 2+ players)
+  const handleStartRound = async () => {
+    if (!course || !selectedCourseId || players.length < 2) return;
     
     // Create round in database first if not exists
     if (!roundState.id) {
@@ -304,8 +316,8 @@ const Index = () => {
             />
             <PlayerSetup players={players} onChange={setPlayers} maxPlayers={6} />
             
-            {/* Share Link Button - only show when round is started */}
-            {isRoundStarted && (
+            {/* Share Link Button - show after round is created */}
+            {roundState.id && (
               <Button 
                 variant="outline" 
                 onClick={copyShareLink}
@@ -320,14 +332,28 @@ const Index = () => {
             
             {/* Action Buttons */}
             <div className="space-y-2">
+              {/* Create Round button - shows when no round exists yet */}
+              {!roundState.id && (
+                <Button 
+                  onClick={handleCreateRound} 
+                  disabled={!canCreateRound || isLoading} 
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Crear Ronda y Obtener Link
+                </Button>
+              )}
+
+              {/* Start Scoring button */}
               {!isRoundStarted ? (
                 <Button 
                   onClick={handleStartRound} 
-                  disabled={!canStartRound || isLoading} 
+                  disabled={!canStartScoring || isLoading} 
                   className="w-full"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  Iniciar Ronda
+                  {players.length < 2 ? 'Necesitas 2+ jugadores para iniciar' : 'Iniciar Ronda'}
                 </Button>
               ) : (
                 <>
