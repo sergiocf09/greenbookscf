@@ -76,11 +76,6 @@ export const getOyesesPairResult = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
 
-    // In Oyeses, a missing score entry should be treated as "no proximity" (✗)
-    // so that Acumulados can carry and be settled later.
-    // If neither player has any entry for the hole, consider it not played yet.
-    if (!scoreA && !scoreB) continue;
-
     const proximityA = scoreA?.oyesProximity ?? null;
     const proximityB = scoreB?.oyesProximity ?? null;
     
@@ -364,10 +359,6 @@ export const calculateOyesesBets = (
         
         const scoreA = scoresA.find(s => s.holeNumber === holeNum);
         const scoreB = scoresB.find(s => s.holeNumber === holeNum);
-
-        // Treat missing score entry as "no proximity" (✗) for Acumulados.
-        // If neither player has any entry for the hole, consider it not played yet.
-        if (!scoreA && !scoreB) continue;
 
         const proximityA = scoreA?.oyesProximity ?? null;
         const proximityB = scoreB?.oyesProximity ?? null;
