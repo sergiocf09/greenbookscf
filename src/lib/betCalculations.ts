@@ -209,11 +209,13 @@ export const calculatePressureBets = (
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       
       // Process a nine and return bets array
-      // PRESSURE LOGIC: When ANY bet reaches ±2, a NEW bet opens at 0 on the NEXT hole
-      // This new bet runs until the end of the nine (9 or 18)
-      // If the new bet also reaches ±2, another bet opens, and so on
+      // PRESSURE LOGIC: 
+      // - Only the LAST opened bet can trigger a new bet
+      // - When the last bet reaches ±2, a NEW bet opens at 0 on the NEXT hole
+      // - Once a new bet opens, the previous bets continue accumulating but cannot trigger more bets
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0]; // Start with first bet at 0
+        let lastBetCanTrigger = true; // Only the last bet can trigger new bets
         
         holes.forEach((holeNum, holeIndex) => {
           const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
@@ -228,15 +230,16 @@ export const calculatePressureBets = (
           // Apply the hole result to ALL active bets
           bets = bets.map(bal => bal + holeResult);
           
-          // Check if ANY bet just reached ±2 after this hole
-          // If so, open a new bet starting at 0 (which will start from NEXT hole)
-          // Don't open on the last hole of the nine
+          // Check if the LAST bet (most recent) reached ±2 after this hole
+          // Only the last bet can trigger a new bet opening
           const isLastHole = holeIndex === holes.length - 1;
-          if (!isLastHole) {
-            const anyReachedTwo = bets.some(bal => Math.abs(bal) === 2);
-            if (anyReachedTwo) {
-              // Always add a new bet at 0 - this starts fresh from next hole
+          if (!isLastHole && lastBetCanTrigger) {
+            const lastBetBalance = bets[bets.length - 1];
+            if (Math.abs(lastBetBalance) >= 2) {
+              // Open a new bet at 0 - this starts fresh from next hole
               bets.push(0);
+              // The new bet is now the one that can trigger future bets
+              // (lastBetCanTrigger stays true, but now refers to the new last bet)
             }
           }
         });
