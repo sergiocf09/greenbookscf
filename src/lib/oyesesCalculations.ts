@@ -75,11 +75,14 @@ export const getOyesesPairResult = (
     
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
-    
-    if (!scoreA || !scoreB) continue;
-    
-    const proximityA = scoreA.oyesProximity;
-    const proximityB = scoreB.oyesProximity;
+
+    // In Oyeses, a missing score entry should be treated as "no proximity" (✗)
+    // so that Acumulados can carry and be settled later.
+    // If neither player has any entry for the hole, consider it not played yet.
+    if (!scoreA && !scoreB) continue;
+
+    const proximityA = scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximity ?? null;
     
     if (pairModality === 'acumulados') {
       // In Acumulados, a hole counts as played even if both miss (it can carry).
@@ -361,19 +364,21 @@ export const calculateOyesesBets = (
         
         const scoreA = scoresA.find(s => s.holeNumber === holeNum);
         const scoreB = scoresB.find(s => s.holeNumber === holeNum);
-        
-        if (!scoreA || !scoreB) continue;
-        
-        const proximityA = scoreA.oyesProximity;
-        const proximityB = scoreB.oyesProximity;
+
+        // Treat missing score entry as "no proximity" (✗) for Acumulados.
+        // If neither player has any entry for the hole, consider it not played yet.
+        if (!scoreA && !scoreB) continue;
+
+        const proximityA = scoreA?.oyesProximity ?? null;
+        const proximityB = scoreB?.oyesProximity ?? null;
         
          if (pairModality === 'acumulados') {
            // In Acumulados, the hole counts as played even if both miss (carry).
            totalPlayedHoles++;
 
           // Acumulados: null proximity means didn't reach green in 1
-          const hasNumberA = proximityA !== null && proximityA !== undefined;
-          const hasNumberB = proximityB !== null && proximityB !== undefined;
+           const hasNumberA = proximityA !== null && proximityA !== undefined;
+           const hasNumberB = proximityB !== null && proximityB !== undefined;
           
           if (!hasNumberA && !hasNumberB) {
             // Neither reached green - accumulate this hole
