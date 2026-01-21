@@ -150,26 +150,25 @@ const Index = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div>
+          {/* Left: Logo */}
+          <div className="flex-shrink-0 w-20">
             <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
             <p className="text-[10px] text-primary-foreground/70">by SCF</p>
           </div>
           
-          <div className="flex items-center gap-3">
-            {view !== 'setup' && course && currentHoleInfo && (
-              <div className="text-right">
-                <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
-                <p className="text-[10px] text-primary-foreground/70">
-                  Par {holePar} • SI {holeStrokeIndex}
-                </p>
-                {holeYards && (
-                  <p className="text-[10px] text-primary-foreground/70 font-medium">
-                    {holeYards} yardas
-                  </p>
-                )}
-              </div>
-            )}
-            
+          {/* Center: Hole Info */}
+          {view !== 'setup' && course && currentHoleInfo && (
+            <div className="flex-1 text-center">
+              <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
+              <p className="text-[10px] text-primary-foreground/70">
+                Par {holePar} • SI {holeStrokeIndex}
+                {holeYards && <span> • {holeYards} yds</span>}
+              </p>
+            </div>
+          )}
+          
+          {/* Right: Profile Menu */}
+          <div className="flex-shrink-0 w-20 flex justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
