@@ -257,6 +257,11 @@ const Index = () => {
               const playerScores = scores.get(player.id) || [];
               const holeScore = playerScores.find(s => s.holeNumber === currentHole);
               const isBasePlayer = player.profileId === profile?.id;
+              const isPar3 = holePar === 3;
+              
+              // Check if player has Oyeses enabled
+              const oyesPlayerConfig = betConfig.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
+              const oyesEnabled = betConfig.oyeses.enabled && (oyesPlayerConfig?.enabled ?? false);
               
               return (
                 <PlayerScoreInput
@@ -274,6 +279,10 @@ const Index = () => {
                   onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
                   handicapStrokes={holeScore?.strokesReceived || 0}
                   isBasePlayer={isBasePlayer}
+                  isPar3={isPar3}
+                  oyesEnabled={oyesEnabled}
+                  oyesProximity={holeScore?.oyesProximity}
+                  onOyesProximityChange={(proximity) => updateScore(player.id, currentHole, { oyesProximity: proximity })}
                 />
               );
             })}

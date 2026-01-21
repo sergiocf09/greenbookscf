@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2, Minus } from 'lucide-react';
-import { BetConfig, Player, CarritosTeamBet } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -261,6 +261,130 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => updateBet('caros', { amount: v })} />
       </BetSection>
 
+      {/* Oyeses (Closest to the Pin) - BEFORE Units */}
+      <BetSection
+        id="oyeses"
+        title="Oyeses (Closest to the Pin)"
+        description="Par 3 - cercanía a la bandera"
+        enabled={config.oyeses.enabled}
+        onToggle={(enabled) => {
+          // Initialize player configs when enabling
+          if (enabled && config.oyeses.playerConfigs.length === 0) {
+            const playerConfigs: OyesesPlayerConfig[] = players.map(p => ({
+              playerId: p.id,
+              modality: 'acumulados' as OyesModality,
+              enabled: true,
+            }));
+            updateBet('oyeses', { enabled, playerConfigs });
+          } else {
+            updateBet('oyeses', { enabled });
+          }
+        }}
+        color="gold"
+      >
+        <AmountInput 
+          label="Importe por Oyes" 
+          value={config.oyeses.amount} 
+          onChange={(v) => updateBet('oyeses', { amount: v })} 
+        />
+        
+        {/* Player modality configuration */}
+        <div className="space-y-2 mt-3">
+          <Label className="text-xs font-medium">Modalidad por jugador</Label>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.
+          </p>
+          
+          {players.map(player => {
+            const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
+            const isEnabled = playerConfig?.enabled ?? true;
+            const modality = playerConfig?.modality ?? 'acumulados';
+            
+            const updatePlayerOyes = (updates: Partial<OyesesPlayerConfig>) => {
+              const existingConfigs = [...config.oyeses.playerConfigs];
+              const idx = existingConfigs.findIndex(pc => pc.playerId === player.id);
+              if (idx >= 0) {
+                existingConfigs[idx] = { ...existingConfigs[idx], ...updates };
+              } else {
+                existingConfigs.push({
+                  playerId: player.id,
+                  modality: 'acumulados',
+                  enabled: true,
+                  ...updates,
+                });
+              }
+              updateBet('oyeses', { playerConfigs: existingConfigs });
+            };
+            
+            return (
+              <div 
+                key={player.id} 
+                className={cn(
+                  "flex items-center justify-between p-2 rounded-lg transition-colors",
+                  isEnabled ? "bg-muted/50" : "bg-muted/20 opacity-60"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={isEnabled}
+                    onCheckedChange={(v) => updatePlayerOyes({ enabled: v })}
+                    className="scale-75"
+                  />
+                  <div 
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold"
+                    style={{ backgroundColor: player.color }}
+                  >
+                    {player.initials}
+                  </div>
+                  <span className="text-xs">{player.name}</span>
+                </div>
+                
+                {isEnabled && (
+                  <div 
+                    className="flex gap-1"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        updatePlayerOyes({ modality: 'acumulados' });
+                      }}
+                      className={cn(
+                        "px-2 py-1 text-[10px] rounded transition-colors",
+                        modality === 'acumulados' 
+                          ? "bg-golf-gold text-golf-dark font-medium" 
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      Acum
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        updatePlayerOyes({ modality: 'sangron' });
+                      }}
+                      className={cn(
+                        "px-2 py-1 text-[10px] rounded transition-colors",
+                        modality === 'sangron' 
+                          ? "bg-destructive text-destructive-foreground font-medium" 
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      Sang
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </BetSection>
+
       {/* Units */}
       <BetSection
         id="units"
@@ -405,18 +529,18 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
   isPrimary = false,
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onMouseDown={(e) => e.stopPropagation()}>
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Equipo A</Label>
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Select
             value={teamA[0]}
             onValueChange={(v) => onUpdate({ teamA: [v, teamA[1]] })}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Jugador 1" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
               {players.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -426,10 +550,10 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamA[1]}
             onValueChange={(v) => onUpdate({ teamA: [teamA[0], v] })}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Jugador 2" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
               {players.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -440,15 +564,15 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Equipo B</Label>
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Select
             value={teamB[0]}
             onValueChange={(v) => onUpdate({ teamB: [v, teamB[1]] })}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Jugador 1" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
               {players.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -458,10 +582,10 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamB[1]}
             onValueChange={(v) => onUpdate({ teamB: [teamB[0], v] })}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
               <SelectValue placeholder="Jugador 2" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
               {players.map(p => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}
@@ -574,16 +698,16 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
         <Label className="text-xs text-muted-foreground">Tipo de puntuación</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-xs">
+          <SelectTrigger className="h-7 w-28 text-xs" onMouseDown={(e) => e.stopPropagation()}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
             <SelectItem value="lowBall">Low Ball</SelectItem>
             <SelectItem value="highBall">High Ball</SelectItem>
             <SelectItem value="combined">Combinado</SelectItem>
@@ -600,6 +724,7 @@ export const defaultBetConfig: BetConfig = {
   pressures: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 25 },
   skins: { enabled: true, frontValue: 25, backValue: 25, carryOver: false },
   caros: { enabled: true, amount: 25 },
+  oyeses: { enabled: false, amount: 25, playerConfigs: [] },
   units: { enabled: true, valuePerPoint: 25 },
   manchas: { enabled: true, valuePerPoint: 25 },
   culebras: { enabled: true, valuePerOccurrence: 25 },

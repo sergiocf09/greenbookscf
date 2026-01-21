@@ -1,5 +1,6 @@
 // Bet Calculations Engine - All bilateral calculations
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
+import { calculateOyesesBets } from './oyesesCalculations';
 
 export interface BetSummary {
   playerId: string;
