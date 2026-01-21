@@ -209,10 +209,13 @@ export const calculatePressureBets = (
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       
       // Process a nine and return bets array
+      // PRESSURE LOGIC: When ANY bet reaches ±2, a NEW bet opens at 0 on the NEXT hole
+      // This new bet runs until the end of the nine (9 or 18)
+      // If the new bet also reaches ±2, another bet opens, and so on
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0]; // Start with first bet at 0
         
-        holes.forEach(holeNum => {
+        holes.forEach((holeNum, holeIndex) => {
           const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
           const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
           
@@ -222,12 +225,17 @@ export const calculatePressureBets = (
           if (scoreA < scoreB) holeResult = 1;
           else if (scoreB < scoreA) holeResult = -1;
           
+          // Apply the hole result to ALL active bets
           bets = bets.map(bal => bal + holeResult);
           
-          const justReachedTwo = bets.some(bal => Math.abs(bal) === 2);
-          if (justReachedTwo && holeNum !== holes[holes.length - 1]) {
-            const hasZeroBet = bets.some(bal => bal === 0);
-            if (!hasZeroBet) {
+          // Check if ANY bet just reached ±2 after this hole
+          // If so, open a new bet starting at 0 (which will start from NEXT hole)
+          // Don't open on the last hole of the nine
+          const isLastHole = holeIndex === holes.length - 1;
+          if (!isLastHole) {
+            const anyReachedTwo = bets.some(bal => Math.abs(bal) === 2);
+            if (anyReachedTwo) {
+              // Always add a new bet at 0 - this starts fresh from next hole
               bets.push(0);
             }
           }
