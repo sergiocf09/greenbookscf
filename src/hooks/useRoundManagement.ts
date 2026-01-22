@@ -122,6 +122,9 @@ export const useRoundManagement = ({
             profile_id,
             handicap_for_round,
             group_id,
+            guest_name,
+            guest_initials,
+            guest_color,
             profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color)
           `)
           .eq('round_id', activeRound.id);
@@ -142,25 +145,32 @@ export const useRoundManagement = ({
           groupId: allRoundPlayers[0]?.group_id || null,
         });
 
-        // Restore round player IDs mapping
+        // Restore players + roundPlayerIds mapping
+        // NOTE: Registered players use profile_id as Player.id (stable across devices).
+        // Guests don't have profile_id, so we use round_players.id as Player.id.
         const rpIdMap = new Map<string, string>();
-        allRoundPlayers.forEach(rp => {
-          rpIdMap.set(rp.profile_id, rp.id);
-        });
-        setRoundPlayerIds(rpIdMap);
-
-        // Restore players
-        const restoredPlayers: Player[] = allRoundPlayers.map(rp => {
+        const restoredPlayers: Player[] = allRoundPlayers.map((rp: any) => {
           const profileData = rp.profiles as any;
+          const isGuest = !rp.profile_id;
+
+          const playerId = isGuest ? rp.id : rp.profile_id;
+          rpIdMap.set(playerId, rp.id);
+
+          const name = isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador');
+          const initials = isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX');
+          const color = isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6');
+
           return {
-            id: rp.profile_id,
-            name: profileData?.display_name || 'Jugador',
-            initials: profileData?.initials || 'XX',
-            color: profileData?.avatar_color || '#3B82F6',
+            id: playerId,
+            name,
+            initials,
+            color,
             handicap: Number(rp.handicap_for_round) || 0,
-            profileId: rp.profile_id,
+            profileId: rp.profile_id || undefined,
           };
         });
+
+        setRoundPlayerIds(rpIdMap);
         setPlayers(restoredPlayers);
 
         // Restore course selection
@@ -568,6 +578,111 @@ export const useRoundManagement = ({
           newMap.set(player.id, data.id);
           return newMap;
         });
+      } else {
+        // Guest player: persist on round_players so scores survive refresh
+        const isHexColor = typeof player.color === 'string' && player.color.startsWith('#');
+        const guestColor = isHexColor ? player.color : '#3B82F6';
+
+        const { data, error } = await supabase
+          .from('round_players')
+          .insert({
+            round_id: roundState.id,
+            group_id: roundState.groupId,
+            profile_id: null,
+            handicap_for_round: player.handicap,
+            is_organizer: false,
+            guest_name: player.name,
+            guest_initials: player.initials,
+            guest_color: guestColor,
+          })
+          .select('id')
+          .single();
+
+        if (error) {
+          console.error('Error adding guest player to round:', error);
+          toast.error('Error al agregar invitado a la ronda');
+          return false;
+        }
+
+        const oldId = player.id;
+        const newId = data.id as string;
+
+        // 1) Update players list to use stable id (round_players.id)
+        setPlayers((prev) => prev.map((p) => (p.id === oldId ? { ...p, id: newId, color: guestColor } : p)));
+
+        // 2) Migrate scores map key + playerId inside score rows
+        setScores((prev) => {
+          const next = new Map(prev);
+          const oldScores = next.get(oldId);
+          if (oldScores) {
+            next.delete(oldId);
+            next.set(
+              newId,
+              oldScores.map((s) => ({ ...s, playerId: newId }))
+            );
+          }
+          return next;
+        });
+
+        // 3) Update roundPlayerIds mapping
+        setRoundPlayerIds((prev) => {
+          const next = new Map(prev);
+          next.delete(oldId);
+          next.set(newId, newId);
+          return next;
+        });
+
+        // 4) Update betConfig references (best-effort, only if hook controls it)
+        if (setBetConfig) {
+          setBetConfig((prev) => {
+            const replaceId = (value: string) => (value === oldId ? newId : value);
+
+            const updated: BetConfig = {
+              ...prev,
+              carritos: {
+                ...prev.carritos,
+                teamA: [replaceId(prev.carritos.teamA[0]), replaceId(prev.carritos.teamA[1])],
+                teamB: [replaceId(prev.carritos.teamB[0]), replaceId(prev.carritos.teamB[1])],
+                teamHandicaps: prev.carritos.teamHandicaps
+                  ? Object.fromEntries(
+                      Object.entries(prev.carritos.teamHandicaps).map(([pid, h]) => [replaceId(pid), h])
+                    )
+                  : prev.carritos.teamHandicaps,
+              },
+              carritosTeams: prev.carritosTeams?.map((t) => ({
+                ...t,
+                teamA: [replaceId(t.teamA[0]), replaceId(t.teamA[1])],
+                teamB: [replaceId(t.teamB[0]), replaceId(t.teamB[1])],
+                teamHandicaps: t.teamHandicaps
+                  ? Object.fromEntries(Object.entries(t.teamHandicaps).map(([pid, h]) => [replaceId(pid), h]))
+                  : t.teamHandicaps,
+              })),
+              oyeses: {
+                ...prev.oyeses,
+                playerConfigs: prev.oyeses.playerConfigs.map((pc) => ({ ...pc, playerId: replaceId(pc.playerId) })),
+              },
+              medalGeneral: {
+                ...prev.medalGeneral,
+                playerHandicaps: prev.medalGeneral.playerHandicaps.map((ph) => ({
+                  ...ph,
+                  playerId: replaceId(ph.playerId),
+                })),
+              },
+              betOverrides: prev.betOverrides?.map((o) => ({
+                ...o,
+                playerAId: replaceId(o.playerAId),
+                playerBId: replaceId(o.playerBId),
+              })),
+              bilateralHandicaps: prev.bilateralHandicaps?.map((h) => ({
+                ...h,
+                playerAId: replaceId(h.playerAId),
+                playerBId: replaceId(h.playerBId),
+              })),
+            };
+
+            return updated;
+          });
+        }
       }
 
       return true;
@@ -575,7 +690,7 @@ export const useRoundManagement = ({
       console.error('Error in addPlayerToRound:', err);
       return false;
     }
-  }, [roundState.id, roundState.groupId, roundPlayerIds]);
+  }, [roundState.id, roundState.groupId, roundPlayerIds, setPlayers, setScores, setBetConfig]);
 
   // Add a guest player (non-registered) - just local, no DB entry
   const addGuestPlayer = useCallback(async (name: string, handicap: number) => {
