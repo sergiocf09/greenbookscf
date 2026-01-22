@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Copy, Check, Link2, QrCode, Hash, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface ShareRoundDialogProps {
   roundId: string;
@@ -29,6 +27,12 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
     return roundId.substring(0, 6).toUpperCase();
   }, [roundId]);
 
+  // Generate QR code URL using a free API
+  const qrCodeUrl = useMemo(() => {
+    const encodedUrl = encodeURIComponent(shareLink);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodedUrl}&bgcolor=ffffff&color=1a472a`;
+  }, [shareLink]);
+
   const copyToClipboard = async (text: string, type: 'link' | 'code') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -50,13 +54,12 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             <span className="text-sm font-medium">Escanear QR</span>
           </div>
           <div className="bg-white p-3 rounded-lg shadow-inner border">
-            <QRCodeSVG 
-              value={shareLink} 
-              size={160}
-              level="M"
-              includeMargin={false}
-              bgColor="#ffffff"
-              fgColor="#1a472a"
+            <img 
+              src={qrCodeUrl} 
+              alt="QR Code para unirse a la ronda"
+              width={160}
+              height={160}
+              className="block"
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
