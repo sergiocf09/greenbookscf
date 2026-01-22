@@ -72,13 +72,34 @@ const Index = () => {
     setTeeColor,
     getCourseById,
   });
+  // Track if we've done initial navigation after restore
+  const [hasInitialNavigated, setHasInitialNavigated] = useState(false);
 
-  // Auto-navigate to scoring view when round is restored
+  // Auto-navigate to scoring view ONLY once when round is first restored
   useEffect(() => {
-    if (!isRestoring && isRoundStarted && view === 'setup') {
+    if (!isRestoring && isRoundStarted && !hasInitialNavigated && roundState.status !== 'completed') {
       setView('scoring');
+      setHasInitialNavigated(true);
+    } else if (!isRestoring && !hasInitialNavigated) {
+      setHasInitialNavigated(true);
     }
-  }, [isRestoring, isRoundStarted, view]);
+  }, [isRestoring, isRoundStarted, hasInitialNavigated, roundState.status]);
+
+  // Function to start a new round (reset everything)
+  const startNewRound = useCallback(() => {
+    // Reset all state
+    setPlayers([]);
+    setScores(new Map());
+    setConfirmedHoles(new Set());
+    setSelectedCourseId(null);
+    setBetConfig(defaultBetConfig);
+    setCurrentHole(1);
+    setHasInitialNavigated(true); // Prevent auto-navigate
+    setView('setup');
+    
+    // Force page reload to reset hook state
+    window.location.reload();
+  }, []);
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
@@ -569,9 +590,18 @@ const Index = () => {
             )}
             
             {roundState.status === 'completed' && (
-              <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
-                <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                Tarjeta cerrada y guardada
+              <div className="space-y-4">
+                <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
+                  <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                  Tarjeta cerrada y guardada
+                </div>
+                <Button 
+                  onClick={startNewRound}
+                  className="w-full"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Iniciar Nueva Ronda
+                </Button>
               </div>
             )}
           </>
