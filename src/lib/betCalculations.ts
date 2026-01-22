@@ -90,7 +90,7 @@ const getSegmentNetTotal = (
   const [start, end] = getSegmentHoleRange(segment);
   const playerScores = scores.get(playerId) || [];
   return playerScores
-    .filter((s) => s.holeNumber >= start && s.holeNumber <= end)
+    .filter((s) => s.confirmed && s.holeNumber >= start && s.holeNumber <= end)
     .reduce((sum, s) => {
       const net = Number.isFinite(s.netScore) ? s.netScore : Number.isFinite(s.strokes) ? s.strokes : 0;
       return sum + net;

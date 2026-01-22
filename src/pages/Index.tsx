@@ -283,7 +283,21 @@ const Index = () => {
       const playerScores = [...(newScores.get(playerId) || [])];
       const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
       if (idx >= 0) {
-        playerScores[idx] = { ...playerScores[idx], ...updates };
+        const wasConfirmed = !!playerScores[idx].confirmed;
+        const isScoringMutation =
+          updates.strokes !== undefined ||
+          updates.putts !== undefined ||
+          updates.oyesProximity !== undefined ||
+          updates.markers !== undefined;
+
+        // If a confirmed hole is edited, force re-confirmation so bets/markers stay trustworthy.
+        const shouldUnconfirm = wasConfirmed && isScoringMutation;
+
+        playerScores[idx] = {
+          ...playerScores[idx],
+          ...updates,
+          ...(shouldUnconfirm ? { confirmed: false } : {}),
+        };
         if (updates.strokes !== undefined) {
           playerScores[idx].netScore = updates.strokes - playerScores[idx].strokesReceived;
         }
@@ -291,11 +305,20 @@ const Index = () => {
         if (roundState.id) {
           saveScoreToDb(playerId, holeNumber, playerScores[idx]);
         }
+
+        // If any player edited a previously-confirmed hole, the hole should require confirmation again.
+        if (shouldUnconfirm) {
+          setConfirmedHoles((prevHoles) => {
+            const next = new Set(prevHoles);
+            next.delete(holeNumber);
+            return next;
+          });
+        }
       }
       newScores.set(playerId, playerScores);
       return newScores;
     });
-  }, [saveScoreToDb, roundState.id]);
+  }, [saveScoreToDb, roundState.id, setConfirmedHoles]);
 
   const confirmHole = useCallback((holeNumber: number) => {
     // Mark all players' scores for this hole as confirmed
