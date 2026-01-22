@@ -1,5 +1,6 @@
 import React from 'react';
 import { 
+  Icon,
   Flag,
   Waves,
   Target,
@@ -11,6 +12,7 @@ import {
   Hourglass,
   Footprints,
 } from 'lucide-react';
+import { sneaker } from '@lucide/lab';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -29,6 +31,10 @@ interface MarkerConfig {
   points?: number;
 }
 
+const PinkiesShoeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <Icon iconNode={sneaker} {...props} />
+);
+
 // Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', points: 1 },
@@ -39,7 +45,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
 // Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'ladies', icon: Footprints, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'ladies', icon: PinkiesShoeIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
   { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
@@ -86,8 +92,8 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                     compact ? 'p-2' : 'p-2.5',
                     isActive
                       ? isUnidad
-                        ? 'bg-golf-gold/90 text-golf-dark'
-                        : 'bg-destructive/90 text-destructive-foreground'
+                        ? 'bg-primary/15 text-primary ring-1 ring-primary/25'
+                        : 'bg-destructive/15 text-destructive ring-1 ring-destructive/25'
                       : 'bg-muted/50 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/80'
                   )}
                 >
@@ -99,7 +105,7 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                 side="top" 
                 className={cn(
                   'text-xs',
-                  isUnidad ? 'bg-golf-gold text-golf-dark' : 'bg-destructive text-destructive-foreground'
+                  isUnidad ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'
                 )}
               >
                 <p className="font-semibold">{marker.label}</p>

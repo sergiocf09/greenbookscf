@@ -1,0 +1,54 @@
+import React from 'react';
+import { Minus, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+interface ScoreStepperProps {
+  label: string;
+  value: number;
+  min: number;
+  onChange: (next: number) => void;
+  className?: string;
+  rightSlot?: React.ReactNode;
+}
+
+export const ScoreStepper: React.FC<ScoreStepperProps> = ({
+  label,
+  value,
+  min,
+  onChange,
+  className,
+  rightSlot,
+}) => {
+  return (
+    <div className={cn('flex items-center gap-2', className)}>
+      <span className="text-xs text-muted-foreground w-12">{label}</span>
+
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7 rounded-full"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+        >
+          <Minus className="h-3 w-3" />
+        </Button>
+
+        <div className="w-10 text-center flex items-center justify-center gap-1">
+          <span className="text-lg font-bold">{value || '-'}</span>
+          {rightSlot}
+        </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7 rounded-full"
+          onClick={() => onChange(value + 1)}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+};

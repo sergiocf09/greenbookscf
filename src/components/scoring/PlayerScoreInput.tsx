@@ -1,7 +1,5 @@
 import React from 'react';
-import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { 
   InlineMarkers, 
   AutoDetectedBadge,
@@ -10,6 +8,7 @@ import {
 } from './InlineMarkers';
 import { MarkerState, defaultMarkerState } from '@/types/golf';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
+import { ScoreStepper } from './ScoreStepper';
 
 interface PlayerScoreInputProps {
   playerName: string;
@@ -118,38 +117,36 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         </div>
       </div>
 
-      {/* Strokes Input Row with Oyeses and Unit Markers */}
-      <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground w-12">Golpes</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 rounded-full"
-              onClick={() => onStrokesChange(Math.max(1, strokes - 1))}
-              disabled={strokes <= 1}
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <div className="w-10 text-center">
-              <span className="text-lg font-bold">{strokes || '-'}</span>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 rounded-full"
-              onClick={() => onStrokesChange(strokes + 1)}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
+      {/* Inputs (Golpes + Putts + Proximidad Par 3) */}
+      <div className="bg-muted/30 rounded-lg p-2">
+        <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+          <ScoreStepper
+            label="Golpes"
+            value={strokes}
+            min={1}
+            onChange={onStrokesChange}
+          />
 
-        <div className="flex items-center gap-2">
-          {/* Oyeses Proximity Input - only on Par 3 holes */}
-          {isPar3 && oyesEnabled && onOyesProximityChange && (
-            <div className="flex items-center gap-1">
+          <ScoreStepper
+            label="Putts"
+            value={putts}
+            min={0}
+            onChange={onPuttsChange}
+            rightSlot={(
+              <>
+                {mergedMarkers.culebra && !mergedMarkers.cuatriput && (
+                  <AutoDetectedBadge type="culebra" show={true} />
+                )}
+                {mergedMarkers.cuatriput && (
+                  <AutoDetectedBadge type="cuatriput" show={true} />
+                )}
+              </>
+            )}
+          />
+
+          {/* Proximidad Oyes (solo Par 3) */}
+          {isPar3 && oyesEnabled && onOyesProximityChange ? (
+            <div className="flex items-center gap-1 justify-end">
               <span className="text-[10px] text-muted-foreground">🎯</span>
               <select
                 value={oyesProximity ?? ''}
@@ -158,10 +155,10 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                   onOyesProximityChange(val === '' ? null : parseInt(val));
                 }}
                 className={cn(
-                  "h-7 w-10 text-xs text-center rounded border bg-background",
-                  oyesProximity 
-                    ? "border-golf-gold text-golf-gold font-bold" 
-                    : "border-muted-foreground/30 text-muted-foreground"
+                  'h-7 w-10 text-xs text-center rounded border bg-background',
+                  oyesProximity
+                    ? 'border-primary text-primary font-bold'
+                    : 'border-muted-foreground/30 text-muted-foreground'
                 )}
               >
                 <option value="">-</option>
@@ -173,55 +170,33 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                 <option value="6">6</option>
               </select>
             </div>
+          ) : (
+            <div />
           )}
-
-          {/* Manual Unit Markers on strokes row */}
-          <InlineMarkers 
-            state={markers} 
-            onChange={handleMarkersChange} 
-            markers={manualUnitMarkers}
-          />
         </div>
       </div>
 
-      {/* Putts Input Row with Stain Markers */}
-      <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground w-12">Putts</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 rounded-full"
-              onClick={() => onPuttsChange(Math.max(0, putts - 1))}
-              disabled={putts <= 0}
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <div className="w-10 text-center flex items-center justify-center gap-1">
-              <span className="text-lg font-bold">{putts}</span>
-              {/* Show culebra badge for 3+ putts */}
-              {mergedMarkers.culebra && !mergedMarkers.cuatriput && <AutoDetectedBadge type="culebra" show={true} />}
-              {/* Show cuatriput badge for 4+ putts */}
-              {mergedMarkers.cuatriput && <AutoDetectedBadge type="cuatriput" show={true} />}
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7 rounded-full"
-              onClick={() => onPuttsChange(putts + 1)}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
+      {/* Markers (Unidades + Manchas) */}
+      <div className="bg-muted/30 rounded-lg p-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-muted-foreground w-16">Unidades</span>
+            <InlineMarkers
+              state={markers}
+              onChange={handleMarkersChange}
+              markers={manualUnitMarkers}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-muted-foreground w-16">Manchas</span>
+            <InlineMarkers
+              state={markers}
+              onChange={handleMarkersChange}
+              markers={manualStainMarkers}
+            />
           </div>
         </div>
-
-        {/* Manual Stain Markers on putts row */}
-        <InlineMarkers 
-          state={markers} 
-          onChange={handleMarkersChange} 
-          markers={manualStainMarkers}
-        />
       </div>
 
       {/* Net Score Display */}
