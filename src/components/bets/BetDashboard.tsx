@@ -1059,7 +1059,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   <span className="text-muted-foreground"> · </span>
                   <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
                 </div>
-                <div className={cn('text-sm font-bold tabular-nums', baseTeamMoney > 0 ? 'text-primary' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                 <div className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamMoney))}>
                   {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
                 </div>
               </div>
