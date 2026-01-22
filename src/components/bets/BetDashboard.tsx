@@ -45,6 +45,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // BilateralHandicap is now imported from types/golf.ts
 
@@ -103,9 +104,34 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const results: Array<{
       teamA: [string, string];
       teamB: [string, string];
+      scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
       // Net points by hole from Team A perspective (A points - B points). null = skipped (missing confirmation)
       netByHoleFront: Array<number | null>; // holes 1-9
       netByHoleBack: Array<number | null>; // holes 10-18
+      holeDetailsFront: Array<{
+        holeNumber: number;
+        netA1: number;
+        netA2: number;
+        netB1: number;
+        netB2: number;
+        lowBallWinner?: 'A' | 'B' | 'tie';
+        highBallWinner?: 'A' | 'B' | 'tie';
+        combinedWinner?: 'A' | 'B' | 'tie';
+        pointsA: number;
+        pointsB: number;
+      } | null>;
+      holeDetailsBack: Array<{
+        holeNumber: number;
+        netA1: number;
+        netA2: number;
+        netB1: number;
+        netB2: number;
+        lowBallWinner?: 'A' | 'B' | 'tie';
+        highBallWinner?: 'A' | 'B' | 'tie';
+        combinedWinner?: 'A' | 'B' | 'tie';
+        pointsA: number;
+        pointsB: number;
+      } | null>;
       // Points per segment
       pointsAFront: number;
       pointsBFront: number;
@@ -173,7 +199,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
       const includeCombined = scoringType === 'combined' || scoringType === 'all';
 
-      const getHolePoints = (holeNum: number): { pointsA: number; pointsB: number } | null => {
+      const getHolePoints = (holeNum: number): {
+        pointsA: number;
+        pointsB: number;
+        detail: {
+          holeNumber: number;
+          netA1: number;
+          netA2: number;
+          netB1: number;
+          netB2: number;
+          lowBallWinner?: 'A' | 'B' | 'tie';
+          highBallWinner?: 'A' | 'B' | 'tie';
+          combinedWinner?: 'A' | 'B' | 'tie';
+          pointsA: number;
+          pointsB: number;
+        };
+      } | null => {
         const netA1 = getCarritosNet(resolvedTeamA[0], holeNum);
         const netA2 = getCarritosNet(resolvedTeamA[1], holeNum);
         const netB1 = getCarritosNet(resolvedTeamB[0], holeNum);
@@ -184,48 +225,117 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
         let pointsA = 0;
         let pointsB = 0;
+        let lowBallWinner: 'A' | 'B' | 'tie' | undefined;
+        let highBallWinner: 'A' | 'B' | 'tie' | undefined;
+        let combinedWinner: 'A' | 'B' | 'tie' | undefined;
 
         if (includeLowBall) {
           const lowballA = Math.min(netA1, netA2);
           const lowballB = Math.min(netB1, netB2);
-          if (lowballA < lowballB) pointsA += 1;
-          else if (lowballB < lowballA) pointsB += 1;
+          if (lowballA < lowballB) {
+            pointsA += 1;
+            lowBallWinner = 'A';
+          } else if (lowballB < lowballA) {
+            pointsB += 1;
+            lowBallWinner = 'B';
+          } else {
+            lowBallWinner = 'tie';
+          }
         }
 
         if (includeHighBall) {
           const highballA = Math.max(netA1, netA2);
           const highballB = Math.max(netB1, netB2);
-          if (highballA < highballB) pointsA += 1;
-          else if (highballB < highballA) pointsB += 1;
+          if (highballA < highballB) {
+            pointsA += 1;
+            highBallWinner = 'A';
+          } else if (highballB < highballA) {
+            pointsB += 1;
+            highBallWinner = 'B';
+          } else {
+            highBallWinner = 'tie';
+          }
         }
 
         if (includeCombined) {
           const combinedA = netA1 + netA2;
           const combinedB = netB1 + netB2;
-          if (combinedA < combinedB) pointsA += 1;
-          else if (combinedB < combinedA) pointsB += 1;
+          if (combinedA < combinedB) {
+            pointsA += 1;
+            combinedWinner = 'A';
+          } else if (combinedB < combinedA) {
+            pointsB += 1;
+            combinedWinner = 'B';
+          } else {
+            combinedWinner = 'tie';
+          }
         }
 
-        return { pointsA, pointsB };
+        return {
+          pointsA,
+          pointsB,
+          detail: {
+            holeNumber: holeNum,
+            netA1,
+            netA2,
+            netB1,
+            netB2,
+            lowBallWinner,
+            highBallWinner,
+            combinedWinner,
+            pointsA,
+            pointsB,
+          },
+        };
       };
 
-      const calculatePointsForHoles = (holes: number[]): { pointsA: number; pointsB: number; netByHole: Array<number | null> } => {
+      const calculatePointsForHoles = (holes: number[]): {
+        pointsA: number;
+        pointsB: number;
+        netByHole: Array<number | null>;
+        details: Array<{
+          holeNumber: number;
+          netA1: number;
+          netA2: number;
+          netB1: number;
+          netB2: number;
+          lowBallWinner?: 'A' | 'B' | 'tie';
+          highBallWinner?: 'A' | 'B' | 'tie';
+          combinedWinner?: 'A' | 'B' | 'tie';
+          pointsA: number;
+          pointsB: number;
+        } | null>;
+      } => {
         let pointsA = 0;
         let pointsB = 0;
         const netByHole: Array<number | null> = [];
+        const details: Array<{
+          holeNumber: number;
+          netA1: number;
+          netA2: number;
+          netB1: number;
+          netB2: number;
+          lowBallWinner?: 'A' | 'B' | 'tie';
+          highBallWinner?: 'A' | 'B' | 'tie';
+          combinedWinner?: 'A' | 'B' | 'tie';
+          pointsA: number;
+          pointsB: number;
+        } | null> = [];
 
         holes.forEach((holeNum) => {
           const holePoints = getHolePoints(holeNum);
           if (!holePoints) {
             netByHole.push(null);
+            details.push(null);
             return;
           }
           pointsA += holePoints.pointsA;
           pointsB += holePoints.pointsB;
           netByHole.push(holePoints.pointsA - holePoints.pointsB);
+          details.push(holePoints.detail);
         });
 
-        return { pointsA, pointsB, netByHole };
+        return { pointsA, pointsB, netByHole, details };
       };
       
       const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -261,8 +371,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return {
         teamA: resolvedTeamA,
         teamB: resolvedTeamB,
+        scoringType,
         netByHoleFront: frontPoints.netByHole,
         netByHoleBack: backPoints.netByHole,
+        holeDetailsFront: frontPoints.details,
+        holeDetailsBack: backPoints.details,
         pointsAFront,
         pointsBFront,
         pointsABack,
@@ -620,8 +733,33 @@ interface CarritosResultsCardProps {
   results: {
     teamA: [string, string];
     teamB: [string, string];
+    scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
     netByHoleFront: Array<number | null>;
     netByHoleBack: Array<number | null>;
+    holeDetailsFront: Array<{
+      holeNumber: number;
+      netA1: number;
+      netA2: number;
+      netB1: number;
+      netB2: number;
+      lowBallWinner?: 'A' | 'B' | 'tie';
+      highBallWinner?: 'A' | 'B' | 'tie';
+      combinedWinner?: 'A' | 'B' | 'tie';
+      pointsA: number;
+      pointsB: number;
+    } | null>;
+    holeDetailsBack: Array<{
+      holeNumber: number;
+      netA1: number;
+      netA2: number;
+      netB1: number;
+      netB2: number;
+      lowBallWinner?: 'A' | 'B' | 'tie';
+      highBallWinner?: 'A' | 'B' | 'tie';
+      combinedWinner?: 'A' | 'B' | 'tie';
+      pointsA: number;
+      pointsB: number;
+    } | null>;
     pointsAFront: number;
     pointsBFront: number;
     pointsABack: number;
@@ -646,6 +784,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
+
+  type Winner = 'A' | 'B' | 'tie';
+  const invertWinner = (w?: Winner): Winner | undefined => {
+    if (!w) return undefined;
+    if (w === 'tie') return 'tie';
+    return w === 'A' ? 'B' : 'A';
+  };
   
   const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
   const displayTeamAPlayers = isBaseInTeamA ? teamAPlayers : teamBPlayers;
@@ -659,8 +804,59 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const baseNetByHoleFront = isBaseInTeamA ? results.netByHoleFront : results.netByHoleFront.map(v => (v === null ? null : -v));
   const baseNetByHoleBack = isBaseInTeamA ? results.netByHoleBack : results.netByHoleBack.map(v => (v === null ? null : -v));
 
+  const baseHoleDetailsFront = isBaseInTeamA
+    ? results.holeDetailsFront
+    : results.holeDetailsFront.map((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          // swap teams for display
+          netA1: d.netB1,
+          netA2: d.netB2,
+          netB1: d.netA1,
+          netB2: d.netA2,
+          lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
+          highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
+          combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
+          pointsA: d.pointsB,
+          pointsB: d.pointsA,
+        };
+      });
+
+  const baseHoleDetailsBack = isBaseInTeamA
+    ? results.holeDetailsBack
+    : results.holeDetailsBack.map((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          netA1: d.netB1,
+          netA2: d.netB2,
+          netB1: d.netA1,
+          netB2: d.netA2,
+          lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
+          highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
+          combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
+          pointsA: d.pointsB,
+          pointsB: d.pointsA,
+        };
+      });
+
   const getNetTone = (n: number) => (n > 0 ? 'text-primary' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
   const getNetPill = (n: number) => (n > 0 ? 'border-primary/40 text-primary' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
+
+  const getWinnerText = (w?: Winner) => {
+    if (!w) return '—';
+    if (w === 'tie') return 'Empate';
+    return w === 'A' ? 'A' : 'B';
+  };
+
+  const scoringLabel = results.scoringType === 'all'
+    ? 'LowBall + HighBall + Suma'
+    : results.scoringType === 'lowBall'
+      ? 'LowBall'
+      : results.scoringType === 'highBall'
+        ? 'HighBall'
+        : 'Suma';
   
   // Payment: each losing player pays 50% of total to EACH winning player
   const getPaymentBreakdown = () => {
@@ -737,7 +933,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         {/* Puntos por hoyo (netos de tu pareja) */}
         <div className="bg-muted/30 rounded-lg p-2 space-y-2">
           <div className="text-[10px] text-muted-foreground text-center">
-            Carritos se calcula con neto (golpes - strokes recibidos) y solo cuenta hoyos con score confirmado en los 4.
+            Carritos ({scoringLabel}) se calcula con neto (golpes - strokes recibidos) y solo cuenta hoyos con score confirmado en los 4.
           </div>
 
           {/* Front 9 */}
@@ -748,9 +944,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
               </span>
             </div>
-            <div className="grid grid-cols-9 gap-1">
-              {baseNetByHoleFront.map((net, idx) => {
+            <TooltipProvider>
+              <div className="grid grid-cols-9 gap-1">
+                {baseNetByHoleFront.map((net, idx) => {
                 const hole = idx + 1;
+                const detail = baseHoleDetailsFront[idx];
                 if (net === null) {
                   return (
                     <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
@@ -760,13 +958,67 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   );
                 }
                 return (
-                  <div key={hole} className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center', getNetPill(net))}>
-                    <span className="text-[9px] opacity-80">{hole}</span>
-                    <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
-                  </div>
+                  <Tooltip key={hole}>
+                    <TooltipTrigger asChild>
+                      <div className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-default', getNetPill(net))}>
+                        <span className="text-[9px] opacity-80">{hole}</span>
+                        <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="w-64">
+                      {!detail ? (
+                        <div className="text-xs">
+                          <p className="font-medium">Hoyo {hole}</p>
+                          <p className="text-muted-foreground">Sin scores confirmados de los 4 jugadores.</p>
+                        </div>
+                      ) : (
+                        <div className="text-xs space-y-1">
+                          <p className="font-medium">Hoyo {detail.holeNumber} • Neto {net > 0 ? `+${net}` : `${net}`} pts</p>
+                          <div className="grid grid-cols-2 gap-x-3">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
+                              <p className="tabular-nums">{displayTeamAPlayers[0]?.name.split(' ')[0]}: {detail.netA1}</p>
+                              <p className="tabular-nums">{displayTeamAPlayers[1]?.name.split(' ')[0]}: {detail.netA2}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
+                              <p className="tabular-nums">{displayTeamBPlayers[0]?.name.split(' ')[0]}: {detail.netB1}</p>
+                              <p className="tabular-nums">{displayTeamBPlayers[1]?.name.split(' ')[0]}: {detail.netB2}</p>
+                            </div>
+                          </div>
+
+                          <div className="pt-1 border-t border-border/50">
+                            {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>LowBall</span>
+                                <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
+                              </p>
+                            )}
+                            {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>HighBall</span>
+                                <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
+                              </p>
+                            )}
+                            {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>Suma</span>
+                                <span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span>
+                              </p>
+                            )}
+                            <p className="flex justify-between font-medium">
+                              <span>Puntos (A-B)</span>
+                              <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
-            </div>
+              </div>
+            </TooltipProvider>
           </div>
 
           {/* Back 9 */}
@@ -777,9 +1029,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
               </span>
             </div>
-            <div className="grid grid-cols-9 gap-1">
-              {baseNetByHoleBack.map((net, idx) => {
+            <TooltipProvider>
+              <div className="grid grid-cols-9 gap-1">
+                {baseNetByHoleBack.map((net, idx) => {
                 const hole = idx + 10;
+                const detail = baseHoleDetailsBack[idx];
                 if (net === null) {
                   return (
                     <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
@@ -789,13 +1043,67 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   );
                 }
                 return (
-                  <div key={hole} className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center', getNetPill(net))}>
-                    <span className="text-[9px] opacity-80">{hole}</span>
-                    <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
-                  </div>
+                  <Tooltip key={hole}>
+                    <TooltipTrigger asChild>
+                      <div className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-default', getNetPill(net))}>
+                        <span className="text-[9px] opacity-80">{hole}</span>
+                        <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="w-64">
+                      {!detail ? (
+                        <div className="text-xs">
+                          <p className="font-medium">Hoyo {hole}</p>
+                          <p className="text-muted-foreground">Sin scores confirmados de los 4 jugadores.</p>
+                        </div>
+                      ) : (
+                        <div className="text-xs space-y-1">
+                          <p className="font-medium">Hoyo {detail.holeNumber} • Neto {net > 0 ? `+${net}` : `${net}`} pts</p>
+                          <div className="grid grid-cols-2 gap-x-3">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
+                              <p className="tabular-nums">{displayTeamAPlayers[0]?.name.split(' ')[0]}: {detail.netA1}</p>
+                              <p className="tabular-nums">{displayTeamAPlayers[1]?.name.split(' ')[0]}: {detail.netA2}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
+                              <p className="tabular-nums">{displayTeamBPlayers[0]?.name.split(' ')[0]}: {detail.netB1}</p>
+                              <p className="tabular-nums">{displayTeamBPlayers[1]?.name.split(' ')[0]}: {detail.netB2}</p>
+                            </div>
+                          </div>
+
+                          <div className="pt-1 border-t border-border/50">
+                            {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>LowBall</span>
+                                <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
+                              </p>
+                            )}
+                            {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>HighBall</span>
+                                <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
+                              </p>
+                            )}
+                            {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                              <p className="flex justify-between">
+                                <span>Suma</span>
+                                <span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span>
+                              </p>
+                            )}
+                            <p className="flex justify-between font-medium">
+                              <span>Puntos (A-B)</span>
+                              <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
-            </div>
+              </div>
+            </TooltipProvider>
           </div>
 
           {/* Total */}
