@@ -40,13 +40,13 @@ interface PlayerScoreData {
   initials: string;
   color: string;
   handicap: number;
-  scores: { holeNumber: number; strokes: number; putts: number }[];
+  scores: { holeNumber: number; strokes: number; putts: number; oyesProximity?: number | null }[];
   totalStrokes: number;
 }
 
 interface RoundHistoryProps {
   onClose?: () => void;
-  onViewScorecard?: (roundData: {
+  onViewRound?: (roundData: {
     roundId: string;
     courseId: string;
     players: PlayerScoreData[];
@@ -55,7 +55,7 @@ interface RoundHistoryProps {
   }) => void;
 }
 
-export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScorecard }) => {
+export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound }) => {
   const { profile } = useAuth();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,10 +183,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScore
     }
   };
 
-  const handleViewScorecard = async (e: React.MouseEvent, round: RoundHistoryItem) => {
+  const handleViewRound = async (e: React.MouseEvent, round: RoundHistoryItem) => {
     e.stopPropagation();
     
-    if (!onViewScorecard) {
+    if (!onViewRound) {
       toast.info('Función de visualización no disponible');
       return;
     }
@@ -207,7 +207,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScore
 
       if (rpError) throw rpError;
 
-      // Get all hole scores for all players
+      // Get all hole scores for all players including oyes_proximity
       const playerScores: PlayerScoreData[] = [];
       
       for (const rp of roundPlayers || []) {
@@ -215,7 +215,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScore
         
         const { data: scores } = await supabase
           .from('hole_scores')
-          .select('hole_number, strokes, putts')
+          .select('hole_number, strokes, putts, oyes_proximity')
           .eq('round_player_id', rp.id)
           .order('hole_number');
 
@@ -231,12 +231,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScore
             holeNumber: s.hole_number,
             strokes: s.strokes || 0,
             putts: s.putts || 0,
+            oyesProximity: s.oyes_proximity,
           })),
           totalStrokes,
         });
       }
 
-      onViewScorecard({
+      onViewRound({
         roundId: round.id,
         courseId: round.courseId,
         players: playerScores,
@@ -329,7 +330,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScore
                         variant="outline"
                         size="sm"
                         className="flex-1"
-                        onClick={(e) => handleViewScorecard(e, round)}
+                        onClick={(e) => handleViewRound(e, round)}
                         disabled={loadingScorecard === round.id}
                       >
                         {loadingScorecard === round.id ? (

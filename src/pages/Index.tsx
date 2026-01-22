@@ -7,7 +7,7 @@ import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
 import { RoundHistory } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
-import { HistoricalScorecard } from '@/components/HistoricalScorecard';
+import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -674,7 +674,7 @@ const Index = () => {
           </DialogHeader>
           <RoundHistory 
             onClose={() => setShowHistoryDialog(false)} 
-            onViewScorecard={(data) => {
+            onViewRound={(data) => {
               setHistoricalScorecardData(data);
               setShowHistoryDialog(false);
               setShowScorecardDialog(true);
@@ -693,14 +693,16 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Historical Scorecard Dialog */}
+      {/* Historical Round View Dialog */}
       <Dialog open={showScorecardDialog} onOpenChange={setShowScorecardDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Tarjeta Histórica</DialogTitle>
+            <DialogTitle>Ronda Histórica</DialogTitle>
           </DialogHeader>
           {historicalScorecardData && getCourseById(historicalScorecardData.courseId) && (
-            <HistoricalScorecard
+            <HistoricalRoundView
+              roundId={historicalScorecardData.roundId}
+              courseId={historicalScorecardData.courseId}
               course={getCourseById(historicalScorecardData.courseId)!}
               players={historicalScorecardData.players}
               teeColor={historicalScorecardData.teeColor}
