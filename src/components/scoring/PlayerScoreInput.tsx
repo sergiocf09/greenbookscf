@@ -73,13 +73,6 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   const handleMarkersChange = (newMarkers: MarkerState) => {
     // Only update manual markers, auto-detected ones are computed
     onMarkersChange(newMarkers);
-
-    // Hole Out implies zero putts
-    if (!markers.holeOut && newMarkers.holeOut) {
-      onPuttsChange(0);
-    } else if (markers.holeOut && !newMarkers.holeOut) {
-      onPuttsChange(2);
-    }
   };
 
   return (
