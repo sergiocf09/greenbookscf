@@ -896,16 +896,16 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 };
 
 export const defaultBetConfig: BetConfig = {
-  medal: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 50 },
-  pressures: { enabled: true, frontAmount: 25, backAmount: 25, totalAmount: 25 },
-  skins: { enabled: true, frontValue: 25, backValue: 25, carryOver: false },
-  caros: { enabled: true, amount: 25 },
+  medal: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 100 },
+  pressures: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 50 },
+  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: false },
+  caros: { enabled: true, amount: 200 },
   oyeses: { enabled: false, amount: 25, playerConfigs: [] },
   units: { enabled: true, valuePerPoint: 25 },
   manchas: { enabled: true, valuePerPoint: 25 },
   culebras: { enabled: true, valuePerOccurrence: 25 },
   pinguinos: { enabled: false, valuePerOccurrence: 25 },
-  rayas: { enabled: false, frontValue: 25, backValue: 25, medalTotalValue: 50, skinVariant: 'acumulados' },
+  rayas: { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados' },
   carritos: { 
     enabled: false, 
     teamA: ['', ''], 
