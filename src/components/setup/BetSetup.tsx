@@ -438,10 +438,11 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         id="medalGeneral"
         title="Medal General"
         description="Grupal: menor score neto total gana"
-        enabled={config.medalGeneral.enabled}
+        enabled={config.medalGeneral?.enabled ?? false}
         onToggle={(enabled) => {
           // Initialize player handicaps when enabling
-          if (enabled && config.medalGeneral.playerHandicaps.length === 0) {
+          const currentHandicaps = config.medalGeneral?.playerHandicaps || [];
+          if (enabled && currentHandicaps.length === 0) {
             const initialHandicaps = players.map(p => ({
               playerId: p.id,
               handicap: p.handicap,
@@ -455,7 +456,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       >
         <AmountInput 
           label="Cantidad por jugador" 
-          value={config.medalGeneral.amount} 
+          value={config.medalGeneral?.amount ?? 100} 
           onChange={(v) => updateBet('medalGeneral', { amount: v })} 
         />
         
@@ -463,7 +464,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         <div className="mt-3 space-y-2">
           <Label className="text-xs text-muted-foreground">Handicaps para Medal General</Label>
           {players.map(player => {
-            const playerConfig = config.medalGeneral.playerHandicaps.find(
+            const playerHandicaps = config.medalGeneral?.playerHandicaps || [];
+            const playerConfig = playerHandicaps.find(
               pc => pc.playerId === player.id
             );
             const currentHcp = playerConfig?.handicap ?? player.handicap;
@@ -487,7 +489,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                     className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                      const existingHandicaps = config.medalGeneral?.playerHandicaps || [];
+                      const newHandicaps = existingHandicaps.map(pc =>
                         pc.playerId === player.id ? { ...pc, handicap: Math.max(0, pc.handicap - 1) } : pc
                       );
                       // If player not in list, add them
@@ -504,7 +507,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                     value={currentHcp}
                     onChange={(e) => {
                       const newValue = parseInt(e.target.value) || 0;
-                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                      const existingHandicaps = config.medalGeneral?.playerHandicaps || [];
+                      const newHandicaps = existingHandicaps.map(pc =>
                         pc.playerId === player.id ? { ...pc, handicap: newValue } : pc
                       );
                       if (!newHandicaps.some(pc => pc.playerId === player.id)) {
@@ -522,7 +526,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                     className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                      const existingHandicaps = config.medalGeneral?.playerHandicaps || [];
+                      const newHandicaps = existingHandicaps.map(pc =>
                         pc.playerId === player.id ? { ...pc, handicap: pc.handicap + 1 } : pc
                       );
                       if (!newHandicaps.some(pc => pc.playerId === player.id)) {
