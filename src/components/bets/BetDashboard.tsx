@@ -84,7 +84,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           (s) =>
             s.confirmed &&
             typeof s.strokes === 'number' &&
-            s.strokes > 0
+            Number.isFinite(s.strokes)
         )
       );
     });
