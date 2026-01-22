@@ -72,5 +72,5 @@ export const getManualUnitMarkers = (): (keyof MarkerState)[] => {
  * Get manually toggleable stain markers (negative)
  */
 export const getManualStainMarkers = (): (keyof MarkerState)[] => {
-  return ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3'];
+  return ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'par3GirMas3'];
 };
