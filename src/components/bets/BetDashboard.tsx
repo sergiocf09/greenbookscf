@@ -123,18 +123,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }> = [];
 
     const calculateCarritosResult = (
-      teamA: [string, string], 
-      teamB: [string, string], 
-      frontAmount: number, 
-      backAmount: number, 
-      totalAmount: number, 
-      scoringType: string,
-      teamHandicaps?: Record<string, number>,
-      id?: string
+      teamA: [string, string],
+      teamB: [string, string],
+      frontAmount: number,
+      backAmount: number,
+      totalAmount: number,
+      scoringType: 'lowBall' | 'highBall' | 'combined' | 'all',
+      opts?: {
+        useTeamHandicaps?: boolean;
+        teamHandicaps?: Record<string, number>;
+        id?: string;
+      }
     ) => {
+      const { useTeamHandicaps, teamHandicaps, id } = opts ?? {};
+
       const getPlayerHandicapForCarritos = (playerId: string): number => {
-        const teamHcp = teamHandicaps?.[playerId];
-        if (typeof teamHcp === 'number' && Number.isFinite(teamHcp)) return teamHcp;
+        if (useTeamHandicaps) {
+          const teamHcp = teamHandicaps?.[playerId];
+          if (typeof teamHcp === 'number' && Number.isFinite(teamHcp)) return teamHcp;
+        }
         return players.find((p) => p.id === playerId)?.handicap ?? 0;
       };
 
@@ -165,23 +172,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           // Skip if not all four have a score for this hole
           if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return;
           
-          // Lowball: best ball of each team
-          const lowballA = Math.min(netA1, netA2);
-          const lowballB = Math.min(netB1, netB2);
-          if (lowballA < lowballB) pointsA += 1;
-          else if (lowballB < lowballA) pointsB += 1;
-          
-          // Highball: worst ball of each team
-          const highballA = Math.max(netA1, netA2);
-          const highballB = Math.max(netB1, netB2);
-          if (highballA < highballB) pointsA += 1;
-          else if (highballB < highballA) pointsB += 1;
-          
-          // Combined: sum of both players
-          const combinedA = netA1 + netA2;
-          const combinedB = netB1 + netB2;
-          if (combinedA < combinedB) pointsA += 1;
-          else if (combinedB < combinedA) pointsB += 1;
+          const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
+          const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
+          const includeCombined = scoringType === 'combined' || scoringType === 'all';
+
+          if (includeLowBall) {
+            // Lowball: best ball of each team
+            const lowballA = Math.min(netA1, netA2);
+            const lowballB = Math.min(netB1, netB2);
+            if (lowballA < lowballB) pointsA += 1;
+            else if (lowballB < lowballA) pointsB += 1;
+          }
+
+          if (includeHighBall) {
+            // Highball: worst ball of each team
+            const highballA = Math.max(netA1, netA2);
+            const highballB = Math.max(netB1, netB2);
+            if (highballA < highballB) pointsA += 1;
+            else if (highballB < highballA) pointsB += 1;
+          }
+
+          if (includeCombined) {
+            // Combined: sum of both players
+            const combinedA = netA1 + netA2;
+            const combinedB = netB1 + netB2;
+            if (combinedA < combinedB) pointsA += 1;
+            else if (combinedB < combinedA) pointsB += 1;
+          }
         });
         
         return { pointsA, pointsB };
@@ -237,23 +254,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
     // Primary carritos
     if (betConfig.carritos.enabled) {
-      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps } = betConfig.carritos;
-      results.push(calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps));
+      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps } = betConfig.carritos;
+      results.push(
+        calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {
+          id: undefined,
+          useTeamHandicaps,
+          teamHandicaps,
+        })
+      );
     }
 
     // Additional carritos teams
     betConfig.carritosTeams?.forEach(team => {
       if (team.enabled) {
-        results.push(calculateCarritosResult(
-          team.teamA, 
-          team.teamB, 
-          team.frontAmount, 
-          team.backAmount, 
-          team.totalAmount, 
-          team.scoringType, 
-          team.teamHandicaps,
-          team.id
-        ));
+        results.push(
+          calculateCarritosResult(team.teamA, team.teamB, team.frontAmount, team.backAmount, team.totalAmount, team.scoringType, {
+            id: team.id,
+            useTeamHandicaps: true,
+            teamHandicaps: team.teamHandicaps,
+          })
+        );
       }
     });
 
