@@ -15,6 +15,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
   onClose,
 }) => {
   const [copiedType, setCopiedType] = useState<'link' | 'code' | null>(null);
+  const [showQR, setShowQR] = useState(false);
 
   // Generate share link
   const shareLink = useMemo(() => {
@@ -30,7 +31,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
   // Generate QR code URL using a free API
   const qrCodeUrl = useMemo(() => {
     const encodedUrl = encodeURIComponent(shareLink);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodedUrl}&bgcolor=ffffff&color=1a472a`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedUrl}&bgcolor=ffffff&color=1a472a`;
   }, [shareLink]);
 
   const copyToClipboard = async (text: string, type: 'link' | 'code') => {
@@ -46,28 +47,6 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* QR Code Section */}
-      <Card className="bg-white">
-        <CardContent className="p-4 flex flex-col items-center">
-          <div className="flex items-center gap-2 mb-3 text-muted-foreground">
-            <QrCode className="h-4 w-4" />
-            <span className="text-sm font-medium">Escanear QR</span>
-          </div>
-          <div className="bg-white p-3 rounded-lg shadow-inner border">
-            <img 
-              src={qrCodeUrl} 
-              alt="QR Code para unirse a la ronda"
-              width={160}
-              height={160}
-              className="block"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Los jugadores pueden escanear para unirse
-          </p>
-        </CardContent>
-      </Card>
-
       {/* Link Section */}
       <Card>
         <CardContent className="p-4 space-y-2">
@@ -128,6 +107,36 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
           </p>
         </CardContent>
       </Card>
+
+      {/* QR Toggle Button */}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => setShowQR(!showQR)}
+      >
+        <QrCode className="h-4 w-4 mr-2" />
+        {showQR ? 'Ocultar QR' : 'Mostrar QR'}
+      </Button>
+
+      {/* QR Code Section - Collapsible */}
+      {showQR && (
+        <Card className="bg-white animate-in fade-in-0 slide-in-from-top-2 duration-200">
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className="bg-white p-3 rounded-lg shadow-inner border">
+              <img 
+                src={qrCodeUrl} 
+                alt="QR Code para unirse a la ronda"
+                width={200}
+                height={200}
+                className="block"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Los jugadores pueden escanear para unirse
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Native Share Button (mobile) */}
       {typeof navigator.share === 'function' && (
