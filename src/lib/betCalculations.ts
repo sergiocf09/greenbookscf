@@ -1044,12 +1044,13 @@ export const calculateMedalGeneralBets = (
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
   
-  if (!config.medalGeneral.enabled || players.length < 2) {
+  // Guard against undefined medalGeneral config (for backward compatibility)
+  if (!config.medalGeneral?.enabled || players.length < 2) {
     return summaries;
   }
   
-  const amount = config.medalGeneral.amount;
-  const playerHandicaps = config.medalGeneral.playerHandicaps;
+  const amount = config.medalGeneral.amount || 100;
+  const playerHandicaps = config.medalGeneral.playerHandicaps || [];
   
   // Calculate net totals for each player using their Medal General handicap
   const playerNetTotals: { playerId: string; netTotal: number; grossTotal: number }[] = [];
