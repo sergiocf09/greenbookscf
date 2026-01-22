@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateHandicapIndexFromDifferentials } from '@/lib/usgaHandicap';
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
@@ -58,6 +59,92 @@ export const useRoundManagement = ({
   const hasRestoredRef = useRef(false);
 
   const isRoundStarted = roundState.status !== 'setup';
+
+  const applyMyUsgaHandicapIfAvailable = useCallback(
+    async (targetRoundPlayerId?: string | null) => {
+      if (!profile || !targetRoundPlayerId) return;
+
+      try {
+        // Get last 20 completed rounds for this user
+        const { data: roundPlayers, error } = await supabase
+          .from('round_players')
+          .select(
+            `
+            id,
+            rounds!inner(
+              id,
+              date,
+              status
+            )
+          `
+          )
+          .eq('profile_id', profile.id)
+          .eq('rounds.status', 'completed')
+          .order('rounds(date)', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        const differentials: number[] = [];
+
+        // Ratings (placeholder until we store real course/slope ratings)
+        const courseRating = 72.0;
+        const slopeRating = 125;
+
+        for (const rp of roundPlayers || []) {
+          const { data: scores, error: scoresError } = await supabase
+            .from('hole_scores')
+            .select('strokes')
+            .eq('round_player_id', rp.id);
+
+          if (scoresError) continue;
+
+          const grossScore = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          const differential = (113 / slopeRating) * (grossScore - courseRating);
+          differentials.push(Math.round(differential * 10) / 10);
+        }
+
+        const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
+        if (handicapIndex === null) return; // Not enough rounds; keep 0
+
+        // Persist to backend (policy allows user to update their own row)
+        const { error: updateError } = await supabase
+          .from('round_players')
+          .update({ handicap_for_round: handicapIndex })
+          .eq('id', targetRoundPlayerId);
+
+        if (updateError) throw updateError;
+
+        // Update local player handicap so strokesReceived uses it when scoring starts
+        setPlayers((prev) =>
+          prev.map((p) => (p.profileId === profile.id || p.id === profile.id ? { ...p, handicap: handicapIndex } : p))
+        );
+
+        // If scores already exist (round in progress), recompute strokesReceived + netScore for my player
+        if (course) {
+          setScores((prev) => {
+            const next = new Map(prev);
+            const myPlayerKey = profile.id;
+            const myScores = next.get(myPlayerKey);
+            if (!myScores) return prev;
+            const strokesPerHole = calculateStrokesPerHole(handicapIndex, course);
+            next.set(
+              myPlayerKey,
+              myScores.map((s, i) => ({
+                ...s,
+                strokesReceived: strokesPerHole[i] ?? s.strokesReceived,
+                netScore: (s.strokes ?? 0) - (strokesPerHole[i] ?? s.strokesReceived ?? 0),
+              }))
+            );
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error('Error applying USGA handicap:', err);
+      }
+    },
+    [profile, setPlayers, setScores, course]
+  );
 
   const isValidBetType = useCallback(
     (betType: unknown): betType is (typeof Constants.public.Enums.bet_type)[number] => {
@@ -174,6 +261,11 @@ export const useRoundManagement = ({
         setRoundPlayerIds(rpIdMap);
         setPlayers(restoredPlayers);
 
+        // If user has enough completed rounds, auto-apply their USGA handicap into this round
+        const myRoundPlayerId = rpIdMap.get(profile.id);
+        // Fire and forget (keeps 0 if not enough rounds)
+        void applyMyUsgaHandicapIfAvailable(myRoundPlayerId);
+
         // Restore course selection
         if (setSelectedCourseId) {
           setSelectedCourseId(activeRound.course_id);
@@ -279,7 +371,7 @@ export const useRoundManagement = ({
     };
 
     restoreActiveRound();
-  }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, getCourseById]);
+  }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, getCourseById, applyMyUsgaHandicapIfAvailable]);
 
   // Generate shareable link
   const getShareableLink = useCallback(() => {
@@ -336,6 +428,9 @@ export const useRoundManagement = ({
       setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));
 
       toast.success('Ronda creada');
+
+      // Auto-apply USGA handicap for the organizer if available (otherwise stays 0)
+      void applyMyUsgaHandicapIfAvailable(result.round_player_id);
       return result.round_id;
     } catch (error) {
       console.error('Error creating round:', error);
@@ -344,7 +439,7 @@ export const useRoundManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [profile, betConfig]);
+  }, [profile, betConfig, applyMyUsgaHandicapIfAvailable]);
 
   // Start the round (change status to in_progress)
   const startRound = useCallback(async () => {
@@ -582,7 +677,7 @@ export const useRoundManagement = ({
             round_id: roundState.id,
             group_id: roundState.groupId,
             profile_id: player.profileId,
-            handicap_for_round: player.handicap,
+            handicap_for_round: 0,
             is_organizer: false,
           })
           .select('id')
@@ -611,7 +706,7 @@ export const useRoundManagement = ({
             round_id: roundState.id,
             group_id: roundState.groupId,
             profile_id: null,
-            handicap_for_round: player.handicap,
+            handicap_for_round: 0,
             is_organizer: false,
             guest_name: player.name,
             guest_initials: player.initials,
@@ -744,7 +839,7 @@ export const useRoundManagement = ({
       name,
       initials,
       color: colors[players.length % colors.length],
-      handicap,
+      handicap: 0,
     };
 
     return newPlayer;
