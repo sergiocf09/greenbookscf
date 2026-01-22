@@ -38,7 +38,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .maybeSingle();
     
     if (data && !error) {
-      setProfile(data);
+      // Try to get the handicap from the last completed round
+      const { data: lastRoundData } = await supabase
+        .from('round_players')
+        .select(`
+          handicap_for_round,
+          rounds!inner(status, date)
+        `)
+        .eq('profile_id', data.id)
+        .eq('rounds.status', 'completed')
+        .order('rounds(date)', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Use last round handicap if available, otherwise use profile's current_handicap
+      const effectiveHandicap = lastRoundData?.handicap_for_round ?? data.current_handicap;
+      
+      setProfile({
+        ...data,
+        current_handicap: Number(effectiveHandicap) || Number(data.current_handicap) || 0,
+      });
     }
   };
 
