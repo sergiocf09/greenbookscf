@@ -103,6 +103,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const results: Array<{
       teamA: [string, string];
       teamB: [string, string];
+      // Net points by hole from Team A perspective (A points - B points). null = skipped (missing confirmation)
+      netByHoleFront: Array<number | null>; // holes 1-9
+      netByHoleBack: Array<number | null>; // holes 10-18
       // Points per segment
       pointsAFront: number;
       pointsBFront: number;
@@ -166,50 +169,63 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         return (typeof score.strokes === 'number' ? score.strokes : 0) - strokesReceived;
       };
 
-      // Calculate points per hole: lowball 1pt, highball 1pt, combined 1pt
-      const calculatePointsForHoles = (holes: number[]): { pointsA: number; pointsB: number } => {
+      const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
+      const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
+      const includeCombined = scoringType === 'combined' || scoringType === 'all';
+
+      const getHolePoints = (holeNum: number): { pointsA: number; pointsB: number } | null => {
+        const netA1 = getCarritosNet(resolvedTeamA[0], holeNum);
+        const netA2 = getCarritosNet(resolvedTeamA[1], holeNum);
+        const netB1 = getCarritosNet(resolvedTeamB[0], holeNum);
+        const netB2 = getCarritosNet(resolvedTeamB[1], holeNum);
+
+        // Skip if not all four have a score for this hole
+        if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
+
         let pointsA = 0;
         let pointsB = 0;
-        
-        holes.forEach(holeNum => {
-          const netA1 = getCarritosNet(resolvedTeamA[0], holeNum);
-          const netA2 = getCarritosNet(resolvedTeamA[1], holeNum);
-          const netB1 = getCarritosNet(resolvedTeamB[0], holeNum);
-          const netB2 = getCarritosNet(resolvedTeamB[1], holeNum);
 
-          // Skip if not all four have a score for this hole
-          if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return;
-          
-          const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
-          const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
-          const includeCombined = scoringType === 'combined' || scoringType === 'all';
+        if (includeLowBall) {
+          const lowballA = Math.min(netA1, netA2);
+          const lowballB = Math.min(netB1, netB2);
+          if (lowballA < lowballB) pointsA += 1;
+          else if (lowballB < lowballA) pointsB += 1;
+        }
 
-          if (includeLowBall) {
-            // Lowball: best ball of each team
-            const lowballA = Math.min(netA1, netA2);
-            const lowballB = Math.min(netB1, netB2);
-            if (lowballA < lowballB) pointsA += 1;
-            else if (lowballB < lowballA) pointsB += 1;
-          }
+        if (includeHighBall) {
+          const highballA = Math.max(netA1, netA2);
+          const highballB = Math.max(netB1, netB2);
+          if (highballA < highballB) pointsA += 1;
+          else if (highballB < highballA) pointsB += 1;
+        }
 
-          if (includeHighBall) {
-            // Highball: worst ball of each team
-            const highballA = Math.max(netA1, netA2);
-            const highballB = Math.max(netB1, netB2);
-            if (highballA < highballB) pointsA += 1;
-            else if (highballB < highballA) pointsB += 1;
-          }
+        if (includeCombined) {
+          const combinedA = netA1 + netA2;
+          const combinedB = netB1 + netB2;
+          if (combinedA < combinedB) pointsA += 1;
+          else if (combinedB < combinedA) pointsB += 1;
+        }
 
-          if (includeCombined) {
-            // Combined: sum of both players
-            const combinedA = netA1 + netA2;
-            const combinedB = netB1 + netB2;
-            if (combinedA < combinedB) pointsA += 1;
-            else if (combinedB < combinedA) pointsB += 1;
-          }
-        });
-        
         return { pointsA, pointsB };
+      };
+
+      const calculatePointsForHoles = (holes: number[]): { pointsA: number; pointsB: number; netByHole: Array<number | null> } => {
+        let pointsA = 0;
+        let pointsB = 0;
+        const netByHole: Array<number | null> = [];
+
+        holes.forEach((holeNum) => {
+          const holePoints = getHolePoints(holeNum);
+          if (!holePoints) {
+            netByHole.push(null);
+            return;
+          }
+          pointsA += holePoints.pointsA;
+          pointsB += holePoints.pointsB;
+          netByHole.push(holePoints.pointsA - holePoints.pointsB);
+        });
+
+        return { pointsA, pointsB, netByHole };
       };
       
       const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -245,6 +261,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return {
         teamA: resolvedTeamA,
         teamB: resolvedTeamB,
+        netByHoleFront: frontPoints.netByHole,
+        netByHoleBack: backPoints.netByHole,
         pointsAFront,
         pointsBFront,
         pointsABack,
@@ -602,6 +620,8 @@ interface CarritosResultsCardProps {
   results: {
     teamA: [string, string];
     teamB: [string, string];
+    netByHoleFront: Array<number | null>;
+    netByHoleBack: Array<number | null>;
     pointsAFront: number;
     pointsBFront: number;
     pointsABack: number;
@@ -628,10 +648,19 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
   
   const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
+  const displayTeamAPlayers = isBaseInTeamA ? teamAPlayers : teamBPlayers;
+  const displayTeamBPlayers = isBaseInTeamA ? teamBPlayers : teamAPlayers;
+
   const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
-  const baseTeamPointsFront = isBaseInTeamA ? results.pointsAFront : results.pointsBFront;
-  const baseTeamPointsBack = isBaseInTeamA ? results.pointsABack : results.pointsBBack;
-  const baseTeamPointsTotal = isBaseInTeamA ? results.pointsATotal : results.pointsBTotal;
+  const baseTeamNetFront = isBaseInTeamA ? (results.pointsAFront - results.pointsBFront) : (results.pointsBFront - results.pointsAFront);
+  const baseTeamNetBack = isBaseInTeamA ? (results.pointsABack - results.pointsBBack) : (results.pointsBBack - results.pointsABack);
+  const baseTeamNetTotal = isBaseInTeamA ? (results.pointsATotal - results.pointsBTotal) : (results.pointsBTotal - results.pointsATotal);
+
+  const baseNetByHoleFront = isBaseInTeamA ? results.netByHoleFront : results.netByHoleFront.map(v => (v === null ? null : -v));
+  const baseNetByHoleBack = isBaseInTeamA ? results.netByHoleBack : results.netByHoleBack.map(v => (v === null ? null : -v));
+
+  const getNetTone = (n: number) => (n > 0 ? 'text-primary' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
+  const getNetPill = (n: number) => (n > 0 ? 'border-primary/40 text-primary' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
   
   // Payment: each losing player pays 50% of total to EACH winning player
   const getPaymentBreakdown = () => {
@@ -671,95 +700,122 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        {/* Team comparison */}
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <div className="text-left">
-            <div className="flex items-center gap-1 mb-1">
-              {teamAPlayers.map(p => (
-                <div key={p.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: p.color }}>
+        {/* Solo vista Pareja A (tu equipo) */}
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-1">
+              {displayTeamAPlayers.map((p) => (
+                <div
+                  key={p.id}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{ backgroundColor: p.color }}
+                  title={p.name}
+                >
                   {getPlayerAbbr(p)}
                 </div>
               ))}
             </div>
-            <span className="text-muted-foreground">Equipo A</span>
+            <p className="text-[10px] text-muted-foreground mt-1">Pareja A (tu equipo)</p>
           </div>
-          <div className="text-muted-foreground self-center">vs</div>
           <div className="text-right">
-            <div className="flex items-center justify-end gap-1 mb-1">
-              {teamBPlayers.map(p => (
-                <div key={p.id} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: p.color }}>
+            <div className="flex items-center justify-end gap-1">
+              {displayTeamBPlayers.map((p) => (
+                <div
+                  key={p.id}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold opacity-80"
+                  style={{ backgroundColor: p.color }}
+                  title={p.name}
+                >
                   {getPlayerAbbr(p)}
                 </div>
               ))}
             </div>
-            <span className="text-muted-foreground">Equipo B</span>
+            <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
           </div>
         </div>
         
-        {/* Points per segment - Net score display */}
-        <div className="bg-muted/30 rounded-lg p-2 space-y-1">
-          <div className="text-[10px] text-muted-foreground text-center mb-1">
-            Puntos: LowBall + HighBall + Combinado (0-3 pts/hoyo)
+        {/* Puntos por hoyo (netos de tu pareja) */}
+        <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+          <div className="text-[10px] text-muted-foreground text-center">
+            Carritos se calcula con neto (golpes - strokes recibidos) y solo cuenta hoyos con score confirmado en los 4.
           </div>
+
           {/* Front 9 */}
-          {(() => {
-            const netFrontA = results.pointsAFront - results.pointsBFront;
-            const netFrontB = results.pointsBFront - results.pointsAFront;
-            return (
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground w-16">Front 9</span>
-                <span className={cn('font-bold', netFrontA > 0 ? 'text-green-500' : netFrontA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsAFront} - {results.pointsBFront} → {netFrontA >= 0 ? '+' : ''}{netFrontA} pts
-                </span>
-                <span className={cn('font-bold', netFrontB > 0 ? 'text-green-500' : netFrontB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsBFront} - {results.pointsAFront} → {netFrontB >= 0 ? '+' : ''}{netFrontB} pts
-                </span>
-              </div>
-            );
-          })()}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Front 9</span>
+              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetFront))}>
+                {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
+              </span>
+            </div>
+            <div className="grid grid-cols-9 gap-1">
+              {baseNetByHoleFront.map((net, idx) => {
+                const hole = idx + 1;
+                if (net === null) {
+                  return (
+                    <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
+                      <span className="text-[9px] text-muted-foreground">{hole}</span>
+                      <span className="text-[11px] font-semibold text-muted-foreground">–</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={hole} className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center', getNetPill(net))}>
+                    <span className="text-[9px] opacity-80">{hole}</span>
+                    <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Back 9 */}
-          {(() => {
-            const netBackA = results.pointsABack - results.pointsBBack;
-            const netBackB = results.pointsBBack - results.pointsABack;
-            return (
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground w-16">Back 9</span>
-                <span className={cn('font-bold', netBackA > 0 ? 'text-green-500' : netBackA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsABack} - {results.pointsBBack} → {netBackA >= 0 ? '+' : ''}{netBackA} pts
-                </span>
-                <span className={cn('font-bold', netBackB > 0 ? 'text-green-500' : netBackB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsBBack} - {results.pointsABack} → {netBackB >= 0 ? '+' : ''}{netBackB} pts
-                </span>
-              </div>
-            );
-          })()}
-          {/* Total 18 */}
-          {(() => {
-            const netTotalA = results.pointsATotal - results.pointsBTotal;
-            const netTotalB = results.pointsBTotal - results.pointsATotal;
-            return (
-              <div className="flex justify-between items-center text-xs border-t border-border/50 pt-1">
-                <span className="text-muted-foreground w-16 font-medium">Total</span>
-                <span className={cn('font-bold', netTotalA > 0 ? 'text-green-500' : netTotalA < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsATotal} - {results.pointsBTotal} → {netTotalA >= 0 ? '+' : ''}{netTotalA} pts
-                </span>
-                <span className={cn('font-bold', netTotalB > 0 ? 'text-green-500' : netTotalB < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                  {results.pointsBTotal} - {results.pointsATotal} → {netTotalB >= 0 ? '+' : ''}{netTotalB} pts
-                </span>
-              </div>
-            );
-          })()}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Back 9</span>
+              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetBack))}>
+                {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
+              </span>
+            </div>
+            <div className="grid grid-cols-9 gap-1">
+              {baseNetByHoleBack.map((net, idx) => {
+                const hole = idx + 10;
+                if (net === null) {
+                  return (
+                    <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
+                      <span className="text-[9px] text-muted-foreground">{hole}</span>
+                      <span className="text-[11px] font-semibold text-muted-foreground">–</span>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={hole} className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center', getNetPill(net))}>
+                    <span className="text-[9px] opacity-80">{hole}</span>
+                    <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="flex items-center justify-between border-t border-border/50 pt-2">
+            <span className="text-xs font-medium">Total 18</span>
+            <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
+              {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+            </span>
+          </div>
         </div>
         
         {/* Money result */}
         <div className="text-center">
           <span className={cn(
             'text-xl font-bold',
-            baseTeamMoney > 0 ? 'text-green-500' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground'
+            baseTeamMoney > 0 ? 'text-primary' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
             {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
           </span>
-          <p className="text-[10px] text-muted-foreground">Tu equipo ({baseTeamPointsTotal} pts)</p>
+          <p className="text-[10px] text-muted-foreground">Tu equipo (neto {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts)</p>
         </div>
         
         {/* Payment breakdown */}
