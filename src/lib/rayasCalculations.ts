@@ -84,7 +84,7 @@ const countPositiveUnits = (
       // Marker-based units
       if (score.markers.sandyPar) units += 1;
       if (score.markers.aquaPar) units += 1;
-      if (score.markers.holeOut) units += 2;
+      if (score.markers.holeOut) units += 1;
     });
   
   return units;

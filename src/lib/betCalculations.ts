@@ -711,7 +711,7 @@ export const calculateUnitsBets = (
       if (toPar <= -3) positive += 3; // Albatross
       if (score.markers.sandyPar) positive += 1;
       if (score.markers.aquaPar) positive += 1;
-      if (score.markers.holeOut) positive += 2;
+      if (score.markers.holeOut) positive += 1;
       
       // Negative units - Cuatriput (4+ putts)
       if (score.putts >= 4) negative += 1;
