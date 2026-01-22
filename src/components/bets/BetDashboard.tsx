@@ -192,10 +192,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const resolvedTeamB: [string, string] = [resolvePlayerId(teamB[0]), resolvePlayerId(teamB[1])];
 
       const getPlayerHandicapForCarritos = (playerId: string): number => {
+        // Prefer the handicap explicitly defined in the Carritos bet setup (teamHandicaps),
+        // even if the feature-flag `useTeamHandicaps` is not set (some older configs may omit it).
+        const direct = teamHandicaps?.[playerId];
+        if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+
+        const byProfileId = players.find((p) => p.id === playerId)?.profileId;
+        if (byProfileId) {
+          const h = teamHandicaps?.[byProfileId];
+          if (typeof h === 'number' && Number.isFinite(h)) return h;
+        }
+
+        // Back-compat: honor the toggle if present
         if (useTeamHandicaps) {
           const teamHcp = teamHandicaps?.[playerId];
           if (typeof teamHcp === 'number' && Number.isFinite(teamHcp)) return teamHcp;
         }
+
+        // Fallback to the player's round handicap stored in the players array
         return players.find((p) => p.id === playerId)?.handicap ?? 0;
       };
 
