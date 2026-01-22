@@ -11,6 +11,7 @@ import {
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult } from '@/lib/rayasCalculations';
+import { GroupBetsCard } from './GroupBetsCard';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -343,6 +344,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   return (
     <div className="space-y-4">
+      {/* Group Bets (Medal General, Culebras, Pinguinos) */}
+      <GroupBetsCard
+        players={players}
+        scores={confirmedScores}
+        betConfig={betConfig}
+        course={course}
+        basePlayerId={basePlayer?.id || basePlayer?.profileId}
+      />
+      
       {/* All Carritos Results */}
       {allCarritosResults.map((result, idx) => (
         <CarritosResultsCard 
