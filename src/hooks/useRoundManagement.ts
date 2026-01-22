@@ -518,11 +518,59 @@ export const useRoundManagement = ({
     }
   }, [roundState.id, profile, scores, players, betConfig, roundPlayerIds]);
 
-  // Add a guest player (non-registered)
+  // Add a player to an active round (creates round_player entry in DB)
+  const addPlayerToRound = useCallback(async (player: Player): Promise<boolean> => {
+    if (!roundState.id || !roundState.groupId) {
+      console.log('No active round to add player to');
+      return false;
+    }
+
+    try {
+      // Check if player already exists in round_players
+      if (roundPlayerIds.has(player.id)) {
+        console.log('Player already in round');
+        return true;
+      }
+
+      // For non-guest players with profileId, create a round_player entry
+      if (player.profileId) {
+        const { data, error } = await supabase
+          .from('round_players')
+          .insert({
+            round_id: roundState.id,
+            group_id: roundState.groupId,
+            profile_id: player.profileId,
+            handicap_for_round: player.handicap,
+            is_organizer: false,
+          })
+          .select('id')
+          .single();
+
+        if (error) {
+          console.error('Error adding player to round:', error);
+          toast.error('Error al agregar jugador a la ronda');
+          return false;
+        }
+
+        // Update roundPlayerIds map
+        setRoundPlayerIds(prev => {
+          const newMap = new Map(prev);
+          newMap.set(player.id, data.id);
+          return newMap;
+        });
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error in addPlayerToRound:', err);
+      return false;
+    }
+  }, [roundState.id, roundState.groupId, roundPlayerIds]);
+
+  // Add a guest player (non-registered) - just local, no DB entry
   const addGuestPlayer = useCallback(async (name: string, handicap: number) => {
     if (!roundState.id || !roundState.groupId) return null;
 
-    // For guests, we just add them locally - they don't have profiles
     const initials = name
       .split(' ')
       .map(n => n[0])
@@ -590,6 +638,7 @@ export const useRoundManagement = ({
     createRound,
     startRound,
     closeScorecard,
+    addPlayerToRound,
     addGuestPlayer,
     setRoundDate,
     copyShareLink,

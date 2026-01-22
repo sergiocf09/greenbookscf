@@ -5,6 +5,8 @@ import { CourseSelect } from '@/components/setup/CourseSelect';
 import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
+import { RoundHistory } from '@/components/RoundHistory';
+import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -15,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -40,6 +43,8 @@ const Index = () => {
   const [currentHole, setCurrentHole] = useState(1);
   const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
   const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
@@ -56,6 +61,7 @@ const Index = () => {
     createRound,
     startRound: startRoundInDb,
     closeScorecard,
+    addPlayerToRound,
     setRoundDate,
     copyShareLink,
     getShareableLink,
@@ -120,29 +126,63 @@ const Index = () => {
   const canCreateRound = players.length >= 1 && course !== null;
   const canStartScoring = players.length >= 1 && course !== null;
 
+  // Initialize scores for a single player
+  const initializePlayerScores = useCallback((player: Player): PlayerScore[] => {
+    if (!course) return [];
+    const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
+    return Array.from({ length: 18 }, (_, i) => {
+      const holePar = course.holes[i]?.par || 4;
+      return {
+        playerId: player.id,
+        holeNumber: i + 1,
+        strokes: holePar,
+        putts: 2,
+        markers: { ...defaultMarkerState },
+        strokesReceived: strokesPerHole[i],
+        netScore: holePar - strokesPerHole[i],
+        confirmed: false,
+      };
+    });
+  }, [course]);
+
   // Initialize scores locally (for when continuing or starting)
   const initializeScores = useCallback(() => {
     if (!course) return;
     const initialScores = new Map<string, PlayerScore[]>();
     players.forEach(player => {
-      const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
-      const playerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
-        const holePar = course.holes[i]?.par || 4;
-        return {
-          playerId: player.id,
-          holeNumber: i + 1,
-          strokes: holePar,
-          putts: 2,
-          markers: { ...defaultMarkerState },
-          strokesReceived: strokesPerHole[i],
-          netScore: holePar - strokesPerHole[i],
-          confirmed: false,
-        };
-      });
-      initialScores.set(player.id, playerScores);
+      initialScores.set(player.id, initializePlayerScores(player));
     });
     setScores(initialScores);
-  }, [course, players]);
+  }, [course, players, initializePlayerScores]);
+
+  // Handle players change - initialize scores for new players when round is active
+  const handlePlayersChange = useCallback(async (newPlayers: Player[]) => {
+    // Find new players (in newPlayers but not in current players)
+    const currentPlayerIds = new Set(players.map(p => p.id));
+    const addedPlayers = newPlayers.filter(p => !currentPlayerIds.has(p.id));
+
+    // Update players first
+    setPlayers(newPlayers);
+
+    // If round is in progress, initialize scores for new players
+    if (isRoundStarted && course && addedPlayers.length > 0) {
+      setScores(prev => {
+        const newScores = new Map(prev);
+        for (const player of addedPlayers) {
+          // Only add if not already has scores
+          if (!newScores.has(player.id)) {
+            newScores.set(player.id, initializePlayerScores(player));
+          }
+        }
+        return newScores;
+      });
+
+      // Add players to the round in database
+      for (const player of addedPlayers) {
+        await addPlayerToRound(player);
+      }
+    }
+  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound]);
 
   // Create round in database (can do with 1 player to get share link)
   const handleCreateRound = async () => {
@@ -335,6 +375,15 @@ const Index = () => {
                   <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
+                  <History className="h-4 w-4 mr-2" />
+                  Historial de Rondas
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowHandicapDialog(true)}>
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Calcular Handicap
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Cerrar Sesión
@@ -399,7 +448,7 @@ const Index = () => {
               teeColor={teeColor}
               onTeeColorChange={setTeeColor}
             />
-            <PlayerSetup players={players} onChange={setPlayers} maxPlayers={6} />
+            <PlayerSetup players={players} onChange={handlePlayersChange} maxPlayers={6} />
             
             {/* Share Link Button - show after round is created */}
             {roundState.id && (
@@ -607,6 +656,26 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Historial de Rondas</DialogTitle>
+          </DialogHeader>
+          <RoundHistory onClose={() => setShowHistoryDialog(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Handicap Calculator Dialog */}
+      <Dialog open={showHandicapDialog} onOpenChange={setShowHandicapDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Calculadora de Handicap</DialogTitle>
+          </DialogHeader>
+          <HandicapCalculator onClose={() => setShowHandicapDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
