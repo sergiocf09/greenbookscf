@@ -1100,8 +1100,29 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // NOTE: Culebras and Pingüinos are NOT shown in bilateral view
-    // They are group bets where the last player pays everyone, displayed in GroupBetsCard
+    // Culebras
+    if (betConfig.culebras?.enabled) {
+      groups.push({
+        key: 'culebras',
+        label: 'Culebras',
+        configKey: 'culebras',
+        segments: [],
+        getTotal: () => groupedSummaries['Culebras']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
+    
+    // Pingüinos
+    if (betConfig.pinguinos?.enabled) {
+      groups.push({
+        key: 'pinguinos',
+        label: 'Pingüinos',
+        configKey: 'pinguinos',
+        segments: [],
+        getTotal: () => groupedSummaries['Pingüinos']?.total || 0,
+        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
+      });
+    }
     
     // Rayas (Aggregator bet)
     if (betConfig.rayas?.enabled) {
