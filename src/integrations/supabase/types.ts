@@ -683,6 +683,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_round: {
+        Args: {
+          p_bet_config: Json
+          p_course_id: string
+          p_date: string
+          p_tee_color: string
+        }
+        Returns: {
+          group_id: string
+          organizer_profile_id: string
+          round_id: string
+          round_player_id: string
+        }[]
+      }
       get_my_profile_id: { Args: never; Returns: string }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
