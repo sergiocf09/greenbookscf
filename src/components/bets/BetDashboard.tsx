@@ -1100,29 +1100,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Culebras
-    if (betConfig.culebras.enabled) {
-      groups.push({
-        key: 'culebras',
-        label: 'Culebras',
-        configKey: 'culebras',
-        segments: [],
-        getTotal: () => groupedSummaries['Culebras']?.total || 0,
-        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
-      });
-    }
-    
-    // Pingüinos
-    if (betConfig.pinguinos.enabled) {
-      groups.push({
-        key: 'pinguinos',
-        label: 'Pingüinos',
-        configKey: 'pinguinos',
-        segments: [],
-        getTotal: () => groupedSummaries['Pingüinos']?.total || 0,
-        getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: 0 }),
-      });
-    }
+    // NOTE: Culebras and Pingüinos are NOT shown in bilateral view
+    // They are group bets where the last player pays everyone, displayed in GroupBetsCard
     
     // Rayas (Aggregator bet)
     if (betConfig.rayas?.enabled) {
@@ -1174,8 +1153,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Medal General (Group bet shown in bilateral view)
-    if (betConfig.medalGeneral?.enabled) {
+    // Medal General (Group bet shown in bilateral view) - only after 18 holes confirmed
+    // Check if both player and rival have 18 holes confirmed
+    const bothPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every(h => {
+      const playerScores = confirmedScores.get(player.id) || [];
+      const rivalScores = confirmedScores.get(rival.id) || [];
+      return playerScores.some(s => s.holeNumber === h) && rivalScores.some(s => s.holeNumber === h);
+    });
+    
+    if (betConfig.medalGeneral?.enabled && bothPlayersComplete) {
       const medalResult = getMedalGeneralBilateralResult(player, rival, confirmedScores, betConfig, course);
       if (medalResult) {
         groups.push({
