@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Icon,
   Flag,
   Waves,
   Target,
@@ -11,7 +10,6 @@ import {
   Hourglass,
   Footprints,
 } from 'lucide-react';
-import { sneaker } from '@lucide/lab';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -30,8 +28,25 @@ interface MarkerConfig {
   points?: number;
 }
 
-const PinkiesShoeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <Icon iconNode={sneaker} {...props} />
+// Custom "high heel" icon for Pinkies (Lucide doesn't include a heel icon)
+const PinkiesHeelIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    {/* Stylized high-heel silhouette */}
+    <path d="M4 12c2.5 0 4.5-2 6.5-4.5C12 5.6 13.7 5 15 5c2 0 3 1.5 3 3.5 0 1.8-.8 3.4-2 4.8" />
+    <path d="M6 12l7 3.2c1.2.6 2.6.8 3.9.5l2.1-.5" />
+    <path d="M8 16l4.5 2" />
+    <path d="M14 16.5l-2 6.5" />
+    <path d="M19.5 15.2l1.5 5.8" />
+  </svg>
 );
 
 // Manual unit markers (shown on strokes row) - LARGER SIZE
@@ -46,7 +61,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
 export const manualStainMarkers: MarkerConfig[] = [
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },
   { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
-  { key: 'ladies', icon: PinkiesShoeIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'ladies', icon: PinkiesHeelIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
