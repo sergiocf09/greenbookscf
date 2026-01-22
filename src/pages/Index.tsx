@@ -8,6 +8,7 @@ import { BetDashboard } from '@/components/bets/BetDashboard';
 import { RoundHistory } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
+import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -47,6 +48,7 @@ const Index = () => {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [historicalScorecardData, setHistoricalScorecardData] = useState<{
     roundId: string;
     courseId: string;
@@ -198,7 +200,11 @@ const Index = () => {
     if (!course || !selectedCourseId) return;
     
     if (!roundState.id) {
-      await createRound(selectedCourseId, teeColor, roundState.date);
+      const result = await createRound(selectedCourseId, teeColor, roundState.date);
+      if (result) {
+        // Show share dialog after successful creation
+        setShowShareDialog(true);
+      }
     }
   };
 
@@ -459,15 +465,15 @@ const Index = () => {
             />
             <PlayerSetup players={players} onChange={handlePlayersChange} maxPlayers={6} />
             
-            {/* Share Link Button - show after round is created */}
+            {/* Share Options Button - show after round is created */}
             {roundState.id && (
               <Button 
                 variant="outline" 
-                onClick={copyShareLink}
+                onClick={() => setShowShareDialog(true)}
                 className="w-full"
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                Copiar Link para Invitar Jugadores
+                Invitar Jugadores (Link, QR, Código)
               </Button>
             )}
 
@@ -484,7 +490,7 @@ const Index = () => {
                   variant="outline"
                 >
                   <Share2 className="h-4 w-4 mr-2" />
-                  Crear Ronda y Obtener Link
+                  Crear Ronda y Obtener Link, QR & Código
                 </Button>
               )}
 
@@ -707,6 +713,21 @@ const Index = () => {
               players={historicalScorecardData.players}
               teeColor={historicalScorecardData.teeColor}
               date={historicalScorecardData.date}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Round Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Invitar Jugadores</DialogTitle>
+          </DialogHeader>
+          {roundState.id && (
+            <ShareRoundDialog 
+              roundId={roundState.id} 
+              onClose={() => setShowShareDialog(false)} 
             />
           )}
         </DialogContent>
