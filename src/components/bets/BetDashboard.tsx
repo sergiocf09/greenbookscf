@@ -344,98 +344,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   return (
     <div className="space-y-4">
-      {/* Group Bets (Medal General, Culebras, Pinguinos) */}
-      <GroupBetsCard
-        players={players}
-        scores={confirmedScores}
-        betConfig={betConfig}
-        course={course}
-        basePlayerId={basePlayer?.id || basePlayer?.profileId}
-      />
-      
-      {/* All Carritos Results */}
-      {allCarritosResults.map((result, idx) => (
-        <CarritosResultsCard 
-          key={result.id || idx}
-          results={result} 
-          players={players}
-          basePlayerId={basePlayer?.id}
-          title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
-          onCancel={onBetConfigChange ? () => cancelCarritos(result.id) : undefined}
-        />
-      ))}
-      
-      {/* Rival Selector */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <span className="text-muted-foreground">Tu balance vs:</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {rivals.map(rival => {
-              const balance = getRivalBalance(rival.id);
-              const isSelected = selectedRival === rival.id;
-              const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
-              const hasOverride = !!pairHandicap;
-              
-              return (
-                <button
-                  key={rival.id}
-                  onClick={() => setSelectedRival(isSelected ? null : rival.id)}
-                  className={cn(
-                    'flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px] relative',
-                    isSelected 
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
-                      : 'bg-muted/50 hover:bg-muted'
-                  )}
-                >
-                  {hasOverride && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
-                  )}
-                  <div 
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold mb-1"
-                    style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
-                  >
-                    {getPlayerAbbr(rival)}
-                  </div>
-                  <div className={cn(
-                    'text-sm font-bold flex items-center gap-0.5',
-                    isSelected ? '' : balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                  )}>
-                    {balance !== 0 && (
-                      balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
-                    )}
-                    ${Math.abs(balance)}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Bilateral Detail View */}
-      {selectedRival && basePlayer && (
-        <BilateralDetail
-          player={basePlayer}
-          rival={players.find(p => p.id === selectedRival)!}
-          groupedSummaries={getGroupedSummaries(selectedRival)}
-          totalBalance={getRivalBalance(selectedRival)}
-          expandedTypes={expandedTypes}
-          onToggleExpand={toggleExpanded}
-          bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
-          onUpdateBilateralHandicap={updateBilateralHandicap}
-          betConfig={betConfig}
-          confirmedScores={confirmedScores}
-          course={course}
-          allScores={scores}
-          onBetConfigChange={onBetConfigChange}
-        />
-      )}
-      
-      {/* General Leaderboard - Expandable */}
+      {/* Tabla General */}
       <Card>
         <CardHeader className="py-3">
           <CardTitle className="text-sm">Tabla General</CardTitle>
@@ -537,6 +446,97 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Balance vs */}
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <span className="text-muted-foreground">Tu balance vs:</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {rivals.map(rival => {
+              const balance = getRivalBalance(rival.id);
+              const isSelected = selectedRival === rival.id;
+              const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
+              const hasOverride = !!pairHandicap;
+              
+              return (
+                <button
+                  key={rival.id}
+                  onClick={() => setSelectedRival(isSelected ? null : rival.id)}
+                  className={cn(
+                    'flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px] relative',
+                    isSelected 
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
+                      : 'bg-muted/50 hover:bg-muted'
+                  )}
+                >
+                  {hasOverride && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
+                  )}
+                  <div 
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold mb-1"
+                    style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
+                  >
+                    {getPlayerAbbr(rival)}
+                  </div>
+                  <div className={cn(
+                    'text-sm font-bold flex items-center gap-0.5',
+                    isSelected ? '' : balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  )}>
+                    {balance !== 0 && (
+                      balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
+                    )}
+                    ${Math.abs(balance)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Bilateral Detail View */}
+      {selectedRival && basePlayer && (
+        <BilateralDetail
+          player={basePlayer}
+          rival={players.find(p => p.id === selectedRival)!}
+          groupedSummaries={getGroupedSummaries(selectedRival)}
+          totalBalance={getRivalBalance(selectedRival)}
+          expandedTypes={expandedTypes}
+          onToggleExpand={toggleExpanded}
+          bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
+          onUpdateBilateralHandicap={updateBilateralHandicap}
+          betConfig={betConfig}
+          confirmedScores={confirmedScores}
+          course={course}
+          allScores={scores}
+          onBetConfigChange={onBetConfigChange}
+        />
+      )}
+
+      {/* All Carritos Results */}
+      {allCarritosResults.map((result, idx) => (
+        <CarritosResultsCard 
+          key={result.id || idx}
+          results={result} 
+          players={players}
+          basePlayerId={basePlayer?.id}
+          title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
+          onCancel={onBetConfigChange ? () => cancelCarritos(result.id) : undefined}
+        />
+      ))}
+
+      {/* Grupales */}
+      <GroupBetsCard
+        players={players}
+        scores={confirmedScores}
+        betConfig={betConfig}
+        course={course}
+        basePlayerId={basePlayer?.id || basePlayer?.profileId}
+      />
     </div>
   );
 };
