@@ -10,11 +10,12 @@ import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -45,11 +46,13 @@ const Index = () => {
   const { getCourseById } = useGolfCourses();
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
-  // Round management hook
+  // Round management hook with restoration
   const {
     roundState,
     isLoading,
+    isRestoring,
     isRoundStarted,
+    roundPlayerIds,
     createRound,
     startRound: startRoundInDb,
     closeScorecard,
@@ -63,12 +66,23 @@ const Index = () => {
     setScores,
     setConfirmedHoles,
     betConfig,
+    setBetConfig,
     course,
+    setSelectedCourseId,
+    setTeeColor,
+    getCourseById,
   });
 
-  // Initialize base player from profile
+  // Auto-navigate to scoring view when round is restored
   useEffect(() => {
-    if (profile && players.length === 0) {
+    if (!isRestoring && isRoundStarted && view === 'setup') {
+      setView('scoring');
+    }
+  }, [isRestoring, isRoundStarted, view]);
+
+  // Initialize base player from profile (only if not restoring and no players)
+  useEffect(() => {
+    if (!isRestoring && profile && players.length === 0) {
       const basePlayer: Player = {
         id: profile.id,
         name: profile.display_name,
@@ -79,7 +93,7 @@ const Index = () => {
       };
       setPlayers([basePlayer]);
     }
-  }, [profile, players.length]);
+  }, [profile, players.length, isRestoring]);
 
   // Can create and start round with just 1 player (for solo score tracking)
   const canCreateRound = players.length >= 1 && course !== null;
@@ -141,6 +155,36 @@ const Index = () => {
     setView('scoring');
   };
 
+  // Save score to database when updated
+  const saveScoreToDb = useCallback(async (playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
+    const rpId = roundPlayerIds.get(playerId);
+    if (!rpId || !roundState.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('hole_scores')
+        .upsert({
+          round_player_id: rpId,
+          hole_number: holeNumber,
+          strokes: score.strokes,
+          putts: score.putts,
+          net_score: score.netScore,
+          strokes_received: score.strokesReceived,
+          oyes_proximity: score.oyesProximity ?? null,
+          confirmed: score.confirmed ?? false,
+        }, {
+          onConflict: 'round_player_id,hole_number',
+          ignoreDuplicates: false,
+        });
+
+      if (error) {
+        console.error('Error saving score:', error);
+      }
+    } catch (err) {
+      console.error('Error in saveScoreToDb:', err);
+    }
+  }, [roundPlayerIds, roundState.id]);
+
   const updateScore = useCallback((playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => {
     setScores(prev => {
       const newScores = new Map(prev);
@@ -151,11 +195,15 @@ const Index = () => {
         if (updates.strokes !== undefined) {
           playerScores[idx].netScore = updates.strokes - playerScores[idx].strokesReceived;
         }
+        // Save to database
+        if (roundState.id) {
+          saveScoreToDb(playerId, holeNumber, playerScores[idx]);
+        }
       }
       newScores.set(playerId, playerScores);
       return newScores;
     });
-  }, []);
+  }, [saveScoreToDb, roundState.id]);
 
   const confirmHole = useCallback((holeNumber: number) => {
     // Mark all players' scores for this hole as confirmed
@@ -166,13 +214,17 @@ const Index = () => {
         const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
         if (idx >= 0) {
           playerScores[idx] = { ...playerScores[idx], confirmed: true };
+          // Save confirmed state to database
+          if (roundState.id) {
+            saveScoreToDb(player.id, holeNumber, playerScores[idx]);
+          }
         }
         newScores.set(player.id, playerScores);
       });
       return newScores;
     });
     setConfirmedHoles(prev => new Set([...prev, holeNumber]));
-  }, [players]);
+  }, [players, saveScoreToDb, roundState.id]);
 
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);
@@ -206,6 +258,18 @@ const Index = () => {
       giving: baseReceives < rivalReceives,     // Base player gives advantage
     };
   };
+
+  // Show loading while restoring
+  if (isRestoring) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,8 +324,8 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      {view !== 'setup' && (
+      {/* Navigation Tabs - show when round is in progress OR not in setup view */}
+      {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
             <Tabs value={view} onValueChange={(v) => setView(v as AppView)}>
