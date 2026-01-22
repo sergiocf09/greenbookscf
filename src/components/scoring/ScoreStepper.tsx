@@ -24,20 +24,20 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="text-xs text-muted-foreground w-12">{label}</span>
+      <span className="text-xs text-muted-foreground w-10">{label}</span>
 
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          className="h-7 w-7 rounded-full"
+          className="h-6 w-6 rounded-full"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
         >
           <Minus className="h-3 w-3" />
         </Button>
 
-        <div className="w-10 text-center flex items-center justify-center gap-1">
+        <div className="w-8 text-center flex items-center justify-center gap-1">
           <span className="text-lg font-bold">{displayValue}</span>
           {rightSlot}
         </div>
@@ -45,7 +45,7 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
         <Button
           variant="outline"
           size="icon"
-          className="h-7 w-7 rounded-full"
+          className="h-6 w-6 rounded-full"
           onClick={() => onChange(value + 1)}
         >
           <Plus className="h-3 w-3" />

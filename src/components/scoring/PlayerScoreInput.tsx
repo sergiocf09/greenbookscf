@@ -126,12 +126,13 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
 
       {/* Inputs (Golpes + Putts + Proximidad Par 3) */}
       <div className="bg-muted/30 rounded-lg p-2">
-        <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+        <div className="grid grid-cols-[auto_auto_minmax(96px,1fr)] items-center gap-2">
           <ScoreStepper
             label="Golpes"
             value={strokes}
             min={1}
             onChange={onStrokesChange}
+            className="shrink-0"
           />
 
           <ScoreStepper
@@ -139,6 +140,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             value={putts}
             min={0}
             onChange={onPuttsChange}
+            className="shrink-0"
             rightSlot={(
               <>
                 {mergedMarkers.culebra && !mergedMarkers.cuatriput && (
@@ -162,7 +164,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                   onOyesProximityChange(val === '' ? null : parseInt(val));
                 }}
                 className={cn(
-                  'h-7 w-10 text-xs text-center rounded border bg-background',
+                  'h-7 w-12 text-xs text-center rounded border bg-background',
                   oyesProximity
                     ? 'border-primary text-primary font-bold'
                     : 'border-muted-foreground/30 text-muted-foreground'
