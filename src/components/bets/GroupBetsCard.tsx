@@ -52,9 +52,24 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   course,
   basePlayerId,
 }) => {
-  // Calculate Medal General - only winners
+  // Check if all 18 holes are confirmed for all players
+  const all18HolesConfirmed = useMemo(() => {
+    return Array.from({ length: 18 }, (_, i) => i + 1).every(holeNum =>
+      players.every(player => {
+        const playerScores = scores.get(player.id) || [];
+        return playerScores.some(s => s.holeNumber === holeNum && s.confirmed && s.strokes > 0);
+      })
+    );
+  }, [players, scores]);
+
+  // Calculate Medal General - only show after all 18 holes are confirmed
   const medalGeneralResult = useMemo((): MedalGeneralResult | null => {
     if (!betConfig.medalGeneral?.enabled || players.length < 2) {
+      return null;
+    }
+
+    // Only show Medal General results at end of round (all 18 holes confirmed)
+    if (!all18HolesConfirmed) {
       return null;
     }
 
@@ -93,7 +108,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
 
     if (playerNetScores.length < 2) {
-      return { enabled: true, amount, winners: [], hasValidScores: false };
+      return null;
     }
 
     // Find minimum net total (winners)
@@ -114,7 +129,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       })),
       hasValidScores: true,
     };
-  }, [players, scores, betConfig.medalGeneral, course]);
+  }, [players, scores, betConfig.medalGeneral, course, all18HolesConfirmed]);
 
   // Calculate Culebras - show count and loser payment
   const culebrasResult = useMemo((): OccurrenceBetResult | null => {
