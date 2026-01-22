@@ -29,6 +29,12 @@ interface MedalGeneralResult {
   hasValidScores: boolean;
 }
 
+interface OccurrenceInfo {
+  playerId: string;
+  playerInitial: string;
+  holeNumber: number;
+}
+
 interface OccurrenceBetResult {
   enabled: boolean;
   type: 'culebras' | 'pinguinos';
@@ -36,6 +42,8 @@ interface OccurrenceBetResult {
   emoji: string;
   totalCount: number;
   valuePerOccurrence: number;
+  amountPerPlayer: number;
+  occurrences: OccurrenceInfo[];
   loser: {
     playerId: string;
     name: string;
@@ -156,6 +164,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
 
     const totalCount = allCulebras.length;
+    const amountPerPlayer = totalCount * valuePerOccurrence;
+
+    // Map occurrences with player initials
+    const occurrences: OccurrenceInfo[] = allCulebras
+      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .map(c => {
+        const player = players.find(p => p.id === c.playerId);
+        return {
+          playerId: c.playerId,
+          playerInitial: player?.initials?.charAt(0) || '?',
+          holeNumber: c.holeNumber,
+        };
+      });
 
     // Find last player to pay (most recent culebra by hole number)
     let loser = null;
@@ -168,7 +189,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       if (loserCulebra) {
         const loserPlayer = players.find(p => p.id === loserCulebra.playerId);
         if (loserPlayer) {
-          const amountPerPlayer = totalCount * valuePerOccurrence;
           const totalLoss = amountPerPlayer * (players.length - 1);
           loser = {
             playerId: loserPlayer.id,
@@ -188,6 +208,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       emoji: '🐍',
       totalCount,
       valuePerOccurrence,
+      amountPerPlayer,
+      occurrences,
       loser,
     };
   }, [players, scores, betConfig.culebras]);
@@ -219,6 +241,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
 
     const totalCount = allPinguinos.length;
+    const amountPerPlayer = totalCount * valuePerOccurrence;
+
+    // Map occurrences with player initials
+    const occurrences: OccurrenceInfo[] = allPinguinos
+      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .map(p => {
+        const player = players.find(pl => pl.id === p.playerId);
+        return {
+          playerId: p.playerId,
+          playerInitial: player?.initials?.charAt(0) || '?',
+          holeNumber: p.holeNumber,
+        };
+      });
 
     // Find last player to pay
     let loser = null;
@@ -231,7 +266,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       if (loserPinguino) {
         const loserPlayer = players.find(p => p.id === loserPinguino.playerId);
         if (loserPlayer) {
-          const amountPerPlayer = totalCount * valuePerOccurrence;
           const totalLoss = amountPerPlayer * (players.length - 1);
           loser = {
             playerId: loserPlayer.id,
@@ -251,6 +285,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       emoji: '🐧',
       totalCount,
       valuePerOccurrence,
+      amountPerPlayer,
+      occurrences,
       loser,
     };
   }, [players, scores, betConfig.pinguinos, course]);
@@ -327,14 +363,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {medalGeneralResult && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-lg">{culebrasResult.emoji}</span>
                   <span className="font-medium text-sm">{culebrasResult.title}</span>
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                    {culebrasResult.totalCount} total
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{culebrasResult.totalCount}</span>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground">${culebrasResult.valuePerOccurrence} c/u</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  ${culebrasResult.amountPerPlayer} c/jug
+                </span>
               </div>
               
               {culebrasResult.loser ? (
@@ -354,9 +392,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       -${culebrasResult.loser.totalLoss}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Paga ${culebrasResult.totalCount * culebrasResult.valuePerOccurrence} a cada uno de los otros {players.length - 1} jugadores
-                  </p>
+                  {culebrasResult.occurrences.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {culebrasResult.occurrences.map((occ, idx) => (
+                        <span key={idx} className="text-xs bg-muted/50 px-1.5 py-0.5 rounded font-medium">
+                          {occ.playerInitial}-{occ.holeNumber}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
@@ -373,14 +417,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {(medalGeneralResult || culebrasResult) && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-lg">{pinguinosResult.emoji}</span>
                   <span className="font-medium text-sm">{pinguinosResult.title}</span>
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                    {pinguinosResult.totalCount} total
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{pinguinosResult.totalCount}</span>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground">${pinguinosResult.valuePerOccurrence} c/u</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  ${pinguinosResult.amountPerPlayer} c/jug
+                </span>
               </div>
               
               {pinguinosResult.loser ? (
@@ -400,9 +446,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       -${pinguinosResult.loser.totalLoss}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Paga ${pinguinosResult.totalCount * pinguinosResult.valuePerOccurrence} a cada uno de los otros {players.length - 1} jugadores
-                  </p>
+                  {pinguinosResult.occurrences.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {pinguinosResult.occurrences.map((occ, idx) => (
+                        <span key={idx} className="text-xs bg-muted/50 px-1.5 py-0.5 rounded font-medium">
+                          {occ.playerInitial}-{occ.holeNumber}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
