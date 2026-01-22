@@ -46,15 +46,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   };
 
   const getScoreColor = (strokes: number, par: number, confirmed: boolean): string => {
-    if (!confirmed) return 'text-muted-foreground/40';
-    if (strokes === 0) return 'text-muted-foreground';
+    if (!confirmed) return 'text-muted-foreground/40 font-bold';
+    if (strokes === 0) return 'text-muted-foreground font-bold';
     const toPar = strokes - par;
     if (toPar <= -2) return 'text-golf-gold font-bold';
     if (toPar === -1) return 'text-green-500 font-bold';
-    if (toPar === 0) return 'text-foreground';
-    if (toPar === 1) return 'text-orange-500';
-    if (toPar >= 2) return 'text-destructive';
-    return 'text-foreground';
+    if (toPar === 0) return 'text-foreground font-bold';
+    if (toPar === 1) return 'text-orange-500 font-bold';
+    if (toPar >= 2) return 'text-destructive font-bold';
+    return 'text-foreground font-bold';
   };
 
   const getScoreBg = (strokes: number, par: number, confirmed: boolean): string => {
@@ -102,11 +102,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">OUT</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-2 py-1 sticky left-0 bg-muted/30">Par</td>
+              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
               {frontNine.map(hole => (
-                <td key={hole.number} className="text-center px-1.5 py-1">{hole.par}</td>
+                <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
-              <td className="text-center px-2 py-1 font-medium bg-muted/50">{frontPar}</td>
+              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{frontPar}</td>
+            </tr>
+            <tr className="bg-muted/20 text-muted-foreground text-[10px]">
+              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
+              {frontNine.map(hole => (
+                <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
+              ))}
+              <td className="text-center px-2 py-0.5 bg-muted/30"></td>
             </tr>
           </thead>
           <tbody>
@@ -174,12 +181,20 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <th className="px-2 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[40px]">TOT</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-2 py-1 sticky left-0 bg-muted/30">Par</td>
+              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
               {backNine.map(hole => (
-                <td key={hole.number} className="text-center px-1.5 py-1">{hole.par}</td>
+                <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
-              <td className="text-center px-2 py-1 font-medium bg-muted/50">{backPar}</td>
-              <td className="text-center px-2 py-1 font-medium bg-primary/10">{frontPar + backPar}</td>
+              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{backPar}</td>
+              <td className="text-center px-2 py-1 font-semibold bg-primary/10">{frontPar + backPar}</td>
+            </tr>
+            <tr className="bg-muted/20 text-muted-foreground text-[10px]">
+              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
+              {backNine.map(hole => (
+                <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
+              ))}
+              <td className="text-center px-2 py-0.5 bg-muted/30"></td>
+              <td className="text-center px-2 py-0.5 bg-primary/5"></td>
             </tr>
           </thead>
           <tbody>

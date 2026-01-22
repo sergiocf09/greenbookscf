@@ -377,7 +377,7 @@ const Index = () => {
             {view !== 'setup' && course && currentHoleInfo && (
               <>
                 <p className="text-xl font-bold text-accent">Hoyo {currentHole}</p>
-                <p className="text-[10px] text-primary-foreground/70">
+                <p className="text-sm font-bold text-primary-foreground/90">
                   Par {holePar} • SI {holeStrokeIndex}
                   {holeYards && <span> • {holeYards} yds</span>}
                 </p>
