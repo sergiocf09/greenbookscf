@@ -366,8 +366,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{culebrasResult.emoji}</span>
                   <span className="font-medium text-sm">{culebrasResult.title}</span>
-                  <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{culebrasResult.totalCount}</span>
+                  <div className="w-8 h-8 border-2 border-destructive flex items-center justify-center">
+                    <span className="text-destructive font-bold text-lg">{culebrasResult.totalCount}</span>
                   </div>
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
@@ -420,8 +420,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{pinguinosResult.emoji}</span>
                   <span className="font-medium text-sm">{pinguinosResult.title}</span>
-                  <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{pinguinosResult.totalCount}</span>
+                  <div className="w-8 h-8 border-2 border-destructive flex items-center justify-center">
+                    <span className="text-destructive font-bold text-lg">{pinguinosResult.totalCount}</span>
                   </div>
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
