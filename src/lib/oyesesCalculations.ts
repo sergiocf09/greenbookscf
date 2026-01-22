@@ -30,6 +30,26 @@ export interface OyesesPairResult {
 }
 
 /**
+ * When a player is added mid-round, they may not have a per-player config entry yet.
+ * For consistency with the scoring UI, we default to enabled and inherit a reasonable modality.
+ */
+const getEffectiveOyesesPlayerConfig = (
+  playerId: string,
+  config: BetConfig
+): { enabled: boolean; modality: OyesModality } => {
+  const playerConfig = config.oyeses.playerConfigs.find((pc) => pc.playerId === playerId);
+
+  // If explicitly present, respect it.
+  if (playerConfig) return { enabled: playerConfig.enabled, modality: playerConfig.modality };
+
+  // If missing, inherit a default modality from existing configs (if any), otherwise acumulados.
+  const fallbackModality: OyesModality =
+    config.oyeses.playerConfigs[0]?.modality ?? 'acumulados';
+
+  return { enabled: true, modality: fallbackModality };
+};
+
+/**
  * Get Oyeses pair result for zapato detection
  */
 export const getOyesesPairResult = (
@@ -48,15 +68,10 @@ export const getOyesesPairResult = (
     .filter(h => h.par === 3)
     .map(h => h.number);
   
-  // Get player modalities
-  const getPlayerModality = (playerId: string): OyesModality | null => {
-    const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === playerId);
-    if (!playerConfig?.enabled) return null;
-    return playerConfig.modality;
-  };
-  
-  const modalityA = getPlayerModality(playerAId);
-  const modalityB = getPlayerModality(playerBId);
+  const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
+  const cfgB = getEffectiveOyesesPlayerConfig(playerBId, config);
+  const modalityA = cfgA.enabled ? cfgA.modality : null;
+  const modalityB = cfgB.enabled ? cfgB.modality : null;
   
   if (!modalityA || !modalityB) return null;
   
@@ -186,15 +201,10 @@ export const getOyesesDisplayData = (
     .filter(h => h.par === 3)
     .map(h => h.number);
   
-  // Get player modalities
-  const getPlayerModality = (playerId: string): OyesModality | null => {
-    const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === playerId);
-    if (!playerConfig?.enabled) return null;
-    return playerConfig.modality;
-  };
-  
-  const modalityA = getPlayerModality(playerAId);
-  const modalityB = getPlayerModality(playerBId);
+  const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
+  const cfgB = getEffectiveOyesesPlayerConfig(playerBId, config);
+  const modalityA = cfgA.enabled ? cfgA.modality : null;
+  const modalityB = cfgB.enabled ? cfgB.modality : null;
   
   // Skip if either player doesn't have Oyeses enabled
   if (!modalityA || !modalityB) return { playerAHoles, playerBHoles };
@@ -317,11 +327,9 @@ export const calculateOyesesBets = (
     .filter(h => h.par === 3)
     .map(h => h.number);
   
-  // Get player modalities
   const getPlayerModality = (playerId: string): OyesModality | null => {
-    const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === playerId);
-    if (!playerConfig?.enabled) return null;
-    return playerConfig.modality;
+    const cfg = getEffectiveOyesesPlayerConfig(playerId, config);
+    return cfg.enabled ? cfg.modality : null;
   };
   
   // Process each pair of players
