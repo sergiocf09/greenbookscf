@@ -178,24 +178,20 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
 
       {/* Markers (Unidades + Manchas) */}
       <div className="bg-muted/30 rounded-lg p-2">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground w-16">Unidades</span>
-            <InlineMarkers
-              state={markers}
-              onChange={handleMarkersChange}
-              markers={manualUnitMarkers}
-            />
-          </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <InlineMarkers
+            state={markers}
+            onChange={handleMarkersChange}
+            markers={manualUnitMarkers}
+          />
 
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground w-16">Manchas</span>
-            <InlineMarkers
-              state={markers}
-              onChange={handleMarkersChange}
-              markers={manualStainMarkers}
-            />
-          </div>
+          <span className="h-5 w-px bg-border/60" aria-hidden="true" />
+
+          <InlineMarkers
+            state={markers}
+            onChange={handleMarkersChange}
+            markers={manualStainMarkers}
+          />
         </div>
       </div>
 
