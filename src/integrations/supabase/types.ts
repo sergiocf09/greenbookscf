@@ -706,6 +706,10 @@ export type Database = {
           round_player_id: string
         }[]
       }
+      finalize_round_bets: {
+        Args: { p_ledger: Json; p_round_id: string }
+        Returns: undefined
+      }
       get_my_profile_id: { Args: never; Returns: string }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }

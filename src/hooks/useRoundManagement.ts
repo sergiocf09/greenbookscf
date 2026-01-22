@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 interface RoundState {
@@ -56,6 +57,16 @@ export const useRoundManagement = ({
   const hasRestoredRef = useRef(false);
 
   const isRoundStarted = roundState.status !== 'setup';
+
+  const isValidBetType = useCallback(
+    (betType: unknown): betType is (typeof Constants.public.Enums.bet_type)[number] => {
+      return (
+        typeof betType === 'string' &&
+        (Constants.public.Enums.bet_type as readonly string[]).includes(betType)
+      );
+    },
+    []
+  );
 
   // Restore active round on mount
   useEffect(() => {
@@ -408,12 +419,12 @@ export const useRoundManagement = ({
           const toPlayer = players.find(p => p.id === result.toPlayerId);
           
           if (fromPlayer?.profileId && toPlayer?.profileId) {
+            const betType = isValidBetType(result.betType) ? result.betType : 'medal_total';
             ledgerRecords.push({
-              round_id: roundState.id,
               from_profile_id: fromPlayer.profileId,
               to_profile_id: toPlayer.profileId,
               amount: Math.abs(result.amount),
-              bet_type: result.betType || 'other',
+              bet_type: betType,
               segment: result.segment || 'total',
               hole_number: result.holeNumber || null,
               description: result.description || null,
@@ -423,13 +434,12 @@ export const useRoundManagement = ({
       });
 
       if (ledgerRecords.length > 0) {
-        const { error: ledgerError } = await supabase
-          .from('ledger_transactions')
-          .insert(ledgerRecords);
+        const { error: ledgerError } = await supabase.rpc('finalize_round_bets', {
+          p_round_id: roundState.id,
+          p_ledger: ledgerRecords,
+        });
 
-        if (ledgerError) {
-          console.error('Ledger error:', ledgerError);
-        }
+        if (ledgerError) throw ledgerError;
       }
 
       // Update player vs player records
@@ -516,7 +526,7 @@ export const useRoundManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [roundState.id, profile, scores, players, betConfig, roundPlayerIds]);
+  }, [roundState.id, profile, scores, players, betConfig, roundPlayerIds, isValidBetType]);
 
   // Add a player to an active round (creates round_player entry in DB)
   const addPlayerToRound = useCallback(async (player: Player): Promise<boolean> => {
