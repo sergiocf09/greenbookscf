@@ -189,7 +189,9 @@ export const useRoundManagement = ({
           .from('rounds')
           .select('*')
           .in('id', roundIds)
-          .eq('status', 'in_progress')
+          // Restore both draft (setup) and active (in_progress) rounds.
+          // This prevents losing guests when the app reloads before scoring starts.
+          .in('status', ['setup', 'in_progress'])
           .order('updated_at', { ascending: false })
           .limit(1);
 
@@ -361,7 +363,7 @@ export const useRoundManagement = ({
           console.log('Restored', holeScores.length, 'scores from database');
         }
 
-        toast.success('Ronda activa restaurada');
+         toast.success('Ronda restaurada');
       } catch (err) {
         console.error('Error restoring round:', err);
       } finally {
