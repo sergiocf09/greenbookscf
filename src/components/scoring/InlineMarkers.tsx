@@ -7,7 +7,6 @@ import {
   Bird,
   Repeat,
   Droplets,
-  XCircle,
   CircleDot,
   Hourglass,
   Footprints,
@@ -50,7 +49,6 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
   { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
-  { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces OB', type: 'mancha' },
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },
 ];
 
