@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BetConfig, RayasBetConfig, BilateralHandicap, BetOverride } from '@/types/golf';
+import { BetConfig, RayasBetConfig, BilateralHandicap, BetOverride, MedalGeneralPlayerConfig } from '@/types/golf';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -24,6 +24,11 @@ interface RoundBetConfig {
       modality: 'acumulados' | 'sangron';
       enabled: boolean;
     }>;
+  };
+  medalGeneral?: {
+    enabled: boolean;
+    amount: number;
+    playerHandicaps: MedalGeneralPlayerConfig[];
   };
   bilateralHandicaps?: BilateralHandicap[];
   betOverrides?: BetOverride[];
@@ -90,6 +95,15 @@ export const useBetConfigPersistence = ({
             newConfig.betOverrides = dbConfig.betOverrides;
           }
           
+          // Apply Medal General config if exists
+          if (dbConfig.medalGeneral) {
+            newConfig.medalGeneral = {
+              enabled: dbConfig.medalGeneral.enabled ?? prev.medalGeneral.enabled,
+              amount: dbConfig.medalGeneral.amount ?? prev.medalGeneral.amount,
+              playerHandicaps: dbConfig.medalGeneral.playerHandicaps ?? prev.medalGeneral.playerHandicaps,
+            };
+          }
+          
           return newConfig;
         });
         
@@ -119,6 +133,11 @@ export const useBetConfigPersistence = ({
           enabled: config.oyeses.enabled,
           amount: config.oyeses.amount,
           playerConfigs: config.oyeses.playerConfigs,
+        },
+        medalGeneral: {
+          enabled: config.medalGeneral.enabled,
+          amount: config.medalGeneral.amount,
+          playerHandicaps: config.medalGeneral.playerHandicaps,
         },
         bilateralHandicaps: config.bilateralHandicaps || [],
         betOverrides: config.betOverrides || [],

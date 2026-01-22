@@ -433,6 +433,118 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => updateBet('pinguinos', { valuePerOccurrence: v })} />
       </BetSection>
 
+      {/* Medal General - Group bet */}
+      <BetSection
+        id="medalGeneral"
+        title="Medal General"
+        description="Grupal: menor score neto total gana"
+        enabled={config.medalGeneral.enabled}
+        onToggle={(enabled) => {
+          // Initialize player handicaps when enabling
+          if (enabled && config.medalGeneral.playerHandicaps.length === 0) {
+            const initialHandicaps = players.map(p => ({
+              playerId: p.id,
+              handicap: p.handicap,
+            }));
+            updateBet('medalGeneral', { enabled, playerHandicaps: initialHandicaps });
+          } else {
+            updateBet('medalGeneral', { enabled });
+          }
+        }}
+        color="gold"
+      >
+        <AmountInput 
+          label="Cantidad por jugador" 
+          value={config.medalGeneral.amount} 
+          onChange={(v) => updateBet('medalGeneral', { amount: v })} 
+        />
+        
+        {/* Player handicaps for Medal General */}
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs text-muted-foreground">Handicaps para Medal General</Label>
+          {players.map(player => {
+            const playerConfig = config.medalGeneral.playerHandicaps.find(
+              pc => pc.playerId === player.id
+            );
+            const currentHcp = playerConfig?.handicap ?? player.handicap;
+            
+            return (
+              <div key={player.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    style={{ backgroundColor: player.color }}
+                  >
+                    {player.initials}
+                  </div>
+                  <span className="text-xs font-medium">{player.name}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                        pc.playerId === player.id ? { ...pc, handicap: Math.max(0, pc.handicap - 1) } : pc
+                      );
+                      // If player not in list, add them
+                      if (!newHandicaps.some(pc => pc.playerId === player.id)) {
+                        newHandicaps.push({ playerId: player.id, handicap: Math.max(0, player.handicap - 1) });
+                      }
+                      updateBet('medalGeneral', { playerHandicaps: newHandicaps });
+                    }}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <Input
+                    type="number"
+                    value={currentHcp}
+                    onChange={(e) => {
+                      const newValue = parseInt(e.target.value) || 0;
+                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                        pc.playerId === player.id ? { ...pc, handicap: newValue } : pc
+                      );
+                      if (!newHandicaps.some(pc => pc.playerId === player.id)) {
+                        newHandicaps.push({ playerId: player.id, handicap: newValue });
+                      }
+                      updateBet('medalGeneral', { playerHandicaps: newHandicaps });
+                    }}
+                    className="w-14 h-6 text-center text-xs p-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newHandicaps = config.medalGeneral.playerHandicaps.map(pc =>
+                        pc.playerId === player.id ? { ...pc, handicap: pc.handicap + 1 } : pc
+                      );
+                      if (!newHandicaps.some(pc => pc.playerId === player.id)) {
+                        newHandicaps.push({ playerId: player.id, handicap: player.handicap + 1 });
+                      }
+                      updateBet('medalGeneral', { playerHandicaps: newHandicaps });
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <p className="text-[9px] text-muted-foreground mt-2">
+          El ganador (o ganadores en empate) cobra la cantidad a cada perdedor. 
+          Los empates dividen el total entre los ganadores.
+        </p>
+      </BetSection>
+
       {/* Rayas - Aggregator bet */}
       <BetSection
         id="rayas"
@@ -800,6 +912,7 @@ export const defaultBetConfig: BetConfig = {
     scoringType: 'all',
     teamHandicaps: {},
   },
+  medalGeneral: { enabled: false, amount: 100, playerHandicaps: [] },
   carritosTeams: [],
   betOverrides: [],
 };
