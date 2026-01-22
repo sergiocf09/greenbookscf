@@ -77,6 +77,8 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
     // Hole Out implies zero putts
     if (!markers.holeOut && newMarkers.holeOut) {
       onPuttsChange(0);
+    } else if (markers.holeOut && !newMarkers.holeOut) {
+      onPuttsChange(2);
     }
   };
 
