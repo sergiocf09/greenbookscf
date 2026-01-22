@@ -970,9 +970,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     setHoleDialogOpen(true);
   };
 
-  const ScoreLine = ({ name, gross, hcp, net }: { name: string; gross: number; hcp: number; net: number }) => (
-    <p className="tabular-nums text-sm">
-      {name}: Bruto {gross} (HCP {hcp}) → Neto {net}
+  const ScoreLine = ({ name, hcp, net }: { name: string; hcp: number; net: number }) => (
+    <p className="flex items-center justify-between gap-2 text-sm">
+      <span className="truncate">{name}</span>
+      <span className="flex items-center gap-2 tabular-nums">
+        <span>Neto {net}</span>
+        {hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" aria-label="Stroke aplicado" />}
+      </span>
     </p>
   );
 
@@ -1120,13 +1124,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
-                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA1} hcp={detail.hcpA1} net={detail.netA1} />
-                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA2} hcp={detail.hcpA2} net={detail.netA2} />
+                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
+                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB1} hcp={detail.hcpB1} net={detail.netB1} />
-                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB2} hcp={detail.hcpB2} net={detail.netB2} />
+                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB1} net={detail.netB1} />
+                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB2} net={detail.netB2} />
                             </div>
                           </div>
 
@@ -1213,13 +1217,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
-                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA1} hcp={detail.hcpA1} net={detail.netA1} />
-                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA2} hcp={detail.hcpA2} net={detail.netA2} />
+                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
+                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB1} hcp={detail.hcpB1} net={detail.netB1} />
-                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB2} hcp={detail.hcpB2} net={detail.netB2} />
+                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB1} net={detail.netB1} />
+                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB2} net={detail.netB2} />
                             </div>
                           </div>
 
@@ -1297,13 +1301,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       <p className="text-[11px] text-muted-foreground mb-1">Pareja A</p>
                       <ScoreLine
                         name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
-                        gross={selectedHole.detail.grossA1}
                         hcp={selectedHole.detail.hcpA1}
                         net={selectedHole.detail.netA1}
                       />
                       <ScoreLine
                         name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
-                        gross={selectedHole.detail.grossA2}
                         hcp={selectedHole.detail.hcpA2}
                         net={selectedHole.detail.netA2}
                       />
@@ -1312,13 +1314,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       <p className="text-[11px] text-muted-foreground mb-1">Rival</p>
                       <ScoreLine
                         name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
-                        gross={selectedHole.detail.grossB1}
                         hcp={selectedHole.detail.hcpB1}
                         net={selectedHole.detail.netB1}
                       />
                       <ScoreLine
                         name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
-                        gross={selectedHole.detail.grossB2}
                         hcp={selectedHole.detail.hcpB2}
                         net={selectedHole.detail.netB2}
                       />
