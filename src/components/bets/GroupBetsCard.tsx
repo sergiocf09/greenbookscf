@@ -152,7 +152,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     players.forEach(player => {
       const playerScores = scores.get(player.id) || [];
-      playerScores.filter(s => s.confirmed).forEach(score => {
+      // NOTE: `scores` is already filtered to confirmed holes by BetDashboard.
+      // Late-joined players may have `confirmed=false` on previously confirmed holes;
+      // filtering again by `score.confirmed` would undercount vs the main bet engine.
+      playerScores.forEach(score => {
         if (score.putts >= 3) {
           allCulebras.push({
             playerId: player.id,
@@ -227,7 +230,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     players.forEach(player => {
       const playerScores = scores.get(player.id) || [];
-      playerScores.filter(s => s.confirmed).forEach(score => {
+      // Same rationale as Culebras: rely on parent filtering by confirmed holes.
+      playerScores.forEach(score => {
         const holePar = course.holes[score.holeNumber - 1]?.par || 4;
         const overPar = score.strokes - holePar;
         if (overPar >= 3) {
