@@ -1,9 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Player, BetConfig, PlayerScore, GolfCourse } from '@/types/golf';
+import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
-import { defaultMarkerState } from '@/types/golf';
 import { toast } from 'sonner';
 
 interface RoundState {
@@ -22,7 +21,11 @@ interface UseRoundManagementProps {
   setScores: React.Dispatch<React.SetStateAction<Map<string, PlayerScore[]>>>;
   setConfirmedHoles: React.Dispatch<React.SetStateAction<Set<number>>>;
   betConfig: BetConfig;
+  setBetConfig?: React.Dispatch<React.SetStateAction<BetConfig>>;
   course: GolfCourse | null;
+  setSelectedCourseId?: React.Dispatch<React.SetStateAction<string | null>>;
+  setTeeColor?: React.Dispatch<React.SetStateAction<'blue' | 'white' | 'yellow' | 'red'>>;
+  getCourseById?: (id: string) => GolfCourse | undefined;
 }
 
 export const useRoundManagement = ({
@@ -32,7 +35,11 @@ export const useRoundManagement = ({
   setScores,
   setConfirmedHoles,
   betConfig,
+  setBetConfig,
   course,
+  setSelectedCourseId,
+  setTeeColor,
+  getCourseById,
 }: UseRoundManagementProps) => {
   const { profile } = useAuth();
   const [roundState, setRoundState] = useState<RoundState>({
@@ -45,8 +52,191 @@ export const useRoundManagement = ({
   });
   const [roundPlayerIds, setRoundPlayerIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(true);
+  const hasRestoredRef = useRef(false);
 
   const isRoundStarted = roundState.status !== 'setup';
+
+  // Restore active round on mount
+  useEffect(() => {
+    if (!profile || hasRestoredRef.current) return;
+    
+    const restoreActiveRound = async () => {
+      try {
+        // Find the most recent in_progress round for this user
+        const { data: roundPlayers, error: rpError } = await supabase
+          .from('round_players')
+          .select(`
+            id,
+            round_id,
+            profile_id,
+            handicap_for_round,
+            group_id,
+            is_organizer,
+            profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color, current_handicap)
+          `)
+          .eq('profile_id', profile.id)
+          .order('joined_at', { ascending: false });
+
+        if (rpError || !roundPlayers?.length) {
+          setIsRestoring(false);
+          hasRestoredRef.current = true;
+          return;
+        }
+
+        // Get rounds for these participations
+        const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
+        const { data: rounds, error: roundsError } = await supabase
+          .from('rounds')
+          .select('*')
+          .in('id', roundIds)
+          .eq('status', 'in_progress')
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (roundsError || !rounds?.length) {
+          setIsRestoring(false);
+          hasRestoredRef.current = true;
+          return;
+        }
+
+        const activeRound = rounds[0];
+        console.log('Restoring active round:', activeRound.id);
+
+        // Get all players in this round
+        const { data: allRoundPlayers, error: allRpError } = await supabase
+          .from('round_players')
+          .select(`
+            id,
+            profile_id,
+            handicap_for_round,
+            group_id,
+            profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color)
+          `)
+          .eq('round_id', activeRound.id);
+
+        if (allRpError || !allRoundPlayers?.length) {
+          setIsRestoring(false);
+          hasRestoredRef.current = true;
+          return;
+        }
+
+        // Restore round state
+        setRoundState({
+          id: activeRound.id,
+          status: activeRound.status as 'setup' | 'in_progress' | 'completed',
+          date: new Date(activeRound.date),
+          courseId: activeRound.course_id,
+          teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
+          groupId: allRoundPlayers[0]?.group_id || null,
+        });
+
+        // Restore round player IDs mapping
+        const rpIdMap = new Map<string, string>();
+        allRoundPlayers.forEach(rp => {
+          rpIdMap.set(rp.profile_id, rp.id);
+        });
+        setRoundPlayerIds(rpIdMap);
+
+        // Restore players
+        const restoredPlayers: Player[] = allRoundPlayers.map(rp => {
+          const profileData = rp.profiles as any;
+          return {
+            id: rp.profile_id,
+            name: profileData?.display_name || 'Jugador',
+            initials: profileData?.initials || 'XX',
+            color: profileData?.avatar_color || '#3B82F6',
+            handicap: Number(rp.handicap_for_round) || 0,
+            profileId: rp.profile_id,
+          };
+        });
+        setPlayers(restoredPlayers);
+
+        // Restore course selection
+        if (setSelectedCourseId) {
+          setSelectedCourseId(activeRound.course_id);
+        }
+        if (setTeeColor) {
+          setTeeColor(activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red');
+        }
+
+        // Restore bet config if available
+        if (activeRound.bet_config && setBetConfig) {
+          setBetConfig(activeRound.bet_config as unknown as BetConfig);
+        }
+
+        // Get course to restore scores
+        const courseData = getCourseById?.(activeRound.course_id);
+        
+        // Load scores from database
+        const { data: holeScores, error: scoresError } = await supabase
+          .from('hole_scores')
+          .select('*')
+          .in('round_player_id', Array.from(rpIdMap.values()));
+
+        if (!scoresError && holeScores && courseData) {
+          const newScores = new Map<string, PlayerScore[]>();
+          const confirmedHoleNumbers = new Set<number>();
+
+          restoredPlayers.forEach(player => {
+            const rpId = rpIdMap.get(player.id);
+            const strokesPerHole = calculateStrokesPerHole(player.handicap, courseData);
+            
+            const playerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
+              const holePar = courseData.holes[i]?.par || 4;
+              const dbScore = holeScores.find(
+                hs => hs.round_player_id === rpId && hs.hole_number === i + 1
+              );
+
+              if (dbScore) {
+                if (dbScore.confirmed) {
+                  confirmedHoleNumbers.add(dbScore.hole_number);
+                }
+
+                return {
+                  playerId: player.id,
+                  holeNumber: i + 1,
+                  strokes: dbScore.strokes ?? holePar,
+                  putts: dbScore.putts ?? 2,
+                  markers: { ...defaultMarkerState },
+                  strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
+                  netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
+                  oyesProximity: dbScore.oyes_proximity ?? null,
+                  confirmed: dbScore.confirmed ?? false,
+                };
+              }
+
+              return {
+                playerId: player.id,
+                holeNumber: i + 1,
+                strokes: holePar,
+                putts: 2,
+                markers: { ...defaultMarkerState },
+                strokesReceived: strokesPerHole[i],
+                netScore: holePar - strokesPerHole[i],
+                confirmed: false,
+              };
+            });
+
+            newScores.set(player.id, playerScores);
+          });
+
+          setScores(newScores);
+          setConfirmedHoles(confirmedHoleNumbers);
+          console.log('Restored', holeScores.length, 'scores from database');
+        }
+
+        toast.success('Ronda activa restaurada');
+      } catch (err) {
+        console.error('Error restoring round:', err);
+      } finally {
+        setIsRestoring(false);
+        hasRestoredRef.current = true;
+      }
+    };
+
+    restoreActiveRound();
+  }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, getCourseById]);
 
   // Generate shareable link
   const getShareableLink = useCallback(() => {
@@ -394,6 +584,7 @@ export const useRoundManagement = ({
     roundPlayerIds,
     setRoundPlayerIds,
     isLoading,
+    isRestoring,
     isRoundStarted,
     getShareableLink,
     createRound,
