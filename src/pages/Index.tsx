@@ -589,8 +589,8 @@ const Index = () => {
                   avatarColor={player.color}
                   holeNumber={currentHole}
                   par={holePar}
-                  strokes={holeScore?.strokes || holePar}
-                  putts={holeScore?.putts || 2}
+                  strokes={holeScore?.strokes ?? holePar}
+                  putts={holeScore?.putts ?? 2}
                   markers={holeScore?.markers || defaultMarkerState}
                   onStrokesChange={(strokes) => updateScore(player.id, currentHole, { strokes })}
                   onPuttsChange={(putts) => updateScore(player.id, currentHole, { putts })}

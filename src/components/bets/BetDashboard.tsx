@@ -72,19 +72,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
   
-  // Filter scores to only include confirmed holes
+  // Filter scores to only include confirmed scores.
+  // NOTE: We intentionally *do not* rely on `confirmedHoles` here because it can get out of sync
+  // when players join late (historical holes may be "confirmed" for some but not all).
   const confirmedScores = useMemo(() => {
     const filtered = new Map<string, PlayerScore[]>();
     scores.forEach((playerScores, playerId) => {
-      // IMPORTANT:
-      // `confirmedHoles` is a round-level concept (the hole was confirmed for the group),
-      // but late-joined players may not have a valid/confirmed score for previously confirmed holes.
-      // If we include placeholder rows (strokes=0 / confirmed=false), net calculations break.
       filtered.set(
         playerId,
         playerScores.filter(
           (s) =>
-            confirmedHoles.has(s.holeNumber) &&
             s.confirmed &&
             typeof s.strokes === 'number' &&
             s.strokes > 0
@@ -92,7 +89,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       );
     });
     return filtered;
-  }, [scores, confirmedHoles]);
+  }, [scores]);
 
   // Calculate all bets using only confirmed scores
   const betSummaries = useMemo(() => 
