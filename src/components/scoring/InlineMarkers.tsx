@@ -94,7 +94,9 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                       ? isUnidad
                         ? 'bg-primary/15 text-primary ring-1 ring-primary/25'
                         : 'bg-destructive/15 text-destructive ring-1 ring-destructive/25'
-                      : 'bg-muted/50 text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/80'
+                      : isUnidad
+                        ? 'bg-primary/5 text-primary/60 ring-1 ring-primary/10 hover:bg-primary/10 hover:text-primary'
+                        : 'bg-destructive/5 text-destructive/60 ring-1 ring-destructive/10 hover:bg-destructive/10 hover:text-destructive'
                   )}
                 >
                   {/* LARGER ICONS - h-5 w-5 instead of h-3 w-3 */}
