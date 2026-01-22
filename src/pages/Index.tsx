@@ -63,6 +63,11 @@ const Index = () => {
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
+  const [pendingRoundSummary, setPendingRoundSummary] = useState<{
+    courseName: string;
+    holesPlayed: number;
+    totalStrokes: number;
+  } | null>(null);
   const [historicalScorecardData, setHistoricalScorecardData] = useState<{
     roundId: string;
     courseId: string;
@@ -110,6 +115,67 @@ const Index = () => {
       setShowPendingRoundDialog(true);
     }
   }, [pendingRound]);
+
+  // Load summary for the pending round (so the user recognizes it)
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPendingRoundSummary = async () => {
+      if (!pendingRound || !profile) {
+        setPendingRoundSummary(null);
+        return;
+      }
+
+      try {
+        const courseName = getCourseById?.(pendingRound.courseId)?.name ?? 'Campo';
+
+        // Get my round_player id for this round
+        const { data: myRp, error: rpErr } = await supabase
+          .from('round_players')
+          .select('id')
+          .eq('round_id', pendingRound.roundId)
+          .eq('profile_id', profile.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (rpErr || !myRp?.id) {
+          setPendingRoundSummary({ courseName, holesPlayed: 0, totalStrokes: 0 });
+          return;
+        }
+
+        const { data: myScores, error: scoresErr } = await supabase
+          .from('hole_scores')
+          .select('hole_number, strokes')
+          .eq('round_player_id', myRp.id);
+
+        if (cancelled) return;
+
+        if (scoresErr) {
+          setPendingRoundSummary({ courseName, holesPlayed: 0, totalStrokes: 0 });
+          return;
+        }
+
+        const holesPlayed = (myScores || []).filter(
+          (s) => typeof s.strokes === 'number' && Number.isFinite(s.strokes)
+        ).length;
+        const totalStrokes = (myScores || []).reduce(
+          (sum, s) => sum + (typeof s.strokes === 'number' && Number.isFinite(s.strokes) ? s.strokes : 0),
+          0
+        );
+
+        setPendingRoundSummary({ courseName, holesPlayed, totalStrokes });
+      } catch (e) {
+        console.error('Error loading pending round summary:', e);
+        if (!cancelled) setPendingRoundSummary(null);
+      }
+    };
+
+    void loadPendingRoundSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingRound, profile, getCourseById]);
 
   // Real-time score synchronization
   useRealtimeScores({
@@ -162,6 +228,42 @@ const Index = () => {
     sessionStorage.setItem('skip_restore_once', '1');
     startNewRound();
   }, [startNewRound]);
+
+  const handleClosePendingRoundPermanently = useCallback(async () => {
+    if (!pendingRound) return;
+
+    try {
+      // Mark round as completed. This is a minimal "close" without rebuilding local state.
+      const { error: roundErr } = await supabase
+        .from('rounds')
+        .update({ status: 'completed' })
+        .eq('id', pendingRound.roundId);
+
+      if (roundErr) throw roundErr;
+
+      // Best-effort: set existing hole scores as confirmed (so they count as "final")
+      const { data: rpIds, error: rpErr } = await supabase
+        .from('round_players')
+        .select('id')
+        .eq('round_id', pendingRound.roundId);
+
+      if (!rpErr && rpIds?.length) {
+        await supabase
+          .from('hole_scores')
+          .update({ confirmed: true })
+          .in('round_player_id', rpIds.map((r) => r.id));
+      }
+
+      toast.success('Tarjeta cerrada');
+
+      // Continue clean
+      sessionStorage.setItem('skip_restore_once', '1');
+      window.location.reload();
+    } catch (e: any) {
+      console.error('Error closing pending round:', e);
+      toast.error('No se pudo cerrar la tarjeta (requiere ser organizador)');
+    }
+  }, [pendingRound]);
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
@@ -429,26 +531,51 @@ const Index = () => {
                 <span className="block mt-2 text-xs text-muted-foreground">
                   {pendingRound.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
                   {format(pendingRound.date, "d 'de' MMMM, yyyy", { locale: es })}
+                  {pendingRoundSummary && (
+                    <>
+                      {' '}• {pendingRoundSummary.courseName} • {pendingRoundSummary.holesPlayed} hoyos • {pendingRoundSummary.totalStrokes} golpes
+                    </>
+                  )}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setShowPendingRoundDialog(false);
-                handleDiscardPendingRoundAndStartNew();
-              }}
-            >
-              Iniciar nueva ronda
+            <AlertDialogCancel asChild>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowPendingRoundDialog(false);
+                  handleDiscardPendingRoundAndStartNew();
+                }}
+              >
+                Iniciar nueva
+              </Button>
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowPendingRoundDialog(false);
-                handleRestorePendingRound();
-              }}
-            >
-              Restaurar y cerrar
+            <AlertDialogAction asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setShowPendingRoundDialog(false);
+                  handleRestorePendingRound();
+                }}
+              >
+                Restaurar
+              </Button>
+            </AlertDialogAction>
+            <AlertDialogAction asChild>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  setShowPendingRoundDialog(false);
+                  void handleClosePendingRoundPermanently();
+                }}
+              >
+                Cerrar definitiva
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
