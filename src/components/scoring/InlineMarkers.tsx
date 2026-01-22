@@ -57,6 +57,7 @@ interface InlineMarkersProps {
   onChange: (newState: MarkerState) => void;
   markers: MarkerConfig[];
   compact?: boolean;
+  wrap?: boolean;
 }
 
 export const InlineMarkers: React.FC<InlineMarkersProps> = ({
@@ -64,13 +65,14 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
   onChange,
   markers,
   compact = true,
+  wrap = true,
 }) => {
   const toggleMarker = (key: keyof MarkerState) => {
     onChange({ ...state, [key]: !state[key] });
   };
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className={cn('flex items-center gap-1', wrap ? 'flex-wrap' : 'flex-nowrap')}>
       {markers.map(marker => {
         const Icon = marker.icon;
         const isActive = state[marker.key];
