@@ -7,6 +7,7 @@ import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
 import { RoundHistory } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
+import { HistoricalScorecard } from '@/components/HistoricalScorecard';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -45,6 +46,14 @@ const Index = () => {
   const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
+  const [showScorecardDialog, setShowScorecardDialog] = useState(false);
+  const [historicalScorecardData, setHistoricalScorecardData] = useState<{
+    roundId: string;
+    courseId: string;
+    players: any[];
+    teeColor: string;
+    date: string;
+  } | null>(null);
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
@@ -663,7 +672,14 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Historial de Rondas</DialogTitle>
           </DialogHeader>
-          <RoundHistory onClose={() => setShowHistoryDialog(false)} />
+          <RoundHistory 
+            onClose={() => setShowHistoryDialog(false)} 
+            onViewScorecard={(data) => {
+              setHistoricalScorecardData(data);
+              setShowHistoryDialog(false);
+              setShowScorecardDialog(true);
+            }}
+          />
         </DialogContent>
       </Dialog>
 
@@ -674,6 +690,23 @@ const Index = () => {
             <DialogTitle>Calculadora de Handicap</DialogTitle>
           </DialogHeader>
           <HandicapCalculator onClose={() => setShowHandicapDialog(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Historical Scorecard Dialog */}
+      <Dialog open={showScorecardDialog} onOpenChange={setShowScorecardDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tarjeta Histórica</DialogTitle>
+          </DialogHeader>
+          {historicalScorecardData && getCourseById(historicalScorecardData.courseId) && (
+            <HistoricalScorecard
+              course={getCourseById(historicalScorecardData.courseId)!}
+              players={historicalScorecardData.players}
+              teeColor={historicalScorecardData.teeColor}
+              date={historicalScorecardData.date}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
