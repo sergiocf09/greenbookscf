@@ -80,6 +80,23 @@ const getSegmentHoleRange = (segment: 'front' | 'back' | 'total'): [number, numb
   return segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
 };
 
+// Sum net totals for a segment using ONLY the holes that exist for that player.
+// (Used by Medal display mode where we want "all holes of the player" instead of mutual holes.)
+const getSegmentNetTotal = (
+  playerId: string,
+  scores: Map<string, PlayerScore[]>,
+  segment: 'front' | 'back' | 'total'
+): number => {
+  const [start, end] = getSegmentHoleRange(segment);
+  const playerScores = scores.get(playerId) || [];
+  return playerScores
+    .filter((s) => s.holeNumber >= start && s.holeNumber <= end)
+    .reduce((sum, s) => {
+      const net = Number.isFinite(s.netScore) ? s.netScore : Number.isFinite(s.strokes) ? s.strokes : 0;
+      return sum + net;
+    }, 0);
+};
+
 // IMPORTANT:
 // For bilateral comparisons we must sum over the SAME set of holes for both players.
 // If one player is missing a hole (late join / sync), comparing totals across different
@@ -159,7 +176,10 @@ export const calculateMedalBets = (
       segments.forEach(({ key, amount, label }) => {
         if (amount <= 0) return;
 
-          const { netA, netB } = getMutualSegmentNetTotals(playerA.id, playerB.id, adjustedScores, key);
+          // Medal (requested behavior): compare each player's accumulated net over THEIR confirmed holes.
+          // This intentionally does not require mutual holes.
+          const netA = getSegmentNetTotal(playerA.id, adjustedScores, key);
+          const netB = getSegmentNetTotal(playerB.id, adjustedScores, key);
         
         if (netA < netB) {
           // Player A wins
