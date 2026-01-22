@@ -3,101 +3,141 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface RoundHistoryItem {
   id: string;
+  roundPlayerId: string;
   date: string;
   status: string;
   courseName: string;
   courseLocation: string;
+  courseId: string;
   teeColor: string;
   totalStrokes: number;
   handicapUsed: number;
   playersCount: number;
+  isOrganizer: boolean;
+}
+
+interface PlayerScoreData {
+  playerId: string;
+  playerName: string;
+  initials: string;
+  color: string;
+  handicap: number;
+  scores: { holeNumber: number; strokes: number; putts: number }[];
+  totalStrokes: number;
 }
 
 interface RoundHistoryProps {
   onClose?: () => void;
+  onViewScorecard?: (roundData: {
+    roundId: string;
+    courseId: string;
+    players: PlayerScoreData[];
+    teeColor: string;
+    date: string;
+  }) => void;
 }
 
-export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose }) => {
+export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewScorecard }) => {
   const { profile } = useAuth();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRound, setExpandedRound] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [roundToDelete, setRoundToDelete] = useState<RoundHistoryItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [loadingScorecard, setLoadingScorecard] = useState<string | null>(null);
+
+  const fetchRounds = async () => {
+    if (!profile) return;
+    
+    try {
+      // Get all completed rounds for this player
+      const { data: roundPlayers, error } = await supabase
+        .from('round_players')
+        .select(`
+          id,
+          handicap_for_round,
+          round_id,
+          is_organizer,
+          rounds!inner(
+            id,
+            date,
+            status,
+            tee_color,
+            course_id,
+            golf_courses(name, location)
+          )
+        `)
+        .eq('profile_id', profile.id)
+        .eq('rounds.status', 'completed')
+        .order('rounds(date)', { ascending: false });
+
+      if (error) throw error;
+
+      // Get hole scores for each round player
+      const roundItems: RoundHistoryItem[] = [];
+      
+      for (const rp of roundPlayers || []) {
+        const round = rp.rounds as any;
+        const course = round.golf_courses as any;
+
+        // Get total strokes
+        const { data: scores } = await supabase
+          .from('hole_scores')
+          .select('strokes')
+          .eq('round_player_id', rp.id);
+
+        const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+
+        // Get player count
+        const { count } = await supabase
+          .from('round_players')
+          .select('id', { count: 'exact', head: true })
+          .eq('round_id', rp.round_id);
+
+        roundItems.push({
+          id: round.id,
+          roundPlayerId: rp.id,
+          date: round.date,
+          status: round.status,
+          courseName: course?.name || 'Campo desconocido',
+          courseLocation: course?.location || '',
+          courseId: round.course_id,
+          teeColor: round.tee_color,
+          totalStrokes,
+          handicapUsed: Number(rp.handicap_for_round) || 0,
+          playersCount: count || 1,
+          isOrganizer: rp.is_organizer,
+        });
+      }
+
+      setRounds(roundItems);
+    } catch (err) {
+      console.error('Error fetching round history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!profile) return;
-
-    const fetchRounds = async () => {
-      try {
-        // Get all completed rounds for this player
-        const { data: roundPlayers, error } = await supabase
-          .from('round_players')
-          .select(`
-            id,
-            handicap_for_round,
-            round_id,
-            rounds!inner(
-              id,
-              date,
-              status,
-              tee_color,
-              golf_courses(name, location)
-            )
-          `)
-          .eq('profile_id', profile.id)
-          .eq('rounds.status', 'completed')
-          .order('rounds(date)', { ascending: false });
-
-        if (error) throw error;
-
-        // Get hole scores for each round player
-        const roundItems: RoundHistoryItem[] = [];
-        
-        for (const rp of roundPlayers || []) {
-          const round = rp.rounds as any;
-          const course = round.golf_courses as any;
-
-          // Get total strokes
-          const { data: scores } = await supabase
-            .from('hole_scores')
-            .select('strokes')
-            .eq('round_player_id', rp.id);
-
-          const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
-
-          // Get player count
-          const { count } = await supabase
-            .from('round_players')
-            .select('id', { count: 'exact', head: true })
-            .eq('round_id', rp.round_id);
-
-          roundItems.push({
-            id: round.id,
-            date: round.date,
-            status: round.status,
-            courseName: course?.name || 'Campo desconocido',
-            courseLocation: course?.location || '',
-            teeColor: round.tee_color,
-            totalStrokes,
-            handicapUsed: Number(rp.handicap_for_round) || 0,
-            playersCount: count || 1,
-          });
-        }
-
-        setRounds(roundItems);
-      } catch (err) {
-        console.error('Error fetching round history:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRounds();
   }, [profile]);
 
@@ -108,6 +148,106 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose }) => {
       case 'yellow': return 'bg-yellow-400';
       case 'red': return 'bg-red-500';
       default: return 'bg-gray-400';
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, round: RoundHistoryItem) => {
+    e.stopPropagation();
+    setRoundToDelete(round);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!roundToDelete) return;
+
+    setDeleting(true);
+    try {
+      // Delete the round (this will cascade to round_players, hole_scores, etc.)
+      const { error } = await supabase
+        .from('rounds')
+        .delete()
+        .eq('id', roundToDelete.id);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setRounds(prev => prev.filter(r => r.id !== roundToDelete.id));
+      toast.success('Ronda eliminada');
+    } catch (err) {
+      console.error('Error deleting round:', err);
+      toast.error('Error al eliminar la ronda. Solo el organizador puede eliminarla.');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setRoundToDelete(null);
+    }
+  };
+
+  const handleViewScorecard = async (e: React.MouseEvent, round: RoundHistoryItem) => {
+    e.stopPropagation();
+    
+    if (!onViewScorecard) {
+      toast.info('Función de visualización no disponible');
+      return;
+    }
+
+    setLoadingScorecard(round.id);
+    
+    try {
+      // Get all players in this round
+      const { data: roundPlayers, error: rpError } = await supabase
+        .from('round_players')
+        .select(`
+          id,
+          profile_id,
+          handicap_for_round,
+          profiles(display_name, initials, avatar_color)
+        `)
+        .eq('round_id', round.id);
+
+      if (rpError) throw rpError;
+
+      // Get all hole scores for all players
+      const playerScores: PlayerScoreData[] = [];
+      
+      for (const rp of roundPlayers || []) {
+        const profileData = rp.profiles as any;
+        
+        const { data: scores } = await supabase
+          .from('hole_scores')
+          .select('hole_number, strokes, putts')
+          .eq('round_player_id', rp.id)
+          .order('hole_number');
+
+        const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+
+        playerScores.push({
+          playerId: rp.profile_id,
+          playerName: profileData?.display_name || 'Jugador',
+          initials: profileData?.initials || 'XX',
+          color: profileData?.avatar_color || '#3B82F6',
+          handicap: Number(rp.handicap_for_round) || 0,
+          scores: (scores || []).map(s => ({
+            holeNumber: s.hole_number,
+            strokes: s.strokes || 0,
+            putts: s.putts || 0,
+          })),
+          totalStrokes,
+        });
+      }
+
+      onViewScorecard({
+        roundId: round.id,
+        courseId: round.courseId,
+        players: playerScores,
+        teeColor: round.teeColor,
+        date: round.date,
+      });
+    } catch (err) {
+      console.error('Error loading scorecard:', err);
+      toast.error('Error al cargar la tarjeta');
+    } finally {
+      setLoadingScorecard(null);
     }
   };
 
@@ -130,64 +270,123 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="space-y-3">
-      <h3 className="font-semibold text-lg">Historial de Rondas</h3>
-      <ScrollArea className="h-[400px]">
-        <div className="space-y-2 pr-4">
-          {rounds.map((round) => (
-            <div
-              key={round.id}
-              className="bg-card border border-border rounded-lg overflow-hidden"
-            >
-              <button
-                onClick={() => setExpandedRound(expandedRound === round.id ? null : round.id)}
-                className="w-full p-3 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
+    <>
+      <div className="space-y-3">
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-2 pr-4">
+            {rounds.map((round) => (
+              <div
+                key={round.id}
+                className="bg-card border border-border rounded-lg overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <div className={cn('w-3 h-3 rounded-full', getTeeColorClass(round.teeColor))} />
-                  <div>
-                    <p className="font-medium text-sm">{round.courseName}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(round.date), "d MMM yyyy", { locale: es })}
-                    </p>
+                <button
+                  onClick={() => setExpandedRound(expandedRound === round.id ? null : round.id)}
+                  className="w-full p-3 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn('w-3 h-3 rounded-full', getTeeColorClass(round.teeColor))} />
+                    <div>
+                      <p className="font-medium text-sm">{round.courseName}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(new Date(round.date), "d MMM yyyy", { locale: es })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="font-bold text-lg">{round.totalStrokes}</p>
-                    <p className="text-[10px] text-muted-foreground">golpes</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{round.totalStrokes}</p>
+                      <p className="text-[10px] text-muted-foreground">golpes</p>
+                    </div>
+                    {expandedRound === round.id ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </div>
-                  {expandedRound === round.id ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </button>
+                </button>
 
-              {expandedRound === round.id && (
-                <div className="px-3 pb-3 pt-0 border-t border-border/50 space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {round.courseLocation}
+                {expandedRound === round.id && (
+                  <div className="px-3 pb-3 pt-0 border-t border-border/50 space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm pt-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {round.courseLocation}
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" />
+                        {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" />
-                      {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Handicap usado:</span>
+                      <span className="font-medium">{round.handicapUsed}</span>
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={(e) => handleViewScorecard(e, round)}
+                        disabled={loadingScorecard === round.id}
+                      >
+                        {loadingScorecard === round.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Eye className="h-4 w-4 mr-1" />
+                        )}
+                        Ver Tarjeta
+                      </Button>
+                      {round.isOrganizer && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDeleteClick(e, round)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Handicap usado:</span>
-                    <span className="font-medium">{round.handicapUsed}</span>
-                  </div>
-                </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta ronda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán todos los scores, 
+              transacciones y datos asociados a esta ronda del {roundToDelete && format(new Date(roundToDelete.date), "d 'de' MMMM, yyyy", { locale: es })}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
               )}
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
