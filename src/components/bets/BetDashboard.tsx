@@ -134,6 +134,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     ) => {
       const { useTeamHandicaps, teamHandicaps, id } = opts ?? {};
 
+      // Defensive: carritos config can store either `player.id` or `player.profileId`.
+      // Normalize to the ids used by `scores/confirmedScores`.
+      const resolvePlayerId = (pid: string): string => {
+        if (confirmedScores.has(pid) || scores.has(pid)) return pid;
+        const match = players.find((p) => p.profileId === pid);
+        return match?.id ?? pid;
+      };
+
+      const resolvedTeamA: [string, string] = [resolvePlayerId(teamA[0]), resolvePlayerId(teamA[1])];
+      const resolvedTeamB: [string, string] = [resolvePlayerId(teamB[0]), resolvePlayerId(teamB[1])];
+
       const getPlayerHandicapForCarritos = (playerId: string): number => {
         if (useTeamHandicaps) {
           const teamHcp = teamHandicaps?.[playerId];
@@ -143,7 +154,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       };
 
       const strokesReceivedByPlayer = new Map<string, number[]>();
-      const allPlayers = [...new Set([...teamA, ...teamB])];
+      const allPlayers = [...new Set([...resolvedTeamA, ...resolvedTeamB])];
       allPlayers.forEach((pid) => {
         strokesReceivedByPlayer.set(pid, calculateStrokesPerHole(getPlayerHandicapForCarritos(pid), course));
       });
@@ -161,10 +172,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         let pointsB = 0;
         
         holes.forEach(holeNum => {
-          const netA1 = getCarritosNet(teamA[0], holeNum);
-          const netA2 = getCarritosNet(teamA[1], holeNum);
-          const netB1 = getCarritosNet(teamB[0], holeNum);
-          const netB2 = getCarritosNet(teamB[1], holeNum);
+          const netA1 = getCarritosNet(resolvedTeamA[0], holeNum);
+          const netA2 = getCarritosNet(resolvedTeamA[1], holeNum);
+          const netB1 = getCarritosNet(resolvedTeamB[0], holeNum);
+          const netB2 = getCarritosNet(resolvedTeamB[1], holeNum);
 
           // Skip if not all four have a score for this hole
           if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return;
@@ -232,8 +243,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       else if (pointsBTotal > pointsATotal) moneyA -= totalAmount;
       
       return {
-        teamA,
-        teamB,
+        teamA: resolvedTeamA,
+        teamB: resolvedTeamB,
         pointsAFront,
         pointsBFront,
         pointsABack,

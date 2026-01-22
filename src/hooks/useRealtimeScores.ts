@@ -81,14 +81,13 @@ export const useRealtimeScores = ({
         return newScores;
       });
 
-      // Update confirmed holes if needed
-      if (record.confirmed) {
-        setConfirmedHoles(prev => {
-          const newSet = new Set(prev);
-          newSet.add(record.hole_number);
-          return newSet;
-        });
-      }
+      // Update confirmed holes (global set used by UI)
+      setConfirmedHoles((prev) => {
+        const next = new Set(prev);
+        if (record.confirmed) next.add(record.hole_number);
+        else next.delete(record.hole_number);
+        return next;
+      });
     }
   }, [course, players, getReverseMap, setScores, setConfirmedHoles]);
 
