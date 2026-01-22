@@ -11,7 +11,7 @@ import {
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult } from '@/lib/rayasCalculations';
-import { GroupBetsCard } from './GroupBetsCard';
+import { GroupBetsCard, getMedalGeneralBilateralResult } from './GroupBetsCard';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -1172,6 +1172,26 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           }
         },
       });
+    }
+    
+    // Medal General (Group bet shown in bilateral view)
+    if (betConfig.medalGeneral?.enabled) {
+      const medalResult = getMedalGeneralBilateralResult(player, rival, confirmedScores, betConfig, course);
+      if (medalResult) {
+        groups.push({
+          key: 'medalGeneral',
+          label: 'Medal General',
+          configKey: 'medalGeneral',
+          segments: [],
+          getTotal: () => medalResult.amount,
+          getSegmentData: () => ({
+            playerNet: medalResult.playerNet,
+            rivalNet: medalResult.rivalNet,
+            amount: medalResult.amount,
+            description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
+          }),
+        });
+      }
     }
     
     return groups;
