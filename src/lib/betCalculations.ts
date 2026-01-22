@@ -1,5 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
@@ -1035,6 +1035,105 @@ export const calculatePinguinosBets = (
   return summaries;
 };
 
+// Calculate Medal General group bet - lowest net total wins
+export const calculateMedalGeneralBets = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse
+): BetSummary[] => {
+  const summaries: BetSummary[] = [];
+  
+  if (!config.medalGeneral.enabled || players.length < 2) {
+    return summaries;
+  }
+  
+  const amount = config.medalGeneral.amount;
+  const playerHandicaps = config.medalGeneral.playerHandicaps;
+  
+  // Calculate net totals for each player using their Medal General handicap
+  const playerNetTotals: { playerId: string; netTotal: number; grossTotal: number }[] = [];
+  
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    
+    // Only consider confirmed scores
+    const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
+    if (confirmedScores.length === 0) return;
+    
+    // Get Medal General handicap for this player (fallback to round handicap)
+    const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+    const handicap = playerHcp?.handicap ?? player.handicap;
+    
+    // Calculate strokes received per hole
+    const strokesPerHole = calculateStrokesPerHole(handicap, course);
+    
+    // Calculate gross total
+    const grossTotal = confirmedScores.reduce((sum, s) => sum + s.strokes, 0);
+    
+    // Calculate net total
+    const netTotal = confirmedScores.reduce((sum, s) => {
+      const received = strokesPerHole[s.holeNumber - 1] || 0;
+      return sum + (s.strokes - received);
+    }, 0);
+    
+    playerNetTotals.push({ playerId: player.id, netTotal, grossTotal });
+  });
+  
+  // Need at least 2 players with scores
+  if (playerNetTotals.length < 2) {
+    return summaries;
+  }
+  
+  // Find the minimum net total
+  const minNetTotal = Math.min(...playerNetTotals.map(p => p.netTotal));
+  
+  // Find all winners (those with the minimum net total)
+  const winners = playerNetTotals.filter(p => p.netTotal === minNetTotal);
+  const losers = playerNetTotals.filter(p => p.netTotal !== minNetTotal);
+  
+  // If everyone tied, no one wins/loses
+  if (losers.length === 0) {
+    return summaries;
+  }
+  
+  // Calculate total pot from losers
+  const totalPot = losers.length * amount;
+  
+  // Split pot among winners
+  const amountPerWinner = totalPot / winners.length;
+  
+  // Create bet summaries - losers pay to each winner
+  losers.forEach(loser => {
+    const loserPlayer = players.find(p => p.id === loser.playerId);
+    const amountToPayPerWinner = amount / winners.length;
+    
+    winners.forEach(winner => {
+      const winnerPlayer = players.find(p => p.id === winner.playerId);
+      
+      summaries.push({
+        playerId: loser.playerId,
+        vsPlayer: winner.playerId,
+        betType: 'Medal General',
+        amount: -amountToPayPerWinner,
+        segment: 'total',
+        description: `Neto ${loser.netTotal} vs ${winner.netTotal}${winners.length > 1 ? ' (empate dividido)' : ''}`,
+      });
+      
+      summaries.push({
+        playerId: winner.playerId,
+        vsPlayer: loser.playerId,
+        betType: 'Medal General',
+        amount: amountToPayPerWinner,
+        segment: 'total',
+        description: `Neto ${winner.netTotal} vs ${loser.netTotal}${winners.length > 1 ? ' (empate dividido)' : ''}`,
+      });
+    });
+  });
+  
+  return summaries;
+};
+
 // Calculate ALL bet summaries with bet overrides and bilateral handicap overrides applied
 export const calculateAllBets = (
   players: Player[],
@@ -1055,6 +1154,7 @@ export const calculateAllBets = (
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config, course),
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps),
+    ...calculateMedalGeneralBets(players, scores, config, course),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides

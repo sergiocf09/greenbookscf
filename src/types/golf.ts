@@ -167,6 +167,18 @@ export interface RayasBetConfig {
   skinVariant: RayasSkinVariant; // Whether skins accumulate in Rayas
 }
 
+// Medal General - Group bet for lowest net total score
+export interface MedalGeneralPlayerConfig {
+  playerId: string;
+  handicap: number; // Specific handicap for this group bet
+}
+
+export interface MedalGeneralBetConfig {
+  enabled: boolean;
+  amount: number; // Amount each loser pays to winner(s)
+  playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -180,6 +192,7 @@ export interface BetConfig {
   pinguinos: CumulativeBetConfig;
   rayas: RayasBetConfig;
   carritos: CarritosBetConfig;
+  medalGeneral: MedalGeneralBetConfig; // Group bet - lowest net total wins
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
