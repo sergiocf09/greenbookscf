@@ -193,19 +193,11 @@ export const useRoundManagement = ({
 
           console.log('Restoring selected pending round:', activeRound.id);
 
-          // Get all players in this round
+          // Get all players in this round (including guests). Avoid embedded joins
+          // to ensure guests (profile_id = null) are always returned.
           const { data: allRoundPlayers, error: allRpError } = await supabase
             .from('round_players')
-            .select(`
-              id,
-              profile_id,
-              handicap_for_round,
-              group_id,
-              guest_name,
-              guest_initials,
-              guest_color,
-              profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color)
-            `)
+            .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color')
             .eq('round_id', activeRound.id);
 
           if (allRpError || !allRoundPlayers?.length) return;
@@ -220,15 +212,41 @@ export const useRoundManagement = ({
             groupId: allRoundPlayers[0]?.group_id || null,
           });
 
+          // Load profiles for registered players (guests have profile_id = null)
+          const profileIds = Array.from(
+            new Set(
+              (allRoundPlayers || [])
+                .map((rp: any) => rp.profile_id)
+                .filter(Boolean)
+            )
+          ) as string[];
+
+          const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string }>();
+          if (profileIds.length) {
+            const { data: profilesData, error: profilesErr } = await supabase
+              .from('profiles')
+              .select('id, display_name, initials, avatar_color')
+              .in('id', profileIds);
+
+            if (!profilesErr && profilesData?.length) {
+              profilesData.forEach((p: any) => {
+                profilesById.set(p.id, {
+                  display_name: p.display_name,
+                  initials: p.initials,
+                  avatar_color: p.avatar_color,
+                });
+              });
+            }
+          }
+
           // Restore players + roundPlayerIds mapping
           const rpIdMap = new Map<string, string>();
-          const restoredPlayers: Player[] = allRoundPlayers.map((rp: any) => {
-            const profileData = rp.profiles as any;
+          const restoredPlayers: Player[] = (allRoundPlayers || []).map((rp: any) => {
             const isGuest = !rp.profile_id;
-
             const playerId = isGuest ? rp.id : rp.profile_id;
             rpIdMap.set(playerId, rp.id);
 
+            const profileData = !isGuest ? profilesById.get(rp.profile_id) : undefined;
             const name = isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador');
             const initials = isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX');
             const color = isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6');
