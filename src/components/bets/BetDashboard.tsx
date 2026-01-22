@@ -851,7 +851,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     segment: 'front' | 'back' | 'total'
   ): number => {
     const playerScores = confirmedScores.get(playerId) || [];
-    const rivalScores = confirmedScores.get(rivalId) || [];
     
     // Check if there's a bilateral handicap override for this pair
     const override = betConfig.bilateralHandicaps?.find(
@@ -860,18 +859,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     );
     
     const [start, end] = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+    // Medal display mode: sum ALL confirmed holes for this player in the segment
     const filtered = playerScores.filter((s) => s.holeNumber >= start && s.holeNumber <= end);
-    const rivalByHole = new Map<number, PlayerScore>();
-    rivalScores
-      .filter((s) => s.holeNumber >= start && s.holeNumber <= end)
-      .forEach((s) => rivalByHole.set(s.holeNumber, s));
-
-    // Only sum holes that exist for BOTH players
-    const mutual = filtered.filter((s) => rivalByHole.has(s.holeNumber));
     
     // If no override, use existing net scores
     if (!override) {
-      return mutual.reduce((sum, s) => sum + (Number.isFinite(s.netScore) ? s.netScore : s.strokes), 0);
+      return filtered.reduce((sum, s) => sum + (Number.isFinite(s.netScore) ? s.netScore : s.strokes), 0);
     }
     
     // Apply bilateral handicap override
@@ -881,7 +874,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course);
     
     // Calculate net with overridden strokes received
-    return mutual.reduce((sum, s) => {
+    return filtered.reduce((sum, s) => {
       const adjustedNet = (typeof s.strokes === 'number' ? s.strokes : 0) - (strokesPerHole[s.holeNumber - 1] ?? 0);
       return sum + adjustedNet;
     }, 0);
