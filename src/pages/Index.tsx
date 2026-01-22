@@ -21,7 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -38,6 +39,7 @@ import {
 type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets';
 
 const Index = () => {
+  const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const [view, setView] = useState<AppView>('setup');
   const [players, setPlayers] = useState<Player[]>([]);
@@ -402,6 +404,10 @@ const Index = () => {
                   <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/join')}>
+                  <Hash className="h-4 w-4 mr-2" />
+                  Unirse con Código
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
