@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap } from '@/types/golf';
+import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { 
   calculateAllBets, 
   getPlayerBalance, 
@@ -131,24 +132,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       teamHandicaps?: Record<string, number>,
       id?: string
     ) => {
+      const getPlayerHandicapForCarritos = (playerId: string): number => {
+        const teamHcp = teamHandicaps?.[playerId];
+        if (typeof teamHcp === 'number' && Number.isFinite(teamHcp)) return teamHcp;
+        return players.find((p) => p.id === playerId)?.handicap ?? 0;
+      };
+
+      const strokesReceivedByPlayer = new Map<string, number[]>();
+      const allPlayers = [...new Set([...teamA, ...teamB])];
+      allPlayers.forEach((pid) => {
+        strokesReceivedByPlayer.set(pid, calculateStrokesPerHole(getPlayerHandicapForCarritos(pid), course));
+      });
+
+      const getCarritosNet = (playerId: string, holeNum: number): number | null => {
+        const score = confirmedScores.get(playerId)?.find((s) => s.holeNumber === holeNum);
+        if (!score) return null;
+        const strokesReceived = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
+        return (typeof score.strokes === 'number' ? score.strokes : 0) - strokesReceived;
+      };
+
       // Calculate points per hole: lowball 1pt, highball 1pt, combined 1pt
       const calculatePointsForHoles = (holes: number[]): { pointsA: number; pointsB: number } => {
         let pointsA = 0;
         let pointsB = 0;
         
         holes.forEach(holeNum => {
-          const scoresA1 = confirmedScores.get(teamA[0])?.find(s => s.holeNumber === holeNum);
-          const scoresA2 = confirmedScores.get(teamA[1])?.find(s => s.holeNumber === holeNum);
-          const scoresB1 = confirmedScores.get(teamB[0])?.find(s => s.holeNumber === holeNum);
-          const scoresB2 = confirmedScores.get(teamB[1])?.find(s => s.holeNumber === holeNum);
-          
-          // Skip if not all scores are available
-          if (!scoresA1 || !scoresA2 || !scoresB1 || !scoresB2) return;
-          
-          const netA1 = scoresA1.netScore;
-          const netA2 = scoresA2.netScore;
-          const netB1 = scoresB1.netScore;
-          const netB2 = scoresB2.netScore;
+          const netA1 = getCarritosNet(teamA[0], holeNum);
+          const netA2 = getCarritosNet(teamA[1], holeNum);
+          const netB1 = getCarritosNet(teamB[0], holeNum);
+          const netB2 = getCarritosNet(teamB[1], holeNum);
+
+          // Skip if not all four have a score for this hole
+          if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return;
           
           // Lowball: best ball of each team
           const lowballA = Math.min(netA1, netA2);
@@ -243,7 +258,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
 
     return results;
-  }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players]);
+  }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
   
   const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId) || players[0];
   const rivals = players.filter(p => p.id !== basePlayer?.id);
@@ -819,6 +834,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     segment: 'front' | 'back' | 'total'
   ): number => {
     const playerScores = confirmedScores.get(playerId) || [];
+    const rivalScores = confirmedScores.get(rivalId) || [];
     
     // Check if there's a bilateral handicap override for this pair
     const override = betConfig.bilateralHandicaps?.find(
@@ -826,43 +842,30 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
            (h.playerAId === rivalId && h.playerBId === playerId)
     );
     
-    let filtered = playerScores;
-    if (segment === 'front') {
-      filtered = playerScores.filter(s => s.holeNumber >= 1 && s.holeNumber <= 9);
-    } else if (segment === 'back') {
-      filtered = playerScores.filter(s => s.holeNumber >= 10 && s.holeNumber <= 18);
-    }
+    const [start, end] = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+    const filtered = playerScores.filter((s) => s.holeNumber >= start && s.holeNumber <= end);
+    const rivalByHole = new Map<number, PlayerScore>();
+    rivalScores
+      .filter((s) => s.holeNumber >= start && s.holeNumber <= end)
+      .forEach((s) => rivalByHole.set(s.holeNumber, s));
+
+    // Only sum holes that exist for BOTH players
+    const mutual = filtered.filter((s) => rivalByHole.has(s.holeNumber));
     
     // If no override, use existing net scores
     if (!override) {
-      return filtered.reduce((sum, s) => sum + s.netScore, 0);
+      return mutual.reduce((sum, s) => sum + (Number.isFinite(s.netScore) ? s.netScore : s.strokes), 0);
     }
     
     // Apply bilateral handicap override
     const isPlayerA = override.playerAId === playerId;
     const overrideHandicap = isPlayerA ? override.playerAHandicap : override.playerBHandicap;
     
-    // Import calculateStrokesPerHole logic inline to recalculate
-    const strokesPerHole = new Array(18).fill(0);
-    const sortedHoles = [...course.holes].sort((a, b) => a.handicapIndex - b.handicapIndex);
-    let remainingStrokes = Math.round(overrideHandicap);
-    
-    // First pass
-    for (const hole of sortedHoles) {
-      if (remainingStrokes <= 0) break;
-      strokesPerHole[hole.number - 1] += 1;
-      remainingStrokes--;
-    }
-    // Second pass for handicaps > 18
-    for (const hole of sortedHoles) {
-      if (remainingStrokes <= 0) break;
-      strokesPerHole[hole.number - 1] += 1;
-      remainingStrokes--;
-    }
+    const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course);
     
     // Calculate net with overridden strokes received
-    return filtered.reduce((sum, s) => {
-      const adjustedNet = s.strokes - strokesPerHole[s.holeNumber - 1];
+    return mutual.reduce((sum, s) => {
+      const adjustedNet = (typeof s.strokes === 'number' ? s.strokes : 0) - (strokesPerHole[s.holeNumber - 1] ?? 0);
       return sum + adjustedNet;
     }, 0);
   };

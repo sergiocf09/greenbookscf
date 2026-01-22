@@ -76,17 +76,45 @@ export const getAdjustedScoresForPair = (
 };
 
 // Calculate net score for a segment (front 9, back 9, or total)
-const getSegmentNetTotal = (
-  playerId: string,
+const getSegmentHoleRange = (segment: 'front' | 'back' | 'total'): [number, number] => {
+  return segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+};
+
+// IMPORTANT:
+// For bilateral comparisons we must sum over the SAME set of holes for both players.
+// If one player is missing a hole (late join / sync), comparing totals across different
+// hole counts produces incorrect "net" numbers.
+const getMutualSegmentNetTotals = (
+  playerAId: string,
+  playerBId: string,
   scores: Map<string, PlayerScore[]>,
   segment: 'front' | 'back' | 'total'
-): number => {
-  const playerScores = scores.get(playerId) || [];
-  const holeRange = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
-  
-  return playerScores
-    .filter(s => s.holeNumber >= holeRange[0] && s.holeNumber <= holeRange[1])
-    .reduce((sum, s) => sum + (s.netScore ?? s.strokes), 0);
+): { netA: number; netB: number } => {
+  const [start, end] = getSegmentHoleRange(segment);
+  const aScores = (scores.get(playerAId) || []).filter((s) => s.holeNumber >= start && s.holeNumber <= end);
+  const bScores = (scores.get(playerBId) || []).filter((s) => s.holeNumber >= start && s.holeNumber <= end);
+
+  const aByHole = new Map<number, PlayerScore>();
+  aScores.forEach((s) => aByHole.set(s.holeNumber, s));
+
+  const bByHole = new Map<number, PlayerScore>();
+  bScores.forEach((s) => bByHole.set(s.holeNumber, s));
+
+  let netA = 0;
+  let netB = 0;
+  for (let hole = start; hole <= end; hole++) {
+    const a = aByHole.get(hole);
+    const b = bByHole.get(hole);
+    if (!a || !b) continue;
+
+    // Be defensive: restored rows can be inconsistent during sync
+    const aNet = Number.isFinite(a.netScore) ? a.netScore : Number.isFinite(a.strokes) ? a.strokes : 0;
+    const bNet = Number.isFinite(b.netScore) ? b.netScore : Number.isFinite(b.strokes) ? b.strokes : 0;
+    netA += aNet;
+    netB += bNet;
+  }
+
+  return { netA, netB };
 };
 
 // Get strokes for specific hole
@@ -130,9 +158,8 @@ export const calculateMedalBets = (
       
       segments.forEach(({ key, amount, label }) => {
         if (amount <= 0) return;
-        
-        const netA = getSegmentNetTotal(playerA.id, adjustedScores, key);
-        const netB = getSegmentNetTotal(playerB.id, adjustedScores, key);
+
+          const { netA, netB } = getMutualSegmentNetTotals(playerA.id, playerB.id, adjustedScores, key);
         
         if (netA < netB) {
           // Player A wins
