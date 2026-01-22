@@ -75,7 +75,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const confirmedScores = useMemo(() => {
     const filtered = new Map<string, PlayerScore[]>();
     scores.forEach((playerScores, playerId) => {
-      filtered.set(playerId, playerScores.filter(s => confirmedHoles.has(s.holeNumber)));
+      // IMPORTANT:
+      // `confirmedHoles` is a round-level concept (the hole was confirmed for the group),
+      // but late-joined players may not have a valid/confirmed score for previously confirmed holes.
+      // If we include placeholder rows (strokes=0 / confirmed=false), net calculations break.
+      filtered.set(
+        playerId,
+        playerScores.filter(
+          (s) =>
+            confirmedHoles.has(s.holeNumber) &&
+            s.confirmed &&
+            typeof s.strokes === 'number' &&
+            s.strokes > 0
+        )
+      );
     });
     return filtered;
   }, [scores, confirmedHoles]);
