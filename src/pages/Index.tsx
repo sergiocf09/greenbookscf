@@ -574,8 +574,10 @@ const Index = () => {
               const isPar3 = holePar === 3;
               
               // Check if player has Oyeses enabled
+              // NOTE: When a player is added after the round has started, they may not yet have a
+              // per-player config entry. We default to enabled (same behavior as BetSetup UI).
               const oyesPlayerConfig = betConfig.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
-              const oyesEnabled = betConfig.oyeses.enabled && (oyesPlayerConfig?.enabled ?? false);
+              const oyesEnabled = betConfig.oyeses.enabled && (oyesPlayerConfig?.enabled ?? true);
               
               return (
                 <PlayerScoreInput
