@@ -92,8 +92,8 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                     compact ? 'p-2' : 'p-2.5',
                     isActive
                       ? isUnidad
-                        ? 'bg-primary/15 text-primary ring-1 ring-primary/25'
-                        : 'bg-destructive/15 text-destructive ring-1 ring-destructive/25'
+                        ? 'bg-primary text-primary-foreground ring-2 ring-primary/40 shadow-sm'
+                        : 'bg-destructive text-destructive-foreground ring-2 ring-destructive/40 shadow-sm'
                       : isUnidad
                         ? 'bg-primary/5 text-primary/60 ring-1 ring-primary/10 hover:bg-primary/10 hover:text-primary'
                         : 'bg-destructive/5 text-destructive/60 ring-1 ring-destructive/10 hover:bg-destructive/10 hover:text-destructive'
