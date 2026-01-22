@@ -37,19 +37,19 @@ const PinkiesShoeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 // Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', points: 1 },
-  { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', points: 1 },
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', points: 1 },
+  { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', points: 1 },
 ];
 
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
 // Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'ladies', icon: PinkiesShoeIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
-  { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
-  { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
-  { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
-  { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha' },
+  { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha' },
+  { key: 'ladies', icon: PinkiesShoeIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha' },
+  { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha' },
+  { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha' },
+  { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha' },
 ];
 
 interface InlineMarkersProps {
