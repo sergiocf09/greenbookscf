@@ -13,6 +13,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/go
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
+import { useRealtimeScores } from '@/hooks/useRealtimeScores';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,17 @@ const Index = () => {
     setTeeColor,
     getCourseById,
   });
+
+  // Real-time score synchronization
+  useRealtimeScores({
+    roundId: roundState.id,
+    players,
+    course,
+    roundPlayerIds,
+    setScores,
+    setConfirmedHoles,
+  });
+
   // Track if we've done initial navigation after restore
   const [hasInitialNavigated, setHasInitialNavigated] = useState(false);
 
