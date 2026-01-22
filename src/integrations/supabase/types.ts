@@ -491,29 +491,38 @@ export type Database = {
       round_players: {
         Row: {
           group_id: string
+          guest_color: string | null
+          guest_initials: string | null
+          guest_name: string | null
           handicap_for_round: number
           id: string
           is_organizer: boolean
           joined_at: string
-          profile_id: string
+          profile_id: string | null
           round_id: string
         }
         Insert: {
           group_id: string
+          guest_color?: string | null
+          guest_initials?: string | null
+          guest_name?: string | null
           handicap_for_round: number
           id?: string
           is_organizer?: boolean
           joined_at?: string
-          profile_id: string
+          profile_id?: string | null
           round_id: string
         }
         Update: {
           group_id?: string
+          guest_color?: string | null
+          guest_initials?: string | null
+          guest_name?: string | null
           handicap_for_round?: number
           id?: string
           is_organizer?: boolean
           joined_at?: string
-          profile_id?: string
+          profile_id?: string | null
           round_id?: string
         }
         Relationships: [
