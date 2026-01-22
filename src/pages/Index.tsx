@@ -81,9 +81,9 @@ const Index = () => {
     }
   }, [profile, players.length]);
 
-  // Can create round with just 1 player (the logged-in user), need 2+ to start scoring
+  // Can create and start round with just 1 player (for solo score tracking)
   const canCreateRound = players.length >= 1 && course !== null;
-  const canStartScoring = players.length >= 2 && course !== null;
+  const canStartScoring = players.length >= 1 && course !== null;
 
   // Initialize scores locally (for when continuing or starting)
   const initializeScores = useCallback(() => {
@@ -118,9 +118,9 @@ const Index = () => {
     }
   };
 
-  // Start scoring (needs 2+ players)
+  // Start scoring (can do with 1 player for solo tracking)
   const handleStartRound = async () => {
-    if (!course || !selectedCourseId || players.length < 2) return;
+    if (!course || !selectedCourseId) return;
     
     // Create round in database first if not exists
     if (!roundState.id) {
@@ -353,7 +353,7 @@ const Index = () => {
                   className="w-full"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  {players.length < 2 ? 'Necesitas 2+ jugadores para iniciar' : 'Iniciar Ronda'}
+                  Iniciar Ronda
                 </Button>
               ) : (
                 <>

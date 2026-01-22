@@ -54,7 +54,7 @@ export const useRoundManagement = ({
     return `${window.location.origin}/join/${roundState.id}`;
   }, [roundState.id]);
 
-  // Create a new round in the database
+  // Create a new round in the database using server-side RPC
   const createRound = useCallback(async (courseId: string, teeColor: string, date: Date) => {
     if (!profile) {
       toast.error('Debes iniciar sesión para crear una ronda');
@@ -68,82 +68,42 @@ export const useRoundManagement = ({
       return null;
     }
 
-    // Verify profile ID matches what the server will expect
-    const { data: serverProfileId } = await supabase.rpc('get_my_profile_id');
-    console.log('Profile comparison:', {
-      clientProfileId: profile.id,
-      serverProfileId,
-      authUserId: session.user.id,
-      match: profile.id === serverProfileId
-    });
-
-    if (!serverProfileId) {
-      toast.error('Error de sincronización. Intenta cerrar sesión y volver a entrar.');
-      return null;
-    }
-
     setIsLoading(true);
     try {
-      // Use the server-verified profile ID
-      const { data: round, error: roundError } = await supabase
-        .from('rounds')
-        .insert({
-          course_id: courseId,
-          organizer_id: serverProfileId, // Use server-verified profile ID
-          tee_color: teeColor,
-          date: date.toISOString().split('T')[0],
-          status: 'setup',
-          bet_config: betConfig as any,
-        })
-        .select()
-        .single();
+      // Use the security-definer RPC to create round atomically
+      const { data, error } = await supabase.rpc('create_round', {
+        p_course_id: courseId,
+        p_tee_color: teeColor,
+        p_date: date.toISOString().split('T')[0],
+        p_bet_config: betConfig as any,
+      });
 
-      if (roundError) {
-        console.error('Round creation error:', roundError);
-        throw roundError;
+      if (error) {
+        console.error('Round creation error:', error);
+        throw error;
       }
 
-      // Create default group
-      const { data: group, error: groupError } = await supabase
-        .from('round_groups')
-        .insert({
-          round_id: round.id,
-          group_number: 1,
-        })
-        .select()
-        .single();
-
-      if (groupError) throw groupError;
-
-      // Add organizer as first player
-      const { data: roundPlayer, error: rpError } = await supabase
-        .from('round_players')
-        .insert({
-          round_id: round.id,
-          group_id: group.id,
-          profile_id: profile.id,
-          handicap_for_round: profile.current_handicap,
-          is_organizer: true,
-        })
-        .select()
-        .single();
-
-      if (rpError) throw rpError;
+      // RPC returns an array with one row
+      const result = Array.isArray(data) ? data[0] : data;
+      
+      if (!result) {
+        throw new Error('No data returned from create_round');
+      }
 
       // Update state
       setRoundState({
-        id: round.id,
+        id: result.round_id,
         status: 'setup',
-        date: new Date(round.date),
-        courseId: round.course_id,
-        teeColor: round.tee_color as any,
-        groupId: group.id,
+        date: date,
+        courseId: courseId,
+        teeColor: teeColor as any,
+        groupId: result.group_id,
       });
 
-      setRoundPlayerIds(new Map([[profile.id, roundPlayer.id]]));
+      setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));
 
       toast.success('Ronda creada');
-      return round.id;
+      return result.round_id;
     } catch (error) {
       console.error('Error creating round:', error);
       toast.error('Error al crear la ronda');
