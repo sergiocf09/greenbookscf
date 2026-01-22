@@ -5,6 +5,7 @@ import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState } from '
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { defaultBetConfig } from '@/components/setup/BetSetup';
 
 interface RoundState {
   id: string | null;
@@ -181,9 +182,30 @@ export const useRoundManagement = ({
           setTeeColor(activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red');
         }
 
-        // Restore bet config if available
-        if (activeRound.bet_config && setBetConfig) {
-          setBetConfig(activeRound.bet_config as unknown as BetConfig);
+        // Restore bet config (DEFENSIVE merge with defaults)
+        // Older rounds / partial configs might be missing nested objects.
+        if (setBetConfig) {
+          const incoming = (activeRound.bet_config || {}) as Partial<BetConfig>;
+          const merged: BetConfig = {
+            ...defaultBetConfig,
+            ...incoming,
+            medal: { ...defaultBetConfig.medal, ...incoming.medal },
+            pressures: { ...defaultBetConfig.pressures, ...incoming.pressures },
+            skins: { ...defaultBetConfig.skins, ...incoming.skins },
+            caros: { ...defaultBetConfig.caros, ...incoming.caros },
+            oyeses: { ...defaultBetConfig.oyeses, ...incoming.oyeses },
+            units: { ...defaultBetConfig.units, ...incoming.units },
+            manchas: { ...defaultBetConfig.manchas, ...incoming.manchas },
+            culebras: { ...defaultBetConfig.culebras, ...incoming.culebras },
+            pinguinos: { ...defaultBetConfig.pinguinos, ...incoming.pinguinos },
+            rayas: { ...defaultBetConfig.rayas, ...incoming.rayas },
+            carritos: { ...defaultBetConfig.carritos, ...incoming.carritos },
+            medalGeneral: { ...defaultBetConfig.medalGeneral, ...incoming.medalGeneral },
+            carritosTeams: incoming.carritosTeams ?? defaultBetConfig.carritosTeams,
+            betOverrides: incoming.betOverrides ?? defaultBetConfig.betOverrides,
+            bilateralHandicaps: incoming.bilateralHandicaps ?? defaultBetConfig.bilateralHandicaps,
+          };
+          setBetConfig(merged);
         }
 
         // Get course to restore scores
@@ -635,21 +657,29 @@ export const useRoundManagement = ({
         // 4) Update betConfig references (best-effort, only if hook controls it)
         if (setBetConfig) {
           setBetConfig((prev) => {
+            // `prev` may be partially shaped if it was restored from a legacy/partial bet_config.
+            // Ensure nested objects exist before mapping.
+            const safePrev: BetConfig = {
+              ...defaultBetConfig,
+              ...(prev as any),
+              carritos: { ...defaultBetConfig.carritos, ...(prev as any)?.carritos },
+              oyeses: { ...defaultBetConfig.oyeses, ...(prev as any)?.oyeses },
+              medalGeneral: { ...defaultBetConfig.medalGeneral, ...(prev as any)?.medalGeneral },
+            };
+
             const replaceId = (value: string) => (value === oldId ? newId : value);
 
-            const updated: BetConfig = {
-              ...prev,
+            return {
+              ...safePrev,
               carritos: {
-                ...prev.carritos,
-                teamA: [replaceId(prev.carritos.teamA[0]), replaceId(prev.carritos.teamA[1])],
-                teamB: [replaceId(prev.carritos.teamB[0]), replaceId(prev.carritos.teamB[1])],
-                teamHandicaps: prev.carritos.teamHandicaps
-                  ? Object.fromEntries(
-                      Object.entries(prev.carritos.teamHandicaps).map(([pid, h]) => [replaceId(pid), h])
-                    )
-                  : prev.carritos.teamHandicaps,
+                ...safePrev.carritos,
+                teamA: [replaceId(safePrev.carritos.teamA[0]), replaceId(safePrev.carritos.teamA[1])],
+                teamB: [replaceId(safePrev.carritos.teamB[0]), replaceId(safePrev.carritos.teamB[1])],
+                teamHandicaps: safePrev.carritos.teamHandicaps
+                  ? Object.fromEntries(Object.entries(safePrev.carritos.teamHandicaps).map(([pid, h]) => [replaceId(pid), h]))
+                  : safePrev.carritos.teamHandicaps,
               },
-              carritosTeams: prev.carritosTeams?.map((t) => ({
+              carritosTeams: safePrev.carritosTeams?.map((t) => ({
                 ...t,
                 teamA: [replaceId(t.teamA[0]), replaceId(t.teamA[1])],
                 teamB: [replaceId(t.teamB[0]), replaceId(t.teamB[1])],
@@ -658,29 +688,30 @@ export const useRoundManagement = ({
                   : t.teamHandicaps,
               })),
               oyeses: {
-                ...prev.oyeses,
-                playerConfigs: prev.oyeses.playerConfigs.map((pc) => ({ ...pc, playerId: replaceId(pc.playerId) })),
+                ...safePrev.oyeses,
+                playerConfigs: (safePrev.oyeses.playerConfigs ?? []).map((pc) => ({
+                  ...pc,
+                  playerId: replaceId(pc.playerId),
+                })),
               },
               medalGeneral: {
-                ...prev.medalGeneral,
-                playerHandicaps: prev.medalGeneral.playerHandicaps.map((ph) => ({
+                ...safePrev.medalGeneral,
+                playerHandicaps: (safePrev.medalGeneral.playerHandicaps ?? []).map((ph) => ({
                   ...ph,
                   playerId: replaceId(ph.playerId),
                 })),
               },
-              betOverrides: prev.betOverrides?.map((o) => ({
+              betOverrides: safePrev.betOverrides?.map((o) => ({
                 ...o,
                 playerAId: replaceId(o.playerAId),
                 playerBId: replaceId(o.playerBId),
               })),
-              bilateralHandicaps: prev.bilateralHandicaps?.map((h) => ({
+              bilateralHandicaps: safePrev.bilateralHandicaps?.map((h) => ({
                 ...h,
                 playerAId: replaceId(h.playerAId),
                 playerBId: replaceId(h.playerBId),
               })),
             };
-
-            return updated;
           });
         }
       }
