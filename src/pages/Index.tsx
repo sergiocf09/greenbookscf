@@ -21,6 +21,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +62,7 @@ const Index = () => {
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [historicalScorecardData, setHistoricalScorecardData] = useState<{
     roundId: string;
     courseId: string;
@@ -71,6 +82,7 @@ const Index = () => {
     isLoading,
     isRestoring,
     isRoundStarted,
+    pendingRound,
     roundPlayerIds,
     createRound,
     startRound: startRoundInDb,
@@ -92,6 +104,12 @@ const Index = () => {
     setTeeColor,
     getCourseById,
   });
+
+  useEffect(() => {
+    if (pendingRound) {
+      setShowPendingRoundDialog(true);
+    }
+  }, [pendingRound]);
 
   // Real-time score synchronization
   useRealtimeScores({
@@ -131,6 +149,19 @@ const Index = () => {
     // Force page reload to reset hook state
     window.location.reload();
   }, []);
+
+  const handleRestorePendingRound = useCallback(() => {
+    if (!pendingRound) return;
+    // Use a one-shot flag so the hook restores exactly this round on next mount.
+    sessionStorage.setItem('restore_round_id', pendingRound.roundId);
+    window.location.reload();
+  }, [pendingRound]);
+
+  const handleDiscardPendingRoundAndStartNew = useCallback(() => {
+    // Skip the restore prompt once, then continue clean.
+    sessionStorage.setItem('skip_restore_once', '1');
+    startNewRound();
+  }, [startNewRound]);
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
@@ -388,6 +419,41 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <AlertDialog open={showPendingRoundDialog && !!pendingRound}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Encontramos una ronda sin “Cerrar Tarjeta”. ¿Qué quieres hacer?
+              {pendingRound && (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  {pendingRound.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
+                  {format(pendingRound.date, "d 'de' MMMM, yyyy", { locale: es })}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowPendingRoundDialog(false);
+                handleDiscardPendingRoundAndStartNew();
+              }}
+            >
+              Iniciar nueva ronda
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowPendingRoundDialog(false);
+                handleRestorePendingRound();
+              }}
+            >
+              Restaurar y cerrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center">
