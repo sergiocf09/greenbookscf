@@ -20,6 +20,8 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
   className,
   rightSlot,
 }) => {
+  const displayValue = value === 0 ? (min === 0 ? 0 : '-') : value;
+
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <span className="text-xs text-muted-foreground w-12">{label}</span>
@@ -36,7 +38,7 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
         </Button>
 
         <div className="w-10 text-center flex items-center justify-center gap-1">
-          <span className="text-lg font-bold">{value || '-'}</span>
+          <span className="text-lg font-bold">{displayValue}</span>
           {rightSlot}
         </div>
 
