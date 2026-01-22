@@ -46,6 +46,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // BilateralHandicap is now imported from types/golf.ts
 
@@ -110,9 +111,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       netByHoleBack: Array<number | null>; // holes 10-18
       holeDetailsFront: Array<{
         holeNumber: number;
+         grossA1: number;
+         hcpA1: number;
         netA1: number;
+         grossA2: number;
+         hcpA2: number;
         netA2: number;
+         grossB1: number;
+         hcpB1: number;
         netB1: number;
+         grossB2: number;
+         hcpB2: number;
         netB2: number;
         lowBallWinner?: 'A' | 'B' | 'tie';
         highBallWinner?: 'A' | 'B' | 'tie';
@@ -122,9 +131,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       } | null>;
       holeDetailsBack: Array<{
         holeNumber: number;
+         grossA1: number;
+         hcpA1: number;
         netA1: number;
+         grossA2: number;
+         hcpA2: number;
         netA2: number;
+         grossB1: number;
+         hcpB1: number;
         netB1: number;
+         grossB2: number;
+         hcpB2: number;
         netB2: number;
         lowBallWinner?: 'A' | 'B' | 'tie';
         highBallWinner?: 'A' | 'B' | 'tie';
@@ -195,6 +212,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         return (typeof score.strokes === 'number' ? score.strokes : 0) - strokesReceived;
       };
 
+      const getCarritosHoleScore = (
+        playerId: string,
+        holeNum: number
+      ): { gross: number; hcp: number; net: number } | null => {
+        const score = confirmedScores.get(playerId)?.find((s) => s.holeNumber === holeNum);
+        if (!score || typeof score.strokes !== 'number' || !Number.isFinite(score.strokes)) return null;
+        const hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
+        return { gross: score.strokes, hcp, net: score.strokes - hcp };
+      };
+
       const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
       const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
       const includeCombined = scoringType === 'combined' || scoringType === 'all';
@@ -204,9 +231,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         pointsB: number;
         detail: {
           holeNumber: number;
+          grossA1: number;
+          hcpA1: number;
           netA1: number;
+          grossA2: number;
+          hcpA2: number;
           netA2: number;
+          grossB1: number;
+          hcpB1: number;
           netB1: number;
+          grossB2: number;
+          hcpB2: number;
           netB2: number;
           lowBallWinner?: 'A' | 'B' | 'tie';
           highBallWinner?: 'A' | 'B' | 'tie';
@@ -215,13 +250,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           pointsB: number;
         };
       } | null => {
-        const netA1 = getCarritosNet(resolvedTeamA[0], holeNum);
-        const netA2 = getCarritosNet(resolvedTeamA[1], holeNum);
-        const netB1 = getCarritosNet(resolvedTeamB[0], holeNum);
-        const netB2 = getCarritosNet(resolvedTeamB[1], holeNum);
+        const a1 = getCarritosHoleScore(resolvedTeamA[0], holeNum);
+        const a2 = getCarritosHoleScore(resolvedTeamA[1], holeNum);
+        const b1 = getCarritosHoleScore(resolvedTeamB[0], holeNum);
+        const b2 = getCarritosHoleScore(resolvedTeamB[1], holeNum);
 
         // Skip if not all four have a score for this hole
-        if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
+        if (!a1 || !a2 || !b1 || !b2) return null;
+
+        const netA1 = a1.net;
+        const netA2 = a2.net;
+        const netB1 = b1.net;
+        const netB2 = b2.net;
 
         let pointsA = 0;
         let pointsB = 0;
@@ -276,9 +316,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           pointsB,
           detail: {
             holeNumber: holeNum,
+            grossA1: a1.gross,
+            hcpA1: a1.hcp,
             netA1,
+            grossA2: a2.gross,
+            hcpA2: a2.hcp,
             netA2,
+            grossB1: b1.gross,
+            hcpB1: b1.hcp,
             netB1,
+            grossB2: b2.gross,
+            hcpB2: b2.hcp,
             netB2,
             lowBallWinner,
             highBallWinner,
@@ -295,9 +343,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         netByHole: Array<number | null>;
         details: Array<{
           holeNumber: number;
+          grossA1: number;
+          hcpA1: number;
           netA1: number;
+          grossA2: number;
+          hcpA2: number;
           netA2: number;
+          grossB1: number;
+          hcpB1: number;
           netB1: number;
+          grossB2: number;
+          hcpB2: number;
           netB2: number;
           lowBallWinner?: 'A' | 'B' | 'tie';
           highBallWinner?: 'A' | 'B' | 'tie';
@@ -311,9 +367,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const netByHole: Array<number | null> = [];
         const details: Array<{
           holeNumber: number;
+          grossA1: number;
+          hcpA1: number;
           netA1: number;
+          grossA2: number;
+          hcpA2: number;
           netA2: number;
+          grossB1: number;
+          hcpB1: number;
           netB1: number;
+          grossB2: number;
+          hcpB2: number;
           netB2: number;
           lowBallWinner?: 'A' | 'B' | 'tie';
           highBallWinner?: 'A' | 'B' | 'tie';
@@ -738,9 +802,17 @@ interface CarritosResultsCardProps {
     netByHoleBack: Array<number | null>;
     holeDetailsFront: Array<{
       holeNumber: number;
+      grossA1: number;
+      hcpA1: number;
       netA1: number;
+      grossA2: number;
+      hcpA2: number;
       netA2: number;
+      grossB1: number;
+      hcpB1: number;
       netB1: number;
+      grossB2: number;
+      hcpB2: number;
       netB2: number;
       lowBallWinner?: 'A' | 'B' | 'tie';
       highBallWinner?: 'A' | 'B' | 'tie';
@@ -750,9 +822,17 @@ interface CarritosResultsCardProps {
     } | null>;
     holeDetailsBack: Array<{
       holeNumber: number;
+      grossA1: number;
+      hcpA1: number;
       netA1: number;
+      grossA2: number;
+      hcpA2: number;
       netA2: number;
+      grossB1: number;
+      hcpB1: number;
       netB1: number;
+      grossB2: number;
+      hcpB2: number;
       netB2: number;
       lowBallWinner?: 'A' | 'B' | 'tie';
       highBallWinner?: 'A' | 'B' | 'tie';
@@ -780,6 +860,16 @@ interface CarritosResultsCardProps {
 }
 
 const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel }) => {
+  const isMobile = useIsMobile();
+  const [holeDialogOpen, setHoleDialogOpen] = useState(false);
+  const [selectedHole, setSelectedHole] = useState<{
+    holeNumber: number;
+    net: number | null;
+    detail:
+      | CarritosResultsCardProps['results']['holeDetailsFront'][number]
+      | CarritosResultsCardProps['results']['holeDetailsBack'][number];
+  } | null>(null);
+
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
@@ -811,9 +901,17 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         return {
           ...d,
           // swap teams for display
+          grossA1: d.grossB1,
+          hcpA1: d.hcpB1,
           netA1: d.netB1,
+          grossA2: d.grossB2,
+          hcpA2: d.hcpB2,
           netA2: d.netB2,
+          grossB1: d.grossA1,
+          hcpB1: d.hcpA1,
           netB1: d.netA1,
+          grossB2: d.grossA2,
+          hcpB2: d.hcpA2,
           netB2: d.netA2,
           lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
           highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
@@ -829,9 +927,17 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         if (!d) return null;
         return {
           ...d,
+          grossA1: d.grossB1,
+          hcpA1: d.hcpB1,
           netA1: d.netB1,
+          grossA2: d.grossB2,
+          hcpA2: d.hcpB2,
           netA2: d.netB2,
+          grossB1: d.grossA1,
+          hcpB1: d.hcpA1,
           netB1: d.netA1,
+          grossB2: d.grossA2,
+          hcpB2: d.hcpA2,
           netB2: d.netA2,
           lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
           highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
@@ -840,6 +946,21 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           pointsB: d.pointsA,
         };
       });
+
+  const openHoleDetail = (
+    holeNumber: number,
+    net: number | null,
+    detail: CarritosResultsCardProps['results']['holeDetailsFront'][number] | CarritosResultsCardProps['results']['holeDetailsBack'][number]
+  ) => {
+    setSelectedHole({ holeNumber, net, detail });
+    setHoleDialogOpen(true);
+  };
+
+  const ScoreLine = ({ name, gross, hcp, net }: { name: string; gross: number; hcp: number; net: number }) => (
+    <p className="tabular-nums text-sm">
+      {name}: Bruto {gross} (HCP {hcp}) → Neto {net}
+    </p>
+  );
 
   const getNetTone = (n: number) => (n > 0 ? 'text-primary' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
   const getNetPill = (n: number) => (n > 0 ? 'border-primary/40 text-primary' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
@@ -949,23 +1070,31 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseNetByHoleFront.map((net, idx) => {
                 const hole = idx + 1;
                 const detail = baseHoleDetailsFront[idx];
-                if (net === null) {
-                  return (
-                    <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
-                      <span className="text-[9px] text-muted-foreground">{hole}</span>
-                      <span className="text-[11px] font-semibold text-muted-foreground">–</span>
-                    </div>
-                  );
-                }
+
+                const pill = (
+                  <div
+                    className={cn(
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                      net === null ? 'border-border text-muted-foreground' : getNetPill(net),
+                      isMobile ? 'cursor-pointer' : 'cursor-default'
+                    )}
+                    onClick={isMobile ? () => openHoleDetail(hole, net, detail) : undefined}
+                    role={isMobile ? 'button' : undefined}
+                    tabIndex={isMobile ? 0 : undefined}
+                  >
+                    <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
+                    <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
+                      {net === null ? '–' : net > 0 ? `+${net}` : `${net}`}
+                    </span>
+                  </div>
+                );
+
+                if (isMobile || net === null) return <div key={hole}>{pill}</div>;
+
                 return (
                   <Tooltip key={hole}>
-                    <TooltipTrigger asChild>
-                      <div className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-default', getNetPill(net))}>
-                        <span className="text-[9px] opacity-80">{hole}</span>
-                        <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="w-64">
+                    <TooltipTrigger asChild>{pill}</TooltipTrigger>
+                    <TooltipContent side="top" className="w-80">
                       {!detail ? (
                         <div className="text-xs">
                           <p className="font-medium">Hoyo {hole}</p>
@@ -977,13 +1106,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
-                              <p className="tabular-nums">{displayTeamAPlayers[0]?.name.split(' ')[0]}: {detail.netA1}</p>
-                              <p className="tabular-nums">{displayTeamAPlayers[1]?.name.split(' ')[0]}: {detail.netA2}</p>
+                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA1} hcp={detail.hcpA1} net={detail.netA1} />
+                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA2} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <p className="tabular-nums">{displayTeamBPlayers[0]?.name.split(' ')[0]}: {detail.netB1}</p>
-                              <p className="tabular-nums">{displayTeamBPlayers[1]?.name.split(' ')[0]}: {detail.netB2}</p>
+                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB1} hcp={detail.hcpB1} net={detail.netB1} />
+                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB2} hcp={detail.hcpB2} net={detail.netB2} />
                             </div>
                           </div>
 
@@ -1034,23 +1163,31 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseNetByHoleBack.map((net, idx) => {
                 const hole = idx + 10;
                 const detail = baseHoleDetailsBack[idx];
-                if (net === null) {
-                  return (
-                    <div key={hole} className="h-8 rounded border border-border bg-background/60 flex flex-col items-center justify-center">
-                      <span className="text-[9px] text-muted-foreground">{hole}</span>
-                      <span className="text-[11px] font-semibold text-muted-foreground">–</span>
-                    </div>
-                  );
-                }
+
+                const pill = (
+                  <div
+                    className={cn(
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                      net === null ? 'border-border text-muted-foreground' : getNetPill(net),
+                      isMobile ? 'cursor-pointer' : 'cursor-default'
+                    )}
+                    onClick={isMobile ? () => openHoleDetail(hole, net, detail) : undefined}
+                    role={isMobile ? 'button' : undefined}
+                    tabIndex={isMobile ? 0 : undefined}
+                  >
+                    <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
+                    <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
+                      {net === null ? '–' : net > 0 ? `+${net}` : `${net}`}
+                    </span>
+                  </div>
+                );
+
+                if (isMobile || net === null) return <div key={hole}>{pill}</div>;
+
                 return (
                   <Tooltip key={hole}>
-                    <TooltipTrigger asChild>
-                      <div className={cn('h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-default', getNetPill(net))}>
-                        <span className="text-[9px] opacity-80">{hole}</span>
-                        <span className="text-[11px] font-semibold tabular-nums">{net > 0 ? `+${net}` : `${net}`}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="w-64">
+                    <TooltipTrigger asChild>{pill}</TooltipTrigger>
+                    <TooltipContent side="top" className="w-80">
                       {!detail ? (
                         <div className="text-xs">
                           <p className="font-medium">Hoyo {hole}</p>
@@ -1062,13 +1199,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
-                              <p className="tabular-nums">{displayTeamAPlayers[0]?.name.split(' ')[0]}: {detail.netA1}</p>
-                              <p className="tabular-nums">{displayTeamAPlayers[1]?.name.split(' ')[0]}: {detail.netA2}</p>
+                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA1} hcp={detail.hcpA1} net={detail.netA1} />
+                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossA2} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <p className="tabular-nums">{displayTeamBPlayers[0]?.name.split(' ')[0]}: {detail.netB1}</p>
-                              <p className="tabular-nums">{displayTeamBPlayers[1]?.name.split(' ')[0]}: {detail.netB2}</p>
+                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB1} hcp={detail.hcpB1} net={detail.netB1} />
+                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} gross={detail.grossB2} hcp={detail.hcpB2} net={detail.netB2} />
                             </div>
                           </div>
 
@@ -1114,6 +1251,95 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             </span>
           </div>
         </div>
+
+        {/* Modal en móvil para detalle por hoyo */}
+        {isMobile && (
+          <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
+                </DialogTitle>
+              </DialogHeader>
+
+              {!selectedHole ? null : !selectedHole.detail ? (
+                <div className="text-sm text-muted-foreground">
+                  Sin scores confirmados de los 4 jugadores.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-xs text-muted-foreground">
+                    Neto hoyo:{' '}
+                    {selectedHole.net === null
+                      ? '–'
+                      : selectedHole.net > 0
+                        ? `+${selectedHole.net}`
+                        : `${selectedHole.net}`}{' '}
+                    pts
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[11px] text-muted-foreground mb-1">Pareja A</p>
+                      <ScoreLine
+                        name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
+                        gross={selectedHole.detail.grossA1}
+                        hcp={selectedHole.detail.hcpA1}
+                        net={selectedHole.detail.netA1}
+                      />
+                      <ScoreLine
+                        name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
+                        gross={selectedHole.detail.grossA2}
+                        hcp={selectedHole.detail.hcpA2}
+                        net={selectedHole.detail.netA2}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-muted-foreground mb-1">Rival</p>
+                      <ScoreLine
+                        name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
+                        gross={selectedHole.detail.grossB1}
+                        hcp={selectedHole.detail.hcpB1}
+                        net={selectedHole.detail.netB1}
+                      />
+                      <ScoreLine
+                        name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
+                        gross={selectedHole.detail.grossB2}
+                        hcp={selectedHole.detail.hcpB2}
+                        net={selectedHole.detail.netB2}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/50 text-sm">
+                    {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>LowBall</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.lowBallWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>HighBall</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.highBallWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>Suma</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.combinedWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    <p className="flex justify-between font-medium pt-1">
+                      <span>Puntos (A-B)</span>
+                      <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
         
         {/* Money result */}
         <div className="text-center">
