@@ -140,7 +140,9 @@ const Index = () => {
         name: profile.display_name,
         initials: profile.initials,
         color: profile.avatar_color,
-        handicap: Number(profile.current_handicap) || 0,
+        // Start all new rounds at 0 handicap for now.
+        // We'll populate this once the USGA handicap calculation is enabled and validated.
+        handicap: 0,
         profileId: profile.id,
       };
       setPlayers([basePlayer]);
