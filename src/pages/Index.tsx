@@ -111,10 +111,15 @@ const Index = () => {
   });
 
   useEffect(() => {
-    if (pendingRound) {
-      setShowPendingRoundDialog(true);
-    }
-  }, [pendingRound]);
+    // If we are currently restoring (or already restored) the same pending round,
+    // don't keep prompting the user.
+    if (!pendingRound) return;
+    if (isRestoring) return;
+    if (roundState.id && roundState.id === pendingRound.roundId) return;
+    if (isRoundStarted) return;
+
+    setShowPendingRoundDialog(true);
+  }, [pendingRound, isRestoring, roundState.id, isRoundStarted]);
 
   // Load summary for the pending round (so the user recognizes it)
   useEffect(() => {
@@ -521,7 +526,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AlertDialog open={showPendingRoundDialog && !!pendingRound}>
+      <AlertDialog open={showPendingRoundDialog && !!pendingRound && !isRestoring && !isRoundStarted}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
