@@ -974,7 +974,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     <p className="flex items-center justify-between gap-2 text-sm">
       <span className="truncate">{name}</span>
       <span className="flex items-center gap-2 tabular-nums">
-        <span>Neto {net}</span>
+        <span>{net}</span>
         {hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" aria-label="Stroke aplicado" />}
       </span>
     </p>
@@ -1034,46 +1034,85 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
-        {/* Solo vista Pareja A (tu equipo) */}
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-1">
-              {displayTeamAPlayers.map((p) => (
-                <div
-                  key={p.id}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
-                  style={{ backgroundColor: p.color }}
-                  title={p.name}
-                >
-                  {getPlayerAbbr(p)}
-                </div>
-              ))}
+      <CardContent className="pt-0">
+        <Collapsible>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                <span className="truncate">
+                  {displayTeamAPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+                  {'  vs  '}
+                  {displayTeamBPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {scoringLabel}
+              </p>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Pareja A (tu equipo)</p>
-          </div>
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-1">
-              {displayTeamBPlayers.map((p) => (
-                <div
-                  key={p.id}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold opacity-80"
-                  style={{ backgroundColor: p.color }}
-                  title={p.name}
-                >
-                  {getPlayerAbbr(p)}
+
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-[11px] tabular-nums">
+                  <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
                 </div>
-              ))}
+                <div className={cn('text-sm font-bold tabular-nums', baseTeamMoney > 0 ? 'text-primary' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
+                </div>
+              </div>
+
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <ChevronDown className="h-4 w-4" />
+                  <span className="sr-only">Ver detalle</span>
+                </Button>
+              </CollapsibleTrigger>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
           </div>
-        </div>
-        
-        {/* Puntos por hoyo (netos de tu pareja) */}
-        <div className="bg-muted/30 rounded-lg p-2 space-y-2">
-          <div className="text-[10px] text-muted-foreground text-center">
-            Carritos ({scoringLabel}) se calcula con neto (golpes - strokes recibidos) y solo cuenta hoyos con score confirmado en los 4.
-          </div>
+
+          <CollapsibleContent className="mt-3 space-y-3">
+            {/* Solo vista Pareja A (tu equipo) */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-1">
+                  {displayTeamAPlayers.map((p) => (
+                    <div
+                      key={p.id}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+                      style={{ backgroundColor: p.color }}
+                      title={p.name}
+                    >
+                      {getPlayerAbbr(p)}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Pareja A (tu equipo)</p>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  {displayTeamBPlayers.map((p) => (
+                    <div
+                      key={p.id}
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold opacity-80"
+                      style={{ backgroundColor: p.color }}
+                      title={p.name}
+                    >
+                      {getPlayerAbbr(p)}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
+              </div>
+            </div>
+            
+            {/* Puntos por hoyo */}
+            <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+              <div className="text-[10px] text-muted-foreground text-center">
+                Toca/hover en un hoyo para ver el desglose (• = stroke aplicado).
+              </div>
 
           {/* Front 9 */}
           <div className="space-y-1">
@@ -1120,7 +1159,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         </div>
                       ) : (
                         <div className="text-xs space-y-1">
-                          <p className="font-medium">Hoyo {detail.holeNumber} • Neto {net > 0 ? `+${net}` : `${net}`} pts</p>
+                          <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
@@ -1213,7 +1252,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         </div>
                       ) : (
                         <div className="text-xs space-y-1">
-                          <p className="font-medium">Hoyo {detail.holeNumber} • Neto {net > 0 ? `+${net}` : `${net}`} pts</p>
+                          <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
                               <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
@@ -1261,40 +1300,40 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             </TooltipProvider>
           </div>
 
-          {/* Total */}
-          <div className="flex items-center justify-between border-t border-border/50 pt-2">
-            <span className="text-xs font-medium">Total 18</span>
-            <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
-              {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
-            </span>
-          </div>
-        </div>
+              {/* Total */}
+              <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                <span className="text-xs font-medium">Total 18</span>
+                <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
+                  {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+                </span>
+              </div>
+            </div>
 
-        {/* Modal en móvil para detalle por hoyo */}
-        {isMobile && (
-          <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
-                </DialogTitle>
-              </DialogHeader>
+            {/* Modal en móvil para detalle por hoyo */}
+            {isMobile && (
+              <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
+                    </DialogTitle>
+                  </DialogHeader>
 
-              {!selectedHole ? null : !selectedHole.detail ? (
-                <div className="text-sm text-muted-foreground">
-                  Sin scores confirmados de los 4 jugadores.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="text-xs text-muted-foreground">
-                    Neto hoyo:{' '}
-                    {selectedHole.net === null
-                      ? '–'
-                      : selectedHole.net > 0
-                        ? `+${selectedHole.net}`
-                        : `${selectedHole.net}`}{' '}
-                    pts
-                  </div>
+                  {!selectedHole ? null : !selectedHole.detail ? (
+                    <div className="text-sm text-muted-foreground">
+                      Sin scores confirmados de los 4 jugadores.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-xs text-muted-foreground">
+                        Hoyo:{' '}
+                        {selectedHole.net === null
+                          ? '–'
+                          : selectedHole.net > 0
+                            ? `+${selectedHole.net}`
+                            : `${selectedHole.net}`}{' '}
+                        pts
+                      </div>
 
                   <div className="space-y-2">
                     <div>
@@ -1349,34 +1388,25 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
                     </p>
                   </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        )}
-        
-        {/* Money result */}
-        <div className="text-center">
-          <span className={cn(
-            'text-xl font-bold',
-            baseTeamMoney > 0 ? 'text-primary' : baseTeamMoney < 0 ? 'text-destructive' : 'text-muted-foreground'
-          )}>
-            {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
-          </span>
-          <p className="text-[10px] text-muted-foreground">Tu equipo (neto {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts)</p>
-        </div>
-        
-        {/* Payment breakdown */}
-        {payment && (
-          <div className="text-[10px] text-muted-foreground bg-muted/20 rounded p-2">
-            <p className="font-medium mb-1">Desglose de pago (cada perdedor paga a cada ganador):</p>
-            {payment.losingTeam.map(loser => (
-              <p key={loser.id}>
-                {loser.name.split(' ')[0]} paga ${payment.perLoserPayToEachWinner} a {payment.winningTeam[0].name.split(' ')[0]} y ${payment.perLoserPayToEachWinner} a {payment.winningTeam[1].name.split(' ')[0]}
-              </p>
-            ))}
-          </div>
-        )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Payment breakdown */}
+            {payment && (
+              <div className="text-[10px] text-muted-foreground bg-muted/20 rounded p-2">
+                <p className="font-medium mb-1">Desglose de pago (cada perdedor paga a cada ganador):</p>
+                {payment.losingTeam.map(loser => (
+                  <p key={loser.id}>
+                    {loser.name.split(' ')[0]} paga ${payment.perLoserPayToEachWinner} a {payment.winningTeam[0].name.split(' ')[0]} y ${payment.perLoserPayToEachWinner} a {payment.winningTeam[1].name.split(' ')[0]}
+                  </p>
+                ))}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
