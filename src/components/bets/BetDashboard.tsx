@@ -2536,52 +2536,77 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               // IMPORTANT: amounts edited here must be per-pair.
               // We persist them as BetOverrides (playerAId/playerBId + betType label substring)
               // so they don't affect other pairs.
-              const set = (betTypeLabel: string, amountOverride?: number) => {
+              const nextOverrides = [...(betConfig.betOverrides || [])];
+              const upsert = (betTypeLabel: string, amountOverride?: number) => {
                 if (amountOverride === undefined) return;
-                updateBetOverride(betTypeLabel, { enabled: true, amountOverride });
+
+                const existingIdx = nextOverrides.findIndex(
+                  (o) =>
+                    o.betType === betTypeLabel &&
+                    ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                      (o.playerAId === rival.id && o.playerBId === player.id))
+                );
+
+                if (existingIdx >= 0) {
+                  nextOverrides[existingIdx] = {
+                    ...nextOverrides[existingIdx],
+                    enabled: true,
+                    amountOverride,
+                  };
+                } else {
+                  nextOverrides.push({
+                    playerAId: player.id,
+                    playerBId: rival.id,
+                    betType: betTypeLabel,
+                    enabled: true,
+                    amountOverride,
+                  });
+                }
               };
 
               switch (editingBetType) {
                 case 'medal':
-                  set('Medal Front 9', overrides.front);
-                  set('Medal Back 9', overrides.back);
-                  set('Medal Total', overrides.total);
+                  upsert('Medal Front 9', overrides.front);
+                  upsert('Medal Back 9', overrides.back);
+                  upsert('Medal Total', overrides.total);
                   break;
                 case 'pressures':
-                  set('Pressures Front 9', overrides.front);
-                  set('Pressures Back 9', overrides.back);
-                  set('Match 18', overrides.total);
+                  upsert('Pressures Front 9', overrides.front);
+                  upsert('Pressures Back 9', overrides.back);
+                  upsert('Match 18', overrides.total);
                   break;
                 case 'skins':
                   // Bet engine uses "Skins Front" / "Skins Back" labels.
-                  set('Skins Front', overrides.front);
-                  set('Skins Back', overrides.back);
+                  upsert('Skins Front', overrides.front);
+                  upsert('Skins Back', overrides.back);
                   break;
                 case 'rayas':
-                  set('Rayas Front', overrides.front);
-                  set('Rayas Back', overrides.back);
-                  set('Rayas Medal', overrides.total);
+                  upsert('Rayas Front', overrides.front);
+                  upsert('Rayas Back', overrides.back);
+                  upsert('Rayas Medal', overrides.total);
                   break;
                 case 'caros':
-                  set('Caros', overrides.total);
+                  upsert('Caros', overrides.total);
                   break;
                 case 'oyeses':
                   // Engine uses per-hole labels like "Oyes (Hole X)".
-                  set('Oyes', overrides.total);
+                  upsert('Oyes', overrides.total);
                   break;
                 case 'units':
-                  set('Unidades', overrides.total);
+                  upsert('Unidades', overrides.total);
                   break;
                 case 'manchas':
-                  set('Manchas', overrides.total);
+                  upsert('Manchas', overrides.total);
                   break;
                 case 'culebras':
-                  set('Culebras', overrides.total);
+                  upsert('Culebras', overrides.total);
                   break;
                 case 'pinguinos':
-                  set('Pinguinos', overrides.total);
+                  upsert('Pinguinos', overrides.total);
                   break;
               }
+
+              onBetConfigChange({ ...betConfig, betOverrides: nextOverrides });
               setEditingBetType(null);
             }}
             onClose={() => setEditingBetType(null)}
