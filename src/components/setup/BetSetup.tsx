@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,20 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 }) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(['medal']);
 
+  // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
+  // We snapshot the current scrollY and restore it on the next frame.
+  const safeOnChange = useCallback(
+    (next: BetConfig) => {
+      const y = window.scrollY;
+      onChange(next);
+      requestAnimationFrame(() => {
+        // Second RAF improves stability across browsers when DOM height changes.
+        requestAnimationFrame(() => window.scrollTo({ top: y }));
+      });
+    },
+    [onChange]
+  );
+
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
       prev.includes(section) 
@@ -52,7 +66,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     betType: K,
     updates: Partial<BetConfig[K]>
   ) => {
-    onChange({
+    safeOnChange({
       ...config,
       [betType]: { ...config[betType], ...updates },
     });
@@ -187,7 +201,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       teamHandicaps: {},
       enabled: true,
     };
-    onChange({
+    safeOnChange({
       ...config,
       carritosTeams: [...teams, newTeam],
     });
@@ -195,7 +209,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 
   const updateCarritosTeam = (teamId: string, updates: Partial<CarritosTeamBet>) => {
     const teams = config.carritosTeams || [];
-    onChange({
+    safeOnChange({
       ...config,
       carritosTeams: teams.map(t => t.id === teamId ? { ...t, ...updates } : t),
     });
@@ -203,7 +217,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 
   const removeCarritosTeam = (teamId: string) => {
     const teams = config.carritosTeams || [];
-    onChange({
+    safeOnChange({
       ...config,
       carritosTeams: teams.filter(t => t.id !== teamId),
     });
