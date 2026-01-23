@@ -624,7 +624,19 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           title="Carritos (Parejas)"
           description="Apuestas por equipos de 2"
           enabled={config.carritos.enabled}
-          onToggle={(enabled) => updateBet('carritos', { enabled })}
+          onToggle={(enabled) => {
+            if (enabled) {
+              // Start blank so the user always picks pairs manually (prevents lingering selections).
+              updateBet('carritos', {
+                enabled,
+                teamA: ['', ''],
+                teamB: ['', ''],
+                teamHandicaps: {},
+              });
+            } else {
+              updateBet('carritos', { enabled });
+            }
+          }}
         >
           {/* Primary team setup */}
           <CarritosTeamConfig
