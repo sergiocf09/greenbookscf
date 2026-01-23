@@ -1,8 +1,9 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { toast } from 'sonner';
+import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
 
 interface UseRealtimeScoresProps {
   roundId: string | null;
@@ -21,6 +22,7 @@ export const useRealtimeScores = ({
   setScores,
   setConfirmedHoles,
 }: UseRealtimeScoresProps) => {
+  const holeScoreIdToPlayerHoleRef = useRef<Map<string, { playerId: string; holeNumber: number }>>(new Map());
   
   // Build reverse map: round_player_id -> playerId
   const getReverseMap = useCallback(() => {
@@ -119,10 +121,93 @@ export const useRealtimeScores = ({
         }
       });
 
+    // Markers realtime: we first map hole_score_id -> (playerId, holeNumber)
+    // then subscribe to hole_markers changes for those ids.
+    let markersChannel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    const setupMarkersRealtime = async () => {
+      try {
+        const { data: holeScoreRows, error } = await supabase
+          .from('hole_scores')
+          .select('id, round_player_id, hole_number')
+          .in('round_player_id', rpIds);
+
+        if (cancelled) return;
+        if (error) {
+          console.error('Error mapping hole_score ids for markers realtime:', error);
+          return;
+        }
+
+        const reverseMap = getReverseMap();
+        const mapById = new Map<string, { playerId: string; holeNumber: number }>();
+        for (const row of (holeScoreRows || []) as any[]) {
+          const playerId = reverseMap.get(row.round_player_id);
+          if (!playerId) continue;
+          mapById.set(row.id, { playerId, holeNumber: row.hole_number });
+        }
+        holeScoreIdToPlayerHoleRef.current = mapById;
+
+        const holeScoreIds = Array.from(mapById.keys());
+        if (!holeScoreIds.length) return;
+
+        const allowedKeys = new Set<string>([...getManualUnitMarkers(), ...getManualStainMarkers()].map(String));
+
+        markersChannel = supabase
+          .channel(`markers-${roundId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'hole_markers',
+              filter: `hole_score_id=in.(${holeScoreIds.join(',')})`,
+            },
+            (payload: any) => {
+              const { eventType, new: newRec, old: oldRec } = payload;
+              const rec = eventType === 'DELETE' ? oldRec : newRec;
+              if (!rec?.hole_score_id) return;
+              if (rec.is_auto_detected) return;
+
+              const markerKey = String(rec.marker_type || '');
+              if (!allowedKeys.has(markerKey)) return;
+
+              const mapped = holeScoreIdToPlayerHoleRef.current.get(rec.hole_score_id);
+              if (!mapped) return;
+
+              const { playerId, holeNumber } = mapped;
+              setScores((prev) => {
+                const next = new Map(prev);
+                const playerScores = [...(next.get(playerId) || [])];
+                const idx = playerScores.findIndex((s) => s.holeNumber === holeNumber);
+                if (idx < 0) return prev;
+
+                const currentMarkers = playerScores[idx].markers || { ...defaultMarkerState };
+                const updatedMarkers = {
+                  ...currentMarkers,
+                  [markerKey]: eventType !== 'DELETE',
+                } as any;
+
+                playerScores[idx] = { ...playerScores[idx], markers: updatedMarkers };
+                next.set(playerId, playerScores);
+                return next;
+              });
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.error('Error setting up markers realtime:', e);
+      }
+    };
+
+    void setupMarkersRealtime();
+
     // Cleanup subscription on unmount
     return () => {
+      cancelled = true;
       console.log('Unsubscribing from realtime scores');
       supabase.removeChannel(channel);
+      if (markersChannel) supabase.removeChannel(markersChannel);
     };
   }, [roundId, roundPlayerIds, handleScoreChange]);
 
