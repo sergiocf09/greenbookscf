@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from '@/types/golf';
-import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 
@@ -62,12 +62,13 @@ export const useScorePersistence = ({
           .in('hole_score_id', holeScoreIds);
 
         if (!markersErr && holeMarkers?.length) {
-          const allowedKeys = new Set<string>([...getManualUnitMarkers(), ...getManualStainMarkers()].map(String));
           markersByHoleScoreId = new Map();
           for (const m of holeMarkers as any[]) {
             const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
             const key = markerDbToKey(m.marker_type);
-            if (key && allowedKeys.has(String(key)) && key in prev) {
+            // Restore any non-auto marker that exists in the state shape.
+            // This avoids silent drops when the manual marker list changes over time.
+            if (key && key in prev && !isAutoDetectedMarker(key as any)) {
               (prev as any)[key] = true;
             }
             markersByHoleScoreId.set(m.hole_score_id, prev);
