@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BetConfig, RayasBetConfig, BilateralHandicap, BetOverride, MedalGeneralPlayerConfig } from '@/types/golf';
+import { BetConfig, BilateralHandicap, BetOverride, MedalGeneralPlayerConfig, CarritosBetConfig, CarritosTeamBet } from '@/types/golf';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -30,6 +30,8 @@ interface RoundBetConfig {
     amount: number;
     playerHandicaps: MedalGeneralPlayerConfig[];
   };
+  carritos?: CarritosBetConfig;
+  carritosTeams?: CarritosTeamBet[];
   bilateralHandicaps?: BilateralHandicap[];
   betOverrides?: BetOverride[];
 }
@@ -103,6 +105,22 @@ export const useBetConfigPersistence = ({
               playerHandicaps: dbConfig.medalGeneral.playerHandicaps ?? prev.medalGeneral.playerHandicaps,
             };
           }
+
+          // Apply Carritos config if exists
+          if (dbConfig.carritos) {
+            newConfig.carritos = {
+              ...prev.carritos,
+              ...dbConfig.carritos,
+              // Defensive: keep tuple shape stable
+              teamA: (dbConfig.carritos.teamA ?? prev.carritos.teamA) as [string, string],
+              teamB: (dbConfig.carritos.teamB ?? prev.carritos.teamB) as [string, string],
+              teamHandicaps: dbConfig.carritos.teamHandicaps ?? prev.carritos.teamHandicaps,
+            };
+          }
+
+          if (dbConfig.carritosTeams) {
+            newConfig.carritosTeams = dbConfig.carritosTeams;
+          }
           
           return newConfig;
         });
@@ -139,6 +157,8 @@ export const useBetConfigPersistence = ({
           amount: config.medalGeneral.amount,
           playerHandicaps: config.medalGeneral.playerHandicaps,
         },
+        carritos: config.carritos,
+        carritosTeams: config.carritosTeams || [],
         bilateralHandicaps: config.bilateralHandicaps || [],
         betOverrides: config.betOverrides || [],
       };
