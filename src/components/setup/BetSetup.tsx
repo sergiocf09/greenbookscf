@@ -712,10 +712,21 @@ const StableSelect: React.FC<{
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select
+      value={value}
+      onValueChange={onValueChange}
+      onOpenChange={(open) => {
+        // Debug: el usuario reporta que el menú se cierra instantáneamente.
+        // Esto nos permitirá ver si abre y se cierra por algún evento externo.
+        console.log('[Carritos][Select]', placeholder, open ? 'open' : 'closed');
+      }}
+    >
       <SelectTrigger
         ref={triggerRef}
         className={cn('h-8 text-xs', triggerClassName)}
+        // IMPORTANTE: Radix usa pointer events; stopPropagation en mouse no siempre alcanza.
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerDownCapture={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
@@ -756,7 +767,14 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
   );
 
   return (
-    <div className="space-y-3" onMouseDown={(e) => e.stopPropagation()}>
+    <div
+      className="space-y-3"
+      // Protege toda la sección de Carritos de listeners externos que puedan
+      // interpretar el pointerdown como “click fuera” y cerrar el Select.
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Equipo A</Label>
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
