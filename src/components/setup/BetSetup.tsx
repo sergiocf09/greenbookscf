@@ -673,7 +673,13 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={addCarritosTeam}
+               onClick={(e) => {
+                 // Prevent any parent Collapsible/outside-click logic from swallowing the click
+                 e.preventDefault();
+                 e.stopPropagation();
+                 addCarritosTeam();
+               }}
+               onPointerDown={(e) => e.stopPropagation()}
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -709,8 +715,6 @@ const StableSelect: React.FC<{
   options: CarritosSelectOption[];
   triggerClassName?: string;
 }> = ({ value, onValueChange, placeholder, options, triggerClassName }) => {
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-
   return (
     <Select
       value={value}
@@ -722,7 +726,6 @@ const StableSelect: React.FC<{
       }}
     >
       <SelectTrigger
-        ref={triggerRef}
         className={cn('h-8 text-xs', triggerClassName)}
         // IMPORTANTE: Radix usa pointer events; stopPropagation en mouse no siempre alcanza.
         onPointerDown={(e) => e.stopPropagation()}
@@ -736,7 +739,6 @@ const StableSelect: React.FC<{
         onCloseAutoFocus={(e) => {
           // Evita que Radix enfoque el trigger con scroll automático (causa "salto" al inicio)
           e.preventDefault();
-          triggerRef.current?.focus({ preventScroll: true });
         }}
       >
         {options.map((opt) => (

@@ -117,7 +117,7 @@ const Index = () => {
   });
 
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
-  const { loadBetConfig, saveBetConfig } = useBetConfigPersistence({
+  const { loadBetConfig, saveBetConfig, isLoaded: isBetConfigLoaded } = useBetConfigPersistence({
     roundId: roundState.id,
     betConfig,
     setBetConfig,
@@ -134,6 +134,7 @@ const Index = () => {
   useEffect(() => {
     if (!roundState.id) return;
     if (isRestoring) return;
+    if (!isBetConfigLoaded) return;
     if (players.length === 0) return;
     if (hasSanitizedCarritosForRoundRef.current === roundState.id) return;
 
@@ -172,14 +173,14 @@ const Index = () => {
       });
     }
 
-    hasSanitizedCarritosForRoundRef.current = roundState.id;
-
     if (!changed) return;
+
+    hasSanitizedCarritosForRoundRef.current = roundState.id;
 
     // Persist immediately so a later restore doesn't resurrect the ghost bet.
     setBetConfig(next);
     void saveBetConfig(next);
-  }, [roundState.id, isRestoring, players, betConfig, saveBetConfig, setBetConfig]);
+  }, [roundState.id, isRestoring, isBetConfigLoaded, players, betConfig, saveBetConfig, setBetConfig]);
 
   useEffect(() => {
     // If we are currently restoring (or already restored) the same pending round,
