@@ -62,6 +62,12 @@ const Index = () => {
   const [currentHole, setCurrentHole] = useState(1);
   const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
   const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
+
+  // Keep an always-fresh reference to scores to avoid stale closures when persisting confirmations.
+  const scoresRef = useRef<Map<string, PlayerScore[]>>(new Map());
+  useEffect(() => {
+    scoresRef.current = scores;
+  }, [scores]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
@@ -673,8 +679,11 @@ const Index = () => {
           updates.putts !== undefined ||
           updates.oyesProximity !== undefined;
 
-        // If a confirmed hole is edited, force re-confirmation so bets/markers stay trustworthy.
-        const shouldUnconfirm = wasConfirmed && isScoringMutation;
+        // If a hole is edited (golpes/putts/oyes), force re-confirmation.
+        // IMPORTANT: We also unconfirm when the *global* state says it's confirmed, even if the
+        // local per-player flag got out of sync (this was disabling the confirm button incorrectly).
+        const shouldUnconfirm =
+          isScoringMutation && (wasConfirmed || confirmedHoles.has(holeNumber));
 
         playerScores[idx] = {
           ...playerScores[idx],
@@ -701,7 +710,7 @@ const Index = () => {
       newScores.set(playerId, playerScores);
       return newScores;
     });
-  }, [saveScoreToDb, roundState.id, setConfirmedHoles]);
+  }, [saveScoreToDb, roundState.id, setConfirmedHoles, confirmedHoles]);
 
   const confirmHole = useCallback((holeNumber: number) => {
     // Mark all players' scores for this hole as confirmed
@@ -724,17 +733,25 @@ const Index = () => {
     if (roundState.id) {
       void Promise.all(
         players.map(async (player) => {
-          const holeScore = scores.get(player.id)?.find((s) => s.holeNumber === holeNumber);
+          const holeScore = scoresRef.current.get(player.id)?.find((s) => s.holeNumber === holeNumber);
           if (!holeScore) return;
           await saveScoreToDb(player.id, holeNumber, { ...holeScore, confirmed: true });
         })
       );
     }
-  }, [players, scores, saveScoreToDb, roundState.id]);
+  }, [players, saveScoreToDb, roundState.id]);
 
-  const isHoleConfirmed = (holeNumber: number): boolean => {
-    return confirmedHoles.has(holeNumber);
-  };
+  const isHoleConfirmed = useCallback(
+    (holeNumber: number): boolean => {
+      // Derive from per-player flags to avoid UI getting stuck when `confirmedHoles` is out of sync.
+      if (!players.length) return false;
+      return players.every((p) => {
+        const hs = scores.get(p.id)?.find((s) => s.holeNumber === holeNumber);
+        return Boolean(hs?.confirmed);
+      });
+    },
+    [players, scores]
+  );
 
   const currentHoleInfo: HoleInfo | null = course?.holes[currentHole - 1] || null;
   const holePar = currentHoleInfo?.par || 4;
