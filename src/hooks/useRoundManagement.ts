@@ -24,6 +24,7 @@ export interface PendingRoundInfo {
   status: 'setup' | 'in_progress';
   date: Date;
   courseId: string;
+  courseName?: string;
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
 }
 
@@ -474,7 +475,7 @@ export const useRoundManagement = ({
         const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
         const { data: rounds, error: roundsError } = await supabase
           .from('rounds')
-          .select('*')
+          .select('id, status, date, course_id, tee_color, updated_at, golf_courses(name)')
           .in('id', roundIds)
           // Restore both draft (setup) and active (in_progress) rounds.
           // This prevents losing guests when the app reloads before scoring starts.
@@ -495,6 +496,7 @@ export const useRoundManagement = ({
           status: r.status as 'setup' | 'in_progress',
           date: new Date(r.date),
           courseId: r.course_id,
+          courseName: r.golf_courses?.name ?? undefined,
           teeColor: r.tee_color as any,
         }));
 

@@ -87,7 +87,9 @@ const Index = () => {
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
 
-  const { getCourseById } = useGolfCourses();
+  // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
+  const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
+  const { getCourseById } = useGolfCourses({ enabled: enableCourseCatalog });
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
   // Round management hook with restoration
@@ -120,6 +122,15 @@ const Index = () => {
     setTeeColor,
     getCourseById,
   });
+
+  // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
+  useEffect(() => {
+    if (!profile) return;
+    if (isRestoring) return;
+
+    const shouldBlockForPending = showPendingRoundDialog && pendingRounds.length > 0 && !isRoundStarted;
+    setEnableCourseCatalog(!shouldBlockForPending);
+  }, [profile, isRestoring, showPendingRoundDialog, pendingRounds.length, isRoundStarted]);
 
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
   const { loadBetConfig, saveBetConfig, isLoaded: isBetConfigLoaded } = useBetConfigPersistence({
@@ -268,7 +279,7 @@ const Index = () => {
 
         const next = new Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>();
         for (const r of pendingRounds) {
-          const courseName = getCourseById?.(r.courseId)?.name ?? 'Campo';
+          const courseName = r.courseName ?? 'Campo';
           const myRpId = myRpByRoundId.get(r.roundId);
           const list = myRpId ? scoresByRpId.get(myRpId) ?? [] : [];
           const holesPlayed = list.filter((s) => typeof s.strokes === 'number' && Number.isFinite(s.strokes)).length;
@@ -290,7 +301,7 @@ const Index = () => {
     return () => {
       cancelled = true;
     };
-  }, [pendingRounds, profile, getCourseById]);
+  }, [pendingRounds, profile]);
 
   // Real-time score synchronization
   useRealtimeScores({
@@ -994,6 +1005,7 @@ const Index = () => {
               onChange={setSelectedCourseId}
               teeColor={teeColor}
               onTeeColorChange={setTeeColor}
+              enabled={enableCourseCatalog}
             />
             <PlayerSetup players={players} onChange={handlePlayersChange} maxPlayers={6} />
             
