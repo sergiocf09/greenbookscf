@@ -38,6 +38,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -401,7 +402,8 @@ const Index = () => {
     if (!rpId || !roundState.id) return;
 
     try {
-      const { error } = await supabase
+      // Persist score row and retrieve its id (needed to persist markers)
+      const { data: upserted, error } = await supabase
         .from('hole_scores')
         .upsert({
           round_player_id: rpId,
@@ -415,10 +417,50 @@ const Index = () => {
         }, {
           onConflict: 'round_player_id,hole_number',
           ignoreDuplicates: false,
-        });
+        })
+        .select('id');
 
       if (error) {
         console.error('Error saving score:', error);
+        return;
+      }
+
+      // Persist manual markers (unidades + manchas). We intentionally do NOT persist
+      // auto-detected markers (birdie/eagle/culebra/etc.) since they can be derived.
+      if (score.markers) {
+        const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
+        if (holeScoreId) {
+          const manualKeys = [...getManualUnitMarkers(), ...getManualStainMarkers()];
+          const activeKeys = manualKeys.filter((k) => !!(score.markers as any)[k]);
+
+          // Replace manual markers for this hole_score_id
+          const { error: delErr } = await supabase
+            .from('hole_markers')
+            .delete()
+            .eq('hole_score_id', holeScoreId)
+            .eq('is_auto_detected', false);
+
+          if (delErr) {
+            console.error('Error clearing hole markers:', delErr);
+            return;
+          }
+
+          if (activeKeys.length) {
+            const { error: insErr } = await supabase
+              .from('hole_markers')
+              .insert(
+                activeKeys.map((markerKey) => ({
+                  hole_score_id: holeScoreId,
+                  marker_type: markerKey as any,
+                  is_auto_detected: false,
+                }))
+              );
+
+            if (insErr) {
+              console.error('Error inserting hole markers:', insErr);
+            }
+          }
+        }
       }
     } catch (err) {
       console.error('Error in saveScoreToDb:', err);
@@ -432,11 +474,13 @@ const Index = () => {
       const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
       if (idx >= 0) {
         const wasConfirmed = !!playerScores[idx].confirmed;
+        // Only unconfirm when the actual score changes.
+        // Markers (unidades/manchas) should NOT force re-confirmation, otherwise
+        // a simple mancha toggle removes the hole from Medal/Presiones/Skins.
         const isScoringMutation =
           updates.strokes !== undefined ||
           updates.putts !== undefined ||
-          updates.oyesProximity !== undefined ||
-          updates.markers !== undefined;
+          updates.oyesProximity !== undefined;
 
         // If a confirmed hole is edited, force re-confirmation so bets/markers stay trustworthy.
         const shouldUnconfirm = wasConfirmed && isScoringMutation;
