@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -33,15 +33,21 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const [expandedSections, setExpandedSections] = useState<string[]>(['medal']);
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
-  // We snapshot the current scrollY and restore it on the next frame.
+  // We snapshot the current scrollY and restore it after React commits the update.
+  // (More reliable than RAF across mobile browsers)
+  const pendingScrollRestoreRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const y = pendingScrollRestoreRef.current;
+    if (typeof y !== 'number') return;
+    pendingScrollRestoreRef.current = null;
+    window.scrollTo({ top: y });
+  });
+
   const safeOnChange = useCallback(
     (next: BetConfig) => {
-      const y = window.scrollY;
+      pendingScrollRestoreRef.current = window.scrollY;
       onChange(next);
-      requestAnimationFrame(() => {
-        // Second RAF improves stability across browsers when DOM height changes.
-        requestAnimationFrame(() => window.scrollTo({ top: y }));
-      });
     },
     [onChange]
   );
