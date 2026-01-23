@@ -214,6 +214,25 @@ export const useRoundManagement = ({
     
     const restoreActiveRound = async () => {
       try {
+        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        const isTransientFetch = (e: any) => {
+          const msg = String(e?.message ?? e ?? '');
+          return msg.includes('Failed to fetch') || msg.includes('AbortError') || msg.includes('signal is aborted');
+        };
+
+        const retry = async <T,>(fn: () => Promise<{ data: T | null; error: any }>, attempts = 3): Promise<T | null> => {
+          let last: any = null;
+          for (let i = 0; i < attempts; i++) {
+            const { data, error } = await fn();
+            if (!error) return data;
+            last = error;
+            if (!isTransientFetch(error)) break;
+            await sleep(250 * (i + 1));
+          }
+          console.error('Retryable operation failed:', last);
+          return null;
+        };
+
         // One-shot controls set by the UI (login flow)
         const skipRestoreOnce = sessionStorage.getItem('skip_restore_once');
         if (skipRestoreOnce) {
@@ -223,27 +242,34 @@ export const useRoundManagement = ({
 
         const explicitRestoreRoundId = sessionStorage.getItem('restore_round_id');
         if (explicitRestoreRoundId) {
-          sessionStorage.removeItem('restore_round_id');
+          // IMPORTANT: do NOT clear this until restore succeeds.
+          // If network fails mid-restore, we want the user to be able to retry without losing selection.
 
           // Restore THIS round directly
-          const { data: activeRound, error: roundError } = await supabase
-            .from('rounds')
-            .select('*')
-            .eq('id', explicitRestoreRoundId)
-            .single();
+          const activeRound = await retry<any>(() =>
+            supabase.from('rounds').select('*').eq('id', explicitRestoreRoundId).single() as any
+          );
 
-          if (roundError || !activeRound) return;
+          if (!activeRound) {
+            toast.error('No se pudo cargar la ronda (intenta de nuevo)');
+            return;
+          }
 
           console.log('Restoring selected pending round:', activeRound.id);
 
           // Get all players in this round (including guests). Avoid embedded joins
           // to ensure guests (profile_id = null) are always returned.
-          const { data: allRoundPlayers, error: allRpError } = await supabase
-            .from('round_players')
-            .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color')
-            .eq('round_id', activeRound.id);
+          const allRoundPlayers = await retry<any[]>(() =>
+            supabase
+              .from('round_players')
+              .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color')
+              .eq('round_id', activeRound.id) as any
+          );
 
-          if (allRpError || !allRoundPlayers?.length) return;
+          if (!allRoundPlayers?.length) {
+            toast.error('No se pudieron cargar los jugadores de la ronda');
+            return;
+          }
 
           // Restore round state
           setRoundState({
@@ -266,20 +292,17 @@ export const useRoundManagement = ({
 
           const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string }>();
           if (profileIds.length) {
-            const { data: profilesData, error: profilesErr } = await supabase
-              .from('profiles')
-              .select('id, display_name, initials, avatar_color')
-              .in('id', profileIds);
+            const profilesData = await retry<any[]>(() =>
+              supabase.from('profiles').select('id, display_name, initials, avatar_color').in('id', profileIds) as any
+            );
 
-            if (!profilesErr && profilesData?.length) {
-              profilesData.forEach((p: any) => {
-                profilesById.set(p.id, {
-                  display_name: p.display_name,
-                  initials: p.initials,
-                  avatar_color: p.avatar_color,
-                });
+            (profilesData || []).forEach((p: any) => {
+              profilesById.set(p.id, {
+                display_name: p.display_name,
+                initials: p.initials,
+                avatar_color: p.avatar_color,
               });
-            }
+            });
           }
 
           // Restore players + roundPlayerIds mapping
@@ -345,21 +368,22 @@ export const useRoundManagement = ({
            // might not be ready yet. Fallback to fetching the course+holes from backend.
            const courseData =
              getCourseById?.(activeRound.course_id) ?? (await fetchCourseForRestore(activeRound.course_id));
-          const { data: holeScores, error: scoresError } = await supabase
-            .from('hole_scores')
-            .select('*')
-            .in('round_player_id', Array.from(rpIdMap.values()));
+          const holeScores = await retry<any[]>(() =>
+            supabase.from('hole_scores').select('*').in('round_player_id', Array.from(rpIdMap.values())) as any
+          );
 
            // Load markers (manchas/unidades/etc) for restored hole scores
            const holeScoreIds = (holeScores || []).map((hs: any) => hs.id).filter(Boolean);
            let markersByHoleScoreId: Map<string, MarkerState> = new Map();
            if (holeScoreIds.length) {
-             const { data: holeMarkers, error: markersErr } = await supabase
-               .from('hole_markers')
-               .select('hole_score_id, marker_type, is_auto_detected')
-               .in('hole_score_id', holeScoreIds);
+             const holeMarkers = await retry<any[]>(() =>
+               supabase
+                 .from('hole_markers')
+                 .select('hole_score_id, marker_type, is_auto_detected')
+                 .in('hole_score_id', holeScoreIds) as any
+             );
 
-             if (!markersErr && holeMarkers?.length) {
+             if (holeMarkers?.length) {
                markersByHoleScoreId = new Map();
                for (const m of holeMarkers as any[]) {
                  if (m.is_auto_detected) continue;
@@ -373,7 +397,7 @@ export const useRoundManagement = ({
              }
            }
 
-           if (!scoresError && holeScores && courseData) {
+           if (holeScores && courseData) {
             const newScores = new Map<string, PlayerScore[]>();
             const confirmedHoleNumbers = new Set<number>();
 
@@ -421,6 +445,7 @@ export const useRoundManagement = ({
           }
 
           toast.success('Ronda restaurada');
+           sessionStorage.removeItem('restore_round_id');
           return;
         }
 
