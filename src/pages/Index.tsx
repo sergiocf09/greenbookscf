@@ -15,6 +15,7 @@ import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
 import { useRealtimeScores } from '@/hooks/useRealtimeScores';
+import { useBetConfigPersistence } from '@/hooks/useBetConfigPersistence';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -114,6 +115,19 @@ const Index = () => {
     setTeeColor,
     getCourseById,
   });
+
+  // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
+  const { loadBetConfig } = useBetConfigPersistence({
+    roundId: roundState.id,
+    betConfig,
+    setBetConfig,
+  });
+
+  // Ensure betConfig is loaded at least once for this round so debounced saves are enabled.
+  useEffect(() => {
+    if (!roundState.id) return;
+    void loadBetConfig();
+  }, [roundState.id, loadBetConfig]);
 
   useEffect(() => {
     // If we are currently restoring (or already restored) the same pending round,
