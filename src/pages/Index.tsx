@@ -9,6 +9,7 @@ import { RoundHistory } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
+import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -64,6 +65,7 @@ const Index = () => {
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [pendingRoundSummary, setPendingRoundSummary] = useState<{
     courseName: string;
@@ -91,6 +93,7 @@ const Index = () => {
     isRoundStarted,
     pendingRound,
     roundPlayerIds,
+    setRoundPlayerIds,
     createRound,
     startRound: startRoundInDb,
     closeScorecard,
@@ -396,6 +399,102 @@ const Index = () => {
     // Just navigate to scoring without reinitializing
     setView('scoring');
   };
+
+  const handleAddGuestFromScorecard = useCallback(
+    async (payload: AddGuestPayload) => {
+      if (!roundState.id || !roundState.groupId || !course) throw new Error('Ronda no lista');
+
+      // 1) Create guest in backend
+      const { data: rpRow, error: rpErr } = await supabase
+        .from('round_players')
+        .insert({
+          round_id: roundState.id,
+          group_id: roundState.groupId,
+          profile_id: null,
+          handicap_for_round: 0,
+          is_organizer: false,
+          guest_name: payload.name,
+          guest_initials: payload.initials,
+          guest_color: payload.color,
+        })
+        .select('id')
+        .single();
+
+      if (rpErr || !rpRow?.id) {
+        throw rpErr || new Error('No se pudo crear el jugador');
+      }
+
+      const newPlayerId = rpRow.id as string;
+
+      // 2) Update local state (player list + mapping)
+      const newPlayer: Player = {
+        id: newPlayerId,
+        name: payload.name,
+        initials: payload.initials,
+        color: payload.color,
+        handicap: 0,
+      };
+
+      setPlayers((prev) => [...prev, newPlayer]);
+      // Ensure mapping exists for persistence/realtime (guests: playerId === round_player_id)
+      setRoundPlayerIds((prev) => {
+        const next = new Map(prev);
+        next.set(newPlayerId, newPlayerId);
+        return next;
+      });
+
+      // 3) Build local scores for the new player
+      const strokesPerHole = calculateStrokesPerHole(0, course);
+      const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
+        const holeNumber = i + 1;
+        const holePar = course.holes[i]?.par || 4;
+        const strokes = payload.strokesByHole[holeNumber] ?? holePar;
+        const strokesReceived = strokesPerHole[i] ?? 0;
+        return {
+          playerId: newPlayerId,
+          holeNumber,
+          strokes,
+          putts: 2,
+          markers: { ...defaultMarkerState },
+          strokesReceived,
+          netScore: strokes - strokesReceived,
+          confirmed: true,
+        };
+      });
+
+      setScores((prev) => {
+        const next = new Map(prev);
+        next.set(newPlayerId, newPlayerScores);
+        return next;
+      });
+
+      // 4) Persist hole_scores (confirmed)
+      const scoreRecords = newPlayerScores.map((s) => ({
+        round_player_id: newPlayerId,
+        hole_number: s.holeNumber,
+        strokes: s.strokes,
+        putts: s.putts,
+        strokes_received: s.strokesReceived,
+        net_score: s.netScore,
+        oyes_proximity: null,
+        confirmed: true,
+      }));
+
+      const { error: scoresErr } = await supabase
+        .from('hole_scores')
+        .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
+
+      if (scoresErr) throw scoresErr;
+
+      // 5) Mark holes confirmed (scorecard confirmation is global in current UX)
+      setConfirmedHoles((prev) => {
+        const next = new Set(prev);
+        for (let h = 1; h <= 18; h++) next.add(h);
+        return next;
+      });
+    },
+    [roundState.id, roundState.groupId, course, setRoundPlayerIds]
+  );
 
   // Save score to database when updated
   const saveScoreToDb = useCallback(async (playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
@@ -925,6 +1024,16 @@ const Index = () => {
             basePlayerId={profile?.id}
             getStrokeIndicators={getStrokeIndicators}
             confirmedHoles={confirmedHoles}
+            onAddPlayerClick={() => setShowAddPlayerDialog(true)}
+          />
+        )}
+
+        {roundState.id && (
+          <AddPlayerFromScorecardDialog
+            open={showAddPlayerDialog}
+            onOpenChange={setShowAddPlayerDialog}
+            roundId={roundState.id}
+            onAddGuest={handleAddGuestFromScorecard}
           />
         )}
 
