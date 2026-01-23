@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { PlayerScore, Player, GolfCourse, defaultMarkerState } from '@/types/golf';
+import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from '@/types/golf';
+import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 
 interface UseScorePersistenceProps {
@@ -50,6 +51,28 @@ export const useScorePersistence = ({
         return;
       }
 
+      // Load markers (units/manchas/etc) for the loaded hole scores
+      const holeScoreIds = (holeScores || []).map((hs: any) => hs.id).filter(Boolean);
+      let markersByHoleScoreId: Map<string, MarkerState> = new Map();
+      if (holeScoreIds.length) {
+        const { data: holeMarkers, error: markersErr } = await supabase
+          .from('hole_markers')
+          .select('hole_score_id, marker_type')
+          .in('hole_score_id', holeScoreIds);
+
+        if (!markersErr && holeMarkers?.length) {
+          const allowedKeys = new Set<string>([...getManualUnitMarkers(), ...getManualStainMarkers()].map(String));
+          markersByHoleScoreId = new Map();
+          for (const m of holeMarkers as any[]) {
+            const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
+            if (m.marker_type && allowedKeys.has(String(m.marker_type)) && m.marker_type in prev) {
+              (prev as any)[m.marker_type] = true;
+            }
+            markersByHoleScoreId.set(m.hole_score_id, prev);
+          }
+        }
+      }
+
       // Build scores map from database
       const newScores = new Map<string, PlayerScore[]>();
       const confirmedHoleNumbers = new Set<number>();
@@ -76,7 +99,7 @@ export const useScorePersistence = ({
               holeNumber: i + 1,
               strokes: dbScore.strokes ?? holePar,
               putts: dbScore.putts ?? 2,
-              markers: { ...defaultMarkerState },
+              markers: markersByHoleScoreId.get(dbScore.id) ?? { ...defaultMarkerState },
               strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
               netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
               oyesProximity: dbScore.oyes_proximity ?? null,
