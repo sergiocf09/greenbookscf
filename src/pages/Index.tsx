@@ -131,12 +131,21 @@ const Index = () => {
 
   // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
   const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
+  const wasRestoringRef = useRef(false);
+
+  useEffect(() => {
+    if (isRestoring) wasRestoringRef.current = true;
+  }, [isRestoring]);
+
   useEffect(() => {
     if (!roundState.id) return;
     if (isRestoring) return;
     if (!isBetConfigLoaded) return;
     if (players.length === 0) return;
     if (hasSanitizedCarritosForRoundRef.current === roundState.id) return;
+    // IMPORTANT: Only sanitize right after a restoration finishes.
+    // Otherwise we would disable freshly-enabled Carritos during normal setup (teams start empty).
+    if (!wasRestoringRef.current) return;
 
     const validPlayerIds = new Set(players.map((p) => p.id));
     const isTeamComplete = (team: [string, string]) =>
@@ -154,7 +163,14 @@ const Index = () => {
       const okA = isTeamComplete(next.carritos.teamA);
       const okB = isTeamComplete(next.carritos.teamB);
       if (!okA || !okB) {
-        next.carritos = { ...next.carritos, enabled: false };
+        // Disable AND clear selection so the UI doesn't show prefilled/invalid players.
+        next.carritos = {
+          ...next.carritos,
+          enabled: false,
+          teamA: ['', ''],
+          teamB: ['', ''],
+          teamHandicaps: {},
+        };
         changed = true;
       }
     }
@@ -167,7 +183,13 @@ const Index = () => {
         const okB = isTeamComplete(t.teamB);
         if (!okA || !okB) {
           changed = true;
-          return { ...t, enabled: false };
+          return {
+            ...t,
+            enabled: false,
+            teamA: ['', ''],
+            teamB: ['', ''],
+            teamHandicaps: {},
+          };
         }
         return t;
       });
@@ -176,6 +198,7 @@ const Index = () => {
     if (!changed) return;
 
     hasSanitizedCarritosForRoundRef.current = roundState.id;
+    wasRestoringRef.current = false;
 
     // Persist immediately so a later restore doesn't resurrect the ghost bet.
     setBetConfig(next);
