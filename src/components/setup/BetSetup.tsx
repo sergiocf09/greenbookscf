@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -700,6 +700,44 @@ interface CarritosTeamConfigProps {
   isPrimary?: boolean;
 }
 
+type CarritosSelectOption = { value: string; label: string };
+
+const StableSelect: React.FC<{
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  options: CarritosSelectOption[];
+  triggerClassName?: string;
+}> = ({ value, onValueChange, placeholder, options, triggerClassName }) => {
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger
+        ref={triggerRef}
+        className={cn('h-8 text-xs', triggerClassName)}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent
+        onCloseAutoFocus={(e) => {
+          // Evita que Radix enfoque el trigger con scroll automático (causa "salto" al inicio)
+          e.preventDefault();
+          triggerRef.current?.focus({ preventScroll: true });
+        }}
+      >
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
+
 const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
   teamA,
   teamB,
@@ -712,85 +750,46 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
   onUpdate,
   isPrimary = false,
 }) => {
+  const playerOptions = useMemo(
+    () => players.map((p) => ({ value: p.id, label: p.name })),
+    [players]
+  );
+
   return (
     <div className="space-y-3" onMouseDown={(e) => e.stopPropagation()}>
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Equipo A</Label>
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Select
+          <StableSelect
             value={teamA[0]}
             onValueChange={(v) => onUpdate({ teamA: [v, teamA[1]] })}
-          >
-            <SelectTrigger
-              className="h-8 text-xs"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SelectValue placeholder="Jugador 1" />
-            </SelectTrigger>
-            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
-              {players.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
+            placeholder="Jugador 1"
+            options={playerOptions}
+          />
+          <StableSelect
             value={teamA[1]}
             onValueChange={(v) => onUpdate({ teamA: [teamA[0], v] })}
-          >
-            <SelectTrigger
-              className="h-8 text-xs"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SelectValue placeholder="Jugador 2" />
-            </SelectTrigger>
-            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
-              {players.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Jugador 2"
+            options={playerOptions}
+          />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Equipo B</Label>
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Select
+          <StableSelect
             value={teamB[0]}
             onValueChange={(v) => onUpdate({ teamB: [v, teamB[1]] })}
-          >
-            <SelectTrigger
-              className="h-8 text-xs"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SelectValue placeholder="Jugador 1" />
-            </SelectTrigger>
-            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
-              {players.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
+            placeholder="Jugador 1"
+            options={playerOptions}
+          />
+          <StableSelect
             value={teamB[1]}
             onValueChange={(v) => onUpdate({ teamB: [teamB[0], v] })}
-          >
-            <SelectTrigger
-              className="h-8 text-xs"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SelectValue placeholder="Jugador 2" />
-            </SelectTrigger>
-            <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
-              {players.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Jugador 2"
+            options={playerOptions}
+          />
         </div>
       </div>
 
