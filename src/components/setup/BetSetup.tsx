@@ -742,7 +742,11 @@ const StableSelect: React.FC<{
         // IMPORTANTE: Radix usa pointer events; stopPropagation en mouse no siempre alcanza.
         onPointerDown={(e) => e.stopPropagation()}
         onPointerDownCapture={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          // Prevent focus + scroll-jump in long pages while still allowing the select to open.
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <SelectValue placeholder={placeholder} />
