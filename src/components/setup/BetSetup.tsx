@@ -40,6 +40,14 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     );
   };
 
+  const setSectionOpen = (section: string, open: boolean) => {
+    setExpandedSections((prev) => {
+      const isOpen = prev.includes(section);
+      if (open === isOpen) return prev;
+      return open ? [...prev, section] : prev.filter((s) => s !== section);
+    });
+  };
+
   const updateBet = <K extends keyof BetConfig>(
     betType: K,
     updates: Partial<BetConfig[K]>
@@ -61,7 +69,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   }> = ({ id, title, description, enabled, onToggle, children, color = 'green' }) => (
     <Collapsible 
       open={expandedSections.includes(id)} 
-      onOpenChange={() => toggleSection(id)}
+      onOpenChange={(open) => setSectionOpen(id, open)}
     >
       <div className={cn(
         'border rounded-lg overflow-hidden transition-colors',
@@ -713,7 +721,11 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamA[0]}
             onValueChange={(v) => onUpdate({ teamA: [v, teamA[1]] })}
           >
-            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+            <SelectTrigger
+              className="h-8 text-xs"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <SelectValue placeholder="Jugador 1" />
             </SelectTrigger>
             <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
@@ -726,7 +738,11 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamA[1]}
             onValueChange={(v) => onUpdate({ teamA: [teamA[0], v] })}
           >
-            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+            <SelectTrigger
+              className="h-8 text-xs"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <SelectValue placeholder="Jugador 2" />
             </SelectTrigger>
             <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
@@ -745,7 +761,11 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamB[0]}
             onValueChange={(v) => onUpdate({ teamB: [v, teamB[1]] })}
           >
-            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+            <SelectTrigger
+              className="h-8 text-xs"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <SelectValue placeholder="Jugador 1" />
             </SelectTrigger>
             <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
@@ -758,7 +778,11 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
             value={teamB[1]}
             onValueChange={(v) => onUpdate({ teamB: [teamB[0], v] })}
           >
-            <SelectTrigger className="h-8 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+            <SelectTrigger
+              className="h-8 text-xs"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               <SelectValue placeholder="Jugador 2" />
             </SelectTrigger>
             <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
@@ -880,7 +904,11 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+          <SelectTrigger
+            className="h-7 w-28 text-xs"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
