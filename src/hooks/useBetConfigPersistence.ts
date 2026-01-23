@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BetConfig, BilateralHandicap, BetOverride, MedalGeneralPlayerConfig, CarritosBetConfig, CarritosTeamBet } from '@/types/golf';
+import {
+  BetConfig,
+  BilateralHandicap,
+  BetOverride,
+  MedalGeneralPlayerConfig,
+  CarritosBetConfig,
+  CarritosTeamBet,
+  MedalBetConfig,
+  PressureBetConfig,
+  SkinsBetConfig,
+  CarosBetConfig,
+  UnitsBetConfig,
+  ManchasBetConfig,
+  CumulativeBetConfig,
+} from '@/types/golf';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -9,6 +23,16 @@ interface UseBetConfigPersistenceProps {
 }
 
 interface RoundBetConfig {
+  // Standard bilateral bets
+  medal?: MedalBetConfig;
+  pressures?: PressureBetConfig;
+  skins?: SkinsBetConfig;
+  caros?: CarosBetConfig;
+  units?: UnitsBetConfig;
+  manchas?: ManchasBetConfig;
+  culebras?: CumulativeBetConfig;
+  pinguinos?: CumulativeBetConfig;
+
   rayas?: {
     enabled: boolean;
     frontValue: number;
@@ -66,6 +90,32 @@ export const useBetConfigPersistence = ({
         // Merge database config with current config
         setBetConfig(prev => {
           const newConfig = { ...prev };
+
+          // Apply standard bets if exist
+          if (dbConfig.medal) {
+            newConfig.medal = { ...prev.medal, ...dbConfig.medal };
+          }
+          if (dbConfig.pressures) {
+            newConfig.pressures = { ...prev.pressures, ...dbConfig.pressures };
+          }
+          if (dbConfig.skins) {
+            newConfig.skins = { ...prev.skins, ...dbConfig.skins };
+          }
+          if (dbConfig.caros) {
+            newConfig.caros = { ...prev.caros, ...dbConfig.caros };
+          }
+          if (dbConfig.units) {
+            newConfig.units = { ...prev.units, ...dbConfig.units };
+          }
+          if (dbConfig.manchas) {
+            newConfig.manchas = { ...prev.manchas, ...dbConfig.manchas };
+          }
+          if (dbConfig.culebras) {
+            newConfig.culebras = { ...prev.culebras, ...dbConfig.culebras };
+          }
+          if (dbConfig.pinguinos) {
+            newConfig.pinguinos = { ...prev.pinguinos, ...dbConfig.pinguinos };
+          }
           
           // Apply Rayas config if exists
           if (dbConfig.rayas) {
@@ -145,6 +195,16 @@ export const useBetConfigPersistence = ({
     try {
       // Build the config object to store
       const configToSave: RoundBetConfig = {
+        // Standard bets
+        medal: config.medal,
+        pressures: config.pressures,
+        skins: config.skins,
+        caros: config.caros,
+        units: config.units,
+        manchas: config.manchas,
+        culebras: config.culebras,
+        pinguinos: config.pinguinos,
+
         rayas: {
           enabled: config.rayas.enabled,
           frontValue: config.rayas.frontValue,
