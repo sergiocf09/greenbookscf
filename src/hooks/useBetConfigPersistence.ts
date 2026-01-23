@@ -125,8 +125,13 @@ export const useBetConfigPersistence = ({
           return newConfig;
         });
         
+        // Mark loaded after we apply the incoming config
         isLoadedRef.current = true;
         console.log('Bet config loaded from database:', dbConfig);
+      } else {
+        // Important: rounds can have empty '{}' bet_config.
+        // We still want to enable debounced saving for future changes (overrides/cancelaciones).
+        isLoadedRef.current = true;
       }
     } catch (err) {
       console.error('Error in loadBetConfig:', err);
