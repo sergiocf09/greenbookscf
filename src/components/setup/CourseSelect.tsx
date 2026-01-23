@@ -16,6 +16,7 @@ interface CourseSelectProps {
   onChange: (courseId: string) => void;
   teeColor?: 'blue' | 'white' | 'yellow' | 'red';
   onTeeColorChange?: (color: 'blue' | 'white' | 'yellow' | 'red') => void;
+  enabled?: boolean;
 }
 
 export const CourseSelect: React.FC<CourseSelectProps> = ({
@@ -23,8 +24,9 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onChange,
   teeColor = 'white',
   onTeeColorChange,
+  enabled = true,
 }) => {
-  const { courses, loading, error, getCourseById } = useGolfCourses();
+  const { courses, loading, error, getCourseById } = useGolfCourses({ enabled });
   const selectedCourse = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
   if (loading) {

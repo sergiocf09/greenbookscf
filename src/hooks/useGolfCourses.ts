@@ -22,12 +22,18 @@ interface CourseDB {
   created_at: string;
 }
 
-export const useGolfCourses = () => {
+export const useGolfCourses = (opts?: { enabled?: boolean }) => {
+  const enabled = opts?.enabled ?? true;
   const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     const fetchCourses = async () => {
       try {
         setLoading(true);
@@ -107,7 +113,7 @@ export const useGolfCourses = () => {
     };
     
     fetchCourses();
-  }, []);
+  }, [enabled]);
 
   const getCourseById = (id: string): GolfCourse | undefined => {
     return courses.find(course => course.id === id);
