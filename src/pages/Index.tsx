@@ -38,7 +38,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { 
   DropdownMenu,
@@ -426,13 +426,14 @@ const Index = () => {
         return;
       }
 
-      // Persist manual markers (unidades + manchas). We intentionally do NOT persist
-      // auto-detected markers (birdie/eagle/culebra/etc.) since they can be derived.
+       // Persist manual markers (unidades + manchas). We intentionally do NOT persist
+       // auto-detected markers (birdie/eagle/culebra/etc.) since they can be derived.
       if (score.markers) {
         const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
         if (holeScoreId) {
-          const manualKeys = [...getManualUnitMarkers(), ...getManualStainMarkers()];
-          const activeKeys = manualKeys.filter((k) => !!(score.markers as any)[k]);
+           const activeKeys = (Object.keys(score.markers) as (keyof typeof score.markers)[])
+             .filter((k) => !!(score.markers as any)[k])
+             .filter((k) => !isAutoDetectedMarker(k as any));
 
           // Replace manual markers for this hole_score_id
           const { error: delErr } = await supabase

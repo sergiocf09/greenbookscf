@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { toast } from 'sonner';
-import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 
 interface UseRealtimeScoresProps {
@@ -152,8 +152,6 @@ export const useRealtimeScores = ({
         const holeScoreIds = Array.from(mapById.keys());
         if (!holeScoreIds.length) return;
 
-        const allowedKeys = new Set<string>([...getManualUnitMarkers(), ...getManualStainMarkers()].map(String));
-
         markersChannel = supabase
           .channel(`markers-${roundId}`)
           .on(
@@ -172,7 +170,8 @@ export const useRealtimeScores = ({
 
               const key = markerDbToKey(rec.marker_type);
               if (!key) return;
-              if (!allowedKeys.has(String(key))) return;
+              // Sync any non-auto marker (unidades/manchas/etc)
+              if (isAutoDetectedMarker(key as any)) return;
 
               const mapped = holeScoreIdToPlayerHoleRef.current.get(rec.hole_score_id);
               if (!mapped) return;
