@@ -8,6 +8,7 @@ import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
+import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 
 interface RoundState {
   id: string | null;
@@ -338,14 +339,40 @@ export const useRoundManagement = ({
             setBetConfig(merged);
           }
 
-          // Get course to restore scores
-          const courseData = getCourseById?.(activeRound.course_id);
+           // Get course to restore scores
+           // NOTE: getCourseById depends on initial course list load; on a fresh session it
+           // might not be ready yet. Fallback to fetching the course+holes from backend.
+           const courseData =
+             getCourseById?.(activeRound.course_id) ?? (await fetchCourseForRestore(activeRound.course_id));
           const { data: holeScores, error: scoresError } = await supabase
             .from('hole_scores')
             .select('*')
             .in('round_player_id', Array.from(rpIdMap.values()));
 
-          if (!scoresError && holeScores && courseData) {
+           // Load markers (manchas/unidades/etc) for restored hole scores
+           const holeScoreIds = (holeScores || []).map((hs: any) => hs.id).filter(Boolean);
+           let markersByHoleScoreId: Map<string, MarkerState> = new Map();
+           if (holeScoreIds.length) {
+             const { data: holeMarkers, error: markersErr } = await supabase
+               .from('hole_markers')
+               .select('hole_score_id, marker_type, is_auto_detected')
+               .in('hole_score_id', holeScoreIds);
+
+             if (!markersErr && holeMarkers?.length) {
+               markersByHoleScoreId = new Map();
+               for (const m of holeMarkers as any[]) {
+                 if (m.is_auto_detected) continue;
+                 const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
+                 const key = markerDbToKey(m.marker_type);
+                 if (key && key in prev && !isAutoDetectedMarker(key as any)) {
+                   (prev as any)[key] = true;
+                 }
+                 markersByHoleScoreId.set(m.hole_score_id, prev);
+               }
+             }
+           }
+
+           if (!scoresError && holeScores && courseData) {
             const newScores = new Map<string, PlayerScore[]>();
             const confirmedHoleNumbers = new Set<number>();
 
@@ -364,7 +391,7 @@ export const useRoundManagement = ({
                     holeNumber: i + 1,
                     strokes: dbScore.strokes ?? holePar,
                     putts: dbScore.putts ?? 2,
-                    markers: { ...defaultMarkerState },
+                     markers: markersByHoleScoreId.get(dbScore.id) ?? { ...defaultMarkerState },
                     strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
                     netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
                     oyesProximity: dbScore.oyes_proximity ?? null,
