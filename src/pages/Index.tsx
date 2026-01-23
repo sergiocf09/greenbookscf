@@ -195,15 +195,25 @@ const Index = () => {
   // Track if we've done initial navigation after restore
   const [hasInitialNavigated, setHasInitialNavigated] = useState(false);
 
-  // Auto-navigate to scoring view ONLY once when round is first restored
+  // Auto-navigate after restore ONLY once.
+  // We prefer taking the user to the Dashboard (bets) once the round is fully hydrated
+  // (players + course + scores). This avoids landing on empty screens after login.
   useEffect(() => {
-    if (!isRestoring && isRoundStarted && !hasInitialNavigated && roundState.status !== 'completed') {
-      setView('scoring');
+    if (hasInitialNavigated) return;
+    if (isRestoring) return;
+
+    const hasHydratedScores = scores.size > 0 && Array.from(scores.values()).some((arr) => (arr?.length ?? 0) > 0);
+    const isHydrated = Boolean(roundState.id) && Boolean(course) && players.length > 0 && hasHydratedScores;
+
+    if (isHydrated) {
+      setView('bets');
       setHasInitialNavigated(true);
-    } else if (!isRestoring && !hasInitialNavigated) {
-      setHasInitialNavigated(true);
+      return;
     }
-  }, [isRestoring, isRoundStarted, hasInitialNavigated, roundState.status]);
+
+    // If there isn't enough data yet (e.g., course still loading), don't force a view.
+    // We'll re-run until hydrated, then lock navigation.
+  }, [hasInitialNavigated, isRestoring, roundState.id, course, players.length, scores]);
 
   // Function to start a new round (reset everything)
   const startNewRound = useCallback(() => {
