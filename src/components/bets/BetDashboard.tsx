@@ -2531,32 +2531,56 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             currentOverride={getBetOverride(editingBetType || '')}
             betConfig={betConfig}
             onSave={(overrides) => {
-                if (editingBetType && onBetConfigChange) {
-                // Update the bet config with the new amounts for this pair
-                // This is a simplified approach - in production you'd want per-pair overrides
-                const newConfig = { ...betConfig };
-                if (editingBetType === 'medal' && overrides.front !== undefined) {
-                  newConfig.medal = { ...newConfig.medal, frontAmount: overrides.front, backAmount: overrides.back ?? newConfig.medal.backAmount, totalAmount: overrides.total ?? newConfig.medal.totalAmount };
-                } else if (editingBetType === 'pressures' && overrides.front !== undefined) {
-                  newConfig.pressures = { ...newConfig.pressures, frontAmount: overrides.front, backAmount: overrides.back ?? newConfig.pressures.backAmount, totalAmount: overrides.total ?? newConfig.pressures.totalAmount };
-                } else if (editingBetType === 'skins' && overrides.front !== undefined) {
-                  newConfig.skins = { ...newConfig.skins, frontValue: overrides.front, backValue: overrides.back ?? newConfig.skins.backValue };
-                } else if (editingBetType === 'rayas' && overrides.front !== undefined) {
-                  newConfig.rayas = { 
-                    ...newConfig.rayas, 
-                    frontValue: overrides.front, 
-                    backValue: overrides.back ?? newConfig.rayas?.backValue ?? 25, 
-                    medalTotalValue: overrides.total ?? newConfig.rayas?.medalTotalValue ?? 50 
-                  };
-                } else if (overrides.total !== undefined) {
-                  if (editingBetType === 'caros') newConfig.caros = { ...newConfig.caros, amount: overrides.total };
-                  else if (editingBetType === 'oyeses') newConfig.oyeses = { ...newConfig.oyeses, amount: overrides.total };
-                  else if (editingBetType === 'units') newConfig.units = { ...newConfig.units, valuePerPoint: overrides.total };
-                  else if (editingBetType === 'manchas') newConfig.manchas = { ...newConfig.manchas, valuePerPoint: overrides.total };
-                  else if (editingBetType === 'culebras') newConfig.culebras = { ...newConfig.culebras, valuePerOccurrence: overrides.total };
-                  else if (editingBetType === 'pinguinos') newConfig.pinguinos = { ...newConfig.pinguinos, valuePerOccurrence: overrides.total };
-                }
-                onBetConfigChange(newConfig);
+              if (!editingBetType || !onBetConfigChange) return;
+
+              // IMPORTANT: amounts edited here must be per-pair.
+              // We persist them as BetOverrides (playerAId/playerBId + betType label substring)
+              // so they don't affect other pairs.
+              const set = (betTypeLabel: string, amountOverride?: number) => {
+                if (amountOverride === undefined) return;
+                updateBetOverride(betTypeLabel, { enabled: true, amountOverride });
+              };
+
+              switch (editingBetType) {
+                case 'medal':
+                  set('Medal Front 9', overrides.front);
+                  set('Medal Back 9', overrides.back);
+                  set('Medal Total', overrides.total);
+                  break;
+                case 'pressures':
+                  set('Pressures Front 9', overrides.front);
+                  set('Pressures Back 9', overrides.back);
+                  set('Match 18', overrides.total);
+                  break;
+                case 'skins':
+                  // Bet engine uses "Skins Front" / "Skins Back" labels.
+                  set('Skins Front', overrides.front);
+                  set('Skins Back', overrides.back);
+                  break;
+                case 'rayas':
+                  set('Rayas Front', overrides.front);
+                  set('Rayas Back', overrides.back);
+                  set('Rayas Medal', overrides.total);
+                  break;
+                case 'caros':
+                  set('Caros', overrides.total);
+                  break;
+                case 'oyeses':
+                  // Engine uses per-hole labels like "Oyes (Hole X)".
+                  set('Oyes', overrides.total);
+                  break;
+                case 'units':
+                  set('Unidades', overrides.total);
+                  break;
+                case 'manchas':
+                  set('Manchas', overrides.total);
+                  break;
+                case 'culebras':
+                  set('Culebras', overrides.total);
+                  break;
+                case 'pinguinos':
+                  set('Pinguinos', overrides.total);
+                  break;
               }
               setEditingBetType(null);
             }}
