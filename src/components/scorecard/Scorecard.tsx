@@ -2,6 +2,8 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState } from '@/types/golf';
 import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ScorecardProps {
   players: Player[];
@@ -12,6 +14,7 @@ interface ScorecardProps {
   basePlayerId?: string;
   getStrokeIndicators?: (rivalId: string, holeNumber: number) => { receiving: boolean; giving: boolean };
   confirmedHoles?: Set<number>;
+  onAddPlayerClick?: () => void;
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -23,6 +26,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   basePlayerId,
   getStrokeIndicators,
   confirmedHoles = new Set(),
+  onAddPlayerClick,
 }) => {
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);
@@ -75,8 +79,25 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
-        <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
-        <p className="text-[10px] text-muted-foreground">{course.name}</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+            <p className="text-[10px] text-muted-foreground">{course.name}</p>
+          </div>
+
+          {onAddPlayerClick && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 px-2 text-xs"
+              onClick={onAddPlayerClick}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Jugador
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Front 9 */}
