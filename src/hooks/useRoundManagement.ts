@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState } from '@/types/golf';
+import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState, HoleInfo, MarkerState } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateHandicapIndexFromDifferentials } from '@/lib/usgaHandicap';
 import { Constants } from '@/integrations/supabase/types';
@@ -68,6 +68,46 @@ export const useRoundManagement = ({
   const hasRestoredRef = useRef(false);
 
   const isRoundStarted = roundState.status !== 'setup';
+
+  const fetchCourseForRestore = useCallback(async (courseId: string): Promise<GolfCourse | null> => {
+    try {
+      const { data: courseRow, error: courseErr } = await supabase
+        .from('golf_courses')
+        .select('id, name, location')
+        .eq('id', courseId)
+        .single();
+
+      if (courseErr || !courseRow) return null;
+
+      const { data: holesRows, error: holesErr } = await supabase
+        .from('course_holes')
+        .select('hole_number, par, stroke_index, yards_blue, yards_white, yards_yellow, yards_red')
+        .eq('course_id', courseId)
+        .order('hole_number');
+
+      if (holesErr || !holesRows?.length) return null;
+
+      const holes: HoleInfo[] = holesRows.map((h: any) => ({
+        number: h.hole_number,
+        par: h.par,
+        handicapIndex: h.stroke_index,
+        yardsBlue: h.yards_blue ?? undefined,
+        yardsWhite: h.yards_white ?? undefined,
+        yardsYellow: h.yards_yellow ?? undefined,
+        yardsRed: h.yards_red ?? undefined,
+      }));
+
+      return {
+        id: courseRow.id,
+        name: courseRow.name,
+        location: courseRow.location,
+        holes,
+      };
+    } catch (e) {
+      console.error('Error fetching course for restore:', e);
+      return null;
+    }
+  }, []);
 
   const applyMyUsgaHandicapIfAvailable = useCallback(
     async (targetRoundPlayerId?: string | null) => {
@@ -506,13 +546,37 @@ export const useRoundManagement = ({
         }
 
         // Get course to restore scores
-        const courseData = getCourseById?.(activeRound.course_id);
+          // NOTE: getCourseById depends on initial course list load; on a fresh session it
+          // might not be ready yet. Fallback to fetching the course+holes from backend.
+          const courseData =
+            getCourseById?.(activeRound.course_id) ?? (await fetchCourseForRestore(activeRound.course_id));
         
         // Load scores from database
         const { data: holeScores, error: scoresError } = await supabase
           .from('hole_scores')
           .select('*')
           .in('round_player_id', Array.from(rpIdMap.values()));
+
+          // Load markers (units/manchas/etc) for restored hole scores
+          const holeScoreIds = (holeScores || []).map((hs: any) => hs.id).filter(Boolean);
+          let markersByHoleScoreId: Map<string, MarkerState> = new Map();
+          if (holeScoreIds.length) {
+            const { data: holeMarkers, error: markersErr } = await supabase
+              .from('hole_markers')
+              .select('hole_score_id, marker_type')
+              .in('hole_score_id', holeScoreIds);
+
+            if (!markersErr && holeMarkers?.length) {
+              markersByHoleScoreId = new Map();
+              for (const m of holeMarkers as any[]) {
+                const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
+                if (m.marker_type && m.marker_type in prev) {
+                  (prev as any)[m.marker_type] = true;
+                }
+                markersByHoleScoreId.set(m.hole_score_id, prev);
+              }
+            }
+          }
 
         if (!scoresError && holeScores && courseData) {
           const newScores = new Map<string, PlayerScore[]>();
@@ -538,7 +602,7 @@ export const useRoundManagement = ({
                   holeNumber: i + 1,
                   strokes: dbScore.strokes ?? holePar,
                   putts: dbScore.putts ?? 2,
-                  markers: { ...defaultMarkerState },
+                    markers: markersByHoleScoreId.get(dbScore.id) ?? { ...defaultMarkerState },
                   strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
                   netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
                   oyesProximity: dbScore.oyes_proximity ?? null,
