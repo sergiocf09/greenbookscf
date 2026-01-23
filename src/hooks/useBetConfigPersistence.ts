@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   BetConfig,
@@ -67,6 +67,7 @@ export const useBetConfigPersistence = ({
 }: UseBetConfigPersistenceProps) => {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadedRef = useRef(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load bet config from database
   const loadBetConfig = useCallback(async () => {
@@ -177,11 +178,13 @@ export const useBetConfigPersistence = ({
         
         // Mark loaded after we apply the incoming config
         isLoadedRef.current = true;
+        setIsLoaded(true);
         console.log('Bet config loaded from database:', dbConfig);
       } else {
         // Important: rounds can have empty '{}' bet_config.
         // We still want to enable debounced saving for future changes (overrides/cancelaciones).
         isLoadedRef.current = true;
+        setIsLoaded(true);
       }
     } catch (err) {
       console.error('Error in loadBetConfig:', err);
@@ -274,5 +277,6 @@ export const useBetConfigPersistence = ({
   return {
     loadBetConfig,
     saveBetConfig,
+    isLoaded,
   };
 };
