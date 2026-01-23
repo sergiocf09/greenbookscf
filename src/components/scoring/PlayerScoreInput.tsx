@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { 
   InlineMarkers, 
   AutoDetectedBadge,
@@ -83,12 +84,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
       {/* Player Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={cn(
-            'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-sm',
-            avatarColor,
-          )}>
-            {initials}
-          </div>
+          <PlayerAvatar initials={initials} background={avatarColor} size="md" className="shadow-sm" />
           <div>
             <p className="font-semibold text-sm text-foreground">{playerName}</p>
             {handicapStrokes > 0 && (

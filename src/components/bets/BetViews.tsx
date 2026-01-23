@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Player, BetConfig } from '@/types/golf';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface BetSummary {
   playerId: string;
@@ -53,12 +54,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
                 : 'bg-muted/50 hover:bg-muted'
             )}
           >
-            <div className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-              rival.color
-            )}>
-              {rival.initials}
-            </div>
+            <PlayerAvatar initials={rival.initials} background={rival.color} size="md" />
             <div className={cn(
               'text-[10px] font-semibold mt-1 flex items-center gap-0.5',
               balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -104,13 +100,9 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
     <div className="bg-card border border-border rounded-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold', player.color)}>
-            {player.initials}
-          </div>
+          <PlayerAvatar initials={player.initials} background={player.color} size="md" />
           <span className="text-sm text-muted-foreground">vs</span>
-          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold', rival.color)}>
-            {rival.initials}
-          </div>
+          <PlayerAvatar initials={rival.initials} background={rival.color} size="md" />
         </div>
         <div className={cn(
           'text-xl font-bold flex items-center gap-1',
@@ -182,9 +174,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
             <div key={player.id} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground w-5">{index + 1}</span>
-                <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold', player.color)}>
-                  {player.initials}
-                </div>
+                <PlayerAvatar initials={player.initials} background={player.color} size="md" />
                 <span className="font-medium">{player.name}</span>
               </div>
               <div className={cn(

@@ -6,6 +6,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Users } from 'lucide-react';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface GroupBetsCardProps {
   players: Player[];
@@ -331,12 +332,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       {medalGeneralResult.winners.map((winner, idx) => (
                         <React.Fragment key={winner.playerId}>
                           {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                          <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                            style={{ backgroundColor: winner.color }}
-                          >
-                            {winner.initials}
-                          </div>
+                          <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" />
                           <span className="font-medium text-sm">{winner.name.split(' ')[0]}</span>
                           <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
                         </React.Fragment>
@@ -384,12 +380,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-destructive text-xs">Paga:</span>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                        style={{ backgroundColor: culebrasResult.loser.color }}
-                      >
-                        {culebrasResult.loser.initials}
-                      </div>
+                      <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" />
                       <span className="font-medium text-sm">{culebrasResult.loser.name.split(' ')[0]}</span>
                     </div>
                     <span className="text-destructive font-bold text-lg">
@@ -438,12 +429,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-destructive text-xs">Paga:</span>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                        style={{ backgroundColor: pinguinosResult.loser.color }}
-                      >
-                        {pinguinosResult.loser.initials}
-                      </div>
+                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" />
                       <span className="font-medium text-sm">{pinguinosResult.loser.name.split(' ')[0]}</span>
                     </div>
                     <span className="text-destructive font-bold text-lg">
