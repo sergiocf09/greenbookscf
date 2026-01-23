@@ -7,6 +7,7 @@ import { calculateHandicapIndexFromDifferentials } from '@/lib/usgaHandicap';
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
+import { markerDbToKey } from '@/lib/markerTypeMapping';
 
 interface RoundState {
   id: string | null;
@@ -568,10 +569,11 @@ export const useRoundManagement = ({
 
             if (!markersErr && holeMarkers?.length) {
               markersByHoleScoreId = new Map();
-              for (const m of holeMarkers as any[]) {
+               for (const m of holeMarkers as any[]) {
                 const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
-                if (m.marker_type && m.marker_type in prev) {
-                  (prev as any)[m.marker_type] = true;
+                 const key = markerDbToKey(m.marker_type);
+                 if (key && key in prev) {
+                   (prev as any)[key] = true;
                 }
                 markersByHoleScoreId.set(m.hole_score_id, prev);
               }

@@ -39,6 +39,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -451,7 +452,7 @@ const Index = () => {
               .insert(
                 activeKeys.map((markerKey) => ({
                   hole_score_id: holeScoreId,
-                  marker_type: markerKey as any,
+                  marker_type: markerKeyToDb[markerKey as any] as any,
                   is_auto_detected: false,
                 }))
               );
@@ -521,17 +522,25 @@ const Index = () => {
         const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
         if (idx >= 0) {
           playerScores[idx] = { ...playerScores[idx], confirmed: true };
-          // Save confirmed state to database
-          if (roundState.id) {
-            saveScoreToDb(player.id, holeNumber, playerScores[idx]);
-          }
         }
         newScores.set(player.id, playerScores);
       });
       return newScores;
     });
     setConfirmedHoles(prev => new Set([...prev, holeNumber]));
-  }, [players, saveScoreToDb, roundState.id]);
+
+    // Persist confirmation explicitly using the latest known score snapshot.
+    // This prevents cases where a hole appears confirmed locally but remains unconfirmed in backend.
+    if (roundState.id) {
+      void Promise.all(
+        players.map(async (player) => {
+          const holeScore = scores.get(player.id)?.find((s) => s.holeNumber === holeNumber);
+          if (!holeScore) return;
+          await saveScoreToDb(player.id, holeNumber, { ...holeScore, confirmed: true });
+        })
+      );
+    }
+  }, [players, scores, saveScoreToDb, roundState.id]);
 
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);

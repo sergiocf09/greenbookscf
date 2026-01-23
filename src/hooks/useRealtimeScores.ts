@@ -4,6 +4,7 @@ import { PlayerScore, Player, GolfCourse, defaultMarkerState } from '@/types/gol
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { toast } from 'sonner';
 import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { markerDbToKey } from '@/lib/markerTypeMapping';
 
 interface UseRealtimeScoresProps {
   roundId: string | null;
@@ -169,8 +170,9 @@ export const useRealtimeScores = ({
               if (!rec?.hole_score_id) return;
               if (rec.is_auto_detected) return;
 
-              const markerKey = String(rec.marker_type || '');
-              if (!allowedKeys.has(markerKey)) return;
+              const key = markerDbToKey(rec.marker_type);
+              if (!key) return;
+              if (!allowedKeys.has(String(key))) return;
 
               const mapped = holeScoreIdToPlayerHoleRef.current.get(rec.hole_score_id);
               if (!mapped) return;
@@ -185,7 +187,7 @@ export const useRealtimeScores = ({
                 const currentMarkers = playerScores[idx].markers || { ...defaultMarkerState };
                 const updatedMarkers = {
                   ...currentMarkers,
-                  [markerKey]: eventType !== 'DELETE',
+                  [key]: eventType !== 'DELETE',
                 } as any;
 
                 playerScores[idx] = { ...playerScores[idx], markers: updatedMarkers };

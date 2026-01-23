@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from '@/types/golf';
 import { getManualStainMarkers, getManualUnitMarkers } from '@/lib/scoreDetection';
+import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 
 interface UseScorePersistenceProps {
@@ -65,8 +66,9 @@ export const useScorePersistence = ({
           markersByHoleScoreId = new Map();
           for (const m of holeMarkers as any[]) {
             const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
-            if (m.marker_type && allowedKeys.has(String(m.marker_type)) && m.marker_type in prev) {
-              (prev as any)[m.marker_type] = true;
+            const key = markerDbToKey(m.marker_type);
+            if (key && allowedKeys.has(String(key)) && key in prev) {
+              (prev as any)[key] = true;
             }
             markersByHoleScoreId.set(m.hole_score_id, prev);
           }
