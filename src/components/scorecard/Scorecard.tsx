@@ -4,6 +4,7 @@ import { Player, GolfCourse, PlayerScore, MarkerState } from '@/types/golf';
 import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface ScorecardProps {
   players: Player[];
@@ -142,9 +143,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <tr key={player.id} className="border-t border-border/50">
                 <td className="px-2 py-1.5 sticky left-0 bg-card">
                   <div className="flex items-center gap-1.5">
-                    <div className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold', player.color)}>
-                      {player.initials}
-                    </div>
+                    <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
                     <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
                   </div>
                 </td>
@@ -226,9 +225,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 <tr key={player.id} className="border-t border-border/50">
                   <td className="px-2 py-1.5 sticky left-0 bg-card">
                     <div className="flex items-center gap-1.5">
-                      <div className={cn('w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold', player.color)}>
-                        {player.initials}
-                      </div>
+                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
                       <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
                     </div>
                   </td>

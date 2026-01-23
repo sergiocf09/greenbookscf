@@ -122,10 +122,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('profiles')
       .update(updates)
       .eq('id', profile.id);
-    
-    if (!error) {
-      setProfile({ ...profile, ...updates });
+
+    if (error) {
+      throw error;
     }
+
+    setProfile({ ...profile, ...updates });
   };
 
   return (
