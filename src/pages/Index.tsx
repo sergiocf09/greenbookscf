@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
 import { CourseSelect } from '@/components/setup/CourseSelect';
@@ -117,7 +117,7 @@ const Index = () => {
   });
 
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
-  const { loadBetConfig } = useBetConfigPersistence({
+  const { loadBetConfig, saveBetConfig } = useBetConfigPersistence({
     roundId: roundState.id,
     betConfig,
     setBetConfig,
@@ -128,6 +128,58 @@ const Index = () => {
     if (!roundState.id) return;
     void loadBetConfig();
   }, [roundState.id, loadBetConfig]);
+
+  // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
+  const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!roundState.id) return;
+    if (isRestoring) return;
+    if (players.length === 0) return;
+    if (hasSanitizedCarritosForRoundRef.current === roundState.id) return;
+
+    const validPlayerIds = new Set(players.map((p) => p.id));
+    const isTeamComplete = (team: [string, string]) =>
+      Boolean(team?.[0]) && Boolean(team?.[1]) && validPlayerIds.has(team[0]) && validPlayerIds.has(team[1]);
+
+    let changed = false;
+    const next: BetConfig = {
+      ...betConfig,
+      carritos: { ...betConfig.carritos },
+      carritosTeams: (betConfig.carritosTeams ?? []).map((t) => ({ ...t })),
+    };
+
+    // Single legacy Carritos config
+    if (next.carritos?.enabled) {
+      const okA = isTeamComplete(next.carritos.teamA);
+      const okB = isTeamComplete(next.carritos.teamB);
+      if (!okA || !okB) {
+        next.carritos = { ...next.carritos, enabled: false };
+        changed = true;
+      }
+    }
+
+    // Multi-team Carritos
+    if (next.carritosTeams?.length) {
+      next.carritosTeams = next.carritosTeams.map((t) => {
+        if (!t.enabled) return t;
+        const okA = isTeamComplete(t.teamA);
+        const okB = isTeamComplete(t.teamB);
+        if (!okA || !okB) {
+          changed = true;
+          return { ...t, enabled: false };
+        }
+        return t;
+      });
+    }
+
+    hasSanitizedCarritosForRoundRef.current = roundState.id;
+
+    if (!changed) return;
+
+    // Persist immediately so a later restore doesn't resurrect the ghost bet.
+    setBetConfig(next);
+    void saveBetConfig(next);
+  }, [roundState.id, isRestoring, players, betConfig, saveBetConfig, setBetConfig]);
 
   useEffect(() => {
     // If we are currently restoring (or already restored) the same pending round,
