@@ -251,6 +251,31 @@ export const calculatePressureBets = (
   
   // Total 18 (Match) uses its own configured amount
   const totalMatchAmount = config.pressures.totalAmount;
+
+  // Resolve per-pair amount overrides (stored in betConfig.betOverrides) for the labels
+  // emitted by this calculator.
+  const getPairOverrideAmount = (
+    playerAId: string,
+    playerBId: string,
+    label: string
+  ): number | undefined => {
+    const overrides = config.betOverrides;
+    if (!overrides || overrides.length === 0) return undefined;
+
+    const match = overrides.find((o) => {
+      const matchesPair =
+        (o.playerAId === playerAId && o.playerBId === playerBId) ||
+        (o.playerAId === playerBId && o.playerBId === playerAId);
+      if (!matchesPair) return false;
+      if (o.enabled === false) return false;
+      return (o.betType ?? '').toLowerCase() === label.toLowerCase();
+    });
+
+    if (!match) return undefined;
+    return typeof match.amountOverride === 'number' && Number.isFinite(match.amountOverride)
+      ? match.amountOverride
+      : undefined;
+  };
   
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -303,12 +328,26 @@ export const calculatePressureBets = (
       const backBets = processNine(backHoles);
       
       const frontIsTied = frontBets[0] === 0 && frontBets.length === 1;
+
+      // IMPORTANT: Carry needs to use the pair-specific (override) amounts for:
+      // - Front 9 (because the formula is F9*2)
+      // - Match 18 (because the formula adds Total18)
+      // Back 9 base amount is NOT used during carry.
+      const frontUnit =
+        getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Front') ??
+        config.pressures.frontAmount;
+      const match18Unit =
+        getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Match 18') ??
+        totalMatchAmount;
+      const backUnit =
+        getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Back') ??
+        config.pressures.backAmount;
       
       // Front 9 - Each bet result contributes ONLY 1x the bet value
       const frontBetsWonA = frontBets.filter(b => b > 0).length;
       const frontBetsLostA = frontBets.filter(b => b < 0).length;
       const frontNetBets = frontBetsWonA - frontBetsLostA;
-      const frontAmountA = frontNetBets * config.pressures.frontAmount;
+      const frontAmountA = frontNetBets * frontUnit;
       
       const frontDisplayStr = frontIsTied ? 'Even (Carry)' : frontBets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
       
@@ -321,7 +360,7 @@ export const calculatePressureBets = (
           segment: 'front',
           description: frontDisplayStr,
           units: frontNetBets,
-          baseUnitAmount: config.pressures.frontAmount,
+          baseUnitAmount: frontUnit,
           multiplier: 1,
         });
         summaries.push({
@@ -332,7 +371,7 @@ export const calculatePressureBets = (
           segment: 'front',
           description: frontBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
           units: -frontNetBets,
-          baseUnitAmount: config.pressures.frontAmount,
+          baseUnitAmount: frontUnit,
           multiplier: 1,
         });
       }
@@ -341,8 +380,8 @@ export const calculatePressureBets = (
       // When carry: back value = 2x frontAmount + totalMatchAmount (NOT backAmount)
       // Example: frontAmount=50, totalAmount=50 -> carry = 2*50+50 = 150
       const effectiveBackValue = frontIsTied 
-        ? (2 * config.pressures.frontAmount + totalMatchAmount)
-        : config.pressures.backAmount;
+        ? (2 * frontUnit + match18Unit)
+        : backUnit;
       
       const backBetsWonA = backBets.filter(b => b > 0).length;
       const backBetsLostA = backBets.filter(b => b < 0).length;
@@ -386,7 +425,7 @@ export const calculatePressureBets = (
         if (total18Balance > 0) matchWinner = 1;
         else if (total18Balance < 0) matchWinner = -1;
         
-        const totalAmountA = matchWinner * totalMatchAmount;
+        const totalAmountA = matchWinner * match18Unit;
         
         // Only show the final balance result, not the sum formula
         const total18Str = total18Balance === 0 ? 'Even' : ((total18Balance >= 0 ? '+' : '') + total18Balance);
@@ -401,7 +440,7 @@ export const calculatePressureBets = (
             segment: 'total',
             description: total18Str,
             units: matchWinner,
-            baseUnitAmount: totalMatchAmount,
+            baseUnitAmount: match18Unit,
             multiplier: 1,
           });
           summaries.push({
@@ -412,7 +451,7 @@ export const calculatePressureBets = (
             segment: 'total',
             description: total18StrB,
             units: -matchWinner,
-            baseUnitAmount: totalMatchAmount,
+            baseUnitAmount: match18Unit,
             multiplier: 1,
           });
         } else {
