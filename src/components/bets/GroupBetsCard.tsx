@@ -125,6 +125,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const winners = playerNetScores.filter(p => p.netScore === minNet);
     const losersCount = playerNetScores.length - winners.length;
 
+    // If everyone tied, there is no payout.
+    if (losersCount === 0) {
+      return null;
+    }
+
     // Calculate winnings: losers pay amount each, split among winners
     const totalPot = losersCount * amount;
     const amountPerWinner = winners.length > 0 ? totalPot / winners.length : 0;
@@ -461,6 +466,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
 // Utility function to calculate Medal General result for bilateral view
 export const getMedalGeneralBilateralResult = (
+  allPlayers: Player[],
   player: Player,
   rival: Player,
   scores: Map<string, PlayerScore[]>,
@@ -473,6 +479,38 @@ export const getMedalGeneralBilateralResult = (
 
   const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
   const amount = betConfig.medalGeneral.amount || 100;
+
+  // Calculate net totals for all players (to properly handle ties and split payouts)
+  const netTotals: Array<{ playerId: string; netTotal: number }> = [];
+
+  allPlayers.forEach((p) => {
+    const pScores = scores.get(p.id) || [];
+    const confirmed = pScores.filter((s) => s.confirmed && s.strokes > 0);
+    if (confirmed.length === 0) return;
+
+    const hcp = playerHandicaps.find((ph) => ph.playerId === p.id)?.handicap ?? p.handicap;
+    const strokesPerHole = calculateStrokesPerHole(hcp, course);
+    const netTotal = confirmed.reduce((sum, s) => {
+      const received = strokesPerHole[s.holeNumber - 1] || 0;
+      return sum + (s.strokes - received);
+    }, 0);
+
+    netTotals.push({ playerId: p.id, netTotal });
+  });
+
+  if (netTotals.length < 2) {
+    return null;
+  }
+
+  const minNetTotal = Math.min(...netTotals.map((p) => p.netTotal));
+  const winnerIds = new Set(netTotals.filter((p) => p.netTotal === minNetTotal).map((p) => p.playerId));
+  const winnersCount = winnerIds.size;
+  const losersCount = netTotals.length - winnersCount;
+
+  // Everyone tied => no payout.
+  if (losersCount === 0) {
+    return null;
+  }
 
   // Get player scores
   const playerScores = scores.get(player.id) || [];
@@ -507,10 +545,24 @@ export const getMedalGeneralBilateralResult = (
   const isWinner = playerNet < rivalNet;
   const isTied = playerNet === rivalNet;
 
+  // Medal General payout is group-based:
+  // each non-winner pays `amount`, split evenly among winners.
+  const isPlayerWinner = winnerIds.has(player.id);
+  const isRivalWinner = winnerIds.has(rival.id);
+
+  const amountFromLoserToWinner = amount / winnersCount;
+  const bilateralAmount =
+    isPlayerWinner && !isRivalWinner
+      ? amountFromLoserToWinner
+      : !isPlayerWinner && isRivalWinner
+        ? -amountFromLoserToWinner
+        : 0;
+
   return {
+    // Keep these for UI messaging, but amount is now the true group-based bilateral impact.
     isWinner,
     isTied,
-    amount: isWinner ? amount : isTied ? 0 : -amount,
+    amount: bilateralAmount,
     playerNet,
     rivalNet,
   };

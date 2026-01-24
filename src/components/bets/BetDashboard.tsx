@@ -810,6 +810,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {/* Bilateral Detail View */}
       {selectedRival && basePlayer && (
         <BilateralDetail
+          players={players}
           player={basePlayer}
           rival={players.find(p => p.id === selectedRival)!}
           groupedSummaries={getGroupedSummaries(selectedRival)}
@@ -1458,6 +1459,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
 // Bilateral Detail Component - Reorganized with bet type rows and override capability
 interface BilateralDetailProps {
+  players: Player[];
   player: Player;
   rival: Player;
   groupedSummaries: Record<string, { total: number; details: BetSummary[] }>;
@@ -1474,6 +1476,7 @@ interface BilateralDetailProps {
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
+  players,
   player,
   rival,
   groupedSummaries,
@@ -1893,16 +1896,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Medal General (Group bet shown in bilateral view) - only after 18 holes confirmed
-    // Check if both player and rival have 18 holes confirmed
-    const bothPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every(h => {
-      const playerScores = confirmedScores.get(player.id) || [];
-      const rivalScores = confirmedScores.get(rival.id) || [];
-      return playerScores.some(s => s.holeNumber === h) && rivalScores.some(s => s.holeNumber === h);
+    // Medal General (Group bet shown in bilateral view) - only after the round is complete (all players 18 confirmed)
+    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
+      return players.every((p) => {
+        const pScores = confirmedScores.get(p.id) || [];
+        return pScores.some((s) => s.holeNumber === h);
+      });
     });
     
-    if (betConfig.medalGeneral?.enabled && bothPlayersComplete) {
-      const medalResult = getMedalGeneralBilateralResult(player, rival, confirmedScores, betConfig, course);
+    if (betConfig.medalGeneral?.enabled && allPlayersComplete) {
+      const medalResult = getMedalGeneralBilateralResult(players, player, rival, confirmedScores, betConfig, course);
       if (medalResult) {
         groups.push({
           key: 'medalGeneral',
@@ -1921,7 +1924,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     return groups;
-  }, [betConfig, groupedSummaries, confirmedScores, player.id, rival.id, allScores, course.holes]);
+  }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes]);
   
   // Effective handicaps (with override or original)
   const effectivePlayerHcp = bilateralHandicap?.playerAHandicap ?? player.handicap;
