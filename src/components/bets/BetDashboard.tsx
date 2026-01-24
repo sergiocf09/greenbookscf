@@ -733,9 +733,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {/* Balance vs */}
       <Card>
         <CardHeader className="py-3 space-y-2">
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardTitle className="text-sm flex items-center gap-2 min-w-0">
             <span className="text-muted-foreground">Balance de</span>
-            <span className="font-bold">{basePlayer?.initials || '—'}</span>
+            <span className="font-bold truncate">{basePlayer?.name || '—'}</span>
             <span className="text-muted-foreground">vs:</span>
           </CardTitle>
 
