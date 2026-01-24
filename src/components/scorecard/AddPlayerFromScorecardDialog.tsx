@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 
 type HoleScores = Record<number, number | ''>;
 
@@ -22,15 +23,6 @@ interface Props {
   roundId: string;
   onAddGuest: (payload: AddGuestPayload) => Promise<void>;
 }
-
-const initialsFromName = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .map((n) => n[0] || '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
 export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   open,
@@ -50,8 +42,16 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   const shareLink = useMemo(() => `${window.location.origin}/join/${roundId}`, [roundId]);
 
   const canSave = useMemo(() => {
-    const n = name.trim();
-    if (!n) return false;
+    const parsed = (() => {
+      try {
+        validatePlayerName(name);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+
+    if (!parsed) return false;
     for (let h = 1; h <= 18; h++) {
       const v = scores[h];
       if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return false;
@@ -72,14 +72,17 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
       toast.error('Completa nombre y 18 hoyos');
       return;
     }
+
     setSaving(true);
     try {
       const strokesByHole: Record<number, number> = {};
       for (let h = 1; h <= 18; h++) strokesByHole[h] = scores[h] as number;
 
+      const safeName = validatePlayerName(name);
+
       await onAddGuest({
-        name: name.trim(),
-        initials: initialsFromName(name),
+        name: safeName,
+        initials: initialsFromPlayerName(safeName),
         color,
         strokesByHole,
       });

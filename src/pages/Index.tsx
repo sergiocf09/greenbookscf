@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { devError } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
+import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -534,6 +535,10 @@ const Index = () => {
     async (payload: AddGuestPayload) => {
       if (!roundState.id || !roundState.groupId || !course) throw new Error('Ronda no lista');
 
+      // Defense-in-depth: validate/sanitize guest identity before persisting.
+      const safeName = validatePlayerName(payload.name);
+      const safeInitials = initialsFromPlayerName(safeName);
+
       // 1) Create guest in backend
       const { data: rpRow, error: rpErr } = await supabase
         .from('round_players')
@@ -543,8 +548,8 @@ const Index = () => {
           profile_id: null,
           handicap_for_round: 0,
           is_organizer: false,
-          guest_name: payload.name,
-          guest_initials: payload.initials,
+          guest_name: safeName,
+          guest_initials: safeInitials,
           guest_color: payload.color,
         })
         .select('id')
@@ -559,8 +564,8 @@ const Index = () => {
       // 2) Update local state (player list + mapping)
       const newPlayer: Player = {
         id: newPlayerId,
-        name: payload.name,
-        initials: payload.initials,
+        name: safeName,
+        initials: safeInitials,
         color: payload.color,
         handicap: 0,
       };

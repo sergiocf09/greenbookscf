@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Player, PlayerGroup } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
+import { toast } from 'sonner';
 
 const playerColors = [
   'bg-golf-green text-white',
@@ -44,17 +46,20 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
   const addPlayer = () => {
     if (!newPlayerName.trim() || players.length >= maxPlayers) return;
-    
-    const initials = newPlayerName
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+
+    let safeName = '';
+    let initials = '';
+    try {
+      safeName = validatePlayerName(newPlayerName);
+      initials = initialsFromPlayerName(safeName);
+    } catch (e: any) {
+      toast.error(e?.message || 'Nombre inválido');
+      return;
+    }
 
     const newPlayer: Player = {
       id: `player-${Date.now()}`,
-      name: newPlayerName.trim(),
+      name: safeName,
       initials,
       color: playerColors[players.length % playerColors.length],
       handicap: 0,
@@ -160,10 +165,21 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             <div className="flex-1 min-w-0">
               <Input
                 value={player.name}
-                onChange={(e) => updatePlayer(player.id, { 
-                  name: e.target.value,
-                  initials: e.target.value.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                })}
+                maxLength={100}
+                onChange={(e) => {
+                  // Keep editing fluid, but cap length and keep initials deterministic.
+                  const raw = e.target.value.slice(0, 100);
+                  let initials = player.initials;
+                  try {
+                    initials = initialsFromPlayerName(raw);
+                  } catch {
+                    // While typing, it's ok if initials can't be derived yet.
+                  }
+                  updatePlayer(player.id, {
+                    name: raw,
+                    initials,
+                  });
+                }}
                 className="h-7 text-sm"
                 placeholder="Nombre del jugador"
               />
@@ -198,7 +214,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         <div className="flex gap-2">
           <Input
             value={newPlayerName}
-            onChange={(e) => setNewPlayerName(e.target.value)}
+            maxLength={100}
+            onChange={(e) => setNewPlayerName(e.target.value.slice(0, 100))}
             placeholder="Nombre del nuevo jugador"
             className="flex-1"
             onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
