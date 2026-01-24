@@ -636,78 +636,35 @@ export const calculateSkinsBets = (
       const frontSkinsA = frontSkinsABase + carriedSkinsWonByA;
       const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
 
-      // OYESES -> SKINS "zapato" rule (requested):
-      // If a player is currently perfect in Par-3 Oyeses that already have a defined winner
-      // within the nine, Skins for that nine is doubled.
-      const computeOyesPerfect = (start: number, end: number) => {
-        const par3Holes = course.holes
-          .filter((h) => h.par === 3 && h.number >= start && h.number <= end)
-          .map((h) => h.number);
+      // SKINS "zapato" (x2) rule (Skins ONLY):
+      // During a nine, if ONLY one player has any skins won so far (>=1) and the opponent has 0,
+      // Skins for that nine is doubled *at that moment*.
+      // Note: This is independent of Oyeses; do not mix bet types.
+      const hasZapatoFront =
+        (frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0);
+      const hasZapatoBack =
+        (backSkinsA > 0 && backSkinsB === 0) || (backSkinsB > 0 && backSkinsA === 0);
 
-        let holesWithWinner = 0;
-        let wonByA = 0;
-        let wonByB = 0;
-
-        for (const holeNum of par3Holes) {
-          const scoresA = adjustedScores.get(playerA.id) || [];
-          const scoresB = adjustedScores.get(playerB.id) || [];
-          const scoreA = scoresA.find((s) => s.holeNumber === holeNum);
-          const scoreB = scoresB.find((s) => s.holeNumber === holeNum);
-
-          const proxA = scoreA?.oyesProximity ?? null;
-          const proxB = scoreB?.oyesProximity ?? null;
-          const hasA = proxA !== null && proxA !== undefined;
-          const hasB = proxB !== null && proxB !== undefined;
-
-          // "con definición de ganador": only count if there is an unambiguous winner
-          if (hasA && !hasB) {
-            holesWithWinner++;
-            wonByA++;
-          } else if (!hasA && hasB) {
-            holesWithWinner++;
-            wonByB++;
-          } else if (hasA && hasB) {
-            if (proxA === proxB) continue; // tie => no winner
-            holesWithWinner++;
-            if ((proxA as number) < (proxB as number)) wonByA++;
-            else wonByB++;
-          }
-        }
-
-        return {
-          perfectA: holesWithWinner > 0 && wonByA === holesWithWinner,
-          perfectB: holesWithWinner > 0 && wonByB === holesWithWinner,
-        };
-      };
-
-      const oyesFront = computeOyesPerfect(1, 9);
-      const oyesBack = computeOyesPerfect(10, 18);
-      
       // DOUBLING LOGIC:
-      // Perfect sweep: Won all 9 holes in the nine
+      // Perfect sweep: won all 9 holes in the nine
       const frontPerfectSweepA = frontHolesWonByA === 9 && frontHolesWonByB === 0;
       const frontPerfectSweepB = frontHolesWonByB === 9 && frontHolesWonByA === 0;
       const backPerfectSweepA = backHolesWonByA === 9 && backHolesWonByB === 0;
       const backPerfectSweepB = backHolesWonByB === 9 && backHolesWonByA === 0;
-      
-      // Progressive doubling: Winning all holes that have had a winner, stops if opponent wins or ties 9/18
-      const frontProgressiveDoubleA = frontHolesWithWinner > 0 && frontHolesWonByA === frontHolesWithWinner && !frontHole9Tied;
-      const frontProgressiveDoubleB = frontHolesWithWinner > 0 && frontHolesWonByB === frontHolesWithWinner && !frontHole9Tied;
-      const backProgressiveDoubleA = backHolesWithWinner > 0 && backHolesWonByA === backHolesWithWinner && !backHole18Tied;
-      const backProgressiveDoubleB = backHolesWithWinner > 0 && backHolesWonByB === backHolesWithWinner && !backHole18Tied;
-      
-      // Apply doubling: perfect sweep (all 9) or progressive (all decided, no tie on 9/18)
-      const frontDoubleMultiplierA = (frontPerfectSweepA || frontProgressiveDoubleA || oyesFront.perfectA) ? 2 : 1;
-      const frontDoubleMultiplierB = (frontPerfectSweepB || frontProgressiveDoubleB || oyesFront.perfectB) ? 2 : 1;
-      const backDoubleMultiplierA = (backPerfectSweepA || backProgressiveDoubleA || oyesBack.perfectA) ? 2 : 1;
-      const backDoubleMultiplierB = (backPerfectSweepB || backProgressiveDoubleB || oyesBack.perfectB) ? 2 : 1;
+
+      // Apply doubling: perfect sweep (all 9) OR zapato (only one has skins so far)
+      const frontDoubleMultiplierA = (frontPerfectSweepA || hasZapatoFront) ? 2 : 1;
+      const frontDoubleMultiplierB = (frontPerfectSweepB || hasZapatoFront) ? 2 : 1;
+      const backDoubleMultiplierA = (backPerfectSweepA || hasZapatoBack) ? 2 : 1;
+      const backDoubleMultiplierB = (backPerfectSweepB || hasZapatoBack) ? 2 : 1;
       
       // Calculate money for front 9 (includes carried skins resolved in back, at front rate)
       const netSkinsFront = frontSkinsA - frontSkinsB;
       if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
         const multiplier = netSkinsFront > 0 ? frontDoubleMultiplierA : frontDoubleMultiplierB;
         const frontAmount = netSkinsFront * config.skins.frontValue * multiplier;
-        const doubleLabel = multiplier === 2 ? ' (x2)' : '';
+        const shoeLabel = (frontPerfectSweepA || frontPerfectSweepB) ? ' 🥾' : '';
+        const doubleLabel = multiplier === 2 ? ` (x2)${shoeLabel}` : shoeLabel;
         // Show breakdown if there were carried skins
         const hasCarried = carriedSkinsWonByA > 0 || carriedSkinsWonByB > 0;
         const descA = hasCarried 
@@ -740,7 +697,8 @@ export const calculateSkinsBets = (
       if (netPureBackSkins !== 0 && config.skins.backValue > 0) {
         const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
         const backAmount = netPureBackSkins * config.skins.backValue * pureBackMultiplier;
-        const doubleLabel = pureBackMultiplier === 2 ? ' (x2)' : '';
+        const shoeLabel = (backPerfectSweepA || backPerfectSweepB) ? ' 🥾' : '';
+        const doubleLabel = pureBackMultiplier === 2 ? ` (x2)${shoeLabel}` : shoeLabel;
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
