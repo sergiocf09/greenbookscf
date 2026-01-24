@@ -50,71 +50,31 @@ const JoinRound = () => {
 
     const fetchRoundInfo = async () => {
       try {
-        // Get round info with course and organizer
-        const { data: round, error: roundError } = await supabase
-          .from('rounds')
-          .select(`
-            id,
-            date,
-            tee_color,
-            status,
-            course_id
-          `)
-          .eq('id', roundId)
-          .single();
+        // Fetch invite-safe info via backend function (works even before you join)
+        const { data, error: rpcError } = await supabase
+          .rpc('get_round_invite_info', { p_round_id: roundId });
 
-        if (roundError) throw roundError;
+        if (rpcError) throw rpcError;
+        if (!data) throw new Error('Round not found');
 
-        // Get course info
-        const { data: course } = await supabase
-          .from('golf_courses')
-          .select('name, location')
-          .eq('id', round.course_id)
-          .single();
+        const parsed = data as any;
+        const players = (parsed.players || []).map((p: any) => ({ profile: p }));
 
-        // Get organizer info
-        const { data: organizer } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', (await supabase
-            .from('rounds')
-            .select('organizer_id')
-            .eq('id', roundId)
-            .single()).data?.organizer_id)
-          .single();
-
-        // Get players
-        const { data: players } = await supabase
-          .from('round_players')
-          .select(`
-            profile_id
-          `)
-          .eq('round_id', roundId);
-
-        // Get profiles for players
-        const playerProfiles = [];
-        if (players) {
-          for (const p of players) {
-            const { data: prof } = await supabase
-              .from('profiles')
-              .select('display_name, initials, avatar_color')
-              .eq('id', p.profile_id)
-              .single();
-            if (prof) playerProfiles.push({ profile: prof });
-          }
-        }
-
-        // Check if user already joined
         if (profile) {
-          const isJoined = players?.some(p => p.profile_id === profile.id);
-          setAlreadyJoined(!!isJoined);
+          // We don't receive profile_id list here; infer via display_name match is unreliable.
+          // Instead, enable join button unless we can confirm via a lightweight query.
+          // We'll confirm on join (join_round is idempotent).
+          setAlreadyJoined(false);
         }
 
         setRoundInfo({
-          ...round,
-          course: course || { name: 'Desconocido', location: '' },
-          organizer: organizer || { display_name: 'Organizador' },
-          players: playerProfiles,
+          id: parsed.id,
+          date: parsed.date,
+          tee_color: parsed.tee_color,
+          status: parsed.status,
+          course: parsed.course,
+          organizer: parsed.organizer,
+          players,
         });
       } catch (err) {
         console.error('Error fetching round:', err);
@@ -135,34 +95,11 @@ const JoinRound = () => {
 
     setJoining(true);
     try {
-      // Get the group for this round
-      const { data: group } = await supabase
-        .from('round_groups')
-        .select('id')
-        .eq('round_id', roundId)
-        .single();
-
-      if (!group) throw new Error('No se encontró el grupo');
-
-      // Add player to round
-      const { error: joinError } = await supabase
-        .from('round_players')
-        .insert({
-          round_id: roundId,
-          group_id: group.id,
-          profile_id: profile.id,
-          handicap_for_round: profile.current_handicap,
-          is_organizer: false,
-        });
-
-      if (joinError) {
-        if (joinError.code === '23505') {
-          toast.info('Ya estás en esta ronda');
-          navigate('/');
-          return;
-        }
-        throw joinError;
-      }
+      // Join via backend function (bypasses RLS, idempotent)
+      const { data: rpId, error: joinError } = await supabase
+        .rpc('join_round', { p_round_id: roundId });
+      if (joinError) throw joinError;
+      if (!rpId) throw new Error('No se pudo unir a la ronda');
 
       toast.success('Te has unido a la ronda');
       navigate('/');

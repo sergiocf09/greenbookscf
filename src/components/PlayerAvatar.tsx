@@ -58,22 +58,21 @@ function inferTextClassFromBg(bg: string): string {
   return "text-golf-cream";
 }
 
-export function PlayerAvatar({
-  initials,
-  background,
-  size = "md",
-  className,
-}: {
-  initials: string;
-  background: string;
-  size?: Size;
-  className?: string;
-}) {
+export const PlayerAvatar = React.forwardRef<
+  HTMLDivElement,
+  {
+    initials: string;
+    background: string;
+    size?: Size;
+    className?: string;
+  }
+>(function PlayerAvatar({ initials, background, size = "md", className }, ref) {
   const isHex = background.trim().startsWith("#");
   const textClass = inferTextClassFromBg(background);
 
   return (
     <div
+      ref={ref}
       className={cn(
         "rounded-full flex items-center justify-center font-bold",
         sizeClasses[size],
@@ -87,4 +86,6 @@ export function PlayerAvatar({
       {initials}
     </div>
   );
-}
+});
+
+PlayerAvatar.displayName = 'PlayerAvatar';

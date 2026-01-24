@@ -43,26 +43,17 @@ const JoinByCode = () => {
 
     try {
       // The code is the first 6 chars of the round UUID (lowercase in DB)
-      const codePrefix = code.toLowerCase();
-      
-      // Search for rounds that start with this prefix
-      const { data: rounds, error: searchError } = await supabase
-        .from('rounds')
-        .select('id, status')
-        .ilike('id', `${codePrefix}%`)
-        .limit(1);
+      const { data: roundId, error: rpcError } = await supabase
+        .rpc('resolve_round_id_by_code', { p_code: code });
 
-      if (searchError) throw searchError;
+      if (rpcError) throw rpcError;
 
-      if (!rounds || rounds.length === 0) {
+      if (!roundId) {
         setError('No se encontró ninguna ronda con ese código');
         return;
       }
 
-      const round = rounds[0];
-      
-      // Navigate to the join page with the full round ID
-      navigate(`/join/${round.id}`);
+      navigate(`/join/${roundId}`);
     } catch (err) {
       console.error('Error searching for round:', err);
       setError('Error al buscar la ronda');

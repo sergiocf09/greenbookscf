@@ -711,9 +711,12 @@ export type Database = {
         Returns: undefined
       }
       get_my_profile_id: { Args: never; Returns: string }
+      get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
+      join_round: { Args: { p_round_id: string }; Returns: string }
+      resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
     }
     Enums: {
       bet_type:
