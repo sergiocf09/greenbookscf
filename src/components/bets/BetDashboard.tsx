@@ -2472,6 +2472,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isPressureEven = isPressures && data.amount === 0 && 
                           (!data.description || data.description === '' || data.description === '+0');
                         
+                        const showSkinsShoe =
+                          group.key === 'skins' &&
+                          typeof data.description === 'string' &&
+                          data.description.includes('🥾');
+
                         return (
                           <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             <div className="flex items-center gap-3">
@@ -2506,10 +2511,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 )}
                               </div>
                             </div>
-                            <span className={cn(
-                              'text-sm font-bold min-w-[50px] text-right',
-                              data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                            )}>
+                            <span
+                              className={cn(
+                                'text-sm font-bold min-w-[50px] text-right',
+                                data.amount > 0
+                                  ? 'text-green-500'
+                                  : data.amount < 0
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                              )}
+                            >
+                              {showSkinsShoe && <span className="mr-1">🥾</span>}
                               {isPressureEven ? 'Even' : `${data.amount >= 0 ? '+' : ''}$${data.amount}`}
                             </span>
                           </div>
