@@ -1,5 +1,5 @@
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 // BilateralHandicap is now imported from types/golf.ts
 
@@ -72,6 +73,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
+  const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
   
   // Filter scores to only include confirmed scores.
@@ -497,8 +499,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return results;
   }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
   
-  const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId) || players[0];
-  const rivals = players.filter(p => p.id !== basePlayer?.id);
+  // Default base player = logged-in user (via basePlayerId prop). User can override for this session.
+  useEffect(() => {
+    if (!players.length) return;
+
+    const defaultBaseId =
+      players.find((p) => p.id === basePlayerId || p.profileId === basePlayerId)?.id ??
+      players[0]?.id ??
+      null;
+
+    // If nothing selected yet (or selection is no longer valid), reset to default.
+    if (!balanceBasePlayerId || !players.some((p) => p.id === balanceBasePlayerId)) {
+      setBalanceBasePlayerId(defaultBaseId);
+      setSelectedRival(null);
+    }
+  }, [players, basePlayerId, balanceBasePlayerId]);
+
+  const basePlayer = players.find((p) => p.id === balanceBasePlayerId) || players[0];
+  const rivals = players.filter((p) => p.id !== basePlayer?.id);
   
   const toggleExpanded = (type: string) => {
     setExpandedTypes(prev => 
@@ -714,10 +732,36 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       {/* Balance vs */}
       <Card>
-        <CardHeader className="py-3">
+        <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <span className="text-muted-foreground">Tu balance vs:</span>
+            <span className="text-muted-foreground">Balance de</span>
+            <span className="font-bold">{basePlayer?.initials || '—'}</span>
+            <span className="text-muted-foreground">vs:</span>
           </CardTitle>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <span className="text-[10px] text-muted-foreground shrink-0">Base:</span>
+            {players.map((p) => {
+              const isActive = p.id === basePlayer?.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setBalanceBasePlayerId(p.id);
+                    setSelectedRival(null);
+                  }}
+                  className={cn(
+                    'shrink-0 rounded-full transition-all',
+                    isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'opacity-80 hover:opacity-100'
+                  )}
+                  aria-pressed={isActive}
+                >
+                  <PlayerAvatar initials={p.initials} background={p.color} size="md" className="w-9 h-9 text-sm" />
+                </button>
+              );
+            })}
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex flex-wrap gap-2 justify-center">
