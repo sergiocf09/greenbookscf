@@ -5,23 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-// IMPORTANT:
-// When running inside Lovable preview/sandbox domains, sharing `window.location.origin`
-// can send invitees to a Lovable-gated URL (they'll see a Lovable login page).
-// Use the published site origin for share links/QR.
-const PUBLISHED_SITE_ORIGIN = 'https://golfbetvdos.lovable.app';
-
-function getShareOrigin() {
-  const { origin, hostname } = window.location;
-
-  // Heuristic: preview/sandbox domains are not suitable for invites.
-  const isLovablePreview =
+const isPreviewHost = () => {
+  const { hostname } = window.location;
+  return (
     hostname.includes('lovableproject.com') ||
-    hostname.endsWith('.lovable.app') ||
-    hostname.startsWith('id-preview--');
-
-  return isLovablePreview ? PUBLISHED_SITE_ORIGIN : origin;
-}
+    hostname.startsWith('id-preview--')
+  );
+};
 
 interface ShareRoundDialogProps {
   roundId: string;
@@ -34,10 +24,13 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 }) => {
   const [copiedType, setCopiedType] = useState<'link' | 'code' | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const isPreview = useMemo(() => isPreviewHost(), []);
 
   // Generate share link
   const shareLink = useMemo(() => {
-    const baseUrl = getShareOrigin();
+    // IMPORTANT: use the same origin where the round was created.
+    // Preview and Published run against different backend environments.
+    const baseUrl = window.location.origin;
     return `${baseUrl}/join/${roundId}`;
   }, [roundId]);
 
@@ -65,6 +58,17 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 
   return (
     <div className="space-y-4">
+      {isPreview && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">
+              Estás en <span className="font-medium">modo preview</span>. Las rondas creadas aquí no existen en el sitio publicado.
+              Para invitar a otros sin problemas, publica la app y crea la ronda desde el sitio publicado antes de compartir.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Link Section */}
       <Card>
         <CardContent className="p-4 space-y-2">
