@@ -327,7 +327,9 @@ export const calculatePressureBets = (
       const frontBets = processNine(frontHoles);
       const backBets = processNine(backHoles);
       
-      const frontIsTied = frontBets[0] === 0 && frontBets.length === 1;
+      // Carry happens when the MAIN (first) Front-9 pressure line ends Even.
+      // There may still be additional opened lines due to cascading triggers.
+      const frontIsTied = frontBets[0] === 0;
 
       // IMPORTANT: Carry needs to use the pair-specific (override) amounts for:
       // - Front 9 (because the formula is F9*2)
@@ -724,8 +726,8 @@ export const calculateSkinsBets = (
       if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
         const multiplier = netSkinsFront > 0 ? frontDoubleMultiplierA : frontDoubleMultiplierB;
         const frontAmount = netSkinsFront * config.skins.frontValue * multiplier;
-        const shoeLabel = (frontPerfectSweepA || frontPerfectSweepB) ? ' 🥾' : '';
-        const doubleLabel = multiplier === 2 ? ` (x2)${shoeLabel}` : shoeLabel;
+        const shoeLabel = multiplier === 2 ? ' 🥾' : '';
+        const doubleLabel = multiplier === 2 ? ` (x2)${shoeLabel}` : '';
         // Show breakdown if there were carried skins
         const hasCarried = carriedSkinsWonByA > 0 || carriedSkinsWonByB > 0;
         const descA = hasCarried 
@@ -764,8 +766,8 @@ export const calculateSkinsBets = (
       if (netPureBackSkins !== 0 && config.skins.backValue > 0) {
         const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
         const backAmount = netPureBackSkins * config.skins.backValue * pureBackMultiplier;
-        const shoeLabel = (backPerfectSweepA || backPerfectSweepB) ? ' 🥾' : '';
-        const doubleLabel = pureBackMultiplier === 2 ? ` (x2)${shoeLabel}` : shoeLabel;
+         const shoeLabel = pureBackMultiplier === 2 ? ' 🥾' : '';
+         const doubleLabel = pureBackMultiplier === 2 ? ` (x2)${shoeLabel}` : '';
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
