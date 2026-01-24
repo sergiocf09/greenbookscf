@@ -217,6 +217,7 @@ export interface SkinsBetConfig {
   frontValue: number;
   backValue: number;
   carryOver: boolean; // If skins carry from 9 to 10
+  modality?: 'acumulados' | 'sinAcumular'; // acumulados = ties add to pot; sinAcumular = ties are void
 }
 
 export interface CarosBetConfig {

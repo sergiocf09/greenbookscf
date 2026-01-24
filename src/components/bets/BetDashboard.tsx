@@ -1449,22 +1449,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   
   const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
 
-  // Get bet override for this pair
-  const getBetOverride = (betType: string): BetOverride | undefined => {
+  // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
+  const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
     return betConfig.betOverrides?.find(
-      o => o.betType === betType && 
-      ((o.playerAId === player.id && o.playerBId === rival.id) ||
-       (o.playerAId === rival.id && o.playerBId === player.id))
+      (o) =>
+        o.betType === overrideLabel &&
+        ((o.playerAId === player.id && o.playerBId === rival.id) ||
+          (o.playerAId === rival.id && o.playerBId === player.id))
     );
   };
 
   // Update bet override
-  const updateBetOverride = (betType: string, updates: Partial<BetOverride>) => {
+  const updateBetOverride = (overrideLabel: string, updates: Partial<BetOverride>) => {
     if (!onBetConfigChange) return;
     
     const overrides = [...(betConfig.betOverrides || [])];
     const existingIdx = overrides.findIndex(
-      o => o.betType === betType && 
+      o => o.betType === overrideLabel && 
       ((o.playerAId === player.id && o.playerBId === rival.id) ||
        (o.playerAId === rival.id && o.playerBId === player.id))
     );
@@ -1475,7 +1476,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       overrides.push({
         playerAId: player.id,
         playerBId: rival.id,
-        betType,
+        betType: overrideLabel,
         enabled: true,
         ...updates,
       });
@@ -1485,8 +1486,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   };
 
   // Toggle bet enabled/disabled
-  const toggleBetEnabled = (betType: string, enabled: boolean) => {
-    updateBetOverride(betType, { enabled });
+  const toggleBetEnabled = (overrideLabel: string, enabled: boolean) => {
+    updateBetOverride(overrideLabel, { enabled });
   };
   
   // Calculate net scores for display with bilateral handicap overrides
@@ -1573,7 +1574,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const groups: {
       key: string;
       label: string;
-      segments: { label: string; key: string }[];
+      // overrideLabel is the persisted key used by betOverrides. Optional because some rows are informational.
+      segments: { label: string; key: string; overrideLabel?: string }[];
       getTotal: () => number;
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
       configKey: string;
@@ -1586,9 +1588,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         label: 'Medal',
         configKey: 'medal',
         segments: [
-          { label: 'Front 9', key: 'medal_front' },
-          { label: 'Back 9', key: 'medal_back' },
-          { label: 'Total 18', key: 'medal_total' },
+          { label: 'Front 9', key: 'medal_front', overrideLabel: 'Medal Front 9' },
+          { label: 'Back 9', key: 'medal_back', overrideLabel: 'Medal Back 9' },
+          { label: 'Total 18', key: 'medal_total', overrideLabel: 'Medal Total' },
         ],
         getTotal: () => {
           const front = groupedSummaries['Medal Front 9']?.total || 0;
@@ -1615,9 +1617,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         label: 'Presiones',
         configKey: 'pressures',
         segments: [
-          { label: 'Front 9', key: 'pressure_front' },
-          { label: 'Back 9', key: 'pressure_back' },
-          { label: 'Total 18', key: 'pressure_total' },
+          // NOTE: override labels MUST match calculatePressureBets() betType strings (Spanish).
+          { label: 'Front 9', key: 'pressure_front', overrideLabel: 'Presiones Front' },
+          // Matches both "Presiones Back" and "Presiones Back (Carry x2+Match)" via includes().
+          { label: 'Back 9', key: 'pressure_back', overrideLabel: 'Presiones Back' },
+          { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
         ],
         getTotal: () => {
           const front = groupedSummaries['Presiones Front']?.total || 0;
@@ -1662,8 +1666,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         label: 'Skins',
         configKey: 'skins',
         segments: [
-          { label: 'Front 9', key: 'skins_front' },
-          { label: 'Back 9', key: 'skins_back' },
+          { label: 'Front 9', key: 'skins_front', overrideLabel: 'Skins Front' },
+          { label: 'Back 9', key: 'skins_back', overrideLabel: 'Skins Back' },
         ],
         getTotal: () => {
           const front = groupedSummaries['Skins Front']?.total || 0;
