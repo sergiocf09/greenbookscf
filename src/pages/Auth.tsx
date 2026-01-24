@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,9 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const returnTo = (location.state as any)?.returnTo as string | undefined;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +30,7 @@ const Auth = () => {
       toast.error('Error al iniciar sesión', { description: error.message });
     } else {
       toast.success('¡Bienvenido!');
-      navigate('/');
+      navigate(returnTo || '/');
     }
     setIsLoading(false);
   };
@@ -46,7 +49,7 @@ const Auth = () => {
       toast.error('Error al registrarse', { description: error.message });
     } else {
       toast.success('¡Cuenta creada exitosamente!');
-      navigate('/');
+      navigate(returnTo || '/');
     }
     setIsLoading(false);
   };
