@@ -12,6 +12,10 @@ export interface BetSummary {
   segment: 'front' | 'back' | 'total' | 'hole';
   holeNumber?: number;
   description?: string;
+  // Optional fields used to correctly apply per-pair amount overrides.
+  units?: number; // signed unit count (e.g., -7 skins, +2 presiones)
+  baseUnitAmount?: number; // value per unit (e.g., $25 per skin)
+  multiplier?: number; // e.g., x2 for skins zapato/sweep
 }
 
 // Get bilateral handicap for a specific pair of players
@@ -316,6 +320,9 @@ export const calculatePressureBets = (
           amount: frontAmountA,
           segment: 'front',
           description: frontDisplayStr,
+          units: frontNetBets,
+          baseUnitAmount: config.pressures.frontAmount,
+          multiplier: 1,
         });
         summaries.push({
           playerId: playerB.id,
@@ -324,6 +331,9 @@ export const calculatePressureBets = (
           amount: -frontAmountA,
           segment: 'front',
           description: frontBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+          units: -frontNetBets,
+          baseUnitAmount: config.pressures.frontAmount,
+          multiplier: 1,
         });
       }
       
@@ -350,6 +360,9 @@ export const calculatePressureBets = (
           amount: backAmountA,
           segment: 'back',
           description: backDisplayStr,
+          units: backNetBets,
+          baseUnitAmount: effectiveBackValue,
+          multiplier: 1,
         });
         summaries.push({
           playerId: playerB.id,
@@ -358,6 +371,9 @@ export const calculatePressureBets = (
           amount: -backAmountA,
           segment: 'back',
           description: backBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+          units: -backNetBets,
+          baseUnitAmount: effectiveBackValue,
+          multiplier: 1,
         });
       }
       
@@ -384,6 +400,9 @@ export const calculatePressureBets = (
             amount: totalAmountA,
             segment: 'total',
             description: total18Str,
+            units: matchWinner,
+            baseUnitAmount: totalMatchAmount,
+            multiplier: 1,
           });
           summaries.push({
             playerId: playerB.id,
@@ -392,6 +411,9 @@ export const calculatePressureBets = (
             amount: -totalAmountA,
             segment: 'total',
             description: total18StrB,
+            units: -matchWinner,
+            baseUnitAmount: totalMatchAmount,
+            multiplier: 1,
           });
         } else {
           // Tie in Match 18
@@ -680,6 +702,9 @@ export const calculateSkinsBets = (
           amount: frontAmount,
           segment: 'front',
           description: descA,
+          units: netSkinsFront,
+          baseUnitAmount: config.skins.frontValue,
+          multiplier,
         });
         summaries.push({
           playerId: playerB.id,
@@ -688,6 +713,9 @@ export const calculateSkinsBets = (
           amount: -frontAmount,
           segment: 'front',
           description: descB,
+          units: -netSkinsFront,
+          baseUnitAmount: config.skins.frontValue,
+          multiplier,
         });
       }
       
@@ -706,6 +734,9 @@ export const calculateSkinsBets = (
           amount: backAmount,
           segment: 'back',
           description: `${backSkinsA} vs ${backSkinsB} skins${doubleLabel}`,
+          units: netPureBackSkins,
+          baseUnitAmount: config.skins.backValue,
+          multiplier: pureBackMultiplier,
         });
         summaries.push({
           playerId: playerB.id,
@@ -714,6 +745,9 @@ export const calculateSkinsBets = (
           amount: -backAmount,
           segment: 'back',
           description: `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}`,
+          units: -netPureBackSkins,
+          baseUnitAmount: config.skins.backValue,
+          multiplier: pureBackMultiplier,
         });
       }
     }
@@ -1295,8 +1329,18 @@ export const calculateAllBets = (
         if (override.enabled === false) {
           return { ...summary, amount: 0 };
         }
-        // If there's an amount override, scale the amount proportionally
+        // If there's an amount override, recompute using units × override × multiplier when available.
         if (override.amountOverride !== undefined && summary.amount !== 0) {
+          if (typeof summary.units === 'number') {
+            const mult = typeof summary.multiplier === 'number' ? summary.multiplier : 1;
+            return {
+              ...summary,
+              baseUnitAmount: override.amountOverride,
+              amount: summary.units * override.amountOverride * mult,
+            };
+          }
+
+          // Fallback (older summaries without units)
           const sign = summary.amount > 0 ? 1 : -1;
           return { ...summary, amount: sign * override.amountOverride };
         }
