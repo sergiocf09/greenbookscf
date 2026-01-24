@@ -1361,7 +1361,16 @@ export const calculateAllBets = (
       const override = config.betOverrides?.find(o => {
         const matchesPair = (o.playerAId === summary.playerId && o.playerBId === summary.vsPlayer) ||
                            (o.playerAId === summary.vsPlayer && o.playerBId === summary.playerId);
-        const matchesBetType = summary.betType.toLowerCase().includes(o.betType.toLowerCase());
+        const summaryType = summary.betType.toLowerCase();
+        const overrideType = (o.betType ?? '').toLowerCase();
+
+        // IMPORTANT: In carry scenarios (e.g. "Presiones Back (Carry x2+Match)"),
+        // we must NOT allow the regular segment override ("Presiones Back") to overwrite
+        // the computed carry value (Front×2 + Match18).
+        const isCarryLabel = summaryType.includes('(carry');
+        const matchesBetType = isCarryLabel
+          ? summaryType === overrideType
+          : summaryType.includes(overrideType);
         return matchesPair && matchesBetType;
       });
       
