@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2, Minus } from 'lucide-
 import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality, RayasSkinVariant } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { devLog } from '@/lib/logger';
 import {
   Select,
   SelectContent,
@@ -793,7 +794,7 @@ const StableSelect: React.FC<{
       onOpenChange={(open) => {
         // Debug: el usuario reporta que el menú se cierra instantáneamente.
         // Esto nos permitirá ver si abre y se cierra por algún evento externo.
-        console.log('[Carritos][Select]', placeholder, open ? 'open' : 'closed');
+        devLog('[Carritos][Select]', placeholder, open ? 'open' : 'closed');
       }}
     >
       <SelectTrigger

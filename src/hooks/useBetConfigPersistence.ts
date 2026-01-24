@@ -15,6 +15,7 @@ import {
   ManchasBetConfig,
   CumulativeBetConfig,
 } from '@/types/golf';
+import { devError, devLog } from '@/lib/logger';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -81,7 +82,7 @@ export const useBetConfigPersistence = ({
         .single();
 
       if (error) {
-        console.error('Error loading bet config:', error);
+        devError('Error loading bet config:', error);
         return;
       }
 
@@ -179,7 +180,7 @@ export const useBetConfigPersistence = ({
         // Mark loaded after we apply the incoming config
         isLoadedRef.current = true;
         setIsLoaded(true);
-        console.log('Bet config loaded from database:', dbConfig);
+        devLog('Bet config loaded from database:', dbConfig);
       } else {
         // Important: rounds can have empty '{}' bet_config.
         // We still want to enable debounced saving for future changes (overrides/cancelaciones).
@@ -187,7 +188,7 @@ export const useBetConfigPersistence = ({
         setIsLoaded(true);
       }
     } catch (err) {
-      console.error('Error in loadBetConfig:', err);
+      devError('Error in loadBetConfig:', err);
     }
   }, [roundId, setBetConfig]);
 
@@ -237,13 +238,13 @@ export const useBetConfigPersistence = ({
         .eq('id', roundId);
 
       if (error) {
-        console.error('Error saving bet config:', error);
+        devError('Error saving bet config:', error);
         return;
       }
 
-      console.log('Bet config saved to database');
+      devLog('Bet config saved to database');
     } catch (err) {
-      console.error('Error in saveBetConfig:', err);
+      devError('Error in saveBetConfig:', err);
     }
   }, [roundId]);
 

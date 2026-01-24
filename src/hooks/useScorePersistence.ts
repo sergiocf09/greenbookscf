@@ -4,6 +4,7 @@ import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { devError, devLog, devWarn } from '@/lib/logger';
 
 interface UseScorePersistenceProps {
   roundId: string | null;
@@ -43,12 +44,12 @@ export const useScorePersistence = ({
         .in('round_player_id', rpIds);
 
       if (error) {
-        console.error('Error loading scores:', error);
+        devError('Error loading scores:', error);
         return;
       }
 
       if (!holeScores || holeScores.length === 0) {
-        console.log('No saved scores found, using defaults');
+        devLog('No saved scores found, using defaults');
         return;
       }
 
@@ -127,9 +128,9 @@ export const useScorePersistence = ({
 
       setScores(newScores);
       setConfirmedHoles(confirmedHoleNumbers);
-      console.log('Scores loaded from database:', holeScores.length, 'records');
+      devLog('Scores loaded from database:', holeScores.length, 'records');
     } catch (err) {
-      console.error('Error in loadScores:', err);
+      devError('Error in loadScores:', err);
     }
   }, [roundId, course, players, roundPlayerIds, setScores, setConfirmedHoles]);
 
@@ -137,7 +138,7 @@ export const useScorePersistence = ({
   const saveScore = useCallback(async (playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
     const rpId = roundPlayerIds.get(playerId);
     if (!rpId) {
-      console.warn('No round_player_id for player:', playerId);
+      devWarn('No round_player_id for player:', playerId);
       return;
     }
 
@@ -160,10 +161,10 @@ export const useScorePersistence = ({
         });
 
       if (error) {
-        console.error('Error saving score:', error);
+        devError('Error saving score:', error);
       }
     } catch (err) {
-      console.error('Error in saveScore:', err);
+      devError('Error in saveScore:', err);
     }
   }, [roundPlayerIds]);
 
@@ -183,7 +184,7 @@ export const useScorePersistence = ({
     });
 
     await Promise.all(promises);
-    console.log('Saved hole', holeNumber, 'scores for all players');
+    devLog('Saved hole', holeNumber, 'scores for all players');
   }, [roundId, players, scores, roundPlayerIds, saveScore]);
 
   // Debounced save on score change

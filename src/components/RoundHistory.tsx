@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { devError } from '@/lib/logger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,7 +132,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       setRounds(roundItems);
     } catch (err) {
-      console.error('Error fetching round history:', err);
+      devError('Error fetching round history:', err);
     } finally {
       setLoading(false);
     }
@@ -174,7 +175,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       setRounds(prev => prev.filter(r => r.id !== roundToDelete.id));
       toast.success('Ronda eliminada');
     } catch (err) {
-      console.error('Error deleting round:', err);
+      devError('Error deleting round:', err);
       toast.error('Error al eliminar la ronda. Solo el organizador puede eliminarla.');
     } finally {
       setDeleting(false);
@@ -245,7 +246,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
         date: round.date,
       });
     } catch (err) {
-      console.error('Error loading scorecard:', err);
+      devError('Error loading scorecard:', err);
       toast.error('Error al cargar la tarjeta');
     } finally {
       setLoadingScorecard(null);
