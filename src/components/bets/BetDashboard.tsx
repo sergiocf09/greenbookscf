@@ -2532,7 +2532,41 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </DialogHeader>
           <BetAmountEditor
             betType={editingBetType || ''}
-            currentOverride={getBetOverride(editingBetType || '')}
+            initialValues={(() => {
+              const byLabel = (label: string) => getBetOverride(label)?.amountOverride;
+
+              switch (editingBetType) {
+                case 'medal':
+                  return {
+                    front: byLabel('Medal Front 9') ?? betConfig.medal.frontAmount,
+                    back: byLabel('Medal Back 9') ?? betConfig.medal.backAmount,
+                    total: byLabel('Medal Total') ?? betConfig.medal.totalAmount,
+                  };
+                case 'pressures':
+                  return {
+                    front: byLabel('Presiones Front') ?? betConfig.pressures.frontAmount,
+                    back: byLabel('Presiones Back') ?? betConfig.pressures.backAmount,
+                    total: byLabel('Presiones Match 18') ?? betConfig.pressures.totalAmount,
+                  };
+                case 'skins':
+                  return {
+                    front: byLabel('Skins Front') ?? betConfig.skins.frontValue,
+                    back: byLabel('Skins Back') ?? betConfig.skins.backValue,
+                  };
+                case 'caros':
+                  return {
+                    total: byLabel('Caros') ?? betConfig.caros.amount,
+                  };
+                case 'rayas':
+                  return {
+                    front: byLabel('Rayas Front') ?? (betConfig.rayas?.frontValue || 25),
+                    back: byLabel('Rayas Back') ?? (betConfig.rayas?.backValue || 25),
+                    total: byLabel('Rayas Medal') ?? (betConfig.rayas?.medalTotalValue || 50),
+                  };
+                default:
+                  return undefined;
+              }
+            })()}
             betConfig={betConfig}
             onSave={(overrides) => {
               if (!editingBetType || !onBetConfigChange) return;
@@ -2626,7 +2660,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 // Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
-  currentOverride?: BetOverride;
+  initialValues?: { front?: number; back?: number; total?: number };
   betConfig: BetConfig;
   onSave: (overrides: { front?: number; back?: number; total?: number }) => void;
   onClose: () => void;
@@ -2634,7 +2668,7 @@ interface BetAmountEditorProps {
 
 const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   betType,
-  currentOverride,
+  initialValues,
   betConfig,
   onSave,
   onClose,
@@ -2683,9 +2717,17 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   };
 
   const segmentConfig = getSegmentConfig();
-  const [frontAmount, setFrontAmount] = useState(segmentConfig.front ?? 0);
-  const [backAmount, setBackAmount] = useState(segmentConfig.back ?? 0);
-  const [totalAmount, setTotalAmount] = useState(segmentConfig.total ?? 0);
+  const [frontAmount, setFrontAmount] = useState(initialValues?.front ?? segmentConfig.front ?? 0);
+  const [backAmount, setBackAmount] = useState(initialValues?.back ?? segmentConfig.back ?? 0);
+  const [totalAmount, setTotalAmount] = useState(initialValues?.total ?? segmentConfig.total ?? 0);
+
+  // When switching bet type (or reopening dialog), rehydrate from the per-pair overrides.
+  React.useEffect(() => {
+    setFrontAmount(initialValues?.front ?? segmentConfig.front ?? 0);
+    setBackAmount(initialValues?.back ?? segmentConfig.back ?? 0);
+    setTotalAmount(initialValues?.total ?? segmentConfig.total ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betType]);
 
   const hasFront = segmentConfig.front !== undefined;
   const hasBack = segmentConfig.back !== undefined;
