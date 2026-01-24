@@ -2526,7 +2526,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                             {showSkinsShoe && (
                               <span
-                                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl leading-none"
+                                className="pointer-events-none absolute left-[62%] top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl leading-none"
                                 aria-hidden="true"
                               >
                                 🥾
