@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { devError } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { 
@@ -301,7 +302,7 @@ const Index = () => {
 
         setPendingRoundSummaries(next);
       } catch (e) {
-        console.error('Error loading pending round summary:', e);
+        devError('Error loading pending round summary:', e);
         if (!cancelled) setPendingRoundSummaries(new Map());
       }
     };
@@ -403,7 +404,7 @@ const Index = () => {
       sessionStorage.setItem('skip_restore_once', '1');
       window.location.reload();
     } catch (e: any) {
-      console.error('Error closing pending round:', e);
+      devError('Error closing pending round:', e);
       toast.error('No se pudo cerrar la tarjeta (requiere ser organizador)');
     }
   }, []);

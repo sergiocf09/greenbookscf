@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GolfCourse, HoleInfo } from '@/types/golf';
+import { devError } from '@/lib/logger';
 
 interface CourseHoleDB {
   id: string;
@@ -105,7 +106,7 @@ export const useGolfCourses = (opts?: { enabled?: boolean }) => {
         if (msg.includes('AbortError') || msg.includes('signal is aborted')) {
           return;
         }
-        console.error('Error fetching courses:', err);
+        devError('Error fetching courses:', err);
         setError(err instanceof Error ? err.message : 'Error loading courses');
       } finally {
         setLoading(false);

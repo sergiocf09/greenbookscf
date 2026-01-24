@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
+import { devError, devLog } from '@/lib/logger';
 
 interface RoundState {
   id: string | null;
@@ -108,7 +109,7 @@ export const useRoundManagement = ({
         holes,
       };
     } catch (e) {
-      console.error('Error fetching course for restore:', e);
+      devError('Error fetching course for restore:', e);
       return null;
     }
   }, []);
@@ -193,7 +194,7 @@ export const useRoundManagement = ({
           });
         }
       } catch (err) {
-        console.error('Error applying USGA handicap:', err);
+        devError('Error applying USGA handicap:', err);
       }
     },
     [profile, setPlayers, setScores, course]
@@ -230,7 +231,7 @@ export const useRoundManagement = ({
             if (!isTransientFetch(error)) break;
             await sleep(250 * (i + 1));
           }
-          console.error('Retryable operation failed:', last);
+          devError('Retryable operation failed:', last);
           return null;
         };
 
@@ -256,7 +257,7 @@ export const useRoundManagement = ({
             return;
           }
 
-          console.log('Restoring selected pending round:', activeRound.id);
+          devLog('Restoring selected pending round:', activeRound.id);
 
           // Get all players in this round (including guests). Avoid embedded joins
           // to ensure guests (profile_id = null) are always returned.
@@ -442,7 +443,7 @@ export const useRoundManagement = ({
 
             setScores(newScores);
             setConfirmedHoles(confirmedHoleNumbers);
-            console.log('Restored', holeScores.length, 'scores from database');
+            devLog('Restored', holeScores.length, 'scores from database');
           }
 
           toast.success('Ronda restaurada');
@@ -504,7 +505,7 @@ export const useRoundManagement = ({
         setPendingRound(mappedPending[0] ?? null); // back-compat
         return;
       } catch (err) {
-        console.error('Error restoring round:', err);
+        devError('Error restoring round:', err);
       } finally {
         setIsRestoring(false);
         hasRestoredRef.current = true;
@@ -545,7 +546,7 @@ export const useRoundManagement = ({
       });
 
       if (error) {
-        console.error('Round creation error:', error);
+        devError('Round creation error:', error);
         throw error;
       }
 
@@ -574,7 +575,7 @@ export const useRoundManagement = ({
       void applyMyUsgaHandicapIfAvailable(result.round_player_id);
       return result.round_id;
     } catch (error) {
-      console.error('Error creating round:', error);
+      devError('Error creating round:', error);
       toast.error('Error al crear la ronda');
       return null;
     } finally {
@@ -621,7 +622,7 @@ export const useRoundManagement = ({
       
       return true;
     } catch (error) {
-      console.error('Error starting round:', error);
+      devError('Error starting round:', error);
       toast.error('Error al iniciar la ronda');
       return false;
     } finally {
@@ -788,7 +789,7 @@ export const useRoundManagement = ({
       toast.success('Tarjeta cerrada y guardada');
       return true;
     } catch (error) {
-      console.error('Error closing scorecard:', error);
+      devError('Error closing scorecard:', error);
       toast.error('Error al cerrar la tarjeta');
       return false;
     } finally {
@@ -799,14 +800,14 @@ export const useRoundManagement = ({
   // Add a player to an active round (creates round_player entry in DB)
   const addPlayerToRound = useCallback(async (player: Player): Promise<boolean> => {
     if (!roundState.id || !roundState.groupId) {
-      console.log('No active round to add player to');
+      devLog('No active round to add player to');
       return false;
     }
 
     try {
       // Check if player already exists in round_players
       if (roundPlayerIds.has(player.id)) {
-        console.log('Player already in round');
+        devLog('Player already in round');
         return true;
       }
 
@@ -825,7 +826,7 @@ export const useRoundManagement = ({
           .single();
 
         if (error) {
-          console.error('Error adding player to round:', error);
+          devError('Error adding player to round:', error);
           toast.error('Error al agregar jugador a la ronda');
           return false;
         }
@@ -857,7 +858,7 @@ export const useRoundManagement = ({
           .single();
 
         if (error) {
-          console.error('Error adding guest player to round:', error);
+          devError('Error adding guest player to round:', error);
           toast.error('Error al agregar invitado a la ronda');
           return false;
         }

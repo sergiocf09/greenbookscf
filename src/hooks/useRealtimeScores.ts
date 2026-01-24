@@ -5,6 +5,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { toast } from 'sonner';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
+import { devError, devLog } from '@/lib/logger';
 
 interface UseRealtimeScoresProps {
   roundId: string | null;
@@ -112,13 +113,13 @@ export const useRealtimeScores = ({
           filter: `round_player_id=in.(${rpIds.join(',')})`,
         },
         (payload) => {
-          console.log('Realtime score update:', payload);
+          devLog('Realtime score update:', payload);
           handleScoreChange(payload);
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Subscribed to realtime scores for round:', roundId);
+          devLog('Subscribed to realtime scores for round:', roundId);
         }
       });
 
@@ -136,7 +137,7 @@ export const useRealtimeScores = ({
 
         if (cancelled) return;
         if (error) {
-          console.error('Error mapping hole_score ids for markers realtime:', error);
+          devError('Error mapping hole_score ids for markers realtime:', error);
           return;
         }
 
@@ -197,7 +198,7 @@ export const useRealtimeScores = ({
           )
           .subscribe();
       } catch (e) {
-        console.error('Error setting up markers realtime:', e);
+        devError('Error setting up markers realtime:', e);
       }
     };
 
@@ -206,7 +207,7 @@ export const useRealtimeScores = ({
     // Cleanup subscription on unmount
     return () => {
       cancelled = true;
-      console.log('Unsubscribing from realtime scores');
+      devLog('Unsubscribing from realtime scores');
       supabase.removeChannel(channel);
       if (markersChannel) supabase.removeChannel(markersChannel);
     };
