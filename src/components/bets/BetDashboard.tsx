@@ -2478,7 +2478,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           data.description.includes('🥾');
 
                         return (
-                          <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                          <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             <div className="flex items-center gap-3">
                               <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
                               {/* Score comparison */}
@@ -2521,9 +2521,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'text-muted-foreground'
                               )}
                             >
-                              {showSkinsShoe && <span className="mr-1">🥾</span>}
                               {isPressureEven ? 'Even' : `${data.amount >= 0 ? '+' : ''}$${data.amount}`}
                             </span>
+
+                            {showSkinsShoe && (
+                              <span
+                                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl leading-none"
+                                aria-hidden="true"
+                              >
+                                🥾
+                              </span>
+                            )}
                           </div>
                         );
                       })
