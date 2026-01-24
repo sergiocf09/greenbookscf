@@ -269,6 +269,45 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       >
         <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => updateBet('skins', { frontValue: v })} />
         <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => updateBet('skins', { backValue: v })} />
+
+        <div className="flex items-center justify-between mt-2" onClick={(e) => e.stopPropagation()}>
+          <Label className="text-xs text-muted-foreground">Modalidad</Label>
+          <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('skins', { modality: 'acumulados' });
+              }}
+              className={cn(
+                'px-2 py-1 text-[10px] rounded transition-colors',
+                (config.skins.modality ?? 'acumulados') === 'acumulados'
+                  ? 'bg-golf-gold text-golf-dark font-medium'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              Acum
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('skins', { modality: 'sinAcumular' });
+              }}
+              className={cn(
+                'px-2 py-1 text-[10px] rounded transition-colors',
+                (config.skins.modality ?? 'acumulados') === 'sinAcumular'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              Sin Acum
+            </button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between">
           <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
           <Switch
@@ -981,7 +1020,7 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 100 },
   pressures: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 50 },
-  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: false },
+  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: false, modality: 'acumulados' },
   caros: { enabled: true, amount: 200 },
   oyeses: { enabled: false, amount: 25, playerConfigs: [] },
   units: { enabled: true, valuePerPoint: 25 },

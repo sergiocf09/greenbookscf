@@ -450,6 +450,76 @@ export const calculateSkinsBets = (
   bilateralHandicaps?: BilateralHandicap[]
 ): BetSummary[] => {
   if (!config.skins.enabled) return [];
+
+  // Variant: ties do NOT accumulate; tied holes are void.
+  if ((config.skins.modality ?? 'acumulados') === 'sinAcumular') {
+    const summaries: BetSummary[] = [];
+
+    const calcNine = (
+      playerA: Player,
+      playerB: Player,
+      adjustedScores: Map<string, PlayerScore[]>,
+      start: number,
+      end: number,
+      value: number,
+      betType: 'Skins Front' | 'Skins Back',
+      segment: 'front' | 'back'
+    ) => {
+      if (value <= 0) return;
+
+      let winsA = 0;
+      let winsB = 0;
+
+      for (let holeNum = start; holeNum <= end; holeNum++) {
+        const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+        const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
+        if (scoreA === null || scoreB === null) continue;
+        if (scoreA < scoreB) winsA += 1;
+        else if (scoreB < scoreA) winsB += 1;
+        // tie => void
+      }
+
+      const net = winsA - winsB;
+      if (net === 0) return;
+
+      const perfectSweepA = winsA === 9 && winsB === 0;
+      const perfectSweepB = winsB === 9 && winsA === 0;
+      const multiplier = net > 0 ? (perfectSweepA ? 2 : 1) : (perfectSweepB ? 2 : 1);
+
+      const amount = net * value * multiplier;
+      const doubleLabel = multiplier === 2 ? ' (x2)' : '';
+
+      summaries.push({
+        playerId: playerA.id,
+        vsPlayer: playerB.id,
+        betType,
+        amount,
+        segment,
+        description: `${winsA} vs ${winsB} skins${doubleLabel} (sin acumular)`,
+      });
+      summaries.push({
+        playerId: playerB.id,
+        vsPlayer: playerA.id,
+        betType,
+        amount: -amount,
+        segment,
+        description: `${winsB} vs ${winsA} skins${doubleLabel} (sin acumular)`,
+      });
+    };
+
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const playerA = players[i];
+        const playerB = players[j];
+        const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+
+        calcNine(playerA, playerB, adjustedScores, 1, 9, config.skins.frontValue, 'Skins Front', 'front');
+        calcNine(playerA, playerB, adjustedScores, 10, 18, config.skins.backValue, 'Skins Back', 'back');
+      }
+    }
+
+    return summaries;
+  }
   
   const summaries: BetSummary[] = [];
   
@@ -520,8 +590,8 @@ export const calculateSkinsBets = (
       let backHole18Tied = false;
       
       for (let holeNum = 10; holeNum <= 18; holeNum++) {
-        const scoreA = getHoleScore(playerA.id, holeNum, scores);
-        const scoreB = getHoleScore(playerB.id, holeNum, scores);
+        const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+        const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
         
         if (scoreA === null || scoreB === null) {
           backAccumulated++;
