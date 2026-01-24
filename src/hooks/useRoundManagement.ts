@@ -148,18 +148,33 @@ export const useRoundManagement = ({
         for (const rp of roundPlayers || []) {
           const { data: scores, error: scoresError } = await supabase
             .from('hole_scores')
-            .select('strokes')
+            .select('strokes, confirmed')
             .eq('round_player_id', rp.id);
 
           if (scoresError) continue;
 
-          const grossScore = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          // Guardrail: ignore malformed/partial historical rounds.
+          // We only consider rounds with 18 confirmed holes and non-null strokes.
+          const validStrokes = (scores || [])
+            .filter((s: any) => s?.confirmed === true)
+            .map((s: any) => (typeof s?.strokes === 'number' ? s.strokes : null))
+            .filter((v: number | null): v is number => v !== null);
+
+          if (validStrokes.length < 18) continue;
+
+          const grossScore = validStrokes.reduce((sum: number, v: number) => sum + v, 0);
+          if (!Number.isFinite(grossScore) || grossScore <= 0) continue;
+
           const differential = (113 / slopeRating) * (grossScore - courseRating);
           differentials.push(Math.round(differential * 10) / 10);
         }
 
         const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
         if (handicapIndex === null) return; // Not enough rounds; keep 0
+
+        // Guardrail: never apply impossible/invalid indexes (prevents negatives like -62.5
+        // caused by malformed historical data).
+        if (!Number.isFinite(handicapIndex) || handicapIndex < 0 || handicapIndex > 54) return;
 
         // Persist to backend (policy allows user to update their own row)
         const { error: updateError } = await supabase
@@ -335,6 +350,20 @@ export const useRoundManagement = ({
           // If user has enough completed rounds, auto-apply their USGA handicap into this round
           const myRoundPlayerId = rpIdMap.get(profile.id);
           void applyMyUsgaHandicapIfAvailable(myRoundPlayerId);
+
+          // Sanitize my handicap for unfinished rounds: keep 0 unless we can compute a valid USGA index.
+          if (activeRound.status !== 'completed' && myRoundPlayerId) {
+            const myRpRow = (allRoundPlayers || []).find((rp: any) => rp.id === myRoundPlayerId);
+            const current = Number(myRpRow?.handicap_for_round);
+            const isInvalid = !Number.isFinite(current) || current < 0 || current > 54;
+            if (isInvalid) {
+              // Update backend so the wrong value doesn't keep coming back on future restores.
+              void supabase
+                .from('round_players')
+                .update({ handicap_for_round: 0 })
+                .eq('id', myRoundPlayerId);
+            }
+          }
 
           // Restore course selection
           if (setSelectedCourseId) setSelectedCourseId(activeRound.course_id);
