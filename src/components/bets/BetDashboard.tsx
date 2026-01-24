@@ -2575,9 +2575,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   upsert('Medal Total', overrides.total);
                   break;
                 case 'pressures':
-                  upsert('Pressures Front 9', overrides.front);
-                  upsert('Pressures Back 9', overrides.back);
-                  upsert('Match 18', overrides.total);
+                  // IMPORTANT: must match betType strings produced by calculatePressureBets()
+                  // so overrides actually apply.
+                  upsert('Presiones Front', overrides.front);
+                  upsert('Presiones Back', overrides.back);
+                  upsert('Presiones Match 18', overrides.total);
                   break;
                 case 'skins':
                   // Bet engine uses "Skins Front" / "Skins Back" labels.

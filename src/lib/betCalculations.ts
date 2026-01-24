@@ -635,6 +635,53 @@ export const calculateSkinsBets = (
       // FINAL FRONT 9 SKINS = base + carried skins resolved in back 9
       const frontSkinsA = frontSkinsABase + carriedSkinsWonByA;
       const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
+
+      // OYESES -> SKINS "zapato" rule (requested):
+      // If a player is currently perfect in Par-3 Oyeses that already have a defined winner
+      // within the nine, Skins for that nine is doubled.
+      const computeOyesPerfect = (start: number, end: number) => {
+        const par3Holes = course.holes
+          .filter((h) => h.par === 3 && h.number >= start && h.number <= end)
+          .map((h) => h.number);
+
+        let holesWithWinner = 0;
+        let wonByA = 0;
+        let wonByB = 0;
+
+        for (const holeNum of par3Holes) {
+          const scoresA = adjustedScores.get(playerA.id) || [];
+          const scoresB = adjustedScores.get(playerB.id) || [];
+          const scoreA = scoresA.find((s) => s.holeNumber === holeNum);
+          const scoreB = scoresB.find((s) => s.holeNumber === holeNum);
+
+          const proxA = scoreA?.oyesProximity ?? null;
+          const proxB = scoreB?.oyesProximity ?? null;
+          const hasA = proxA !== null && proxA !== undefined;
+          const hasB = proxB !== null && proxB !== undefined;
+
+          // "con definición de ganador": only count if there is an unambiguous winner
+          if (hasA && !hasB) {
+            holesWithWinner++;
+            wonByA++;
+          } else if (!hasA && hasB) {
+            holesWithWinner++;
+            wonByB++;
+          } else if (hasA && hasB) {
+            if (proxA === proxB) continue; // tie => no winner
+            holesWithWinner++;
+            if ((proxA as number) < (proxB as number)) wonByA++;
+            else wonByB++;
+          }
+        }
+
+        return {
+          perfectA: holesWithWinner > 0 && wonByA === holesWithWinner,
+          perfectB: holesWithWinner > 0 && wonByB === holesWithWinner,
+        };
+      };
+
+      const oyesFront = computeOyesPerfect(1, 9);
+      const oyesBack = computeOyesPerfect(10, 18);
       
       // DOUBLING LOGIC:
       // Perfect sweep: Won all 9 holes in the nine
@@ -650,10 +697,10 @@ export const calculateSkinsBets = (
       const backProgressiveDoubleB = backHolesWithWinner > 0 && backHolesWonByB === backHolesWithWinner && !backHole18Tied;
       
       // Apply doubling: perfect sweep (all 9) or progressive (all decided, no tie on 9/18)
-      const frontDoubleMultiplierA = (frontPerfectSweepA || frontProgressiveDoubleA) ? 2 : 1;
-      const frontDoubleMultiplierB = (frontPerfectSweepB || frontProgressiveDoubleB) ? 2 : 1;
-      const backDoubleMultiplierA = (backPerfectSweepA || backProgressiveDoubleA) ? 2 : 1;
-      const backDoubleMultiplierB = (backPerfectSweepB || backProgressiveDoubleB) ? 2 : 1;
+      const frontDoubleMultiplierA = (frontPerfectSweepA || frontProgressiveDoubleA || oyesFront.perfectA) ? 2 : 1;
+      const frontDoubleMultiplierB = (frontPerfectSweepB || frontProgressiveDoubleB || oyesFront.perfectB) ? 2 : 1;
+      const backDoubleMultiplierA = (backPerfectSweepA || backProgressiveDoubleA || oyesBack.perfectA) ? 2 : 1;
+      const backDoubleMultiplierB = (backPerfectSweepB || backProgressiveDoubleB || oyesBack.perfectB) ? 2 : 1;
       
       // Calculate money for front 9 (includes carried skins resolved in back, at front rate)
       const netSkinsFront = frontSkinsA - frontSkinsB;
@@ -742,22 +789,21 @@ export const calculateCarosBets = (
       // Calculate total net scores for holes 15-18
       let totalA = 0;
       let totalB = 0;
-      let hasAllScores = true;
+      let played = 0;
       
       caroHoles.forEach(holeNum => {
         const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
         const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
         
-        if (scoreA === null || scoreB === null) {
-          hasAllScores = false;
-          return;
-        }
-        
+        // Show partial results: only count holes where BOTH players have a score
+        if (scoreA === null || scoreB === null) return;
+        played += 1;
         totalA += scoreA;
         totalB += scoreB;
       });
-      
-      if (!hasAllScores) continue;
+
+      // Nothing to compare yet
+      if (played === 0) continue;
       
       // Single bet - whoever has lower total wins
       if (totalA < totalB) {
@@ -767,7 +813,7 @@ export const calculateCarosBets = (
           betType: 'Caros',
           amount: config.caros.amount,
           segment: 'back',
-          description: `${totalA} vs ${totalB}`,
+          description: `${totalA} vs ${totalB} (${played}/4)`,
         });
         summaries.push({
           playerId: playerB.id,
@@ -775,7 +821,7 @@ export const calculateCarosBets = (
           betType: 'Caros',
           amount: -config.caros.amount,
           segment: 'back',
-          description: `${totalB} vs ${totalA}`,
+          description: `${totalB} vs ${totalA} (${played}/4)`,
         });
       } else if (totalB < totalA) {
         summaries.push({
@@ -784,7 +830,7 @@ export const calculateCarosBets = (
           betType: 'Caros',
           amount: config.caros.amount,
           segment: 'back',
-          description: `${totalB} vs ${totalA}`,
+          description: `${totalB} vs ${totalA} (${played}/4)`,
         });
         summaries.push({
           playerId: playerA.id,
@@ -792,7 +838,7 @@ export const calculateCarosBets = (
           betType: 'Caros',
           amount: -config.caros.amount,
           segment: 'back',
-          description: `${totalA} vs ${totalB}`,
+          description: `${totalA} vs ${totalB} (${played}/4)`,
         });
       }
       // Tie = no money changes hands
