@@ -5,6 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
+// IMPORTANT:
+// When running inside Lovable preview/sandbox domains, sharing `window.location.origin`
+// can send invitees to a Lovable-gated URL (they'll see a Lovable login page).
+// Use the published site origin for share links/QR.
+const PUBLISHED_SITE_ORIGIN = 'https://golfbetvdos.lovable.app';
+
+function getShareOrigin() {
+  const { origin, hostname } = window.location;
+
+  // Heuristic: preview/sandbox domains are not suitable for invites.
+  const isLovablePreview =
+    hostname.includes('lovableproject.com') ||
+    hostname.endsWith('.lovable.app') ||
+    hostname.startsWith('id-preview--');
+
+  return isLovablePreview ? PUBLISHED_SITE_ORIGIN : origin;
+}
+
 interface ShareRoundDialogProps {
   roundId: string;
   onClose?: () => void;
@@ -19,7 +37,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 
   // Generate share link
   const shareLink = useMemo(() => {
-    const baseUrl = window.location.origin;
+    const baseUrl = getShareOrigin();
     return `${baseUrl}/join/${roundId}`;
   }, [roundId]);
 
