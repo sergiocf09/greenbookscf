@@ -10,6 +10,7 @@ import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { devError, devLog } from '@/lib/logger';
+import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 
 interface RoundState {
   id: string | null;
@@ -871,6 +872,16 @@ export const useRoundManagement = ({
         const isHexColor = typeof player.color === 'string' && player.color.startsWith('#');
         const guestColor = isHexColor ? player.color : '#3B82F6';
 
+        let safeName = player.name;
+        let safeInitials = player.initials;
+        try {
+          safeName = validatePlayerName(player.name);
+          safeInitials = initialsFromPlayerName(safeName);
+        } catch (e: any) {
+          toast.error(e?.message || 'Nombre inválido');
+          return false;
+        }
+
         const { data, error } = await supabase
           .from('round_players')
           .insert({
@@ -879,8 +890,8 @@ export const useRoundManagement = ({
             profile_id: null,
             handicap_for_round: 0,
             is_organizer: false,
-            guest_name: player.name,
-            guest_initials: player.initials,
+            guest_name: safeName,
+            guest_initials: safeInitials,
             guest_color: guestColor,
           })
           .select('id')
@@ -896,7 +907,13 @@ export const useRoundManagement = ({
         const newId = data.id as string;
 
         // 1) Update players list to use stable id (round_players.id)
-        setPlayers((prev) => prev.map((p) => (p.id === oldId ? { ...p, id: newId, color: guestColor } : p)));
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.id === oldId
+              ? { ...p, id: newId, color: guestColor, name: safeName, initials: safeInitials }
+              : p
+          )
+        );
 
         // 2) Migrate scores map key + playerId inside score rows
         setScores((prev) => {
