@@ -372,15 +372,67 @@ const Index = () => {
   }, []);
 
   // Add a new player group
-  const handleAddGroup = useCallback(() => {
-    const newGroup: PlayerGroup = {
-      id: `group-${Date.now()}`,
-      name: `Grupo ${playerGroups.length + 2}`, // +2 because main group is implicit
-      players: [],
-    };
-    setPlayerGroups(prev => [...prev, newGroup]);
-    toast.success(`${newGroup.name} creado`);
-  }, [playerGroups.length]);
+  const handleAddGroup = useCallback(async () => {
+    if (!roundState.id) {
+      toast.error('Primero crea/selecciona una ronda');
+      return;
+    }
+
+    try {
+      // Get next group number
+      const { data: lastGroup, error: lastErr } = await supabase
+        .from('round_groups')
+        .select('group_number')
+        .eq('round_id', roundState.id)
+        .order('group_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastErr) throw lastErr;
+
+      const nextGroupNumber = (lastGroup?.group_number ?? 1) + 1;
+
+      const { data: inserted, error: insErr } = await supabase
+        .from('round_groups')
+        .insert({ round_id: roundState.id, group_number: nextGroupNumber })
+        .select('id, group_number');
+
+      if (insErr) throw insErr;
+      const row = inserted?.[0];
+      if (!row?.id) throw new Error('No se pudo crear el grupo');
+
+      const newGroup: PlayerGroup = {
+        id: row.id,
+        name: `Grupo ${row.group_number}`,
+        players: [],
+      };
+
+      setPlayerGroups((prev) => [...prev, newGroup]);
+      toast.success(`${newGroup.name} creado`);
+    } catch (e: any) {
+      devError('Error creating round group:', e);
+      toast.error('No se pudo crear el grupo');
+    }
+  }, [roundState.id, setPlayerGroups]);
+
+  const handleGroupPlayersChange = useCallback(
+    async (groupId: string, newPlayers: Player[]) => {
+      // Update local state immediately for snappy UI
+      setPlayerGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, players: newPlayers } : g)));
+
+      // Persist any *new* players so they survive refresh
+      const existingIds = new Set<string>();
+      playerGroups.find((g) => g.id === groupId)?.players.forEach((p) => existingIds.add(p.id));
+
+      const added = newPlayers.filter((p) => !existingIds.has(p.id));
+      if (!added.length) return;
+
+      for (const p of added) {
+        await addPlayerToRound(p, groupId);
+      }
+    },
+    [addPlayerToRound, playerGroups, setPlayerGroups]
+  );
 
   const handleRestorePendingRound = useCallback((roundId: string) => {
     // Use a one-shot flag so the hook restores exactly this round on next mount.
@@ -1254,9 +1306,7 @@ const Index = () => {
                 <PlayerSetup
                   players={group.players}
                   onChange={(newPlayers) => {
-                    setPlayerGroups(prev => prev.map(g => 
-                      g.id === group.id ? { ...g, players: newPlayers } : g
-                    ));
+                    void handleGroupPlayersChange(group.id, newPlayers);
                   }}
                   maxPlayers={6}
                 />
