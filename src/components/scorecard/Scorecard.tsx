@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup } from '@/types/golf';
 import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
-import { Plus, Trophy } from 'lucide-react';
+import { Plus, Trophy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
 
 interface ScorecardProps {
   players: Player[];
@@ -35,6 +36,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   onLeaderboardClick,
   playerGroups = [],
 }) => {
+  // State for which group to display
+  const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
+  
+  // Get players to display based on selected group
+  const displayPlayers = useMemo(() => {
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
+  }, [displayGroupIndex, players, playerGroups]);
+  
+  const hasMultipleGroups = playerGroups.length > 0;
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);
   };
@@ -101,7 +111,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="bg-primary/10 px-3 py-2 border-b border-border">
+      <div className="bg-primary/10 px-3 py-2 border-b border-border space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
@@ -135,6 +145,17 @@ export const Scorecard: React.FC<ScorecardProps> = ({
             )}
           </div>
         </div>
+        
+        {/* Group Selector */}
+        {hasMultipleGroups && (
+          <GroupSelector
+            currentGroupIndex={displayGroupIndex}
+            players={players}
+            playerGroups={playerGroups}
+            onGroupChange={setDisplayGroupIndex}
+            compact
+          />
+        )}
       </div>
 
       {/* First Nine (holes 1-9 when starting at 1, holes 10-18 when starting at 10) */}
@@ -175,7 +196,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
             </tr>
           </thead>
           <tbody>
-            {players.map(player => {
+            {displayPlayers.map(player => {
               const firstNineTotal = firstNine.reduce((sum, hole) => {
                 if (!isHoleConfirmed(hole.number)) return sum;
                 const score = getPlayerScoreForHole(player.id, hole.number);
@@ -260,7 +281,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
             </tr>
           </thead>
           <tbody>
-            {players.map(player => {
+            {displayPlayers.map(player => {
               const frontTotal = getPlayerTotal(player.id, 1, 9);
               const backTotal = getPlayerTotal(player.id, 10, 18);
               const secondNineTotal = secondNine.reduce((sum, hole) => {
