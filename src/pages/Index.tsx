@@ -722,53 +722,80 @@ const Index = () => {
     }
   }, [roundPlayerIds, roundState.id]);
 
-  const updateScore = useCallback((playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => {
-    setScores(prev => {
-      const newScores = new Map(prev);
-      const playerScores = [...(newScores.get(playerId) || [])];
-      const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
-      if (idx >= 0) {
-        const wasConfirmed = !!playerScores[idx].confirmed;
-        // Only unconfirm when the actual score changes.
-        // Markers (unidades/manchas) should NOT force re-confirmation, otherwise
-        // a simple mancha toggle removes the hole from Medal/Presiones/Skins.
-        const isScoringMutation =
-          updates.strokes !== undefined ||
-          updates.putts !== undefined ||
-          updates.oyesProximity !== undefined;
+  const updateScore = useCallback(
+    (playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => {
+      setScores((prev) => {
+        const newScores = new Map(prev);
+        const playerScores = [...(newScores.get(playerId) || [])];
 
-        // If a hole is edited (golpes/putts/oyes), force re-confirmation.
-        // IMPORTANT: We also unconfirm when the *global* state says it's confirmed, even if the
-        // local per-player flag got out of sync (this was disabling the confirm button incorrectly).
-        const shouldUnconfirm =
-          isScoringMutation && (wasConfirmed || confirmedHoles.has(holeNumber));
+        // Ensure we have a score row to edit (groups 2/3 often have empty arrays until first interaction)
+        let idx = playerScores.findIndex((s) => s.holeNumber === holeNumber);
+        if (idx < 0) {
+          const allGroupPlayers = [...players];
+          playerGroups.forEach((g) => allGroupPlayers.push(...g.players));
+          const player = allGroupPlayers.find((p) => p.id === playerId);
+          const holePar = course?.holes[holeNumber - 1]?.par || 4;
+          const strokesPerHole = player && course ? calculateStrokesPerHole(player.handicap, course) : [];
+          const strokesReceived = strokesPerHole[holeNumber - 1] ?? 0;
 
-        playerScores[idx] = {
-          ...playerScores[idx],
-          ...updates,
-          ...(shouldUnconfirm ? { confirmed: false } : {}),
-        };
-        if (updates.strokes !== undefined) {
-          playerScores[idx].netScore = updates.strokes - playerScores[idx].strokesReceived;
-        }
-        // Save to database
-        if (roundState.id) {
-          saveScoreToDb(playerId, holeNumber, playerScores[idx]);
+          const baseScore: PlayerScore = {
+            playerId,
+            holeNumber,
+            strokes: holePar,
+            putts: 2,
+            markers: { ...defaultMarkerState },
+            strokesReceived,
+            netScore: holePar - strokesReceived,
+            confirmed: false,
+            oyesProximity: null,
+          };
+
+          playerScores.push(baseScore);
+          playerScores.sort((a, b) => a.holeNumber - b.holeNumber);
+          idx = playerScores.findIndex((s) => s.holeNumber === holeNumber);
         }
 
-        // If any player edited a previously-confirmed hole, the hole should require confirmation again.
-        if (shouldUnconfirm) {
-          setConfirmedHoles((prevHoles) => {
-            const next = new Set(prevHoles);
-            next.delete(holeNumber);
-            return next;
-          });
+        if (idx >= 0) {
+          const wasConfirmed = !!playerScores[idx].confirmed;
+
+          // Only unconfirm when the actual score changes.
+          // Markers (unidades/manchas) should NOT force re-confirmation.
+          const isScoringMutation =
+            updates.strokes !== undefined || updates.putts !== undefined || updates.oyesProximity !== undefined;
+
+          const shouldUnconfirm = isScoringMutation && (wasConfirmed || confirmedHoles.has(holeNumber));
+
+          playerScores[idx] = {
+            ...playerScores[idx],
+            ...updates,
+            ...(shouldUnconfirm ? { confirmed: false } : {}),
+          };
+
+          // Keep netScore consistent
+          if (updates.strokes !== undefined) {
+            playerScores[idx].netScore = updates.strokes - playerScores[idx].strokesReceived;
+          }
+
+          // Save to database
+          if (roundState.id) {
+            saveScoreToDb(playerId, holeNumber, playerScores[idx]);
+          }
+
+          if (shouldUnconfirm) {
+            setConfirmedHoles((prevHoles) => {
+              const next = new Set(prevHoles);
+              next.delete(holeNumber);
+              return next;
+            });
+          }
         }
-      }
-      newScores.set(playerId, playerScores);
-      return newScores;
-    });
-  }, [saveScoreToDb, roundState.id, setConfirmedHoles, confirmedHoles]);
+
+        newScores.set(playerId, playerScores);
+        return newScores;
+      });
+    },
+    [players, playerGroups, course, confirmedHoles, roundState.id, saveScoreToDb, setConfirmedHoles]
+  );
 
   const confirmHole = useCallback((holeNumber: number, playerIds?: string[]) => {
     // If playerIds provided, only confirm for those players (group-specific)
