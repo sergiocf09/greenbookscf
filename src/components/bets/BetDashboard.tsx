@@ -153,9 +153,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [scores]);
   
   // Players from other groups (used for cross-group rival selection)
+  // CRITICAL: This must be relative to the currently selected group (displayGroupIndex),
+  // NOT hardcoded to exclude only Group 1. When viewing from Group 2, Group 1 players ARE "other group".
   const otherGroupPlayers = useMemo(() => {
-    return getAllPlayersFromAllGroups([], playerGroups); // Only players from additional groups
-  }, [playerGroups]);
+    const all = getAllPlayersFromAllGroups(players, playerGroups);
+    const currentGroupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    const currentIds = new Set(currentGroupPlayers.map((p) => p.id));
+    return all.filter((p) => !currentIds.has(p.id));
+  }, [players, playerGroups, displayGroupIndex]);
 
   // All players across all groups (for calculations). Important: must NOT depend on the selected base player.
   const allPlayersForCalculations = useMemo(() => {
