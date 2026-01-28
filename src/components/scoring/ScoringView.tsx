@@ -1,0 +1,150 @@
+import React, { useState, useMemo } from 'react';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState } from '@/types/golf';
+import { defaultMarkerState } from '@/types/golf';
+import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
+import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
+import { Button } from '@/components/ui/button';
+import { Check, CheckCircle2 } from 'lucide-react';
+
+interface ScoringViewProps {
+  players: Player[];
+  playerGroups: PlayerGroup[];
+  course: GolfCourse;
+  currentHole: number;
+  setCurrentHole: (hole: number) => void;
+  scores: Map<string, PlayerScore[]>;
+  confirmedHoles: Set<number>;
+  isHoleConfirmed: (holeNumber: number) => boolean;
+  confirmHole: (holeNumber: number) => void;
+  updateScore: (playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => void;
+  betConfig: BetConfig;
+  holePar: number;
+  profile: { id: string } | null;
+}
+
+export const ScoringView: React.FC<ScoringViewProps> = ({
+  players,
+  playerGroups,
+  course,
+  currentHole,
+  setCurrentHole,
+  scores,
+  confirmedHoles,
+  isHoleConfirmed,
+  confirmHole,
+  updateScore,
+  betConfig,
+  holePar,
+  profile,
+}) => {
+  // State for which group to display (0 = main group, 1+ = additional groups)
+  const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
+  
+  const hasMultipleGroups = playerGroups.length > 0;
+  
+  // Get players to display based on selected group
+  const displayPlayers = useMemo(() => {
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
+  }, [displayGroupIndex, players, playerGroups]);
+  
+  // Get all players for confirmation check (a hole is confirmed when ALL players have confirmed)
+  const allPlayers = useMemo(() => {
+    return getAllPlayersFromAllGroups(players, playerGroups);
+  }, [players, playerGroups]);
+
+  return (
+    <>
+      {/* Group Selector (only if multiple groups) */}
+      {hasMultipleGroups && (
+        <div className="bg-card border border-border rounded-lg p-2 mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Capturando scores para:</span>
+          </div>
+          <GroupSelector
+            currentGroupIndex={displayGroupIndex}
+            players={players}
+            playerGroups={playerGroups}
+            onGroupChange={setDisplayGroupIndex}
+          />
+        </div>
+      )}
+
+      {/* Hole Navigation */}
+      <div className="flex gap-1 overflow-x-auto pb-2">
+        {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
+          const confirmed = isHoleConfirmed(hole);
+          return (
+            <button
+              key={hole}
+              onClick={() => setCurrentHole(hole)}
+              className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
+                ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
+                  confirmed ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
+                ${hole === 9 ? 'mr-2' : ''}`}
+            >
+              {confirmed && currentHole !== hole ? <CheckCircle2 className="h-4 w-4 mx-auto" /> : hole}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Player Score Inputs */}
+      {displayPlayers.map(player => {
+        const playerScores = scores.get(player.id) || [];
+        const holeScore = playerScores.find(s => s.holeNumber === currentHole);
+        const isBasePlayer = player.profileId === profile?.id;
+        const isPar3 = holePar === 3;
+        
+        // Check if player has Oyeses enabled
+        const oyesPlayerConfig = betConfig.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
+        const oyesEnabled = betConfig.oyeses.enabled && (oyesPlayerConfig?.enabled ?? true);
+        
+        return (
+          <PlayerScoreInput
+            key={player.id}
+            playerName={player.name}
+            playerInitials={player.initials}
+            avatarColor={player.color}
+            holeNumber={currentHole}
+            par={holePar}
+            strokes={holeScore?.strokes ?? holePar}
+            putts={holeScore?.putts ?? 2}
+            markers={holeScore?.markers || defaultMarkerState}
+            onStrokesChange={(strokes) => updateScore(player.id, currentHole, { strokes })}
+            onPuttsChange={(putts) => updateScore(player.id, currentHole, { putts })}
+            onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
+            handicapStrokes={holeScore?.strokesReceived || 0}
+            isBasePlayer={isBasePlayer}
+            isPar3={isPar3}
+            oyesEnabled={oyesEnabled}
+            oyesProximity={holeScore?.oyesProximity}
+            onOyesProximityChange={(proximity) => updateScore(player.id, currentHole, { oyesProximity: proximity })}
+          />
+        );
+      })}
+
+      {/* Confirm Button */}
+      <Button 
+        onClick={() => confirmHole(currentHole)}
+        disabled={isHoleConfirmed(currentHole)}
+        className={`w-full ${isHoleConfirmed(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
+      >
+        {isHoleConfirmed(currentHole) ? (
+          <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
+        ) : (
+          <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
+        )}
+      </Button>
+
+      {/* Navigation Buttons */}
+      <div className="flex gap-3 pt-2">
+        <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1">
+          ← Anterior
+        </Button>
+        <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1">
+          Siguiente →
+        </Button>
+      </div>
+    </>
+  );
+};

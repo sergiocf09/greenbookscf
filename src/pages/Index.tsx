@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
+import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
 import { CourseSelect } from '@/components/setup/CourseSelect';
 import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
@@ -1269,87 +1270,23 @@ const Index = () => {
         )}
 
         {view === 'scoring' && course && (
-          <>
-            {/* Hole Navigation */}
-            <div className="flex gap-1 overflow-x-auto pb-2">
-              {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
-                const confirmed = isHoleConfirmed(hole);
-                return (
-                  <button
-                    key={hole}
-                    onClick={() => setCurrentHole(hole)}
-                    className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
-                      ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
-                        confirmed ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
-                      ${hole === 9 ? 'mr-2' : ''}`}
-                  >
-                    {confirmed && currentHole !== hole ? <CheckCircle2 className="h-4 w-4 mx-auto" /> : hole}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Player Score Inputs */}
-            {players.map(player => {
-              const playerScores = scores.get(player.id) || [];
-              const holeScore = playerScores.find(s => s.holeNumber === currentHole);
-              const isBasePlayer = player.profileId === profile?.id;
-              const isPar3 = holePar === 3;
-              
-              // Check if player has Oyeses enabled
-              // NOTE: When a player is added after the round has started, they may not yet have a
-              // per-player config entry. We default to enabled (same behavior as BetSetup UI).
-              const oyesPlayerConfig = betConfig.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
-              const oyesEnabled = betConfig.oyeses.enabled && (oyesPlayerConfig?.enabled ?? true);
-              
-              return (
-                <PlayerScoreInput
-                  key={player.id}
-                  playerName={player.name}
-                  playerInitials={player.initials}
-                  avatarColor={player.color}
-                  holeNumber={currentHole}
-                  par={holePar}
-                  strokes={holeScore?.strokes ?? holePar}
-                  putts={holeScore?.putts ?? 2}
-                  markers={holeScore?.markers || defaultMarkerState}
-                  onStrokesChange={(strokes) => updateScore(player.id, currentHole, { strokes })}
-                  onPuttsChange={(putts) => updateScore(player.id, currentHole, { putts })}
-                  onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
-                  handicapStrokes={holeScore?.strokesReceived || 0}
-                  isBasePlayer={isBasePlayer}
-                  isPar3={isPar3}
-                  oyesEnabled={oyesEnabled}
-                  oyesProximity={holeScore?.oyesProximity}
-                  onOyesProximityChange={(proximity) => updateScore(player.id, currentHole, { oyesProximity: proximity })}
-                />
-              );
-            })}
-
-            {/* Confirm Button */}
-            <Button 
-              onClick={() => confirmHole(currentHole)}
-              disabled={isHoleConfirmed(currentHole)}
-              className={`w-full ${isHoleConfirmed(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
-            >
-              {isHoleConfirmed(currentHole) ? (
-                <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
-              ) : (
-                <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
-              )}
-            </Button>
-
-            {/* Navigation Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1">
-                ← Anterior
-              </Button>
-              <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1">
-                Siguiente →
-              </Button>
-            </div>
-          </>
+          <ScoringView
+            players={players}
+            playerGroups={playerGroups}
+            course={course}
+            currentHole={currentHole}
+            setCurrentHole={setCurrentHole}
+            scores={scores}
+            confirmedHoles={confirmedHoles}
+            isHoleConfirmed={isHoleConfirmed}
+            confirmHole={confirmHole}
+            updateScore={updateScore}
+            betConfig={betConfig}
+            holePar={holePar}
+            profile={profile}
+          />
         )}
+
 
         {view === 'scorecard' && course && (
           <>
