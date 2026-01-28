@@ -85,8 +85,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Tabla General view mode: 'group' = show selected group only, 'all' = show all groups combined
   const [tablaGeneralMode, setTablaGeneralMode] = useState<'group' | 'all'>('group');
-  // Selected group for Tabla General when in 'all' mode (to show in Balance vs)
-  const [tablaGeneralSelectedGroup, setTablaGeneralSelectedGroup] = useState(0);
   
   // Cross-group rivals are now stored in betConfig as a per-player map
   // Structure: { [basePlayerId]: string[] } - each player has their own exclusive selections
@@ -729,15 +727,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [displayGroupIndex, players, playerGroups]);
   
   // Players to show in "Balance vs" section
-  // - In 'group' mode: show players from displayGroupIndex
-  // - In 'all' mode: show players from tablaGeneralSelectedGroup
+  // Always follows displayGroupIndex (the group selected in "Ver Grupo")
   const balanceVsPlayers = useMemo(() => {
-    if (tablaGeneralMode === 'all' && hasMultipleGroups) {
-      return getPlayersForGroup(tablaGeneralSelectedGroup, players, playerGroups);
-    }
-    // In 'group' mode, use displayGroupIndex (same group shown in Tabla General)
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [tablaGeneralMode, tablaGeneralSelectedGroup, displayGroupIndex, players, playerGroups, hasMultipleGroups]);
+  }, [displayGroupIndex, players, playerGroups]);
   
   // Base player for "Balance vs" - must be from balanceVsPlayers or fallback
   const basePlayer = useMemo(() => {
@@ -747,7 +740,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return balanceVsPlayers[0] || players[0];
   }, [balanceVsPlayers, players, balanceBasePlayerId]);
   
-  const activeBalanceGroupIndex = tablaGeneralMode === 'all' ? tablaGeneralSelectedGroup : displayGroupIndex;
+  // Active group index for balance calculations always follows displayGroupIndex
+  const activeBalanceGroupIndex = displayGroupIndex;
 
   // Auto-update balanceBasePlayerId when the active Balance-vs group changes
   useEffect(() => {
@@ -825,8 +819,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     type="button"
                     onClick={() => {
                       setTablaGeneralMode('all');
-                      // When switching to 'all' mode, set selected group for Balance vs
-                      setTablaGeneralSelectedGroup(displayGroupIndex);
                     }}
                     className={cn(
                       'px-2 py-1 rounded-full text-xs font-medium transition-all',
@@ -840,27 +832,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 </div>
               </div>
               
-              {/* Show Balance vs group selector only in 'all' mode */}
-              {tablaGeneralMode === 'all' && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Balance vs grupo:</span>
-                  <GroupSelector
-                    currentGroupIndex={tablaGeneralSelectedGroup}
-                    players={players}
-                    playerGroups={playerGroups}
-                    onGroupChange={(idx) => {
-                      setTablaGeneralSelectedGroup(idx);
-                      // Reset base player when switching groups in 'all' mode
-                      const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
-                      if (groupPlayers.length > 0) {
-                        setBalanceBasePlayerId(groupPlayers[0].id);
-                        setSelectedRival(null);
-                      }
-                    }}
-                    compact
-                  />
-                </div>
-              )}
+              {/* In 'all' mode, Balance vs follows the selected group from "Ver Grupo" */}
             </div>
           )}
         </CardHeader>
@@ -1023,7 +995,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3 w-3" />
               <span>
-                Grupo {tablaGeneralSelectedGroup + 1}
+                Grupo {displayGroupIndex + 1}
               </span>
             </div>
           )}
