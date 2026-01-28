@@ -82,47 +82,49 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             <span>Par {selectedCourse.holes.reduce((sum, h) => sum + h.par, 0)}</span>
           </div>
 
-          {onTeeColorChange && (
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Tee de salida</Label>
-              <ToggleGroup 
-                type="single" 
-                value={teeColor} 
-                onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
-                className="justify-start"
-              >
-                <ToggleGroupItem value="blue" className="w-8 h-8 rounded-full bg-blue-600 data-[state=on]:ring-2 ring-offset-2" />
-                <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:ring-2 ring-offset-2" />
-                <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:ring-2 ring-offset-2" />
-                <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:ring-2 ring-offset-2" />
-              </ToggleGroup>
-            </div>
-          )}
+          <div className="flex gap-6">
+            {onTeeColorChange && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Tee de salida</Label>
+                <ToggleGroup 
+                  type="single" 
+                  value={teeColor} 
+                  onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="blue" className="w-8 h-8 rounded-full bg-blue-600 data-[state=on]:ring-2 ring-offset-2" />
+                  <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:ring-2 ring-offset-2" />
+                  <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:ring-2 ring-offset-2" />
+                  <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:ring-2 ring-offset-2" />
+                </ToggleGroup>
+              </div>
+            )}
 
-          {onStartingHoleChange && (
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Hoyo de inicio</Label>
-              <ToggleGroup 
-                type="single" 
-                value={String(startingHole)} 
-                onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
-                className="justify-start"
-              >
-                <ToggleGroupItem 
-                  value="1" 
-                  className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            {onStartingHoleChange && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Hoyo de inicio</Label>
+                <ToggleGroup 
+                  type="single" 
+                  value={String(startingHole)} 
+                  onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
+                  className="justify-start"
                 >
-                  Hoyo 1
-                </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="10" 
-                  className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  Hoyo 10
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-          )}
+                  <ToggleGroupItem 
+                    value="1" 
+                    className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    Hoyo 1
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="10" 
+                    className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    Hoyo 10
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
