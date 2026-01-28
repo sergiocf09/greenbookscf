@@ -1375,6 +1375,7 @@ const Index = () => {
               scores={scores}
               course={course}
               confirmedHoles={confirmedHoles}
+              betConfig={betConfig}
             />
           </>
         )}

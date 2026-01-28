@@ -13,10 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Player, PlayerScore, GolfCourse, PlayerGroup } from '@/types/golf';
+import { Player, PlayerScore, GolfCourse, PlayerGroup, BetConfig } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown } from 'lucide-react';
+import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 
 interface LeaderboardDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ interface LeaderboardDialogProps {
   scores: Map<string, PlayerScore[]>;
   course: GolfCourse | null;
   confirmedHoles: Set<number>;
+  betConfig?: BetConfig;
 }
 
 interface LeaderboardEntry {
@@ -41,6 +43,15 @@ interface LeaderboardEntry {
 
 type SortMode = 'net' | 'gross';
 
+// Format name as "FirstName L." where L is first initial of last name
+const formatPlayerName = (fullName: string): string => {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const firstName = parts[0];
+  const lastInitial = parts[parts.length - 1]?.[0]?.toUpperCase() || '';
+  return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+};
+
 export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   open,
   onOpenChange,
@@ -49,6 +60,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   scores,
   course,
   confirmedHoles,
+  betConfig,
 }) => {
   const [sortMode, setSortMode] = useState<SortMode>('net');
 
@@ -73,8 +85,24 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
 
     const allPlayers = [...mainGroupPlayers, ...additionalGroupPlayers];
 
+    // Get Medal General handicap overrides if enabled
+    const medalGeneralEnabled = betConfig?.medalGeneral?.enabled ?? false;
+    const medalGeneralHandicaps = betConfig?.medalGeneral?.playerHandicaps || [];
+
     for (const { player, groupNumber } of allPlayers) {
       const playerScores = scores.get(player.id) || [];
+      
+      // Determine handicap to use: Medal General override if enabled, else player's base handicap
+      let effectiveHandicap = player.handicap;
+      if (medalGeneralEnabled) {
+        const override = medalGeneralHandicaps.find(pc => pc.playerId === player.id);
+        if (override !== undefined) {
+          effectiveHandicap = override.handicap;
+        }
+      }
+
+      // Calculate strokes per hole based on effective handicap
+      const strokesPerHole = calculateStrokesPerHole(effectiveHandicap, course);
       
       let grossScore = 0;
       let netScore = 0;
@@ -89,9 +117,11 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
         if (!score || !score.strokes || score.strokes <= 0) continue;
 
         const holePar = course.holes[h - 1]?.par || 4;
+        const strokesReceivedOnHole = strokesPerHole[h - 1] || 0;
+        
         grossScore += score.strokes;
-        // Use the net score from the score object which includes handicap strokes
-        netScore += score.netScore ?? (score.strokes - (score.strokesReceived || 0));
+        // Calculate net score using the effective handicap strokes
+        netScore += score.strokes - strokesReceivedOnHole;
         parForPlayed += holePar;
         holesPlayed++;
         lastConfirmedHole = Math.max(lastConfirmedHole, h);
@@ -120,7 +150,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
       }
       return a.netVsPar - b.netVsPar;
     });
-  }, [players, playerGroups, scores, course, confirmedHoles, sortMode]);
+  }, [players, playerGroups, scores, course, confirmedHoles, sortMode, betConfig]);
 
   const formatVsPar = (value: number): string => {
     if (value === 0) return 'E';
@@ -151,16 +181,16 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
               No hay jugadores registrados
             </p>
           ) : (
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="text-xs">
-                  <TableHead className="w-[30px] text-center p-1">#</TableHead>
-                  <TableHead className="p-1">Jugador</TableHead>
-                  <TableHead className="text-center w-[36px] p-1">Grp</TableHead>
-                  <TableHead className="text-center w-[36px] p-1">Hoyo</TableHead>
+                  <TableHead className="w-7 text-center px-1 py-1.5">#</TableHead>
+                  <TableHead className="px-1 py-1.5">Jugador</TableHead>
+                  <TableHead className="text-center w-8 px-1 py-1.5">Grp</TableHead>
+                  <TableHead className="text-center w-9 px-1 py-1.5">Hoyo</TableHead>
                   <TableHead 
                     className={cn(
-                      "text-center w-[50px] p-1 cursor-pointer hover:bg-muted/50 transition-colors",
+                      "text-center w-12 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
                       sortMode === 'gross' && "bg-muted"
                     )}
                     onClick={() => handleSortClick('gross')}
@@ -172,7 +202,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                   </TableHead>
                   <TableHead 
                     className={cn(
-                      "text-center w-[50px] p-1 cursor-pointer hover:bg-muted/50 transition-colors",
+                      "text-center w-12 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
                       sortMode === 'net' && "bg-muted"
                     )}
                     onClick={() => handleSortClick('net')}
@@ -187,31 +217,31 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
               <TableBody>
                 {leaderboard.map((entry, idx) => (
                   <TableRow key={entry.player.id} className="text-xs">
-                    <TableCell className="text-center font-medium text-muted-foreground p-1">
+                    <TableCell className="text-center font-medium text-muted-foreground px-1 py-1">
                       {entry.holesPlayed > 0 ? idx + 1 : '-'}
                     </TableCell>
-                    <TableCell className="p-1">
+                    <TableCell className="px-1 py-1">
                       <div className="flex items-center gap-1.5">
                         <PlayerAvatar 
                           initials={entry.player.initials} 
                           background={entry.player.color} 
                           size="sm" 
                         />
-                        <span className="font-medium text-xs truncate max-w-[80px]">
-                          {entry.player.name.split(' ')[0]}
+                        <span className="font-medium text-xs truncate">
+                          {formatPlayerName(entry.player.name)}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground p-1">
+                    <TableCell className="text-center text-xs text-muted-foreground px-1 py-1">
                       {entry.groupNumber}
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground p-1">
-                      {entry.holesPlayed > 0 ? `${entry.lastConfirmedHole}` : '-'}
+                    <TableCell className="text-center text-xs text-muted-foreground px-1 py-1">
+                      {entry.holesPlayed > 0 ? entry.lastConfirmedHole : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center p-1', getVsParColor(entry.grossVsPar))}>
+                    <TableCell className={cn('text-center px-1 py-1', getVsParColor(entry.grossVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.grossVsPar) : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center p-1', getVsParColor(entry.netVsPar))}>
+                    <TableCell className={cn('text-center px-1 py-1', getVsParColor(entry.netVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.netVsPar) : '-'}
                     </TableCell>
                   </TableRow>
