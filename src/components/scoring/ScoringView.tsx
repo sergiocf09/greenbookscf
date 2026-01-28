@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
@@ -15,7 +15,7 @@ interface ScoringViewProps {
   scores: Map<string, PlayerScore[]>;
   confirmedHoles: Set<number>;
   isHoleConfirmed: (holeNumber: number) => boolean;
-  confirmHole: (holeNumber: number) => void;
+  confirmHole: (holeNumber: number, playerIds?: string[]) => void;
   updateScore: (playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => void;
   betConfig: BetConfig;
   holePar: number;
@@ -52,6 +52,24 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     return getAllPlayersFromAllGroups(players, playerGroups);
   }, [players, playerGroups]);
 
+  // Check if hole is confirmed for the CURRENTLY DISPLAYED group only
+  const isHoleConfirmedForDisplayGroup = useCallback(
+    (holeNumber: number): boolean => {
+      if (!displayPlayers.length) return false;
+      return displayPlayers.every((p) => {
+        const hs = scores.get(p.id)?.find((s) => s.holeNumber === holeNumber);
+        return Boolean(hs?.confirmed);
+      });
+    },
+    [displayPlayers, scores]
+  );
+
+  // Confirm hole for the currently displayed group's players
+  const handleConfirmHole = useCallback((holeNumber: number) => {
+    const playerIds = displayPlayers.map(p => p.id);
+    confirmHole(holeNumber, playerIds);
+  }, [displayPlayers, confirmHole]);
+
   return (
     <>
       {/* Group Selector (only if multiple groups) */}
@@ -72,7 +90,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       {/* Hole Navigation */}
       <div className="flex gap-1 overflow-x-auto pb-2">
         {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
-          const confirmed = isHoleConfirmed(hole);
+          const confirmed = isHoleConfirmedForDisplayGroup(hole);
           return (
             <button
               key={hole}
@@ -125,11 +143,11 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Confirm Button */}
       <Button 
-        onClick={() => confirmHole(currentHole)}
-        disabled={isHoleConfirmed(currentHole)}
-        className={`w-full ${isHoleConfirmed(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
+        onClick={() => handleConfirmHole(currentHole)}
+        disabled={isHoleConfirmedForDisplayGroup(currentHole)}
+        className={`w-full ${isHoleConfirmedForDisplayGroup(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
       >
-        {isHoleConfirmed(currentHole) ? (
+        {isHoleConfirmedForDisplayGroup(currentHole) ? (
           <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
         ) : (
           <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
