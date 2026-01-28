@@ -31,6 +31,8 @@ interface PlayerSetupProps {
   groups?: PlayerGroup[];
   onGroupsChange?: (groups: PlayerGroup[]) => void;
   multiGroupEnabled?: boolean;
+  onAddGroupClick?: () => void;
+  showAddGroupButton?: boolean;
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -40,6 +42,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   groups = [],
   onGroupsChange,
   multiGroupEnabled = false,
+  onAddGroupClick,
+  showAddGroupButton = false,
 }) => {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(groups[0]?.id || null);
@@ -232,6 +236,18 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">Agrega jugadores para comenzar</p>
         </div>
+      )}
+
+      {/* Add Group Button - shows when at max players and showAddGroupButton is true */}
+      {showAddGroupButton && players.length >= maxPlayers && onAddGroupClick && (
+        <Button 
+          variant="outline" 
+          onClick={onAddGroupClick}
+          className="w-full mt-2"
+        >
+          <Users2 className="h-4 w-4 mr-2" />
+          Agregar Otro Grupo de Juego
+        </Button>
       )}
     </div>
   );
