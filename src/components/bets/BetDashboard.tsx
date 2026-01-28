@@ -133,31 +133,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return filtered;
   }, [scores]);
   
-  // Get all players from other groups (for cross-group betting)
+  // Players from other groups (used for cross-group rival selection)
   const otherGroupPlayers = useMemo(() => {
     return getAllPlayersFromAllGroups([], playerGroups); // Only players from additional groups
   }, [playerGroups]);
-  
-  // Get cross-group rivals for current base player (for calculations)
-  const currentBaseRivals = getCrossGroupRivalsForBase(balanceBasePlayerId);
-  
-  // Combine main group players with selected cross-group players for bet calculations
-  // This now only includes the cross-group players selected by the current base player
-  const allPlayersForCalculations = useMemo(() => {
-    const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => currentBaseRivals.includes(p.id));
-    // Create a combined player list, avoiding duplicates
-    const combined = [...players];
-    selectedCrossGroupPlayers.forEach(p => {
-      if (!combined.some(existing => existing.id === p.id)) {
-        combined.push(p);
-      }
-    });
-    return combined;
-  }, [players, otherGroupPlayers, currentBaseRivals]);
 
-  // Calculate all bets using only confirmed scores - now including cross-group players
-  const betSummaries = useMemo(() => 
-    calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole),
+  // All players across all groups (for calculations). Important: must NOT depend on the selected base player.
+  const allPlayersForCalculations = useMemo(() => {
+    return getAllPlayersFromAllGroups(players, playerGroups);
+  }, [players, playerGroups]);
+
+  // Calculate all bets using only confirmed scores (all groups). UI will filter per mode.
+  const betSummaries = useMemo(
+    () => calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole),
     [allPlayersForCalculations, confirmedScores, betConfig, course, startingHole]
   );
   
@@ -722,6 +710,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // The difference is in the expanded view (handled separately)
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
   }, [displayGroupIndex, players, playerGroups]);
+
+  // Summaries restricted to bets where BOTH players belong to the currently selected group.
+  // This is what "Solo Grupo" should use for the main totals/sum.
+  const tablaGeneralPlayerIds = useMemo(() => {
+    return new Set(tablaGeneralPlayers.map((p) => p.id));
+  }, [tablaGeneralPlayers]);
+
+  const tablaGeneralGroupOnlySummaries = useMemo(() => {
+    return betSummaries.filter(
+      (s) => tablaGeneralPlayerIds.has(s.playerId) && tablaGeneralPlayerIds.has(s.vsPlayer)
+    );
+  }, [betSummaries, tablaGeneralPlayerIds]);
   
   // Players for the old displayPlayers (used in other sections)
   const displayPlayers = useMemo(() => {
@@ -747,14 +747,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return balanceVsPlayers[0] || players[0];
   }, [balanceVsPlayers, players, balanceBasePlayerId]);
   
-  // Auto-update balanceBasePlayerId when displayGroupIndex changes
+  const activeBalanceGroupIndex = tablaGeneralMode === 'all' ? tablaGeneralSelectedGroup : displayGroupIndex;
+
+  // Auto-update balanceBasePlayerId when the active Balance-vs group changes
   useEffect(() => {
-    const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    const groupPlayers = getPlayersForGroup(activeBalanceGroupIndex, players, playerGroups);
     if (groupPlayers.length > 0 && !groupPlayers.some(p => p.id === balanceBasePlayerId)) {
       setBalanceBasePlayerId(groupPlayers[0].id);
       setSelectedRival(null);
     }
-  }, [displayGroupIndex, players, playerGroups, balanceBasePlayerId]);
+  }, [activeBalanceGroupIndex, players, playerGroups, balanceBasePlayerId]);
   
   // Rivals = players in the same group as base player + cross-group players selected by THIS base player
   const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
@@ -833,7 +835,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    Todos los Grupos
+                    + Apuestas Cruzadas
                   </button>
                 </div>
               </div>
@@ -865,7 +867,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardContent className="pt-0">
           <div className="space-y-2">
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
-              const balance = getPlayerBalance(player.id, betSummaries);
+              // Base total: ONLY bets vs players inside the selected group
+              const balance = getPlayerBalance(player.id, tablaGeneralGroupOnlySummaries);
               const carritosBalance = getCarritosBalanceForPlayer(player.id);
               const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
@@ -887,6 +890,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               // Calculate total for "all" mode including cross-group bets
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
+                // Cross-group: only this player's explicitly selected rivals
                 return sum + getBilateralBalance(player.id, rival.id, betSummaries);
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
@@ -942,6 +946,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
+                        // Use full summaries so cross-group pairs work here too.
                         const vsIndividualBalance = getBilateralBalance(player.id, other.id, betSummaries);
                         const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
@@ -998,7 +1003,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${tablaGeneralPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
+            Σ = ${tablaGeneralPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, tablaGeneralGroupOnlySummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>
