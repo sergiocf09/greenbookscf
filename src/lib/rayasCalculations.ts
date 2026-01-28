@@ -597,7 +597,8 @@ export const calculateRayasBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.rayas?.enabled) return [];
   

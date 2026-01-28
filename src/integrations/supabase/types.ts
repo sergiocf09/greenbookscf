@@ -557,6 +557,7 @@ export type Database = {
           date: string
           id: string
           organizer_id: string
+          starting_hole: number
           status: Database["public"]["Enums"]["round_status"]
           tee_color: string
           updated_at: string
@@ -568,6 +569,7 @@ export type Database = {
           date?: string
           id?: string
           organizer_id: string
+          starting_hole?: number
           status?: Database["public"]["Enums"]["round_status"]
           tee_color?: string
           updated_at?: string
@@ -579,6 +581,7 @@ export type Database = {
           date?: string
           id?: string
           organizer_id?: string
+          starting_hole?: number
           status?: Database["public"]["Enums"]["round_status"]
           tee_color?: string
           updated_at?: string
@@ -692,20 +695,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_round: {
-        Args: {
-          p_bet_config: Json
-          p_course_id: string
-          p_date: string
-          p_tee_color: string
-        }
-        Returns: {
-          group_id: string
-          organizer_profile_id: string
-          round_id: string
-          round_player_id: string
-        }[]
-      }
+      create_round:
+        | {
+            Args: {
+              p_bet_config: Json
+              p_course_id: string
+              p_date: string
+              p_tee_color: string
+            }
+            Returns: {
+              group_id: string
+              organizer_profile_id: string
+              round_id: string
+              round_player_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_bet_config: Json
+              p_course_id: string
+              p_date: string
+              p_starting_hole?: number
+              p_tee_color: string
+            }
+            Returns: {
+              group_id: string
+              organizer_profile_id: string
+              round_id: string
+              round_player_id: string
+            }[]
+          }
       finalize_round_bets: {
         Args: { p_ledger: Json; p_round_id: string }
         Returns: undefined

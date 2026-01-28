@@ -97,6 +97,7 @@ const Index = () => {
   } | null>(null);
   
   const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
+  const [startingHole, setStartingHole] = useState<1 | 10>(1);
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
@@ -131,6 +132,7 @@ const Index = () => {
     course,
     setSelectedCourseId,
     setTeeColor,
+    setStartingHole,
     getCourseById,
   });
 
@@ -500,7 +502,7 @@ const Index = () => {
     if (!course || !selectedCourseId) return;
     
     if (!roundState.id) {
-      const result = await createRound(selectedCourseId, teeColor, roundState.date);
+      const result = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (result) {
         // Show share dialog after successful creation
         setShowShareDialog(true);
@@ -514,7 +516,7 @@ const Index = () => {
     
     // Create round in database first if not exists
     if (!roundState.id) {
-      const roundId = await createRound(selectedCourseId, teeColor, roundState.date);
+      const roundId = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (!roundId) return;
     }
     
@@ -1147,6 +1149,8 @@ const Index = () => {
               onChange={setSelectedCourseId}
               teeColor={teeColor}
               onTeeColorChange={setTeeColor}
+              startingHole={startingHole}
+              onStartingHoleChange={setStartingHole}
               enabled={enableCourseCatalog}
             />
             <PlayerSetup players={players} onChange={handlePlayersChange} maxPlayers={6} />

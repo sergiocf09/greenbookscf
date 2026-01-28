@@ -16,6 +16,8 @@ interface CourseSelectProps {
   onChange: (courseId: string) => void;
   teeColor?: 'blue' | 'white' | 'yellow' | 'red';
   onTeeColorChange?: (color: 'blue' | 'white' | 'yellow' | 'red') => void;
+  startingHole?: 1 | 10;
+  onStartingHoleChange?: (hole: 1 | 10) => void;
   enabled?: boolean;
 }
 
@@ -24,6 +26,8 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onChange,
   teeColor = 'white',
   onTeeColorChange,
+  startingHole = 1,
+  onStartingHoleChange,
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById } = useGolfCourses({ enabled });
@@ -91,6 +95,31 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                 <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:ring-2 ring-offset-2" />
                 <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:ring-2 ring-offset-2" />
                 <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:ring-2 ring-offset-2" />
+              </ToggleGroup>
+            </div>
+          )}
+
+          {onStartingHoleChange && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Hoyo de inicio</Label>
+              <ToggleGroup 
+                type="single" 
+                value={String(startingHole)} 
+                onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
+                className="justify-start"
+              >
+                <ToggleGroupItem 
+                  value="1" 
+                  className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  Hoyo 1
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="10" 
+                  className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  Hoyo 10
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           )}

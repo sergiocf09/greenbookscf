@@ -16,6 +16,7 @@ interface ScorecardProps {
   getStrokeIndicators?: (rivalId: string, holeNumber: number) => { receiving: boolean; giving: boolean };
   confirmedHoles?: Set<number>;
   onAddPlayerClick?: () => void;
+  startingHole?: 1 | 10;
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -28,6 +29,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   getStrokeIndicators,
   confirmedHoles = new Set(),
   onAddPlayerClick,
+  startingHole = 1,
 }) => {
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);
@@ -71,6 +73,22 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     return '';
   };
 
+  // Determine display order based on starting hole
+  // When starting at hole 10, show holes 10-18 first, then 1-9
+  const firstNine = startingHole === 10 
+    ? course.holes.slice(9, 18)  // holes 10-18
+    : course.holes.slice(0, 9);   // holes 1-9
+  const secondNine = startingHole === 10
+    ? course.holes.slice(0, 9)   // holes 1-9
+    : course.holes.slice(9, 18);  // holes 10-18
+  const firstNinePar = firstNine.reduce((sum, h) => sum + h.par, 0);
+  const secondNinePar = secondNine.reduce((sum, h) => sum + h.par, 0);
+  
+  // Labels for the nine sections
+  const firstNineLabel = startingHole === 10 ? 'OUT' : 'OUT';
+  const secondNineLabel = startingHole === 10 ? 'IN' : 'IN';
+  
+  // For total calculations - always holes 1-9 and 10-18
   const frontNine = course.holes.slice(0, 9);
   const backNine = course.holes.slice(9, 18);
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
@@ -101,7 +119,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
         </div>
       </div>
 
-      {/* Front 9 */}
+      {/* First Nine (holes 1-9 when starting at 1, holes 10-18 when starting at 10) */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -109,7 +127,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[80px]">
                 Hoyo
               </th>
-              {frontNine.map(hole => (
+              {firstNine.map(hole => (
                 <th 
                   key={hole.number}
                   onClick={() => onHoleClick?.(hole.number)}
@@ -121,25 +139,31 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   {hole.number}
                 </th>
               ))}
-              <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">OUT</th>
+              <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">{firstNineLabel}</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
               <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
-              {frontNine.map(hole => (
+              {firstNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
-              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{frontPar}</td>
+              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{firstNinePar}</td>
             </tr>
             <tr className="bg-muted/20 text-muted-foreground text-[10px]">
               <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
-              {frontNine.map(hole => (
+              {firstNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
               ))}
               <td className="text-center px-2 py-0.5 bg-muted/30"></td>
             </tr>
           </thead>
           <tbody>
-            {players.map(player => (
+            {players.map(player => {
+              const firstNineTotal = firstNine.reduce((sum, hole) => {
+                if (!isHoleConfirmed(hole.number)) return sum;
+                const score = getPlayerScoreForHole(player.id, hole.number);
+                return sum + (score?.strokes && score.strokes > 0 ? score.strokes : 0);
+              }, 0);
+              return (
               <tr key={player.id} className="border-t border-border/50">
                 <td className="px-2 py-1.5 sticky left-0 bg-card">
                   <div className="flex items-center gap-1.5">
@@ -147,7 +171,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
                   </div>
                 </td>
-                {frontNine.map(hole => {
+                {firstNine.map(hole => {
                   const score = getPlayerScoreForHole(player.id, hole.number);
                   const strokes = score?.strokes || 0;
                   const confirmed = isHoleConfirmed(hole.number);
@@ -166,10 +190,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   );
                 })}
                 <td className="text-center px-2 py-1.5 font-semibold bg-muted/30">
-                  {getPlayerTotal(player.id, 1, 9) || '-'}
+                  {firstNineTotal || '-'}
                 </td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
@@ -177,7 +201,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
       {/* Separator */}
       <div className="h-1 bg-border" />
 
-      {/* Back 9 */}
+      {/* Second Nine */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -185,7 +209,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[80px]">
                 Hoyo
               </th>
-              {backNine.map(hole => (
+              {secondNine.map(hole => (
                 <th 
                   key={hole.number}
                   onClick={() => onHoleClick?.(hole.number)}
@@ -197,20 +221,20 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   {hole.number}
                 </th>
               ))}
-              <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">IN</th>
+              <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">{secondNineLabel}</th>
               <th className="px-2 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[40px]">TOT</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
               <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
-              {backNine.map(hole => (
+              {secondNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
-              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{backPar}</td>
+              <td className="text-center px-2 py-1 font-semibold bg-muted/50">{secondNinePar}</td>
               <td className="text-center px-2 py-1 font-semibold bg-primary/10">{frontPar + backPar}</td>
             </tr>
             <tr className="bg-muted/20 text-muted-foreground text-[10px]">
               <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
-              {backNine.map(hole => (
+              {secondNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
               ))}
               <td className="text-center px-2 py-0.5 bg-muted/30"></td>
@@ -221,6 +245,11 @@ export const Scorecard: React.FC<ScorecardProps> = ({
             {players.map(player => {
               const frontTotal = getPlayerTotal(player.id, 1, 9);
               const backTotal = getPlayerTotal(player.id, 10, 18);
+              const secondNineTotal = secondNine.reduce((sum, hole) => {
+                if (!isHoleConfirmed(hole.number)) return sum;
+                const score = getPlayerScoreForHole(player.id, hole.number);
+                return sum + (score?.strokes && score.strokes > 0 ? score.strokes : 0);
+              }, 0);
               return (
                 <tr key={player.id} className="border-t border-border/50">
                   <td className="px-2 py-1.5 sticky left-0 bg-card">
@@ -229,7 +258,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                       <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
                     </div>
                   </td>
-                  {backNine.map(hole => {
+                  {secondNine.map(hole => {
                     const score = getPlayerScoreForHole(player.id, hole.number);
                     const strokes = score?.strokes || 0;
                     const confirmed = isHoleConfirmed(hole.number);
@@ -248,7 +277,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     );
                   })}
                   <td className="text-center px-2 py-1.5 font-semibold bg-muted/30">
-                    {backTotal || '-'}
+                    {secondNineTotal || '-'}
                   </td>
                   <td className="text-center px-2 py-1.5 font-bold bg-primary/10 text-primary">
                     {(frontTotal + backTotal) || '-'}
