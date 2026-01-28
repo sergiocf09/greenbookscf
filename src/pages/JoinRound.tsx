@@ -8,6 +8,19 @@ import { Loader2, MapPin, Calendar, Users, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+interface GroupInfo {
+  id: string;
+  group_number: number;
+  name: string;
+  players: {
+    display_name: string;
+    initials: string;
+    avatar_color: string;
+    is_guest: boolean;
+  }[];
+}
 
 interface RoundInfo {
   id: string;
@@ -21,6 +34,7 @@ interface RoundInfo {
   organizer: {
     display_name: string;
   };
+  groups: GroupInfo[];
   players: {
     profile: {
       display_name: string;
@@ -40,6 +54,7 @@ const JoinRound = () => {
   const [joining, setJoining] = useState(false);
   const [alreadyJoined, setAlreadyJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roundId) {
@@ -59,12 +74,15 @@ const JoinRound = () => {
 
         const parsed = data as any;
         const players = (parsed.players || []).map((p: any) => ({ profile: p }));
+        const groups: GroupInfo[] = parsed.groups || [];
 
         if (profile) {
-          // We don't receive profile_id list here; infer via display_name match is unreliable.
-          // Instead, enable join button unless we can confirm via a lightweight query.
-          // We'll confirm on join (join_round is idempotent).
           setAlreadyJoined(false);
+        }
+
+        // Auto-select first group if only one exists
+        if (groups.length === 1) {
+          setSelectedGroupId(groups[0].id);
         }
 
         setRoundInfo({
@@ -74,6 +92,7 @@ const JoinRound = () => {
           status: parsed.status,
           course: parsed.course,
           organizer: parsed.organizer,
+          groups,
           players,
         });
       } catch (err) {
@@ -93,11 +112,20 @@ const JoinRound = () => {
       return;
     }
 
+    // Require group selection if multiple groups exist
+    if (roundInfo && roundInfo.groups.length > 1 && !selectedGroupId) {
+      toast.error('Selecciona un grupo para unirte');
+      return;
+    }
+
     setJoining(true);
     try {
-      // Join via backend function (bypasses RLS, idempotent)
+      // Join via backend function with optional group_id
       const { data: rpId, error: joinError } = await supabase
-        .rpc('join_round', { p_round_id: roundId });
+        .rpc('join_round', { 
+          p_round_id: roundId,
+          p_group_id: selectedGroupId || null
+        });
       if (joinError) throw joinError;
       if (!rpId) throw new Error('No se pudo unir a la ronda');
 
@@ -146,6 +174,8 @@ const JoinRound = () => {
     red: 'Rojas',
   };
 
+  const hasMultipleGroups = roundInfo.groups.length > 1;
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto pt-8">
@@ -174,31 +204,93 @@ const JoinRound = () => {
               </div>
             </div>
 
-            {/* Players */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">
-                  Jugadores ({roundInfo.players.length})
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {roundInfo.players.map((p, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 bg-muted rounded-full px-3 py-1"
-                  >
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                      style={{ backgroundColor: p.profile.avatar_color }}
+            {/* Group Selection */}
+            {hasMultipleGroups ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    Selecciona un grupo para unirte
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {roundInfo.groups.map((group) => (
+                    <button
+                      key={group.id}
+                      type="button"
+                      onClick={() => setSelectedGroupId(group.id)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg border-2 transition-all",
+                        selectedGroupId === group.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-muted/50 hover:border-muted-foreground/50"
+                      )}
                     >
-                      {p.profile.initials}
-                    </div>
-                    <span className="text-sm">{p.profile.display_name}</span>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">{group.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {group.players.length} jugador{group.players.length !== 1 ? 'es' : ''}
+                        </span>
+                      </div>
+                      {group.players.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.players.map((p, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center gap-1.5 bg-background rounded-full px-2 py-0.5"
+                            >
+                              <div
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                                style={{ backgroundColor: p.avatar_color }}
+                              >
+                                {p.initials}
+                              </div>
+                              <span className="text-xs">{p.display_name}</span>
+                              {p.is_guest && (
+                                <span className="text-[10px] text-muted-foreground">(inv)</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          Sin jugadores registrados aún
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Single group - show players directly */
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    Jugadores ({roundInfo.groups[0]?.players.length || 0})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {roundInfo.groups[0]?.players.map((p, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-muted rounded-full px-3 py-1"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: p.avatar_color }}
+                      >
+                        {p.initials}
+                      </div>
+                      <span className="text-sm">{p.display_name}</span>
+                    </div>
+                  ))}
+                  {(!roundInfo.groups[0] || roundInfo.groups[0].players.length === 0) && (
+                    <p className="text-sm text-muted-foreground">No hay jugadores registrados aún</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Status */}
             {roundInfo.status === 'completed' && (
@@ -217,12 +309,16 @@ const JoinRound = () => {
               <Button
                 onClick={handleJoin}
                 className="w-full"
-                disabled={joining}
+                disabled={joining || (hasMultipleGroups && !selectedGroupId)}
               >
                 {joining ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : null}
-                {user ? 'Unirme a la Ronda' : 'Iniciar Sesión para Unirme'}
+                {user ? (
+                  hasMultipleGroups && !selectedGroupId 
+                    ? 'Selecciona un grupo' 
+                    : 'Unirme a la Ronda'
+                ) : 'Iniciar Sesión para Unirme'}
               </Button>
             ) : (
               <Button onClick={() => navigate('/')} className="w-full">

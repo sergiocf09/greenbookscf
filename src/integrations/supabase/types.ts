@@ -734,7 +734,9 @@ export type Database = {
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
-      join_round: { Args: { p_round_id: string }; Returns: string }
+      join_round:
+        | { Args: { p_round_id: string }; Returns: string }
+        | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
     }
     Enums: {
