@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
 import { Player, PlayerScore, GolfCourse, PlayerGroup } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
+import { ArrowUpDown } from 'lucide-react';
 
 interface LeaderboardDialogProps {
   open: boolean;
@@ -29,7 +30,7 @@ interface LeaderboardDialogProps {
 
 interface LeaderboardEntry {
   player: Player;
-  groupName?: string;
+  groupNumber: number;
   lastConfirmedHole: number;
   grossScore: number;
   netScore: number;
@@ -37,6 +38,8 @@ interface LeaderboardEntry {
   netVsPar: number;
   holesPlayed: number;
 }
+
+type SortMode = 'net' | 'gross';
 
 export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   open,
@@ -47,26 +50,30 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   course,
   confirmedHoles,
 }) => {
+  const [sortMode, setSortMode] = useState<SortMode>('net');
+
   const leaderboard = useMemo((): LeaderboardEntry[] => {
     if (!course) return [];
 
     const entries: LeaderboardEntry[] = [];
 
-    // Combine main group players with additional groups
-    // Main group players (labeled as "Mi Grupo" or no label if no additional groups)
+    // Main group players (group 1)
     const mainGroupPlayers = players.map(p => ({ 
-      ...p, 
-      groupName: playerGroups.length > 0 ? 'Mi Grupo' : undefined 
+      player: p,
+      groupNumber: 1,
     }));
     
-    // Additional groups players
-    const additionalGroupPlayers = playerGroups.flatMap(g => 
-      g.players.map(p => ({ ...p, groupName: g.name }))
+    // Additional groups players (group 2, 3, etc.)
+    const additionalGroupPlayers = playerGroups.flatMap((g, idx) => 
+      g.players.map(p => ({ 
+        player: p, 
+        groupNumber: idx + 2, // Groups start at 2 for additional groups
+      }))
     );
 
     const allPlayers = [...mainGroupPlayers, ...additionalGroupPlayers];
 
-    for (const player of allPlayers) {
+    for (const { player, groupNumber } of allPlayers) {
       const playerScores = scores.get(player.id) || [];
       
       let grossScore = 0;
@@ -83,6 +90,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
 
         const holePar = course.holes[h - 1]?.par || 4;
         grossScore += score.strokes;
+        // Use the net score from the score object which includes handicap strokes
         netScore += score.netScore ?? (score.strokes - (score.strokesReceived || 0));
         parForPlayed += holePar;
         holesPlayed++;
@@ -91,7 +99,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
 
       entries.push({
         player,
-        groupName: (player as any).groupName,
+        groupNumber,
         lastConfirmedHole,
         grossScore,
         netScore,
@@ -101,14 +109,18 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
       });
     }
 
-    // Sort by net vs par (ascending - lower is better)
+    // Sort based on selected mode
     return entries.sort((a, b) => {
       if (a.holesPlayed === 0 && b.holesPlayed === 0) return 0;
       if (a.holesPlayed === 0) return 1;
       if (b.holesPlayed === 0) return -1;
+      
+      if (sortMode === 'gross') {
+        return a.grossVsPar - b.grossVsPar;
+      }
       return a.netVsPar - b.netVsPar;
     });
-  }, [players, playerGroups, scores, course, confirmedHoles]);
+  }, [players, playerGroups, scores, course, confirmedHoles, sortMode]);
 
   const formatVsPar = (value: number): string => {
     if (value === 0) return 'E';
@@ -120,6 +132,10 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
     if (value === 0) return 'text-foreground font-semibold';
     if (value <= 3) return 'text-orange-500 font-semibold';
     return 'text-destructive font-semibold';
+  };
+
+  const handleSortClick = (mode: SortMode) => {
+    setSortMode(mode);
   };
 
   return (
@@ -138,45 +154,64 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
             <Table>
               <TableHeader>
                 <TableRow className="text-xs">
-                  <TableHead className="w-[40px] text-center">#</TableHead>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead className="text-center w-[50px]">Hoyo</TableHead>
-                  <TableHead className="text-center w-[60px]">Gross</TableHead>
-                  <TableHead className="text-center w-[60px]">Neto</TableHead>
+                  <TableHead className="w-[30px] text-center p-1">#</TableHead>
+                  <TableHead className="p-1">Jugador</TableHead>
+                  <TableHead className="text-center w-[36px] p-1">Grp</TableHead>
+                  <TableHead className="text-center w-[36px] p-1">Hoyo</TableHead>
+                  <TableHead 
+                    className={cn(
+                      "text-center w-[50px] p-1 cursor-pointer hover:bg-muted/50 transition-colors",
+                      sortMode === 'gross' && "bg-muted"
+                    )}
+                    onClick={() => handleSortClick('gross')}
+                  >
+                    <div className="flex items-center justify-center gap-0.5">
+                      Gross
+                      {sortMode === 'gross' && <ArrowUpDown className="h-3 w-3" />}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className={cn(
+                      "text-center w-[50px] p-1 cursor-pointer hover:bg-muted/50 transition-colors",
+                      sortMode === 'net' && "bg-muted"
+                    )}
+                    onClick={() => handleSortClick('net')}
+                  >
+                    <div className="flex items-center justify-center gap-0.5">
+                      Neto
+                      {sortMode === 'net' && <ArrowUpDown className="h-3 w-3" />}
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {leaderboard.map((entry, idx) => (
-                  <TableRow key={entry.player.id} className="text-sm">
-                    <TableCell className="text-center font-medium text-muted-foreground">
+                  <TableRow key={entry.player.id} className="text-xs">
+                    <TableCell className="text-center font-medium text-muted-foreground p-1">
                       {entry.holesPlayed > 0 ? idx + 1 : '-'}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                    <TableCell className="p-1">
+                      <div className="flex items-center gap-1.5">
                         <PlayerAvatar 
                           initials={entry.player.initials} 
                           background={entry.player.color} 
                           size="sm" 
                         />
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm truncate max-w-[100px]">
-                            {entry.player.name.split(' ')[0]}
-                          </span>
-                          {entry.groupName && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {entry.groupName}
-                            </span>
-                          )}
-                        </div>
+                        <span className="font-medium text-xs truncate max-w-[80px]">
+                          {entry.player.name.split(' ')[0]}
+                        </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
+                    <TableCell className="text-center text-xs text-muted-foreground p-1">
+                      {entry.groupNumber}
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground p-1">
                       {entry.holesPlayed > 0 ? `${entry.lastConfirmedHole}` : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center', getVsParColor(entry.grossVsPar))}>
+                    <TableCell className={cn('text-center p-1', getVsParColor(entry.grossVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.grossVsPar) : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center', getVsParColor(entry.netVsPar))}>
+                    <TableCell className={cn('text-center p-1', getVsParColor(entry.netVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.netVsPar) : '-'}
                     </TableCell>
                   </TableRow>
