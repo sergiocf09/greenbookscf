@@ -45,8 +45,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   }, [displayGroupIndex, players, playerGroups]);
   
   const hasMultipleGroups = playerGroups.length > 0;
-  const isHoleConfirmed = (holeNumber: number): boolean => {
-    return confirmedHoles.has(holeNumber);
+  // IMPORTANT: Confirmation is per-player (score.confirmed).
+  // We keep the confirmedHoles prop only for backwards compatibility, but we don't
+  // rely on it for rendering or totals.
+  const isHoleConfirmedForPlayer = (playerId: string, holeNumber: number): boolean => {
+    const score = scores.get(playerId)?.find((s) => s.holeNumber === holeNumber);
+    return Boolean(score?.confirmed);
   };
 
   const getPlayerScoreForHole = (playerId: string, holeNumber: number): PlayerScore | undefined => {
@@ -56,8 +60,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   const getPlayerTotal = (playerId: string, startHole: number, endHole: number): number => {
     let total = 0;
     for (let h = startHole; h <= endHole; h++) {
-      // Only count confirmed holes
-      if (!isHoleConfirmed(h)) continue;
+      // Only count confirmed holes for THIS player
+      if (!isHoleConfirmedForPlayer(playerId, h)) continue;
       const score = getPlayerScoreForHole(playerId, h);
       if (score && score.strokes > 0) {
         total += score.strokes;
@@ -198,7 +202,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
           <tbody>
             {displayPlayers.map(player => {
               const firstNineTotal = firstNine.reduce((sum, hole) => {
-                if (!isHoleConfirmed(hole.number)) return sum;
+                if (!isHoleConfirmedForPlayer(player.id, hole.number)) return sum;
                 const score = getPlayerScoreForHole(player.id, hole.number);
                 return sum + (score?.strokes && score.strokes > 0 ? score.strokes : 0);
               }, 0);
@@ -213,7 +217,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 {firstNine.map(hole => {
                   const score = getPlayerScoreForHole(player.id, hole.number);
                   const strokes = score?.strokes || 0;
-                  const confirmed = isHoleConfirmed(hole.number);
+                  const confirmed = isHoleConfirmedForPlayer(player.id, hole.number);
                   return (
                     <td 
                       key={hole.number}
@@ -285,7 +289,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               const frontTotal = getPlayerTotal(player.id, 1, 9);
               const backTotal = getPlayerTotal(player.id, 10, 18);
               const secondNineTotal = secondNine.reduce((sum, hole) => {
-                if (!isHoleConfirmed(hole.number)) return sum;
+                  if (!isHoleConfirmedForPlayer(player.id, hole.number)) return sum;
                 const score = getPlayerScoreForHole(player.id, hole.number);
                 return sum + (score?.strokes && score.strokes > 0 ? score.strokes : 0);
               }, 0);
@@ -300,7 +304,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   {secondNine.map(hole => {
                     const score = getPlayerScoreForHole(player.id, hole.number);
                     const strokes = score?.strokes || 0;
-                    const confirmed = isHoleConfirmed(hole.number);
+                    const confirmed = isHoleConfirmedForPlayer(player.id, hole.number);
                     return (
                       <td 
                         key={hole.number}
