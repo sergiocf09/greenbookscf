@@ -697,6 +697,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     if (tablaGeneralMode === 'all') {
       return allGroupsPlayers;
     }
+    // In 'group' mode, use displayGroupIndex to select which group to show
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
   }, [tablaGeneralMode, displayGroupIndex, players, playerGroups, allGroupsPlayers]);
   
@@ -705,22 +706,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
   }, [displayGroupIndex, players, playerGroups]);
   
-  // Players to show in "Balance vs" section - when a group is selected in Tabla General 'all' mode
+  // Players to show in "Balance vs" section
+  // - In 'group' mode: show players from displayGroupIndex
+  // - In 'all' mode: show players from tablaGeneralSelectedGroup
   const balanceVsPlayers = useMemo(() => {
     if (tablaGeneralMode === 'all' && hasMultipleGroups) {
       return getPlayersForGroup(tablaGeneralSelectedGroup, players, playerGroups);
     }
-    return players; // Default to main group
-  }, [tablaGeneralMode, tablaGeneralSelectedGroup, players, playerGroups, hasMultipleGroups]);
+    // In 'group' mode, use displayGroupIndex (same group shown in Tabla General)
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
+  }, [tablaGeneralMode, tablaGeneralSelectedGroup, displayGroupIndex, players, playerGroups, hasMultipleGroups]);
   
-  // Base player for "Balance vs" - must be from balanceVsPlayers or fallback to players[0]
+  // Base player for "Balance vs" - must be from balanceVsPlayers or fallback
   const basePlayer = useMemo(() => {
     const fromBalanceVs = balanceVsPlayers.find((p) => p.id === balanceBasePlayerId);
     if (fromBalanceVs) return fromBalanceVs;
-    const fromMainGroup = players.find((p) => p.id === balanceBasePlayerId);
-    if (fromMainGroup) return fromMainGroup;
+    // If base player is not in current balanceVsPlayers, reset to first in that list
     return balanceVsPlayers[0] || players[0];
   }, [balanceVsPlayers, players, balanceBasePlayerId]);
+  
+  // Auto-update balanceBasePlayerId when displayGroupIndex changes
+  useEffect(() => {
+    const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    if (groupPlayers.length > 0 && !groupPlayers.some(p => p.id === balanceBasePlayerId)) {
+      setBalanceBasePlayerId(groupPlayers[0].id);
+      setSelectedRival(null);
+    }
+  }, [displayGroupIndex, players, playerGroups, balanceBasePlayerId]);
   
   // Rivals = players in the same group as base player + selected cross-group players
   const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
@@ -745,7 +757,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           {/* Mode toggle + Group selector controls */}
           {hasMultipleGroups && (
             <div className="flex flex-col gap-2">
-              {/* Toggle: Group vs All */}
+              {/* FIRST: Group selector (Ver Grupos 1, 2, 3...) */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Ver Grupo:</span>
+                <GroupSelector
+                  currentGroupIndex={displayGroupIndex}
+                  players={players}
+                  playerGroups={playerGroups}
+                  onGroupChange={(idx) => {
+                    setDisplayGroupIndex(idx);
+                    // When changing group in selector, switch to 'group' mode
+                    setTablaGeneralMode('group');
+                    // Update Balance vs section to show players from this group
+                    const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
+                    if (groupPlayers.length > 0) {
+                      setBalanceBasePlayerId(groupPlayers[0].id);
+                      setSelectedRival(null);
+                    }
+                  }}
+                  compact
+                />
+              </div>
+              
+              {/* SECOND: Toggle between "Solo Grupo" and "Todos los Grupos" */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Vista:</span>
                 <div className="flex items-center gap-1">
@@ -763,7 +797,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTablaGeneralMode('all')}
+                    onClick={() => {
+                      setTablaGeneralMode('all');
+                      // When switching to 'all' mode, set selected group for Balance vs
+                      setTablaGeneralSelectedGroup(displayGroupIndex);
+                    }}
                     className={cn(
                       'px-2 py-1 rounded-full text-xs font-medium transition-all',
                       tablaGeneralMode === 'all'
@@ -776,17 +814,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 </div>
               </div>
               
-              {/* Group selector - different behavior based on mode */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {tablaGeneralMode === 'all' ? 'Balance vs grupo:' : 'Ver grupo:'}
-                </span>
-                <GroupSelector
-                  currentGroupIndex={tablaGeneralMode === 'all' ? tablaGeneralSelectedGroup : displayGroupIndex}
-                  players={players}
-                  playerGroups={playerGroups}
-                  onGroupChange={(idx) => {
-                    if (tablaGeneralMode === 'all') {
+              {/* Show Balance vs group selector only in 'all' mode */}
+              {tablaGeneralMode === 'all' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Balance vs grupo:</span>
+                  <GroupSelector
+                    currentGroupIndex={tablaGeneralSelectedGroup}
+                    players={players}
+                    playerGroups={playerGroups}
+                    onGroupChange={(idx) => {
                       setTablaGeneralSelectedGroup(idx);
                       // Reset base player when switching groups in 'all' mode
                       const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
@@ -794,13 +830,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         setBalanceBasePlayerId(groupPlayers[0].id);
                         setSelectedRival(null);
                       }
-                    } else {
-                      setDisplayGroupIndex(idx);
-                    }
-                  }}
-                  compact
-                />
-              </div>
+                    }}
+                    compact
+                  />
+                </div>
+              )}
             </div>
           )}
         </CardHeader>
