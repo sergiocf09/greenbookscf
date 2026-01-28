@@ -183,10 +183,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               }, 0);
               return (
               <tr key={player.id} className="border-t border-border/50">
-                <td className="px-2 py-1.5 sticky left-0 bg-card">
-                  <div className="flex items-center gap-1.5">
+                <td className="px-2 py-1 sticky left-0 bg-card">
+                  <div className="flex items-center gap-1">
                     <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
-                    <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
+                    <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
                   </div>
                 </td>
                 {firstNine.map(hole => {
@@ -198,7 +198,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                       key={hole.number}
                       onClick={() => onHoleClick?.(hole.number)}
                       className={cn(
-                        'text-center px-1.5 py-1.5 cursor-pointer',
+                        'text-center px-1.5 py-1 cursor-pointer',
                         getScoreColor(strokes, hole.par, confirmed),
                         getScoreBg(strokes, hole.par, confirmed)
                       )}
@@ -207,7 +207,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     </td>
                   );
                 })}
-                <td className="text-center px-2 py-1.5 font-semibold bg-muted/30">
+                <td className="text-center px-2 py-1 font-semibold bg-muted/30">
                   {firstNineTotal || '-'}
                 </td>
               </tr>
@@ -270,10 +270,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               }, 0);
               return (
                 <tr key={player.id} className="border-t border-border/50">
-                  <td className="px-2 py-1.5 sticky left-0 bg-card">
-                    <div className="flex items-center gap-1.5">
+                  <td className="px-2 py-1 sticky left-0 bg-card">
+                    <div className="flex items-center gap-1">
                       <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
-                      <span className="font-medium truncate max-w-[60px]">{player.name.split(' ')[0]}</span>
+                      <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
                     </div>
                   </td>
                   {secondNine.map(hole => {
@@ -285,7 +285,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                         key={hole.number}
                         onClick={() => onHoleClick?.(hole.number)}
                         className={cn(
-                          'text-center px-1.5 py-1.5 cursor-pointer',
+                          'text-center px-1.5 py-1 cursor-pointer',
                           getScoreColor(strokes, hole.par, confirmed),
                           getScoreBg(strokes, hole.par, confirmed)
                         )}
@@ -294,10 +294,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                       </td>
                     );
                   })}
-                  <td className="text-center px-2 py-1.5 font-semibold bg-muted/30">
+                  <td className="text-center px-2 py-1 font-semibold bg-muted/30">
                     {secondNineTotal || '-'}
                   </td>
-                  <td className="text-center px-2 py-1.5 font-bold bg-primary/10 text-primary">
+                  <td className="text-center px-2 py-1 font-bold bg-primary/10 text-primary">
                     {(frontTotal + backTotal) || '-'}
                   </td>
                 </tr>
