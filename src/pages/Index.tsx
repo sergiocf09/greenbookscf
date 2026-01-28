@@ -1311,6 +1311,7 @@ const Index = () => {
             getStrokeIndicators={getStrokeIndicators}
             confirmedHoles={confirmedHoles}
             onAddPlayerClick={() => setShowAddPlayerDialog(true)}
+            startingHole={startingHole}
           />
         )}
 
