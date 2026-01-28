@@ -96,17 +96,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return crossGroupRivalsMap[baseId] || [];
   };
   
-  // Set cross-group rivals for current base player
+  // Set cross-group rivals for current base player (with reciprocity)
   const setCrossGroupRivalsForBase = (updater: string[] | ((prev: string[]) => string[])) => {
     if (!onBetConfigChange || !balanceBasePlayerId) return;
     const currentRivals = getCrossGroupRivalsForBase(balanceBasePlayerId);
     const newRivals = typeof updater === 'function' ? updater(currentRivals) : updater;
+    
+    // Build updated map with base player's new rivals
+    const updatedMap = { 
+      ...crossGroupRivalsMap, 
+      [balanceBasePlayerId]: newRivals 
+    };
+    
+    // Apply reciprocity: if adding a rival, also add base to that rival's list
+    // If removing a rival, also remove base from that rival's list
+    const addedRivals = newRivals.filter(id => !currentRivals.includes(id));
+    const removedRivals = currentRivals.filter(id => !newRivals.includes(id));
+    
+    addedRivals.forEach(rivalId => {
+      const rivalCurrentList = updatedMap[rivalId] || [];
+      if (!rivalCurrentList.includes(balanceBasePlayerId)) {
+        updatedMap[rivalId] = [...rivalCurrentList, balanceBasePlayerId];
+      }
+    });
+    
+    removedRivals.forEach(rivalId => {
+      const rivalCurrentList = updatedMap[rivalId] || [];
+      updatedMap[rivalId] = rivalCurrentList.filter(id => id !== balanceBasePlayerId);
+    });
+    
     onBetConfigChange({ 
       ...betConfig, 
-      crossGroupRivals: { 
-        ...crossGroupRivalsMap, 
-        [balanceBasePlayerId]: newRivals 
-      } 
+      crossGroupRivals: updatedMap 
     });
   };
   
@@ -743,14 +764,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Active group index for balance calculations always follows displayGroupIndex
   const activeBalanceGroupIndex = displayGroupIndex;
 
-  // Auto-update balanceBasePlayerId when the active Balance-vs group changes
+  // Auto-update balanceBasePlayerId ONLY when current base is not in the new group
+  // This prevents resetting selection when clicking within the same group
   useEffect(() => {
     const groupPlayers = getPlayersForGroup(activeBalanceGroupIndex, players, playerGroups);
-    if (groupPlayers.length > 0 && !groupPlayers.some(p => p.id === balanceBasePlayerId)) {
+    const currentBaseInGroup = groupPlayers.some(p => p.id === balanceBasePlayerId);
+    // Only reset if the current base player is NOT in the new group
+    if (groupPlayers.length > 0 && !currentBaseInGroup) {
       setBalanceBasePlayerId(groupPlayers[0].id);
       setSelectedRival(null);
     }
-  }, [activeBalanceGroupIndex, players, playerGroups, balanceBasePlayerId]);
+  }, [activeBalanceGroupIndex, players, playerGroups]);
   
   // Rivals = players in the same group as base player + cross-group players selected by THIS base player
   const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
