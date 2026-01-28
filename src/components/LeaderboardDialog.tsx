@@ -111,10 +111,9 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
       let holesPlayed = 0;
 
       for (let h = 1; h <= 18; h++) {
-        if (!confirmedHoles.has(h)) continue;
-        
         const score = playerScores.find(s => s.holeNumber === h);
-        if (!score || !score.strokes || score.strokes <= 0) continue;
+        if (!score || !score.confirmed) continue;
+        if (!score.strokes || score.strokes <= 0) continue;
 
         const holePar = course.holes[h - 1]?.par || 4;
         const strokesReceivedOnHole = strokesPerHole[h - 1] || 0;

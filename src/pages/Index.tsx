@@ -763,7 +763,8 @@ const Index = () => {
           const isScoringMutation =
             updates.strokes !== undefined || updates.putts !== undefined || updates.oyesProximity !== undefined;
 
-          const shouldUnconfirm = isScoringMutation && (wasConfirmed || confirmedHoles.has(holeNumber));
+          // Confirmation is per-player; do not rely on global confirmedHoles here.
+          const shouldUnconfirm = isScoringMutation && wasConfirmed;
 
           playerScores[idx] = {
             ...playerScores[idx],
@@ -781,20 +782,14 @@ const Index = () => {
             saveScoreToDb(playerId, holeNumber, playerScores[idx]);
           }
 
-          if (shouldUnconfirm) {
-            setConfirmedHoles((prevHoles) => {
-              const next = new Set(prevHoles);
-              next.delete(holeNumber);
-              return next;
-            });
-          }
+          // No global confirmedHoles mutation here; UI/logic derives from per-player flags.
         }
 
         newScores.set(playerId, playerScores);
         return newScores;
       });
     },
-    [players, playerGroups, course, confirmedHoles, roundState.id, saveScoreToDb, setConfirmedHoles]
+    [players, playerGroups, course, roundState.id, saveScoreToDb]
   );
 
   const confirmHole = useCallback((holeNumber: number, playerIds?: string[]) => {
