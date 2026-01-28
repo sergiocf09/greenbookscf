@@ -238,8 +238,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         </div>
       )}
 
-      {/* Add Group Button - always visible when enabled */}
-      {showAddGroupButton && onAddGroupClick && (
+      {/* Add Group Button - always visible when enabled, regardless of player count */}
+      {showAddGroupButton && onAddGroupClick && players.length >= 1 && (
         <Button 
           variant="outline" 
           onClick={onAddGroupClick}
