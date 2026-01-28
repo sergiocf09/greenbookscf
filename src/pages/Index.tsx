@@ -10,7 +10,8 @@ import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
-import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo } from '@/types/golf';
+import { LeaderboardDialog } from '@/components/LeaderboardDialog';
+import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
@@ -84,7 +85,9 @@ const Index = () => {
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
+  const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
     Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>
   >(new Map());
@@ -358,12 +361,24 @@ const Index = () => {
     setSelectedCourseId(null);
     setBetConfig(defaultBetConfig);
     setCurrentHole(1);
+    setPlayerGroups([]);
     setHasInitialNavigated(true); // Prevent auto-navigate
     setView('setup');
     
     // Force page reload to reset hook state
     window.location.reload();
   }, []);
+
+  // Add a new player group
+  const handleAddGroup = useCallback(() => {
+    const newGroup: PlayerGroup = {
+      id: `group-${Date.now()}`,
+      name: `Grupo ${playerGroups.length + 2}`, // +2 because main group is implicit
+      players: [],
+    };
+    setPlayerGroups(prev => [...prev, newGroup]);
+    toast.success(`${newGroup.name} creado`);
+  }, [playerGroups.length]);
 
   const handleRestorePendingRound = useCallback((roundId: string) => {
     // Use a one-shot flag so the hook restores exactly this round on next mount.
@@ -1153,7 +1168,42 @@ const Index = () => {
               onStartingHoleChange={setStartingHole}
               enabled={enableCourseCatalog}
             />
-            <PlayerSetup players={players} onChange={handlePlayersChange} maxPlayers={6} />
+            <PlayerSetup 
+              players={players} 
+              onChange={handlePlayersChange} 
+              maxPlayers={6}
+              showAddGroupButton={true}
+              onAddGroupClick={handleAddGroup}
+            />
+            
+            {/* Additional Groups */}
+            {playerGroups.map((group, idx) => (
+              <div key={group.id} className="space-y-2">
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
+                  <span className="text-sm font-medium">{group.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
+                      toast.success(`${group.name} eliminado`);
+                    }}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
+                <PlayerSetup
+                  players={group.players}
+                  onChange={(newPlayers) => {
+                    setPlayerGroups(prev => prev.map(g => 
+                      g.id === group.id ? { ...g, players: newPlayers } : g
+                    ));
+                  }}
+                  maxPlayers={6}
+                />
+              </div>
+            ))}
             
             {/* Share Options Button - show after round is created */}
             {roundState.id && (
@@ -1301,18 +1351,32 @@ const Index = () => {
         )}
 
         {view === 'scorecard' && course && (
-          <Scorecard 
-            players={players} 
-            course={course} 
-            scores={scores} 
-            currentHole={currentHole} 
-            onHoleClick={h => { setCurrentHole(h); setView('scoring'); }}
-            basePlayerId={profile?.id}
-            getStrokeIndicators={getStrokeIndicators}
-            confirmedHoles={confirmedHoles}
-            onAddPlayerClick={() => setShowAddPlayerDialog(true)}
-            startingHole={startingHole}
-          />
+          <>
+            <Scorecard 
+              players={players} 
+              course={course} 
+              scores={scores} 
+              currentHole={currentHole} 
+              onHoleClick={h => { setCurrentHole(h); setView('scoring'); }}
+              basePlayerId={profile?.id}
+              getStrokeIndicators={getStrokeIndicators}
+              confirmedHoles={confirmedHoles}
+              onAddPlayerClick={() => setShowAddPlayerDialog(true)}
+              startingHole={startingHole}
+              onLeaderboardClick={() => setShowLeaderboardDialog(true)}
+              playerGroups={playerGroups}
+            />
+            
+            <LeaderboardDialog
+              open={showLeaderboardDialog}
+              onOpenChange={setShowLeaderboardDialog}
+              players={players}
+              playerGroups={playerGroups}
+              scores={scores}
+              course={course}
+              confirmedHoles={confirmedHoles}
+            />
+          </>
         )}
 
         {roundState.id && (

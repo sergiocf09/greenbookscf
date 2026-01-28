@@ -1,8 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Player, GolfCourse, PlayerScore, MarkerState } from '@/types/golf';
+import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup } from '@/types/golf';
 import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
-import { Plus } from 'lucide-react';
+import { Plus, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -17,6 +17,8 @@ interface ScorecardProps {
   confirmedHoles?: Set<number>;
   onAddPlayerClick?: () => void;
   startingHole?: 1 | 10;
+  onLeaderboardClick?: () => void;
+  playerGroups?: PlayerGroup[];
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -30,6 +32,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   confirmedHoles = new Set(),
   onAddPlayerClick,
   startingHole = 1,
+  onLeaderboardClick,
+  playerGroups = [],
 }) => {
   const isHoleConfirmed = (holeNumber: number): boolean => {
     return confirmedHoles.has(holeNumber);
@@ -104,18 +108,32 @@ export const Scorecard: React.FC<ScorecardProps> = ({
             <p className="text-[10px] text-muted-foreground">{course.name}</p>
           </div>
 
-          {onAddPlayerClick && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8 px-2 text-xs"
-              onClick={onAddPlayerClick}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Jugador
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {onLeaderboardClick && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 px-2 text-xs"
+                onClick={onLeaderboardClick}
+              >
+                <Trophy className="h-3.5 w-3.5 mr-1" />
+                Leaderboard
+              </Button>
+            )}
+            {onAddPlayerClick && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 px-2 text-xs"
+                onClick={onAddPlayerClick}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Jugador
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
