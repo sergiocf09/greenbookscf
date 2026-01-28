@@ -59,7 +59,7 @@ interface RoundBetConfig {
   carritosTeams?: CarritosTeamBet[];
   bilateralHandicaps?: BilateralHandicap[];
   betOverrides?: BetOverride[];
-  crossGroupRivals?: string[]; // IDs of players from other groups selected for bilateral bets
+  crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> rival IDs
 }
 
 export const useBetConfigPersistence = ({
@@ -175,7 +175,7 @@ export const useBetConfigPersistence = ({
             newConfig.carritosTeams = dbConfig.carritosTeams;
           }
           
-          // Apply cross-group rivals if exist
+          // Apply cross-group rivals if exist (new structure: Record<string, string[]>)
           if (dbConfig.crossGroupRivals) {
             newConfig.crossGroupRivals = dbConfig.crossGroupRivals;
           }
@@ -236,7 +236,7 @@ export const useBetConfigPersistence = ({
         carritosTeams: config.carritosTeams || [],
         bilateralHandicaps: config.bilateralHandicaps || [],
         betOverrides: config.betOverrides || [],
-        crossGroupRivals: config.crossGroupRivals || [],
+        crossGroupRivals: config.crossGroupRivals || {},
       };
 
       const { error } = await supabase
