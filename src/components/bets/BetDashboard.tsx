@@ -81,8 +81,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
-  const [crossGroupRivals, setCrossGroupRivals] = useState<string[]>([]); // IDs of selected cross-group players
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0); // For group selector in detail view
+  
+  // Cross-group rivals are now stored in betConfig and persisted via onBetConfigChange
+  const crossGroupRivals = betConfig.crossGroupRivals || [];
+  const setCrossGroupRivals = (updater: string[] | ((prev: string[]) => string[])) => {
+    if (!onBetConfigChange) return;
+    const newValue = typeof updater === 'function' ? updater(crossGroupRivals) : updater;
+    onBetConfigChange({ ...betConfig, crossGroupRivals: newValue });
+  };
+  
   // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
   
   // Filter scores to only include confirmed scores.
@@ -103,11 +111,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
     return filtered;
   }, [scores]);
+  
+  // Get all players from other groups (for cross-group betting)
+  const otherGroupPlayers = useMemo(() => {
+    return getAllPlayersFromAllGroups([], playerGroups); // Only players from additional groups
+  }, [playerGroups]);
+  
+  // Combine main group players with selected cross-group players for bet calculations
+  const allPlayersForCalculations = useMemo(() => {
+    const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => crossGroupRivals.includes(p.id));
+    // Create a combined player list, avoiding duplicates
+    const combined = [...players];
+    selectedCrossGroupPlayers.forEach(p => {
+      if (!combined.some(existing => existing.id === p.id)) {
+        combined.push(p);
+      }
+    });
+    return combined;
+  }, [players, otherGroupPlayers, crossGroupRivals]);
 
-  // Calculate all bets using only confirmed scores
+  // Calculate all bets using only confirmed scores - now including cross-group players
   const betSummaries = useMemo(() => 
-    calculateAllBets(players, confirmedScores, betConfig, course, startingHole),
-    [players, confirmedScores, betConfig, course, startingHole]
+    calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole),
+    [allPlayersForCalculations, confirmedScores, betConfig, course, startingHole]
   );
   
   // Calculate ALL Carritos results (primary + additional teams)
@@ -525,11 +551,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [players, basePlayerId, balanceBasePlayerId]);
 
   const basePlayer = players.find((p) => p.id === balanceBasePlayerId) || players[0];
-  
-  // Get all players from other groups (for cross-group betting)
-  const otherGroupPlayers = useMemo(() => {
-    return getAllPlayersFromAllGroups([], playerGroups); // Only players from additional groups
-  }, [playerGroups]);
   
   // Rivals = players in the same group + selected cross-group players
   const sameGroupRivals = players.filter((p) => p.id !== basePlayer?.id);
