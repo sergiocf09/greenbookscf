@@ -82,6 +82,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
   const [crossGroupRivals, setCrossGroupRivals] = useState<string[]>([]); // IDs of selected cross-group players
+  const [displayGroupIndex, setDisplayGroupIndex] = useState(0); // For group selector in detail view
   // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
   
   // Filter scores to only include confirmed scores.
@@ -580,12 +581,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const getGroupedSummaries = (rivalId: string) =>
     groupSummariesByType(basePlayer?.id || '', rivalId, betSummaries);
   
-  // Sort players by total balance for leaderboard
-  const sortedPlayers = useMemo(() => {
-    return [...players].sort((a, b) => 
-      getPlayerBalance(b.id, betSummaries) - getPlayerBalance(a.id, betSummaries)
+  // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
+  const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
+    return [...playersToSort].sort((a, b) => 
+      getPlayerBalance(b.id, betSummaries) + getCarritosBalanceForPlayer(b.id) - 
+      (getPlayerBalance(a.id, betSummaries) + getCarritosBalanceForPlayer(a.id))
     );
-  }, [players, betSummaries]);
+  };
+  
+  // For verification calculation, still use all players from current group
+  const sortedPlayers = useMemo(() => {
+    return getSortedPlayersForDisplay(players);
+  }, [players, betSummaries, allCarritosResults]);
 
   // Get player name abbreviation (first 3 letters)
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
@@ -656,22 +663,53 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }
   };
   
+  // Get players to display based on selected group
+  const hasMultipleGroups = playerGroups.length > 0;
+  const displayPlayers = useMemo(() => {
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
+  }, [displayGroupIndex, players, playerGroups]);
+  
   return (
     <div className="space-y-4">
+      {/* Group Selector - visible when multiple groups exist */}
+      {hasMultipleGroups && (
+        <Card className="bg-muted/30">
+          <CardContent className="py-2 px-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Ver grupo:</span>
+              <GroupSelector
+                currentGroupIndex={displayGroupIndex}
+                players={players}
+                playerGroups={playerGroups}
+                onGroupChange={setDisplayGroupIndex}
+                compact
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Tabla General */}
       <Card>
         <CardHeader className="py-3">
-          <CardTitle className="text-sm">Tabla General</CardTitle>
+          <CardTitle className="text-sm flex items-center justify-between">
+            <span>Tabla General</span>
+            {hasMultipleGroups && displayGroupIndex > 0 && (
+              <span className="text-xs font-normal text-muted-foreground">
+                {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-2">
-            {sortedPlayers.map((player, idx) => {
+            {getSortedPlayersForDisplay(displayPlayers).map((player, idx) => {
               const balance = getPlayerBalance(player.id, betSummaries);
               const carritosBalance = getCarritosBalanceForPlayer(player.id);
               const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
-              const otherPlayers = players.filter(p => p.id !== player.id);
+              const otherPlayers = displayPlayers.filter(p => p.id !== player.id);
               
               return (
                 <div key={player.id}>
@@ -686,7 +724,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <span className={cn(
                         'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
                         idx === 0 ? 'bg-golf-gold text-golf-gold-foreground' :
-                        idx === sortedPlayers.length - 1 ? 'bg-destructive text-destructive-foreground' :
+                        idx === getSortedPlayersForDisplay(displayPlayers).length - 1 ? 'bg-destructive text-destructive-foreground' :
                         'bg-muted text-muted-foreground'
                       )}>
                         {idx + 1}
@@ -755,7 +793,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${sortedPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
+            Σ = ${displayPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>

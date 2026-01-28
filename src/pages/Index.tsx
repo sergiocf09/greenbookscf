@@ -137,6 +137,7 @@ const Index = () => {
     setTeeColor,
     setStartingHole,
     getCourseById,
+    setPlayerGroups,
   });
 
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
