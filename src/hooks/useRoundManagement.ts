@@ -283,22 +283,27 @@ export const useRoundManagement = ({
           devLog('Restoring selected pending round:', activeRound.id);
 
           // Get all groups for this round (sorted by group_number to identify main group)
-          const allGroups = await retry<any[]>(() =>
-            supabase
-              .from('round_groups')
-              .select('id, group_number')
-              .eq('round_id', activeRound.id)
-              .order('group_number', { ascending: true }) as any
-          );
+          const { data: allGroupsData, error: groupsError } = await supabase
+            .from('round_groups')
+            .select('id, group_number')
+            .eq('round_id', activeRound.id)
+            .order('group_number', { ascending: true });
+          
+          if (groupsError) {
+            devError('Failed to fetch round_groups:', groupsError);
+          }
+          
+          const allGroups = allGroupsData || [];
+          devLog('Loaded groups from DB:', allGroups);
           
           // Build a map from group_id to group_number
           const groupNumberById = new Map<string, number>();
-          (allGroups || []).forEach((g: any) => {
+          allGroups.forEach((g: any) => {
             groupNumberById.set(g.id, g.group_number);
           });
           
           // Identify main group (group_number = 1)
-          const mainGroupId = (allGroups || []).find((g: any) => g.group_number === 1)?.id || null;
+          let mainGroupId = allGroups.find((g: any) => g.group_number === 1)?.id || null;
 
           // Get all players in this round (including guests). Avoid embedded joins
           // to ensure guests (profile_id = null) are always returned.
@@ -313,6 +318,14 @@ export const useRoundManagement = ({
             toast.error('No se pudieron cargar los jugadores de la ronda');
             return;
           }
+          
+          devLog('Loaded round players:', allRoundPlayers.length, 'players');
+
+          // Fallback: if no groups were loaded from DB, use first player's group as main
+          if (!mainGroupId && allRoundPlayers.length > 0) {
+            mainGroupId = allRoundPlayers[0].group_id;
+            devLog('Using fallback mainGroupId from first player:', mainGroupId);
+          }
 
           // Restore round state
           setRoundState({
@@ -322,7 +335,7 @@ export const useRoundManagement = ({
             courseId: activeRound.course_id,
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
             startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
-            groupId: mainGroupId || allRoundPlayers[0]?.group_id || null,
+            groupId: mainGroupId,
           });
           
           // Also update parent state for starting hole
@@ -389,8 +402,12 @@ export const useRoundManagement = ({
             playersByGroupId.set(rp.group_id, groupPlayers);
           });
 
+          devLog('Players grouped by group_id:', Array.from(playersByGroupId.entries()).map(([k, v]) => ({ groupId: k, count: v.length })));
+
           // Main group players (group_number = 1)
           const mainGroupPlayers = mainGroupId ? (playersByGroupId.get(mainGroupId) || []) : [];
+          
+          devLog('Main group players:', mainGroupPlayers.length);
           
           // Additional groups - sorted by group_number
           const additionalGroups: PlayerGroup[] = [];
@@ -407,6 +424,8 @@ export const useRoundManagement = ({
               players: groupPlayers,
             });
           });
+          
+          devLog('Additional groups:', additionalGroups.length, additionalGroups.map(g => ({ name: g.name, players: g.players.length })));
 
           setRoundPlayerIds(rpIdMap);
           setPlayers(mainGroupPlayers);
