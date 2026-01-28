@@ -939,11 +939,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       </Card>
       
       {/* Bilateral Detail View */}
-      {selectedRival && basePlayer && (
+      {selectedRival && basePlayer && rivals.find(p => p.id === selectedRival) && (
         <BilateralDetail
           players={players}
           player={basePlayer}
-          rival={players.find(p => p.id === selectedRival)!}
+          rival={rivals.find(p => p.id === selectedRival)!}
           groupedSummaries={getGroupedSummaries(selectedRival)}
           totalBalance={getRivalBalance(selectedRival)}
           expandedTypes={expandedTypes}
