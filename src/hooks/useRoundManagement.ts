@@ -914,8 +914,9 @@ export const useRoundManagement = ({
   }, [roundState.id, profile, scores, players, betConfig, roundPlayerIds, isValidBetType]);
 
   // Add a player to an active round (creates round_player entry in DB)
-  const addPlayerToRound = useCallback(async (player: Player): Promise<boolean> => {
-    if (!roundState.id || !roundState.groupId) {
+  const addPlayerToRound = useCallback(async (player: Player, targetGroupId?: string | null): Promise<boolean> => {
+    const groupId = targetGroupId ?? roundState.groupId;
+    if (!roundState.id || !groupId) {
       devLog('No active round to add player to');
       return false;
     }
@@ -933,7 +934,7 @@ export const useRoundManagement = ({
           .from('round_players')
           .insert({
             round_id: roundState.id,
-            group_id: roundState.groupId,
+            group_id: groupId,
             profile_id: player.profileId,
             handicap_for_round: 0,
             is_organizer: false,
@@ -972,7 +973,7 @@ export const useRoundManagement = ({
           .from('round_players')
           .insert({
             round_id: roundState.id,
-            group_id: roundState.groupId,
+            group_id: groupId,
             profile_id: null,
             handicap_for_round: 0,
             is_organizer: false,
