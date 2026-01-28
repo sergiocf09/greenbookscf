@@ -581,6 +581,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const getGroupedSummaries = (rivalId: string) =>
     groupSummariesByType(basePlayer?.id || '', rivalId, betSummaries);
   
+  // Get carritos balance for a specific player
+  const getCarritosBalanceForPlayer = (playerId: string): number => {
+    let total = 0;
+    allCarritosResults.forEach(result => {
+      if (result.teamA.includes(playerId)) {
+        total += result.moneyA / 2; // Each player gets half
+      } else if (result.teamB.includes(playerId)) {
+        total += result.moneyB / 2;
+      }
+    });
+    return total;
+  };
+
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
     return [...playersToSort].sort((a, b) => 
@@ -596,19 +609,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Get player name abbreviation (first 3 letters)
   const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
-
-  // Get carritos balance for a specific player
-  const getCarritosBalanceForPlayer = (playerId: string): number => {
-    let total = 0;
-    allCarritosResults.forEach(result => {
-      if (result.teamA.includes(playerId)) {
-        total += result.moneyA / 2; // Each player gets half
-      } else if (result.teamB.includes(playerId)) {
-        total += result.moneyB / 2;
-      }
-    });
-    return total;
-  };
   
   // Get carritos balance between two specific players
   // Returns the balance from playerA's perspective vs playerB
