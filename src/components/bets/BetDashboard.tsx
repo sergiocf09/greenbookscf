@@ -585,6 +585,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Get carritos balance between two specific players
   // Returns the balance from playerA's perspective vs playerB
+  // 
+  // Settlement logic for Carritos (team bets):
+  // - Team result moneyA is the total the team wins/loses
+  // - Each player on a team gets/pays half: moneyA / 2
+  // - That half is split evenly between the two opponents: (moneyA / 2) / 2 = moneyA / 4
+  // 
+  // Example: Team A wins $200
+  // - Player A1 gets $100 total ($50 from B1 + $50 from B2)
+  // - Player A2 gets $100 total ($50 from B1 + $50 from B2)
+  // - So vs any single opponent, the amount is moneyA / 4
   const getCarritosBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
     let total = 0;
     allCarritosResults.forEach(result => {
@@ -593,12 +603,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const teamAHasPlayerB = result.teamA.includes(playerBId);
       const teamBHasPlayerB = result.teamB.includes(playerBId);
       
-      // If they're on opposite teams, calculate the 50% split
+      // If they're on opposite teams, calculate the correct split
       if ((teamAHasPlayerA && teamBHasPlayerB) || (teamBHasPlayerA && teamAHasPlayerB)) {
-        // PlayerA and PlayerB are opponents - 50% of team result
+        // PlayerA and PlayerB are opponents
         const playerAMoney = teamAHasPlayerA ? result.moneyA : result.moneyB;
-        // Each player pays/receives 50% to/from each opponent
-        total += playerAMoney / 2;
+        // Each player pays/receives 25% of total to/from each opponent (1/4)
+        // Because: (team total / 2 players on winning team) / 2 opponents = total / 4
+        total += playerAMoney / 4;
       }
       // If they're on the same team, no money changes between them
     });
