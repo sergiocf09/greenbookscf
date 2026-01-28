@@ -59,6 +59,7 @@ interface BetDashboardProps {
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
   onBetConfigChange?: (config: BetConfig) => void;
+  startingHole?: 1 | 10;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -69,6 +70,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   basePlayerId,
   confirmedHoles = new Set(),
   onBetConfigChange,
+  startingHole = 1,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -97,8 +99,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Calculate all bets using only confirmed scores
   const betSummaries = useMemo(() => 
-    calculateAllBets(players, confirmedScores, betConfig, course),
-    [players, confirmedScores, betConfig, course]
+    calculateAllBets(players, confirmedScores, betConfig, course, startingHole),
+    [players, confirmedScores, betConfig, course, startingHole]
   );
   
   // Calculate ALL Carritos results (primary + additional teams)

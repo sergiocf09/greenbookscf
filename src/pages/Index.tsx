@@ -1334,6 +1334,7 @@ const Index = () => {
               basePlayerId={profile?.id}
               confirmedHoles={confirmedHoles}
               onBetConfigChange={setBetConfig}
+              startingHole={startingHole}
             />
             
             {/* Close Scorecard Button */}
