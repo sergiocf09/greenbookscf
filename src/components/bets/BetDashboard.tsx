@@ -83,6 +83,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0); // For group selector in detail view
   
+  // Tabla General view mode: 'group' = show selected group only, 'all' = show all groups combined
+  const [tablaGeneralMode, setTablaGeneralMode] = useState<'group' | 'all'>('group');
+  // Selected group for Tabla General when in 'all' mode (to show in Balance vs)
+  const [tablaGeneralSelectedGroup, setTablaGeneralSelectedGroup] = useState(0);
+  
   // Cross-group rivals are now stored in betConfig and persisted via onBetConfigChange
   const crossGroupRivals = betConfig.crossGroupRivals || [];
   const setCrossGroupRivals = (updater: string[] | ((prev: string[]) => string[])) => {
@@ -550,12 +555,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }
   }, [players, basePlayerId, balanceBasePlayerId]);
 
-  const basePlayer = players.find((p) => p.id === balanceBasePlayerId) || players[0];
-  
-  // Rivals = players in the same group + selected cross-group players
-  const sameGroupRivals = players.filter((p) => p.id !== basePlayer?.id);
-  const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => crossGroupRivals.includes(p.id));
-  const rivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
+  // Base player, sameGroupRivals, rivals are calculated after balanceVsPlayers is defined
   
   // Players available to add as cross-group rivals (not already selected)
   const availableCrossGroupPlayers = otherGroupPlayers.filter(p => !crossGroupRivals.includes(p.id));
@@ -686,51 +686,137 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Get players to display based on selected group
   const hasMultipleGroups = playerGroups.length > 0;
+  
+  // All players from all groups combined
+  const allGroupsPlayers = useMemo(() => {
+    return getAllPlayersFromAllGroups(players, playerGroups);
+  }, [players, playerGroups]);
+  
+  // Players to display in Tabla General based on mode
+  const tablaGeneralPlayers = useMemo(() => {
+    if (tablaGeneralMode === 'all') {
+      return allGroupsPlayers;
+    }
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
+  }, [tablaGeneralMode, displayGroupIndex, players, playerGroups, allGroupsPlayers]);
+  
+  // Players for the old displayPlayers (used in other sections)
   const displayPlayers = useMemo(() => {
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
   }, [displayGroupIndex, players, playerGroups]);
   
+  // Players to show in "Balance vs" section - when a group is selected in Tabla General 'all' mode
+  const balanceVsPlayers = useMemo(() => {
+    if (tablaGeneralMode === 'all' && hasMultipleGroups) {
+      return getPlayersForGroup(tablaGeneralSelectedGroup, players, playerGroups);
+    }
+    return players; // Default to main group
+  }, [tablaGeneralMode, tablaGeneralSelectedGroup, players, playerGroups, hasMultipleGroups]);
+  
+  // Base player for "Balance vs" - must be from balanceVsPlayers or fallback to players[0]
+  const basePlayer = useMemo(() => {
+    const fromBalanceVs = balanceVsPlayers.find((p) => p.id === balanceBasePlayerId);
+    if (fromBalanceVs) return fromBalanceVs;
+    const fromMainGroup = players.find((p) => p.id === balanceBasePlayerId);
+    if (fromMainGroup) return fromMainGroup;
+    return balanceVsPlayers[0] || players[0];
+  }, [balanceVsPlayers, players, balanceBasePlayerId]);
+  
+  // Rivals = players in the same group as base player + selected cross-group players
+  const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
+  const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => crossGroupRivals.includes(p.id));
+  const rivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
+
   return (
     <div className="space-y-4">
-      {/* Group Selector - visible when multiple groups exist */}
-      {hasMultipleGroups && (
-        <Card className="bg-muted/30">
-          <CardContent className="py-2 px-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Ver grupo:</span>
-              <GroupSelector
-                currentGroupIndex={displayGroupIndex}
-                players={players}
-                playerGroups={playerGroups}
-                onGroupChange={setDisplayGroupIndex}
-                compact
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
       
       {/* Tabla General */}
       <Card>
-        <CardHeader className="py-3">
+        <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center justify-between">
             <span>Tabla General</span>
-            {hasMultipleGroups && displayGroupIndex > 0 && (
+            {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
               <span className="text-xs font-normal text-muted-foreground">
                 {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
               </span>
             )}
           </CardTitle>
+          
+          {/* Mode toggle + Group selector controls */}
+          {hasMultipleGroups && (
+            <div className="flex flex-col gap-2">
+              {/* Toggle: Group vs All */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Vista:</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setTablaGeneralMode('group')}
+                    className={cn(
+                      'px-2 py-1 rounded-full text-xs font-medium transition-all',
+                      tablaGeneralMode === 'group'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    )}
+                  >
+                    Solo Grupo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTablaGeneralMode('all')}
+                    className={cn(
+                      'px-2 py-1 rounded-full text-xs font-medium transition-all',
+                      tablaGeneralMode === 'all'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    )}
+                  >
+                    Todos los Grupos
+                  </button>
+                </div>
+              </div>
+              
+              {/* Group selector - different behavior based on mode */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {tablaGeneralMode === 'all' ? 'Balance vs grupo:' : 'Ver grupo:'}
+                </span>
+                <GroupSelector
+                  currentGroupIndex={tablaGeneralMode === 'all' ? tablaGeneralSelectedGroup : displayGroupIndex}
+                  players={players}
+                  playerGroups={playerGroups}
+                  onGroupChange={(idx) => {
+                    if (tablaGeneralMode === 'all') {
+                      setTablaGeneralSelectedGroup(idx);
+                      // Reset base player when switching groups in 'all' mode
+                      const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
+                      if (groupPlayers.length > 0) {
+                        setBalanceBasePlayerId(groupPlayers[0].id);
+                        setSelectedRival(null);
+                      }
+                    } else {
+                      setDisplayGroupIndex(idx);
+                    }
+                  }}
+                  compact
+                />
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-2">
-            {getSortedPlayersForDisplay(displayPlayers).map((player, idx) => {
+            {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
               const balance = getPlayerBalance(player.id, betSummaries);
               const carritosBalance = getCarritosBalanceForPlayer(player.id);
               const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
-              const otherPlayers = displayPlayers.filter(p => p.id !== player.id);
+              const otherPlayers = tablaGeneralPlayers.filter(p => p.id !== player.id);
+              
+              // Determine which group this player belongs to
+              const playerGroupIdx = players.some(p => p.id === player.id) ? 0 : 
+                playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
               
               return (
                 <div key={player.id}>
@@ -745,7 +831,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <span className={cn(
                         'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
                         idx === 0 ? 'bg-golf-gold text-golf-gold-foreground' :
-                        idx === getSortedPlayersForDisplay(displayPlayers).length - 1 ? 'bg-destructive text-destructive-foreground' :
+                        idx === getSortedPlayersForDisplay(tablaGeneralPlayers).length - 1 ? 'bg-destructive text-destructive-foreground' :
                         'bg-muted text-muted-foreground'
                       )}>
                         {idx + 1}
@@ -756,9 +842,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       >
                         {getPlayerAbbr(player)}
                       </div>
-                      <div>
-                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
-                        <span className="text-[10px] text-muted-foreground ml-1">HCP {player.handicap}</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                          <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
+                        </div>
+                        {tablaGeneralMode === 'all' && hasMultipleGroups && (
+                          <span className="text-[9px] text-muted-foreground/70">
+                            Grupo {playerGroupIdx + 1}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -780,6 +873,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
                         
+                        // Other player's group
+                        const otherGroupIdx = players.some(p => p.id === other.id) ? 0 : 
+                          playerGroups.findIndex(g => g.players.some(p => p.id === other.id)) + 1;
+                        
                         return (
                           <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
                             <div className="flex items-center gap-2">
@@ -790,6 +887,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               >
                                 {getPlayerAbbr(other)}
                               </div>
+                              {tablaGeneralMode === 'all' && hasMultipleGroups && (
+                                <span className="text-[9px] text-muted-foreground/60">G{otherGroupIdx + 1}</span>
+                              )}
                               {vsCarritosBalance !== 0 && (
                                 <span className="text-[9px] text-muted-foreground">
                                   Ind: ${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance} | Car: ${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}
@@ -814,7 +914,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${displayPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
+            Σ = ${tablaGeneralPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, betSummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>
@@ -829,9 +929,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <span className="text-muted-foreground">vs:</span>
           </CardTitle>
 
+          {/* Show group indicator when in 'all' mode */}
+          {tablaGeneralMode === 'all' && hasMultipleGroups && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Users className="h-3 w-3" />
+              <span>
+                Grupo {tablaGeneralSelectedGroup + 1}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <span className="text-[10px] text-muted-foreground shrink-0">Base:</span>
-            {players.map((p) => {
+            {balanceVsPlayers.map((p) => {
               const isActive = p.id === basePlayer?.id;
               return (
                 <button
