@@ -827,66 +827,9 @@ export const useRoundManagement = ({
         if (ledgerError) throw ledgerError;
       }
 
-      // Update player vs player records
-      const pvpUpdates = new Map<string, { aWon: number; bWon: number }>();
-      allBetResults.forEach(result => {
-        if (!result.fromPlayerId || !result.toPlayerId || result.amount === 0) return;
-        
-        const fromPlayer = players.find(p => p.id === result.fromPlayerId);
-        const toPlayer = players.find(p => p.id === result.toPlayerId);
-        
-        if (!fromPlayer?.profileId || !toPlayer?.profileId) return;
-
-        const key = [fromPlayer.profileId, toPlayer.profileId].sort().join('-');
-        const existing = pvpUpdates.get(key) || { aWon: 0, bWon: 0 };
-        
-        // Determine who is player A (alphabetically first)
-        const isFromPlayerA = fromPlayer.profileId < toPlayer.profileId;
-        if (result.amount > 0) {
-          // toPlayer won
-          if (isFromPlayerA) {
-            existing.bWon += result.amount;
-          } else {
-            existing.aWon += result.amount;
-          }
-        }
-        pvpUpdates.set(key, existing);
-      });
-
-      // Upsert PvP records
-      for (const [key, amounts] of pvpUpdates) {
-        const [playerAId, playerBId] = key.split('-');
-        
-        const { data: existing } = await supabase
-          .from('player_vs_player')
-          .select('*')
-          .eq('player_a_id', playerAId)
-          .eq('player_b_id', playerBId)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase
-            .from('player_vs_player')
-            .update({
-              rounds_played: existing.rounds_played + 1,
-              total_won_by_a: Number(existing.total_won_by_a) + amounts.aWon,
-              total_won_by_b: Number(existing.total_won_by_b) + amounts.bWon,
-              last_played_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
-        } else {
-          await supabase
-            .from('player_vs_player')
-            .insert({
-              player_a_id: playerAId,
-              player_b_id: playerBId,
-              rounds_played: 1,
-              total_won_by_a: amounts.aWon,
-              total_won_by_b: amounts.bWon,
-              last_played_at: new Date().toISOString(),
-            });
-        }
-      }
+      // NOTE: Player vs Player (PvP) records are now updated server-side
+      // within the finalize_round_bets RPC function for security.
+      // This prevents client-side manipulation of head-to-head statistics.
 
       // Update handicap history for all players with profiles
       for (const player of players) {
