@@ -88,12 +88,28 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Selected group for Tabla General when in 'all' mode (to show in Balance vs)
   const [tablaGeneralSelectedGroup, setTablaGeneralSelectedGroup] = useState(0);
   
-  // Cross-group rivals are now stored in betConfig and persisted via onBetConfigChange
-  const crossGroupRivals = betConfig.crossGroupRivals || [];
-  const setCrossGroupRivals = (updater: string[] | ((prev: string[]) => string[])) => {
-    if (!onBetConfigChange) return;
-    const newValue = typeof updater === 'function' ? updater(crossGroupRivals) : updater;
-    onBetConfigChange({ ...betConfig, crossGroupRivals: newValue });
+  // Cross-group rivals are now stored in betConfig as a per-player map
+  // Structure: { [basePlayerId]: string[] } - each player has their own exclusive selections
+  const crossGroupRivalsMap = betConfig.crossGroupRivals || {};
+  
+  // Get cross-group rivals for the current base player only
+  const getCrossGroupRivalsForBase = (baseId: string | null | undefined): string[] => {
+    if (!baseId) return [];
+    return crossGroupRivalsMap[baseId] || [];
+  };
+  
+  // Set cross-group rivals for current base player
+  const setCrossGroupRivalsForBase = (updater: string[] | ((prev: string[]) => string[])) => {
+    if (!onBetConfigChange || !balanceBasePlayerId) return;
+    const currentRivals = getCrossGroupRivalsForBase(balanceBasePlayerId);
+    const newRivals = typeof updater === 'function' ? updater(currentRivals) : updater;
+    onBetConfigChange({ 
+      ...betConfig, 
+      crossGroupRivals: { 
+        ...crossGroupRivalsMap, 
+        [balanceBasePlayerId]: newRivals 
+      } 
+    });
   };
   
   // Bilateral handicaps are now stored in betConfig and persisted via onBetConfigChange
@@ -122,9 +138,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return getAllPlayersFromAllGroups([], playerGroups); // Only players from additional groups
   }, [playerGroups]);
   
+  // Get cross-group rivals for current base player (for calculations)
+  const currentBaseRivals = getCrossGroupRivalsForBase(balanceBasePlayerId);
+  
   // Combine main group players with selected cross-group players for bet calculations
+  // This now only includes the cross-group players selected by the current base player
   const allPlayersForCalculations = useMemo(() => {
-    const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => crossGroupRivals.includes(p.id));
+    const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => currentBaseRivals.includes(p.id));
     // Create a combined player list, avoiding duplicates
     const combined = [...players];
     selectedCrossGroupPlayers.forEach(p => {
@@ -133,7 +153,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       }
     });
     return combined;
-  }, [players, otherGroupPlayers, crossGroupRivals]);
+  }, [players, otherGroupPlayers, currentBaseRivals]);
 
   // Calculate all bets using only confirmed scores - now including cross-group players
   const betSummaries = useMemo(() => 
@@ -557,8 +577,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Base player, sameGroupRivals, rivals are calculated after balanceVsPlayers is defined
   
-  // Players available to add as cross-group rivals (not already selected)
-  const availableCrossGroupPlayers = otherGroupPlayers.filter(p => !crossGroupRivals.includes(p.id));
+  // Players available to add as cross-group rivals for current base player
+  const availableCrossGroupPlayers = otherGroupPlayers.filter(
+    p => !getCrossGroupRivalsForBase(balanceBasePlayerId).includes(p.id)
+  );
   
   const toggleExpanded = (type: string) => {
     setExpandedTypes(prev => 
@@ -693,13 +715,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [players, playerGroups]);
   
   // Players to display in Tabla General based on mode
+  // 'group' mode: Only players from the selected group
+  // 'all' mode: Players from selected group + cross-group rivals of each player (for expanded view)
   const tablaGeneralPlayers = useMemo(() => {
-    if (tablaGeneralMode === 'all') {
-      return allGroupsPlayers;
-    }
-    // In 'group' mode, use displayGroupIndex to select which group to show
+    // Both modes show only the selected group's players in the main list
+    // The difference is in the expanded view (handled separately)
     return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [tablaGeneralMode, displayGroupIndex, players, playerGroups, allGroupsPlayers]);
+  }, [displayGroupIndex, players, playerGroups]);
   
   // Players for the old displayPlayers (used in other sections)
   const displayPlayers = useMemo(() => {
@@ -734,9 +756,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }
   }, [displayGroupIndex, players, playerGroups, balanceBasePlayerId]);
   
-  // Rivals = players in the same group as base player + selected cross-group players
+  // Rivals = players in the same group as base player + cross-group players selected by THIS base player
   const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
-  const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => crossGroupRivals.includes(p.id));
+  const selectedCrossGroupPlayers = otherGroupPlayers.filter(
+    p => getCrossGroupRivalsForBase(basePlayer?.id).includes(p.id)
+  );
   const rivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
 
   return (
@@ -846,11 +870,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
-              const otherPlayers = tablaGeneralPlayers.filter(p => p.id !== player.id);
+              
+              // Get other players for the expanded view based on mode:
+              // 'group' mode: only other players from the same group
+              // 'all' mode: other players from group + this player's specific cross-group rivals
+              const sameGroupOthers = tablaGeneralPlayers.filter(p => p.id !== player.id);
+              const playerCrossGroupRivals = getCrossGroupRivalsForBase(player.id);
+              const crossGroupOthers = tablaGeneralMode === 'all' 
+                ? otherGroupPlayers.filter(p => playerCrossGroupRivals.includes(p.id))
+                : [];
+              const otherPlayers = [...sameGroupOthers, ...crossGroupOthers];
               
               // Determine which group this player belongs to
               const playerGroupIdx = players.some(p => p.id === player.id) ? 0 : 
                 playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
+              
+              // Calculate total for "all" mode including cross-group bets
+              const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
+                return sum + getBilateralBalance(player.id, rival.id, betSummaries);
+              }, 0);
+              const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
               return (
                 <div key={player.id}>
@@ -881,9 +920,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
                           <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
                         </div>
-                        {tablaGeneralMode === 'all' && hasMultipleGroups && (
+                        {tablaGeneralMode === 'all' && hasMultipleGroups && crossGroupOthers.length > 0 && (
                           <span className="text-[9px] text-muted-foreground/70">
-                            Grupo {playerGroupIdx + 1}
+                            +{crossGroupOthers.length} de otros grupos
                           </span>
                         )}
                       </div>
@@ -891,9 +930,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         'text-lg font-bold',
-                        totalBalance > 0 ? 'text-green-500' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        displayBalance > 0 ? 'text-green-500' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {totalBalance >= 0 ? '+' : ''}${totalBalance}
+                        {displayBalance >= 0 ? '+' : ''}${displayBalance}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
@@ -907,12 +946,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
                         
+                        // Check if this is a cross-group rival
+                        const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
+                        
                         // Other player's group
                         const otherGroupIdx = players.some(p => p.id === other.id) ? 0 : 
                           playerGroups.findIndex(g => g.players.some(p => p.id === other.id)) + 1;
                         
                         return (
-                          <div key={other.id} className="flex items-center justify-between px-2 py-1 bg-background/50 rounded text-sm">
+                          <div 
+                            key={other.id} 
+                            className={cn(
+                              'flex items-center justify-between px-2 py-1 rounded text-sm',
+                              isCrossGroupRival ? 'bg-accent/20 border border-accent/30' : 'bg-background/50'
+                            )}
+                          >
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">vs</span>
                               <div 
@@ -921,8 +969,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               >
                                 {getPlayerAbbr(other)}
                               </div>
-                              {tablaGeneralMode === 'all' && hasMultipleGroups && (
-                                <span className="text-[9px] text-muted-foreground/60">G{otherGroupIdx + 1}</span>
+                              {isCrossGroupRival && (
+                                <span className="text-[9px] px-1.5 py-0.5 bg-accent/30 rounded text-accent-foreground">
+                                  G{otherGroupIdx + 1}
+                                </span>
                               )}
                               {vsCarritosBalance !== 0 && (
                                 <span className="text-[9px] text-muted-foreground">
@@ -1004,8 +1054,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const isSelected = selectedRival === rival.id;
               const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
               const hasOverride = !!pairHandicap;
-              const isCrossGroup = crossGroupRivals.includes(rival.id);
-              
+              const isCrossGroup = getCrossGroupRivalsForBase(basePlayer?.id).includes(rival.id);
               return (
                 <div key={rival.id} className="relative">
                   <button
@@ -1043,7 +1092,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCrossGroupRivals(prev => prev.filter(id => id !== rival.id));
+                        setCrossGroupRivalsForBase(prev => prev.filter(id => id !== rival.id));
                         if (selectedRival === rival.id) setSelectedRival(null);
                       }}
                       className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:bg-destructive/80"
@@ -1082,16 +1131,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {group.players.map(player => {
-                            const isAdded = crossGroupRivals.includes(player.id);
+                            const isAdded = getCrossGroupRivalsForBase(balanceBasePlayerId).includes(player.id);
                             return (
                               <button
                                 key={player.id}
                                 type="button"
                                 onClick={() => {
                                   if (isAdded) {
-                                    setCrossGroupRivals(prev => prev.filter(id => id !== player.id));
+                                    setCrossGroupRivalsForBase(prev => prev.filter(id => id !== player.id));
                                   } else {
-                                    setCrossGroupRivals(prev => [...prev, player.id]);
+                                    setCrossGroupRivalsForBase(prev => [...prev, player.id]);
                                   }
                                 }}
                                 className={cn(

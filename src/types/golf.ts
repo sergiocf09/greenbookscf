@@ -196,7 +196,7 @@ export interface BetConfig {
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
-  crossGroupRivals?: string[]; // IDs of players from other groups selected for bilateral bets
+  crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> array of cross-group rival IDs
 }
 
 export interface MedalBetConfig {
