@@ -566,21 +566,28 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return results;
   }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
   
-  // Default base player = logged-in user (via basePlayerId prop). User can override for this session.
+  // Default base player = logged-in user (via basePlayerId prop), across ALL groups.
+  // Critical: must not validate only against `players` (Group 1) or selection breaks for Groups 2/3.
   useEffect(() => {
-    if (!players.length) return;
+    if (!allPlayersForCalculations.length) return;
 
     const defaultBaseId =
-      players.find((p) => p.id === basePlayerId || p.profileId === basePlayerId)?.id ??
-      players[0]?.id ??
+      allPlayersForCalculations.find(
+        (p) => p.id === basePlayerId || p.profileId === basePlayerId
+      )?.id ??
+      allPlayersForCalculations[0]?.id ??
       null;
 
+    const isValidSelection =
+      !!balanceBasePlayerId &&
+      allPlayersForCalculations.some((p) => p.id === balanceBasePlayerId);
+
     // If nothing selected yet (or selection is no longer valid), reset to default.
-    if (!balanceBasePlayerId || !players.some((p) => p.id === balanceBasePlayerId)) {
+    if (!isValidSelection) {
       setBalanceBasePlayerId(defaultBaseId);
       setSelectedRival(null);
     }
-  }, [players, basePlayerId, balanceBasePlayerId]);
+  }, [allPlayersForCalculations, basePlayerId, balanceBasePlayerId]);
 
   // Base player, sameGroupRivals, rivals are calculated after balanceVsPlayers is defined
   
