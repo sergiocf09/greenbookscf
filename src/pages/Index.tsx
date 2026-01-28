@@ -1400,6 +1400,7 @@ const Index = () => {
               confirmedHoles={confirmedHoles}
               onBetConfigChange={setBetConfig}
               startingHole={startingHole}
+              playerGroups={playerGroups}
             />
             
             {/* Close Scorecard Button */}
