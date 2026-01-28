@@ -363,6 +363,9 @@ export const useRoundManagement = ({
               profileId: rp.profile_id || undefined,
             };
             
+            // Add to restoredPlayers for score restoration
+            restoredPlayers.push(player);
+            
             // Track first group as main group
             if (!mainGroupId) mainGroupId = rp.group_id;
             
