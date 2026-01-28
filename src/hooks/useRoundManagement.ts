@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState, HoleInfo, MarkerState } from '@/types/golf';
+import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState, HoleInfo, MarkerState, PlayerGroup } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateHandicapIndexFromDifferentials } from '@/lib/usgaHandicap';
 import { Constants } from '@/integrations/supabase/types';
@@ -45,6 +45,7 @@ interface UseRoundManagementProps {
   setTeeColor?: React.Dispatch<React.SetStateAction<'blue' | 'white' | 'yellow' | 'red'>>;
   setStartingHole?: React.Dispatch<React.SetStateAction<1 | 10>>;
   getCourseById?: (id: string) => GolfCourse | undefined;
+  setPlayerGroups?: React.Dispatch<React.SetStateAction<PlayerGroup[]>>;
 }
 
 export const useRoundManagement = ({
@@ -60,6 +61,7 @@ export const useRoundManagement = ({
   setTeeColor,
   setStartingHole,
   getCourseById,
+  setPlayerGroups,
 }: UseRoundManagementProps) => {
   const { profile } = useAuth();
   const [roundState, setRoundState] = useState<RoundState>({
@@ -335,8 +337,14 @@ export const useRoundManagement = ({
           }
 
           // Restore players + roundPlayerIds mapping
+          // Also group players by their group_id for multi-group restoration
           const rpIdMap = new Map<string, string>();
-          const restoredPlayers: Player[] = (allRoundPlayers || []).map((rp: any) => {
+          const playersByGroupId = new Map<string, Player[]>();
+          
+          const restoredPlayers: Player[] = [];
+          let mainGroupId: string | null = null;
+          
+          (allRoundPlayers || []).forEach((rp: any) => {
             const isGuest = !rp.profile_id;
             const playerId = isGuest ? rp.id : rp.profile_id;
             rpIdMap.set(playerId, rp.id);
@@ -346,7 +354,7 @@ export const useRoundManagement = ({
             const initials = isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX');
             const color = isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6');
 
-            return {
+            const player: Player = {
               id: playerId,
               name,
               initials,
@@ -354,10 +362,35 @@ export const useRoundManagement = ({
               handicap: Number(rp.handicap_for_round) || 0,
               profileId: rp.profile_id || undefined,
             };
+            
+            // Track first group as main group
+            if (!mainGroupId) mainGroupId = rp.group_id;
+            
+            // Group players by group_id
+            const groupPlayers = playersByGroupId.get(rp.group_id) || [];
+            groupPlayers.push(player);
+            playersByGroupId.set(rp.group_id, groupPlayers);
+          });
+
+          // Main group players (first group)
+          const mainGroupPlayers = mainGroupId ? (playersByGroupId.get(mainGroupId) || []) : [];
+          
+          // Additional groups
+          const additionalGroups: PlayerGroup[] = [];
+          let groupCounter = 2;
+          playersByGroupId.forEach((groupPlayers, groupId) => {
+            if (groupId === mainGroupId) return;
+            additionalGroups.push({
+              id: groupId,
+              name: `Grupo ${groupCounter}`,
+              players: groupPlayers,
+            });
+            groupCounter++;
           });
 
           setRoundPlayerIds(rpIdMap);
-          setPlayers(restoredPlayers);
+          setPlayers(mainGroupPlayers);
+          if (setPlayerGroups) setPlayerGroups(additionalGroups);
 
           // If user has enough completed rounds, auto-apply their USGA handicap into this round
           const myRoundPlayerId = rpIdMap.get(profile.id);
