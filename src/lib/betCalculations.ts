@@ -2,7 +2,7 @@
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
-import { calculateStrokesPerHole } from './handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 
 export interface BetSummary {
   playerId: string;
@@ -80,8 +80,11 @@ export const getAdjustedScoresForPair = (
 };
 
 // Calculate net score for a segment (front 9, back 9, or total)
-const getSegmentHoleRange = (segment: 'front' | 'back' | 'total'): [number, number] => {
-  return segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+// Supports startingHole to swap front/back when starting at hole 10
+const getSegmentHoleRange = (segment: 'front' | 'back' | 'total', startingHole: 1 | 10 = 1): [number, number] => {
+  if (segment === 'total') return [1, 18];
+  const ranges = getSegmentHoleRanges(startingHole);
+  return segment === 'front' ? ranges.front : ranges.back;
 };
 
 // Sum net totals for a segment using ONLY the holes that exist for that player.
@@ -89,9 +92,10 @@ const getSegmentHoleRange = (segment: 'front' | 'back' | 'total'): [number, numb
 const getSegmentNetTotal = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
-  segment: 'front' | 'back' | 'total'
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1
 ): number => {
-  const [start, end] = getSegmentHoleRange(segment);
+  const [start, end] = getSegmentHoleRange(segment, startingHole);
   const playerScores = scores.get(playerId) || [];
   return playerScores
     .filter((s) => s.confirmed && s.holeNumber >= start && s.holeNumber <= end)
@@ -109,9 +113,10 @@ const getMutualSegmentNetTotals = (
   playerAId: string,
   playerBId: string,
   scores: Map<string, PlayerScore[]>,
-  segment: 'front' | 'back' | 'total'
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1
 ): { netA: number; netB: number } => {
-  const [start, end] = getSegmentHoleRange(segment);
+  const [start, end] = getSegmentHoleRange(segment, startingHole);
   const aScores = (scores.get(playerAId) || []).filter((s) => s.holeNumber >= start && s.holeNumber <= end);
   const bScores = (scores.get(playerBId) || []).filter((s) => s.holeNumber >= start && s.holeNumber <= end);
 
@@ -157,7 +162,8 @@ export const calculateMedalBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.medal.enabled) return [];
   
@@ -182,8 +188,8 @@ export const calculateMedalBets = (
 
           // Medal (requested behavior): compare each player's accumulated net over THEIR confirmed holes.
           // This intentionally does not require mutual holes.
-          const netA = getSegmentNetTotal(playerA.id, adjustedScores, key);
-          const netB = getSegmentNetTotal(playerB.id, adjustedScores, key);
+          const netA = getSegmentNetTotal(playerA.id, adjustedScores, key, startingHole);
+          const netB = getSegmentNetTotal(playerB.id, adjustedScores, key, startingHole);
         
         if (netA < netB) {
           // Player A wins
@@ -240,14 +246,17 @@ export const calculatePressureBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.pressures.enabled) return [];
   
   const summaries: BetSummary[] = [];
   
-  const frontHoles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  const backHoles = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+  // Get hole ranges based on starting hole
+  const ranges = getSegmentHoleRanges(startingHole);
+  const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
+  const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   
   // Total 18 (Match) uses its own configured amount
   const totalMatchAmount = config.pressures.totalAmount;
@@ -510,7 +519,8 @@ export const calculateSkinsBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.skins.enabled) return [];
 
@@ -804,7 +814,8 @@ export const calculateCarosBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.caros.enabled || config.caros.amount <= 0) return [];
   
@@ -1336,21 +1347,22 @@ export const calculateAllBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   const bilateralHandicaps = config.bilateralHandicaps;
   
   const allSummaries = [
-    ...calculateMedalBets(players, scores, config, course, bilateralHandicaps),
-    ...calculatePressureBets(players, scores, config, course, bilateralHandicaps),
-    ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps),
-    ...calculateCarosBets(players, scores, config, course, bilateralHandicaps),
+    ...calculateMedalBets(players, scores, config, course, bilateralHandicaps, startingHole),
+    ...calculatePressureBets(players, scores, config, course, bilateralHandicaps, startingHole),
+    ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps, startingHole),
+    ...calculateCarosBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateOyesesBets(players, scores, config, course),
     ...calculateUnitsBets(players, scores, config, course),
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config, course),
-    ...calculateRayasBets(players, scores, config, course, bilateralHandicaps),
+    ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMedalGeneralBets(players, scores, config, course),
   ];
   

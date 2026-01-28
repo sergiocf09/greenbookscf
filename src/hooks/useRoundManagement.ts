@@ -18,6 +18,7 @@ interface RoundState {
   date: Date;
   courseId: string | null;
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
+  startingHole: 1 | 10;
   groupId: string | null;
 }
 
@@ -28,6 +29,7 @@ export interface PendingRoundInfo {
   courseId: string;
   courseName?: string;
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
+  startingHole: 1 | 10;
 }
 
 interface UseRoundManagementProps {
@@ -41,6 +43,7 @@ interface UseRoundManagementProps {
   course: GolfCourse | null;
   setSelectedCourseId?: React.Dispatch<React.SetStateAction<string | null>>;
   setTeeColor?: React.Dispatch<React.SetStateAction<'blue' | 'white' | 'yellow' | 'red'>>;
+  setStartingHole?: React.Dispatch<React.SetStateAction<1 | 10>>;
   getCourseById?: (id: string) => GolfCourse | undefined;
 }
 
@@ -55,6 +58,7 @@ export const useRoundManagement = ({
   course,
   setSelectedCourseId,
   setTeeColor,
+  setStartingHole,
   getCourseById,
 }: UseRoundManagementProps) => {
   const { profile } = useAuth();
@@ -64,6 +68,7 @@ export const useRoundManagement = ({
     date: new Date(),
     courseId: null,
     teeColor: 'white',
+    startingHole: 1,
     groupId: null,
   });
   const [roundPlayerIds, setRoundPlayerIds] = useState<Map<string, string>>(new Map());
@@ -296,8 +301,14 @@ export const useRoundManagement = ({
             date: new Date(activeRound.date),
             courseId: activeRound.course_id,
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
+            startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
             groupId: allRoundPlayers[0]?.group_id || null,
           });
+          
+          // Also update parent state for starting hole
+          if (setStartingHole) {
+            setStartingHole((activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10);
+          }
 
           // Load profiles for registered players (guests have profile_id = null)
           const profileIds = Array.from(
@@ -506,7 +517,7 @@ export const useRoundManagement = ({
         const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
         const { data: rounds, error: roundsError } = await supabase
           .from('rounds')
-          .select('id, status, date, course_id, tee_color, updated_at, golf_courses(name)')
+          .select('id, status, date, course_id, tee_color, starting_hole, updated_at, golf_courses(name)')
           .in('id', roundIds)
           // Restore both draft (setup) and active (in_progress) rounds.
           // This prevents losing guests when the app reloads before scoring starts.
@@ -529,6 +540,7 @@ export const useRoundManagement = ({
           courseId: r.course_id,
           courseName: r.golf_courses?.name ?? undefined,
           teeColor: r.tee_color as any,
+          startingHole: (r.starting_hole === 10 ? 10 : 1) as 1 | 10,
         }));
 
         setPendingRounds(mappedPending);
@@ -543,7 +555,7 @@ export const useRoundManagement = ({
     };
 
     restoreActiveRound();
-  }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, getCourseById, applyMyUsgaHandicapIfAvailable]);
+  }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, setStartingHole, getCourseById, applyMyUsgaHandicapIfAvailable]);
 
   // Generate shareable link
   const getShareableLink = useCallback(() => {
@@ -552,7 +564,7 @@ export const useRoundManagement = ({
   }, [roundState.id]);
 
   // Create a new round in the database using server-side RPC
-  const createRound = useCallback(async (courseId: string, teeColor: string, date: Date) => {
+  const createRound = useCallback(async (courseId: string, teeColor: string, date: Date, startingHole: 1 | 10 = 1) => {
     if (!profile) {
       toast.error('Debes iniciar sesión para crear una ronda');
       return null;
@@ -573,6 +585,7 @@ export const useRoundManagement = ({
         p_tee_color: teeColor,
         p_date: date.toISOString().split('T')[0],
         p_bet_config: betConfig as any,
+        p_starting_hole: startingHole,
       });
 
       if (error) {
@@ -594,6 +607,7 @@ export const useRoundManagement = ({
         date: date,
         courseId: courseId,
         teeColor: teeColor as any,
+        startingHole: startingHole,
         groupId: result.group_id,
       });
 
