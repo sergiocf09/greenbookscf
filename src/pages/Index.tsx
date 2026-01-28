@@ -770,30 +770,35 @@ const Index = () => {
     });
   }, [saveScoreToDb, roundState.id, setConfirmedHoles, confirmedHoles]);
 
-  const confirmHole = useCallback((holeNumber: number) => {
-    // Mark all players' scores for this hole as confirmed
+  const confirmHole = useCallback((holeNumber: number, playerIds?: string[]) => {
+    // If playerIds provided, only confirm for those players (group-specific)
+    // Otherwise, fallback to all players in main group (legacy behavior)
+    const targetPlayerIds = playerIds ?? players.map(p => p.id);
+    
+    // Mark the specified players' scores for this hole as confirmed
     setScores(prev => {
       const newScores = new Map(prev);
-      players.forEach(player => {
-        const playerScores = [...(newScores.get(player.id) || [])];
+      targetPlayerIds.forEach(playerId => {
+        const playerScores = [...(newScores.get(playerId) || [])];
         const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
         if (idx >= 0) {
           playerScores[idx] = { ...playerScores[idx], confirmed: true };
         }
-        newScores.set(player.id, playerScores);
+        newScores.set(playerId, playerScores);
       });
       return newScores;
     });
-    setConfirmedHoles(prev => new Set([...prev, holeNumber]));
+    
+    // Note: we don't add to global confirmedHoles since confirmation is now per-group
+    // The UI derives this from per-player scores
 
     // Persist confirmation explicitly using the latest known score snapshot.
-    // This prevents cases where a hole appears confirmed locally but remains unconfirmed in backend.
     if (roundState.id) {
       void Promise.all(
-        players.map(async (player) => {
-          const holeScore = scoresRef.current.get(player.id)?.find((s) => s.holeNumber === holeNumber);
+        targetPlayerIds.map(async (playerId) => {
+          const holeScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
           if (!holeScore) return;
-          await saveScoreToDb(player.id, holeNumber, { ...holeScore, confirmed: true });
+          await saveScoreToDb(playerId, holeNumber, { ...holeScore, confirmed: true });
         })
       );
     }
