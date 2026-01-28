@@ -776,11 +776,27 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }
   }, [activeBalanceGroupIndex, players, playerGroups]);
   
-  // Rivals = players in the same group as base player + cross-group players selected by THIS base player
+  // Rivals = players in the same group as base player + cross-group players
+  // Include BOTH: players THIS base selected AND players who selected THIS base (reciprocity)
   const sameGroupRivals = balanceVsPlayers.filter((p) => p.id !== basePlayer?.id);
-  const selectedCrossGroupPlayers = otherGroupPlayers.filter(
+  
+  // Get players that basePlayer explicitly selected
+  const directlySelectedCrossGroup = otherGroupPlayers.filter(
     p => getCrossGroupRivalsForBase(basePlayer?.id).includes(p.id)
   );
+  
+  // Get players who selected basePlayer (reciprocal visibility)
+  const reciprocalCrossGroup = otherGroupPlayers.filter(
+    p => getCrossGroupRivalsForBase(p.id).includes(basePlayer?.id || '')
+  );
+  
+  // Combine and deduplicate
+  const allCrossGroupIds = new Set([
+    ...directlySelectedCrossGroup.map(p => p.id),
+    ...reciprocalCrossGroup.map(p => p.id)
+  ]);
+  const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => allCrossGroupIds.has(p.id));
+  
   const rivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
 
   return (
@@ -1027,7 +1043,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <span className="text-[10px] text-muted-foreground shrink-0">Base:</span>
             {balanceVsPlayers.map((p) => {
-              const isActive = p.id === basePlayer?.id;
+              // Compare directly with state, not with computed basePlayer (which can fallback)
+              const isActive = p.id === balanceBasePlayerId;
               return (
                 <button
                   key={p.id}
