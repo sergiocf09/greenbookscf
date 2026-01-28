@@ -282,6 +282,24 @@ export const useRoundManagement = ({
 
           devLog('Restoring selected pending round:', activeRound.id);
 
+          // Get all groups for this round (sorted by group_number to identify main group)
+          const allGroups = await retry<any[]>(() =>
+            supabase
+              .from('round_groups')
+              .select('id, group_number')
+              .eq('round_id', activeRound.id)
+              .order('group_number', { ascending: true }) as any
+          );
+          
+          // Build a map from group_id to group_number
+          const groupNumberById = new Map<string, number>();
+          (allGroups || []).forEach((g: any) => {
+            groupNumberById.set(g.id, g.group_number);
+          });
+          
+          // Identify main group (group_number = 1)
+          const mainGroupId = (allGroups || []).find((g: any) => g.group_number === 1)?.id || null;
+
           // Get all players in this round (including guests). Avoid embedded joins
           // to ensure guests (profile_id = null) are always returned.
           const allRoundPlayers = await retry<any[]>(() =>
@@ -304,7 +322,7 @@ export const useRoundManagement = ({
             courseId: activeRound.course_id,
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
             startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
-            groupId: allRoundPlayers[0]?.group_id || null,
+            groupId: mainGroupId || allRoundPlayers[0]?.group_id || null,
           });
           
           // Also update parent state for starting hole
@@ -342,7 +360,6 @@ export const useRoundManagement = ({
           const playersByGroupId = new Map<string, Player[]>();
           
           const restoredPlayers: Player[] = [];
-          let mainGroupId: string | null = null;
           
           (allRoundPlayers || []).forEach((rp: any) => {
             const isGuest = !rp.profile_id;
@@ -366,29 +383,29 @@ export const useRoundManagement = ({
             // Add to restoredPlayers for score restoration
             restoredPlayers.push(player);
             
-            // Track first group as main group
-            if (!mainGroupId) mainGroupId = rp.group_id;
-            
             // Group players by group_id
             const groupPlayers = playersByGroupId.get(rp.group_id) || [];
             groupPlayers.push(player);
             playersByGroupId.set(rp.group_id, groupPlayers);
           });
 
-          // Main group players (first group)
+          // Main group players (group_number = 1)
           const mainGroupPlayers = mainGroupId ? (playersByGroupId.get(mainGroupId) || []) : [];
           
-          // Additional groups
+          // Additional groups - sorted by group_number
           const additionalGroups: PlayerGroup[] = [];
-          let groupCounter = 2;
-          playersByGroupId.forEach((groupPlayers, groupId) => {
-            if (groupId === mainGroupId) return;
+          const sortedGroupIds = Array.from(playersByGroupId.keys())
+            .filter(gid => gid !== mainGroupId)
+            .sort((a, b) => (groupNumberById.get(a) || 99) - (groupNumberById.get(b) || 99));
+          
+          sortedGroupIds.forEach(groupId => {
+            const groupNumber = groupNumberById.get(groupId) || 2;
+            const groupPlayers = playersByGroupId.get(groupId) || [];
             additionalGroups.push({
               id: groupId,
-              name: `Grupo ${groupCounter}`,
+              name: `Grupo ${groupNumber}`,
               players: groupPlayers,
             });
-            groupCounter++;
           });
 
           setRoundPlayerIds(rpIdMap);
