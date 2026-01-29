@@ -1393,7 +1393,25 @@ export const calculateAllBets = (
         const matchesPair = (aId === summary.playerId && bId === summary.vsPlayer) ||
                            (aId === summary.vsPlayer && bId === summary.playerId);
         const summaryType = summary.betType.toLowerCase();
-        const overrideType = (o.betType ?? '').toLowerCase();
+        // Back-compat: historically some overrides were stored using internal keys (e.g. "pressures")
+        // while summaries use Spanish labels (e.g. "Presiones Front"). Normalize to improve matching.
+        const rawOverrideType = (o.betType ?? '').toLowerCase();
+        const overrideType = (() => {
+          switch (rawOverrideType) {
+            case 'pressures':
+              return 'presiones';
+            case 'oyeses':
+              return 'oyes';
+            case 'units':
+              return 'unidades';
+            case 'pinguinos':
+              return 'pingüinos';
+            case 'medalgeneral':
+              return 'medal general';
+            default:
+              return rawOverrideType;
+          }
+        })();
 
         // IMPORTANT: In carry scenarios (e.g. "Presiones Back (Carry x2+Match)"),
         // we must NOT allow the regular segment override ("Presiones Back") to overwrite
