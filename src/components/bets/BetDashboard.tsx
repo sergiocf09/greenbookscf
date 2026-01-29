@@ -1231,6 +1231,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {selectedRival && basePlayer && rivals.find(p => p.id === selectedRival) && (
         <BilateralDetail
           players={players}
+          allPlayers={allPlayersForCalculations}
           player={basePlayer}
           rival={rivals.find(p => p.id === selectedRival)!}
           groupedSummaries={getGroupedSummaries(selectedRival)}
@@ -1885,6 +1886,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 // Bilateral Detail Component - Reorganized with bet type rows and override capability
 interface BilateralDetailProps {
   players: Player[];
+  allPlayers: Player[]; // All players across all groups for Oyes calculations
   player: Player;
   rival: Player;
   groupedSummaries: Record<string, { total: number; details: BetSummary[] }>;
@@ -1903,6 +1905,7 @@ interface BilateralDetailProps {
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
   players,
+  allPlayers,
   player,
   rival,
   groupedSummaries,
@@ -2844,7 +2847,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           confirmedScores,
                           betConfig,
                           course,
-                          betConfig.bilateralHandicaps
+                          betConfig.bilateralHandicaps,
+                          allPlayers
                         );
                         
                         // Group details by source - counting net rayas won (positive = player wins)
@@ -2869,51 +2873,25 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const backValue = betConfig.rayas?.backValue || 0;
                         const medalValue = betConfig.rayas?.medalTotalValue || 0;
                         
-                        // Include Oyes summaries from groupedSummaries
-                        const oyesFrontAmount = groupedSummaries['Rayas Oyes']?.details
-                          ?.filter(d => d.segment === 'front')
-                          .reduce((s, d) => s + d.amount, 0) || 0;
-                        const oyesBackAmount = groupedSummaries['Rayas Oyes']?.details
-                          ?.filter(d => d.segment === 'back')
-                          .reduce((s, d) => s + d.amount, 0) || 0;
-                        
-                        // Calculate oyes rayas count from amount
-                        const oyesFrontRayas = frontValue > 0 ? Math.round(oyesFrontAmount / frontValue) : 0;
-                        const oyesBackRayas = backValue > 0 ? Math.round(oyesBackAmount / backValue) : 0;
-                        
-                        // Calculate net rayas per source for display
-                        const getSourceNet = (source: string) => {
-                          const data = sourceGroups[source];
-                          if (source === 'oyes') {
-                            return {
-                              front: oyesFrontRayas,
-                              back: oyesBackRayas,
-                              total: oyesFrontRayas + oyesBackRayas,
-                            };
-                          }
-                          return {
-                            front: data.front,
-                            back: data.back,
-                            total: data.front + data.back + data.total,
-                          };
-                        };
-                        
-                        const skinsNet = getSourceNet('skins');
-                        const unitsNet = getSourceNet('units');
-                        const oyesNet = getSourceNet('oyes');
-                        const medalNet = getSourceNet('medal');
+                        // Get source nets directly from sourceGroups (now includes Oyes from rayasResult)
+                        const skinsNet = sourceGroups['skins'];
+                        const unitsNet = sourceGroups['units'];
+                        const oyesNet = sourceGroups['oyes'];
+                        const medalNet = sourceGroups['medal'];
                         
                         // Calculate total rayas per segment
                         const frontTotalRayas = skinsNet.front + unitsNet.front + oyesNet.front + medalNet.front;
                         const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
-                        const totalRayasAll = frontTotalRayas + backTotalRayas;
+                        const medalTotalRayas = medalNet.total; // Medal Total raya goes in 'total' segment
+                        const totalRayasAll = frontTotalRayas + backTotalRayas + medalTotalRayas;
                         
                         // IMPORTANT: Amounts must match the engine output (groupedSummaries),
                         // because groupedSummaries already includes cancellations and per-pair amount overrides.
-                        const frontTotalAmount = (groupedSummaries['Rayas Front']?.total || 0) + oyesFrontAmount;
-                        const backTotalAmount = (groupedSummaries['Rayas Back']?.total || 0) + oyesBackAmount;
+                        const frontTotalAmount = groupedSummaries['Rayas Front']?.total || 0;
+                        const backTotalAmount = groupedSummaries['Rayas Back']?.total || 0;
+                        const oyesTotalAmount = groupedSummaries['Rayas Oyes']?.total || 0;
                         const medalTotalAmount = groupedSummaries['Rayas Medal Total']?.total || 0;
-                        const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
+                        const grandTotal = frontTotalAmount + backTotalAmount + oyesTotalAmount + medalTotalAmount;
                         
                         // Check if we have all 18 holes confirmed
                         const confirmedHolesCount = confirmedScores.get(player.id)?.length || 0;

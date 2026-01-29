@@ -19,15 +19,24 @@ export interface BetSummary {
 }
 
 // Get bilateral handicap for a specific pair of players
+// Supports matching by both player.id and player.profileId since overrides may use either
 export const getBilateralHandicapForPair = (
   playerAId: string,
   playerBId: string,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  playerAProfileId?: string,
+  playerBProfileId?: string
 ): BilateralHandicap | undefined => {
   if (!bilateralHandicaps) return undefined;
+  
+  // Match function that checks both id and profileId
+  const matches = (overrideId: string, id: string, profileId?: string): boolean => {
+    return overrideId === id || (profileId !== undefined && overrideId === profileId);
+  };
+  
   return bilateralHandicaps.find(
-    h => (h.playerAId === playerAId && h.playerBId === playerBId) ||
-         (h.playerAId === playerBId && h.playerBId === playerAId)
+    h => (matches(h.playerAId, playerAId, playerAProfileId) && matches(h.playerBId, playerBId, playerBProfileId)) ||
+         (matches(h.playerAId, playerBId, playerBProfileId) && matches(h.playerBId, playerAId, playerAProfileId))
   );
 };
 
@@ -40,13 +49,23 @@ export const getAdjustedScoresForPair = (
   course: GolfCourse,
   bilateralHandicaps?: BilateralHandicap[]
 ): Map<string, PlayerScore[]> => {
-  const override = getBilateralHandicapForPair(playerA.id, playerB.id, bilateralHandicaps);
+  // Pass profileId to support overrides stored with profile IDs
+  const override = getBilateralHandicapForPair(
+    playerA.id, 
+    playerB.id, 
+    bilateralHandicaps,
+    playerA.profileId,
+    playerB.profileId
+  );
   
   // If no override, return original scores
   if (!override) return scores;
   
   // Determine which player is A and which is B in the override
-  const isPlayerAFirst = override.playerAId === playerA.id;
+  // Check both id and profileId for matching
+  const matchesPlayerA = (id: string) => 
+    id === playerA.id || (playerA.profileId && id === playerA.profileId);
+  const isPlayerAFirst = matchesPlayerA(override.playerAId);
   const handicapA = isPlayerAFirst ? override.playerAHandicap : override.playerBHandicap;
   const handicapB = isPlayerAFirst ? override.playerBHandicap : override.playerAHandicap;
   
