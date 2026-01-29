@@ -635,9 +635,54 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     onBetConfigChange({ ...betConfig, bilateralHandicaps: handicaps });
   };
   
-  // Get balance for base player vs each rival
+  // Get corrected bilateral balance that uses getRayasDetailForPair for Rayas consistency
+  // This ensures the Tabla General uses the same Rayas calculation as the BilateralDetail
+  const getCorrectedBilateralBalance = (playerId: string, rivalId: string): number => {
+    // Get balance from betSummaries for non-Rayas bets
+    const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
+    const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
+    
+    // Sum all non-Rayas bets from betSummaries
+    const nonRayasBalance = betSummaries
+      .filter(s => 
+        s.playerId === playerId && 
+        s.vsPlayer === rivalId && 
+        !s.betType.startsWith('Rayas')
+      )
+      .reduce((sum, s) => sum + s.amount, 0);
+    
+    // Calculate correct Rayas total using getRayasDetailForPair
+    let rayasTotal = 0;
+    if (betConfig.rayas?.enabled && playerObj && rivalObj) {
+      const rayasResult = getRayasDetailForPair(
+        playerObj,
+        rivalObj,
+        confirmedScores,
+        betConfig,
+        course,
+        betConfig.bilateralHandicaps,
+        allPlayersForCalculations
+      );
+      
+      // Sum rayas from details
+      rayasResult.details.forEach((d) => {
+        rayasTotal += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+      });
+    }
+    
+    return nonRayasBalance + rayasTotal;
+  };
+  
+  // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
+  const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
+    return rivalIds.reduce((sum, rivalId) => {
+      return sum + getCorrectedBilateralBalance(playerId, rivalId);
+    }, 0);
+  };
+  
+  // Get balance for base player vs each rival (using corrected calculation)
   const getRivalBalance = (rivalId: string) => 
-    getBilateralBalance(basePlayer?.id || '', rivalId, betSummaries);
+    getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   
   // Get grouped summaries for selected pair
   const getGroupedSummaries = (rivalId: string) =>
@@ -658,10 +703,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
-    return [...playersToSort].sort((a, b) => 
-      getPlayerBalance(b.id, betSummaries) + getCarritosBalanceForPlayer(b.id) - 
-      (getPlayerBalance(a.id, betSummaries) + getCarritosBalanceForPlayer(a.id))
-    );
+    return [...playersToSort].sort((a, b) => {
+      // Use corrected balance for sorting
+      const rivalIdsA = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
+      const rivalIdsB = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
+      const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + getCarritosBalanceForPlayer(a.id);
+      const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + getCarritosBalanceForPlayer(b.id);
+      return balanceB - balanceA;
+    });
   };
   
   // For verification calculation, still use all players from current group
@@ -896,8 +945,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardContent className="pt-0">
           <div className="space-y-2">
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
-              // Base total: ONLY bets vs players inside the selected group
-              const balance = getPlayerBalance(player.id, tablaGeneralGroupOnlySummaries);
+              // Base total: ONLY bets vs players inside the selected group - use corrected balance
+              const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
+              const balance = getCorrectedPlayerBalance(player.id, groupRivalIds);
               const carritosBalance = getCarritosBalanceForPlayer(player.id);
               const totalBalance = balance + carritosBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
@@ -917,10 +967,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const playerGroupIdx = players.some(p => p.id === player.id) ? 0 : 
                 playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
               
-              // Calculate total for "all" mode including cross-group bets
+              // Calculate total for "all" mode including cross-group bets using corrected balance
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                // Cross-group: only this player's explicitly selected rivals
-                return sum + getBilateralBalance(player.id, rival.id, betSummaries);
+                // Cross-group: only this player's explicitly selected rivals - use corrected balance
+                return sum + getCorrectedBilateralBalance(player.id, rival.id);
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
@@ -975,8 +1025,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
-                        // Use full summaries so cross-group pairs work here too.
-                        const vsIndividualBalance = getBilateralBalance(player.id, other.id, betSummaries);
+                        // Use corrected balance that calculates Rayas correctly
+                        const vsIndividualBalance = getCorrectedBilateralBalance(player.id, other.id);
                         const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
                         
@@ -1032,7 +1082,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${tablaGeneralPlayers.reduce((sum, p) => sum + getPlayerBalance(p.id, tablaGeneralGroupOnlySummaries) + getCarritosBalanceForPlayer(p.id), 0)} 
+            Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
+              const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
+              return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id);
+            }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>
@@ -2462,6 +2515,45 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     return groups;
   }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes]);
   
+  // Compute the total balance from the bet type groups for consistency
+  // This ensures the header total matches the sum of all bet type rows
+  const computedTotalBalance = useMemo(() => {
+    return betTypeGroups.reduce((sum, group) => {
+      // Check if bet is disabled via override
+      const normalizeLabel = (label: string) => {
+        switch (label) {
+          case 'medal': return 'Medal';
+          case 'pressures': return 'Presiones';
+          case 'skins': return 'Skins';
+          case 'caros': return 'Caros';
+          case 'oyeses': return 'Oyes';
+          case 'units': return 'Unidades';
+          case 'manchas': return 'Manchas';
+          case 'culebras': return 'Culebras';
+          case 'pinguinos': return 'Pingüinos';
+          case 'rayas': return 'Rayas';
+          case 'medalGeneral': return 'Medal General';
+          default: return label;
+        }
+      };
+      
+      const matchesPlayer = (overrideId: string, p: Player) =>
+        overrideId === p.id || (p.profileId && overrideId === p.profileId);
+      
+      const override = betConfig.betOverrides?.find(
+        (o) =>
+          (o.betType === normalizeLabel(group.key) || o.betType === group.key) &&
+          ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
+            (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
+      );
+      
+      // Skip disabled bets
+      if (override?.enabled === false) return sum;
+      
+      return sum + group.getTotal();
+    }, 0);
+  }, [betTypeGroups, betConfig.betOverrides, player, rival]);
+  
   // Effective handicaps (with override or original)
   // IMPORTANT: Must correctly map based on which player is A vs B in the stored override
   const getEffectiveHandicaps = () => {
@@ -2533,11 +2625,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            totalBalance > 0 ? 'text-green-600' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+            computedTotalBalance > 0 ? 'text-green-600' : computedTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
-            {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${Math.abs(totalBalance)}
+            {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
+            {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
+            ${Math.abs(computedTotalBalance)}
           </div>
         </div>
         
