@@ -2879,10 +2879,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const oyesNet = sourceGroups['oyes'];
                         const medalNet = sourceGroups['medal'];
                         
-                        // Calculate total rayas per segment
-                        const frontTotalRayas = skinsNet.front + unitsNet.front + oyesNet.front + medalNet.front;
-                        const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
-                        const medalTotalRayas = medalNet.total; // Medal Total raya goes in 'total' segment
+                        // IMPORTANT:
+                        // - "Rayas Front" and "Rayas Back" amounts DO NOT include Oyes (Oyes is its own betType: "Rayas Oyes").
+                        // - So the multiplication shown in Total Front/Back must also exclude Oyes to match the $ amount.
+                        const frontRayasForAmount = skinsNet.front + unitsNet.front + medalNet.front;
+                        const backRayasForAmount = skinsNet.back + unitsNet.back + medalNet.back;
+                        const medalTotalRayas = medalNet.total; // Medal Total raya lives in the "total" segment
+
+                        // For display purposes we still want a global rayas count that includes everything
+                        const frontTotalRayas = frontRayasForAmount + oyesNet.front;
+                        const backTotalRayas = backRayasForAmount + oyesNet.back;
                         const totalRayasAll = frontTotalRayas + backTotalRayas + medalTotalRayas;
                         
                         // IMPORTANT: Amounts must match the engine output (groupedSummaries),
@@ -2938,6 +2944,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 {frontTotalAmount >= 0 ? '+' : ''}${frontTotalAmount}
                               </span>
                             </div>
+
+                            {/* Front 9 amount reconciliation (excludes Oyes) */}
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2">
+                              <span>
+                                Para el importe de Front se usan: {frontRayasForAmount} × ${frontValue}
+                              </span>
+                              <span>
+                                {frontRayasForAmount !== 0 ? '' : ''}
+                              </span>
+                            </div>
                             
                             {/* Back 9 row */}
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2">
@@ -2969,15 +2985,26 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 {backTotalAmount >= 0 ? '+' : ''}${backTotalAmount}
                               </span>
                             </div>
+
+                            {/* Back 9 amount reconciliation (excludes Oyes) */}
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2">
+                              <span>
+                                Para el importe de Back se usan: {backRayasForAmount} × ${backValue}
+                              </span>
+                              <span>
+                                {backRayasForAmount !== 0 ? '' : ''}
+                              </span>
+                            </div>
                             
                             {/* Medal Total row - only show when all 18 holes confirmed */}
-                            {hasAll18 && medalTotalAmount !== 0 && (
+                            {hasAll18 && medalValue > 0 && medalTotalRayas !== 0 && (
                               <div className="flex items-center justify-between text-sm bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium">Medal Total</span>
-                                  <span className="text-muted-foreground text-xs">(1 raya)</span>
+                                  <span className="font-medium">Medal Total (Total 18)</span>
+                                  <span className="text-muted-foreground text-xs">({medalTotalRayas} raya)</span>
+                                  <span className="text-muted-foreground text-xs">× ${medalValue}</span>
                                 </div>
-                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : 'text-destructive')}>
+                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                   {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
                                 </span>
                               </div>
