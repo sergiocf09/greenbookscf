@@ -728,9 +728,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let total = 0;
     allCarritosResults.forEach(result => {
       if (result.teamA.includes(playerId)) {
-        total += result.moneyA / 2; // Each player gets half
+        // IMPORTANT: moneyA/moneyB are TEAM totals.
+        // In Carritos settlement, each losing player pays 50% of the total loss to EACH winner,
+        // so each winner's net equals the full team result (not half).
+        // This must match the sum of per-opponent amounts from getCarritosBalanceVsPlayer.
+        total += result.moneyA;
       } else if (result.teamB.includes(playerId)) {
-        total += result.moneyB / 2;
+        total += result.moneyB;
       }
     });
     return total;
