@@ -1376,11 +1376,22 @@ export const calculateAllBets = (
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
   if (config.betOverrides && config.betOverrides.length > 0) {
+    // betOverrides can be stored using either `player.id` (often round_player_id)
+    // or `player.profileId` (profile id). Normalize to the ids used by summaries.
+    const resolveOverridePlayerId = (pid: string): string => {
+      const direct = players.find((p) => p.id === pid);
+      if (direct) return direct.id;
+      const byProfile = players.find((p) => p.profileId === pid);
+      return byProfile?.id ?? pid;
+    };
+
     return allSummaries.map(summary => {
       // Find if there's an override for this pair and bet type
       const override = config.betOverrides?.find(o => {
-        const matchesPair = (o.playerAId === summary.playerId && o.playerBId === summary.vsPlayer) ||
-                           (o.playerAId === summary.vsPlayer && o.playerBId === summary.playerId);
+        const aId = resolveOverridePlayerId(o.playerAId);
+        const bId = resolveOverridePlayerId(o.playerBId);
+        const matchesPair = (aId === summary.playerId && bId === summary.vsPlayer) ||
+                           (aId === summary.vsPlayer && bId === summary.playerId);
         const summaryType = summary.betType.toLowerCase();
         const overrideType = (o.betType ?? '').toLowerCase();
 
@@ -1416,11 +1427,15 @@ export const calculateAllBets = (
         }
       }
       return summary;
-    }).filter(s => s.amount !== 0 || !config.betOverrides?.some(o => 
-      o.enabled === false && 
-      ((o.playerAId === s.playerId && o.playerBId === s.vsPlayer) ||
-       (o.playerAId === s.vsPlayer && o.playerBId === s.playerId))
-    ));
+    }).filter(s => s.amount !== 0 || !config.betOverrides?.some(o => {
+      if (o.enabled !== false) return false;
+      const aId = resolveOverridePlayerId(o.playerAId);
+      const bId = resolveOverridePlayerId(o.playerBId);
+      return (
+        (aId === s.playerId && bId === s.vsPlayer) ||
+        (aId === s.vsPlayer && bId === s.playerId)
+      );
+    }));
   }
   
   return allSummaries;
