@@ -1925,12 +1925,45 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
   // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
   const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
+    const normalizeLabel = (label: string) => {
+      // The UI uses internal group keys (e.g. "rayas"), but overrides must match
+      // the text labels emitted by the calculation engine (e.g. "Rayas Front").
+      switch (label) {
+        case 'medal':
+          return 'Medal';
+        case 'pressures':
+          return 'Presiones';
+        case 'skins':
+          return 'Skins';
+        case 'caros':
+          return 'Caros';
+        case 'oyeses':
+          return 'Oyes';
+        case 'units':
+          return 'Unidades';
+        case 'manchas':
+          return 'Manchas';
+        case 'culebras':
+          return 'Culebras';
+        case 'pinguinos':
+          return 'Pingüinos';
+        case 'rayas':
+          return 'Rayas';
+        case 'medalGeneral':
+          return 'Medal General';
+        default:
+          return label;
+      }
+    };
+
+    const normalized = normalizeLabel(overrideLabel);
+
     const matchesPlayer = (overrideId: string, p: Player) =>
       overrideId === p.id || (p.profileId && overrideId === p.profileId);
 
     return betConfig.betOverrides?.find(
       (o) =>
-        o.betType === overrideLabel &&
+        o.betType === normalized &&
         ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
           (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
     );
@@ -1939,12 +1972,46 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // Update bet override
   const updateBetOverride = (overrideLabel: string, updates: Partial<BetOverride>) => {
     if (!onBetConfigChange) return;
+
+    // Normalize group keys ("rayas") to engine labels ("Rayas") so overrides actually apply.
+    const normalizedLabel = (() => {
+      switch (overrideLabel) {
+        case 'medal':
+          return 'Medal';
+        case 'pressures':
+          return 'Presiones';
+        case 'skins':
+          return 'Skins';
+        case 'caros':
+          return 'Caros';
+        case 'oyeses':
+          return 'Oyes';
+        case 'units':
+          return 'Unidades';
+        case 'manchas':
+          return 'Manchas';
+        case 'culebras':
+          return 'Culebras';
+        case 'pinguinos':
+          return 'Pingüinos';
+        case 'rayas':
+          return 'Rayas';
+        case 'medalGeneral':
+          return 'Medal General';
+        default:
+          return overrideLabel;
+      }
+    })();
+
+    const matchesPlayer = (overrideId: string, p: Player) =>
+      overrideId === p.id || (p.profileId && overrideId === p.profileId);
     
     const overrides = [...(betConfig.betOverrides || [])];
     const existingIdx = overrides.findIndex(
-      o => o.betType === overrideLabel && 
-      ((o.playerAId === player.id && o.playerBId === rival.id) ||
-       (o.playerAId === rival.id && o.playerBId === player.id))
+      (o) =>
+        o.betType === normalizedLabel &&
+        ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
+          (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
     );
 
     if (existingIdx >= 0) {
@@ -1953,7 +2020,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       overrides.push({
         playerAId: player.id,
         playerBId: rival.id,
-        betType: overrideLabel,
+        betType: normalizedLabel,
         enabled: true,
         ...updates,
       });
@@ -3077,7 +3144,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   return {
                     front: byLabel('Rayas Front') ?? (betConfig.rayas?.frontValue || 25),
                     back: byLabel('Rayas Back') ?? (betConfig.rayas?.backValue || 25),
-                    total: byLabel('Rayas Medal') ?? (betConfig.rayas?.medalTotalValue || 50),
+                    total: byLabel('Rayas Medal Total') ?? (betConfig.rayas?.medalTotalValue || 50),
                   };
                 default:
                   return undefined;
@@ -3139,7 +3206,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'rayas':
                   upsert('Rayas Front', overrides.front);
                   upsert('Rayas Back', overrides.back);
-                  upsert('Rayas Medal', overrides.total);
+                  upsert('Rayas Medal Total', overrides.total);
                   break;
                 case 'caros':
                   upsert('Caros', overrides.total);
