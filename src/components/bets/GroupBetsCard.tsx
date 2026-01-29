@@ -344,7 +344,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       ))}
                     </div>
                   </div>
-                  <span className="text-green-500 font-bold text-lg">
+                  <span className="text-green-600 font-bold text-lg">
                     +${medalGeneralResult.winners[0]?.amountWon || 0}
                   </span>
                 </div>

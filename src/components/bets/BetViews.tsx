@@ -59,7 +59,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
             <PlayerAvatar initials={rival.initials} background={rival.color} size="md" isLoggedInUser={rival.id === basePlayerId} />
             <div className={cn(
               'text-[10px] font-semibold mt-1 flex items-center gap-0.5',
-              balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+              balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
             )}>
               {balance !== 0 && (
                 balance > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />
@@ -110,7 +110,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
         </div>
         <div className={cn(
           'text-xl font-bold flex items-center gap-1',
-          totalBalance > 0 ? 'text-green-500' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+          totalBalance > 0 ? 'text-green-600' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
         )}>
           {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
           {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
@@ -128,7 +128,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
               <span className="text-sm font-medium">{betType}</span>
               <span className={cn(
                 'text-sm font-semibold',
-                typeTotal > 0 ? 'text-green-500' : typeTotal < 0 ? 'text-destructive' : 'text-muted-foreground'
+                typeTotal > 0 ? 'text-green-600' : typeTotal < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
                 {typeTotal >= 0 ? '+' : ''}${typeTotal}
               </span>
@@ -185,7 +185,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
               </div>
               <div className={cn(
                 'text-lg font-bold flex items-center gap-1',
-                balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
                 {balance > 0 && '+'}
                 ${balance}
