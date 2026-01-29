@@ -1963,7 +1963,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
     return betConfig.betOverrides?.find(
       (o) =>
-        o.betType === normalized &&
+        // Support legacy stored keys (e.g. "pressures") AND normalized engine labels (e.g. "Presiones")
+        (o.betType === normalized || o.betType === overrideLabel) &&
         ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
           (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
     );
@@ -2009,7 +2010,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const overrides = [...(betConfig.betOverrides || [])];
     const existingIdx = overrides.findIndex(
       (o) =>
-        o.betType === normalizedLabel &&
+        (o.betType === normalizedLabel || o.betType === overrideLabel) &&
         ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
           (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
     );
@@ -2907,10 +2908,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
                         const totalRayasAll = frontTotalRayas + backTotalRayas;
                         
-                        // Calculate amounts
-                        const frontTotalAmount = frontTotalRayas * frontValue;
-                        const backTotalAmount = backTotalRayas * backValue;
-                        const medalTotalAmount = rayasResult.medalTotalAmountA;
+                        // IMPORTANT: Amounts must match the engine output (groupedSummaries),
+                        // because groupedSummaries already includes cancellations and per-pair amount overrides.
+                        const frontTotalAmount = (groupedSummaries['Rayas Front']?.total || 0) + oyesFrontAmount;
+                        const backTotalAmount = (groupedSummaries['Rayas Back']?.total || 0) + oyesBackAmount;
+                        const medalTotalAmount = groupedSummaries['Rayas Medal Total']?.total || 0;
                         const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
                         
                         // Check if we have all 18 holes confirmed
