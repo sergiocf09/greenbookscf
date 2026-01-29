@@ -681,9 +681,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // - That half is split evenly between the two opponents: (moneyA / 2) / 2 = moneyA / 4
   // 
   // Example: Team A wins $200
-  // - Player A1 gets $100 total ($50 from B1 + $50 from B2)
-  // - Player A2 gets $100 total ($50 from B1 + $50 from B2)
-  // - So vs any single opponent, the amount is moneyA / 4
+  // Carritos payment rule:
+  // Each LOSER pays 50% of the total lost to EACH winner
+  // Example: Team loses $100 total
+  // - Loser A pays $50 to Winner C and $50 to Winner D (total $100 out)
+  // - Loser B pays $50 to Winner C and $50 to Winner D (total $100 out)
+  // Each winner receives: $50 from Loser A + $50 from Loser B = $100 total
+  // 
+  // So vs any single opponent, the amount is totalLost / 2
   const getCarritosBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
     let total = 0;
     allCarritosResults.forEach(result => {
@@ -694,11 +699,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       
       // If they're on opposite teams, calculate the correct split
       if ((teamAHasPlayerA && teamBHasPlayerB) || (teamBHasPlayerA && teamAHasPlayerB)) {
-        // PlayerA and PlayerB are opponents
+        // PlayerA and PlayerB are opponents on different teams
         const playerAMoney = teamAHasPlayerA ? result.moneyA : result.moneyB;
-        // Each player pays/receives 25% of total to/from each opponent (1/4)
-        // Because: (team total / 2 players on winning team) / 2 opponents = total / 4
-        total += playerAMoney / 4;
+        // Each player pays/receives 50% of total to/from each opponent
+        // This is because each loser pays 50% to EACH winner
+        total += playerAMoney / 2;
       }
       // If they're on the same team, no money changes between them
     });
