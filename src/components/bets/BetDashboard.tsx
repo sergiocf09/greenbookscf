@@ -647,9 +647,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // IMPORTANT: overrides are stored sometimes as the UI key ("rayas") and sometimes as
     // the engine label ("Rayas"). In addition, some legacy/edge cases store partial labels.
     const isBetDisabledForPair = (betTypeLabel: string, aliases: string[] = []): boolean => {
+      // Match player ID - check both direct ID match and profileId match
+      // Also check the reverse: overrideId might be a profileId that matches a player's profileId
       const matchesPlayer = (overrideId: string, pId: string) => {
+        // Direct match
+        if (overrideId === pId) return true;
+        
+        // Find the player object to check profileId
         const p = allPlayersForCalculations.find(x => x.id === pId);
-        return overrideId === pId || (p?.profileId && overrideId === p.profileId);
+        if (p?.profileId && overrideId === p.profileId) return true;
+        
+        // Reverse: overrideId is a player.id, pId might be looking by profileId
+        // This handles cases where override was stored with player.id but we're searching by profileId
+        const pByProfile = allPlayersForCalculations.find(x => x.profileId === pId);
+        if (pByProfile && overrideId === pByProfile.id) return true;
+        
+        // Also check if overrideId is a profileId that matches any player
+        const pByOverride = allPlayersForCalculations.find(x => x.profileId === overrideId);
+        if (pByOverride && pByOverride.id === pId) return true;
+        
+        return false;
       };
 
       const acceptable = [betTypeLabel, ...aliases]
