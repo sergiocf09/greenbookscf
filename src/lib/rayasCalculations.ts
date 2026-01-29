@@ -683,6 +683,7 @@ export const calculateRayasBets = (
 
 /**
  * Get detailed rayas breakdown for a pair (for dashboard audit)
+ * Includes bilateral rayas (skins, units, medal) AND Oyes rayas for this pair
  */
 export const getRayasDetailForPair = (
   playerA: Player,
@@ -690,9 +691,59 @@ export const getRayasDetailForPair = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  allPlayers?: Player[]
 ): RayasPairResult => {
-  return calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  
+  // If we have all players, calculate Oyes details for this pair
+  if (allPlayers && allPlayers.length > 0) {
+    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course);
+    
+    // Get Oyes details for this specific pair
+    const pairKey = [playerA.id, playerB.id].sort().join('-');
+    const oyesDetails = oyesDetailsByPair.get(pairKey) || [];
+    
+    // Merge Oyes details into the result
+    // Normalize rayasCount perspective to match playerA
+    const normalizedOyesDetails: RayaDetail[] = oyesDetails.map(d => {
+      // If the detail was stored with the opposite perspective, flip the sign
+      const isPlayerAFirst = playerA.id < playerB.id;
+      const needsFlip = !isPlayerAFirst;
+      return {
+        ...d,
+        rayasCount: needsFlip ? -d.rayasCount : d.rayasCount,
+      };
+    });
+    
+    // Merge details
+    const mergedDetails = [...bilateralResult.details, ...normalizedOyesDetails];
+    
+    // Recalculate amounts including Oyes
+    const frontValue = config.rayas?.frontValue || 0;
+    const backValue = config.rayas?.backValue || 0;
+    
+    // Sum up Oyes amounts for this pair
+    let oyesFrontAmountA = 0;
+    let oyesBackAmountA = 0;
+    normalizedOyesDetails.forEach(d => {
+      if (d.appliedSegment === 'front') {
+        oyesFrontAmountA += d.rayasCount * d.valuePerRaya;
+      } else if (d.appliedSegment === 'back') {
+        oyesBackAmountA += d.rayasCount * d.valuePerRaya;
+      }
+    });
+    
+    return {
+      ...bilateralResult,
+      frontAmountA: bilateralResult.frontAmountA + oyesFrontAmountA,
+      backAmountA: bilateralResult.backAmountA + oyesBackAmountA,
+      totalAmountA: bilateralResult.totalAmountA + oyesFrontAmountA + oyesBackAmountA,
+      details: mergedDetails,
+    };
+  }
+  
+  return bilateralResult;
 };
 
 /**
