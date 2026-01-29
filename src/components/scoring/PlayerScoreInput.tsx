@@ -25,6 +25,8 @@ interface PlayerScoreInputProps {
   onMarkersChange: (markers: MarkerState) => void;
   handicapStrokes?: number;
   isBasePlayer?: boolean;
+  playerId?: string;
+  basePlayerId?: string;
   // Oyeses props
   isPar3?: boolean;
   oyesEnabled?: boolean;
@@ -46,6 +48,8 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   onMarkersChange,
   handicapStrokes = 0,
   isBasePlayer = false,
+  playerId,
+  basePlayerId,
   // Oyeses props
   isPar3 = false,
   oyesEnabled = false,
@@ -53,6 +57,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   onOyesProximityChange,
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const isLoggedInUser = playerId && basePlayerId ? playerId === basePlayerId : false;
   
   // Auto-detect score-based markers
   const autoDetected = strokes > 0 ? detectScoreBasedMarkers(strokes, putts, par) : {};
@@ -86,7 +91,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
       {/* Player Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <PlayerAvatar initials={initials} background={avatarColor} size="md" className="shadow-sm" />
+          <PlayerAvatar initials={initials} background={avatarColor} size="md" className="shadow-sm" isLoggedInUser={isLoggedInUser} />
           <div>
             <p className="font-semibold text-sm text-foreground">{playerName}</p>
             {handicapStrokes > 0 && (

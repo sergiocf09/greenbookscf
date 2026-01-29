@@ -47,6 +47,10 @@ All colors MUST be HSL.
     --golf-cream: 45 30% 96%;
     --golf-dark: 150 40% 12%;
     --golf-fairway: 120 35% 45%;
+    
+    /* Augusta colors for logged-in user avatar */
+    --augusta-green: 163 100% 20%; /* #006747 */
+    --augusta-gold: 55 100% 49%; /* #FCE300 */
 
     --sidebar-background: 150 45% 18%;
     --sidebar-foreground: 45 30% 96%;
@@ -96,6 +100,10 @@ All colors MUST be HSL.
     --golf-cream: 45 30% 96%;
     --golf-dark: 150 40% 8%;
     --golf-fairway: 120 35% 35%;
+    
+    /* Augusta colors for logged-in user avatar */
+    --augusta-green: 163 100% 20%; /* #006747 */
+    --augusta-gold: 55 100% 49%; /* #FCE300 */
 
     --sidebar-background: 150 40% 6%;
     --sidebar-foreground: 45 25% 95%;

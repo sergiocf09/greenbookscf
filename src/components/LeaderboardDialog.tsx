@@ -28,6 +28,7 @@ interface LeaderboardDialogProps {
   course: GolfCourse | null;
   confirmedHoles: Set<number>;
   betConfig?: BetConfig;
+  basePlayerId?: string;
 }
 
 interface LeaderboardEntry {
@@ -61,6 +62,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   course,
   confirmedHoles,
   betConfig,
+  basePlayerId,
 }) => {
   const [sortMode, setSortMode] = useState<SortMode>('net');
 
@@ -225,6 +227,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                           initials={entry.player.initials} 
                           background={entry.player.color} 
                           size="sm" 
+                          isLoggedInUser={entry.player.id === basePlayerId}
                         />
                         <span className="font-medium text-xs truncate">
                           {formatPlayerName(entry.player.name)}

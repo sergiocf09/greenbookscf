@@ -67,6 +67,11 @@ export default {
           dark: "hsl(var(--golf-dark))",
           fairway: "hsl(var(--golf-fairway))",
         },
+        // Augusta colors for logged-in user avatar
+        augusta: {
+          green: "hsl(var(--augusta-green))",
+          gold: "hsl(var(--augusta-gold))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
