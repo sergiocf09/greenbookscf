@@ -104,7 +104,11 @@ const getSegmentNetTotal = (
   return playerScores
     // Rayas must respect confirmation rules (only confirmed holes count)
     .filter(s => s.confirmed && s.holeNumber >= holeRange[0] && s.holeNumber <= holeRange[1])
-    .reduce((sum, s) => sum + (s.netScore ?? s.strokes ?? 0), 0);
+    // Avoid treating missing strokes/net as 0 (that can incorrectly create ties/wins)
+    .reduce((sum, s) => {
+      const v = (typeof s.netScore === 'number' ? s.netScore : (typeof s.strokes === 'number' ? s.strokes : null));
+      return v === null ? sum : sum + v;
+    }, 0);
 };
 
 /**
