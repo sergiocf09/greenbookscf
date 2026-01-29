@@ -2350,6 +2350,27 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Rayas (Aggregator bet)
     if (betConfig.rayas?.enabled) {
+      // Pre-compute Rayas total from the same source used in the detail view
+      // This ensures the header line matches the TOTAL RAYAS in the expanded detail
+      const rayasResultForTotal = getRayasDetailForPair(
+        player,
+        rival,
+        confirmedScores,
+        betConfig,
+        course,
+        betConfig.bilateralHandicaps,
+        allPlayers
+      );
+      
+      // Calculate total from rayasResult.details (same as detail view)
+      const rayasTotalFromDetails = (() => {
+        let sum = 0;
+        rayasResultForTotal.details.forEach((d) => {
+          sum += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+        });
+        return sum;
+      })();
+      
       groups.push({
         key: 'rayas',
         label: 'Rayas',
@@ -2359,38 +2380,51 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           { label: 'Back 9', key: 'rayas_back' },
           { label: 'Medal Total', key: 'rayas_medal' },
         ],
-        getTotal: () => {
-          const front = groupedSummaries['Rayas Front']?.total || 0;
-          const back = groupedSummaries['Rayas Back']?.total || 0;
-          const oyes = groupedSummaries['Rayas Oyes']?.total || 0;
-          const medal = groupedSummaries['Rayas Medal Total']?.total || 0;
-          return front + back + oyes + medal;
-        },
+        getTotal: () => rayasTotalFromDetails,
         getSegmentData: (segmentKey) => {
           if (segmentKey === 'rayas_front') {
+            // Calculate from details for consistency
+            let frontAmount = 0;
+            rayasResultForTotal.details.forEach((d) => {
+              if (d.appliedSegment === 'front') {
+                frontAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+              }
+            });
             const summary = groupedSummaries['Rayas Front'];
             const match = summary?.details?.[0]?.description?.match(/(\d+) vs (\d+)/);
             return {
               playerNet: match ? parseInt(match[1]) : 0,
               rivalNet: match ? parseInt(match[2]) : 0,
-              amount: (summary?.total || 0) + (groupedSummaries['Rayas Oyes']?.details?.filter(d => d.segment === 'front').reduce((s, d) => s + d.amount, 0) || 0),
+              amount: frontAmount,
               description: summary?.details?.[0]?.description,
             };
           } else if (segmentKey === 'rayas_back') {
+            let backAmount = 0;
+            rayasResultForTotal.details.forEach((d) => {
+              if (d.appliedSegment === 'back') {
+                backAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+              }
+            });
             const summary = groupedSummaries['Rayas Back'];
             const match = summary?.details?.[0]?.description?.match(/(\d+) vs (\d+)/);
             return {
               playerNet: match ? parseInt(match[1]) : 0,
               rivalNet: match ? parseInt(match[2]) : 0,
-              amount: (summary?.total || 0) + (groupedSummaries['Rayas Oyes']?.details?.filter(d => d.segment === 'back').reduce((s, d) => s + d.amount, 0) || 0),
+              amount: backAmount,
               description: summary?.details?.[0]?.description,
             };
           } else {
+            let medalAmount = 0;
+            rayasResultForTotal.details.forEach((d) => {
+              if (d.appliedSegment === 'total') {
+                medalAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+              }
+            });
             const summary = groupedSummaries['Rayas Medal Total'];
             return {
               playerNet: 0,
               rivalNet: 0,
-              amount: summary?.total || 0,
+              amount: medalAmount,
               description: summary?.details?.[0]?.description,
             };
           }
