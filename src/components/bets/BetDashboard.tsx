@@ -643,20 +643,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
     const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
     
-    // Helper to check if a bet is disabled for this pair
-    const isBetDisabledForPair = (betTypeLabel: string): boolean => {
+    // Helper to check if a bet is disabled for this pair.
+    // IMPORTANT: overrides are stored sometimes as the UI key ("rayas") and sometimes as
+    // the engine label ("Rayas"). In addition, some legacy/edge cases store partial labels.
+    const isBetDisabledForPair = (betTypeLabel: string, aliases: string[] = []): boolean => {
       const matchesPlayer = (overrideId: string, pId: string) => {
         const p = allPlayersForCalculations.find(x => x.id === pId);
         return overrideId === pId || (p?.profileId && overrideId === p.profileId);
       };
-      
-      const override = betConfig.betOverrides?.find(
-        (o) =>
-          o.betType === betTypeLabel &&
-          ((matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
-            (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId)))
-      );
-      
+
+      const acceptable = [betTypeLabel, ...aliases]
+        .filter(Boolean)
+        .map((s) => s.toLowerCase());
+
+      const override = betConfig.betOverrides?.find((o) => {
+        const type = (o.betType || '').toLowerCase();
+
+        // match exact OR substring (keeps compatibility with existing logic elsewhere)
+        const matchesType = acceptable.some((a) => type === a || type.includes(a) || a.includes(type));
+        if (!matchesType) return false;
+
+        const matchesPair =
+          (matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
+          (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId));
+
+        return matchesPair;
+      });
+
       return override?.enabled === false;
     };
     
@@ -672,7 +685,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Calculate correct Rayas total using getRayasDetailForPair
     // BUT only if Rayas is not disabled for this pair
     let rayasTotal = 0;
-    const isRayasDisabled = isBetDisabledForPair('Rayas');
+    // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
+    const isRayasDisabled = isBetDisabledForPair('Rayas', ['rayas']);
     
     if (betConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabled) {
       const rayasResult = getRayasDetailForPair(
