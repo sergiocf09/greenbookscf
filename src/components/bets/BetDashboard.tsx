@@ -1468,9 +1468,12 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     const losingTeam = results.moneyA > 0 ? teamBPlayers : teamAPlayers;
     const totalLost = Math.abs(results.moneyA);
     
-    // Each loser's share: totalLost / 2 (split between 2 losers)
-    // Each loser pays to each winner: (totalLost / 2) / 2 = totalLost / 4
-    const perLoserPayToEachWinner = totalLost / 4;
+    // Each loser pays 50% of total to EACH winner
+    // Example: Total lost = $100
+    // - Loser A pays $50 to Winner C and $50 to Winner D (total $100)
+    // - Loser B pays $50 to Winner C and $50 to Winner D (total $100)
+    // Each winner receives: $50 from A + $50 from B = $100
+    const perLoserPayToEachWinner = totalLost / 2;
     
     return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon: totalLost };
   };
@@ -2024,7 +2027,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣', isPositive: isManchaPositiveForBasePlayer });
-        if (score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
+        // DobleDigito - auto-detected when strokes >= 10 (not persisted to DB)
+        if (score.strokes >= 10 || score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
         // Cuatriput - 4+ putts - negative for the player who commits it
         if (score.putts >= 4 || score.markers.cuatriput) {
           details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
