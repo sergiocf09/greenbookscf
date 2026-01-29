@@ -2557,15 +2557,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Medal General (Group bet shown in bilateral view) - only after the round is complete (all players 18 confirmed)
+    // IMPORTANT: Use allPlayers (not players) to check completion and calculate results,
+    // matching the logic in getCorrectedBilateralBalance for consistency.
     const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
-      return players.every((p) => {
+      return allPlayers.every((p) => {
         const pScores = confirmedScores.get(p.id) || [];
         return pScores.some((s) => s.holeNumber === h);
       });
     });
     
     if (betConfig.medalGeneral?.enabled && allPlayersComplete) {
-      const medalResult = getMedalGeneralBilateralResult(players, player, rival, confirmedScores, betConfig, course);
+      const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
       if (medalResult) {
         groups.push({
           key: 'medalGeneral',
