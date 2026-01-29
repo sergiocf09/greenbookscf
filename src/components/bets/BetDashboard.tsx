@@ -647,6 +647,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // IMPORTANT: overrides are stored sometimes as the UI key ("rayas") and sometimes as
     // the engine label ("Rayas"). In addition, some legacy/edge cases store partial labels.
     const isBetDisabledForPair = (betTypeLabel: string, aliases: string[] = []): boolean => {
+      // Normalize bet type strings so overrides match regardless of spaces/underscores/case/accents.
+      // Examples that should match:
+      // - "Medal General" / "medalGeneral" / "medal_general" / "MEDALGENERAL"
+      // - "Pingüinos" / "pinguinos"
+      const normalizeType = (s: string): string => {
+        return (s || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '');
+      };
+
       // Match player ID - check both direct ID match and profileId match
       // Also check the reverse: overrideId might be a profileId that matches a player's profileId
       const matchesPlayer = (overrideId: string, pId: string) => {
@@ -671,10 +683,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       const acceptable = [betTypeLabel, ...aliases]
         .filter(Boolean)
-        .map((s) => s.toLowerCase());
+        .map((s) => normalizeType(s));
 
       const override = betConfig.betOverrides?.find((o) => {
-        const type = (o.betType || '').toLowerCase();
+        const type = normalizeType(o.betType || '');
 
         // match exact OR substring (keeps compatibility with existing logic elsewhere)
         const matchesType = acceptable.some((a) => type === a || type.includes(a) || a.includes(type));
