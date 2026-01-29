@@ -1925,11 +1925,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
   // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
   const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
+    const matchesPlayer = (overrideId: string, p: Player) =>
+      overrideId === p.id || (p.profileId && overrideId === p.profileId);
+
     return betConfig.betOverrides?.find(
       (o) =>
         o.betType === overrideLabel &&
-        ((o.playerAId === player.id && o.playerBId === rival.id) ||
-          (o.playerAId === rival.id && o.playerBId === player.id))
+        ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
+          (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
     );
   };
 
