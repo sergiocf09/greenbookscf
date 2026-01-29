@@ -976,17 +976,25 @@ export const calculateManchasBets = (
   
   const summaries: BetSummary[] = [];
   
-  const manchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana'] as const;
+  // Manual manchas that are persisted to database
+  const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana'] as const;
   
   // Count regular manchas (not cuatriput)
+  // Also auto-detect dobleDigito (10+ strokes) since it's not persisted to DB
   const countManchas = (playerId: string): number => {
     const playerScores = scores.get(playerId) || [];
     let manchas = 0;
     
     playerScores.forEach(score => {
-      manchaMarkers.forEach(marker => {
+      // Count manual markers from database
+      manualManchaMarkers.forEach(marker => {
         if (score.markers[marker]) manchas += 1;
       });
+      
+      // Auto-detect dobleDigito (10+ strokes) - this is auto-detected, not persisted
+      if (score.strokes >= 10) {
+        manchas += 1;
+      }
     });
     
     return manchas;
