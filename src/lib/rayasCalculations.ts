@@ -102,7 +102,8 @@ const getSegmentNetTotal = (
   const holeRange = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
   
   return playerScores
-    .filter(s => s.holeNumber >= holeRange[0] && s.holeNumber <= holeRange[1])
+    // Rayas must respect confirmation rules (only confirmed holes count)
+    .filter(s => s.confirmed && s.holeNumber >= holeRange[0] && s.holeNumber <= holeRange[1])
     .reduce((sum, s) => sum + (s.netScore ?? s.strokes ?? 0), 0);
 };
 
@@ -494,14 +495,16 @@ const processOyesHole = (
       });
     }
     
-    // Carried Front Oyes (paid at front value, only in Back 9)
+    // Carried Front Oyes
+    // NOTE: For Rayas display/settlement we treat carried Oyes as part of the Back segment
+    // so the Back total rayas & amount reflect the full count (e.g., 12 × $50 = $600).
     if (segment === 'back' && carriedFromFront > 0) {
       summaries.push({
         playerId: closestPlayer.playerId,
         vsPlayer: rival.id,
         betType: 'Rayas Oyes',
-        amount: carriedFromFront * frontValue,
-        segment: 'front',
+        amount: carriedFromFront * segmentValue,
+        segment: 'back',
         holeNumber: holeNum,
         description: `Oyes Carry del Front (${carriedFromFront})`,
       });
@@ -509,8 +512,8 @@ const processOyesHole = (
         playerId: rival.id,
         vsPlayer: closestPlayer.playerId,
         betType: 'Rayas Oyes',
-        amount: -carriedFromFront * frontValue,
-        segment: 'front',
+        amount: -carriedFromFront * segmentValue,
+        segment: 'back',
         holeNumber: holeNum,
         description: `Oyes Carry del Front`,
       });
