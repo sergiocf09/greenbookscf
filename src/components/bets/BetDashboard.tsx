@@ -2902,9 +2902,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const medalTotalAmount = groupedSummaries['Rayas Medal Total']?.total || 0;
                         const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
                         
-                        // Check if we have all 18 holes confirmed
-                        const confirmedHolesCount = confirmedScores.get(player.id)?.length || 0;
-                        const hasAll18 = confirmedHolesCount >= 18;
+                        // Check if we have all 18 holes confirmed for BOTH players
+                        const confirmedHolesCountA = confirmedScores.get(player.id)?.length || 0;
+                        const confirmedHolesCountB = confirmedScores.get(rival.id)?.length || 0;
+                        const hasAll18 = confirmedHolesCountA >= 18 && confirmedHolesCountB >= 18;
                         
                         return (
                           <div className="px-4 py-3 pl-6 bg-background/50 space-y-2">
