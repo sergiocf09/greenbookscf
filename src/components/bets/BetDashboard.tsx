@@ -673,12 +673,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return override?.enabled === false;
     };
     
-    // Sum all non-Rayas bets from betSummaries, respecting overrides
-    const nonRayasBalance = betSummaries
+    // Sum all non-Rayas and non-Medal General bets from betSummaries.
+    // We EXCLUDE Medal General here because it needs to be calculated dynamically
+    // using getMedalGeneralBilateralResult to match the detail view (only when all 18 holes confirmed).
+    const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
         s.vsPlayer === rivalId && 
-        !s.betType.startsWith('Rayas')
+        !s.betType.startsWith('Rayas') &&
+        s.betType !== 'Medal General'
       )
       .reduce((sum, s) => sum + s.amount, 0);
     
@@ -705,7 +708,36 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       });
     }
     
-    return nonRayasBalance + rayasTotal;
+    // Calculate Medal General using the same logic as the detail view
+    // This ensures consistency between the Balance vs header and the detail breakdown
+    let medalGeneralTotal = 0;
+    const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
+    
+    if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled) {
+      // Check if all players have all 18 holes confirmed (same check as detail view)
+      const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
+        return allPlayersForCalculations.every((p) => {
+          const pScores = confirmedScores.get(p.id) || [];
+          return pScores.some((s) => s.holeNumber === h);
+        });
+      });
+      
+      if (allPlayersComplete) {
+        const medalResult = getMedalGeneralBilateralResult(
+          allPlayersForCalculations,
+          playerObj,
+          rivalObj,
+          confirmedScores,
+          betConfig,
+          course
+        );
+        if (medalResult) {
+          medalGeneralTotal = medalResult.amount;
+        }
+      }
+    }
+    
+    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal;
   };
   
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
