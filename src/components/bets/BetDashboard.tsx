@@ -637,12 +637,30 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Get corrected bilateral balance that uses getRayasDetailForPair for Rayas consistency
   // This ensures the Tabla General uses the same Rayas calculation as the BilateralDetail
+  // IMPORTANT: Also respects betOverrides (cancelled bets) for each pair
   const getCorrectedBilateralBalance = (playerId: string, rivalId: string): number => {
     // Get balance from betSummaries for non-Rayas bets
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
     const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
     
-    // Sum all non-Rayas bets from betSummaries
+    // Helper to check if a bet is disabled for this pair
+    const isBetDisabledForPair = (betTypeLabel: string): boolean => {
+      const matchesPlayer = (overrideId: string, pId: string) => {
+        const p = allPlayersForCalculations.find(x => x.id === pId);
+        return overrideId === pId || (p?.profileId && overrideId === p.profileId);
+      };
+      
+      const override = betConfig.betOverrides?.find(
+        (o) =>
+          o.betType === betTypeLabel &&
+          ((matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
+            (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId)))
+      );
+      
+      return override?.enabled === false;
+    };
+    
+    // Sum all non-Rayas bets from betSummaries, respecting overrides
     const nonRayasBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -652,8 +670,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       .reduce((sum, s) => sum + s.amount, 0);
     
     // Calculate correct Rayas total using getRayasDetailForPair
+    // BUT only if Rayas is not disabled for this pair
     let rayasTotal = 0;
-    if (betConfig.rayas?.enabled && playerObj && rivalObj) {
+    const isRayasDisabled = isBetDisabledForPair('Rayas');
+    
+    if (betConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabled) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
