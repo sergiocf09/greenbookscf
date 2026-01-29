@@ -210,7 +210,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <tr key={player.id} className="border-t border-border/50">
                 <td className="px-2 py-1 sticky left-0 bg-card">
                   <div className="flex items-center gap-1">
-                    <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
+                    <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
                     <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
                   </div>
                 </td>
@@ -297,7 +297,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 <tr key={player.id} className="border-t border-border/50">
                   <td className="px-2 py-1 sticky left-0 bg-card">
                     <div className="flex items-center gap-1">
-                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" />
+                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
                       <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
                     </div>
                   </td>

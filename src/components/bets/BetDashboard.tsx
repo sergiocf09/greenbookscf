@@ -1071,7 +1071,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   )}
                   aria-pressed={isActive}
                 >
-                  <PlayerAvatar initials={p.initials} background={p.color} size="md" className="w-9 h-9 text-sm" />
+                  <PlayerAvatar initials={p.initials} background={p.color} size="md" className="w-9 h-9 text-sm" isLoggedInUser={p.id === basePlayerId} />
                 </button>
               );
             })}
@@ -1182,8 +1182,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               >
                                 <PlayerAvatar 
                                   initials={player.initials} 
-                                  background={isAdded ? 'rgba(255,255,255,0.2)' : player.color} 
+                                  background={player.color} 
                                   size="sm" 
+                                  isLoggedInUser={player.id === basePlayerId}
                                 />
                                 <span className="text-sm font-medium">{player.name.split(' ')[0]}</span>
                                 {isAdded && <Check className="h-4 w-4" />}

@@ -337,7 +337,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       {medalGeneralResult.winners.map((winner, idx) => (
                         <React.Fragment key={winner.playerId}>
                           {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                          <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" />
+                          <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
                           <span className="font-medium text-sm">{winner.name.split(' ')[0]}</span>
                           <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
                         </React.Fragment>
@@ -385,7 +385,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-destructive text-xs">Paga:</span>
-                      <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" />
+                      <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" isLoggedInUser={culebrasResult.loser.playerId === basePlayerId} />
                       <span className="font-medium text-sm">{culebrasResult.loser.name.split(' ')[0]}</span>
                     </div>
                     <span className="text-destructive font-bold text-lg">
@@ -434,7 +434,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-destructive text-xs">Paga:</span>
-                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" />
+                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" isLoggedInUser={pinguinosResult.loser.playerId === basePlayerId} />
                       <span className="font-medium text-sm">{pinguinosResult.loser.name.split(' ')[0]}</span>
                     </div>
                     <span className="text-destructive font-bold text-lg">

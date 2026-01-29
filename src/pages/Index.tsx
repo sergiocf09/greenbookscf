@@ -1420,6 +1420,7 @@ const Index = () => {
               course={course}
               confirmedHoles={confirmedHoles}
               betConfig={betConfig}
+              basePlayerId={profile?.id}
             />
           </>
         )}

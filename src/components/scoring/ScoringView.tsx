@@ -133,6 +133,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
             handicapStrokes={holeScore?.strokesReceived || 0}
             isBasePlayer={isBasePlayer}
+            playerId={player.profileId || player.id}
+            basePlayerId={profile?.id}
             isPar3={isPar3}
             oyesEnabled={oyesEnabled}
             oyesProximity={holeScore?.oyesProximity}

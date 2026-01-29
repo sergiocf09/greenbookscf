@@ -19,6 +19,7 @@ interface PlayerBetIconsProps {
   betSummaries: BetSummary[];
   onPlayerClick: (rivalId: string) => void;
   selectedRival: string | null;
+  basePlayerId?: string;
 }
 
 export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
@@ -28,6 +29,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
   betSummaries,
   onPlayerClick,
   selectedRival,
+  basePlayerId,
 }) => {
   const rivals = allPlayers.filter(p => p.id !== player.id);
 
@@ -54,7 +56,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
                 : 'bg-muted/50 hover:bg-muted'
             )}
           >
-            <PlayerAvatar initials={rival.initials} background={rival.color} size="md" />
+            <PlayerAvatar initials={rival.initials} background={rival.color} size="md" isLoggedInUser={rival.id === basePlayerId} />
             <div className={cn(
               'text-[10px] font-semibold mt-1 flex items-center gap-0.5',
               balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -76,6 +78,7 @@ interface BetDetailViewProps {
   rival: Player;
   summaries: BetSummary[];
   betConfig: BetConfig;
+  basePlayerId?: string;
 }
 
 export const BetDetailView: React.FC<BetDetailViewProps> = ({
@@ -83,6 +86,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
   rival,
   summaries,
   betConfig,
+  basePlayerId,
 }) => {
   const relevantSummaries = summaries.filter(
     s => s.playerId === player.id && s.vsPlayer === rival.id
@@ -100,9 +104,9 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
     <div className="bg-card border border-border rounded-xl p-3 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <PlayerAvatar initials={player.initials} background={player.color} size="md" />
+          <PlayerAvatar initials={player.initials} background={player.color} size="md" isLoggedInUser={player.id === basePlayerId} />
           <span className="text-sm text-muted-foreground">vs</span>
-          <PlayerAvatar initials={rival.initials} background={rival.color} size="md" />
+          <PlayerAvatar initials={rival.initials} background={rival.color} size="md" isLoggedInUser={rival.id === basePlayerId} />
         </div>
         <div className={cn(
           'text-xl font-bold flex items-center gap-1',
@@ -145,11 +149,13 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
 interface GeneralBetTableProps {
   players: Player[];
   summaries: BetSummary[];
+  basePlayerId?: string;
 }
 
 export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
   players,
   summaries,
+  basePlayerId,
 }) => {
   const getPlayerTotalBalance = (playerId: string): number => {
     return summaries
@@ -174,7 +180,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
             <div key={player.id} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground w-5">{index + 1}</span>
-                <PlayerAvatar initials={player.initials} background={player.color} size="md" />
+                <PlayerAvatar initials={player.initials} background={player.color} size="md" isLoggedInUser={player.id === basePlayerId} />
                 <span className="font-medium">{player.name}</span>
               </div>
               <div className={cn(
