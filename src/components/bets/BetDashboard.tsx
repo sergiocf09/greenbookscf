@@ -2885,22 +2885,32 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
                         const totalRayasAll = frontTotalRayas + backTotalRayas + medalTotalRayas;
                         
-                        // IMPORTANT: Amounts must match the engine output (groupedSummaries),
-                        // because groupedSummaries already includes cancellations and per-pair amount overrides.
-                        const oyesFrontAmount =
-                          groupedSummaries['Rayas Oyes']?.details
-                            ?.filter((d) => d.segment === 'front')
-                            .reduce((s, d) => s + d.amount, 0) || 0;
-                        const oyesBackAmount =
-                          groupedSummaries['Rayas Oyes']?.details
-                            ?.filter((d) => d.segment === 'back')
-                            .reduce((s, d) => s + d.amount, 0) || 0;
+                        // IMPORTANT:
+                        // The Rayas audit table must be internally consistent:
+                        // - The displayed rayas counts (front/back/total) come from rayasResult.details
+                        // - The money amounts MUST come from the SAME source, otherwise we can show
+                        //   "12 × $50 = $550" when the engine splits lines differently.
+                        //
+                        // So: compute amounts directly from rayasResult.details by appliedSegment.
+                        const { frontTotalAmount, backTotalAmount, medalTotalAmount, grandTotal } = (() => {
+                          let front = 0;
+                          let back = 0;
+                          let total = 0;
 
-                        // Front/Back totals must include Oyes for the segment multiplication to be correct
-                        const frontTotalAmount = (groupedSummaries['Rayas Front']?.total || 0) + oyesFrontAmount;
-                        const backTotalAmount = (groupedSummaries['Rayas Back']?.total || 0) + oyesBackAmount;
-                        const medalTotalAmount = groupedSummaries['Rayas Medal Total']?.total || 0;
-                        const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
+                          rayasResult.details.forEach((d) => {
+                            const amt = (d.rayasCount || 0) * (d.valuePerRaya || 0);
+                            if (d.appliedSegment === 'front') front += amt;
+                            else if (d.appliedSegment === 'back') back += amt;
+                            else total += amt;
+                          });
+
+                          return {
+                            frontTotalAmount: front,
+                            backTotalAmount: back,
+                            medalTotalAmount: total,
+                            grandTotal: front + back + total,
+                          };
+                        })();
                         
                         // Check if we have all 18 holes confirmed for BOTH players
                         const confirmedHolesCountA = confirmedScores.get(player.id)?.length || 0;
