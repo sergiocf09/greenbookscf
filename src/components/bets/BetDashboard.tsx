@@ -937,12 +937,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       )}>
                         {idx + 1}
                       </span>
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-                        style={{ backgroundColor: player.color }}
-                      >
-                        {getPlayerAbbr(player)}
-                      </div>
+                      <PlayerAvatar 
+                        initials={getPlayerAbbr(player)} 
+                        background={player.color} 
+                        size="lg" 
+                        isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
+                      />
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1">
                           <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
@@ -958,7 +958,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         'text-lg font-bold',
-                        displayBalance > 0 ? 'text-green-500' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
                         {displayBalance >= 0 ? '+' : ''}${displayBalance}
                       </div>
@@ -992,26 +992,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">vs</span>
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                                style={{ backgroundColor: other.color }}
-                              >
-                                {getPlayerAbbr(other)}
-                              </div>
+                              <PlayerAvatar 
+                                initials={getPlayerAbbr(other)} 
+                                background={other.color} 
+                                size="sm" 
+                                isLoggedInUser={other.id === basePlayerId || other.profileId === basePlayerId}
+                              />
                               {isCrossGroupRival && (
                                 <span className="text-[9px] px-1.5 py-0.5 bg-accent/30 rounded text-accent-foreground">
                                   G{otherGroupIdx + 1}
                                 </span>
                               )}
                               {vsCarritosBalance !== 0 && (
-                                <span className="text-[9px] text-muted-foreground">
-                                  Ind: ${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance} | Car: ${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}
+                                <span className="text-xs text-muted-foreground">
+                                  Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span> | Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span>
                                 </span>
                               )}
                             </div>
                             <span className={cn(
                               'font-bold',
-                              vsTotalBalance > 0 ? 'text-green-500' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                              vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
                               {vsTotalBalance >= 0 ? '+' : ''}${vsTotalBalance}
                             </span>
@@ -1100,15 +1100,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     {hasOverride && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
                     )}
-                    <div 
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold mb-1"
-                      style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : rival.color }}
-                    >
-                      {getPlayerAbbr(rival)}
-                    </div>
+                    <PlayerAvatar 
+                      initials={getPlayerAbbr(rival)} 
+                      background={isSelected ? 'rgba(255,255,255,0.2)' : rival.color} 
+                      size="lg" 
+                      className="w-14 h-14 text-lg mb-1"
+                      isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
+                    />
                     <div className={cn(
                       'text-sm font-bold flex items-center gap-0.5',
-                      isSelected ? '' : balance > 0 ? 'text-green-500' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      isSelected ? '' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}>
                       {balance !== 0 && (
                         balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
@@ -1238,6 +1239,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           course={course}
           allScores={scores}
           onBetConfigChange={onBetConfigChange}
+          basePlayerId={basePlayerId}
         />
       )}
 
@@ -1887,6 +1889,7 @@ interface BilateralDetailProps {
   course: GolfCourse;
   allScores: Map<string, PlayerScore[]>;
   onBetConfigChange?: (config: BetConfig) => void;
+  basePlayerId?: string;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -1904,6 +1907,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   course,
   allScores,
   onBetConfigChange,
+  basePlayerId,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
@@ -2359,13 +2363,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               <span 
                 key={i} 
                 className={cn(
-                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]',
+                  'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
                   d.isPositive 
                     ? 'bg-green-500/20 text-green-600' 
                     : 'bg-destructive/20 text-destructive'
                 )}
               >
-                <span>H{d.holeNumber}</span>
+                <span className="font-medium">H{d.holeNumber}</span>
                 <span>{d.emoji}</span>
                 <span className="hidden sm:inline">{d.marker}</span>
                 <span className="font-bold">{d.isPositive ? '+' : '-'}${betConfig[type === 'units' ? 'units' : 'manchas'].valuePerPoint}</span>
@@ -2384,23 +2388,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       <CardHeader className="py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-              style={{ backgroundColor: player.color }}
-            >
-              {getPlayerAbbr(player)}
-            </div>
+            <PlayerAvatar 
+              initials={getPlayerAbbr(player)} 
+              background={player.color} 
+              size="lg" 
+              isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
+            />
             <span className="text-muted-foreground text-sm">vs</span>
-            <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-              style={{ backgroundColor: rival.color }}
-            >
-              {getPlayerAbbr(rival)}
-            </div>
+            <PlayerAvatar 
+              initials={getPlayerAbbr(rival)} 
+              background={rival.color} 
+              size="lg" 
+              isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
+            />
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            totalBalance > 0 ? 'text-green-500' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+            totalBalance > 0 ? 'text-green-600' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
             {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
             {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
@@ -2559,7 +2563,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     <span className={cn(
                       'text-lg font-bold',
                       isDisabled ? 'text-muted-foreground' :
-                      total > 0 ? 'text-green-500' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}>
                       {isDisabled ? '$0' : `${total >= 0 ? '+' : ''}$${total}`}
                     </span>
@@ -2834,84 +2838,84 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
                             
                             {/* Front 9 row */}
-                            <div className="grid grid-cols-5 gap-1 items-center text-xs py-1">
+                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1">
                               <div className="font-medium text-muted-foreground">Front 9</div>
-                              <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-500' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-600' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.front !== 0 ? skinsNet.front : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', unitsNet.front > 0 ? 'text-green-500' : unitsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', unitsNet.front > 0 ? 'text-green-600' : unitsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {unitsNet.front !== 0 ? unitsNet.front : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', oyesNet.front > 0 ? 'text-green-500' : oyesNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', oyesNet.front > 0 ? 'text-green-600' : oyesNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {oyesNet.front !== 0 ? oyesNet.front : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', medalNet.front > 0 ? 'text-green-500' : medalNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', medalNet.front > 0 ? 'text-green-600' : medalNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {medalNet.front !== 0 ? medalNet.front : '-'}
                               </div>
                             </div>
                             
                             {/* Front 9 total */}
-                            <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                            <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground">Total Front:</span>
-                                <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-500' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
+                                <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-600' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {frontTotalRayas}
                                 </span>
                                 <span className="text-muted-foreground">× ${frontValue} =</span>
                               </div>
-                              <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-500' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
+                              <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-600' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
                                 {frontTotalAmount >= 0 ? '+' : ''}${frontTotalAmount}
                               </span>
                             </div>
                             
                             {/* Back 9 row */}
-                            <div className="grid grid-cols-5 gap-1 items-center text-xs py-1 border-t border-border/20 pt-2">
+                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2">
                               <div className="font-medium text-muted-foreground">Back 9</div>
-                              <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-500' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-600' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', unitsNet.back > 0 ? 'text-green-500' : unitsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', unitsNet.back > 0 ? 'text-green-600' : unitsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {unitsNet.back !== 0 ? unitsNet.back : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', oyesNet.back > 0 ? 'text-green-500' : oyesNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', oyesNet.back > 0 ? 'text-green-600' : oyesNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {oyesNet.back !== 0 ? oyesNet.back : '-'}
                               </div>
-                              <div className={cn('text-center font-bold', medalNet.back > 0 ? 'text-green-500' : medalNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                              <div className={cn('text-center font-bold', medalNet.back > 0 ? 'text-green-600' : medalNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {medalNet.back !== 0 ? medalNet.back : '-'}
                               </div>
                             </div>
                             
                             {/* Back 9 total */}
-                            <div className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
+                            <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground">Total Back:</span>
-                                <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-500' : backTotalRayas < 0 ? 'text-destructive' : '')}>
+                                <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-600' : backTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {backTotalRayas}
                                 </span>
                                 <span className="text-muted-foreground">× ${backValue} =</span>
                               </div>
-                              <span className={cn('font-bold', backTotalAmount > 0 ? 'text-green-500' : backTotalAmount < 0 ? 'text-destructive' : '')}>
+                              <span className={cn('font-bold', backTotalAmount > 0 ? 'text-green-600' : backTotalAmount < 0 ? 'text-destructive' : '')}>
                                 {backTotalAmount >= 0 ? '+' : ''}${backTotalAmount}
                               </span>
                             </div>
                             
                             {/* Medal Total row - only show when all 18 holes confirmed */}
                             {hasAll18 && medalTotalAmount !== 0 && (
-                              <div className="flex items-center justify-between text-xs bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
+                              <div className="flex items-center justify-between text-sm bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">Medal Total</span>
-                                  <span className="text-muted-foreground text-[10px]">(1 raya)</span>
+                                  <span className="text-muted-foreground text-xs">(1 raya)</span>
                                 </div>
-                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-500' : 'text-destructive')}>
+                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : 'text-destructive')}>
                                   {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
                                 </span>
                               </div>
                             )}
                             
                             {/* Grand Total */}
-                            <div className="flex items-center justify-between text-sm font-bold border-t border-border/50 pt-2 mt-2">
+                            <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
                               <span>TOTAL RAYAS</span>
-                              <span className={cn(grandTotal > 0 ? 'text-green-500' : grandTotal < 0 ? 'text-destructive' : '')}>
+                              <span className={cn(grandTotal > 0 ? 'text-green-600' : grandTotal < 0 ? 'text-destructive' : '')}>
                                 {grandTotal >= 0 ? '+' : ''}${grandTotal}
                               </span>
                             </div>
@@ -2941,29 +2945,29 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted-foreground w-16">{segment.label}</span>
+                              <span className="text-sm text-muted-foreground w-16">{segment.label}</span>
                               {/* Score comparison */}
-                              <div className="flex items-center gap-1 text-xs">
+                              <div className="flex items-center gap-1.5 text-sm">
                                 {group.key === 'pressures' ? (
                                   <span className={cn(
-                                    'font-medium',
-                                    data.amount > 0 ? 'text-green-500' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                    'font-semibold',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                                   )}>
                                     {isPressureEven ? 'Even' : (data.description || 'Even')}
                                   </span>
                                 ) : (
                                   <>
                                     <span className={cn(
-                                      'font-medium min-w-[24px] text-center',
-                                      data.playerNet < data.rivalNet ? 'text-green-500' : 
+                                      'font-semibold min-w-[28px] text-center',
+                                      data.playerNet < data.rivalNet ? 'text-green-600' : 
                                       data.playerNet > data.rivalNet ? 'text-destructive' : ''
                                     )}>
                                       {group.key === 'skins' ? `${data.playerNet}` : data.playerNet || '-'}
                                     </span>
                                     <span className="text-muted-foreground">vs</span>
                                     <span className={cn(
-                                      'font-medium min-w-[24px] text-center',
-                                      data.rivalNet < data.playerNet ? 'text-green-500' : 
+                                      'font-semibold min-w-[28px] text-center',
+                                      data.rivalNet < data.playerNet ? 'text-green-600' : 
                                       data.rivalNet > data.playerNet ? 'text-destructive' : ''
                                     )}>
                                       {group.key === 'skins' ? `${data.rivalNet}` : data.rivalNet || '-'}
@@ -2974,9 +2978,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
                             <span
                               className={cn(
-                                'text-sm font-bold min-w-[50px] text-right',
+                                'text-base font-bold min-w-[55px] text-right',
                                 data.amount > 0
-                                  ? 'text-green-500'
+                                  ? 'text-green-600'
                                   : data.amount < 0
                                     ? 'text-destructive'
                                     : 'text-muted-foreground'

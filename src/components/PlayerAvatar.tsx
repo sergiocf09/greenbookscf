@@ -1,12 +1,13 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-type Size = "xs" | "sm" | "md";
+type Size = "xs" | "sm" | "md" | "lg";
 
 const sizeClasses: Record<Size, string> = {
   xs: "w-4 h-4 text-[8px]",
   sm: "w-5 h-5 text-[9px]",
   md: "w-8 h-8 text-xs",
+  lg: "w-10 h-10 text-sm",
 };
 
 interface PlayerAvatarProps {
