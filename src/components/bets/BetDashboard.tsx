@@ -1441,8 +1441,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     </p>
   );
 
-  const getNetTone = (n: number) => (n > 0 ? 'text-primary' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
-  const getNetPill = (n: number) => (n > 0 ? 'border-primary/40 text-primary' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
+  const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
+  const getNetPill = (n: number) => (n > 0 ? 'border-green-600/40 text-green-600' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
 
   const getWinnerText = (w?: Winner) => {
     if (!w) return '—';
@@ -1458,18 +1458,21 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         ? 'HighBall'
         : 'Suma';
   
-  // Payment: each losing player pays 50% of total to EACH winning player
+  // Payment: Each loser pays 50% of their share to EACH winner
+  // Total loss is split between 2 losers, then each loser splits their half between 2 winners
+  // Example: Team loses $100 total -> each loser pays $50 total -> $25 to each winner
   const getPaymentBreakdown = () => {
     if (results.moneyA === 0) return null;
     
     const winningTeam = results.moneyA > 0 ? teamAPlayers : teamBPlayers;
     const losingTeam = results.moneyA > 0 ? teamBPlayers : teamAPlayers;
-    const totalWon = Math.abs(results.moneyA);
+    const totalLost = Math.abs(results.moneyA);
     
-    // Each loser pays (totalWon / 2) to EACH winner
-    const perLoserPayToEachWinner = totalWon / 2;
+    // Each loser's share: totalLost / 2 (split between 2 losers)
+    // Each loser pays to each winner: (totalLost / 2) / 2 = totalLost / 4
+    const perLoserPayToEachWinner = totalLost / 4;
     
-    return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon };
+    return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon: totalLost };
   };
   
   const payment = getPaymentBreakdown();
@@ -1540,14 +1543,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div>
                 <div className="flex items-center gap-1">
                   {displayTeamAPlayers.map((p) => (
-                    <div
+                    <PlayerAvatar
                       key={p.id}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
-                      style={{ backgroundColor: p.color }}
-                      title={p.name}
-                    >
-                      {getPlayerAbbr(p)}
-                    </div>
+                      initials={getPlayerAbbr(p)}
+                      background={p.color}
+                      size="md"
+                      isLoggedInUser={p.id === basePlayerId || p.profileId === basePlayerId}
+                    />
                   ))}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">Pareja A (tu equipo)</p>
@@ -1555,14 +1557,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {displayTeamBPlayers.map((p) => (
-                    <div
+                    <PlayerAvatar
                       key={p.id}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold opacity-80"
-                      style={{ backgroundColor: p.color }}
-                      title={p.name}
-                    >
-                      {getPlayerAbbr(p)}
-                    </div>
+                      initials={getPlayerAbbr(p)}
+                      background={p.color}
+                      size="sm"
+                      isLoggedInUser={p.id === basePlayerId || p.profileId === basePlayerId}
+                    />
                   ))}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
@@ -2345,8 +2346,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes]);
   
   // Effective handicaps (with override or original)
-  const effectivePlayerHcp = bilateralHandicap?.playerAHandicap ?? player.handicap;
-  const effectiveRivalHcp = bilateralHandicap?.playerBHandicap ?? rival.handicap;
+  // IMPORTANT: Must correctly map based on which player is A vs B in the stored override
+  const getEffectiveHandicaps = () => {
+    if (!bilateralHandicap) {
+      return { playerHcp: player.handicap, rivalHcp: rival.handicap };
+    }
+    // Check if player is playerA in the stored override
+    const isPlayerA = bilateralHandicap.playerAId === player.id;
+    return {
+      playerHcp: isPlayerA ? bilateralHandicap.playerAHandicap : bilateralHandicap.playerBHandicap,
+      rivalHcp: isPlayerA ? bilateralHandicap.playerBHandicap : bilateralHandicap.playerAHandicap,
+    };
+  };
+  const { playerHcp: effectivePlayerHcp, rivalHcp: effectiveRivalHcp } = getEffectiveHandicaps();
   const hasOverride = !!bilateralHandicap;
 
   // Render units/manchas detail with proper colors
@@ -2932,10 +2944,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       group.segments.map((segment) => {
                         const data = group.getSegmentData(segment.key);
                         
-                        // For pressures, show "Even" when tied (amount is 0 or description indicates no activity)
+                        // For pressures, show "Even" ONLY when:
+                        // - Amount is 0 AND
+                        // - Only one bet was opened (initial) AND that bet is tied (+0)
+                        // If there are multiple lines (e.g., -1+1, 0+2), show the actual results
                         const isPressures = group.key === 'pressures';
+                        const pressureDesc = data.description || '';
+                        // Count how many bet lines exist (each line is represented as a signed number)
+                        const pressureLines = pressureDesc.match(/[+-]\d+/g) || [];
+                        // "Even" only when single line showing +0 or empty
                         const isPressureEven = isPressures && data.amount === 0 && 
-                          (!data.description || data.description === '' || data.description === '+0');
+                          (pressureLines.length === 0 || (pressureLines.length === 1 && pressureLines[0] === '+0'));
                         
                         const showSkinsShoe =
                           group.key === 'skins' &&
@@ -3304,11 +3323,17 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
   currentHandicap,
   onSave,
 }) => {
+  // Correctly map handicaps based on stored player order
+  const isPlayerA = currentHandicap?.playerAId === player.id;
   const [playerAHcp, setPlayerAHcp] = useState(
-    currentHandicap?.playerAHandicap ?? player.handicap
+    currentHandicap 
+      ? (isPlayerA ? currentHandicap.playerAHandicap : currentHandicap.playerBHandicap)
+      : player.handicap
   );
   const [playerBHcp, setPlayerBHcp] = useState(
-    currentHandicap?.playerBHandicap ?? rival.handicap
+    currentHandicap 
+      ? (isPlayerA ? currentHandicap.playerBHandicap : currentHandicap.playerAHandicap)
+      : rival.handicap
   );
   
   const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, User, Users2 } from 'lucide-react';
+import { Plus, X, User, Users2, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,7 +66,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       name: safeName,
       initials,
       color: playerColors[players.length % playerColors.length],
-      handicap: 0,
+      handicap: 0, // Default to 0, user can optionally load USGA handicap
     };
 
     onChange([...players, newPlayer]);
@@ -199,6 +199,15 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 min={0}
                 max={54}
               />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-accent"
+                onClick={() => toast.info('Cálculo de handicap USGA disponible próximamente cuando haya historial de rondas')}
+                title="Cargar handicap USGA"
+              >
+                <Calculator className="h-3.5 w-3.5" />
+              </Button>
             </div>
             
             <Button
