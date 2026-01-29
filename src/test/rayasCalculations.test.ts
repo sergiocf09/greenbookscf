@@ -242,20 +242,26 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     // Player A wins against each rival
     const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     
-    // Should have wins in both segments (front for carried, back for current)
+    // New product rule: carried Front Oyes counts inside Back (so Back total rayas & amount match)
     const frontWins = playerAWins.filter(w => w.segment === 'front');
     const backWins = playerAWins.filter(w => w.segment === 'back');
     
-    // Front wins: 2 accumulated * 100 = 200 per rival = 3 entries
-    expect(frontWins.length).toBe(3);
-    frontWins.forEach(win => {
-      expect(win.amount).toBe(200); // 2 accumulated * 100 front value
+    expect(frontWins.length).toBe(0);
+    
+    // Back wins include:
+    // - carry: 2 accumulated * 150 = 300 per rival
+    // - current: 1 current * 150 = 150 per rival
+    const backCarryWins = backWins.filter(w => (w.description || '').includes('Carry'));
+    const backCurrentWins = backWins.filter(w => !(w.description || '').includes('Carry'));
+    
+    expect(backCarryWins.length).toBe(3);
+    backCarryWins.forEach(win => {
+      expect(win.amount).toBe(300);
     });
     
-    // Back wins: 1 current * 150 = 150 per rival = 3 entries
-    expect(backWins.length).toBe(3);
-    backWins.forEach(win => {
-      expect(win.amount).toBe(150); // 1 * 150 back value
+    expect(backCurrentWins.length).toBe(3);
+    backCurrentWins.forEach(win => {
+      expect(win.amount).toBe(150);
     });
   });
 

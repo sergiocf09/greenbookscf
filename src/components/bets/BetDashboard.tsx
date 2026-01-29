@@ -2879,25 +2879,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const oyesNet = sourceGroups['oyes'];
                         const medalNet = sourceGroups['medal'];
                         
-                        // IMPORTANT:
-                        // - "Rayas Front" and "Rayas Back" amounts DO NOT include Oyes (Oyes is its own betType: "Rayas Oyes").
-                        // - So the multiplication shown in Total Front/Back must also exclude Oyes to match the $ amount.
-                        const frontRayasForAmount = skinsNet.front + unitsNet.front + medalNet.front;
-                        const backRayasForAmount = skinsNet.back + unitsNet.back + medalNet.back;
+                        // Total rayas per segment (includes Oyes because Rayas uses Oyes results too)
                         const medalTotalRayas = medalNet.total; // Medal Total raya lives in the "total" segment
-
-                        // For display purposes we still want a global rayas count that includes everything
-                        const frontTotalRayas = frontRayasForAmount + oyesNet.front;
-                        const backTotalRayas = backRayasForAmount + oyesNet.back;
+                        const frontTotalRayas = skinsNet.front + unitsNet.front + oyesNet.front + medalNet.front;
+                        const backTotalRayas = skinsNet.back + unitsNet.back + oyesNet.back + medalNet.back;
                         const totalRayasAll = frontTotalRayas + backTotalRayas + medalTotalRayas;
                         
                         // IMPORTANT: Amounts must match the engine output (groupedSummaries),
                         // because groupedSummaries already includes cancellations and per-pair amount overrides.
-                        const frontTotalAmount = groupedSummaries['Rayas Front']?.total || 0;
-                        const backTotalAmount = groupedSummaries['Rayas Back']?.total || 0;
-                        const oyesTotalAmount = groupedSummaries['Rayas Oyes']?.total || 0;
+                        const oyesFrontAmount =
+                          groupedSummaries['Rayas Oyes']?.details
+                            ?.filter((d) => d.segment === 'front')
+                            .reduce((s, d) => s + d.amount, 0) || 0;
+                        const oyesBackAmount =
+                          groupedSummaries['Rayas Oyes']?.details
+                            ?.filter((d) => d.segment === 'back')
+                            .reduce((s, d) => s + d.amount, 0) || 0;
+
+                        // Front/Back totals must include Oyes for the segment multiplication to be correct
+                        const frontTotalAmount = (groupedSummaries['Rayas Front']?.total || 0) + oyesFrontAmount;
+                        const backTotalAmount = (groupedSummaries['Rayas Back']?.total || 0) + oyesBackAmount;
                         const medalTotalAmount = groupedSummaries['Rayas Medal Total']?.total || 0;
-                        const grandTotal = frontTotalAmount + backTotalAmount + oyesTotalAmount + medalTotalAmount;
+                        const grandTotal = frontTotalAmount + backTotalAmount + medalTotalAmount;
                         
                         // Check if we have all 18 holes confirmed
                         const confirmedHolesCount = confirmedScores.get(player.id)?.length || 0;
@@ -2945,15 +2948,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               </span>
                             </div>
 
-                            {/* Front 9 amount reconciliation (excludes Oyes) */}
-                            <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2">
-                              <span>
-                                Para el importe de Front se usan: {frontRayasForAmount} × ${frontValue}
-                              </span>
-                              <span>
-                                {frontRayasForAmount !== 0 ? '' : ''}
-                              </span>
-                            </div>
                             
                             {/* Back 9 row */}
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2">
@@ -2986,15 +2980,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               </span>
                             </div>
 
-                            {/* Back 9 amount reconciliation (excludes Oyes) */}
-                            <div className="flex items-center justify-between text-[11px] text-muted-foreground px-2">
-                              <span>
-                                Para el importe de Back se usan: {backRayasForAmount} × ${backValue}
-                              </span>
-                              <span>
-                                {backRayasForAmount !== 0 ? '' : ''}
-                              </span>
-                            </div>
                             
                             {/* Medal Total row - only show when all 18 holes confirmed */}
                             {hasAll18 && medalValue > 0 && medalTotalRayas !== 0 && (
