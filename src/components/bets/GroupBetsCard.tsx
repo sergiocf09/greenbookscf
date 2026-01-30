@@ -1,13 +1,18 @@
 // Group Bets Card - Medal General, Culebras, Pinguinos, Coneja consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Users } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { calculateConejaSetResults, getConejaHoleDisplays, type ConejaHoleDisplay } from '@/lib/conejaCalculations';
+import { calculateConejaSetResults, getConejaHoleDisplays, getConejaHoleDetail, type ConejaHoleDisplay, type ConejaHoleDetail } from '@/lib/conejaCalculations';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface GroupBetsCardProps {
   players: Player[];
@@ -55,6 +60,227 @@ interface OccurrenceBetResult {
     totalLoss: number;
   } | null;
 }
+
+// Coneja Section component with interactive toolkit
+interface ConejaSectionProps {
+  conejaResult: {
+    setResults: ReturnType<typeof calculateConejaSetResults>;
+    holeDisplays: ConejaHoleDisplay[];
+    winners: Array<{
+      setNumber: number;
+      player: Player | undefined;
+      accumulatedSets: number[];
+      amount: number;
+      isAccumulated: boolean;
+    }>;
+    amount: number;
+  };
+  players: Player[];
+  scores: Map<string, PlayerScore[]>;
+  course: GolfCourse;
+  betConfig: BetConfig;
+  confirmedHoles: Set<number>;
+  basePlayerId?: string;
+  getPlayer: (id: string) => Player | undefined;
+}
+
+const ConejaSection: React.FC<ConejaSectionProps> = ({
+  conejaResult,
+  players,
+  scores,
+  course,
+  betConfig,
+  confirmedHoles,
+  basePlayerId,
+  getPlayer,
+}) => {
+  const [selectedHole, setSelectedHole] = useState<number | null>(null);
+  
+  // Get hole detail for selected hole
+  const holeDetail = useMemo(() => {
+    if (!selectedHole) return null;
+    return getConejaHoleDetail(selectedHole, players, scores, course, betConfig, confirmedHoles);
+  }, [selectedHole, players, scores, course, betConfig, confirmedHoles]);
+
+  // Render multiple rabbits based on pata count
+  const renderPatas = (count: number) => {
+    return Array(count).fill('🐰').join('');
+  };
+
+  // Render a single hole cell
+  const renderHoleCell = (hd: ConejaHoleDisplay) => {
+    const pataPlayer = hd.pataPlayerId ? getPlayer(hd.pataPlayerId) : null;
+    const winnerPlayer = hd.winnerId ? getPlayer(hd.winnerId) : null;
+    
+    return (
+      <Popover key={hd.holeNumber}>
+        <PopoverTrigger asChild>
+          <button
+            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setSelectedHole(hd.holeNumber)}
+          >
+            <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
+            <div className={cn(
+              "w-6 h-6 flex items-center justify-center text-[8px] rounded",
+              !hd.isConfirmed && "bg-muted/50",
+              hd.isConfirmed && hd.isTie && "bg-muted",
+              hd.winnerId && !hd.hasPata && "bg-green-100 dark:bg-green-900/30",
+              hd.hasPata && "bg-amber-100 dark:bg-amber-900/30"
+            )}>
+              {hd.isTie && hd.isConfirmed && <span className="text-muted-foreground font-bold">=</span>}
+              {hd.hasPata && renderPatas(Math.min(hd.pataCount, 2))}
+              {hd.winnerId && !hd.hasPata && <span className="text-green-600 font-bold">✓</span>}
+            </div>
+            {(hd.hasPata && pataPlayer) && (
+              <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{pataPlayer.initials}</span>
+            )}
+            {(hd.winnerId && !hd.hasPata && winnerPlayer) && (
+              <span className="text-[8px] font-bold text-green-600">{winnerPlayer.initials}</span>
+            )}
+          </button>
+        </PopoverTrigger>
+        {hd.isConfirmed && (
+          <PopoverContent className="w-64 p-2" side="top">
+            <HoleDetailTooltip 
+              holeNumber={hd.holeNumber} 
+              players={players}
+              scores={scores}
+              course={course}
+              betConfig={betConfig}
+              confirmedHoles={confirmedHoles}
+            />
+          </PopoverContent>
+        )}
+      </Popover>
+    );
+  };
+
+  return (
+    <>
+      <div className="border-t border-border/50" />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🐰</span>
+            <span className="font-medium text-sm">Coneja</span>
+            <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
+              {betConfig.coneja?.handicapMode === 'bilateral' ? 'Sliding' : 'USGA'}
+            </span>
+          </div>
+          <span className="text-xs text-muted-foreground">${conejaResult.amount} c/set</span>
+        </div>
+        
+        {/* Toolkit visual - holes grid */}
+        <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+          {/* Front 9 */}
+          <div className="grid grid-cols-9 gap-0.5">
+            {conejaResult.holeDisplays.slice(0, 9).map(renderHoleCell)}
+          </div>
+          {/* Back 9 */}
+          <div className="grid grid-cols-9 gap-0.5">
+            {conejaResult.holeDisplays.slice(9, 18).map(renderHoleCell)}
+          </div>
+        </div>
+
+        {/* Winners display */}
+        {conejaResult.winners.length > 0 && (
+          <div className="space-y-1">
+            {conejaResult.winners.map((w, idx) => w.player && (
+              <div key={idx} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500 text-xs">🏆</span>
+                    <PlayerAvatar initials={w.player.initials} background={w.player.color} size="sm" isLoggedInUser={w.player.id === basePlayerId} />
+                    <span className="font-medium text-sm">{w.player.name.split(' ')[0]}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {w.isAccumulated && w.accumulatedSets.length > 1 
+                        ? `Sets ${w.accumulatedSets.join('+')}` 
+                        : `Set ${w.setNumber}`}
+                    </span>
+                  </div>
+                  <span className="text-green-600 font-bold">+${w.amount}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+// Tooltip component showing net score details for a hole
+interface HoleDetailTooltipProps {
+  holeNumber: number;
+  players: Player[];
+  scores: Map<string, PlayerScore[]>;
+  course: GolfCourse;
+  betConfig: BetConfig;
+  confirmedHoles: Set<number>;
+}
+
+const HoleDetailTooltip: React.FC<HoleDetailTooltipProps> = ({
+  holeNumber,
+  players,
+  scores,
+  course,
+  betConfig,
+  confirmedHoles,
+}) => {
+  const detail = useMemo(() => {
+    return getConejaHoleDetail(holeNumber, players, scores, course, betConfig, confirmedHoles);
+  }, [holeNumber, players, scores, course, betConfig, confirmedHoles]);
+
+  if (!detail) {
+    return <span className="text-xs text-muted-foreground">Sin datos</span>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-sm">Hoyo {detail.holeNumber}</span>
+        <span className="text-xs text-muted-foreground">Par {detail.par}</span>
+      </div>
+      
+      <div className="space-y-1">
+        {detail.players
+          .sort((a, b) => a.netScore - b.netScore)
+          .map((p) => (
+            <div 
+              key={p.playerId} 
+              className={cn(
+                "flex items-center justify-between text-xs p-1 rounded",
+                p.isWinner && "bg-green-100 dark:bg-green-900/30"
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium w-6">{p.initials}</span>
+                <span className="text-muted-foreground">{p.grossScore}</span>
+                {p.strokesReceived > 0 && (
+                  <span className="text-primary font-bold">•</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "font-bold",
+                  p.isWinner && "text-green-600"
+                )}>
+                  {p.netScore}
+                </span>
+                {p.isWinner && <span className="text-green-600">🐰</span>}
+              </div>
+            </div>
+          ))}
+      </div>
+      
+      {detail.isTie && (
+        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
+          Empate - Sin ganador absoluto
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   players,
@@ -494,91 +720,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
         {/* Coneja - Patas system */}
         {conejaResult && (
-          <>
-            {(medalGeneralResult || culebrasResult || pinguinosResult) && <div className="border-t border-border/50" />}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🐰</span>
-                  <span className="font-medium text-sm">Coneja</span>
-                </div>
-                <span className="text-xs text-muted-foreground">${conejaResult.amount} c/set</span>
-              </div>
-              
-              {/* Toolkit visual - holes grid */}
-              <div className="bg-muted/30 rounded-lg p-2 space-y-1">
-                {/* Front 9 */}
-                <div className="grid grid-cols-9 gap-0.5">
-                  {conejaResult.holeDisplays.slice(0, 9).map((hd) => {
-                    const pataPlayer = hd.pataPlayerId ? getPlayer(hd.pataPlayerId) : null;
-                    return (
-                      <div key={hd.holeNumber} className="flex flex-col items-center">
-                        <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-                        <div className={cn(
-                          "w-6 h-6 flex items-center justify-center text-[10px] rounded",
-                          !hd.isConfirmed && "bg-muted/50",
-                          hd.isConfirmed && hd.isTie && "bg-muted",
-                          hd.hasPata && "bg-amber-100 dark:bg-amber-900/30"
-                        )}>
-                          {hd.isTie && hd.isConfirmed && "="}
-                          {hd.hasPata && "🐰"}
-                        </div>
-                        {hd.hasPata && pataPlayer && (
-                          <span className="text-[8px] font-bold">{pataPlayer.initials}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Back 9 */}
-                <div className="grid grid-cols-9 gap-0.5">
-                  {conejaResult.holeDisplays.slice(9, 18).map((hd) => {
-                    const pataPlayer = hd.pataPlayerId ? getPlayer(hd.pataPlayerId) : null;
-                    return (
-                      <div key={hd.holeNumber} className="flex flex-col items-center">
-                        <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-                        <div className={cn(
-                          "w-6 h-6 flex items-center justify-center text-[10px] rounded",
-                          !hd.isConfirmed && "bg-muted/50",
-                          hd.isConfirmed && hd.isTie && "bg-muted",
-                          hd.hasPata && "bg-amber-100 dark:bg-amber-900/30"
-                        )}>
-                          {hd.isTie && hd.isConfirmed && "="}
-                          {hd.hasPata && "🐰"}
-                        </div>
-                        {hd.hasPata && pataPlayer && (
-                          <span className="text-[8px] font-bold">{pataPlayer.initials}</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Winners display */}
-              {conejaResult.winners.length > 0 && (
-                <div className="space-y-1">
-                  {conejaResult.winners.map((w, idx) => w.player && (
-                    <div key={idx} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-500 text-xs">🏆</span>
-                          <PlayerAvatar initials={w.player.initials} background={w.player.color} size="sm" isLoggedInUser={w.player.id === basePlayerId} />
-                          <span className="font-medium text-sm">{w.player.name.split(' ')[0]}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {w.isAccumulated && w.accumulatedSets.length > 1 
-                              ? `Sets ${w.accumulatedSets.join('+')}` 
-                              : `Set ${w.setNumber}`}
-                          </span>
-                        </div>
-                        <span className="text-green-600 font-bold">+${w.amount}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
+          <ConejaSection
+            conejaResult={conejaResult}
+            players={players}
+            scores={scores}
+            course={course}
+            betConfig={betConfig}
+            confirmedHoles={confirmedHoles}
+            basePlayerId={basePlayerId}
+            getPlayer={getPlayer}
+          />
         )}
       </CardContent>
     </Card>
