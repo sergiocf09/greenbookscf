@@ -471,6 +471,7 @@ export const useRoundManagement = ({
               rayas: { ...defaultBetConfig.rayas, ...incoming.rayas },
               carritos: { ...defaultBetConfig.carritos, ...incoming.carritos },
               medalGeneral: { ...defaultBetConfig.medalGeneral, ...incoming.medalGeneral },
+              coneja: { ...defaultBetConfig.coneja, ...incoming.coneja },
               carritosTeams: incoming.carritosTeams ?? defaultBetConfig.carritosTeams,
               betOverrides: incoming.betOverrides ?? defaultBetConfig.betOverrides,
               bilateralHandicaps: incoming.bilateralHandicaps ?? defaultBetConfig.bilateralHandicaps,

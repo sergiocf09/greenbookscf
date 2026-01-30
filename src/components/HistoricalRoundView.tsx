@@ -73,6 +73,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             rayas: { ...defaultBetConfig.rayas, ...loadedConfig.rayas },
             carritos: { ...defaultBetConfig.carritos, ...loadedConfig.carritos },
             medalGeneral: { ...defaultBetConfig.medalGeneral, ...loadedConfig.medalGeneral },
+            coneja: { ...defaultBetConfig.coneja, ...loadedConfig.coneja },
           });
         }
 
