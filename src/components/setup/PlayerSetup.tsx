@@ -8,6 +8,9 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { toast } from 'sonner';
+import { USGAHandicapDialog } from './USGAHandicapDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const playerColors = [
   'bg-golf-green text-white',
@@ -45,8 +48,66 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   onAddGroupClick,
   showAddGroupButton = false,
 }) => {
+  const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(groups[0]?.id || null);
+  
+  // USGA Handicap dialog state
+  const [usgaDialogOpen, setUsgaDialogOpen] = useState(false);
+  const [selectedPlayerForUSGA, setSelectedPlayerForUSGA] = useState<{
+    id: string;
+    name: string;
+    profileId: string | null;
+  } | null>(null);
+
+  // Resolve profile_id for a player (could be the current user or need lookup)
+  const getProfileIdForPlayer = async (player: Player): Promise<string | null> => {
+    // Check if this player matches the logged-in user's profile
+    if (profile && (
+      player.name.toLowerCase() === profile.display_name.toLowerCase() ||
+      player.id.startsWith('organizer') ||
+      player.profileId === profile.id
+    )) {
+      return profile.id;
+    }
+    
+    // If player has a stored profileId, use it
+    if (player.profileId) {
+      return player.profileId;
+    }
+
+    // Try to find a matching profile by display name
+    const { data } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('display_name', player.name)
+      .maybeSingle();
+
+    return data?.id || null;
+  };
+
+  const handleOpenUSGADialog = async (player: Player) => {
+    const profileId = await getProfileIdForPlayer(player);
+    
+    if (!profileId) {
+      toast.error('Este jugador no tiene un perfil registrado con historial de rondas');
+      return;
+    }
+
+    setSelectedPlayerForUSGA({
+      id: player.id,
+      name: player.name,
+      profileId,
+    });
+    setUsgaDialogOpen(true);
+  };
+
+  const handleApplyUSGAHandicap = (handicap: number) => {
+    if (!selectedPlayerForUSGA) return;
+    
+    updatePlayer(selectedPlayerForUSGA.id, { handicap });
+    toast.success(`Handicap USGA ${handicap} aplicado a ${selectedPlayerForUSGA.name}`);
+  };
 
   const addPlayer = () => {
     if (!newPlayerName.trim() || players.length >= maxPlayers) return;
@@ -202,9 +263,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-accent"
-                onClick={() => toast.info('Cálculo de handicap USGA disponible próximamente cuando haya historial de rondas')}
-                title="Cargar handicap USGA"
+                className="h-7 w-7 text-muted-foreground hover:text-primary"
+                onClick={() => handleOpenUSGADialog(player)}
+                title="Calcular handicap USGA"
               >
                 <Calculator className="h-3.5 w-3.5" />
               </Button>
@@ -258,6 +319,15 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           Agregar Otro Grupo de Juego
         </Button>
       )}
+
+      {/* USGA Handicap Dialog */}
+      <USGAHandicapDialog
+        open={usgaDialogOpen}
+        onOpenChange={setUsgaDialogOpen}
+        profileId={selectedPlayerForUSGA?.profileId || null}
+        playerName={selectedPlayerForUSGA?.name || ''}
+        onApplyHandicap={handleApplyUSGAHandicap}
+      />
     </div>
   );
 };
