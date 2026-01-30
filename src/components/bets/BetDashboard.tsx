@@ -169,8 +169,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Calculate all bets using only confirmed scores (all groups). UI will filter per mode.
   const betSummaries = useMemo(
-    () => calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole),
-    [allPlayersForCalculations, confirmedScores, betConfig, course, startingHole]
+    () => calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole, confirmedHoles),
+    [allPlayersForCalculations, confirmedScores, betConfig, course, startingHole, confirmedHoles]
   );
   
   // Calculate ALL Carritos results (primary + additional teams)
