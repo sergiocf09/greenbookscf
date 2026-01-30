@@ -1077,19 +1077,8 @@ const Index = () => {
             )}
           </div>
           
-          {/* Right: Pending Rounds Badge + Profile Menu */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Pending Rounds Indicator - Now next to profile */}
-            {pendingRounds && pendingRounds.length > 0 && (
-              <button
-                onClick={() => setShowPendingRoundDialog(true)}
-                className="relative flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-semibold shadow-md hover:bg-destructive/90 transition-colors animate-pulse"
-              >
-                <Play className="h-3 w-3" />
-                <span>{pendingRounds.length}</span>
-              </button>
-            )}
-            
+          {/* Right: Profile Menu */}
+          <div className="flex items-center flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -1131,8 +1120,9 @@ const Index = () => {
                 </DropdownMenuItem>
                 {pendingRounds && pendingRounds.length > 0 && (
                   <DropdownMenuItem onClick={() => setShowPendingRoundDialog(true)}>
-                    <Play className="h-4 w-4 mr-2" />
-                    Rondas Pendientes ({pendingRounds.length})
+                    <Play className="h-4 w-4 mr-2 text-destructive" />
+                    <span>Rondas Pendientes</span>
+                    <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => setShowHandicapDialog(true)}>
