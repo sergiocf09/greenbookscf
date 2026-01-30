@@ -380,7 +380,22 @@ export const calculatePressureBets = (
       const frontNetBets = frontBetsWonA - frontBetsLostA;
       const frontAmountA = frontNetBets * frontUnit;
       
-      const frontDisplayStr = frontIsTied ? 'Even (Carry)' : frontBets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
+      // Helper to format pressure results: "Even" only if exactly 1 line at 0
+      const formatPressureResult = (bets: number[]): string => {
+        if (bets.length === 1 && bets[0] === 0) return 'Even';
+        return bets.map(b => (b > 0 ? '+' : '') + b).join(' ');
+      };
+      
+      // For carry: front was tied on main line
+      const frontDisplayStr = frontIsTied && frontBets.length === 1 
+        ? 'Even (Carry)' 
+        : formatPressureResult(frontBets);
+      
+      // Inverted results for player B
+      const frontInvertedBets = frontBets.map(b => -b);
+      const frontDisplayStrB = frontIsTied && frontBets.length === 1 
+        ? 'Even (Carry)' 
+        : formatPressureResult(frontInvertedBets);
       
       if (frontAmountA !== 0 || frontBets.length > 0) {
         summaries.push({
@@ -400,7 +415,7 @@ export const calculatePressureBets = (
           betType: 'Presiones Front',
           amount: -frontAmountA,
           segment: 'front',
-          description: frontBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+          description: frontDisplayStrB,
           units: -frontNetBets,
           baseUnitAmount: frontUnit,
           multiplier: 1,
@@ -420,7 +435,11 @@ export const calculatePressureBets = (
       const backAmountA = backNetBets * effectiveBackValue;
       
       const backLabel = frontIsTied ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
-      const backDisplayStr = backBets.map(b => (b >= 0 ? '+' : '') + b).join(' ');
+      
+      // Back 9: "Even" only when exactly 1 line at 0
+      const backDisplayStr = formatPressureResult(backBets);
+      const backInvertedBets = backBets.map(b => -b);
+      const backDisplayStrB = formatPressureResult(backInvertedBets);
       
       if (backAmountA !== 0 || backBets.length > 0) {
         summaries.push({
@@ -440,7 +459,7 @@ export const calculatePressureBets = (
           betType: backLabel,
           amount: -backAmountA,
           segment: 'back',
-          description: backBets.map(b => ((-b) >= 0 ? '+' : '') + (-b)).join(' '),
+          description: backDisplayStrB,
           units: -backNetBets,
           baseUnitAmount: effectiveBackValue,
           multiplier: 1,
