@@ -668,8 +668,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                   : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
               )}
             >
-              <div className="font-medium">Modo A</div>
-              <div className="text-[9px] opacity-80">Handicap único</div>
+              <div className="font-medium">Handicap USGA</div>
+              <div className="text-[9px] opacity-80">Hcp único por jugador</div>
             </button>
             <button
               type="button"
@@ -685,8 +685,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
                   : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
               )}
             >
-              <div className="font-medium">Modo B</div>
-              <div className="text-[9px] opacity-80">Handicap por pareja</div>
+              <div className="font-medium">Sliding</div>
+              <div className="text-[9px] opacity-80">Hcp por pareja</div>
             </button>
           </div>
           

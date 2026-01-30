@@ -401,6 +401,7 @@ export interface ConejaHoleDisplay {
   pataCount: number;
   isConfirmed: boolean;
   isTie: boolean; // Everyone tied on this hole
+  winnerId: string | null; // Absolute winner of this hole
 }
 
 export const getConejaHoleDisplays = (
@@ -430,6 +431,159 @@ export const getConejaHoleDisplays = (
       pataCount,
       isConfirmed: confirmedHoles.has(ps.holeNumber),
       isTie,
+      winnerId: ps.winnerId,
     };
   });
+};
+
+/**
+ * Get detailed net score comparison for a specific hole
+ * Used for the tooltip showing handicap application
+ */
+export interface ConejaHoleDetailPlayer {
+  playerId: string;
+  name: string;
+  initials: string;
+  color: string;
+  grossScore: number;
+  strokesReceived: number; // 0 or 1 (indicator for dot display)
+  netScore: number;
+  isWinner: boolean;
+}
+
+export interface ConejaHoleDetail {
+  holeNumber: number;
+  par: number;
+  players: ConejaHoleDetailPlayer[];
+  winnerId: string | null;
+  isTie: boolean;
+}
+
+export const getConejaHoleDetail = (
+  holeNumber: number,
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaHoleDetail | null => {
+  if (!confirmedHoles.has(holeNumber)) return null;
+  
+  const hole = course.holes[holeNumber - 1];
+  if (!hole) return null;
+  
+  // For 'individual' mode, calculate using player's own handicap
+  if (config.coneja?.handicapMode !== 'bilateral') {
+    const playerDetails: ConejaHoleDetailPlayer[] = [];
+    
+    players.forEach(player => {
+      const playerScores = scores.get(player.id);
+      const holeScore = playerScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+      if (!holeScore) return;
+      
+      const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
+      const strokesReceived = strokesPerHole[holeNumber - 1] || 0;
+      
+      playerDetails.push({
+        playerId: player.id,
+        name: player.name,
+        initials: player.initials,
+        color: player.color,
+        grossScore: holeScore.strokes,
+        strokesReceived,
+        netScore: holeScore.strokes - strokesReceived,
+        isWinner: false, // Will be set later
+      });
+    });
+    
+    if (playerDetails.length < 2) return null;
+    
+    // Determine winner (lowest net score, unique)
+    const minNet = Math.min(...playerDetails.map(p => p.netScore));
+    const playersWithMinNet = playerDetails.filter(p => p.netScore === minNet);
+    const winnerId = playersWithMinNet.length === 1 ? playersWithMinNet[0].playerId : null;
+    
+    playerDetails.forEach(p => {
+      p.isWinner = p.playerId === winnerId;
+    });
+    
+    return {
+      holeNumber,
+      par: hole.par,
+      players: playerDetails,
+      winnerId,
+      isTie: winnerId === null,
+    };
+  }
+  
+  // For 'bilateral' mode, show net scores based on bilateral handicaps
+  // This is more complex - we need to show each player's strokes received vs the group
+  // For simplicity in display, we'll show the max strokes received by any pairing
+  const playerDetails: ConejaHoleDetailPlayer[] = [];
+  
+  players.forEach(player => {
+    const playerScores = scores.get(player.id);
+    const holeScore = playerScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+    if (!holeScore) return;
+    
+    // Find max strokes this player would receive against any rival
+    let maxStrokesReceived = 0;
+    
+    players.forEach(rival => {
+      if (rival.id === player.id) return;
+      
+      const bilateral = getBilateralHandicapForPair(
+        player.id,
+        rival.id,
+        config.bilateralHandicaps,
+        player.profileId,
+        rival.profileId
+      );
+      
+      if (bilateral) {
+        const matchesPlayerA = (id: string) => 
+          id === player.id || (player.profileId && id === player.profileId);
+        const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
+        const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
+        
+        const strokesPerHole = calculateStrokesPerHole(playerHcp, course);
+        const received = strokesPerHole[holeNumber - 1] || 0;
+        maxStrokesReceived = Math.max(maxStrokesReceived, received);
+      }
+    });
+    
+    // Fall back to individual if no bilateral found
+    if (maxStrokesReceived === 0) {
+      const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
+      maxStrokesReceived = strokesPerHole[holeNumber - 1] || 0;
+    }
+    
+    playerDetails.push({
+      playerId: player.id,
+      name: player.name,
+      initials: player.initials,
+      color: player.color,
+      grossScore: holeScore.strokes,
+      strokesReceived: maxStrokesReceived,
+      netScore: holeScore.strokes - maxStrokesReceived,
+      isWinner: false,
+    });
+  });
+  
+  if (playerDetails.length < 2) return null;
+  
+  // Get absolute winner from existing calculation
+  const winnerId = getAbsoluteWinner(players, holeNumber, scores, course, config);
+  
+  playerDetails.forEach(p => {
+    p.isWinner = p.playerId === winnerId;
+  });
+  
+  return {
+    holeNumber,
+    par: hole.par,
+    players: playerDetails,
+    winnerId,
+    isTie: winnerId === null,
+  };
 };
