@@ -1058,10 +1058,23 @@ const Index = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center">
-          {/* Left: Logo - fixed width */}
-          <div className="w-16 flex-shrink-0">
-            <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
-            <p className="text-[10px] text-primary-foreground/70">by SCF</p>
+          {/* Left: Logo + Pending Rounds Badge */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-16">
+              <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
+              <p className="text-[10px] text-primary-foreground/70">by SCF</p>
+            </div>
+            
+            {/* Pending Rounds Indicator */}
+            {pendingRounds && pendingRounds.length > 0 && !isRoundStarted && (
+              <button
+                onClick={() => setShowPendingRoundDialog(true)}
+                className="relative flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-semibold shadow-md hover:bg-destructive/90 transition-colors animate-pulse"
+              >
+                <Play className="h-3 w-3" />
+                <span>{pendingRounds.length}</span>
+              </button>
+            )}
           </div>
           
           {/* Center: Hole Info - takes remaining space */}
