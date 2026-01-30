@@ -402,6 +402,8 @@ export interface ConejaHoleDisplay {
   isConfirmed: boolean;
   isTie: boolean; // Everyone tied on this hole
   winnerId: string | null; // Absolute winner of this hole
+  isSetWonHole: boolean; // True if this hole is where the set was won
+  previousPataCount: number; // Pata count before this hole (to detect losses)
 }
 
 export const getConejaHoleDisplays = (
@@ -412,8 +414,17 @@ export const getConejaHoleDisplays = (
   confirmedHoles: Set<number>
 ): ConejaHoleDisplay[] => {
   const pataStates = calculateConejaPataStates(players, scores, course, config, confirmedHoles);
+  const setResults = calculateConejaSetResults(players, scores, course, config, confirmedHoles);
   
-  return pataStates.map(ps => {
+  // Create a set of holes where the Coneja was won
+  const setWonHoles = new Set<number>();
+  setResults.forEach(sr => {
+    if (sr.winnerId && sr.wonOnHole) {
+      setWonHoles.add(sr.wonOnHole);
+    }
+  });
+  
+  return pataStates.map((ps, index) => {
     const playersWithPatas = Object.entries(ps.patasPerPlayer)
       .filter(([_, count]) => count > 0);
     
@@ -424,6 +435,20 @@ export const getConejaHoleDisplays = (
     // Check if it's a tie (no winner and hole is confirmed)
     const isTie = confirmedHoles.has(ps.holeNumber) && !ps.winnerId;
     
+    // Get previous pata count (within same set)
+    let previousPataCount = 0;
+    const setStartHoles = [1, 7, 13];
+    const isSetStart = setStartHoles.includes(ps.holeNumber);
+    
+    if (!isSetStart && index > 0) {
+      const prevState = pataStates[index - 1];
+      const prevPlayersWithPatas = Object.entries(prevState.patasPerPlayer)
+        .filter(([_, count]) => count > 0);
+      if (prevPlayersWithPatas.length === 1) {
+        previousPataCount = prevPlayersWithPatas[0][1];
+      }
+    }
+    
     return {
       holeNumber: ps.holeNumber,
       hasPata,
@@ -432,6 +457,8 @@ export const getConejaHoleDisplays = (
       isConfirmed: confirmedHoles.has(ps.holeNumber),
       isTie,
       winnerId: ps.winnerId,
+      isSetWonHole: setWonHoles.has(ps.holeNumber),
+      previousPataCount,
     };
   });
 };
@@ -458,6 +485,167 @@ export interface ConejaHoleDetail {
   winnerId: string | null;
   isTie: boolean;
 }
+
+/**
+ * Matrix cell for pairwise net score comparison
+ */
+export interface ConejaMatrixCell {
+  playerId: string;
+  rivalId: string;
+  playerNet: number;
+  rivalNet: number;
+  playerReceived: boolean; // True if player received a stroke
+  result: 'win' | 'loss' | 'tie';
+}
+
+/**
+ * Full matrix for all player pairs on a hole
+ */
+export interface ConejaHoleMatrix {
+  holeNumber: number;
+  par: number;
+  playerIds: string[];
+  playerInitials: Record<string, string>;
+  playerColors: Record<string, string>;
+  cells: Record<string, Record<string, ConejaMatrixCell>>; // [playerId][rivalId]
+  winnerId: string | null;
+}
+
+/**
+ * Calculate the pairwise matrix for a specific hole
+ * Shows how each player fared against every other player
+ */
+export const getConejaHoleMatrix = (
+  holeNumber: number,
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaHoleMatrix | null => {
+  if (!confirmedHoles.has(holeNumber)) return null;
+  
+  const hole = course.holes[holeNumber - 1];
+  if (!hole) return null;
+  
+  const playerIds = players.map(p => p.id);
+  const playerInitials: Record<string, string> = {};
+  const playerColors: Record<string, string> = {};
+  players.forEach(p => {
+    playerInitials[p.id] = p.initials;
+    playerColors[p.id] = p.color;
+  });
+  
+  const cells: Record<string, Record<string, ConejaMatrixCell>> = {};
+  
+  // Initialize cells
+  players.forEach(player => {
+    cells[player.id] = {};
+    
+    players.forEach(rival => {
+      if (rival.id === player.id) return;
+      
+      const netResult = getNetScoreForPlayerVsRivalWithDetails(
+        player, rival, holeNumber, scores, course, config
+      );
+      
+      if (netResult) {
+        let result: 'win' | 'loss' | 'tie' = 'tie';
+        if (netResult.playerNet < netResult.rivalNet) result = 'win';
+        if (netResult.playerNet > netResult.rivalNet) result = 'loss';
+        
+        cells[player.id][rival.id] = {
+          playerId: player.id,
+          rivalId: rival.id,
+          playerNet: netResult.playerNet,
+          rivalNet: netResult.rivalNet,
+          playerReceived: netResult.playerReceived,
+          result,
+        };
+      }
+    });
+  });
+  
+  // Get absolute winner
+  const winnerId = getAbsoluteWinner(players, holeNumber, scores, course, config);
+  
+  return {
+    holeNumber,
+    par: hole.par,
+    playerIds,
+    playerInitials,
+    playerColors,
+    cells,
+    winnerId,
+  };
+};
+
+/**
+ * Helper to get net scores with stroke received info for matrix
+ */
+const getNetScoreForPlayerVsRivalWithDetails = (
+  player: Player,
+  rival: Player,
+  holeNumber: number,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig
+): { playerNet: number; rivalNet: number; playerReceived: boolean; rivalReceived: boolean } | null => {
+  const playerScores = scores.get(player.id);
+  const rivalScores = scores.get(rival.id);
+  
+  const playerHoleScore = playerScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+  const rivalHoleScore = rivalScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+  
+  if (!playerHoleScore || !rivalHoleScore) return null;
+  
+  if (config.coneja?.handicapMode === 'bilateral') {
+    // Use bilateral handicaps if available
+    const bilateral = getBilateralHandicapForPair(
+      player.id,
+      rival.id,
+      config.bilateralHandicaps,
+      player.profileId,
+      rival.profileId
+    );
+    
+    if (bilateral) {
+      const matchesPlayerA = (id: string) => 
+        id === player.id || (player.profileId && id === player.profileId);
+      const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
+      
+      const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
+      const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
+      
+      const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
+      const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
+      
+      const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+      const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+      
+      return {
+        playerNet: playerHoleScore.strokes - playerReceived,
+        rivalNet: rivalHoleScore.strokes - rivalReceived,
+        playerReceived: playerReceived > 0,
+        rivalReceived: rivalReceived > 0,
+      };
+    }
+  }
+  
+  // Fallback to individual handicaps
+  const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
+  const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
+  
+  const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+  const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+  
+  return {
+    playerNet: playerHoleScore.strokes - playerReceived,
+    rivalNet: rivalHoleScore.strokes - rivalReceived,
+    playerReceived: playerReceived > 0,
+    rivalReceived: rivalReceived > 0,
+  };
+};
 
 export const getConejaHoleDetail = (
   holeNumber: number,

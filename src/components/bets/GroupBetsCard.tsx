@@ -7,7 +7,14 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Users } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { calculateConejaSetResults, getConejaHoleDisplays, getConejaHoleDetail, type ConejaHoleDisplay, type ConejaHoleDetail } from '@/lib/conejaCalculations';
+import { 
+  calculateConejaSetResults, 
+  getConejaHoleDisplays, 
+  getConejaHoleMatrix,
+  getConejaHoleDetail,
+  type ConejaHoleDisplay, 
+  type ConejaHoleMatrix 
+} from '@/lib/conejaCalculations';
 import {
   Popover,
   PopoverContent,
@@ -72,6 +79,7 @@ interface ConejaSectionProps {
       accumulatedSets: number[];
       amount: number;
       isAccumulated: boolean;
+      wonOnHole: number | null;
     }>;
     amount: number;
   };
@@ -96,10 +104,10 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
 }) => {
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
   
-  // Get hole detail for selected hole
-  const holeDetail = useMemo(() => {
+  // Get matrix for selected hole
+  const holeMatrix = useMemo(() => {
     if (!selectedHole) return null;
-    return getConejaHoleDetail(selectedHole, players, scores, course, betConfig, confirmedHoles);
+    return getConejaHoleMatrix(selectedHole, players, scores, course, betConfig, confirmedHoles);
   }, [selectedHole, players, scores, course, betConfig, confirmedHoles]);
 
   // Render multiple rabbits based on pata count
@@ -112,6 +120,12 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
     const pataPlayer = hd.pataPlayerId ? getPlayer(hd.pataPlayerId) : null;
     const winnerPlayer = hd.winnerId ? getPlayer(hd.winnerId) : null;
     
+    // Determine if pata was lost on this hole (had more patas before)
+    const pataLost = hd.isConfirmed && hd.previousPataCount > 0 && (!hd.hasPata || hd.pataCount < hd.previousPataCount);
+    
+    // Show "=" if: tie, OR if someone lost a pata and now no one has any
+    const showTie = hd.isConfirmed && (hd.isTie || (pataLost && !hd.hasPata));
+    
     return (
       <Popover key={hd.holeNumber}>
         <PopoverTrigger asChild>
@@ -121,27 +135,31 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
           >
             <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
             <div className={cn(
-              "w-6 h-6 flex items-center justify-center text-[8px] rounded",
-              !hd.isConfirmed && "bg-muted/50",
-              hd.isConfirmed && hd.isTie && "bg-muted",
-              hd.winnerId && !hd.hasPata && "bg-green-100 dark:bg-green-900/30",
-              hd.hasPata && "bg-amber-100 dark:bg-amber-900/30"
+              "w-6 h-6 flex items-center justify-center text-[8px]",
+              // Circle for won holes
+              hd.isSetWonHole && "rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50",
+              // Regular styling for non-won holes
+              !hd.isSetWonHole && "rounded",
+              !hd.isConfirmed && !hd.isSetWonHole && "bg-muted/50",
+              hd.isConfirmed && showTie && !hd.isSetWonHole && "bg-muted",
+              hd.winnerId && !hd.hasPata && !hd.isSetWonHole && "bg-green-100 dark:bg-green-900/30",
+              hd.hasPata && !hd.isSetWonHole && "bg-amber-100 dark:bg-amber-900/30"
             )}>
-              {hd.isTie && hd.isConfirmed && <span className="text-muted-foreground font-bold">=</span>}
-              {hd.hasPata && renderPatas(Math.min(hd.pataCount, 2))}
-              {hd.winnerId && !hd.hasPata && <span className="text-green-600 font-bold">✓</span>}
+              {showTie && <span className="text-muted-foreground font-bold">=</span>}
+              {hd.hasPata && !showTie && renderPatas(Math.min(hd.pataCount, 2))}
+              {hd.winnerId && !hd.hasPata && !showTie && <span className="text-green-600 font-bold">✓</span>}
             </div>
-            {(hd.hasPata && pataPlayer) && (
+            {(hd.hasPata && pataPlayer && !showTie) && (
               <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{pataPlayer.initials}</span>
             )}
-            {(hd.winnerId && !hd.hasPata && winnerPlayer) && (
+            {(hd.winnerId && !hd.hasPata && winnerPlayer && !showTie) && (
               <span className="text-[8px] font-bold text-green-600">{winnerPlayer.initials}</span>
             )}
           </button>
         </PopoverTrigger>
         {hd.isConfirmed && (
-          <PopoverContent className="w-64 p-2" side="top">
-            <HoleDetailTooltip 
+          <PopoverContent className="w-auto p-2" side="top">
+            <HoleMatrixTooltip 
               holeNumber={hd.holeNumber} 
               players={players}
               scores={scores}
@@ -194,8 +212,8 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                     <span className="font-medium text-sm">{w.player.name.split(' ')[0]}</span>
                     <span className="text-[10px] text-muted-foreground">
                       {w.isAccumulated && w.accumulatedSets.length > 1 
-                        ? `Sets ${w.accumulatedSets.join('+')}` 
-                        : `Set ${w.setNumber}`}
+                        ? `Sets ${w.accumulatedSets.join('+')} (H${w.wonOnHole})` 
+                        : `Set ${w.setNumber} (H${w.wonOnHole})`}
                     </span>
                   </div>
                   <span className="text-green-600 font-bold">+${w.amount}</span>
@@ -209,8 +227,8 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
   );
 };
 
-// Tooltip component showing net score details for a hole
-interface HoleDetailTooltipProps {
+// Matrix tooltip showing pairwise net score comparisons
+interface HoleMatrixTooltipProps {
   holeNumber: number;
   players: Player[];
   scores: Map<string, PlayerScore[]>;
@@ -219,7 +237,7 @@ interface HoleDetailTooltipProps {
   confirmedHoles: Set<number>;
 }
 
-const HoleDetailTooltip: React.FC<HoleDetailTooltipProps> = ({
+const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   holeNumber,
   players,
   scores,
@@ -227,53 +245,97 @@ const HoleDetailTooltip: React.FC<HoleDetailTooltipProps> = ({
   betConfig,
   confirmedHoles,
 }) => {
-  const detail = useMemo(() => {
-    return getConejaHoleDetail(holeNumber, players, scores, course, betConfig, confirmedHoles);
+  const matrix = useMemo(() => {
+    return getConejaHoleMatrix(holeNumber, players, scores, course, betConfig, confirmedHoles);
   }, [holeNumber, players, scores, course, betConfig, confirmedHoles]);
 
-  if (!detail) {
+  if (!matrix) {
     return <span className="text-xs text-muted-foreground">Sin datos</span>;
   }
+
+  const winnerPlayer = matrix.winnerId ? players.find(p => p.id === matrix.winnerId) : null;
+  const hole = course.holes[holeNumber - 1];
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-sm">Hoyo {detail.holeNumber}</span>
-        <span className="text-xs text-muted-foreground">Par {detail.par}</span>
+        <span className="font-medium text-sm">Hoyo {holeNumber}</span>
+        <span className="text-xs text-muted-foreground">Par {hole?.par}</span>
       </div>
       
-      <div className="space-y-1">
-        {detail.players
-          .sort((a, b) => a.netScore - b.netScore)
-          .map((p) => (
-            <div 
-              key={p.playerId} 
-              className={cn(
-                "flex items-center justify-between text-xs p-1 rounded",
-                p.isWinner && "bg-green-100 dark:bg-green-900/30"
-              )}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium w-6">{p.initials}</span>
-                <span className="text-muted-foreground">{p.grossScore}</span>
-                {p.strokesReceived > 0 && (
-                  <span className="text-primary font-bold">•</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "font-bold",
-                  p.isWinner && "text-green-600"
-                )}>
-                  {p.netScore}
-                </span>
-                {p.isWinner && <span className="text-green-600">🐰</span>}
-              </div>
-            </div>
-          ))}
+      {/* Matrix table */}
+      <div className="overflow-x-auto">
+        <table className="text-[10px] border-collapse">
+          <thead>
+            <tr>
+              <th className="p-1 border-b border-r border-border/50"></th>
+              {matrix.playerIds.map(pid => (
+                <th 
+                  key={pid} 
+                  className={cn(
+                    "p-1 border-b border-border/50 font-bold text-center min-w-[28px]",
+                    matrix.winnerId === pid && "text-green-600"
+                  )}
+                >
+                  {matrix.playerInitials[pid]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {matrix.playerIds.map(playerId => (
+              <tr key={playerId}>
+                <td 
+                  className={cn(
+                    "p-1 border-r border-border/50 font-bold",
+                    matrix.winnerId === playerId && "text-green-600"
+                  )}
+                >
+                  {matrix.playerInitials[playerId]}
+                </td>
+                {matrix.playerIds.map(rivalId => {
+                  if (playerId === rivalId) {
+                    return (
+                      <td key={rivalId} className="p-1 text-center bg-muted/30">—</td>
+                    );
+                  }
+                  
+                  const cell = matrix.cells[playerId]?.[rivalId];
+                  if (!cell) {
+                    return <td key={rivalId} className="p-1 text-center">-</td>;
+                  }
+                  
+                  return (
+                    <td 
+                      key={rivalId} 
+                      className={cn(
+                        "p-1 text-center",
+                        cell.result === 'win' && "bg-green-100 dark:bg-green-900/30 text-green-700",
+                        cell.result === 'loss' && "bg-red-100 dark:bg-red-900/30 text-destructive",
+                        cell.result === 'tie' && "bg-muted/50"
+                      )}
+                    >
+                      <div className="flex items-center justify-center gap-0.5">
+                        {cell.playerReceived && <span className="text-primary font-bold">•</span>}
+                        <span className="font-medium">{cell.playerNet}</span>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       
-      {detail.isTie && (
+      {/* Winner indicator */}
+      {winnerPlayer ? (
+        <div className="text-[10px] text-green-600 text-center pt-1 border-t border-border/50 flex items-center justify-center gap-1">
+          <span>🐰</span>
+          <span className="font-bold">{winnerPlayer.initials}</span>
+          <span>gana pata</span>
+        </div>
+      ) : (
         <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
           Empate - Sin ganador absoluto
         </div>
@@ -320,6 +382,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           accumulatedSets: sr.accumulatedSets,
           amount: amount * numConejas * (players.length - 1),
           isAccumulated: sr.isAccumulated,
+          wonOnHole: sr.wonOnHole,
         };
       });
     
