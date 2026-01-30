@@ -122,6 +122,41 @@ export type Database = {
           },
         ]
       }
+      course_tees: {
+        Row: {
+          course_id: string
+          course_rating: number
+          created_at: string
+          id: string
+          slope_rating: number
+          tee_color: string
+        }
+        Insert: {
+          course_id: string
+          course_rating?: number
+          created_at?: string
+          id?: string
+          slope_rating?: number
+          tee_color: string
+        }
+        Update: {
+          course_id?: string
+          course_rating?: number
+          created_at?: string
+          id?: string
+          slope_rating?: number
+          tee_color?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tees_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_courses: {
         Row: {
           country: string
@@ -506,6 +541,7 @@ export type Database = {
           joined_at: string
           profile_id: string | null
           round_id: string
+          tee_color: string | null
         }
         Insert: {
           group_id: string
@@ -518,6 +554,7 @@ export type Database = {
           joined_at?: string
           profile_id?: string | null
           round_id: string
+          tee_color?: string | null
         }
         Update: {
           group_id?: string
@@ -530,6 +567,7 @@ export type Database = {
           joined_at?: string
           profile_id?: string | null
           round_id?: string
+          tee_color?: string | null
         }
         Relationships: [
           {

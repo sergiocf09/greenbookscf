@@ -27,6 +27,13 @@ const playerColors = [
   'bg-teal-600 text-white',
 ];
 
+const TEE_OPTIONS = [
+  { value: 'blue', label: 'Azul', bgClass: 'bg-blue-600' },
+  { value: 'white', label: 'Blanco', bgClass: 'bg-white border border-gray-300' },
+  { value: 'yellow', label: 'Amarillo', bgClass: 'bg-yellow-400' },
+  { value: 'red', label: 'Rojo', bgClass: 'bg-red-600' },
+];
+
 interface PlayerSetupProps {
   players: Player[];
   onChange: (players: Player[]) => void;
@@ -36,6 +43,7 @@ interface PlayerSetupProps {
   multiGroupEnabled?: boolean;
   onAddGroupClick?: () => void;
   showAddGroupButton?: boolean;
+  defaultTeeColor?: string; // Round's default tee color
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -47,6 +55,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   multiGroupEnabled = false,
   onAddGroupClick,
   showAddGroupButton = false,
+  defaultTeeColor = 'white',
 }) => {
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -232,7 +241,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 value={player.name}
                 maxLength={100}
                 onChange={(e) => {
-                  // Keep editing fluid, but cap length and keep initials deterministic.
                   const raw = e.target.value.slice(0, 100);
                   let initials = player.initials;
                   try {
@@ -248,6 +256,22 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 className="h-7 text-sm"
                 placeholder="Nombre del jugador"
               />
+            </div>
+
+            {/* Tee Selector */}
+            <div className="flex items-center gap-1">
+              <Label className="text-[10px] text-muted-foreground">Tee</Label>
+              <select
+                value={player.teeColor || defaultTeeColor}
+                onChange={(e) => updatePlayer(player.id, { teeColor: e.target.value })}
+                className="h-7 w-20 text-xs rounded border border-border bg-background px-1"
+              >
+                {TEE_OPTIONS.map((tee) => (
+                  <option key={tee.value} value={tee.value}>
+                    {tee.label}
+                  </option>
+                ))}
+              </select>
             </div>
             
             <div className="flex items-center gap-1">

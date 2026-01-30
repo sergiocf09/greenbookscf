@@ -139,10 +139,19 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
   );
 };
 
+const TEE_COLORS: Record<string, string> = {
+  blue: 'bg-blue-600',
+  white: 'bg-white border border-gray-400',
+  yellow: 'bg-yellow-400',
+  red: 'bg-red-600',
+};
+
 const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({
   round,
   isUsed,
 }) => {
+  const teeColorClass = TEE_COLORS[round.teeColor] || TEE_COLORS.white;
+  
   return (
     <div
       className={cn(
@@ -156,10 +165,18 @@ const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({
         <div className="flex items-center gap-1.5">
           <Flag className="h-3 w-3 text-muted-foreground" />
           <span className="font-medium truncate">{round.courseName}</span>
+          {/* Tee color indicator */}
+          <span 
+            className={cn('w-2.5 h-2.5 rounded-full shrink-0', teeColorClass)} 
+            title={`Tee ${round.teeColor}`}
+          />
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Calendar className="h-3 w-3" />
           <span>{format(new Date(round.date), 'dd MMM yyyy', { locale: es })}</span>
+          <span className="text-[10px]">
+            (R:{round.courseRating}/S:{round.slopeRating})
+          </span>
         </div>
       </div>
 
