@@ -561,10 +561,9 @@ export const useRoundManagement = ({
 
           toast.success('Ronda restaurada');
            sessionStorage.removeItem('restore_round_id');
-          return;
         }
 
-        // Find the most recent in_progress round for this user
+        // ALWAYS fetch pending rounds (even after a restore) so the badge can show
         const { data: roundPlayers, error: rpError } = await supabase
           .from('round_players')
           .select(`
@@ -603,7 +602,6 @@ export const useRoundManagement = ({
           return;
         }
 
-        // Do NOT auto-restore. Let the user decide.
         // Expose *all* open rounds so the UI can let the user choose.
         const mappedPending: PendingRoundInfo[] = (rounds || []).map((r: any) => ({
           roundId: r.id,
