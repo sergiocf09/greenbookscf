@@ -3351,11 +3351,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
                         const pressureDesc = data.description || '';
-                        // Count how many bet lines exist (each line is represented as a signed number)
-                        const pressureLines = pressureDesc.match(/[+-]?\d+/g) || [];
-                        // "Even" ONLY when there's exactly one line that ended at 0
-                        const isPressureEven = isPressures && pressureLines.length <= 1 && 
-                          (pressureLines.length === 0 || pressureLines[0] === '0' || pressureLines[0] === '+0');
+                        
+                        // "Even" ONLY when description is literally "Even" or "Even (Carry)"
+                        // Never show "Even" for results like "-1 +1" even though they sum to 0
+                        const isPressureEven = isPressures && 
+                          (pressureDesc === 'Even' || pressureDesc === 'Even (Carry)' || pressureDesc === '');
                         
                         const showSkinsShoe =
                           isSkins &&

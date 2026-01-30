@@ -1058,23 +1058,12 @@ const Index = () => {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center">
-          {/* Left: Logo + Pending Rounds Badge */}
+          {/* Left: Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-16">
               <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
               <p className="text-[10px] text-primary-foreground/70">by SCF</p>
             </div>
-            
-            {/* Pending Rounds Indicator - Always visible when there are pending rounds */}
-            {pendingRounds && pendingRounds.length > 0 && (
-              <button
-                onClick={() => setShowPendingRoundDialog(true)}
-                className="relative flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-semibold shadow-md hover:bg-destructive/90 transition-colors animate-pulse"
-              >
-                <Play className="h-3 w-3" />
-                <span>{pendingRounds.length}</span>
-              </button>
-            )}
           </div>
           
           {/* Center: Hole Info - takes remaining space */}
@@ -1090,8 +1079,19 @@ const Index = () => {
             )}
           </div>
           
-          {/* Right: Profile Menu - fixed width to match left */}
-          <div className="w-16 flex-shrink-0 flex justify-end">
+          {/* Right: Pending Rounds Badge + Profile Menu */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Pending Rounds Indicator - Now next to profile */}
+            {pendingRounds && pendingRounds.length > 0 && (
+              <button
+                onClick={() => setShowPendingRoundDialog(true)}
+                className="relative flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-semibold shadow-md hover:bg-destructive/90 transition-colors animate-pulse"
+              >
+                <Play className="h-3 w-3" />
+                <span>{pendingRounds.length}</span>
+              </button>
+            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
