@@ -3352,10 +3352,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isSkins = group.key === 'skins';
                         const pressureDesc = data.description || '';
                         
-                        // IMPORTANT: For Presiones, always display the *actual* pressure lines coming
-                        // from the calculations (e.g., "-1 +1", "0 +2 (Carry)").
-                        // "Even" must only appear when the engine produced it (single line tied).
-                        const pressureDisplay = pressureDesc || '—';
+                        // NOTE: pressureDisplay is computed after segmentType/pressureSegmentData are defined.
                         
                         const showSkinsShoe =
                           isSkins &&
@@ -3375,6 +3372,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
+
+                        // IMPORTANT: For Presiones, always display the *actual* pressure lines.
+                        // Sometimes summary.description can be empty; fallback to evolution finalDisplay.
+                        const pressureFallback = isPressures ? (pressureSegmentData?.finalDisplay ?? '') : '';
+
+                        // Add Carry label ONLY for Front 9 when main line finished tied.
+                        const carrySuffix = isPressures && segmentType === 'front' && pressureSegmentData?.hasCarry
+                          ? ' (Carry)'
+                          : '';
+
+                        const pressureDisplayRaw = (pressureDesc || pressureFallback || '—').trim();
+                        const pressureDisplay = pressureDisplayRaw === '—'
+                          ? '—'
+                          : `${pressureDisplayRaw}${carrySuffix}`;
 
                         // Content to wrap in Popover
                         const segmentContent = (
