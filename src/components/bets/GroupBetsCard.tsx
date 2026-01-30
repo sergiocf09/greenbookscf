@@ -218,23 +218,43 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
         {/* Winners display */}
         {conejaResult.winners.length > 0 && (
           <div className="space-y-1">
-            {conejaResult.winners.map((w, idx) => w.player && (
-              <div key={idx} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-500 text-xs">🏆</span>
-                    <PlayerAvatar initials={w.player.initials} background={w.player.color} size="sm" isLoggedInUser={w.player.id === basePlayerId} />
-                    <span className="font-medium text-sm">{w.player.name.split(' ')[0]}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {w.isAccumulated && w.accumulatedSets.length > 1 
-                        ? `Sets ${w.accumulatedSets.join('+')} (H${w.wonOnHole})` 
-                        : `Set ${w.setNumber} (H${w.wonOnHole})`}
-                    </span>
+            {/* Group winners by player ID to show all wins on one row */}
+            {(() => {
+              const winsByPlayer = new Map<string, typeof conejaResult.winners>();
+              conejaResult.winners.forEach(w => {
+                if (!w.player) return;
+                const existing = winsByPlayer.get(w.player.id) || [];
+                existing.push(w);
+                winsByPlayer.set(w.player.id, existing);
+              });
+              
+              return Array.from(winsByPlayer.entries()).map(([playerId, wins]) => {
+                const player = wins[0].player!;
+                const totalAmount = wins.reduce((sum, w) => sum + w.amount, 0);
+                // Build set descriptions: "Set 1 (H6), Set 2 (H12)"
+                const setDescriptions = wins.map(w => 
+                  w.isAccumulated && w.accumulatedSets.length > 1 
+                    ? `Sets ${w.accumulatedSets.join('+')} (H${w.wonOnHole})`
+                    : `Set ${w.setNumber} (H${w.wonOnHole})`
+                ).join(', ');
+                
+                return (
+                  <div key={playerId} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500 text-xs">🏆</span>
+                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {setDescriptions}
+                        </span>
+                      </div>
+                      <span className="text-green-600 font-bold">+${totalAmount}</span>
+                    </div>
                   </div>
-                  <span className="text-green-600 font-bold">+${w.amount}</span>
-                </div>
-              </div>
-            ))}
+                );
+              });
+            })()}
           </div>
         )}
       </div>

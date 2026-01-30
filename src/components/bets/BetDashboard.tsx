@@ -3382,7 +3382,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureFallback = isPressures ? (pressureSegmentData?.finalDisplay ?? '') : '';
 
                         // Add Carry label ONLY for Front 9 when main line finished tied.
-                        const carrySuffix = isPressures && segmentType === 'front' && pressureSegmentData?.hasCarry
+                        // BUT avoid duplicating if description already contains "Carry"
+                        const descAlreadyHasCarry = pressureDesc.toLowerCase().includes('carry');
+                        const carrySuffix = isPressures && segmentType === 'front' && pressureSegmentData?.hasCarry && !descAlreadyHasCarry
                           ? ' (Carry)'
                           : '';
 
