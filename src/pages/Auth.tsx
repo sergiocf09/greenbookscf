@@ -3,12 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import greenbookLogo from '@/assets/greenbook-logo.png';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -58,12 +57,9 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-golf-green to-golf-green-light flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center pb-2">
-          <img 
-            src={greenbookLogo} 
-            alt="GreenBook by SCF" 
-            className="h-16 w-auto mx-auto object-contain"
-          />
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-golf-green">Golf Bets</CardTitle>
+          <CardDescription>by SCF</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
