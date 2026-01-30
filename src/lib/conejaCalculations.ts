@@ -1,0 +1,435 @@
+// Coneja Bet Calculations Engine
+// A group bet based on "patas" per hole within sets of 6 holes
+
+import { Player, PlayerScore, BetConfig, GolfCourse, ConejaPataState, ConejaSetResult } from '@/types/golf';
+import { calculateStrokesPerHole } from './handicapUtils';
+import { getBilateralHandicapForPair } from './betCalculations';
+
+// Set definitions
+const CONEJA_SETS = [
+  { setNumber: 1 as const, startHole: 1, endHole: 6 },
+  { setNumber: 2 as const, startHole: 7, endHole: 12 },
+  { setNumber: 3 as const, startHole: 13, endHole: 18 },
+];
+
+/**
+ * Get net score for a player on a hole using either individual or bilateral handicap
+ */
+const getNetScoreForPlayerVsRival = (
+  player: Player,
+  rival: Player,
+  holeNumber: number,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig
+): { playerNet: number; rivalNet: number } | null => {
+  const playerScores = scores.get(player.id);
+  const rivalScores = scores.get(rival.id);
+  
+  const playerHoleScore = playerScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+  const rivalHoleScore = rivalScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+  
+  if (!playerHoleScore || !rivalHoleScore) return null;
+  
+  if (config.coneja?.handicapMode === 'bilateral') {
+    // Use bilateral handicaps if available
+    const bilateral = getBilateralHandicapForPair(
+      player.id,
+      rival.id,
+      config.bilateralHandicaps,
+      player.profileId,
+      rival.profileId
+    );
+    
+    if (bilateral) {
+      const matchesPlayerA = (id: string) => 
+        id === player.id || (player.profileId && id === player.profileId);
+      const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
+      
+      const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
+      const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
+      
+      const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
+      const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
+      
+      const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+      const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+      
+      return {
+        playerNet: playerHoleScore.strokes - playerReceived,
+        rivalNet: rivalHoleScore.strokes - rivalReceived,
+      };
+    }
+  }
+  
+  // Fallback to individual handicaps
+  const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
+  const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
+  
+  const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+  const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+  
+  return {
+    playerNet: playerHoleScore.strokes - playerReceived,
+    rivalNet: rivalHoleScore.strokes - rivalReceived,
+  };
+};
+
+/**
+ * Determine if a player is the absolute winner of a hole
+ * A player is absolute winner if they beat ALL other players with a lower net score
+ */
+const getAbsoluteWinner = (
+  players: Player[],
+  holeNumber: number,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig
+): string | null => {
+  if (players.length < 2) return null;
+  
+  // Check each player as potential absolute winner
+  for (const candidate of players) {
+    let isAbsoluteWinner = true;
+    let hasValidComparisons = false;
+    
+    for (const rival of players) {
+      if (rival.id === candidate.id) continue;
+      
+      const netResult = getNetScoreForPlayerVsRival(candidate, rival, holeNumber, scores, course, config);
+      
+      if (!netResult) {
+        // No valid score for this comparison - can't be absolute winner
+        isAbsoluteWinner = false;
+        break;
+      }
+      
+      hasValidComparisons = true;
+      
+      // Candidate must strictly beat the rival (no ties)
+      if (netResult.playerNet >= netResult.rivalNet) {
+        isAbsoluteWinner = false;
+        break;
+      }
+    }
+    
+    if (isAbsoluteWinner && hasValidComparisons) {
+      return candidate.id;
+    }
+  }
+  
+  return null; // No absolute winner (ties or missing scores)
+};
+
+/**
+ * Check if a player lost to any rival on a specific hole
+ */
+const didPlayerLoseToAnyone = (
+  playerId: string,
+  players: Player[],
+  holeNumber: number,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig
+): boolean => {
+  const player = players.find(p => p.id === playerId);
+  if (!player) return false;
+  
+  for (const rival of players) {
+    if (rival.id === playerId) continue;
+    
+    const netResult = getNetScoreForPlayerVsRival(player, rival, holeNumber, scores, course, config);
+    
+    if (netResult && netResult.playerNet > netResult.rivalNet) {
+      return true; // Lost to at least one rival
+    }
+  }
+  
+  return false;
+};
+
+/**
+ * Calculate pata states for all holes
+ */
+export const calculateConejaPataStates = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaPataState[] => {
+  const pataStates: ConejaPataState[] = [];
+  
+  // Track running patas per player (reset at each set boundary)
+  let runningPatas: Record<string, number> = {};
+  players.forEach(p => { runningPatas[p.id] = 0; });
+  
+  for (let holeNumber = 1; holeNumber <= 18; holeNumber++) {
+    // Reset patas at set boundaries
+    if (holeNumber === 1 || holeNumber === 7 || holeNumber === 13) {
+      runningPatas = {};
+      players.forEach(p => { runningPatas[p.id] = 0; });
+    }
+    
+    // Skip if hole not confirmed
+    if (!confirmedHoles.has(holeNumber)) {
+      pataStates.push({
+        holeNumber,
+        winnerId: null,
+        patasPerPlayer: { ...runningPatas },
+      });
+      continue;
+    }
+    
+    // Determine absolute winner
+    const winnerId = getAbsoluteWinner(players, holeNumber, scores, course, config);
+    
+    // Update patas
+    if (winnerId) {
+      runningPatas[winnerId] = (runningPatas[winnerId] || 0) + 1;
+    }
+    
+    // Check who loses patas (those who lost to at least one rival AND are not the winner)
+    for (const player of players) {
+      if (player.id === winnerId) continue; // Winner doesn't lose pata
+      
+      if (runningPatas[player.id] > 0 && didPlayerLoseToAnyone(player.id, players, holeNumber, scores, course, config)) {
+        runningPatas[player.id] = Math.max(0, runningPatas[player.id] - 1);
+      }
+    }
+    
+    pataStates.push({
+      holeNumber,
+      winnerId,
+      patasPerPlayer: { ...runningPatas },
+    });
+  }
+  
+  return pataStates;
+};
+
+/**
+ * Calculate Coneja set results including accumulations
+ */
+export const calculateConejaSetResults = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaSetResult[] => {
+  const pataStates = calculateConejaPataStates(players, scores, course, config, confirmedHoles);
+  const results: ConejaSetResult[] = [];
+  
+  let accumulatedSets: number[] = [];
+  
+  for (const set of CONEJA_SETS) {
+    const setEndPataState = pataStates.find(ps => ps.holeNumber === set.endHole);
+    
+    // Check if all holes in set are confirmed
+    const allHolesConfirmed = Array.from({ length: 6 }, (_, i) => set.startHole + i)
+      .every(h => confirmedHoles.has(h));
+    
+    if (!allHolesConfirmed) {
+      // Set not complete yet
+      results.push({
+        setNumber: set.setNumber,
+        startHole: set.startHole,
+        endHole: set.endHole,
+        winnerId: null,
+        wonOnHole: null,
+        isAccumulated: false,
+        accumulatedSets: [],
+      });
+      continue;
+    }
+    
+    if (!setEndPataState) {
+      results.push({
+        setNumber: set.setNumber,
+        startHole: set.startHole,
+        endHole: set.endHole,
+        winnerId: null,
+        wonOnHole: null,
+        isAccumulated: false,
+        accumulatedSets: [],
+      });
+      continue;
+    }
+    
+    // Find player with pata(s) at end of set
+    const playersWithPatas = Object.entries(setEndPataState.patasPerPlayer)
+      .filter(([_, patas]) => patas > 0);
+    
+    if (playersWithPatas.length === 1) {
+      // We have a winner for this set
+      const winnerId = playersWithPatas[0][0];
+      
+      // If there were accumulated conejas, this winner gets them too
+      if (accumulatedSets.length > 0) {
+        // Find the hole where the winner got their first pata (which breaks the accumulation)
+        let wonOnHole = set.endHole;
+        for (let h = set.startHole; h <= set.endHole; h++) {
+          const ps = pataStates.find(p => p.holeNumber === h);
+          if (ps?.winnerId === winnerId) {
+            wonOnHole = h;
+            break;
+          }
+        }
+        
+        results.push({
+          setNumber: set.setNumber,
+          startHole: set.startHole,
+          endHole: set.endHole,
+          winnerId,
+          wonOnHole,
+          isAccumulated: true,
+          accumulatedSets: [...accumulatedSets, set.setNumber],
+        });
+        accumulatedSets = [];
+      } else {
+        results.push({
+          setNumber: set.setNumber,
+          startHole: set.startHole,
+          endHole: set.endHole,
+          winnerId,
+          wonOnHole: set.endHole,
+          isAccumulated: false,
+          accumulatedSets: [],
+        });
+      }
+    } else if (playersWithPatas.length === 0) {
+      // No one has pata - coneja accumulates
+      accumulatedSets.push(set.setNumber);
+      
+      results.push({
+        setNumber: set.setNumber,
+        startHole: set.startHole,
+        endHole: set.endHole,
+        winnerId: null,
+        wonOnHole: null,
+        isAccumulated: true,
+        accumulatedSets: [],
+      });
+    } else {
+      // Multiple players have patas - shouldn't happen by the rules
+      // but handle gracefully - no winner
+      results.push({
+        setNumber: set.setNumber,
+        startHole: set.startHole,
+        endHole: set.endHole,
+        winnerId: null,
+        wonOnHole: null,
+        isAccumulated: false,
+        accumulatedSets: [],
+      });
+    }
+  }
+  
+  return results;
+};
+
+/**
+ * Calculate Coneja bets - returns BetSummary-like objects for integration with ledger
+ */
+export interface ConejaBetResult {
+  winnerId: string;
+  loserId: string;
+  amount: number;
+  setNumber: number;
+  accumulatedSets: number[];
+  description: string;
+}
+
+export const calculateConejaBets = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaBetResult[] => {
+  if (!config.coneja?.enabled || players.length < 2) {
+    return [];
+  }
+  
+  const results: ConejaBetResult[] = [];
+  const setResults = calculateConejaSetResults(players, scores, course, config, confirmedHoles);
+  const amountPerConeja = config.coneja.amount || 50;
+  
+  for (const setResult of setResults) {
+    if (!setResult.winnerId) continue;
+    
+    const winner = players.find(p => p.id === setResult.winnerId);
+    if (!winner) continue;
+    
+    // Calculate how many conejas this winner gets
+    const numConejas = setResult.isAccumulated && setResult.accumulatedSets.length > 0
+      ? setResult.accumulatedSets.length
+      : 1;
+    
+    const totalAmount = amountPerConeja * numConejas;
+    
+    // Each losing player pays the winner
+    for (const loser of players) {
+      if (loser.id === setResult.winnerId) continue;
+      
+      const description = setResult.isAccumulated && setResult.accumulatedSets.length > 1
+        ? `Coneja Sets ${setResult.accumulatedSets.join('+')} (acum)`
+        : `Coneja Set ${setResult.setNumber}`;
+      
+      results.push({
+        winnerId: setResult.winnerId,
+        loserId: loser.id,
+        amount: totalAmount,
+        setNumber: setResult.setNumber,
+        accumulatedSets: setResult.accumulatedSets,
+        description,
+      });
+    }
+  }
+  
+  return results;
+};
+
+/**
+ * Get visual state for Coneja toolkit display
+ */
+export interface ConejaHoleDisplay {
+  holeNumber: number;
+  hasPata: boolean;
+  pataPlayerId: string | null;
+  pataCount: number;
+  isConfirmed: boolean;
+  isTie: boolean; // Everyone tied on this hole
+}
+
+export const getConejaHoleDisplays = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  confirmedHoles: Set<number>
+): ConejaHoleDisplay[] => {
+  const pataStates = calculateConejaPataStates(players, scores, course, config, confirmedHoles);
+  
+  return pataStates.map(ps => {
+    const playersWithPatas = Object.entries(ps.patasPerPlayer)
+      .filter(([_, count]) => count > 0);
+    
+    const hasPata = playersWithPatas.length === 1;
+    const pataPlayerId = hasPata ? playersWithPatas[0][0] : null;
+    const pataCount = hasPata ? playersWithPatas[0][1] : 0;
+    
+    // Check if it's a tie (no winner and hole is confirmed)
+    const isTie = confirmedHoles.has(ps.holeNumber) && !ps.winnerId;
+    
+    return {
+      holeNumber: ps.holeNumber,
+      hasPata,
+      pataPlayerId,
+      pataCount,
+      isConfirmed: confirmedHoles.has(ps.holeNumber),
+      isTie,
+    };
+  });
+};
