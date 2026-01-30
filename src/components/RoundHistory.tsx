@@ -195,13 +195,16 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     setLoadingScorecard(round.id);
     
     try {
-      // Get all players in this round
+      // Get all players in this round (including guests)
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
           id,
           profile_id,
           handicap_for_round,
+          guest_name,
+          guest_initials,
+          guest_color,
           profiles(display_name, initials, avatar_color)
         `)
         .eq('round_id', round.id);
@@ -213,6 +216,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       
       for (const rp of roundPlayers || []) {
         const profileData = rp.profiles as any;
+        const isGuest = !rp.profile_id;
         
         const { data: scores } = await supabase
           .from('hole_scores')
@@ -222,11 +226,22 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
         const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
 
+        // Use guest fields when profile_id is null, otherwise use profile data
+        const playerName = isGuest 
+          ? (rp.guest_name || 'Invitado') 
+          : (profileData?.display_name || 'Jugador');
+        const initials = isGuest 
+          ? (rp.guest_initials || 'IN') 
+          : (profileData?.initials || 'XX');
+        const color = isGuest 
+          ? (rp.guest_color || '#3B82F6') 
+          : (profileData?.avatar_color || '#3B82F6');
+
         playerScores.push({
-          playerId: rp.profile_id,
-          playerName: profileData?.display_name || 'Jugador',
-          initials: profileData?.initials || 'XX',
-          color: profileData?.avatar_color || '#3B82F6',
+          playerId: isGuest ? rp.id : rp.profile_id,
+          playerName,
+          initials,
+          color,
           handicap: Number(rp.handicap_for_round) || 0,
           scores: (scores || []).map(s => ({
             holeNumber: s.hole_number,
