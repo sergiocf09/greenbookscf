@@ -524,14 +524,14 @@ export const calculatePressureBets = (
           });
         }
       } else if (frontIsTied && totalMatchAmount > 0) {
-        // When there's a carry, Match 18 is cancelled
+        // When there's a carry, Match 18 is cancelled - show just "Carry"
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Presiones Match 18',
           amount: 0,
           segment: 'total',
-          description: 'Cancelado (Carry)',
+          description: 'Carry',
         });
         summaries.push({
           playerId: playerB.id,
@@ -539,7 +539,7 @@ export const calculatePressureBets = (
           betType: 'Presiones Match 18',
           amount: 0,
           segment: 'total',
-          description: 'Cancelado (Carry)',
+          description: 'Carry',
         });
       }
     }
