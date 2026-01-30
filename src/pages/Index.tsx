@@ -246,9 +246,13 @@ const Index = () => {
     if (isRestoring) return;
     if (roundState.id && pendingRounds.some((r) => r.roundId === roundState.id)) return;
     if (isRoundStarted) return;
+    
+    // Don't show if user is actively configuring a new round (has players or selected a course)
+    // This prevents the dialog from popping up during USGA handicap calculation or other setup actions
+    if (players.length > 0 || selectedCourseId) return;
 
     setShowPendingRoundDialog(true);
-  }, [pendingRounds, isRestoring, roundState.id, isRoundStarted]);
+  }, [pendingRounds, isRestoring, roundState.id, isRoundStarted, players.length, selectedCourseId]);
 
   // Load summaries for pending rounds (so the user recognizes them)
   useEffect(() => {
