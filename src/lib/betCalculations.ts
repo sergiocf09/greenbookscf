@@ -386,16 +386,16 @@ export const calculatePressureBets = (
         return bets.map(b => (b > 0 ? '+' : '') + b).join(' ');
       };
       
-      // For carry: front was tied on main line
-      const frontDisplayStr = frontIsTied && frontBets.length === 1 
-        ? 'Even (Carry)' 
-        : formatPressureResult(frontBets);
+      // Front 9 display:
+      // - "Even" ONLY when there was exactly one line and it ended 0
+      // - If carry applies (main line ended 0), append "(Carry)" even if there are multiple lines
+      const frontBaseStr = formatPressureResult(frontBets);
+      const frontDisplayStr = frontIsTied ? `${frontBaseStr} (Carry)` : frontBaseStr;
       
       // Inverted results for player B
       const frontInvertedBets = frontBets.map(b => -b);
-      const frontDisplayStrB = frontIsTied && frontBets.length === 1 
-        ? 'Even (Carry)' 
-        : formatPressureResult(frontInvertedBets);
+      const frontBaseStrB = formatPressureResult(frontInvertedBets);
+      const frontDisplayStrB = frontIsTied ? `${frontBaseStrB} (Carry)` : frontBaseStrB;
       
       if (frontAmountA !== 0 || frontBets.length > 0) {
         summaries.push({
