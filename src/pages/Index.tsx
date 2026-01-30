@@ -981,7 +981,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AlertDialog open={showPendingRoundDialog && pendingRounds.length > 0 && !isRestoring && !isRoundStarted}>
+      <AlertDialog open={showPendingRoundDialog && pendingRounds.length > 0 && !isRestoring} onOpenChange={setShowPendingRoundDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
