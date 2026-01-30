@@ -12,6 +12,7 @@ import {
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult } from '@/lib/rayasCalculations';
+import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { GroupBetsCard, getMedalGeneralBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { 
@@ -1404,6 +1405,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           allScores={scores}
           onBetConfigChange={onBetConfigChange}
           basePlayerId={basePlayerId}
+          confirmedHoles={confirmedHoles}
         />
       )}
 
@@ -1426,6 +1428,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         betConfig={betConfig}
         course={course}
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
+        confirmedHoles={confirmedHoles}
       />
     </div>
   );
@@ -2059,6 +2062,7 @@ interface BilateralDetailProps {
   allScores: Map<string, PlayerScore[]>;
   onBetConfigChange?: (config: BetConfig) => void;
   basePlayerId?: string;
+  confirmedHoles: Set<number>;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -2078,6 +2082,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   allScores,
   onBetConfigChange,
   basePlayerId,
+  confirmedHoles,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
@@ -2112,6 +2117,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'coneja':
+          return 'Coneja';
         default:
           return label;
       }
@@ -2160,6 +2167,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'coneja':
+          return 'Coneja';
         default:
           return overrideLabel;
       }
@@ -2619,8 +2628,57 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
+    // Coneja - Group bet shown in bilateral view
+    if (betConfig.coneja?.enabled && players.length >= 2) {
+      // Calculate Coneja results for this pair
+      const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, betConfig, confirmedHoles);
+      
+      // Find results where player wins from rival or rival wins from player
+      const playerWinsFromRival = conejaBets
+        .filter(b => b.winnerId === player.id && b.loserId === rival.id)
+        .reduce((sum, b) => sum + b.amount, 0);
+      const rivalWinsFromPlayer = conejaBets
+        .filter(b => b.winnerId === rival.id && b.loserId === player.id)
+        .reduce((sum, b) => sum + b.amount, 0);
+      
+      const conejaBalance = playerWinsFromRival - rivalWinsFromPlayer;
+      
+      // Only show if there's activity
+      if (conejaBalance !== 0 || conejaBets.some(b => 
+        (b.winnerId === player.id && b.loserId === rival.id) || 
+        (b.winnerId === rival.id && b.loserId === player.id)
+      )) {
+        groups.push({
+          key: 'coneja',
+          label: 'Coneja',
+          configKey: 'coneja',
+          segments: [],
+          getTotal: () => conejaBalance,
+          getSegmentData: () => {
+            const wonSets = conejaBets
+              .filter(b => b.winnerId === player.id && b.loserId === rival.id)
+              .map(b => b.setNumber);
+            const lostSets = conejaBets
+              .filter(b => b.winnerId === rival.id && b.loserId === player.id)
+              .map(b => b.setNumber);
+            const description = wonSets.length > 0 
+              ? `Ganado: Set${wonSets.length > 1 ? 's' : ''} ${wonSets.join(', ')}`
+              : lostSets.length > 0
+                ? `Perdido: Set${lostSets.length > 1 ? 's' : ''} ${lostSets.join(', ')}`
+                : 'Sin resultado';
+            return {
+              playerNet: playerWinsFromRival,
+              rivalNet: rivalWinsFromPlayer,
+              amount: conejaBalance,
+              description,
+            };
+          },
+        });
+      }
+    }
+    
     return groups;
-  }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes]);
+  }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance from the bet type groups for consistency
   // This ensures the header total matches the sum of all bet type rows
@@ -2640,6 +2698,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           case 'pinguinos': return 'Pingüinos';
           case 'rayas': return 'Rayas';
           case 'medalGeneral': return 'Medal General';
+          case 'coneja': return 'Coneja';
           default: return label;
         }
       };
