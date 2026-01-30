@@ -239,19 +239,30 @@ const Index = () => {
     void saveBetConfig(next);
   }, [roundState.id, isRestoring, isBetConfigLoaded, players, betConfig, saveBetConfig, setBetConfig]);
 
+  // Auto-restore the most recent pending round without showing the dialog
   useEffect(() => {
-    // If we are currently restoring (or already restored) the same pending round,
-    // don't keep prompting the user.
+    // Skip if no pending rounds or already restoring
     if (!pendingRounds?.length) return;
     if (isRestoring) return;
     if (roundState.id && pendingRounds.some((r) => r.roundId === roundState.id)) return;
     if (isRoundStarted) return;
     
-    // Don't show if user is actively configuring a new round (has players or selected a course)
-    // This prevents the dialog from popping up during USGA handicap calculation or other setup actions
+    // Don't auto-restore if user is actively configuring a new round
     if (players.length > 0 || selectedCourseId) return;
 
-    setShowPendingRoundDialog(true);
+    // Check if user explicitly skipped restore
+    const skipOnce = sessionStorage.getItem('skip_restore_once');
+    if (skipOnce) {
+      sessionStorage.removeItem('skip_restore_once');
+      return;
+    }
+
+    // Auto-restore the most recent pending round (first in the list, sorted by date desc)
+    const mostRecentRound = pendingRounds[0];
+    if (mostRecentRound) {
+      sessionStorage.setItem('restore_round_id', mostRecentRound.roundId);
+      window.location.reload();
+    }
   }, [pendingRounds, isRestoring, roundState.id, isRoundStarted, players.length, selectedCourseId]);
 
   // Load summaries for pending rounds (so the user recognizes them)
@@ -1103,6 +1114,12 @@ const Index = () => {
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
                 </DropdownMenuItem>
+                {pendingRounds && pendingRounds.length > 0 && (
+                  <DropdownMenuItem onClick={() => setShowPendingRoundDialog(true)}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Rondas Pendientes ({pendingRounds.length})
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setShowHandicapDialog(true)}>
                   <Calculator className="h-4 w-4 mr-2" />
                   Calcular Handicap
