@@ -46,7 +46,8 @@ import { devError } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
-import { 
+import GreenBookLogo from '@/components/GreenBookLogo';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -1059,11 +1060,8 @@ const Index = () => {
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="max-w-md mx-auto flex items-center">
           {/* Left: Logo */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-16">
-              <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
-              <p className="text-[10px] text-primary-foreground/70">by SCF</p>
-            </div>
+          <div className="flex items-center flex-shrink-0">
+            <GreenBookLogo height={36} />
           </div>
           
           {/* Center: Hole Info - takes remaining space */}
