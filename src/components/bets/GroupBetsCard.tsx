@@ -286,9 +286,9 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
       <div className="overflow-x-auto">
         <table className="text-[10px] border-collapse">
           <thead>
-            {/* Row 1: Gross scores above column headers */}
+            {/* Row 1: Label + Gross scores above column headers */}
             <tr>
-              <th className="p-1"></th>
+              <th className="p-1 text-[9px] text-muted-foreground font-normal">Gross</th>
               {matrix.playerIds.map(pid => (
                 <th key={`gross-${pid}`} className="p-0.5 text-center text-muted-foreground font-normal">
                   {matrix.playerGrossScores[pid] || '-'}
