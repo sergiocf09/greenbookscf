@@ -55,6 +55,11 @@ interface RoundBetConfig {
     amount: number;
     playerHandicaps: MedalGeneralPlayerConfig[];
   };
+  coneja?: {
+    enabled: boolean;
+    amount: number;
+    handicapMode: 'individual' | 'bilateral';
+  };
   carritos?: CarritosBetConfig;
   carritosTeams?: CarritosTeamBet[];
   bilateralHandicaps?: BilateralHandicap[];
@@ -159,6 +164,15 @@ export const useBetConfigPersistence = ({
             };
           }
 
+          // Apply Coneja config if exists
+          if (dbConfig.coneja) {
+            newConfig.coneja = {
+              enabled: dbConfig.coneja.enabled ?? prev.coneja.enabled,
+              amount: dbConfig.coneja.amount ?? prev.coneja.amount,
+              handicapMode: dbConfig.coneja.handicapMode ?? prev.coneja.handicapMode,
+            };
+          }
+
           // Apply Carritos config if exists
           if (dbConfig.carritos) {
             newConfig.carritos = {
@@ -231,6 +245,11 @@ export const useBetConfigPersistence = ({
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
           playerHandicaps: config.medalGeneral.playerHandicaps,
+        },
+        coneja: {
+          enabled: config.coneja.enabled,
+          amount: config.coneja.amount,
+          handicapMode: config.coneja.handicapMode,
         },
         carritos: config.carritos,
         carritosTeams: config.carritosTeams || [],
