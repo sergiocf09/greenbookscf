@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ChevronDown, ChevronUp, DollarSign, Plus, Trash2, Minus } from 'lucide-react';
-import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality, RayasSkinVariant } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, OyesesPlayerConfig, OyesModality, RayasSkinVariant, ConejaHandicapMode } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { devLog } from '@/lib/logger';
@@ -635,7 +635,78 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         </p>
       </BetSection>
 
-      {/* Rayas - Aggregator bet */}
+      {/* Coneja - Group bet with patas per set */}
+      <BetSection
+        id="coneja"
+        title="Coneja 🐰"
+        description="Grupal: patas por hoyo en sets de 6"
+        enabled={config.coneja?.enabled ?? false}
+        onToggle={(enabled) => updateBet('coneja', { enabled })}
+        color="gold"
+      >
+        <AmountInput 
+          label="Cantidad por coneja" 
+          value={config.coneja?.amount ?? 50} 
+          onChange={(v) => updateBet('coneja', { amount: v })} 
+        />
+        
+        {/* Handicap Mode Selector */}
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs text-muted-foreground">Modo de Handicap</Label>
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('coneja', { handicapMode: 'individual' as ConejaHandicapMode });
+              }}
+              className={cn(
+                "flex-1 px-3 py-2 text-xs rounded transition-colors border",
+                (config.coneja?.handicapMode ?? 'individual') === 'individual'
+                  ? "bg-golf-gold text-golf-dark font-medium border-golf-gold"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+              )}
+            >
+              <div className="font-medium">Modo A</div>
+              <div className="text-[9px] opacity-80">Handicap único</div>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateBet('coneja', { handicapMode: 'bilateral' as ConejaHandicapMode });
+              }}
+              className={cn(
+                "flex-1 px-3 py-2 text-xs rounded transition-colors border",
+                config.coneja?.handicapMode === 'bilateral'
+                  ? "bg-primary text-primary-foreground font-medium border-primary"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+              )}
+            >
+              <div className="font-medium">Modo B</div>
+              <div className="text-[9px] opacity-80">Handicap por pareja</div>
+            </button>
+          </div>
+          
+          {config.coneja?.handicapMode === 'bilateral' && (
+            <p className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded mt-2">
+              ⚠️ Al usar handicaps por pareja, Coneja utilizará exactamente los golpes de ventaja definidos 
+              entre cada par de jugadores en las apuestas individuales (Medal, Skins, Presiones, etc.).
+            </p>
+          )}
+        </div>
+        
+        <div className="text-[9px] text-muted-foreground mt-3 space-y-1">
+          <p><strong>Estructura:</strong> 3 sets de 6 hoyos (1-6, 7-12, 13-18)</p>
+          <p><strong>Pata:</strong> Ganador absoluto del hoyo gana pata; quien pierde un hoyo, pierde una pata</p>
+          <p><strong>Coneja:</strong> Al cierre del set, quien tenga ≥1 pata cobra a todos los demás</p>
+          <p><strong>Acumulación:</strong> Si nadie tiene pata al cierre, la coneja se acumula al siguiente set</p>
+        </div>
+      </BetSection>
+
+
       <BetSection
         id="rayas"
         title="Rayas"
@@ -1050,6 +1121,7 @@ export const defaultBetConfig: BetConfig = {
     teamHandicaps: {},
   },
   medalGeneral: { enabled: false, amount: 100, playerHandicaps: [] },
+  coneja: { enabled: false, amount: 50, handicapMode: 'individual' },
   carritosTeams: [],
   betOverrides: [],
 };

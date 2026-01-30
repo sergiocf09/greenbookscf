@@ -804,6 +804,7 @@ export type Database = {
         | "rayas_back"
         | "rayas_medal_total"
         | "rayas_oyes"
+        | "coneja"
       marker_type:
         | "birdie"
         | "eagle"
@@ -970,6 +971,7 @@ export const Constants = {
         "rayas_back",
         "rayas_medal_total",
         "rayas_oyes",
+        "coneja",
       ],
       marker_type: [
         "birdie",

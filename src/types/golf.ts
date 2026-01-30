@@ -180,6 +180,33 @@ export interface MedalGeneralBetConfig {
   playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
 }
 
+// Coneja - Group bet based on patas per hole and sets
+export type ConejaHandicapMode = 'individual' | 'bilateral';
+
+export interface ConejaBetConfig {
+  enabled: boolean;
+  amount: number; // Amount per coneja (same for all 3 sets)
+  handicapMode: ConejaHandicapMode; // 'individual' = use player handicap, 'bilateral' = use bilateral handicaps
+}
+
+// Coneja pata state for a specific hole
+export interface ConejaPataState {
+  holeNumber: number;
+  winnerId: string | null; // Player who won the hole absolutely, null if no winner
+  patasPerPlayer: Record<string, number>; // Patas accumulated by each player up to this hole
+}
+
+// Coneja set result
+export interface ConejaSetResult {
+  setNumber: 1 | 2 | 3;
+  startHole: number;
+  endHole: number;
+  winnerId: string | null; // Winner of this coneja, null if accumulated
+  wonOnHole: number | null; // Hole where it was won (for accumulated conejas)
+  isAccumulated: boolean; // Whether this coneja was accumulated from previous set(s)
+  accumulatedSets: number[]; // Which sets are accumulated in this win (e.g., [1, 2] if set 1 and 2 accumulated into set 3)
+}
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -194,6 +221,7 @@ export interface BetConfig {
   rayas: RayasBetConfig;
   carritos: CarritosBetConfig;
   medalGeneral: MedalGeneralBetConfig; // Group bet - lowest net total wins
+  coneja: ConejaBetConfig; // Group bet - patas system per set of 6 holes
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
