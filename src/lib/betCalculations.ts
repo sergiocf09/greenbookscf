@@ -1695,10 +1695,17 @@ export const getPressureEvolution = (
     const finalBets = states.length > 0 ? states[states.length - 1].bets : [0];
     const hasCarry = segment === 'front' && finalBets[0] === 0;
     
+    // "Even" only shown when there's exactly ONE bet line that ended at 0
+    // If multiple lines exist (e.g., +1 -1), show the actual results even if net is $0
+    const showEven = finalBets.length === 1 && finalBets[0] === 0;
+    const finalDisplay = showEven 
+      ? 'Even' 
+      : finalBets.map(b => (b > 0 ? '+' : '') + b).join(' ');
+    
     return {
       segment,
       holes: states,
-      finalDisplay: finalBets.map(b => b === 0 ? 'Even' : (b > 0 ? '+' : '') + b).join(' '),
+      finalDisplay,
       hasCarry,
     };
   };
