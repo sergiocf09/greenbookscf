@@ -3352,10 +3352,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isSkins = group.key === 'skins';
                         const pressureDesc = data.description || '';
                         
-                        // "Even" ONLY when description is literally "Even" or "Even (Carry)"
-                        // Never show "Even" for results like "-1 +1" even though they sum to 0
-                        const isPressureEven = isPressures && 
-                          (pressureDesc === 'Even' || pressureDesc === 'Even (Carry)' || pressureDesc === '');
+                        // IMPORTANT: For Presiones, always display the *actual* pressure lines coming
+                        // from the calculations (e.g., "-1 +1", "0 +2 (Carry)").
+                        // "Even" must only appear when the engine produced it (single line tied).
+                        const pressureDisplay = pressureDesc || '—';
                         
                         const showSkinsShoe =
                           isSkins &&
@@ -3387,7 +3387,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   'font-semibold cursor-pointer hover:underline',
                                   data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                                 )}>
-                                  {isPressureEven ? 'Even' : (data.description || 'Even')}
+                                  {pressureDisplay}
                                 </span>
                               ) : (
                                 <>
@@ -3516,7 +3516,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'text-muted-foreground'
                               )}
                             >
-                              {isPressureEven ? 'Even' : `${data.amount >= 0 ? '+' : ''}$${data.amount}`}
+                              {`${data.amount >= 0 ? '+' : ''}$${data.amount}`}
                             </span>
 
                             {showSkinsShoe && (
