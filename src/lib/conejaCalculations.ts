@@ -402,8 +402,9 @@ export interface ConejaHoleDisplay {
   isConfirmed: boolean;
   isTie: boolean; // Everyone tied on this hole
   winnerId: string | null; // Absolute winner of this hole
-  isSetWonHole: boolean; // True if this hole is where the set was won
+  isSetWonHole: boolean; // True if this hole is where the set was won (NOT for accumulated sets with no winner)
   previousPataCount: number; // Pata count before this hole (to detect losses)
+  conejasWonCount: number; // Number of conejas won on this hole (1 or more if accumulated)
 }
 
 export const getConejaHoleDisplays = (
@@ -416,11 +417,17 @@ export const getConejaHoleDisplays = (
   const pataStates = calculateConejaPataStates(players, scores, course, config, confirmedHoles);
   const setResults = calculateConejaSetResults(players, scores, course, config, confirmedHoles);
   
-  // Create a set of holes where the Coneja was won
-  const setWonHoles = new Set<number>();
+  // Create a map of holes where the Coneja was actually won (with a winner, not just end of set)
+  // and track how many conejas were won on each hole
+  const setWonHolesWithCount: Map<number, number> = new Map();
   setResults.forEach(sr => {
+    // Only mark as won if there's an actual winner (not accumulated without winner)
     if (sr.winnerId && sr.wonOnHole) {
-      setWonHoles.add(sr.wonOnHole);
+      // Count how many conejas were won: accumulated sets count or 1
+      const conejasCount = sr.isAccumulated && sr.accumulatedSets.length > 0 
+        ? sr.accumulatedSets.length 
+        : 1;
+      setWonHolesWithCount.set(sr.wonOnHole, conejasCount);
     }
   });
   
@@ -449,6 +456,8 @@ export const getConejaHoleDisplays = (
       }
     }
     
+    const conejasWonCount = setWonHolesWithCount.get(ps.holeNumber) || 0;
+    
     return {
       holeNumber: ps.holeNumber,
       hasPata,
@@ -457,8 +466,9 @@ export const getConejaHoleDisplays = (
       isConfirmed: confirmedHoles.has(ps.holeNumber),
       isTie,
       winnerId: ps.winnerId,
-      isSetWonHole: setWonHoles.has(ps.holeNumber),
+      isSetWonHole: setWonHolesWithCount.has(ps.holeNumber), // Only true if there was an actual winner
       previousPataCount,
+      conejasWonCount,
     };
   });
 };
@@ -510,6 +520,7 @@ export interface ConejaHoleMatrix {
   playerGrossScores: Record<string, number>; // Gross score per player
   cells: Record<string, Record<string, ConejaMatrixCell>>; // [playerId][rivalId]
   winnerId: string | null;
+  conejasWonCount: number; // How many conejas were won on this hole (for accumulated sets)
 }
 
 /**
@@ -577,6 +588,18 @@ export const getConejaHoleMatrix = (
   // Get absolute winner
   const winnerId = getAbsoluteWinner(players, holeNumber, scores, course, config);
   
+  // Calculate how many conejas were won on this hole
+  let conejasWonCount = 0;
+  if (winnerId) {
+    const setResults = calculateConejaSetResults(players, scores, course, config, confirmedHoles);
+    const setResult = setResults.find(sr => sr.wonOnHole === holeNumber && sr.winnerId === winnerId);
+    if (setResult) {
+      conejasWonCount = setResult.isAccumulated && setResult.accumulatedSets.length > 0 
+        ? setResult.accumulatedSets.length 
+        : 1;
+    }
+  }
+  
   return {
     holeNumber,
     par: hole.par,
@@ -586,6 +609,7 @@ export const getConejaHoleMatrix = (
     playerGrossScores,
     cells,
     winnerId,
+    conejasWonCount,
   };
 };
 
