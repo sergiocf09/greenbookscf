@@ -3347,15 +3347,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // For pressures, show "Even" ONLY when:
                         // - Amount is 0 AND
                         // - Only one bet was opened (initial) AND that bet is tied (+0)
-                        // If there are multiple lines (e.g., -1+1, 0+2), show the actual results
+                        // If there are multiple lines (e.g., +1 -1), show actual results even if net is $0
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
                         const pressureDesc = data.description || '';
                         // Count how many bet lines exist (each line is represented as a signed number)
-                        const pressureLines = pressureDesc.match(/[+-]\d+/g) || [];
-                        // "Even" only when single line showing +0 or empty
-                        const isPressureEven = isPressures && data.amount === 0 && 
-                          (pressureLines.length === 0 || (pressureLines.length === 1 && pressureLines[0] === '+0'));
+                        const pressureLines = pressureDesc.match(/[+-]?\d+/g) || [];
+                        // "Even" ONLY when there's exactly one line that ended at 0
+                        const isPressureEven = isPressures && pressureLines.length <= 1 && 
+                          (pressureLines.length === 0 || pressureLines[0] === '0' || pressureLines[0] === '+0');
                         
                         const showSkinsShoe =
                           isSkins &&
