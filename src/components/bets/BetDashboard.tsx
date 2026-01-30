@@ -2783,18 +2783,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 size="sm" 
                 isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
               />
-              <span className={cn(
-                "text-sm font-bold text-foreground",
-                hasOverride && 'text-accent'
-              )}>
+              <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
                 HCP {effectivePlayerHcp}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-sm font-bold text-foreground",
-                hasOverride && 'text-accent'
-              )}>
+              <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
                 HCP {effectiveRivalHcp}
               </span>
               <PlayerAvatar 
