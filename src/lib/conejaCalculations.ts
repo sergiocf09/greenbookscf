@@ -184,9 +184,23 @@ export const calculateConejaPataStates = (
     // Determine absolute winner
     const winnerId = getAbsoluteWinner(players, holeNumber, scores, course, config);
     
-    // Update patas
+    // CORRECT PATA LOGIC:
+    // 1. Check if ANY other player had pata(s) before this hole
+    // 2. If someone else had pata, winner TAKES one from them but does NOT gain a pata
+    // 3. Only if NO ONE had pata (or winner was the only one with pata), winner GAINS a pata
+    
     if (winnerId) {
-      runningPatas[winnerId] = (runningPatas[winnerId] || 0) + 1;
+      // Check if any OTHER player had patas before this hole
+      const othersWithPatas = Object.entries(runningPatas)
+        .filter(([playerId, patas]) => playerId !== winnerId && patas > 0);
+      
+      if (othersWithPatas.length === 0) {
+        // No one else had pata - winner GAINS a pata
+        runningPatas[winnerId] = (runningPatas[winnerId] || 0) + 1;
+      } else {
+        // Someone else had pata - winner TAKES from them but doesn't gain
+        // The losers lose their patas below
+      }
     }
     
     // Check who loses patas (those who lost to at least one rival AND are not the winner)
