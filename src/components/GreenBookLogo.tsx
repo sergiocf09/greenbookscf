@@ -55,14 +55,13 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
         GreenBook
       </text>
 
-      {/* by SCF text */}
+      {/* by SCF text - using accent gold color */}
       <text
         x="46"
         y="36"
         fontFamily="Arial, sans-serif"
         fontSize="9"
-        fill="white"
-        opacity="0.85"
+        fill="hsl(43, 90%, 50%)"
         letterSpacing="1"
       >
         by SCF
