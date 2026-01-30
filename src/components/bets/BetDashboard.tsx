@@ -2775,34 +2775,56 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             </Dialog>
           </div>
           
-          <div className="flex justify-between mt-2 text-xs">
-            <div className="flex items-center gap-1">
-              <div 
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                style={{ backgroundColor: player.color }}
-              >
-                {getPlayerAbbr(player)}
-              </div>
-              <span className={cn(hasOverride && 'text-accent font-medium')}>
+          <div className="flex justify-between mt-2">
+            <div className="flex items-center gap-2">
+              <PlayerAvatar 
+                initials={getPlayerAbbr(player)} 
+                background={player.color} 
+                size="sm" 
+                isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
+              />
+              <span className={cn(
+                "text-sm font-bold text-foreground",
+                hasOverride && 'text-accent'
+              )}>
                 HCP {effectivePlayerHcp}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className={cn(hasOverride && 'text-accent font-medium')}>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-sm font-bold text-foreground",
+                hasOverride && 'text-accent'
+              )}>
                 HCP {effectiveRivalHcp}
               </span>
-              <div 
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                style={{ backgroundColor: rival.color }}
-              >
-                {getPlayerAbbr(rival)}
-              </div>
+              <PlayerAvatar 
+                initials={getPlayerAbbr(rival)} 
+                background={rival.color} 
+                size="sm" 
+                isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
+              />
             </div>
           </div>
           
-          <p className="text-[10px] text-muted-foreground mt-1 text-center">
-            Aplica a todas las apuestas individuales
-          </p>
+          {(() => {
+            const difference = Math.abs(effectivePlayerHcp - effectiveRivalHcp);
+            if (difference > 0) {
+              const receiverName = effectivePlayerHcp > effectiveRivalHcp ? player.name : rival.name;
+              return (
+                <div className="bg-muted/50 p-2 rounded-lg text-center mt-2">
+                  <p className="text-sm">
+                    <strong>{receiverName}</strong> recibe{' '}
+                    <span className="text-base font-bold text-primary">{difference}</span> golpes
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Ambos jugadores juegan scratch
+              </p>
+            );
+          })()}
         </div>
       </CardHeader>
       
