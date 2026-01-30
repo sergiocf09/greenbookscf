@@ -35,18 +35,35 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
   // We snapshot the current scrollY and restore it after React commits the update.
-  // (More reliable than RAF across mobile browsers)
+  // Using multiple strategies for maximum reliability across browsers.
   const pendingScrollRestoreRef = useRef<number | null>(null);
+  const isRestoringRef = useRef(false);
 
   useLayoutEffect(() => {
     const y = pendingScrollRestoreRef.current;
-    if (typeof y !== 'number') return;
+    if (typeof y !== 'number' || isRestoringRef.current) return;
+    
+    isRestoringRef.current = true;
     pendingScrollRestoreRef.current = null;
-    window.scrollTo({ top: y });
+    
+    // Immediate restore
+    window.scrollTo({ top: y, behavior: 'instant' });
+    
+    // Backup restore after a microtask (catches delayed re-renders)
+    queueMicrotask(() => {
+      window.scrollTo({ top: y, behavior: 'instant' });
+    });
+    
+    // Final backup with RAF (catches async updates)
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, behavior: 'instant' });
+      isRestoringRef.current = false;
+    });
   });
 
   const safeOnChange = useCallback(
     (next: BetConfig) => {
+      // Capture scroll position before triggering the update
       pendingScrollRestoreRef.current = window.scrollY;
       onChange(next);
     },
