@@ -3360,7 +3360,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           data.description.includes('🥾');
 
                         // Determine segment type for evolution tooltips
-                        const segmentType: 'front' | 'back' = segment.key.includes('front') ? 'front' : 'back';
+                        const segmentType: 'front' | 'back' | 'total' = segment.key.includes('front') 
+                          ? 'front' 
+                          : segment.key.includes('total') 
+                            ? 'total' 
+                            : 'back';
 
                         // Get evolution data for tooltips
                         const pressureEvolution = isPressures 
@@ -3426,7 +3430,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Pressures and Skins get Popover for hole-by-hole evolution */}
-                            {(isPressures || isSkins) ? (
+                            {/* EXCEPT for Total 18 in Pressures - it's a simple inference */}
+                            {((isPressures && segmentType !== 'total') || isSkins) ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
