@@ -118,13 +118,16 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
   // Render a single hole cell
   const renderHoleCell = (hd: ConejaHoleDisplay) => {
     const pataPlayer = hd.pataPlayerId ? getPlayer(hd.pataPlayerId) : null;
-    const winnerPlayer = hd.winnerId ? getPlayer(hd.winnerId) : null;
     
     // Determine if pata was lost on this hole (had more patas before)
     const pataLost = hd.isConfirmed && hd.previousPataCount > 0 && (!hd.hasPata || hd.pataCount < hd.previousPataCount);
     
-    // Show "=" if: tie, OR if someone lost a pata and now no one has any
+    // Show "=" if: tie, OR if someone lost all their patas
     const showTie = hd.isConfirmed && (hd.isTie || (pataLost && !hd.hasPata));
+    
+    // When pata is lost but player still has patas, we show reduced rabbits (no winner indicator)
+    // When hole is won and player gains pata, we show rabbits with their initials
+    // We do NOT show the winner's initials when someone else loses a pata
     
     return (
       <Popover key={hd.holeNumber}>
@@ -136,24 +139,20 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
             <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
             <div className={cn(
               "w-6 h-6 flex items-center justify-center text-[8px]",
-              // Circle for won holes
+              // Circle for won set holes
               hd.isSetWonHole && "rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50",
               // Regular styling for non-won holes
               !hd.isSetWonHole && "rounded",
               !hd.isConfirmed && !hd.isSetWonHole && "bg-muted/50",
               hd.isConfirmed && showTie && !hd.isSetWonHole && "bg-muted",
-              hd.winnerId && !hd.hasPata && !hd.isSetWonHole && "bg-green-100 dark:bg-green-900/30",
               hd.hasPata && !hd.isSetWonHole && "bg-amber-100 dark:bg-amber-900/30"
             )}>
               {showTie && <span className="text-muted-foreground font-bold">=</span>}
               {hd.hasPata && !showTie && renderPatas(Math.min(hd.pataCount, 2))}
-              {hd.winnerId && !hd.hasPata && !showTie && <span className="text-green-600 font-bold">✓</span>}
             </div>
+            {/* Only show initials of the pata holder, not when a pata was lost to someone */}
             {(hd.hasPata && pataPlayer && !showTie) && (
               <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{pataPlayer.initials}</span>
-            )}
-            {(hd.winnerId && !hd.hasPata && winnerPlayer && !showTie) && (
-              <span className="text-[8px] font-bold text-green-600">{winnerPlayer.initials}</span>
             )}
           </button>
         </PopoverTrigger>
@@ -256,6 +255,10 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   const winnerPlayer = matrix.winnerId ? players.find(p => p.id === matrix.winnerId) : null;
   const hole = course.holes[holeNumber - 1];
 
+  // Column-based matrix: columns are the perspective
+  // Each cell shows: [row player net] vs [column player net] with dot if column received stroke
+  // Green if column won, red if column lost, gray if tie
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -263,51 +266,64 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
         <span className="text-xs text-muted-foreground">Par {hole?.par}</span>
       </div>
       
-      {/* Matrix table */}
+      {/* Matrix table - columns are the perspective */}
       <div className="overflow-x-auto">
         <table className="text-[10px] border-collapse">
           <thead>
+            {/* Row 1: Gross scores above column headers */}
+            <tr>
+              <th className="p-1"></th>
+              {matrix.playerIds.map(pid => (
+                <th key={`gross-${pid}`} className="p-0.5 text-center text-muted-foreground font-normal">
+                  {matrix.playerGrossScores[pid] || '-'}
+                </th>
+              ))}
+            </tr>
+            {/* Row 2: Column player initials with circle for winner */}
             <tr>
               <th className="p-1 border-b border-r border-border/50"></th>
               {matrix.playerIds.map(pid => (
                 <th 
                   key={pid} 
-                  className={cn(
-                    "p-1 border-b border-border/50 font-bold text-center min-w-[28px]",
-                    matrix.winnerId === pid && "text-green-600"
-                  )}
+                  className="p-1 border-b border-border/50 text-center min-w-[36px]"
                 >
-                  {matrix.playerInitials[pid]}
+                  <div className={cn(
+                    "inline-flex items-center justify-center font-bold",
+                    matrix.winnerId === pid && "w-5 h-5 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 text-green-700"
+                  )}>
+                    {matrix.playerInitials[pid]}
+                  </div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {matrix.playerIds.map(playerId => (
-              <tr key={playerId}>
-                <td 
-                  className={cn(
-                    "p-1 border-r border-border/50 font-bold",
-                    matrix.winnerId === playerId && "text-green-600"
-                  )}
-                >
-                  {matrix.playerInitials[playerId]}
+            {matrix.playerIds.map(rowPlayerId => (
+              <tr key={rowPlayerId}>
+                <td className="p-1 border-r border-border/50 font-bold">
+                  {matrix.playerInitials[rowPlayerId]}
                 </td>
-                {matrix.playerIds.map(rivalId => {
-                  if (playerId === rivalId) {
+                {matrix.playerIds.map(colPlayerId => {
+                  if (rowPlayerId === colPlayerId) {
                     return (
-                      <td key={rivalId} className="p-1 text-center bg-muted/30">—</td>
+                      <td key={colPlayerId} className="p-1 text-center bg-muted/30">—</td>
                     );
                   }
                   
-                  const cell = matrix.cells[playerId]?.[rivalId];
+                  // Get the cell from column player's perspective vs row player
+                  // cells[colPlayerId][rowPlayerId] gives column's perspective
+                  const cell = matrix.cells[colPlayerId]?.[rowPlayerId];
                   if (!cell) {
-                    return <td key={rivalId} className="p-1 text-center">-</td>;
+                    return <td key={colPlayerId} className="p-1 text-center">-</td>;
                   }
+                  
+                  // cell.playerNet is column player's net, cell.rivalNet is row player's net
+                  // cell.result is from column's perspective
+                  // cell.playerReceived indicates if column player received a stroke
                   
                   return (
                     <td 
-                      key={rivalId} 
+                      key={colPlayerId} 
                       className={cn(
                         "p-1 text-center",
                         cell.result === 'win' && "bg-green-100 dark:bg-green-900/30 text-green-700",
@@ -316,8 +332,10 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                       )}
                     >
                       <div className="flex items-center justify-center gap-0.5">
-                        {cell.playerReceived && <span className="text-primary font-bold">•</span>}
+                        <span className="font-medium">{cell.rivalNet}</span>
+                        <span className="text-muted-foreground">v</span>
                         <span className="font-medium">{cell.playerNet}</span>
+                        {cell.playerReceived && <span className="text-primary font-bold">•</span>}
                       </div>
                     </td>
                   );

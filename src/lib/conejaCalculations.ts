@@ -507,6 +507,7 @@ export interface ConejaHoleMatrix {
   playerIds: string[];
   playerInitials: Record<string, string>;
   playerColors: Record<string, string>;
+  playerGrossScores: Record<string, number>; // Gross score per player
   cells: Record<string, Record<string, ConejaMatrixCell>>; // [playerId][rivalId]
   winnerId: string | null;
 }
@@ -531,9 +532,16 @@ export const getConejaHoleMatrix = (
   const playerIds = players.map(p => p.id);
   const playerInitials: Record<string, string> = {};
   const playerColors: Record<string, string> = {};
+  const playerGrossScores: Record<string, number> = {};
+  
   players.forEach(p => {
     playerInitials[p.id] = p.initials;
     playerColors[p.id] = p.color;
+    
+    // Get gross score for this player on this hole
+    const playerScores = scores.get(p.id);
+    const holeScore = playerScores?.find(s => s.holeNumber === holeNumber && s.confirmed && s.strokes > 0);
+    playerGrossScores[p.id] = holeScore?.strokes || 0;
   });
   
   const cells: Record<string, Record<string, ConejaMatrixCell>> = {};
@@ -575,6 +583,7 @@ export const getConejaHoleMatrix = (
     playerIds,
     playerInitials,
     playerColors,
+    playerGrossScores,
     cells,
     winnerId,
   };
