@@ -2,6 +2,7 @@
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
+import { calculateConejaBets } from './conejaCalculations';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 
 export interface BetSummary {
@@ -1375,9 +1376,36 @@ export const calculateAllBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  startingHole: 1 | 10 = 1
+  startingHole: 1 | 10 = 1,
+  confirmedHoles: Set<number> = new Set()
 ): BetSummary[] => {
   const bilateralHandicaps = config.bilateralHandicaps;
+  
+  // Convert Coneja bets to BetSummary format
+  const conejaSummaries: BetSummary[] = [];
+  if (config.coneja?.enabled && players.length >= 2) {
+    const conejaBets = calculateConejaBets(players, scores, course, config, confirmedHoles);
+    conejaBets.forEach(bet => {
+      // Winner gets positive amount
+      conejaSummaries.push({
+        playerId: bet.winnerId,
+        vsPlayer: bet.loserId,
+        betType: 'Coneja',
+        amount: bet.amount,
+        segment: 'total',
+        description: bet.description,
+      });
+      // Loser gets negative amount
+      conejaSummaries.push({
+        playerId: bet.loserId,
+        vsPlayer: bet.winnerId,
+        betType: 'Coneja',
+        amount: -bet.amount,
+        segment: 'total',
+        description: bet.description,
+      });
+    });
+  }
   
   const allSummaries = [
     ...calculateMedalBets(players, scores, config, course, bilateralHandicaps, startingHole),
@@ -1391,6 +1419,7 @@ export const calculateAllBets = (
     ...calculatePinguinosBets(players, scores, config, course),
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMedalGeneralBets(players, scores, config, course),
+    ...conejaSummaries,
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
