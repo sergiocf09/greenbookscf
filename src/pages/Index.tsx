@@ -1284,6 +1284,8 @@ const Index = () => {
               maxPlayers={6}
               showAddGroupButton={true}
               onAddGroupClick={handleAddGroup}
+              courseId={selectedCourseId}
+              defaultTeeColor={teeColor}
             />
             
             {/* Additional Groups */}
@@ -1309,6 +1311,8 @@ const Index = () => {
                     void handleGroupPlayersChange(group.id, newPlayers);
                   }}
                   maxPlayers={6}
+                  courseId={selectedCourseId}
+                  defaultTeeColor={teeColor}
                 />
               </div>
             ))}

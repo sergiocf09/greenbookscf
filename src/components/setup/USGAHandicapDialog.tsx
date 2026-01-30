@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useUSGAHandicap, RoundDifferential } from '@/hooks/useUSGAHandicap';
-import { Loader2, TrendingDown, Calendar, Flag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, TrendingDown, Calendar, Flag, CheckCircle2, AlertCircle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 
 interface USGAHandicapDialogProps {
   open: boolean;
@@ -19,7 +20,29 @@ interface USGAHandicapDialogProps {
   profileId: string | null;
   playerName: string;
   onApplyHandicap?: (handicap: number) => void;
+  courseId?: string | null; // Current course for Course Handicap calculation
+  teeColor?: string; // Player's selected tee
 }
+
+interface CourseData {
+  courseRating: number;
+  slopeRating: number;
+  coursePar: number;
+}
+
+/**
+ * Calculate Course Handicap from Handicap Index
+ * Formula: Course HCP = Index × (Slope / 113) + (Rating - Par)
+ */
+const calculateCourseHandicap = (
+  handicapIndex: number,
+  slopeRating: number,
+  courseRating: number,
+  coursePar: number
+): number => {
+  const courseHcp = handicapIndex * (slopeRating / 113) + (courseRating - coursePar);
+  return Math.round(courseHcp);
+};
 
 export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
   open,
@@ -27,6 +50,8 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
   profileId,
   playerName,
   onApplyHandicap,
+  courseId = null,
+  teeColor = 'white',
 }) => {
   const {
     handicapIndex,
@@ -38,9 +63,64 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
     error,
   } = useUSGAHandicap(profileId);
 
+  const [courseData, setCourseData] = useState<CourseData | null>(null);
+  const [loadingCourse, setLoadingCourse] = useState(false);
+
+  // Fetch course data for the selected course and tee
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!courseId || !open) {
+        setCourseData(null);
+        return;
+      }
+
+      setLoadingCourse(true);
+      try {
+        // Get tee-specific rating and slope
+        const { data: teeData } = await supabase
+          .from('course_tees')
+          .select('course_rating, slope_rating')
+          .eq('course_id', courseId)
+          .eq('tee_color', teeColor)
+          .maybeSingle();
+
+        // Get course par from holes
+        const { data: holes } = await supabase
+          .from('course_holes')
+          .select('par')
+          .eq('course_id', courseId);
+
+        const coursePar = holes?.reduce((sum, h) => sum + h.par, 0) || 72;
+        const courseRating = teeData?.course_rating || 72;
+        const slopeRating = teeData?.slope_rating || 113;
+
+        setCourseData({ courseRating, slopeRating, coursePar });
+      } catch (err) {
+        console.error('Error fetching course data:', err);
+        setCourseData(null);
+      } finally {
+        setLoadingCourse(false);
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId, teeColor, open]);
+
+  // Calculate course handicap if we have both index and course data
+  const courseHandicap = handicapIndex !== null && courseData
+    ? calculateCourseHandicap(
+        handicapIndex,
+        courseData.slopeRating,
+        courseData.courseRating,
+        courseData.coursePar
+      )
+    : null;
+
   const handleApply = () => {
-    if (handicapIndex !== null && onApplyHandicap) {
-      onApplyHandicap(Math.round(handicapIndex));
+    // Apply the Course Handicap (not the Index)
+    const handicapToApply = courseHandicap ?? (handicapIndex !== null ? Math.round(handicapIndex) : null);
+    if (handicapToApply !== null && onApplyHandicap) {
+      onApplyHandicap(handicapToApply);
       onOpenChange(false);
     }
   };
@@ -60,11 +140,11 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             Índice USGA - {playerName}
           </DialogTitle>
           <DialogDescription>
-            Calculado según las reglas oficiales USGA usando los mejores diferenciales
+            El handicap de juego se ajusta según el campo y tee seleccionados
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
+        {isLoading || loadingCourse ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
@@ -87,16 +167,49 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Handicap Index Display */}
-            <div className="bg-primary/10 rounded-xl p-4 text-center">
-              <p className="text-sm text-muted-foreground mb-1">Índice de Handicap</p>
-              <p className="text-4xl font-bold text-primary">
-                {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Usando {roundsUsed} de {totalRounds} mejores diferenciales
-              </p>
+            {/* Dual Display: Handicap Index + Course Handicap */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Handicap Index */}
+              <div className="bg-muted/50 rounded-xl p-3 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Índice USGA</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  (siempre igual)
+                </p>
+              </div>
+
+              {/* Course Handicap */}
+              <div className="bg-primary/10 rounded-xl p-3 text-center border-2 border-primary/30">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Target className="h-3 w-3 text-primary" />
+                  <p className="text-xs text-primary font-medium">Handicap de Juego</p>
+                </div>
+                <p className="text-2xl font-bold text-primary">
+                  {courseHandicap !== null ? courseHandicap : handicapIndex !== null ? Math.round(handicapIndex) : '-'}
+                </p>
+                {courseData && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    R:{courseData.courseRating} / S:{courseData.slopeRating}
+                  </p>
+                )}
+              </div>
             </div>
+
+            {/* Course Handicap Formula Explanation */}
+            {courseData && handicapIndex !== null && (
+              <div className="bg-muted/30 rounded-lg p-2 text-[10px] text-muted-foreground text-center">
+                <span className="font-mono">
+                  {handicapIndex.toFixed(1)} × ({courseData.slopeRating}/113) + ({courseData.courseRating} - {courseData.coursePar}) = {courseHandicap}
+                </span>
+              </div>
+            )}
+
+            {/* Stats */}
+            <p className="text-xs text-muted-foreground text-center">
+              Usando {roundsUsed} de {totalRounds} mejores diferenciales
+            </p>
 
             {/* USGA Scale Reference */}
             <div className="bg-muted/50 rounded-lg p-3 text-xs">
@@ -126,10 +239,10 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             </div>
 
             {/* Apply Button */}
-            {onApplyHandicap && handicapIndex !== null && (
+            {onApplyHandicap && (courseHandicap !== null || handicapIndex !== null) && (
               <Button onClick={handleApply} className="w-full">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Aplicar Handicap {Math.round(handicapIndex)}
+                Aplicar Handicap {courseHandicap ?? Math.round(handicapIndex!)}
               </Button>
             )}
           </div>
