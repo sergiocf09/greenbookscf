@@ -685,17 +685,9 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           description="Apuestas por equipos de 2"
           enabled={config.carritos.enabled}
           onToggle={(enabled) => {
-            if (enabled) {
-              // Start blank so the user always picks pairs manually (prevents lingering selections).
-              updateBet('carritos', {
-                enabled,
-                teamA: ['', ''],
-                teamB: ['', ''],
-                teamHandicaps: {},
-              });
-            } else {
-              updateBet('carritos', { enabled });
-            }
+            // Only toggle the enabled flag – preserve existing team configuration.
+            // Teams should only be cleared when explicitly deleted by the user.
+            updateBet('carritos', { enabled });
           }}
         >
           {/* Primary team setup */}
