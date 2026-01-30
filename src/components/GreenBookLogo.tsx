@@ -6,14 +6,14 @@ interface GreenBookLogoProps {
 }
 
 const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 32 }) => {
-  const aspectRatio = 180 / 40;
+  const aspectRatio = 140 / 44;
   const width = height * aspectRatio;
 
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 180 40"
+      viewBox="0 0 140 44"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -22,7 +22,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       <g>
         {/* Wavy green surface */}
         <path
-          d="M2 28 Q8 24, 14 26 Q20 28, 26 25 Q32 22, 38 26 L38 32 Q32 30, 26 32 Q20 34, 14 32 Q8 30, 2 32 Z"
+          d="M2 30 Q8 26, 14 28 Q20 30, 26 27 Q32 24, 38 28 L38 36 Q32 34, 26 36 Q20 38, 14 36 Q8 34, 2 36 Z"
           fill="hsl(150, 50%, 45%)"
         />
         {/* Flag pole */}
@@ -30,7 +30,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
           x1="28"
           y1="10"
           x2="28"
-          y2="26"
+          y2="28"
           stroke="white"
           strokeWidth="1.5"
           strokeLinecap="round"
@@ -42,27 +42,41 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
         />
       </g>
 
-      {/* GreenBook text */}
+      {/* Green text - first line */}
       <text
         x="46"
-        y="24"
+        y="18"
         fontFamily="Georgia, serif"
-        fontSize="18"
+        fontSize="16"
         fontWeight="bold"
         fill="white"
         letterSpacing="0.5"
       >
-        GreenBook
+        Green
       </text>
 
-      {/* by SCF text - using accent gold color */}
+      {/* Book text - second line */}
       <text
         x="46"
-        y="36"
+        y="34"
+        fontFamily="Georgia, serif"
+        fontSize="16"
+        fontWeight="bold"
+        fill="white"
+        letterSpacing="0.5"
+      >
+        Book
+      </text>
+
+      {/* by SCF text - bold, accent gold color */}
+      <text
+        x="88"
+        y="34"
         fontFamily="Arial, sans-serif"
-        fontSize="9"
+        fontSize="10"
+        fontWeight="bold"
         fill="hsl(43, 90%, 50%)"
-        letterSpacing="1"
+        letterSpacing="0.5"
       >
         by SCF
       </text>
