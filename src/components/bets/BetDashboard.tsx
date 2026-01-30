@@ -684,8 +684,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const override = betConfig.betOverrides?.find((o) => {
         const type = normalizeType(o.betType || '');
 
-        // match exact OR substring (keeps compatibility with existing logic elsewhere)
-        const matchesType = acceptable.some((a) => type === a || type.includes(a) || a.includes(type));
+        // IMPORTANT: Avoid cross-cancelling similar bet names.
+        // Example bug: cancelling "Medal" was also cancelling "Medal General" because
+        // we allowed reverse substring checks (a.includes(type)).
+        // Strategy:
+        // 1) Prefer EXACT normalized matches.
+        // 2) Only if no exact match exists for ANY override type, allow forward substring
+        //    matching (type.includes(a)) for legacy stored partial labels.
+        const hasAnyExactForThisOverride = acceptable.some((a) => type === a);
+        const matchesType = hasAnyExactForThisOverride
+          ? true
+          : acceptable.some((a) => type.includes(a));
         if (!matchesType) return false;
 
         const matchesPair =
