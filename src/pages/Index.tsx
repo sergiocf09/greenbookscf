@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import greenbookLogo from '@/assets/greenbook-logo.png';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
@@ -1060,10 +1061,11 @@ const Index = () => {
         <div className="max-w-md mx-auto flex items-center">
           {/* Left: Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-16">
-              <h1 className="text-lg font-bold tracking-tight">Golf Bets</h1>
-              <p className="text-[10px] text-primary-foreground/70">by SCF</p>
-            </div>
+            <img 
+              src={greenbookLogo} 
+              alt="GreenBook by SCF" 
+              className="h-10 w-auto object-contain"
+            />
           </div>
           
           {/* Center: Hole Info - takes remaining space */}
