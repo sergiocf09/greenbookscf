@@ -1065,8 +1065,8 @@ const Index = () => {
               <p className="text-[10px] text-primary-foreground/70">by SCF</p>
             </div>
             
-            {/* Pending Rounds Indicator */}
-            {pendingRounds && pendingRounds.length > 0 && !isRoundStarted && (
+            {/* Pending Rounds Indicator - Always visible when there are pending rounds */}
+            {pendingRounds && pendingRounds.length > 0 && (
               <button
                 onClick={() => setShowPendingRoundDialog(true)}
                 className="relative flex items-center gap-1.5 bg-destructive text-destructive-foreground px-2.5 py-1 rounded-full text-xs font-semibold shadow-md hover:bg-destructive/90 transition-colors animate-pulse"
