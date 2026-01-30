@@ -25,6 +25,7 @@ export interface Player {
   handicap: number; // General handicap for the round
   teamHandicap?: number; // Specific handicap for team bets (Carritos)
   profileId?: string; // Link to database profile
+  teeColor?: string; // Player's selected tee (white, blue, yellow, red). NULL = use round default.
 }
 
 export interface PlayerScore {

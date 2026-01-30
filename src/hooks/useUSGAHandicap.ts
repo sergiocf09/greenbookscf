@@ -6,6 +6,7 @@ export interface RoundDifferential {
   roundId: string;
   date: string;
   courseName: string;
+  teeColor: string;
   totalStrokes: number;
   coursePar: number;
   courseRating: number;
@@ -56,22 +57,22 @@ export const useUSGAHandicap = (profileId: string | null) => {
         };
       }
 
-      // Fetch completed rounds for this player with confirmed scores
+      // Fetch completed rounds for this player with their tee color
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
           id,
           round_id,
+          tee_color,
           rounds!inner (
             id,
             date,
             status,
             course_id,
+            tee_color,
             golf_courses!inner (
               id,
-              name,
-              course_rating,
-              slope_rating
+              name
             )
           )
         `)
@@ -96,6 +97,9 @@ export const useUSGAHandicap = (profileId: string | null) => {
       for (const rp of roundPlayers) {
         const round = rp.rounds as any;
         const course = round.golf_courses;
+        
+        // Determine tee color: player's specific tee or round default
+        const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
 
         // Get confirmed hole scores for this round_player
         const { data: holeScores, error: hsError } = await supabase
@@ -116,10 +120,20 @@ export const useUSGAHandicap = (profileId: string | null) => {
 
         if (chError || !courseHoles) continue;
 
+        // Get tee-specific rating and slope from course_tees table
+        const { data: teeData } = await supabase
+          .from('course_tees')
+          .select('course_rating, slope_rating')
+          .eq('course_id', course.id)
+          .eq('tee_color', playerTeeColor)
+          .maybeSingle();
+
         const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
         const coursePar = courseHoles.reduce((sum, h) => sum + h.par, 0);
-        const courseRating = course.course_rating || 72;
-        const slopeRating = course.slope_rating || 113;
+        
+        // Use tee-specific rating/slope or defaults
+        const courseRating = teeData?.course_rating || 72;
+        const slopeRating = teeData?.slope_rating || 113;
 
         const differential = calculateDifferential(totalStrokes, courseRating, slopeRating);
 
@@ -127,6 +141,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
           roundId: round.id,
           date: round.date,
           courseName: course.name,
+          teeColor: playerTeeColor,
           totalStrokes,
           coursePar,
           courseRating,
