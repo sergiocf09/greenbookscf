@@ -8,7 +8,9 @@ import {
   getPlayerBalance, 
   getBilateralBalance,
   groupSummariesByType,
-  BetSummary 
+  BetSummary,
+  getPressureEvolution,
+  getSkinsEvolution,
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult } from '@/lib/rayasCalculations';
@@ -49,6 +51,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -1406,6 +1413,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           onBetConfigChange={onBetConfigChange}
           basePlayerId={basePlayerId}
           confirmedHoles={confirmedHoles}
+          startingHole={startingHole}
         />
       )}
 
@@ -2063,6 +2071,7 @@ interface BilateralDetailProps {
   onBetConfigChange?: (config: BetConfig) => void;
   basePlayerId?: string;
   confirmedHoles: Set<number>;
+  startingHole?: 1 | 10;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -2083,6 +2092,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   onBetConfigChange,
   basePlayerId,
   confirmedHoles,
+  startingHole = 1,
 }) => {
   const [editingHandicap, setEditingHandicap] = useState(false);
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
@@ -3339,6 +3349,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // - Only one bet was opened (initial) AND that bet is tied (+0)
                         // If there are multiple lines (e.g., -1+1, 0+2), show the actual results
                         const isPressures = group.key === 'pressures';
+                        const isSkins = group.key === 'skins';
                         const pressureDesc = data.description || '';
                         // Count how many bet lines exist (each line is represented as a signed number)
                         const pressureLines = pressureDesc.match(/[+-]\d+/g) || [];
@@ -3347,44 +3358,154 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           (pressureLines.length === 0 || (pressureLines.length === 1 && pressureLines[0] === '+0'));
                         
                         const showSkinsShoe =
-                          group.key === 'skins' &&
+                          isSkins &&
                           typeof data.description === 'string' &&
                           data.description.includes('🥾');
 
+                        // Determine segment type for evolution tooltips
+                        const segmentType: 'front' | 'back' = segment.key.includes('front') ? 'front' : 'back';
+
+                        // Get evolution data for tooltips
+                        const pressureEvolution = isPressures 
+                          ? getPressureEvolution(player, rival, confirmedScores, course, betConfig, betConfig.bilateralHandicaps, startingHole)
+                          : null;
+                        const skinsEvolution = isSkins 
+                          ? getSkinsEvolution(player, rival, confirmedScores, course, betConfig, betConfig.bilateralHandicaps, startingHole)
+                          : null;
+
+                        const pressureSegmentData = pressureEvolution?.[segmentType];
+                        const skinsSegmentData = skinsEvolution?.[segmentType];
+
+                        // Content to wrap in Popover
+                        const segmentContent = (
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground w-16">{segment.label}</span>
+                            {/* Score comparison */}
+                            <div className="flex items-center gap-1.5 text-sm">
+                              {isPressures ? (
+                                <span className={cn(
+                                  'font-semibold cursor-pointer hover:underline',
+                                  data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                )}>
+                                  {isPressureEven ? 'Even' : (data.description || 'Even')}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className={cn(
+                                    'font-semibold min-w-[28px] text-center cursor-pointer hover:underline',
+                                    data.playerNet < data.rivalNet ? 'text-green-600' : 
+                                    data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                                  )}>
+                                    {isSkins ? `${data.playerNet}` : data.playerNet || '-'}
+                                  </span>
+                                  <span className="text-muted-foreground">vs</span>
+                                  <span className={cn(
+                                    'font-semibold min-w-[28px] text-center',
+                                    data.rivalNet < data.playerNet ? 'text-green-600' : 
+                                    data.rivalNet > data.playerNet ? 'text-destructive' : ''
+                                  )}>
+                                    {isSkins ? `${data.rivalNet}` : data.rivalNet || '-'}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-muted-foreground w-16">{segment.label}</span>
-                              {/* Score comparison */}
-                              <div className="flex items-center gap-1.5 text-sm">
-                                {group.key === 'pressures' ? (
-                                  <span className={cn(
-                                    'font-semibold',
-                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                  )}>
-                                    {isPressureEven ? 'Even' : (data.description || 'Even')}
-                                  </span>
-                                ) : (
-                                  <>
-                                    <span className={cn(
-                                      'font-semibold min-w-[28px] text-center',
-                                      data.playerNet < data.rivalNet ? 'text-green-600' : 
-                                      data.playerNet > data.rivalNet ? 'text-destructive' : ''
-                                    )}>
-                                      {group.key === 'skins' ? `${data.playerNet}` : data.playerNet || '-'}
-                                    </span>
-                                    <span className="text-muted-foreground">vs</span>
-                                    <span className={cn(
-                                      'font-semibold min-w-[28px] text-center',
-                                      data.rivalNet < data.playerNet ? 'text-green-600' : 
-                                      data.rivalNet > data.playerNet ? 'text-destructive' : ''
-                                    )}>
-                                      {group.key === 'skins' ? `${data.rivalNet}` : data.rivalNet || '-'}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
+                            {/* Pressures and Skins get Popover for hole-by-hole evolution */}
+                            {(isPressures || isSkins) ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="flex items-center gap-3 text-left">
+                                    {segmentContent}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-3" side="top">
+                                  {isPressures && pressureSegmentData && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between gap-4">
+                                        <span className="font-medium text-sm">Presiones {segment.label}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {player.initials} vs {rival.initials}
+                                        </span>
+                                      </div>
+                                      {/* Holes grid */}
+                                      <div className="overflow-x-auto">
+                                        <div className="flex gap-0.5 min-w-max">
+                                          {pressureSegmentData.holes.map((hole) => (
+                                            <div key={hole.holeNumber} className="flex flex-col items-center">
+                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                              <div className={cn(
+                                                'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                                hole.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                hole.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {hole.display || 'E'}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      {/* Final result */}
+                                      <div className="text-[10px] text-center pt-1 border-t border-border/50">
+                                        Final: <span className="font-bold">{pressureSegmentData.finalDisplay}</span>
+                                        {pressureSegmentData.hasCarry && <span className="ml-1 text-amber-600">(Carry)</span>}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {isSkins && skinsSegmentData && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between gap-4">
+                                        <span className="font-medium text-sm">Skins {segment.label}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {betConfig.skins.modality === 'sinAcumular' ? 'Sin acumular' : 'Acumulados'}
+                                        </span>
+                                      </div>
+                                      {/* Holes grid */}
+                                      <div className="overflow-x-auto">
+                                        <div className="flex gap-0.5 min-w-max">
+                                          {skinsSegmentData.holes.map((hole) => (
+                                            <div key={hole.holeNumber} className="flex flex-col items-center">
+                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                              <div className={cn(
+                                                'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                                hole.winner === 'A' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                hole.winner === 'B' ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                hole.accumulated > 0 ? 'bg-accent/30 text-accent-foreground' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {hole.winner === 'A' ? `+${hole.skinsWon}` :
+                                                 hole.winner === 'B' ? `-${hole.skinsWon}` :
+                                                 hole.accumulated > 0 ? `(${hole.accumulated})` : '•'}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      {/* Final result */}
+                                      <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
+                                        <span>{player.initials}: <span className="font-bold text-green-600">{skinsSegmentData.totalSkinsA}</span></span>
+                                        <span className="text-muted-foreground">vs</span>
+                                        <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegmentData.totalSkinsB}</span></span>
+                                        {skinsSegmentData.hasZapato && <span className="ml-1">🥾</span>}
+                                      </div>
+                                      {/* Legend */}
+                                      <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdido</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-accent/30"></span>Acum.</span>
+                                        <span>• = Empate</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              segmentContent
+                            )}
                             <span
                               className={cn(
                                 'text-base font-bold min-w-[55px] text-right',

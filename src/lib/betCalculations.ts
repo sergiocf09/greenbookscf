@@ -1616,3 +1616,209 @@ export const detectTiesNeedingResolution = (
   
   return ties;
 };
+
+// ==========================================
+// TOOLKIT CALCULATIONS - Hole-by-hole evolution for dashboard tooltips
+// ==========================================
+
+/**
+ * Pressure evolution per hole for a pair of players
+ * Shows the cumulative balance after each hole for all active lines
+ */
+export interface PressureHoleState {
+  holeNumber: number;
+  bets: number[]; // Array of cumulative balances for each pressure line
+  display: string; // e.g., "+1", "Even", "+2 +1", etc.
+}
+
+export interface PressureEvolution {
+  segment: 'front' | 'back';
+  holes: PressureHoleState[];
+  finalDisplay: string;
+  hasCarry: boolean;
+}
+
+export const getPressureEvolution = (
+  playerA: Player,
+  playerB: Player,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
+): { front: PressureEvolution; back: PressureEvolution } => {
+  const ranges = getSegmentHoleRanges(startingHole);
+  const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
+  const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+  
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  
+  const processNine = (holes: number[], segment: 'front' | 'back'): PressureEvolution => {
+    const states: PressureHoleState[] = [];
+    let bets: number[] = [0];
+    
+    holes.forEach((holeNum, holeIndex) => {
+      const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+      const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
+      
+      if (scoreA === null || scoreB === null) {
+        states.push({
+          holeNumber: holeNum,
+          bets: [...bets],
+          display: bets.map(b => b === 0 ? 'E' : (b > 0 ? '+' : '') + b).join(' '),
+        });
+        return;
+      }
+      
+      let holeResult = 0;
+      if (scoreA < scoreB) holeResult = 1;
+      else if (scoreB < scoreA) holeResult = -1;
+      
+      bets = bets.map(bal => bal + holeResult);
+      
+      const isLastHole = holeIndex === holes.length - 1;
+      if (!isLastHole) {
+        const lastBetBalance = bets[bets.length - 1];
+        if (Math.abs(lastBetBalance) >= 2) {
+          bets.push(0);
+        }
+      }
+      
+      const display = bets.map(b => b === 0 ? 'E' : (b > 0 ? '+' : '') + b).join(' ');
+      states.push({
+        holeNumber: holeNum,
+        bets: [...bets],
+        display,
+      });
+    });
+    
+    const finalBets = states.length > 0 ? states[states.length - 1].bets : [0];
+    const hasCarry = segment === 'front' && finalBets[0] === 0;
+    
+    return {
+      segment,
+      holes: states,
+      finalDisplay: finalBets.map(b => b === 0 ? 'Even' : (b > 0 ? '+' : '') + b).join(' '),
+      hasCarry,
+    };
+  };
+  
+  return {
+    front: processNine(frontHoles, 'front'),
+    back: processNine(backHoles, 'back'),
+  };
+};
+
+/**
+ * Skins evolution per hole for a pair of players
+ * Shows skins won/lost per hole, including accumulation
+ */
+export interface SkinsHoleState {
+  holeNumber: number;
+  accumulated: number; // Skins accumulated at this hole
+  winner: 'A' | 'B' | null; // Who won this hole
+  skinsWon: number; // How many skins were won (includes accumulated)
+  display: string; // e.g., "+2", "-1", "•" (tie), etc.
+}
+
+export interface SkinsEvolution {
+  segment: 'front' | 'back';
+  holes: SkinsHoleState[];
+  totalSkinsA: number;
+  totalSkinsB: number;
+  hasZapato: boolean;
+}
+
+export const getSkinsEvolution = (
+  playerA: Player,
+  playerB: Player,
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  config: BetConfig,
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
+): { front: SkinsEvolution; back: SkinsEvolution } => {
+  const ranges = getSegmentHoleRanges(startingHole);
+  const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
+  const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+  
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const isAccumulated = (config.skins.modality ?? 'acumulados') === 'acumulados';
+  
+  const processNine = (holes: number[], segment: 'front' | 'back'): SkinsEvolution => {
+    const states: SkinsHoleState[] = [];
+    let accumulated = 0;
+    let totalSkinsA = 0;
+    let totalSkinsB = 0;
+    let holesWonByA = 0;
+    let holesWonByB = 0;
+    
+    holes.forEach(holeNum => {
+      const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+      const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
+      
+      if (scoreA === null || scoreB === null) {
+        if (isAccumulated) accumulated++;
+        states.push({
+          holeNumber: holeNum,
+          accumulated,
+          winner: null,
+          skinsWon: 0,
+          display: '-',
+        });
+        return;
+      }
+      
+      if (isAccumulated) {
+        accumulated++;
+      }
+      
+      let winner: 'A' | 'B' | null = null;
+      let skinsWon = 0;
+      let display = '•'; // tie
+      
+      if (scoreA < scoreB) {
+        winner = 'A';
+        skinsWon = isAccumulated ? accumulated : 1;
+        totalSkinsA += skinsWon;
+        holesWonByA++;
+        display = '+' + skinsWon;
+        if (isAccumulated) accumulated = 0;
+      } else if (scoreB < scoreA) {
+        winner = 'B';
+        skinsWon = isAccumulated ? accumulated : 1;
+        totalSkinsB += skinsWon;
+        holesWonByB++;
+        display = '-' + skinsWon;
+        if (isAccumulated) accumulated = 0;
+      }
+      // Tie = accumulate continues
+      
+      states.push({
+        holeNumber: holeNum,
+        accumulated: isAccumulated ? accumulated : 0,
+        winner,
+        skinsWon,
+        display,
+      });
+    });
+    
+    // Zapato: one player has skins, the other has 0
+    const hasZapato = (holesWonByA > 0 && holesWonByB === 0) || (holesWonByB > 0 && holesWonByA === 0);
+    
+    return {
+      segment,
+      holes: states,
+      totalSkinsA,
+      totalSkinsB,
+      hasZapato,
+    };
+  };
+  
+  return {
+    front: processNine(frontHoles, 'front'),
+    back: processNine(backHoles, 'back'),
+  };
+};
+
+// Note: Uses existing getHoleScore function defined earlier in this file
