@@ -129,6 +129,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
     // When hole is won and player gains pata, we show rabbits with their initials
     // We do NOT show the winner's initials when someone else loses a pata
     
+    // For displaying multiple circles when multiple conejas are won
+    const circleCount = hd.isSetWonHole ? Math.min(hd.conejasWonCount || 1, 3) : 0;
+    
     return (
       <Popover key={hd.holeNumber}>
         <PopoverTrigger asChild>
@@ -138,17 +141,30 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
           >
             <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
             <div className={cn(
-              "w-6 h-6 flex items-center justify-center text-[8px]",
-              // Circle for won set holes
-              hd.isSetWonHole && "rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50",
-              // Regular styling for non-won holes
-              !hd.isSetWonHole && "rounded",
+              "relative flex items-center justify-center text-[8px]",
+              // Regular sizing and styling for non-won holes
+              !hd.isSetWonHole && "w-6 h-6 rounded",
               !hd.isConfirmed && !hd.isSetWonHole && "bg-muted/50",
               hd.isConfirmed && showTie && !hd.isSetWonHole && "bg-muted",
-              hd.hasPata && !hd.isSetWonHole && "bg-amber-100 dark:bg-amber-900/30"
+              hd.hasPata && !hd.isSetWonHole && "bg-amber-100 dark:bg-amber-900/30",
+              // For won holes, we use relative positioning for circles
+              hd.isSetWonHole && "w-7 h-7"
             )}>
+              {/* Concentric circles for multiple conejas won */}
+              {hd.isSetWonHole && circleCount >= 3 && (
+                <div className="absolute w-7 h-7 rounded-full border-2 border-green-500" />
+              )}
+              {hd.isSetWonHole && circleCount >= 2 && (
+                <div className="absolute w-5 h-5 rounded-full border-2 border-green-500" />
+              )}
+              {hd.isSetWonHole && (
+                <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 flex items-center justify-center" />
+              )}
               {showTie && <span className="text-muted-foreground font-bold">=</span>}
-              {hd.hasPata && !showTie && renderPatas(Math.min(hd.pataCount, 2))}
+              {hd.hasPata && !showTie && !hd.isSetWonHole && renderPatas(Math.min(hd.pataCount, 2))}
+              {hd.hasPata && !showTie && hd.isSetWonHole && (
+                <span className="absolute">{renderPatas(Math.min(hd.pataCount, 2))}</span>
+              )}
             </div>
             {/* Only show initials of the pata holder, not when a pata was lost to someone */}
             {(hd.hasPata && pataPlayer && !showTie) && (
@@ -279,22 +295,39 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                 </th>
               ))}
             </tr>
-            {/* Row 2: Column player initials with circle for winner */}
+            {/* Row 2: Column player initials with circles for winner (multiple if accumulated) */}
             <tr>
               <th className="p-1 border-b border-r border-border/50"></th>
-              {matrix.playerIds.map(pid => (
-                <th 
-                  key={pid} 
-                  className="p-1 border-b border-border/50 text-center min-w-[36px]"
-                >
-                  <div className={cn(
-                    "inline-flex items-center justify-center font-bold",
-                    matrix.winnerId === pid && "w-5 h-5 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 text-green-700"
-                  )}>
-                    {matrix.playerInitials[pid]}
-                  </div>
-                </th>
-              ))}
+              {matrix.playerIds.map(pid => {
+                const isWinner = matrix.winnerId === pid;
+                const circleCount = isWinner ? Math.min(matrix.conejasWonCount || 1, 3) : 0;
+                
+                return (
+                  <th 
+                    key={pid} 
+                    className="p-1 border-b border-border/50 text-center min-w-[36px]"
+                  >
+                    {isWinner && circleCount > 0 ? (
+                      <div className="relative inline-flex items-center justify-center">
+                        {/* Render concentric circles based on conejas won */}
+                        {circleCount >= 3 && (
+                          <div className="absolute w-9 h-9 rounded-full border-2 border-green-500" />
+                        )}
+                        {circleCount >= 2 && (
+                          <div className="absolute w-7 h-7 rounded-full border-2 border-green-500" />
+                        )}
+                        <div className="w-5 h-5 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-700 font-bold">
+                          {matrix.playerInitials[pid]}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center justify-center font-bold">
+                        {matrix.playerInitials[pid]}
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
