@@ -44,6 +44,7 @@ interface PlayerSetupProps {
   onAddGroupClick?: () => void;
   showAddGroupButton?: boolean;
   defaultTeeColor?: string; // Round's default tee color
+  courseId?: string | null; // Current course for Course Handicap calculation
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -56,6 +57,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   onAddGroupClick,
   showAddGroupButton = false,
   defaultTeeColor = 'white',
+  courseId = null,
 }) => {
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -67,6 +69,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     id: string;
     name: string;
     profileId: string | null;
+    teeColor: string;
   } | null>(null);
 
   // Resolve profile_id for a player (could be the current user or need lookup)
@@ -107,6 +110,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       id: player.id,
       name: player.name,
       profileId,
+      teeColor: player.teeColor || defaultTeeColor,
     });
     setUsgaDialogOpen(true);
   };
@@ -351,6 +355,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         profileId={selectedPlayerForUSGA?.profileId || null}
         playerName={selectedPlayerForUSGA?.name || ''}
         onApplyHandicap={handleApplyUSGAHandicap}
+        courseId={courseId}
+        teeColor={selectedPlayerForUSGA?.teeColor || defaultTeeColor}
       />
     </div>
   );
