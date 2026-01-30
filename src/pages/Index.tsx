@@ -241,6 +241,10 @@ const Index = () => {
 
   // Auto-restore the most recent pending round without showing the dialog
   useEffect(() => {
+    // Skip if already processing a restore (prevent infinite loops)
+    const restoreInProgress = sessionStorage.getItem('restore_round_id');
+    if (restoreInProgress) return;
+    
     // Skip if no pending rounds or already restoring
     if (!pendingRounds?.length) return;
     if (isRestoring) return;
