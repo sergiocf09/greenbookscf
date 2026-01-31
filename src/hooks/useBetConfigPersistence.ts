@@ -64,7 +64,59 @@ interface RoundBetConfig {
   carritosTeams?: CarritosTeamBet[];
   bilateralHandicaps?: BilateralHandicap[];
   betOverrides?: BetOverride[];
-  crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> rival IDs
+  crossGroupRivals?: Record<string, string[]>;
+  
+  // New bet types
+  putts?: {
+    enabled: boolean;
+    frontAmount: number;
+    backAmount: number;
+    totalAmount: number;
+  };
+  sideBets?: {
+    enabled: boolean;
+    bets: Array<{
+      id: string;
+      winners: string[];
+      losers: string[];
+      amount: number;
+      description?: string;
+      createdAt: string;
+    }>;
+  };
+  stableford?: {
+    enabled: boolean;
+    amount: number;
+    points: {
+      albatross: number;
+      eagle: number;
+      birdie: number;
+      par: number;
+      bogey: number;
+      doubleBogey: number;
+      tripleBogey: number;
+      quadrupleOrWorse: number;
+    };
+    playerHandicaps: Array<{
+      playerId: string;
+      handicap: number;
+    }>;
+  };
+  teamPressures?: {
+    enabled: boolean;
+    bets: Array<{
+      id: string;
+      teamA: [string, string];
+      teamB: [string, string];
+      frontAmount: number;
+      backAmount: number;
+      totalAmount: number;
+      openingThreshold: 3 | 4;
+      teamHandicaps: Record<string, number>;
+      scoringType: 'lowBall' | 'highBall' | 'combined';
+      enabled: boolean;
+    }>;
+  };
 }
 
 export const useBetConfigPersistence = ({
@@ -194,6 +246,42 @@ export const useBetConfigPersistence = ({
             newConfig.crossGroupRivals = dbConfig.crossGroupRivals;
           }
           
+          // Apply Putts config if exists
+          if (dbConfig.putts) {
+            newConfig.putts = {
+              enabled: dbConfig.putts.enabled ?? prev.putts.enabled,
+              frontAmount: dbConfig.putts.frontAmount ?? prev.putts.frontAmount,
+              backAmount: dbConfig.putts.backAmount ?? prev.putts.backAmount,
+              totalAmount: dbConfig.putts.totalAmount ?? prev.putts.totalAmount,
+            };
+          }
+          
+          // Apply Side Bets config if exists
+          if (dbConfig.sideBets) {
+            newConfig.sideBets = {
+              enabled: dbConfig.sideBets.enabled ?? prev.sideBets.enabled,
+              bets: dbConfig.sideBets.bets ?? prev.sideBets.bets,
+            };
+          }
+          
+          // Apply Stableford config if exists
+          if (dbConfig.stableford) {
+            newConfig.stableford = {
+              enabled: dbConfig.stableford.enabled ?? prev.stableford.enabled,
+              amount: dbConfig.stableford.amount ?? prev.stableford.amount,
+              points: dbConfig.stableford.points ?? prev.stableford.points,
+              playerHandicaps: dbConfig.stableford.playerHandicaps ?? prev.stableford.playerHandicaps,
+            };
+          }
+          
+          // Apply Team Pressures config if exists
+          if (dbConfig.teamPressures) {
+            newConfig.teamPressures = {
+              enabled: dbConfig.teamPressures.enabled ?? prev.teamPressures.enabled,
+              bets: dbConfig.teamPressures.bets ?? prev.teamPressures.bets,
+            };
+          }
+          
           return newConfig;
         });
         
@@ -256,6 +344,27 @@ export const useBetConfigPersistence = ({
         bilateralHandicaps: config.bilateralHandicaps || [],
         betOverrides: config.betOverrides || [],
         crossGroupRivals: config.crossGroupRivals || {},
+        // New bet types
+        putts: {
+          enabled: config.putts.enabled,
+          frontAmount: config.putts.frontAmount,
+          backAmount: config.putts.backAmount,
+          totalAmount: config.putts.totalAmount,
+        },
+        sideBets: {
+          enabled: config.sideBets.enabled,
+          bets: config.sideBets.bets,
+        },
+        stableford: {
+          enabled: config.stableford.enabled,
+          amount: config.stableford.amount,
+          points: config.stableford.points,
+          playerHandicaps: config.stableford.playerHandicaps,
+        },
+        teamPressures: {
+          enabled: config.teamPressures.enabled,
+          bets: config.teamPressures.bets,
+        },
       };
 
       const { error } = await supabase
