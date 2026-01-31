@@ -1462,6 +1462,98 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         
         if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
         
+        // Calculate evolution data for toolkit
+        const getTeamPressureEvolution = () => {
+          const { teamA, teamB, scoringType, teamHandicaps } = bet;
+          const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+          
+          const getHandicap = (playerId: string): number => {
+            return teamHandicaps?.[playerId] ?? 
+                   players.find(p => p.id === playerId)?.handicap ?? 0;
+          };
+          
+          const strokesMap = new Map<string, number[]>();
+          [...teamA, ...teamB].forEach(pid => {
+            strokesMap.set(pid, calculateStrokesPerHole(getHandicap(pid), course));
+          });
+          
+          const getNet = (playerId: string, holeNum: number): number | null => {
+            const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
+            if (!score || typeof score.strokes !== 'number') return null;
+            const strokes = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            return score.strokes - strokes;
+          };
+          
+          const getHoleResult = (holeNum: number): number | null => {
+            const netA1 = getNet(teamA[0], holeNum);
+            const netA2 = getNet(teamA[1], holeNum);
+            const netB1 = getNet(teamB[0], holeNum);
+            const netB2 = getNet(teamB[1], holeNum);
+            
+            if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
+            
+            let teamAPoints = 0;
+            let teamBPoints = 0;
+            
+            if (scoringType === 'lowBall' || scoringType === 'combined') {
+              const lowA = Math.min(netA1, netA2);
+              const lowB = Math.min(netB1, netB2);
+              if (lowA < lowB) teamAPoints++;
+              else if (lowB < lowA) teamBPoints++;
+            }
+            
+            if (scoringType === 'highBall' || scoringType === 'combined') {
+              const highA = Math.max(netA1, netA2);
+              const highB = Math.max(netB1, netB2);
+              if (highA < highB) teamAPoints++;
+              else if (highB < highA) teamBPoints++;
+            }
+            
+            if (teamAPoints > teamBPoints) return 1;
+            if (teamBPoints > teamAPoints) return -1;
+            return 0;
+          };
+          
+          const processNine = (startHole: number): Array<{ holeNumber: number; bets: number[]; display: string }> => {
+            const holes: Array<{ holeNumber: number; bets: number[]; display: string }> = [];
+            const bets: number[] = [0];
+            
+            for (let i = 0; i < 9; i++) {
+              const holeNum = startHole + i;
+              const result = getHoleResult(holeNum);
+              
+              if (result === null) {
+                holes.push({ holeNumber: holeNum, bets: [...bets], display: '-' });
+                continue;
+              }
+              
+              for (let j = 0; j < bets.length; j++) {
+                bets[j] += result;
+              }
+              
+              const display = bets.map(b => b === 0 ? 'E' : (b > 0 ? `+${b}` : `${b}`)).join(' ');
+              holes.push({ holeNumber: holeNum, bets: [...bets], display });
+              
+              const isLastHole = i === 8;
+              if (!isLastHole) {
+                const lastBet = bets[bets.length - 1];
+                if (Math.abs(lastBet) >= openingThreshold) {
+                  bets.push(0);
+                }
+              }
+            }
+            
+            return holes;
+          };
+          
+          const frontData = processNine(1);
+          const backData = processNine(10);
+          
+          return { frontData, backData, openingThreshold };
+        };
+        
+        const evolution = getTeamPressureEvolution();
+        
         return (
           <Card key={`team-pressure-${idx}`}>
             <CardHeader className="py-2">
@@ -1478,7 +1570,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1">
                   {(isBaseInTeamA ? teamAPlayers : teamBPlayers).map(p => (
@@ -1492,8 +1584,72 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 <span className="text-muted-foreground">
                   {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
                    bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
+                  <span className="ml-1 text-[10px]">(abre cada {evolution.openingThreshold})</span>
                 </span>
               </div>
+              
+              {/* Evolution Toolkit */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className="bg-muted/30 rounded-lg p-2 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <div className="text-[10px] text-center text-muted-foreground">
+                      Toca para ver evolución de presiones
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] max-h-[70vh] overflow-y-auto" side="top">
+                  <div className="space-y-3">
+                    <div className="font-semibold text-sm">Evolución Presiones Parejas</div>
+                    
+                    {/* Front 9 */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Front 9</div>
+                      <div className="flex gap-0.5">
+                        {evolution.frontData.map(h => (
+                          <div key={h.holeNumber} className="flex flex-col items-center">
+                            <span className="text-[8px] text-muted-foreground">{h.holeNumber}</span>
+                            <div className={cn(
+                              'w-8 h-6 flex items-center justify-center text-[8px] font-bold rounded',
+                              h.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                              h.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                              'bg-muted/50 text-muted-foreground'
+                            )}>
+                              {h.display}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Back 9 */}
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Back 9</div>
+                      <div className="flex gap-0.5">
+                        {evolution.backData.map(h => (
+                          <div key={h.holeNumber} className="flex flex-col items-center">
+                            <span className="text-[8px] text-muted-foreground">{h.holeNumber}</span>
+                            <div className={cn(
+                              'w-8 h-6 flex items-center justify-center text-[8px] font-bold rounded',
+                              h.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                              h.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                              'bg-muted/50 text-muted-foreground'
+                            )}>
+                              {h.display}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
+                      <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganando</span>
+                      <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdiendo</span>
+                      <span>E = Even</span>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </CardContent>
           </Card>
         );

@@ -1525,18 +1525,17 @@ export const calculateSideBets = (
   
   const summaries: BetSummary[] = [];
   
+  // Side Bets: Each winner gets bet.amount from EACH loser
+  // Example: $100 bet, 2 winners, 2 losers = each winner gets $200 total ($100 from each loser)
   config.sideBets.bets.forEach(bet => {
-    const perWinnerAmount = (bet.amount * bet.losers.length) / bet.winners.length;
-    
     bet.winners.forEach(winnerId => {
       bet.losers.forEach(loserId => {
-        const amountPerPair = bet.amount / bet.winners.length;
-        
+        // Each winner gets the full bet amount from each loser
         summaries.push({
           playerId: winnerId,
           vsPlayer: loserId,
           betType: 'Side Bet',
-          amount: amountPerPair,
+          amount: bet.amount,
           segment: 'total',
           description: bet.description || 'Side Bet',
         });
@@ -1544,7 +1543,7 @@ export const calculateSideBets = (
           playerId: loserId,
           vsPlayer: winnerId,
           betType: 'Side Bet',
-          amount: -amountPerPair,
+          amount: -bet.amount,
           segment: 'total',
           description: bet.description || 'Side Bet',
         });

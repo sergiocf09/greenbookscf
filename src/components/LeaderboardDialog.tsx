@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Player, PlayerScore, GolfCourse, PlayerGroup, BetConfig } from '@/types/golf';
+import { Player, PlayerScore, GolfCourse, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown } from 'lucide-react';
@@ -40,9 +40,10 @@ interface LeaderboardEntry {
   grossVsPar: number;
   netVsPar: number;
   holesPlayed: number;
+  stablefordPoints: number;
 }
 
-type SortMode = 'net' | 'gross';
+type SortMode = 'net' | 'gross' | 'stableford';
 
 // Format name as "FirstName L." where L is first initial of last name
 const formatPlayerName = (fullName: string): string => {
@@ -111,6 +112,22 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
       let parForPlayed = 0;
       let lastConfirmedHole = 0;
       let holesPlayed = 0;
+      let stablefordPoints = 0;
+      
+      // Get stableford config
+      const stablefordEnabled = betConfig?.stableford?.enabled ?? false;
+      const stablefordPlayerHandicaps = betConfig?.stableford?.playerHandicaps || [];
+      const stablefordPointsConfig = betConfig?.stableford?.points || DEFAULT_STABLEFORD_POINTS;
+      
+      // Stableford uses its own handicap if configured
+      let stablefordHandicap = effectiveHandicap;
+      if (stablefordEnabled) {
+        const stablefordOverride = stablefordPlayerHandicaps.find(pc => pc.playerId === player.id);
+        if (stablefordOverride !== undefined) {
+          stablefordHandicap = stablefordOverride.handicap;
+        }
+      }
+      const stablefordStrokesPerHole = calculateStrokesPerHole(stablefordHandicap, course);
 
       for (let h = 1; h <= 18; h++) {
         const score = playerScores.find(s => s.holeNumber === h);
@@ -126,6 +143,22 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
         parForPlayed += holePar;
         holesPlayed++;
         lastConfirmedHole = Math.max(lastConfirmedHole, h);
+        
+        // Calculate stableford points for this hole
+        if (stablefordEnabled) {
+          const stablefordStrokesReceived = stablefordStrokesPerHole[h - 1] || 0;
+          const stablefordNet = score.strokes - stablefordStrokesReceived;
+          const toPar = stablefordNet - holePar;
+          
+          if (toPar <= -3) stablefordPoints += stablefordPointsConfig.albatross;
+          else if (toPar === -2) stablefordPoints += stablefordPointsConfig.eagle;
+          else if (toPar === -1) stablefordPoints += stablefordPointsConfig.birdie;
+          else if (toPar === 0) stablefordPoints += stablefordPointsConfig.par;
+          else if (toPar === 1) stablefordPoints += stablefordPointsConfig.bogey;
+          else if (toPar === 2) stablefordPoints += stablefordPointsConfig.doubleBogey;
+          else if (toPar === 3) stablefordPoints += stablefordPointsConfig.tripleBogey;
+          else stablefordPoints += stablefordPointsConfig.quadrupleOrWorse;
+        }
       }
 
       entries.push({
@@ -137,6 +170,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
         grossVsPar: holesPlayed > 0 ? grossScore - parForPlayed : 0,
         netVsPar: holesPlayed > 0 ? netScore - parForPlayed : 0,
         holesPlayed,
+        stablefordPoints,
       });
     }
 
@@ -149,9 +183,14 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
       if (sortMode === 'gross') {
         return a.grossVsPar - b.grossVsPar;
       }
+      if (sortMode === 'stableford') {
+        return b.stablefordPoints - a.stablefordPoints; // Higher is better
+      }
       return a.netVsPar - b.netVsPar;
     });
   }, [players, playerGroups, scores, course, confirmedHoles, sortMode, betConfig]);
+
+  const stablefordEnabled = betConfig?.stableford?.enabled ?? false;
 
   const formatVsPar = (value: number): string => {
     if (value === 0) return 'E';
@@ -213,6 +252,20 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                       {sortMode === 'net' && <ArrowUpDown className="h-3 w-3" />}
                     </div>
                   </TableHead>
+                  {stablefordEnabled && (
+                    <TableHead 
+                      className={cn(
+                        "text-center w-10 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
+                        sortMode === 'stableford' && "bg-muted"
+                      )}
+                      onClick={() => handleSortClick('stableford')}
+                    >
+                      <div className="flex items-center justify-center gap-0.5">
+                        Stb
+                        {sortMode === 'stableford' && <ArrowUpDown className="h-3 w-3" />}
+                      </div>
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -246,6 +299,11 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                     <TableCell className={cn('text-center px-1 py-1', getVsParColor(entry.netVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.netVsPar) : '-'}
                     </TableCell>
+                    {stablefordEnabled && (
+                      <TableCell className="text-center px-1 py-1 font-bold text-amber-600">
+                        {entry.holesPlayed > 0 ? entry.stablefordPoints : '-'}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
