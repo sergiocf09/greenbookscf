@@ -13,9 +13,83 @@
  * - Skins accumulated from Front pay at Front rate when resolved in Back
  */
 
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride } from '@/types/golf';
 import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair } from './betCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
+
+/**
+ * Get effective segment configuration for a pair, respecting bilateral overrides
+ */
+const getEffectiveSegmentConfig = (
+  config: BetConfig,
+  segmentKey: 'skins' | 'units' | 'oyes' | 'medal',
+  playerAId: string,
+  playerBId: string
+): { enabled: boolean; frontValue: number; backValue: number } => {
+  const rayas = config.rayas;
+  const defaultFront = rayas?.frontValue ?? 25;
+  const defaultBack = rayas?.backValue ?? 50;
+  
+  // Get global segment config
+  const globalSeg = rayas?.segments?.[segmentKey];
+  const baseConfig = {
+    enabled: globalSeg?.enabled ?? true,
+    frontValue: globalSeg?.frontValue ?? defaultFront,
+    backValue: globalSeg?.backValue ?? defaultBack,
+  };
+  
+  // Check for bilateral overrides (from either player's perspective)
+  const overridesA = rayas?.bilateralOverrides?.[playerAId];
+  const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
+  
+  const overridesB = rayas?.bilateralOverrides?.[playerBId];
+  const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
+  
+  // If either player has disabled rayas with the other, the pair is disabled
+  if (overrideForB?.enabled === false || overrideForA?.enabled === false) {
+    return { ...baseConfig, enabled: false };
+  }
+  
+  // Check segment-level overrides from either player
+  const segOverrideFromA = overrideForB?.segments?.[segmentKey];
+  const segOverrideFromB = overrideForA?.segments?.[segmentKey];
+  
+  // If either player disabled this segment for the pair, disable it
+  if (segOverrideFromA?.enabled === false || segOverrideFromB?.enabled === false) {
+    return { ...baseConfig, enabled: false };
+  }
+  
+  // Use overridden values if specified (prefer A's override, fallback to B's)
+  return {
+    enabled: baseConfig.enabled,
+    frontValue: segOverrideFromA?.frontValue ?? segOverrideFromB?.frontValue ?? baseConfig.frontValue,
+    backValue: segOverrideFromA?.backValue ?? segOverrideFromB?.backValue ?? baseConfig.backValue,
+  };
+};
+
+/**
+ * Check if rayas bet is active between two players
+ */
+const isRayasActiveForPair = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): boolean => {
+  if (!config.rayas?.enabled) return false;
+  
+  const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
+  const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
+  
+  const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
+  const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
+  
+  // If either player has disabled rayas with the other
+  if (overrideForB?.enabled === false || overrideForA?.enabled === false) {
+    return false;
+  }
+  
+  return true;
+};
 
 // Detailed raya tracking for audit
 export interface RayaDetail {
@@ -141,187 +215,194 @@ const calculateRayasForPair = (
   let backRayasA = 0;
   let backRayasB = 0;
   
-  const frontValue = config.rayas.frontValue;
-  const backValue = config.rayas.backValue;
-  const medalTotalValue = config.rayas.medalTotalValue;
-  const useAccumulation = config.rayas.skinVariant === 'acumulados';
+  // Get effective segment configurations for this pair
+  const skinsConfig = getEffectiveSegmentConfig(config, 'skins', playerA.id, playerB.id);
+  const unitsConfig = getEffectiveSegmentConfig(config, 'units', playerA.id, playerB.id);
+  const medalConfig = getEffectiveSegmentConfig(config, 'medal', playerA.id, playerB.id);
+  
+  const medalTotalValue = config.rayas?.medalTotalValue ?? 25;
+  const useAccumulation = config.rayas?.skinVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
-  // Front 9 skins
-  let frontAccumulated = 0;
-  for (let holeNum = 1; holeNum <= 9; holeNum++) {
-    const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
-    const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
-    
-    if (netA === null || netB === null) {
-      if (useAccumulation) frontAccumulated++;
-      continue;
-    }
-    
-    if (useAccumulation) frontAccumulated++;
-    
-    if (netA < netB) {
-      const rayasWon = useAccumulation ? frontAccumulated : 1;
-      frontRayasA += rayasWon;
-      details.push({
-        source: 'skins',
-        segment: 'front',
-        holeNumber: holeNum,
-        description: `Skin H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
-        rayasCount: rayasWon,
-        valuePerRaya: frontValue,
-        appliedSegment: 'front',
-      });
-      if (useAccumulation) frontAccumulated = 0;
-    } else if (netB < netA) {
-      const rayasWon = useAccumulation ? frontAccumulated : 1;
-      frontRayasB += rayasWon;
-      details.push({
-        source: 'skins',
-        segment: 'front',
-        holeNumber: holeNum,
-        description: `Skin H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
-        rayasCount: -rayasWon, // Negative indicates B won
-        valuePerRaya: frontValue,
-        appliedSegment: 'front',
-      });
-      if (useAccumulation) frontAccumulated = 0;
-    }
-    // Tie = accumulate if enabled
-  }
-  
-  // Back 9 skins with potential carry from front
-  let backAccumulated = 0;
-  let pendingFrontCarry = useAccumulation ? frontAccumulated : 0;
-  
-  for (let holeNum = 10; holeNum <= 18; holeNum++) {
-    const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
-    const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
-    
-    if (netA === null || netB === null) {
-      if (useAccumulation) backAccumulated++;
-      continue;
-    }
-    
-    if (useAccumulation) backAccumulated++;
-    
-    if (netA < netB) {
-      // A wins this hole
-      // Back rayas
-      const backRayasWon = useAccumulation ? backAccumulated : 1;
-      backRayasA += backRayasWon;
-      details.push({
-        source: 'skins',
-        segment: 'back',
-        holeNumber: holeNum,
-        description: `Skin H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
-        rayasCount: backRayasWon,
-        valuePerRaya: backValue,
-        appliedSegment: 'back',
-      });
-      if (useAccumulation) backAccumulated = 0;
+  if (skinsConfig.enabled) {
+    // Front 9 skins
+    let frontAccumulated = 0;
+    for (let holeNum = 1; holeNum <= 9; holeNum++) {
+      const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
+      const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
       
-      // Carried front rayas (pay at front value)
-      if (pendingFrontCarry > 0) {
-        frontRayasA += pendingFrontCarry;
-        details.push({
-          source: 'skins',
-          segment: 'front',
-          holeNumber: holeNum,
-          description: `Carry del Front (${pendingFrontCarry} rayas)`,
-          rayasCount: pendingFrontCarry,
-          valuePerRaya: frontValue,
-          appliedSegment: 'front',
-        });
-        pendingFrontCarry = 0;
+      if (netA === null || netB === null) {
+        if (useAccumulation) frontAccumulated++;
+        continue;
       }
-    } else if (netB < netA) {
-      // B wins this hole
-      const backRayasWon = useAccumulation ? backAccumulated : 1;
-      backRayasB += backRayasWon;
-      details.push({
-        source: 'skins',
-        segment: 'back',
-        holeNumber: holeNum,
-        description: `Skin H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
-        rayasCount: -backRayasWon,
-        valuePerRaya: backValue,
-        appliedSegment: 'back',
-      });
-      if (useAccumulation) backAccumulated = 0;
       
-      // Carried front rayas
-      if (pendingFrontCarry > 0) {
-        frontRayasB += pendingFrontCarry;
+      if (useAccumulation) frontAccumulated++;
+      
+      if (netA < netB) {
+        const rayasWon = useAccumulation ? frontAccumulated : 1;
+        frontRayasA += rayasWon;
         details.push({
           source: 'skins',
           segment: 'front',
           holeNumber: holeNum,
-          description: `Carry del Front (${pendingFrontCarry} rayas)`,
-          rayasCount: -pendingFrontCarry,
-          valuePerRaya: frontValue,
+          description: `Skin H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
+          rayasCount: rayasWon,
+          valuePerRaya: skinsConfig.frontValue,
           appliedSegment: 'front',
         });
-        pendingFrontCarry = 0;
+        if (useAccumulation) frontAccumulated = 0;
+      } else if (netB < netA) {
+        const rayasWon = useAccumulation ? frontAccumulated : 1;
+        frontRayasB += rayasWon;
+        details.push({
+          source: 'skins',
+          segment: 'front',
+          holeNumber: holeNum,
+          description: `Skin H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
+          rayasCount: -rayasWon, // Negative indicates B won
+          valuePerRaya: skinsConfig.frontValue,
+          appliedSegment: 'front',
+        });
+        if (useAccumulation) frontAccumulated = 0;
+      }
+      // Tie = accumulate if enabled
+    }
+    
+    // Back 9 skins with potential carry from front
+    let backAccumulated = 0;
+    let pendingFrontCarry = useAccumulation ? frontAccumulated : 0;
+    
+    for (let holeNum = 10; holeNum <= 18; holeNum++) {
+      const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
+      const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
+      
+      if (netA === null || netB === null) {
+        if (useAccumulation) backAccumulated++;
+        continue;
+      }
+      
+      if (useAccumulation) backAccumulated++;
+      
+      if (netA < netB) {
+        // A wins this hole
+        // Back rayas
+        const backRayasWon = useAccumulation ? backAccumulated : 1;
+        backRayasA += backRayasWon;
+        details.push({
+          source: 'skins',
+          segment: 'back',
+          holeNumber: holeNum,
+          description: `Skin H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
+          rayasCount: backRayasWon,
+          valuePerRaya: skinsConfig.backValue,
+          appliedSegment: 'back',
+        });
+        if (useAccumulation) backAccumulated = 0;
+        
+        // Carried front rayas (pay at front value)
+        if (pendingFrontCarry > 0) {
+          frontRayasA += pendingFrontCarry;
+          details.push({
+            source: 'skins',
+            segment: 'front',
+            holeNumber: holeNum,
+            description: `Carry del Front (${pendingFrontCarry} rayas)`,
+            rayasCount: pendingFrontCarry,
+            valuePerRaya: skinsConfig.frontValue,
+            appliedSegment: 'front',
+          });
+          pendingFrontCarry = 0;
+        }
+      } else if (netB < netA) {
+        // B wins this hole
+        const backRayasWon = useAccumulation ? backAccumulated : 1;
+        backRayasB += backRayasWon;
+        details.push({
+          source: 'skins',
+          segment: 'back',
+          holeNumber: holeNum,
+          description: `Skin H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
+          rayasCount: -backRayasWon,
+          valuePerRaya: skinsConfig.backValue,
+          appliedSegment: 'back',
+        });
+        if (useAccumulation) backAccumulated = 0;
+        
+        // Carried front rayas
+        if (pendingFrontCarry > 0) {
+          frontRayasB += pendingFrontCarry;
+          details.push({
+            source: 'skins',
+            segment: 'front',
+            holeNumber: holeNum,
+            description: `Carry del Front (${pendingFrontCarry} rayas)`,
+            rayasCount: -pendingFrontCarry,
+            valuePerRaya: skinsConfig.frontValue,
+            appliedSegment: 'front',
+          });
+          pendingFrontCarry = 0;
+        }
       }
     }
   }
   
   // =========== 2. UNITS RAYAS ===========
-  // Count positive units per segment
-  const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front');
-  const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front');
-  const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back');
-  const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back');
-  
-  // Front units rayas
-  if (frontUnitsA > frontUnitsB) {
-    const diff = frontUnitsA - frontUnitsB;
-    frontRayasA += diff;
-    details.push({
-      source: 'units',
-      segment: 'front',
-      description: `Unidades Front (${frontUnitsA} vs ${frontUnitsB})`,
-      rayasCount: diff,
-      valuePerRaya: frontValue,
-      appliedSegment: 'front',
-    });
-  } else if (frontUnitsB > frontUnitsA) {
-    const diff = frontUnitsB - frontUnitsA;
-    frontRayasB += diff;
-    details.push({
-      source: 'units',
-      segment: 'front',
-      description: `Unidades Front (${frontUnitsA} vs ${frontUnitsB})`,
-      rayasCount: -diff,
-      valuePerRaya: frontValue,
-      appliedSegment: 'front',
-    });
-  }
-  
-  // Back units rayas
-  if (backUnitsA > backUnitsB) {
-    const diff = backUnitsA - backUnitsB;
-    backRayasA += diff;
-    details.push({
-      source: 'units',
-      segment: 'back',
-      description: `Unidades Back (${backUnitsA} vs ${backUnitsB})`,
-      rayasCount: diff,
-      valuePerRaya: backValue,
-      appliedSegment: 'back',
-    });
-  } else if (backUnitsB > backUnitsA) {
-    const diff = backUnitsB - backUnitsA;
-    backRayasB += diff;
-    details.push({
-      source: 'units',
-      segment: 'back',
-      description: `Unidades Back (${backUnitsA} vs ${backUnitsB})`,
-      rayasCount: -diff,
-      valuePerRaya: backValue,
-      appliedSegment: 'back',
-    });
+  if (unitsConfig.enabled) {
+    // Count positive units per segment
+    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front');
+    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front');
+    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back');
+    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back');
+    
+    // Front units rayas
+    if (frontUnitsA > frontUnitsB) {
+      const diff = frontUnitsA - frontUnitsB;
+      frontRayasA += diff;
+      details.push({
+        source: 'units',
+        segment: 'front',
+        description: `Unidades Front (${frontUnitsA} vs ${frontUnitsB})`,
+        rayasCount: diff,
+        valuePerRaya: unitsConfig.frontValue,
+        appliedSegment: 'front',
+      });
+    } else if (frontUnitsB > frontUnitsA) {
+      const diff = frontUnitsB - frontUnitsA;
+      frontRayasB += diff;
+      details.push({
+        source: 'units',
+        segment: 'front',
+        description: `Unidades Front (${frontUnitsA} vs ${frontUnitsB})`,
+        rayasCount: -diff,
+        valuePerRaya: unitsConfig.frontValue,
+        appliedSegment: 'front',
+      });
+    }
+    
+    // Back units rayas
+    if (backUnitsA > backUnitsB) {
+      const diff = backUnitsA - backUnitsB;
+      backRayasA += diff;
+      details.push({
+        source: 'units',
+        segment: 'back',
+        description: `Unidades Back (${backUnitsA} vs ${backUnitsB})`,
+        rayasCount: diff,
+        valuePerRaya: unitsConfig.backValue,
+        appliedSegment: 'back',
+      });
+    } else if (backUnitsB > backUnitsA) {
+      const diff = backUnitsB - backUnitsA;
+      backRayasB += diff;
+      details.push({
+        source: 'units',
+        segment: 'back',
+        description: `Unidades Back (${backUnitsA} vs ${backUnitsB})`,
+        rayasCount: -diff,
+        valuePerRaya: unitsConfig.backValue,
+        appliedSegment: 'back',
+      });
+    }
   }
   
   // =========== 3. OYES RAYAS (ABSOLUTE CLOSEST) ===========
@@ -330,91 +411,103 @@ const calculateRayasForPair = (
   // We'll calculate this in calculateOyesRayasForAll below
   
   // =========== 4. MEDAL RAYAS ===========
-  // Front medal
-  const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front');
-  const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front');
-  if (frontTotalA < frontTotalB) {
-    frontRayasA += 1;
-    details.push({
-      source: 'medal',
-      segment: 'front',
-      description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
-      rayasCount: 1,
-      valuePerRaya: frontValue,
-      appliedSegment: 'front',
-    });
-  } else if (frontTotalB < frontTotalA) {
-    frontRayasB += 1;
-    details.push({
-      source: 'medal',
-      segment: 'front',
-      description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
-      rayasCount: -1,
-      valuePerRaya: frontValue,
-      appliedSegment: 'front',
-    });
-  }
-  
-  // Back medal
-  const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back');
-  const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back');
-  if (backTotalA < backTotalB) {
-    backRayasA += 1;
-    details.push({
-      source: 'medal',
-      segment: 'back',
-      description: `Medal Back (${backTotalA} vs ${backTotalB})`,
-      rayasCount: 1,
-      valuePerRaya: backValue,
-      appliedSegment: 'back',
-    });
-  } else if (backTotalB < backTotalA) {
-    backRayasB += 1;
-    details.push({
-      source: 'medal',
-      segment: 'back',
-      description: `Medal Back (${backTotalA} vs ${backTotalB})`,
-      rayasCount: -1,
-      valuePerRaya: backValue,
-      appliedSegment: 'back',
-    });
-  }
-  
-  // Medal Total (additional raya)
-  const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total');
-  const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total');
   let medalTotalRayaWinner: string | null = null;
   let medalTotalAmountA = 0;
   
-  if (totalA < totalB) {
-    medalTotalRayaWinner = playerA.id;
-    medalTotalAmountA = medalTotalValue;
-    details.push({
-      source: 'medal',
-      segment: 'total',
-      description: `Medal Total (${totalA} vs ${totalB})`,
-      rayasCount: 1,
-      valuePerRaya: medalTotalValue,
-      appliedSegment: 'total',
-    });
-  } else if (totalB < totalA) {
-    medalTotalRayaWinner = playerB.id;
-    medalTotalAmountA = -medalTotalValue;
-    details.push({
-      source: 'medal',
-      segment: 'total',
-      description: `Medal Total (${totalA} vs ${totalB})`,
-      rayasCount: -1,
-      valuePerRaya: medalTotalValue,
-      appliedSegment: 'total',
-    });
+  if (medalConfig.enabled) {
+    // Front medal
+    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front');
+    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front');
+    if (frontTotalA < frontTotalB) {
+      frontRayasA += 1;
+      details.push({
+        source: 'medal',
+        segment: 'front',
+        description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
+        rayasCount: 1,
+        valuePerRaya: medalConfig.frontValue,
+        appliedSegment: 'front',
+      });
+    } else if (frontTotalB < frontTotalA) {
+      frontRayasB += 1;
+      details.push({
+        source: 'medal',
+        segment: 'front',
+        description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
+        rayasCount: -1,
+        valuePerRaya: medalConfig.frontValue,
+        appliedSegment: 'front',
+      });
+    }
+    
+    // Back medal
+    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back');
+    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back');
+    if (backTotalA < backTotalB) {
+      backRayasA += 1;
+      details.push({
+        source: 'medal',
+        segment: 'back',
+        description: `Medal Back (${backTotalA} vs ${backTotalB})`,
+        rayasCount: 1,
+        valuePerRaya: medalConfig.backValue,
+        appliedSegment: 'back',
+      });
+    } else if (backTotalB < backTotalA) {
+      backRayasB += 1;
+      details.push({
+        source: 'medal',
+        segment: 'back',
+        description: `Medal Back (${backTotalA} vs ${backTotalB})`,
+        rayasCount: -1,
+        valuePerRaya: medalConfig.backValue,
+        appliedSegment: 'back',
+      });
+    }
+    
+    // Medal Total (additional raya)
+    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total');
+    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total');
+    
+    if (totalA < totalB) {
+      medalTotalRayaWinner = playerA.id;
+      medalTotalAmountA = medalTotalValue;
+      details.push({
+        source: 'medal',
+        segment: 'total',
+        description: `Medal Total (${totalA} vs ${totalB})`,
+        rayasCount: 1,
+        valuePerRaya: medalTotalValue,
+        appliedSegment: 'total',
+      });
+    } else if (totalB < totalA) {
+      medalTotalRayaWinner = playerB.id;
+      medalTotalAmountA = -medalTotalValue;
+      details.push({
+        source: 'medal',
+        segment: 'total',
+        description: `Medal Total (${totalA} vs ${totalB})`,
+        rayasCount: -1,
+        valuePerRaya: medalTotalValue,
+        appliedSegment: 'total',
+      });
+    }
   }
   
-  // Calculate amounts
-  const frontNetRayas = frontRayasA - frontRayasB;
-  const backNetRayas = backRayasA - backRayasB;
-  const frontAmountA = frontNetRayas * frontValue;
-  const backAmountA = backNetRayas * backValue;
+  // Calculate amounts based on segment-specific values
+  // For each segment, we sum up the rayas * their specific values from the details
+  let frontAmountA = 0;
+  let backAmountA = 0;
+  
+  details.forEach(d => {
+    const amount = d.rayasCount * d.valuePerRaya;
+    if (d.appliedSegment === 'front') {
+      frontAmountA += amount;
+    } else if (d.appliedSegment === 'back') {
+      backAmountA += amount;
+    }
+  });
+  
   const totalAmountA = frontAmountA + backAmountA + medalTotalAmountA;
   
   return {
@@ -620,6 +713,11 @@ export const calculateRayasBets = (
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
+      
+      // Check if rayas is active for this pair (respects bilateral overrides)
+      if (!isRayasActiveForPair(config, playerA.id, playerB.id)) {
+        continue;
+      }
       
       const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
       

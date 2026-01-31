@@ -5,6 +5,7 @@ import { BetCategoryTabs } from './BetCategoryTabs';
 import { IndividualBets } from './bets/IndividualBets';
 import { ParejasBets } from './bets/ParejasBets';
 import { GrupalBets } from './bets/GrupalBets';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BetSetupProps {
   config: BetConfig;
@@ -17,6 +18,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   onChange,
   players,
 }) => {
+  const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
   const [expandedSections, setExpandedSections] = useState<string[]>(['medal']);
 
@@ -91,6 +93,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             expandedSections={expandedSections}
             onToggleSection={toggleSection}
             onUpdateBet={updateBet}
+            basePlayerId={profile?.id}
           />
         )}
         
