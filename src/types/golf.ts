@@ -226,6 +226,7 @@ export interface SideBet {
   losers: string[];   // Player IDs who pay
   amount: number;     // Amount per person
   description?: string;
+  holeNumber?: number; // Hole where the side bet was created
   createdAt: string;
 }
 

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Users, Star } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { 
   calculateConejaSetResults, 
@@ -770,6 +770,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return calculateStablefordPoints(players, scores, course, betConfig);
   }, [players, scores, course, betConfig]);
 
+  // State for collapsible occurrence details
+  const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
+  const [showPinguinosDetail, setShowPinguinosDetail] = useState(false);
+  
   // Check if any group bet is enabled
   const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || conejaResult || betConfig.stableford?.enabled;
 
@@ -789,143 +793,159 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
-        {/* Medal General - Show only winners */}
-        {medalGeneralResult && (
+        {/* Culebras - Simplified view with collapsible detail */}
+        {culebrasResult && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+              onClick={() => setShowCulebrasDetail(!showCulebrasDetail)}
+            >
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                <span className="font-medium text-sm">Medal General</span>
+                <span className="text-lg">{culebrasResult.emoji}</span>
+                <span className="font-medium text-sm">{culebrasResult.title}</span>
+                <span className="text-xs text-muted-foreground">({culebrasResult.totalCount})</span>
               </div>
-              <span className="text-xs text-muted-foreground">${medalGeneralResult.amount} c/u</span>
+              <div className="flex items-center gap-2">
+                {culebrasResult.loser && (
+                  <>
+                    <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" isLoggedInUser={culebrasResult.loser.playerId === basePlayerId} />
+                    <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
+                  </>
+                )}
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCulebrasDetail && "rotate-180")} />
+              </div>
             </div>
             
-            {medalGeneralResult.hasValidScores && medalGeneralResult.winners.length > 0 ? (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-500 text-sm">🏆</span>
-                    <div className="flex items-center gap-1">
-                      {medalGeneralResult.winners.map((winner, idx) => (
-                        <React.Fragment key={winner.playerId}>
-                          {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                          <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                          <span className="font-medium text-sm">{winner.name.split(' ')[0]}</span>
-                          <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-                  <span className="text-green-600 font-bold text-lg">
-                    +${medalGeneralResult.winners[0]?.amountWon || 0}
-                  </span>
+            {showCulebrasDetail && culebrasResult.loser && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Hoyos con culebras:</span>
+                  <span className="text-xs">${culebrasResult.valuePerOccurrence} c/u × {culebrasResult.totalCount} = ${culebrasResult.amountPerPlayer}/jug</span>
                 </div>
-                {medalGeneralResult.winners.length > 1 && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Empate - pot dividido entre {medalGeneralResult.winners.length} jugadores
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                Sin scores confirmados suficientes
+                <div className="flex flex-wrap gap-1.5">
+                  {culebrasResult.occurrences.map((occ, idx) => {
+                    const player = players.find(p => p.id === occ.playerId);
+                    return (
+                      <Popover key={idx}>
+                        <PopoverTrigger asChild>
+                          <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
+                            H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                          </span>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" side="top">
+                          <div className="text-xs">
+                            <p className="font-medium">{player?.name || 'Jugador'}</p>
+                            <p className="text-muted-foreground">Hoyo {occ.holeNumber} - 3+ putts</p>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* Culebras - Show count and loser */}
-        {culebrasResult && (
+        {/* Pinguinos - Simplified view with collapsible detail */}
+        {pinguinosResult && (
           <>
-            {medalGeneralResult && <div className="border-t border-border/50" />}
+            {culebrasResult && <div className="border-t border-border/50" />}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{culebrasResult.emoji}</span>
-                  <span className="font-medium text-sm">{culebrasResult.title}</span>
-                  <div className="w-8 h-8 border-2 border-destructive flex items-center justify-center">
-                    <span className="text-destructive font-bold text-lg">{culebrasResult.totalCount}</span>
-                  </div>
+              <div 
+                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+                onClick={() => setShowPinguinosDetail(!showPinguinosDetail)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{pinguinosResult.emoji}</span>
+                  <span className="font-medium text-sm">{pinguinosResult.title}</span>
+                  <span className="text-xs text-muted-foreground">({pinguinosResult.totalCount})</span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  ${culebrasResult.amountPerPlayer} c/jug
-                </span>
+                <div className="flex items-center gap-2">
+                  {pinguinosResult.loser && (
+                    <>
+                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" isLoggedInUser={pinguinosResult.loser.playerId === basePlayerId} />
+                      <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
+                    </>
+                  )}
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showPinguinosDetail && "rotate-180")} />
+                </div>
               </div>
               
-              {culebrasResult.loser ? (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-destructive text-xs">Paga:</span>
-                      <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" isLoggedInUser={culebrasResult.loser.playerId === basePlayerId} />
-                      <span className="font-medium text-sm">{culebrasResult.loser.name.split(' ')[0]}</span>
-                    </div>
-                    <span className="text-destructive font-bold text-lg">
-                      -${culebrasResult.loser.totalLoss}
-                    </span>
+              {showPinguinosDetail && pinguinosResult.loser && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">Hoyos con pingüinos:</span>
+                    <span className="text-xs">${pinguinosResult.valuePerOccurrence} c/u × {pinguinosResult.totalCount} = ${pinguinosResult.amountPerPlayer}/jug</span>
                   </div>
-                  {culebrasResult.occurrences.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {culebrasResult.occurrences.map((occ, idx) => (
-                        <span key={idx} className="text-xs bg-muted/50 px-1.5 py-0.5 rounded font-medium">
-                          {occ.playerInitial}-{occ.holeNumber}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                  Sin culebras registradas
+                  <div className="flex flex-wrap gap-1.5">
+                    {pinguinosResult.occurrences.map((occ, idx) => {
+                      const player = players.find(p => p.id === occ.playerId);
+                      return (
+                        <Popover key={idx}>
+                          <PopoverTrigger asChild>
+                            <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
+                              H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                            </span>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" side="top">
+                            <div className="text-xs">
+                              <p className="font-medium">{player?.name || 'Jugador'}</p>
+                              <p className="text-muted-foreground">Hoyo {occ.holeNumber} - +3 o más sobre par</p>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
           </>
         )}
 
-        {/* Pinguinos - Show count and loser */}
-        {pinguinosResult && (
+        {/* Medal General - Show only winners */}
+        {medalGeneralResult && (
           <>
-            {(medalGeneralResult || culebrasResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult) && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{pinguinosResult.emoji}</span>
-                  <span className="font-medium text-sm">{pinguinosResult.title}</span>
-                  <div className="w-8 h-8 border-2 border-destructive flex items-center justify-center">
-                    <span className="text-destructive font-bold text-lg">{pinguinosResult.totalCount}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  <span className="font-medium text-sm">Medal General</span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  ${pinguinosResult.amountPerPlayer} c/jug
-                </span>
+                <span className="text-xs text-muted-foreground">${medalGeneralResult.amount} c/u</span>
               </div>
               
-              {pinguinosResult.loser ? (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+              {medalGeneralResult.hasValidScores && medalGeneralResult.winners.length > 0 ? (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-destructive text-xs">Paga:</span>
-                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" isLoggedInUser={pinguinosResult.loser.playerId === basePlayerId} />
-                      <span className="font-medium text-sm">{pinguinosResult.loser.name.split(' ')[0]}</span>
+                      <span className="text-green-500 text-sm">🏆</span>
+                      <div className="flex items-center gap-1">
+                        {medalGeneralResult.winners.map((winner, idx) => (
+                          <React.Fragment key={winner.playerId}>
+                            {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                            <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                            <span className="font-medium text-sm">{winner.name.split(' ')[0]}</span>
+                            <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </div>
-                    <span className="text-destructive font-bold text-lg">
-                      -${pinguinosResult.loser.totalLoss}
+                    <span className="text-green-600 font-bold text-sm">
+                      +${medalGeneralResult.winners[0]?.amountWon || 0}
                     </span>
                   </div>
-                  {pinguinosResult.occurrences.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {pinguinosResult.occurrences.map((occ, idx) => (
-                        <span key={idx} className="text-xs bg-muted/50 px-1.5 py-0.5 rounded font-medium">
-                          {occ.playerInitial}-{occ.holeNumber}
-                        </span>
-                      ))}
-                    </div>
+                  {medalGeneralResult.winners.length > 1 && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Empate - pot dividido entre {medalGeneralResult.winners.length} jugadores
+                    </p>
                   )}
                 </div>
               ) : (
                 <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                  Sin pingüinos registrados
+                  Sin scores confirmados suficientes
                 </div>
               )}
             </div>
