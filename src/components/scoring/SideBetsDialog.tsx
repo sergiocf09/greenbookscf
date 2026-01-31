@@ -24,6 +24,7 @@ interface SideBetsDialogProps {
   onDeleteSideBet?: (betId: string) => void;
   trigger?: React.ReactNode;
   basePlayerId?: string;
+  currentHole?: number; // Current hole for new side bets
 }
 
 export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
@@ -34,6 +35,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   onDeleteSideBet,
   trigger,
   basePlayerId,
+  currentHole,
 }) => {
   const [open, setOpen] = useState(false);
   const [winners, setWinners] = useState<string[]>([]);
@@ -90,6 +92,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
         losers,
         amount,
         description: description.trim() || undefined,
+        holeNumber: currentHole,
         createdAt: new Date().toISOString(),
       };
       onAddSideBet(newBet);

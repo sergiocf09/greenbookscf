@@ -1503,10 +1503,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         
         if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
         
-        // Calculate evolution data for toolkit
-        const getTeamPressureEvolution = () => {
+        // Calculate hole-by-hole details like Carritos
+        const getTeamPressureHoleDetails = () => {
           const { teamA, teamB, scoringType, teamHandicaps } = bet;
-          const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
           
           const getHandicap = (playerId: string): number => {
             return teamHandicaps?.[playerId] ?? 
@@ -1518,179 +1517,334 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             strokesMap.set(pid, calculateStrokesPerHole(getHandicap(pid), course));
           });
           
-          const getNet = (playerId: string, holeNum: number): number | null => {
+          const getPlayerScore = (playerId: string, holeNum: number): { gross: number; hcp: number; net: number } | null => {
             const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
             if (!score || typeof score.strokes !== 'number') return null;
-            const strokes = strokesMap.get(playerId)?.[holeNum - 1] || 0;
-            return score.strokes - strokes;
+            const hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            return { gross: score.strokes, hcp, net: score.strokes - hcp };
           };
           
-          const getHoleResult = (holeNum: number): number | null => {
-            const netA1 = getNet(teamA[0], holeNum);
-            const netA2 = getNet(teamA[1], holeNum);
-            const netB1 = getNet(teamB[0], holeNum);
-            const netB2 = getNet(teamB[1], holeNum);
+          const getHoleDetail = (holeNum: number) => {
+            const a1 = getPlayerScore(teamA[0], holeNum);
+            const a2 = getPlayerScore(teamA[1], holeNum);
+            const b1 = getPlayerScore(teamB[0], holeNum);
+            const b2 = getPlayerScore(teamB[1], holeNum);
             
-            if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
+            if (!a1 || !a2 || !b1 || !b2) return null;
             
             let teamAPoints = 0;
             let teamBPoints = 0;
             
-            if (scoringType === 'lowBall' || scoringType === 'combined') {
-              const lowA = Math.min(netA1, netA2);
-              const lowB = Math.min(netB1, netB2);
+            const lowA = Math.min(a1.net, a2.net);
+            const lowB = Math.min(b1.net, b2.net);
+            const highA = Math.max(a1.net, a2.net);
+            const highB = Math.max(b1.net, b2.net);
+            
+            if (scoringType === 'lowBall') {
+              if (lowA < lowB) teamAPoints = 1;
+              else if (lowB < lowA) teamBPoints = 1;
+            } else if (scoringType === 'highBall') {
+              if (highA < highB) teamAPoints = 1;
+              else if (highB < highA) teamBPoints = 1;
+            } else {
+              // combined
               if (lowA < lowB) teamAPoints++;
               else if (lowB < lowA) teamBPoints++;
-            }
-            
-            if (scoringType === 'highBall' || scoringType === 'combined') {
-              const highA = Math.max(netA1, netA2);
-              const highB = Math.max(netB1, netB2);
               if (highA < highB) teamAPoints++;
               else if (highB < highA) teamBPoints++;
             }
             
-            if (teamAPoints > teamBPoints) return 1;
-            if (teamBPoints > teamAPoints) return -1;
-            return 0;
+            return {
+              holeNumber: holeNum,
+              a1, a2, b1, b2,
+              pointsA: teamAPoints,
+              pointsB: teamBPoints,
+              net: teamAPoints - teamBPoints,
+            };
           };
           
-          const processNine = (startHole: number): Array<{ holeNumber: number; bets: number[]; display: string }> => {
-            const holes: Array<{ holeNumber: number; bets: number[]; display: string }> = [];
-            const bets: number[] = [0];
-            
-            for (let i = 0; i < 9; i++) {
-              const holeNum = startHole + i;
-              const result = getHoleResult(holeNum);
-              
-              if (result === null) {
-                holes.push({ holeNumber: holeNum, bets: [...bets], display: '-' });
-                continue;
-              }
-              
-              for (let j = 0; j < bets.length; j++) {
-                bets[j] += result;
-              }
-              
-              const display = bets.map(b => b === 0 ? 'E' : (b > 0 ? `+${b}` : `${b}`)).join(' ');
-              holes.push({ holeNumber: holeNum, bets: [...bets], display });
-              
-              const isLastHole = i === 8;
-              if (!isLastHole) {
-                const lastBet = bets[bets.length - 1];
-                if (Math.abs(lastBet) >= openingThreshold) {
-                  bets.push(0);
-                }
-              }
-            }
-            
-            return holes;
-          };
+          const frontDetails = Array.from({ length: 9 }, (_, i) => getHoleDetail(i + 1));
+          const backDetails = Array.from({ length: 9 }, (_, i) => getHoleDetail(i + 10));
           
-          const frontData = processNine(1);
-          const backData = processNine(10);
+          // Calculate running balances
+          let runningFront = 0;
+          let runningBack = 0;
+          const frontBalances = frontDetails.map(d => {
+            if (d) runningFront += d.net;
+            return runningFront;
+          });
+          const backBalances = backDetails.map(d => {
+            if (d) runningBack += d.net;
+            return runningBack;
+          });
           
-          return { frontData, backData, openingThreshold };
+          return { frontDetails, backDetails, frontBalances, backBalances };
         };
         
-        const evolution = getTeamPressureEvolution();
+        const holeDetails = getTeamPressureHoleDetails();
+        const displayTeamAPlayers = isBaseInTeamA ? teamAPlayers : teamBPlayers;
+        const displayTeamBPlayers = isBaseInTeamA ? teamBPlayers : teamAPlayers;
+        
+        // Invert details if base is in team B
+        const displayFrontDetails = isBaseInTeamA 
+          ? holeDetails.frontDetails 
+          : holeDetails.frontDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA } : null);
+        const displayBackDetails = isBaseInTeamA 
+          ? holeDetails.backDetails 
+          : holeDetails.backDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA } : null);
+        const displayFrontBalances = isBaseInTeamA 
+          ? holeDetails.frontBalances 
+          : holeDetails.frontBalances.map(b => -b);
+        const displayBackBalances = isBaseInTeamA 
+          ? holeDetails.backBalances 
+          : holeDetails.backBalances.map(b => -b);
+        
+        const frontTotal = displayFrontBalances[8] || 0;
+        const backTotal = displayBackBalances[8] || 0;
+        
+        const cancelTeamPressure = () => {
+          if (!onBetConfigChange) return;
+          const bets = betConfig.teamPressures?.bets || [];
+          onBetConfigChange({
+            ...betConfig,
+            teamPressures: {
+              ...betConfig.teamPressures,
+              bets: bets.map(b => b.id === bet.id ? { ...b, enabled: false } : b),
+            },
+          });
+        };
         
         return (
-          <Card key={`team-pressure-${idx}`}>
-            <CardHeader className="py-2">
+          <Card key={`team-pressure-${idx}`} className="border-accent/50">
+            <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center justify-between">
-                <span className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Presiones Parejas {idx > 0 ? idx + 1 : ''}
-                </span>
-                <span className={cn(
-                  'text-lg font-bold',
-                  baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                )}>
-                  {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
-                </span>
+                </div>
+                {onBetConfigChange && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={cancelTeamPressure}
+                    title="Cancelar Presiones"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1">
-                  {(isBaseInTeamA ? teamAPlayers : teamBPlayers).map(p => (
-                    <PlayerAvatar key={p.id} initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayer?.id} />
-                  ))}
-                  <span className="text-muted-foreground mx-2">vs</span>
-                  {(isBaseInTeamA ? teamBPlayers : teamAPlayers).map(p => (
-                    <PlayerAvatar key={p.id} initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayer?.id} />
-                  ))}
-                </div>
-                <span className="text-muted-foreground">
-                  {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
-                   bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
-                  <span className="ml-1 text-[10px]">(abre cada {evolution.openingThreshold})</span>
-                </span>
-              </div>
-              
-              {/* Evolution Toolkit */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="bg-muted/30 rounded-lg p-2 cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="text-[10px] text-center text-muted-foreground">
-                      Toca para ver evolución de presiones
+            <CardContent className="pt-0">
+              <Collapsible>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                      <span className="truncate">
+                        {displayTeamAPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+                        {'  vs  '}
+                        {displayTeamBPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+                      </span>
                     </div>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
+                       bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
+                      <span className="ml-1">(abre cada {bet.openingThreshold})</span>
+                    </p>
                   </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-[320px] max-h-[70vh] overflow-y-auto" side="top">
-                  <div className="space-y-3">
-                    <div className="font-semibold text-sm">Evolución Presiones Parejas</div>
-                    
-                    {/* Front 9 */}
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-[11px] tabular-nums">
+                        <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          F9 {frontTotal >= 0 ? '+' : ''}{frontTotal}
+                        </span>
+                        <span className="text-muted-foreground"> · </span>
+                        <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          B9 {backTotal >= 0 ? '+' : ''}{backTotal}
+                        </span>
+                      </div>
+                      <div className={cn('text-sm font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
+                      </div>
+                    </div>
+
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <ChevronDown className="h-4 w-4" />
+                        <span className="sr-only">Ver detalle</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                </div>
+
+                <CollapsibleContent className="mt-3 space-y-3">
+                  {/* Teams display */}
+                  <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Front 9</div>
-                      <div className="flex gap-0.5">
-                        {evolution.frontData.map(h => (
-                          <div key={h.holeNumber} className="flex flex-col items-center">
-                            <span className="text-[8px] text-muted-foreground">{h.holeNumber}</span>
-                            <div className={cn(
-                              'w-8 h-6 flex items-center justify-center text-[8px] font-bold rounded',
-                              h.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
-                              h.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
-                              'bg-muted/50 text-muted-foreground'
-                            )}>
-                              {h.display}
-                            </div>
-                          </div>
+                      <div className="flex items-center gap-1">
+                        {displayTeamAPlayers.map((p) => (
+                          <PlayerAvatar
+                            key={p.id}
+                            initials={getPlayerAbbr(p)}
+                            background={p.color}
+                            size="md"
+                            isLoggedInUser={p.id === basePlayer?.id || p.profileId === basePlayer?.id}
+                          />
                         ))}
                       </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">Tu equipo</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {displayTeamBPlayers.map((p) => (
+                          <PlayerAvatar
+                            key={p.id}
+                            initials={getPlayerAbbr(p)}
+                            background={p.color}
+                            size="sm"
+                            isLoggedInUser={p.id === basePlayer?.id || p.profileId === basePlayer?.id}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
+                    </div>
+                  </div>
+                  
+                  {/* Hole by hole grid with tooltips */}
+                  <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+                    <div className="text-[10px] text-muted-foreground text-center">
+                      Toca/hover en un hoyo para ver el desglose
+                    </div>
+                    
+                    {/* Front 9 */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Front 9</span>
+                        <span className={cn('text-xs font-bold tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {frontTotal >= 0 ? '+' : ''}{frontTotal} pts
+                        </span>
+                      </div>
+                      <TooltipProvider>
+                        <div className="grid grid-cols-9 gap-1">
+                          {displayFrontDetails.map((detail, idx) => {
+                            const holeNum = idx + 1;
+                            const runningBalance = displayFrontBalances[idx];
+                            
+                            const pill = (
+                              <div
+                                className={cn(
+                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                                  detail === null ? 'border-border text-muted-foreground' :
+                                  detail.net > 0 ? 'border-green-600/40 text-green-600' :
+                                  detail.net < 0 ? 'border-destructive/40 text-destructive' :
+                                  'border-border text-muted-foreground'
+                                )}
+                              >
+                                <span className={cn('text-[9px] opacity-80', detail === null && 'text-muted-foreground')}>{holeNum}</span>
+                                <span className={cn('text-[11px] font-semibold tabular-nums', detail === null && 'text-muted-foreground')}>
+                                  {detail === null ? '–' : runningBalance > 0 ? `+${runningBalance}` : `${runningBalance}`}
+                                </span>
+                              </div>
+                            );
+                            
+                            if (!detail) return <div key={holeNum}>{pill}</div>;
+                            
+                            return (
+                              <Tooltip key={holeNum}>
+                                <TooltipTrigger asChild>{pill}</TooltipTrigger>
+                                <TooltipContent side="top" className="w-72">
+                                  <div className="text-xs space-y-1">
+                                    <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
+                                    <div className="grid grid-cols-2 gap-x-3">
+                                      <div>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
+                                        <p className="flex justify-between"><span>{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a1.net} {detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex justify-between"><span>{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a2.net} {detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
+                                        <p className="flex justify-between"><span>{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b1.net} {detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex justify-between"><span>{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b2.net} {detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
+                                      Acumulado: {runningBalance >= 0 ? '+' : ''}{runningBalance}
+                                    </p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
                     </div>
                     
                     {/* Back 9 */}
-                    <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Back 9</div>
-                      <div className="flex gap-0.5">
-                        {evolution.backData.map(h => (
-                          <div key={h.holeNumber} className="flex flex-col items-center">
-                            <span className="text-[8px] text-muted-foreground">{h.holeNumber}</span>
-                            <div className={cn(
-                              'w-8 h-6 flex items-center justify-center text-[8px] font-bold rounded',
-                              h.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
-                              h.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
-                              'bg-muted/50 text-muted-foreground'
-                            )}>
-                              {h.display}
-                            </div>
-                          </div>
-                        ))}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Back 9</span>
+                        <span className={cn('text-xs font-bold tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {backTotal >= 0 ? '+' : ''}{backTotal} pts
+                        </span>
                       </div>
-                    </div>
-                    
-                    {/* Legend */}
-                    <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
-                      <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganando</span>
-                      <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdiendo</span>
-                      <span>E = Even</span>
+                      <TooltipProvider>
+                        <div className="grid grid-cols-9 gap-1">
+                          {displayBackDetails.map((detail, idx) => {
+                            const holeNum = idx + 10;
+                            const runningBalance = displayBackBalances[idx];
+                            
+                            const pill = (
+                              <div
+                                className={cn(
+                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                                  detail === null ? 'border-border text-muted-foreground' :
+                                  detail.net > 0 ? 'border-green-600/40 text-green-600' :
+                                  detail.net < 0 ? 'border-destructive/40 text-destructive' :
+                                  'border-border text-muted-foreground'
+                                )}
+                              >
+                                <span className={cn('text-[9px] opacity-80', detail === null && 'text-muted-foreground')}>{holeNum}</span>
+                                <span className={cn('text-[11px] font-semibold tabular-nums', detail === null && 'text-muted-foreground')}>
+                                  {detail === null ? '–' : runningBalance > 0 ? `+${runningBalance}` : `${runningBalance}`}
+                                </span>
+                              </div>
+                            );
+                            
+                            if (!detail) return <div key={holeNum}>{pill}</div>;
+                            
+                            return (
+                              <Tooltip key={holeNum}>
+                                <TooltipTrigger asChild>{pill}</TooltipTrigger>
+                                <TooltipContent side="top" className="w-72">
+                                  <div className="text-xs space-y-1">
+                                    <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
+                                    <div className="grid grid-cols-2 gap-x-3">
+                                      <div>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
+                                        <p className="flex justify-between"><span>{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a1.net} {detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex justify-between"><span>{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a2.net} {detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
+                                        <p className="flex justify-between"><span>{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b1.net} {detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex justify-between"><span>{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b2.net} {detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
+                                      Acumulado: {runningBalance >= 0 ? '+' : ''}{runningBalance}
+                                    </p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         );
@@ -3022,7 +3176,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Side Bets - Direct money between players
+    // Side Bets - Direct money between players (with hole info)
     if (betConfig.sideBets?.enabled && betConfig.sideBets.bets?.length > 0) {
       const sideBetTotal = groupedSummaries['Side Bet']?.total || 0;
       
@@ -3039,7 +3193,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           label: 'Side Bets',
           configKey: 'sideBets',
           segments: relevantBets.map((bet, i) => ({
-            label: bet.description || `Side Bet ${i + 1}`,
+            label: bet.holeNumber ? `H${bet.holeNumber}: ${bet.description || `Side Bet ${i + 1}`}` : (bet.description || `Side Bet ${i + 1}`),
             key: `sidebet_${bet.id}`,
           })),
           getTotal: () => sideBetTotal,
@@ -3055,15 +3209,84 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               playerNet: isWinner ? 1 : 0,
               rivalNet: isWinner ? 0 : 1,
               amount,
-              description: bet.description || 'Side Bet',
+              description: bet.holeNumber 
+                ? `Hoyo ${bet.holeNumber}${bet.description ? `: ${bet.description}` : ''}` 
+                : (bet.description || 'Side Bet'),
             };
           },
         });
       }
     }
     
-    // NOTE: Stableford and Team Pressures are NOT shown in bilateral view
-    // They are displayed in GroupBetsCard and TeamPressuresCard respectively
+    // Stableford - Group bet shown in bilateral view (like Medal General)
+    if (betConfig.stableford?.enabled && allPlayersComplete) {
+      const points = betConfig.stableford.points || {
+        albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: -1, quadrupleOrWorse: -2
+      };
+      const playerHandicaps = betConfig.stableford.playerHandicaps || [];
+      const amount = betConfig.stableford.amount || 100;
+      
+      const calcPoints = (p: Player): number => {
+        const pScores = confirmedScores.get(p.id) || [];
+        const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
+        const strokesPerHole = calculateStrokesPerHole(hcp, course);
+        
+        return pScores.reduce((sum, s) => {
+          if (!s.confirmed || !s.strokes) return sum;
+          const holePar = course.holes[s.holeNumber - 1]?.par || 4;
+          const received = strokesPerHole[s.holeNumber - 1] || 0;
+          const netScore = s.strokes - received;
+          const toPar = netScore - holePar;
+          
+          if (toPar <= -3) return sum + points.albatross;
+          if (toPar === -2) return sum + points.eagle;
+          if (toPar === -1) return sum + points.birdie;
+          if (toPar === 0) return sum + points.par;
+          if (toPar === 1) return sum + points.bogey;
+          if (toPar === 2) return sum + points.doubleBogey;
+          if (toPar === 3) return sum + points.tripleBogey;
+          return sum + points.quadrupleOrWorse;
+        }, 0);
+      };
+      
+      const playerPoints = calcPoints(player);
+      const rivalPoints = calcPoints(rival);
+      
+      // Calculate all players' points for proper group payout
+      const allPoints = allPlayers.map(p => ({ playerId: p.id, points: calcPoints(p) }));
+      const maxPoints = Math.max(...allPoints.map(p => p.points));
+      const winnerIds = new Set(allPoints.filter(p => p.points === maxPoints).map(p => p.playerId));
+      const winnersCount = winnerIds.size;
+      const losersCount = allPoints.length - winnersCount;
+      
+      if (losersCount > 0) {
+        const amountFromLoserToWinner = amount / winnersCount;
+        const isPlayerWinner = winnerIds.has(player.id);
+        const isRivalWinner = winnerIds.has(rival.id);
+        
+        const stablefordAmount = 
+          isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
+          !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
+        
+        if (stablefordAmount !== 0) {
+          groups.push({
+            key: 'stableford',
+            label: 'Stableford',
+            configKey: 'stableford',
+            segments: [],
+            getTotal: () => stablefordAmount,
+            getSegmentData: () => ({
+              playerNet: playerPoints,
+              rivalNet: rivalPoints,
+              amount: stablefordAmount,
+              description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
+            }),
+          });
+        }
+      }
+    }
+    
+    // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
   }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);

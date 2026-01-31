@@ -178,6 +178,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             onUpdateSideBet={onUpdateSideBet}
             onDeleteSideBet={onDeleteSideBet}
             basePlayerId={profile?.id}
+            currentHole={currentHole}
             trigger={
               <Button variant="outline" size="icon" className="shrink-0">
                 <DollarSign className="h-4 w-4" />
