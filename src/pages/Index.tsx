@@ -168,6 +168,7 @@ const Index = () => {
     getStrokesForLocalPair,
     setStrokesForLocalPair,
     initializeHandicapsForNewPlayer,
+    getBilateralHandicapsForEngine,
   } = useRoundHandicaps({
     roundId: roundState.id,
     players,
@@ -1610,6 +1611,7 @@ const Index = () => {
               startingHole={startingHole}
               playerGroups={playerGroups}
               getStrokesForLocalPair={getStrokesForLocalPair}
+              getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
             />
             
             {/* Close Scorecard Button */}

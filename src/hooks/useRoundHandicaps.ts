@@ -379,6 +379,62 @@ export const useRoundHandicaps = ({
     [roundId, handicaps]
   );
 
+  /**
+   * Convert round_handicaps data to BilateralHandicap[] format for the calculation engine.
+   * Uses local player IDs (not round_player_ids).
+   * 
+   * The engine expects absolute handicaps (playerAHandicap, playerBHandicap).
+   * We convert strokes_given_by_a to:
+   * - If A gives strokes to B: A has handicap 0, B has handicap = |strokes|
+   * - If A receives strokes from B: A has handicap = |strokes|, B has handicap 0
+   */
+  const getBilateralHandicapsForEngine = useCallback((): { 
+    playerAId: string; 
+    playerBId: string; 
+    playerAHandicap: number; 
+    playerBHandicap: number; 
+  }[] => {
+    const result: { 
+      playerAId: string; 
+      playerBId: string; 
+      playerAHandicap: number; 
+      playerBHandicap: number; 
+    }[] = [];
+    
+    handicaps.forEach((h) => {
+      // Convert round_player_ids back to local ids
+      const localAId = players.find(p => roundPlayerIds.get(p.id) === h.playerAId)?.id;
+      const localBId = players.find(p => roundPlayerIds.get(p.id) === h.playerBId)?.id;
+      
+      if (!localAId || !localBId) return;
+      
+      // strokes_given_by_a > 0 means A gives strokes TO B (A is stronger)
+      // strokes_given_by_a < 0 means A receives strokes FROM B (B is stronger)
+      // For the engine: the player who RECEIVES strokes has the higher "handicap"
+      const strokes = h.strokesGivenByA;
+      
+      if (strokes >= 0) {
+        // A gives strokes to B → B is weaker → B gets handicap = strokes, A = 0
+        result.push({
+          playerAId: localAId,
+          playerBId: localBId,
+          playerAHandicap: 0,
+          playerBHandicap: strokes,
+        });
+      } else {
+        // A receives strokes from B → A is weaker → A gets handicap = |strokes|, B = 0
+        result.push({
+          playerAId: localAId,
+          playerBId: localBId,
+          playerAHandicap: Math.abs(strokes),
+          playerBHandicap: 0,
+        });
+      }
+    });
+    
+    return result;
+  }, [handicaps, players, roundPlayerIds]);
+
   return {
     handicaps,
     isLoading,
@@ -392,5 +448,6 @@ export const useRoundHandicaps = ({
     deleteHandicapPair,
     toRoundPlayerId,
     initializeHandicapsForNewPlayer,
+    getBilateralHandicapsForEngine,
   };
 };

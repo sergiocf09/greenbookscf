@@ -72,6 +72,7 @@ interface BetDashboardProps {
   startingHole?: 1 | 10;
   playerGroups?: PlayerGroup[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+  getBilateralHandicapsForEngine?: () => BilateralHandicap[];
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -85,6 +86,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   startingHole = 1,
   playerGroups = [],
   getStrokesForLocalPair,
+  getBilateralHandicapsForEngine,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -177,10 +179,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return getAllPlayersFromAllGroups(players, playerGroups);
   }, [players, playerGroups]);
 
+  // Merge bilateral handicaps from matrix (source of truth) with betConfig
+  const effectiveBetConfig = useMemo(() => {
+    const matrixHandicaps = getBilateralHandicapsForEngine?.() ?? [];
+    // If we have matrix handicaps, use them; otherwise fall back to betConfig
+    return {
+      ...betConfig,
+      bilateralHandicaps: matrixHandicaps.length > 0 ? matrixHandicaps : betConfig.bilateralHandicaps,
+    };
+  }, [betConfig, getBilateralHandicapsForEngine]);
+
   // Calculate all bets using only confirmed scores (all groups). UI will filter per mode.
   const betSummaries = useMemo(
-    () => calculateAllBets(allPlayersForCalculations, confirmedScores, betConfig, course, startingHole, confirmedHoles),
-    [allPlayersForCalculations, confirmedScores, betConfig, course, startingHole, confirmedHoles]
+    () => calculateAllBets(allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles),
+    [allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles]
   );
   
   // Calculate ALL Carritos results (primary + additional teams)
@@ -735,14 +747,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
     const isRayasDisabled = isBetDisabledForPair('Rayas', ['rayas']);
     
-    if (betConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabled) {
+    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabled) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
         confirmedScores,
-        betConfig,
+        effectiveBetConfig,
         course,
-        betConfig.bilateralHandicaps,
+        effectiveBetConfig.bilateralHandicaps,
         allPlayersForCalculations
       );
       
@@ -1409,6 +1421,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
           onUpdateBilateralHandicap={updateBilateralHandicap}
           betConfig={betConfig}
+          effectiveBetConfig={effectiveBetConfig}
           confirmedScores={confirmedScores}
           course={course}
           allScores={scores}
@@ -1436,7 +1449,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       <GroupBetsCard
         players={players}
         scores={confirmedScores}
-        betConfig={betConfig}
+        betConfig={effectiveBetConfig}
         course={course}
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
         confirmedHoles={confirmedHoles}
@@ -2068,6 +2081,7 @@ interface BilateralDetailProps {
   bilateralHandicap?: BilateralHandicap;
   onUpdateBilateralHandicap: (handicap: BilateralHandicap) => void;
   betConfig: BetConfig;
+  effectiveBetConfig: BetConfig;
   confirmedScores: Map<string, PlayerScore[]>;
   course: GolfCourse;
   allScores: Map<string, PlayerScore[]>;
@@ -2090,6 +2104,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   bilateralHandicap,
   onUpdateBilateralHandicap,
   betConfig,
+  effectiveBetConfig,
   confirmedScores,
   course,
   allScores,
@@ -2228,7 +2243,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const playerScores = confirmedScores.get(playerId) || [];
     
     // Check if there's a bilateral handicap override for this pair
-    const override = betConfig.bilateralHandicaps?.find(
+    const override = effectiveBetConfig.bilateralHandicaps?.find(
       h => (h.playerAId === playerId && h.playerBId === rivalId) ||
            (h.playerAId === rivalId && h.playerBId === playerId)
     );
@@ -2534,16 +2549,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Rayas (Aggregator bet)
-    if (betConfig.rayas?.enabled) {
+    if (effectiveBetConfig.rayas?.enabled) {
       // Pre-compute Rayas total from the same source used in the detail view
       // This ensures the header line matches the TOTAL RAYAS in the expanded detail
       const rayasResultForTotal = getRayasDetailForPair(
         player,
         rival,
         confirmedScores,
-        betConfig,
+        effectiveBetConfig,
         course,
-        betConfig.bilateralHandicaps,
+        effectiveBetConfig.bilateralHandicaps,
         allPlayers
       );
       
@@ -2647,9 +2662,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Coneja - Group bet shown in bilateral view
-    if (betConfig.coneja?.enabled && players.length >= 2) {
+    if (effectiveBetConfig.coneja?.enabled && players.length >= 2) {
       // Calculate Coneja results for this pair
-      const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, betConfig, confirmedHoles);
+      const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
       
       // Find results where player wins from rival or rival wins from player
       const playerWinsFromRival = conejaBets
@@ -2958,7 +2973,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           player.id,
                           rival.id,
                           confirmedScores,
-                          betConfig,
+                          effectiveBetConfig,
                           course
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
@@ -2968,7 +2983,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           player.id,
                           rival.id,
                           confirmedScores,
-                          betConfig,
+                          effectiveBetConfig,
                           course
                         );
                         
@@ -3125,9 +3140,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           player,
                           rival,
                           confirmedScores,
-                          betConfig,
+                          effectiveBetConfig,
                           course,
-                          betConfig.bilateralHandicaps,
+                          effectiveBetConfig.bilateralHandicaps,
                           allPlayers
                         );
                         
@@ -3330,10 +3345,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                         // Get evolution data for tooltips
                         const pressureEvolution = isPressures 
-                          ? getPressureEvolution(player, rival, confirmedScores, course, betConfig, betConfig.bilateralHandicaps, startingHole)
+                          ? getPressureEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
                         const skinsEvolution = isSkins 
-                          ? getSkinsEvolution(player, rival, confirmedScores, course, betConfig, betConfig.bilateralHandicaps, startingHole)
+                          ? getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
 
                         const pressureSegmentData = pressureEvolution?.[segmentType];
