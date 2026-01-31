@@ -60,7 +60,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   // Get the current strokes for a rival (from pending or saved)
   const getStrokesForRival = useCallback(
     (rivalId: string): number => {
-      const key = `${selectedPlayerId}-${rivalId}`;
+      const key = `${selectedPlayerId}::${rivalId}`;
       if (pendingChanges.has(key)) {
         return pendingChanges.get(key)!;
       }
@@ -72,7 +72,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   // Update pending changes locally
   const updatePendingStrokes = useCallback(
     (rivalId: string, strokes: number) => {
-      const key = `${selectedPlayerId}-${rivalId}`;
+      const key = `${selectedPlayerId}::${rivalId}`;
       setPendingChanges((prev) => new Map(prev).set(key, strokes));
     },
     [selectedPlayerId]
@@ -88,6 +88,9 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     [getStrokesForRival, updatePendingStrokes]
   );
 
+  // Check if roundPlayerIds is ready
+  const hasRoundPlayerIds = roundPlayerIds.size > 0;
+
   // Save all pending changes
   const saveAllChanges = useCallback(async () => {
     if (pendingChanges.size === 0) {
@@ -95,17 +98,38 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       return;
     }
 
+    if (!hasRoundPlayerIds) {
+      toast.error('Los datos de jugadores aún no están listos. Espera un momento y vuelve a intentar.');
+      console.error('roundPlayerIds is empty, cannot save handicaps');
+      return;
+    }
+
     setSaving(true);
     let successCount = 0;
     let errorCount = 0;
+    const failedPlayers: string[] = [];
 
     for (const [key, strokes] of pendingChanges.entries()) {
-      const [playerAId, playerBId] = key.split('-');
+      // Key format is "playerAId::playerBId" (using :: as separator to avoid UUID conflicts)
+      const separatorIndex = key.indexOf('::');
+      if (separatorIndex === -1) {
+        console.error('Invalid pending change key format:', key);
+        errorCount++;
+        continue;
+      }
+      const playerAId = key.substring(0, separatorIndex);
+      const playerBId = key.substring(separatorIndex + 2);
       const success = await setStrokesForLocalPair(playerAId, playerBId, strokes);
       if (success) {
         successCount++;
       } else {
         errorCount++;
+        // Find player names for better error message
+        const playerA = allPlayers.find(p => p.id === playerAId);
+        const playerB = allPlayers.find(p => p.id === playerBId);
+        if (playerA && playerB) {
+          failedPlayers.push(`${playerA.name} - ${playerB.name}`);
+        }
       }
     }
 
@@ -115,9 +139,9 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     if (errorCount === 0) {
       toast.success(`${successCount} hándicap(s) guardado(s)`);
     } else {
-      toast.warning(`${successCount} guardados, ${errorCount} con error`);
+      toast.error(`Error guardando: ${failedPlayers.join(', ')}`);
     }
-  }, [pendingChanges, setStrokesForLocalPair]);
+  }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds, allPlayers]);
 
   // Check if there are pending changes
   const hasPendingChanges = pendingChanges.size > 0;
@@ -127,6 +151,16 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <span className="ml-2 text-muted-foreground">Cargando hándicaps...</span>
+      </div>
+    );
+  }
+
+  // Show loading state if roundPlayerIds map is not ready yet
+  if (!hasRoundPlayerIds && allPlayers.length >= 2) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Sincronizando jugadores...</span>
       </div>
     );
   }
@@ -233,7 +267,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
           <CardContent className="space-y-3">
             {rivals.map((rival) => {
               const strokes = getStrokesForRival(rival.id);
-              const key = `${selectedPlayerId}-${rival.id}`;
+              const key = `${selectedPlayerId}::${rival.id}`;
               const hasChange = pendingChanges.has(key);
               const isGiving = strokes > 0;
               const isReceiving = strokes < 0;
