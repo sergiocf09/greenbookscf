@@ -529,6 +529,58 @@ export type Database = {
           },
         ]
       }
+      round_handicaps: {
+        Row: {
+          created_at: string
+          id: string
+          player_a_id: string
+          player_b_id: string
+          round_id: string
+          strokes_given_by_a: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_a_id: string
+          player_b_id: string
+          round_id: string
+          strokes_given_by_a?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_a_id?: string
+          player_b_id?: string
+          round_id?: string
+          strokes_given_by_a?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_handicaps_player_a_id_fkey"
+            columns: ["player_a_id"]
+            isOneToOne: false
+            referencedRelation: "round_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_handicaps_player_b_id_fkey"
+            columns: ["player_b_id"]
+            isOneToOne: false
+            referencedRelation: "round_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_handicaps_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_players: {
         Row: {
           group_id: string
