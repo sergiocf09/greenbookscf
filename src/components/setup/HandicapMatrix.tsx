@@ -42,6 +42,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [saving, setSaving] = useState(false);
 
   // Get all players including those in additional groups
+  // Sorted so that logged-in player appears first
   const allPlayers = useMemo(() => {
     const mainPlayers = [...players];
     playerGroups.forEach((g) => {
@@ -51,8 +52,16 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         }
       });
     });
-    return mainPlayers;
-  }, [players, playerGroups]);
+    
+    // Sort to put logged-in player first
+    return mainPlayers.sort((a, b) => {
+      const aIsBase = a.id === basePlayerId || a.profileId === basePlayerId;
+      const bIsBase = b.id === basePlayerId || b.profileId === basePlayerId;
+      if (aIsBase && !bIsBase) return -1;
+      if (!aIsBase && bIsBase) return 1;
+      return 0;
+    });
+  }, [players, playerGroups, basePlayerId]);
 
   const selectedPlayer = allPlayers.find((p) => p.id === selectedPlayerId);
   const rivals = allPlayers.filter((p) => p.id !== selectedPlayerId);
