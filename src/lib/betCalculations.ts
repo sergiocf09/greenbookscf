@@ -948,19 +948,24 @@ export const calculateUnitsBets = (
     let negative = 0;
     
     playerScores.forEach(score => {
+      // Skip if strokes is not a valid positive number
+      if (!score.strokes || score.strokes <= 0) return;
+      
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
       const toPar = score.strokes - holePar;
       
-      // Positive units
+      // Positive units from score-based achievements
       if (toPar === -1) positive += 1; // Birdie
       if (toPar === -2) positive += 2; // Eagle
       if (toPar <= -3) positive += 3; // Albatross
-      if (score.markers.sandyPar) positive += 1;
-      if (score.markers.aquaPar) positive += 1;
-      if (score.markers.holeOut) positive += 1;
+      
+      // Positive units from manual markers
+      if (score.markers?.sandyPar) positive += 1;
+      if (score.markers?.aquaPar) positive += 1;
+      if (score.markers?.holeOut) positive += 1;
       
       // Negative units - Cuatriput (4+ putts)
-      if (score.putts >= 4) negative += 1;
+      if (score.putts && score.putts >= 4) negative += 1;
     });
     
     return { positive, negative };
