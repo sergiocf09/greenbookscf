@@ -729,15 +729,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return override?.enabled === false;
     };
     
-    // Sum all non-Rayas and non-Medal General bets from betSummaries.
-    // We EXCLUDE Medal General here because it needs to be calculated dynamically
-    // using getMedalGeneralBilateralResult to match the detail view (only when all 18 holes confirmed).
+    // Sum all bets from betSummaries EXCLUDING:
+    // - Rayas: calculated dynamically using getRayasDetailForPair
+    // - Medal General: calculated dynamically using getMedalGeneralBilateralResult
+    // - Carritos: pair bets shown separately in Tabla General
+    // - Presiones Parejas: pair bets shown separately in Tabla General
+    // These exclusions ensure the bilateral balance matches the detail view and
+    // separates individual bets from pair bets in the Tabla General.
+    const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
         s.vsPlayer === rivalId && 
         !s.betType.startsWith('Rayas') &&
-        s.betType !== 'Medal General'
+        s.betType !== 'Medal General' &&
+        s.betType !== 'Presiones Parejas' &&
+        !carritosTypes.includes(s.betType)
       )
       .reduce((sum, s) => sum + s.amount, 0);
     
@@ -829,13 +836,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   };
 
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
+  // Includes individual bets + Carritos + Team Pressures (all bet types)
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
     return [...playersToSort].sort((a, b) => {
       // Use corrected balance for sorting
       const rivalIdsA = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
       const rivalIdsB = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-      const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + getCarritosBalanceForPlayer(a.id);
-      const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + getCarritosBalanceForPlayer(b.id);
+      const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+      const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
       return balanceB - balanceA;
     });
   };
@@ -884,6 +892,28 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       // If they're on the same team, no money changes between them
     });
     return total;
+  };
+  
+  // Get team pressures balance for a specific player (total from all team pressure bets)
+  const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
+    // Sum from betSummaries where this player is involved in Presiones Parejas
+    return betSummaries
+      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas')
+      .reduce((sum, s) => sum + s.amount, 0);
+  };
+  
+  // Get team pressures balance between two specific players
+  // Returns the balance from playerA's perspective vs playerB
+  // Uses 50/50 split similar to Carritos
+  const getTeamPressuresBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
+    // Find summaries where playerA is involved vs playerB
+    return betSummaries
+      .filter(s => 
+        s.playerId === playerAId && 
+        s.vsPlayer === playerBId && 
+        s.betType === 'Presiones Parejas'
+      )
+      .reduce((sum, s) => sum + s.amount, 0);
   };
   
   // Cancel carritos bet
@@ -1073,10 +1103,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="space-y-2">
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
               // Base total: ONLY bets vs players inside the selected group - use corrected balance
+              // Individual balance EXCLUDES Carritos and Team Pressures (pair bets)
               const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-              const balance = getCorrectedPlayerBalance(player.id, groupRivalIds);
+              const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
               const carritosBalance = getCarritosBalanceForPlayer(player.id);
-              const totalBalance = balance + carritosBalance;
+              const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
+              const totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
               
@@ -1153,9 +1185,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
                         // Use corrected balance that calculates Rayas correctly
+                        // This is the individual balance EXCLUDING Carritos and Team Pressures
                         const vsIndividualBalance = getCorrectedBilateralBalance(player.id, other.id);
                         const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance;
+                        const vsTeamPressuresBalance = getTeamPressuresBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -1185,9 +1219,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   G{otherGroupIdx + 1}
                                 </span>
                               )}
-                              {vsCarritosBalance !== 0 && (
-                                <span className="text-xs text-muted-foreground">
-                                  Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span> | Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span>
+                              {/* Show breakdown when there are pair bets */}
+                              {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0) && (
+                                <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
+                                  <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
+                                  {vsCarritosBalance !== 0 && (
+                                    <span>| Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
+                                  )}
+                                  {vsTeamPressuresBalance !== 0 && (
+                                    <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>${vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -1211,7 +1252,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
             Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
               const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-              return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id);
+              return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
             }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
