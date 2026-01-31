@@ -904,10 +904,27 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
 
+        {/* Coneja - Patas system (before Medal General) */}
+        {conejaResult && (
+          <>
+            {(culebrasResult || pinguinosResult) && <div className="border-t border-border/50" />}
+            <ConejaSection
+              conejaResult={conejaResult}
+              players={players}
+              scores={scores}
+              course={course}
+              betConfig={betConfig}
+              confirmedHoles={confirmedHoles}
+              basePlayerId={basePlayerId}
+              getPlayer={getPlayer}
+            />
+          </>
+        )}
+
         {/* Medal General - Show only winners */}
         {medalGeneralResult && (
           <>
-            {(culebrasResult || pinguinosResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || conejaResult) && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -950,20 +967,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               )}
             </div>
           </>
-        )}
-
-        {/* Coneja - Patas system */}
-        {conejaResult && (
-          <ConejaSection
-            conejaResult={conejaResult}
-            players={players}
-            scores={scores}
-            course={course}
-            betConfig={betConfig}
-            confirmedHoles={confirmedHoles}
-            basePlayerId={basePlayerId}
-            getPlayer={getPlayer}
-          />
         )}
         
         {/* Stableford - Points system with toolkit */}

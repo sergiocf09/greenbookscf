@@ -2764,6 +2764,67 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
+    // Putts - Individual bet (no handicap) - Show total putts for each player (after Medal)
+    if (betConfig.putts?.enabled) {
+      const puttsFront = groupedSummaries['Putts Front']?.total || 0;
+      const puttsBack = groupedSummaries['Putts Back']?.total || 0;
+      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
+      const total = puttsFront + puttsBack + puttsTotal;
+      
+      // Calculate total putts for each player
+      const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
+        const playerScores = allScores.get(playerId) || [];
+        return playerScores
+          .filter(s => s.confirmed && s.holeNumber >= startHole && s.holeNumber <= endHole && typeof s.putts === 'number')
+          .reduce((sum, s) => sum + (s.putts || 0), 0);
+      };
+      
+      const playerPuttsFront = getPlayerPutts(player.id, 1, 9);
+      const playerPuttsBack = getPlayerPutts(player.id, 10, 18);
+      const playerPuttsTotal = playerPuttsFront + playerPuttsBack;
+      const rivalPuttsFront = getPlayerPutts(rival.id, 1, 9);
+      const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
+      const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
+      
+      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
+        groups.push({
+          key: 'putts',
+          label: 'Putts',
+          configKey: 'putts',
+          segments: [
+            { label: 'Front 9', key: 'putts_front' },
+            { label: 'Back 9', key: 'putts_back' },
+            { label: 'Total', key: 'putts_total' },
+          ],
+          getTotal: () => total,
+          getSegmentData: (segmentKey) => {
+            if (segmentKey === 'putts_front') {
+              return { 
+                playerNet: playerPuttsFront, 
+                rivalNet: rivalPuttsFront, 
+                amount: puttsFront, 
+                description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
+              };
+            } else if (segmentKey === 'putts_back') {
+              return { 
+                playerNet: playerPuttsBack, 
+                rivalNet: rivalPuttsBack, 
+                amount: puttsBack, 
+                description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
+              };
+            } else {
+              return { 
+                playerNet: playerPuttsTotal, 
+                rivalNet: rivalPuttsTotal, 
+                amount: puttsTotal, 
+                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
+              };
+            }
+          },
+        });
+      }
+    }
+    
     // Presiones
     if (betConfig.pressures.enabled) {
       groups.push({
@@ -3037,36 +3098,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Medal General (Group bet shown in bilateral view) - only after the round is complete (all players 18 confirmed)
-    // IMPORTANT: Use allPlayers (not players) to check completion and calculate results,
-    // matching the logic in getCorrectedBilateralBalance for consistency.
-    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
-      return allPlayers.every((p) => {
-        const pScores = confirmedScores.get(p.id) || [];
-        return pScores.some((s) => s.holeNumber === h);
-      });
-    });
-    
-    if (betConfig.medalGeneral?.enabled && allPlayersComplete) {
-      const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
-      if (medalResult) {
-        groups.push({
-          key: 'medalGeneral',
-          label: 'Medal General',
-          configKey: 'medalGeneral',
-          segments: [],
-          getTotal: () => medalResult.amount,
-          getSegmentData: () => ({
-            playerNet: medalResult.playerNet,
-            rivalNet: medalResult.rivalNet,
-            amount: medalResult.amount,
-            description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
-          }),
-        });
-      }
-    }
-    
-    // Coneja - Group bet shown in bilateral view
+    // Coneja - Group bet shown in bilateral view (before Medal General)
     if (effectiveBetConfig.coneja?.enabled && players.length >= 2) {
       // Calculate Coneja results for this pair
       const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
@@ -3115,63 +3147,31 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Putts - Individual bet (no handicap) - Show total putts for each player
-    if (betConfig.putts?.enabled) {
-      const puttsFront = groupedSummaries['Putts Front']?.total || 0;
-      const puttsBack = groupedSummaries['Putts Back']?.total || 0;
-      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
-      const total = puttsFront + puttsBack + puttsTotal;
-      
-      // Calculate total putts for each player
-      const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
-        const playerScores = allScores.get(playerId) || [];
-        return playerScores
-          .filter(s => s.confirmed && s.holeNumber >= startHole && s.holeNumber <= endHole && typeof s.putts === 'number')
-          .reduce((sum, s) => sum + (s.putts || 0), 0);
-      };
-      
-      const playerPuttsFront = getPlayerPutts(player.id, 1, 9);
-      const playerPuttsBack = getPlayerPutts(player.id, 10, 18);
-      const playerPuttsTotal = playerPuttsFront + playerPuttsBack;
-      const rivalPuttsFront = getPlayerPutts(rival.id, 1, 9);
-      const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
-      const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
-      
-      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
+    // Medal General (Group bet shown in bilateral view) - only after the round is complete (all players 18 confirmed)
+    // IMPORTANT: Use allPlayers (not players) to check completion and calculate results,
+    // matching the logic in getCorrectedBilateralBalance for consistency.
+    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
+      return allPlayers.every((p) => {
+        const pScores = confirmedScores.get(p.id) || [];
+        return pScores.some((s) => s.holeNumber === h);
+      });
+    });
+    
+    if (betConfig.medalGeneral?.enabled && allPlayersComplete) {
+      const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
+      if (medalResult) {
         groups.push({
-          key: 'putts',
-          label: 'Putts',
-          configKey: 'putts',
-          segments: [
-            { label: 'Front 9', key: 'putts_front' },
-            { label: 'Back 9', key: 'putts_back' },
-            { label: 'Total', key: 'putts_total' },
-          ],
-          getTotal: () => total,
-          getSegmentData: (segmentKey) => {
-            if (segmentKey === 'putts_front') {
-              return { 
-                playerNet: playerPuttsFront, 
-                rivalNet: rivalPuttsFront, 
-                amount: puttsFront, 
-                description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
-              };
-            } else if (segmentKey === 'putts_back') {
-              return { 
-                playerNet: playerPuttsBack, 
-                rivalNet: rivalPuttsBack, 
-                amount: puttsBack, 
-                description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
-              };
-            } else {
-              return { 
-                playerNet: playerPuttsTotal, 
-                rivalNet: rivalPuttsTotal, 
-                amount: puttsTotal, 
-                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
-              };
-            }
-          },
+          key: 'medalGeneral',
+          label: 'Medal General',
+          configKey: 'medalGeneral',
+          segments: [],
+          getTotal: () => medalResult.amount,
+          getSegmentData: () => ({
+            playerNet: medalResult.playerNet,
+            rivalNet: medalResult.rivalNet,
+            amount: medalResult.amount,
+            description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
+          }),
         });
       }
     }
