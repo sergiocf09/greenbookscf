@@ -226,9 +226,16 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         </div>
       )}
       
-      {/* Player List */}
+      {/* Player List - sorted with logged-in player first */}
       <div className="space-y-2">
-        {players.map((player, index) => (
+        {[...players].sort((a, b) => {
+          // Put logged-in player first
+          const aIsLoggedIn = profile && (a.profileId === profile.id || a.id.startsWith('organizer'));
+          const bIsLoggedIn = profile && (b.profileId === profile.id || b.id.startsWith('organizer'));
+          if (aIsLoggedIn && !bIsLoggedIn) return -1;
+          if (!aIsLoggedIn && bIsLoggedIn) return 1;
+          return 0;
+        }).map((player, index) => (
           <div 
             key={player.id}
             className="flex items-center gap-2 bg-card border border-border rounded-lg p-2"
