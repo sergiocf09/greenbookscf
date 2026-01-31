@@ -49,10 +49,21 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   
   const hasMultipleGroups = playerGroups.length > 0;
   
-  // Get players to display based on selected group
+  // Get players to display based on selected group, with logged-in player first
   const displayPlayers = useMemo(() => {
-    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [displayGroupIndex, players, playerGroups]);
+    const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    
+    // Sort to put logged-in player first
+    if (!profile?.id) return groupPlayers;
+    
+    return [...groupPlayers].sort((a, b) => {
+      const aIsBase = a.profileId === profile.id;
+      const bIsBase = b.profileId === profile.id;
+      if (aIsBase && !bIsBase) return -1;
+      if (!aIsBase && bIsBase) return 1;
+      return 0;
+    });
+  }, [displayGroupIndex, players, playerGroups, profile?.id]);
   
   // Get all players for confirmation check (a hole is confirmed when ALL players have confirmed)
   const allPlayers = useMemo(() => {

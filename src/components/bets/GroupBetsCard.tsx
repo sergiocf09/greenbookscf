@@ -803,12 +803,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-lg">{culebrasResult.emoji}</span>
                 <span className="font-medium text-sm">{culebrasResult.title}</span>
-                <span className="text-xs text-muted-foreground">({culebrasResult.totalCount})</span>
+                <span className="text-lg font-bold text-destructive">({culebrasResult.totalCount})</span>
               </div>
               <div className="flex items-center gap-2">
                 {culebrasResult.loser && (
                   <>
-                    <PlayerAvatar initials={culebrasResult.loser.initials} background={culebrasResult.loser.color} size="sm" isLoggedInUser={culebrasResult.loser.playerId === basePlayerId} />
+                    <span className="text-sm font-medium">{culebrasResult.loser.name.split(' ')[0]} {culebrasResult.loser.initials}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
                 )}
@@ -859,12 +859,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{pinguinosResult.emoji}</span>
                   <span className="font-medium text-sm">{pinguinosResult.title}</span>
-                  <span className="text-xs text-muted-foreground">({pinguinosResult.totalCount})</span>
+                  <span className="text-lg font-bold text-destructive">({pinguinosResult.totalCount})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {pinguinosResult.loser && (
                     <>
-                      <PlayerAvatar initials={pinguinosResult.loser.initials} background={pinguinosResult.loser.color} size="sm" isLoggedInUser={pinguinosResult.loser.playerId === basePlayerId} />
+                      <span className="text-sm font-medium">{pinguinosResult.loser.name.split(' ')[0]} {pinguinosResult.loser.initials}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
                   )}
@@ -978,40 +978,37 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-500" />
                   <span className="font-medium text-sm">Stableford</span>
-                  <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
-                    HCP Propio
-                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100}</span>
+                <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100} c/u</span>
               </div>
               
               {/* Default view: Player totals with points (click for toolkit) */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <div className="flex flex-wrap gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
+                  <div className="grid grid-cols-4 gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
                     {stablefordResults.map((result, idx) => {
                       const isWinner = idx === 0 && result.pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0);
                       return (
                         <div 
                           key={result.playerId}
                           className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded-lg",
+                            "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg",
                             isWinner ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
                           )}
                         >
-                          <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                          <div className="flex flex-col items-start">
-                            <span className={cn(
-                              "text-sm font-bold",
-                              isWinner ? "text-green-600" : ""
-                            )}>
-                              {result.pointsTotal} pts
-                            </span>
-                            <span className="text-[8px] text-muted-foreground">
-                              F{result.pointsFront} B{result.pointsBack}
-                            </span>
+                          <div className="relative">
+                            <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                            {isWinner && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
                           </div>
-                          {isWinner && <Trophy className="h-3 w-3 text-amber-500" />}
+                          <span className={cn(
+                            "text-sm font-bold",
+                            isWinner ? "text-green-600" : ""
+                          )}>
+                            {result.pointsTotal}
+                          </span>
+                          <span className="text-[8px] text-muted-foreground">
+                            F{result.pointsFront} B{result.pointsBack}
+                          </span>
                         </div>
                       );
                     })}

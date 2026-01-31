@@ -356,35 +356,11 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
         </div>
       </div>
 
-      {/* Opening threshold */}
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">Abre cuando diferencia =</Label>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => onUpdate({ openingThreshold: 3 })}
-            className={cn(
-              'px-3 py-1 text-xs rounded transition-colors',
-              bet.openingThreshold === 3 
-                ? 'bg-primary text-primary-foreground font-medium' 
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
-          >
-            3 hoyos
-          </button>
-          <button
-            type="button"
-            onClick={() => onUpdate({ openingThreshold: 4 })}
-            className={cn(
-              'px-3 py-1 text-xs rounded transition-colors',
-              bet.openingThreshold === 4 
-                ? 'bg-primary text-primary-foreground font-medium' 
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
-          >
-            4 hoyos
-          </button>
-        </div>
+      {/* Note about opening threshold - auto-determined by scoring type */}
+      <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg p-2">
+        {bet.scoringType === 'combined' 
+          ? '💡 Modo Combinado: nuevas apuestas se abren cuando diferencia > 2'
+          : '💡 Modo Individual: nuevas apuestas se abren cuando diferencia = 2'}
       </div>
 
       {/* Scoring type */}
