@@ -2259,6 +2259,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const isBasePlayer = playerId === player.id;
     
     playerScores.forEach(score => {
+      // Skip if strokes is not a valid positive number (must match engine validation)
+      if (!score.strokes || score.strokes <= 0) return;
+      
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
       const toPar = score.strokes - holePar;
       
@@ -2267,10 +2270,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (toPar === -1) details.push({ holeNumber: score.holeNumber, marker: 'Birdie', emoji: '🐦', isPositive: isBasePlayer });
         if (toPar === -2) details.push({ holeNumber: score.holeNumber, marker: 'Águila', emoji: '🦅', isPositive: isBasePlayer });
         if (toPar <= -3) details.push({ holeNumber: score.holeNumber, marker: 'Albatros', emoji: '🦢', isPositive: isBasePlayer });
-        // Manual units
-        if (score.markers.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
-        if (score.markers.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
-        if (score.markers.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
+        // Manual units - only if strokes is valid
+        if (score.markers?.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
+        if (score.markers?.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
+        if (score.markers?.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
       } else {
         // Manchas - negative for the player who commits them
         // When it's the base player's mancha, it's negative (red). When it's rival's mancha, it's positive (green).
