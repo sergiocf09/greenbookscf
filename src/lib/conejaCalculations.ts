@@ -224,6 +224,10 @@ export const calculateConejaPataStates = (
 
 /**
  * Calculate Coneja set results including accumulations
+ * 
+ * CRITICAL LOGIC: When a set accumulates (no winner at end of set),
+ * the FIRST absolute winner in the NEXT set immediately breaks the accumulation
+ * and wins ALL accumulated conejas on THAT hole - not at the end of the set.
  */
 export const calculateConejaSetResults = (
   players: Player[],
@@ -238,14 +242,39 @@ export const calculateConejaSetResults = (
   let accumulatedSets: number[] = [];
   
   for (const set of CONEJA_SETS) {
-    const setEndPataState = pataStates.find(ps => ps.holeNumber === set.endHole);
-    
     // Check if all holes in set are confirmed
     const allHolesConfirmed = Array.from({ length: 6 }, (_, i) => set.startHole + i)
       .every(h => confirmedHoles.has(h));
     
     if (!allHolesConfirmed) {
-      // Set not complete yet
+      // Set not complete yet - check if accumulation was already broken mid-set
+      // by finding the first absolute winner in this set when there ARE accumulated sets
+      if (accumulatedSets.length > 0) {
+        // Look for first absolute winner in confirmed holes of this set
+        for (let h = set.startHole; h <= set.endHole; h++) {
+          if (!confirmedHoles.has(h)) break; // Stop at first unconfirmed hole
+          
+          const ps = pataStates.find(p => p.holeNumber === h);
+          if (ps?.winnerId) {
+            // Found an absolute winner - they break the accumulation and win ALL accumulated conejas
+            results.push({
+              setNumber: set.setNumber,
+              startHole: set.startHole,
+              endHole: set.endHole,
+              winnerId: ps.winnerId,
+              wonOnHole: h,
+              isAccumulated: true,
+              accumulatedSets: [...accumulatedSets], // Only the accumulated sets, current set continues
+            });
+            accumulatedSets = []; // Clear accumulation - it's been claimed
+            // Don't push another result for this set yet - it's incomplete
+            // We need to continue to see if there's a winner for THIS set's coneja
+            break;
+          }
+        }
+      }
+      
+      // Set is still incomplete
       results.push({
         setNumber: set.setNumber,
         startHole: set.startHole,
@@ -257,6 +286,45 @@ export const calculateConejaSetResults = (
       });
       continue;
     }
+    
+    // Set is complete - process it
+    
+    // FIRST: If there are accumulated sets, find the FIRST absolute winner in this set
+    // They claim all accumulated conejas on that hole
+    if (accumulatedSets.length > 0) {
+      let accumulationBrokenOnHole: number | null = null;
+      let accumulationWinnerId: string | null = null;
+      
+      for (let h = set.startHole; h <= set.endHole; h++) {
+        const ps = pataStates.find(p => p.holeNumber === h);
+        if (ps?.winnerId) {
+          accumulationBrokenOnHole = h;
+          accumulationWinnerId = ps.winnerId;
+          break;
+        }
+      }
+      
+      if (accumulationWinnerId && accumulationBrokenOnHole) {
+        // Push result for the accumulated conejas being claimed
+        // Report as the first accumulated set number
+        const firstAccumSet = accumulatedSets[0] as 1 | 2 | 3;
+        const firstAccumSetDef = CONEJA_SETS.find(s => s.setNumber === firstAccumSet)!;
+        
+        results.push({
+          setNumber: firstAccumSet,
+          startHole: firstAccumSetDef.startHole,
+          endHole: firstAccumSetDef.endHole,
+          winnerId: accumulationWinnerId,
+          wonOnHole: accumulationBrokenOnHole,
+          isAccumulated: true,
+          accumulatedSets: [...accumulatedSets],
+        });
+        accumulatedSets = []; // Clear - accumulation has been claimed
+      }
+    }
+    
+    // SECOND: Determine winner of THIS set's coneja (independent of accumulation)
+    const setEndPataState = pataStates.find(ps => ps.holeNumber === set.endHole);
     
     if (!setEndPataState) {
       results.push({
@@ -276,44 +344,20 @@ export const calculateConejaSetResults = (
       .filter(([_, patas]) => patas > 0);
     
     if (playersWithPatas.length === 1) {
-      // We have a winner for this set
+      // We have a winner for this set's coneja
       const winnerId = playersWithPatas[0][0];
       
-      // If there were accumulated conejas, this winner gets them too
-      if (accumulatedSets.length > 0) {
-        // Find the hole where the winner got their first pata (which breaks the accumulation)
-        let wonOnHole = set.endHole;
-        for (let h = set.startHole; h <= set.endHole; h++) {
-          const ps = pataStates.find(p => p.holeNumber === h);
-          if (ps?.winnerId === winnerId) {
-            wonOnHole = h;
-            break;
-          }
-        }
-        
-        results.push({
-          setNumber: set.setNumber,
-          startHole: set.startHole,
-          endHole: set.endHole,
-          winnerId,
-          wonOnHole,
-          isAccumulated: true,
-          accumulatedSets: [...accumulatedSets, set.setNumber],
-        });
-        accumulatedSets = [];
-      } else {
-        results.push({
-          setNumber: set.setNumber,
-          startHole: set.startHole,
-          endHole: set.endHole,
-          winnerId,
-          wonOnHole: set.endHole,
-          isAccumulated: false,
-          accumulatedSets: [],
-        });
-      }
+      results.push({
+        setNumber: set.setNumber,
+        startHole: set.startHole,
+        endHole: set.endHole,
+        winnerId,
+        wonOnHole: set.endHole,
+        isAccumulated: false,
+        accumulatedSets: [],
+      });
     } else if (playersWithPatas.length === 0) {
-      // No one has pata - coneja accumulates
+      // No one has pata at end - this set's coneja accumulates
       accumulatedSets.push(set.setNumber);
       
       results.push({
