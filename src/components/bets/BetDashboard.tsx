@@ -1582,17 +1582,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           // Opening threshold is auto-determined by scoring type
           const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
           
-          // Process a nine and return array of individual bet balances (like betCalculations.ts)
-          const processNine = (details: typeof frontDetails): number[] => {
+          // Process a nine and return array of individual bet balances AND running snapshots per hole
+          const processNine = (details: typeof frontDetails): { bets: number[]; snapshots: number[][] } => {
             const bets: number[] = [0];
+            const snapshots: number[][] = [];
             
             details.forEach((d, idx) => {
-              if (!d) return;
+              if (!d) {
+                // No data yet - snapshot current state
+                snapshots.push([...bets]);
+                return;
+              }
               
               // Apply result to all open bets
               for (let i = 0; i < bets.length; i++) {
                 bets[i] += d.net;
               }
+              
+              // Snapshot after applying this hole's result
+              snapshots.push([...bets]);
               
               // Check if last bet reached threshold - open new bet
               const isLastHole = idx === details.length - 1;
@@ -1604,13 +1612,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               }
             });
             
-            return bets;
+            return { bets, snapshots };
           };
           
-          const frontBets = processNine(frontDetails);
-          const backBets = processNine(backDetails);
+          const frontResult = processNine(frontDetails);
+          const backResult = processNine(backDetails);
+          const frontBets = frontResult.bets;
+          const backBets = backResult.bets;
+          const frontSnapshots = frontResult.snapshots;
+          const backSnapshots = backResult.snapshots;
           
-          // Calculate running balances for tooltip
+          // Calculate running balances for tooltip (simple cumulative)
           let runningFront = 0;
           let runningBack = 0;
           const frontBalances = frontDetails.map(d => {
@@ -1622,7 +1634,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             return runningBack;
           });
           
-          return { frontDetails, backDetails, frontBalances, backBalances, frontBets, backBets };
+          return { frontDetails, backDetails, frontBalances, backBalances, frontBets, backBets, frontSnapshots, backSnapshots };
         };
         
         const holeDetails = getTeamPressureHoleDetails();
@@ -1643,6 +1655,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           ? holeDetails.backBalances 
           : holeDetails.backBalances.map(b => -b);
         
+        // Get snapshots for hole-by-hole pressure display (inverted if needed)
+        const displayFrontSnapshots = isBaseInTeamA 
+          ? holeDetails.frontSnapshots 
+          : holeDetails.frontSnapshots.map(snap => snap.map(b => -b));
+        const displayBackSnapshots = isBaseInTeamA 
+          ? holeDetails.backSnapshots 
+          : holeDetails.backSnapshots.map(snap => snap.map(b => -b));
+        
         // Get individual bet results for display
         const displayFrontBets = isBaseInTeamA 
           ? holeDetails.frontBets 
@@ -1662,6 +1682,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Keep totals for color coding (based on final running balance)
         const frontTotal = displayFrontBalances[8] || 0;
         const backTotal = displayBackBalances[8] || 0;
+        
+        // Calculate Total 18 (sum of FIRST bet from each nine)
+        const total18 = displayFrontBets[0] + displayBackBets[0];
         
         const cancelTeamPressure = () => {
           if (!onBetConfigChange) return;
@@ -1782,7 +1805,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Front 9</span>
                         <span className={cn('text-xs font-bold tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {frontTotal >= 0 ? '+' : ''}{frontTotal} pts
+                          {frontBetsDisplay}
                         </span>
                       </div>
                       <TooltipProvider>
@@ -1790,20 +1813,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {displayFrontDetails.map((detail, idx) => {
                             const holeNum = idx + 1;
                             const runningBalance = displayFrontBalances[idx];
+                            const snapshot = displayFrontSnapshots[idx] || [];
+                            // Format the snapshot as the pressure display
+                            const pressureDisplay = formatBetsDisplay(snapshot);
+                            // Use sum of all bets for color
+                            const snapshotSum = snapshot.reduce((a, b) => a + b, 0);
                             
                             const pill = (
                               <div
                                 className={cn(
                                   'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
                                   detail === null ? 'border-border text-muted-foreground' :
-                                  detail.net > 0 ? 'border-green-600/40 text-green-600' :
-                                  detail.net < 0 ? 'border-destructive/40 text-destructive' :
+                                  snapshotSum > 0 ? 'border-green-600/40 text-green-600' :
+                                  snapshotSum < 0 ? 'border-destructive/40 text-destructive' :
                                   'border-border text-muted-foreground'
                                 )}
                               >
                                 <span className={cn('text-[9px] opacity-80', detail === null && 'text-muted-foreground')}>{holeNum}</span>
-                                <span className={cn('text-[11px] font-semibold tabular-nums', detail === null && 'text-muted-foreground')}>
-                                  {detail === null ? '–' : runningBalance > 0 ? `+${runningBalance}` : `${runningBalance}`}
+                                <span className={cn('text-[10px] font-semibold tabular-nums leading-tight', detail === null && 'text-muted-foreground')}>
+                                  {detail === null ? '–' : pressureDisplay}
                                 </span>
                               </div>
                             );
@@ -1829,7 +1857,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       </div>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
-                                      Acumulado: {runningBalance >= 0 ? '+' : ''}{runningBalance}
+                                      Presiones: {pressureDisplay}
                                     </p>
                                   </div>
                                 </TooltipContent>
@@ -1845,7 +1873,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Back 9</span>
                         <span className={cn('text-xs font-bold tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {backTotal >= 0 ? '+' : ''}{backTotal} pts
+                          {backBetsDisplay}
                         </span>
                       </div>
                       <TooltipProvider>
@@ -1853,20 +1881,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {displayBackDetails.map((detail, idx) => {
                             const holeNum = idx + 10;
                             const runningBalance = displayBackBalances[idx];
+                            const snapshot = displayBackSnapshots[idx] || [];
+                            const pressureDisplay = formatBetsDisplay(snapshot);
+                            const snapshotSum = snapshot.reduce((a, b) => a + b, 0);
                             
                             const pill = (
                               <div
                                 className={cn(
                                   'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
                                   detail === null ? 'border-border text-muted-foreground' :
-                                  detail.net > 0 ? 'border-green-600/40 text-green-600' :
-                                  detail.net < 0 ? 'border-destructive/40 text-destructive' :
+                                  snapshotSum > 0 ? 'border-green-600/40 text-green-600' :
+                                  snapshotSum < 0 ? 'border-destructive/40 text-destructive' :
                                   'border-border text-muted-foreground'
                                 )}
                               >
                                 <span className={cn('text-[9px] opacity-80', detail === null && 'text-muted-foreground')}>{holeNum}</span>
-                                <span className={cn('text-[11px] font-semibold tabular-nums', detail === null && 'text-muted-foreground')}>
-                                  {detail === null ? '–' : runningBalance > 0 ? `+${runningBalance}` : `${runningBalance}`}
+                                <span className={cn('text-[10px] font-semibold tabular-nums leading-tight', detail === null && 'text-muted-foreground')}>
+                                  {detail === null ? '–' : pressureDisplay}
                                 </span>
                               </div>
                             );
@@ -1892,7 +1923,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       </div>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
-                                      Acumulado: {runningBalance >= 0 ? '+' : ''}{runningBalance}
+                                      Presiones: {pressureDisplay}
                                     </p>
                                   </div>
                                 </TooltipContent>
@@ -1901,6 +1932,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           })}
                         </div>
                       </TooltipProvider>
+                    </div>
+                    
+                    {/* Total 18 Summary */}
+                    <div className="pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Total 18</span>
+                        <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {total18 >= 0 ? '+' : ''}{total18}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        (Primera apuesta F9 + Primera apuesta B9)
+                      </p>
                     </div>
                   </div>
                 </CollapsibleContent>
