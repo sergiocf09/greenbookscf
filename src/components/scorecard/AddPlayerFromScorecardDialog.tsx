@@ -14,6 +14,7 @@ export interface AddGuestPayload {
   name: string;
   initials: string;
   color: string; // hex
+  handicap: number; // Course handicap for this round
   strokesByHole: Record<number, number>; // 1..18
 }
 
@@ -33,6 +34,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   const [tab, setTab] = useState<'guest' | 'invite'>('guest');
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3B82F6');
+  const [handicap, setHandicap] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
 
   const [scores, setScores] = useState<HoleScores>(() =>
@@ -84,12 +86,14 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
         name: safeName,
         initials: initialsFromPlayerName(safeName),
         color,
+        handicap: typeof handicap === 'number' ? handicap : 0,
         strokesByHole,
       });
 
       toast.success('Jugador agregado y scores confirmados');
       onOpenChange(false);
       setName('');
+      setHandicap('');
       setScores(Object.fromEntries(Array.from({ length: 18 }, (_, i) => [i + 1, ''])) as HoleScores);
       setTab('guest');
     } catch (e: any) {
@@ -114,10 +118,27 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
           </TabsList>
 
           <TabsContent value="guest" className="mt-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-end">
               <div>
                 <label className="text-xs text-muted-foreground">Nombre</label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Toño" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Hándicap</label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={54}
+                  step={0.1}
+                  value={handicap}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                    setHandicap(val);
+                  }}
+                  placeholder="0"
+                  className="h-10 w-20"
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Color</label>

@@ -167,6 +167,7 @@ const Index = () => {
     isLoaded: isHandicapsLoaded,
     getStrokesForLocalPair,
     setStrokesForLocalPair,
+    initializeHandicapsForNewPlayer,
   } = useRoundHandicaps({
     roundId: roundState.id,
     players,
@@ -704,14 +705,14 @@ const Index = () => {
       const safeName = validatePlayerName(payload.name);
       const safeInitials = initialsFromPlayerName(safeName);
 
-      // 1) Create guest in backend
+      // 1) Create guest in backend (with handicap from payload)
       const { data: rpRow, error: rpErr } = await supabase
         .from('round_players')
         .insert({
           round_id: roundState.id,
           group_id: roundState.groupId,
           profile_id: null,
-          handicap_for_round: 0,
+          handicap_for_round: payload.handicap ?? 0,
           is_organizer: false,
           guest_name: safeName,
           guest_initials: safeInitials,
@@ -732,7 +733,7 @@ const Index = () => {
         name: safeName,
         initials: safeInitials,
         color: payload.color,
-        handicap: 0,
+        handicap: payload.handicap ?? 0,
       };
 
       setPlayers((prev) => [...prev, newPlayer]);
@@ -743,8 +744,8 @@ const Index = () => {
         return next;
       });
 
-      // 3) Build local scores for the new player
-      const strokesPerHole = calculateStrokesPerHole(0, course);
+      // 3) Build local scores for the new player (using their handicap)
+      const strokesPerHole = calculateStrokesPerHole(payload.handicap ?? 0, course);
       const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
         const holeNumber = i + 1;
         const holePar = course.holes[i]?.par || 4;
@@ -792,8 +793,41 @@ const Index = () => {
         for (let h = 1; h <= 18; h++) next.add(h);
         return next;
       });
+
+      // 6) Initialize bilateral handicaps against all existing players
+      // Build list of existing round_player IDs and their handicaps
+      const existingPlayerRpIds: string[] = [];
+      const existingPlayerHandicaps = new Map<string, number>();
+      
+      for (const existingPlayer of players) {
+        const rpId = roundPlayerIds.get(existingPlayer.id);
+        if (rpId && rpId !== newPlayerId) {
+          existingPlayerRpIds.push(rpId);
+          existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
+        }
+      }
+      
+      // Also include players from additional groups
+      for (const group of playerGroups) {
+        for (const existingPlayer of group.players) {
+          const rpId = roundPlayerIds.get(existingPlayer.id);
+          if (rpId && rpId !== newPlayerId && !existingPlayerRpIds.includes(rpId)) {
+            existingPlayerRpIds.push(rpId);
+            existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
+          }
+        }
+      }
+
+      if (existingPlayerRpIds.length > 0) {
+        await initializeHandicapsForNewPlayer(
+          newPlayerId,
+          newPlayer.handicap,
+          existingPlayerRpIds,
+          existingPlayerHandicaps
+        );
+      }
     },
-    [roundState.id, roundState.groupId, course, setRoundPlayerIds]
+    [roundState.id, roundState.groupId, course, setRoundPlayerIds, players, playerGroups, roundPlayerIds, initializeHandicapsForNewPlayer]
   );
 
   // Save score to database when updated
