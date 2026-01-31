@@ -1,11 +1,11 @@
-// Group Bets Card - Medal General, Culebras, Pinguinos, Coneja consolidated display
+// Group Bets Card - Medal General, Culebras, Pinguinos, Coneja, Stableford consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Users } from 'lucide-react';
+import { Trophy, Users, Star } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { 
   calculateConejaSetResults, 
@@ -29,6 +29,76 @@ interface GroupBetsCardProps {
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
 }
+
+// Stableford Points Calculator
+interface StablefordPlayerResult {
+  playerId: string;
+  player: Player;
+  pointsFront: number;
+  pointsBack: number;
+  pointsTotal: number;
+  holePoints: Array<{ holeNumber: number; points: number; toPar: number }>;
+}
+
+const calculateStablefordPoints = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  course: GolfCourse,
+  betConfig: BetConfig
+): StablefordPlayerResult[] => {
+  if (!betConfig.stableford?.enabled) return [];
+  
+  const points = betConfig.stableford.points || DEFAULT_STABLEFORD_POINTS;
+  const playerHandicaps = betConfig.stableford.playerHandicaps || [];
+  
+  return players.map(player => {
+    const playerScores = scores.get(player.id) || [];
+    const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
+    
+    // Get stableford handicap for this player
+    const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+    const handicap = playerHcp?.handicap ?? player.handicap;
+    const strokesPerHole = calculateStrokesPerHole(handicap, course);
+    
+    const holePoints: StablefordPlayerResult['holePoints'] = [];
+    let pointsFront = 0;
+    let pointsBack = 0;
+    
+    confirmedScores.forEach(score => {
+      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+      const strokesReceived = strokesPerHole[score.holeNumber - 1] || 0;
+      const netScore = score.strokes - strokesReceived;
+      const toPar = netScore - holePar;
+      
+      let holePoint = 0;
+      if (toPar <= -3) holePoint = points.albatross;
+      else if (toPar === -2) holePoint = points.eagle;
+      else if (toPar === -1) holePoint = points.birdie;
+      else if (toPar === 0) holePoint = points.par;
+      else if (toPar === 1) holePoint = points.bogey;
+      else if (toPar === 2) holePoint = points.doubleBogey;
+      else if (toPar === 3) holePoint = points.tripleBogey;
+      else holePoint = points.quadrupleOrWorse;
+      
+      holePoints.push({ holeNumber: score.holeNumber, points: holePoint, toPar });
+      
+      if (score.holeNumber <= 9) {
+        pointsFront += holePoint;
+      } else {
+        pointsBack += holePoint;
+      }
+    });
+    
+    return {
+      playerId: player.id,
+      player,
+      pointsFront,
+      pointsBack,
+      pointsTotal: pointsFront + pointsBack,
+      holePoints,
+    };
+  }).sort((a, b) => b.pointsTotal - a.pointsTotal);
+};
 
 interface MedalGeneralResult {
   enabled: boolean;
@@ -695,8 +765,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
   }, [players, scores, betConfig.pinguinos, course]);
 
+  // Calculate Stableford points for each player
+  const stablefordResults = useMemo(() => {
+    return calculateStablefordPoints(players, scores, course, betConfig);
+  }, [players, scores, course, betConfig]);
+
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || conejaResult;
+  const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || conejaResult || betConfig.stableford?.enabled;
 
   if (!hasAnyBet) {
     return null;
@@ -869,6 +944,150 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             basePlayerId={basePlayerId}
             getPlayer={getPlayer}
           />
+        )}
+        
+        {/* Stableford - Points system with toolkit */}
+        {betConfig.stableford?.enabled && stablefordResults.length > 0 && (
+          <>
+            <div className="border-t border-border/50" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  <span className="font-medium text-sm">Stableford</span>
+                  <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
+                    HCP Propio
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100}</span>
+              </div>
+              
+              {/* Toolkit visual - holes grid by player */}
+              <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+                {/* Header row with hole numbers */}
+                <div className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 text-[8px] text-muted-foreground">
+                  <div></div>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
+                    <div key={h} className="text-center">{h}</div>
+                  ))}
+                  <div className="text-center font-semibold">F9</div>
+                </div>
+                {stablefordResults.map(result => (
+                  <div key={result.playerId} className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 items-center">
+                    <div className="flex items-center gap-1">
+                      <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                      <span className="text-[9px] font-medium truncate">{result.player.name.split(' ')[0]}</span>
+                    </div>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => {
+                      const hp = result.holePoints.find(p => p.holeNumber === h);
+                      return (
+                        <div 
+                          key={h} 
+                          className={cn(
+                            "text-center text-[9px] font-medium rounded py-0.5",
+                            !hp ? "text-muted-foreground" :
+                            hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                            hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                            hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                            hp.points === 0 ? "bg-muted/50" :
+                            "bg-red-500/20 text-destructive"
+                          )}
+                        >
+                          {hp?.points ?? '-'}
+                        </div>
+                      );
+                    })}
+                    <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
+                      {result.pointsFront}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Back 9 */}
+                <div className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 text-[8px] text-muted-foreground mt-2">
+                  <div></div>
+                  {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
+                    <div key={h} className="text-center">{h}</div>
+                  ))}
+                  <div className="text-center font-semibold">B9</div>
+                </div>
+                {stablefordResults.map(result => (
+                  <div key={`${result.playerId}-back`} className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 items-center">
+                    <div className="flex items-center gap-1">
+                      <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                      <span className="text-[9px] font-medium truncate">{result.player.name.split(' ')[0]}</span>
+                    </div>
+                    {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => {
+                      const hp = result.holePoints.find(p => p.holeNumber === h);
+                      return (
+                        <div 
+                          key={h} 
+                          className={cn(
+                            "text-center text-[9px] font-medium rounded py-0.5",
+                            !hp ? "text-muted-foreground" :
+                            hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                            hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                            hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                            hp.points === 0 ? "bg-muted/50" :
+                            "bg-red-500/20 text-destructive"
+                          )}
+                        >
+                          {hp?.points ?? '-'}
+                        </div>
+                      );
+                    })}
+                    <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
+                      {result.pointsBack}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Total row */}
+                <div className="border-t border-border/50 pt-2 mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {stablefordResults.map((result, idx) => {
+                      const isWinner = idx === 0 && result.pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0);
+                      return (
+                        <div 
+                          key={result.playerId}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2 py-1 rounded-lg",
+                            isWinner ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
+                          )}
+                        >
+                          <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                          <span className={cn(
+                            "text-sm font-bold",
+                            isWinner ? "text-green-600" : ""
+                          )}>
+                            {result.pointsTotal} pts
+                          </span>
+                          {isWinner && <Trophy className="h-3 w-3 text-amber-500" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Winner display */}
+              {stablefordResults.length > 0 && stablefordResults[0].pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0) && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-500 text-xs">🏆</span>
+                      <PlayerAvatar initials={stablefordResults[0].player.initials} background={stablefordResults[0].player.color} size="sm" isLoggedInUser={stablefordResults[0].playerId === basePlayerId} />
+                      <span className="font-medium text-sm">{stablefordResults[0].player.name.split(' ')[0]}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {stablefordResults[0].pointsTotal} pts
+                      </span>
+                    </div>
+                    <span className="text-green-600 font-bold">+${(betConfig.stableford?.amount || 100) * (players.length - 1)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
