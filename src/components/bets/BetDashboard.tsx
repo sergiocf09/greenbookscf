@@ -71,6 +71,7 @@ interface BetDashboardProps {
   onBetConfigChange?: (config: BetConfig) => void;
   startingHole?: 1 | 10;
   playerGroups?: PlayerGroup[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -83,6 +84,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   onBetConfigChange,
   startingHole = 1,
   playerGroups = [],
+  getStrokesForLocalPair,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -1414,6 +1416,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           basePlayerId={basePlayerId}
           confirmedHoles={confirmedHoles}
           startingHole={startingHole}
+          getStrokesForLocalPair={getStrokesForLocalPair}
         />
       )}
 
@@ -2072,6 +2075,7 @@ interface BilateralDetailProps {
   basePlayerId?: string;
   confirmedHoles: Set<number>;
   startingHole?: 1 | 10;
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -2093,8 +2097,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   basePlayerId,
   confirmedHoles,
   startingHole = 1,
+  getStrokesForLocalPair,
 }) => {
-  const [editingHandicap, setEditingHandicap] = useState(false);
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
   const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
@@ -2734,21 +2738,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups, betConfig.betOverrides, player, rival]);
   
-  // Effective handicaps (with override or original)
-  // IMPORTANT: Must correctly map based on which player is A vs B in the stored override
-  const getEffectiveHandicaps = () => {
-    if (!bilateralHandicap) {
-      return { playerHcp: player.handicap, rivalHcp: rival.handicap };
-    }
-    // Check if player is playerA in the stored override
-    const isPlayerA = bilateralHandicap.playerAId === player.id;
-    return {
-      playerHcp: isPlayerA ? bilateralHandicap.playerAHandicap : bilateralHandicap.playerBHandicap,
-      rivalHcp: isPlayerA ? bilateralHandicap.playerBHandicap : bilateralHandicap.playerAHandicap,
-    };
-  };
-  const { playerHcp: effectivePlayerHcp, rivalHcp: effectiveRivalHcp } = getEffectiveHandicaps();
-  const hasOverride = !!bilateralHandicap;
+  // Get strokes from round_handicaps (centralized source of truth)
+  // Positive value = player gives strokes to rival, Negative = player receives from rival
+  const strokesFromMatrix = getStrokesForLocalPair ? getStrokesForLocalPair(player.id, rival.id) : 0;
+  const strokesDifference = Math.abs(strokesFromMatrix);
+  const playerReceivesStrokes = strokesFromMatrix < 0; // Negative means player receives
 
   // Render units/manchas detail with proper colors
   const renderMarkerDetail = (type: 'units' | 'manchas') => {
@@ -2813,42 +2807,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </div>
         </div>
         
-        {/* Bilateral Handicap Editor */}
+        {/* Bilateral Handicap Display (read-only, from HandicapMatrix) */}
         <div className="mt-3 p-2 bg-muted/30 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-medium">Handicaps Bilaterales</span>
-              {hasOverride && (
-                <span className="text-[10px] bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
-                  Modificado
-                </span>
-              )}
-            </div>
-            <Dialog open={editingHandicap} onOpenChange={setEditingHandicap}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs">
-                  Editar
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Handicaps para {player.name} vs {rival.name}</DialogTitle>
-                </DialogHeader>
-                <BilateralHandicapEditor
-                  player={player}
-                  rival={rival}
-                  currentHandicap={bilateralHandicap}
-                  onSave={(h) => {
-                    onUpdateBilateralHandicap(h);
-                    setEditingHandicap(false);
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+          <div className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium">Ventaja de Golpes</span>
+            <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+              Definido en Matriz
+            </span>
           </div>
           
-          <div className="flex justify-between mt-2">
+          <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
               <PlayerAvatar 
                 initials={getPlayerAbbr(player)} 
@@ -2856,14 +2825,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 size="sm" 
                 isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
               />
-              <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
-                HCP {effectivePlayerHcp}
-              </span>
+              <span className="text-sm font-medium">{player.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-blue-900 dark:text-blue-300">
-                HCP {effectiveRivalHcp}
-              </span>
+              <span className="text-sm font-medium">{rival.name}</span>
               <PlayerAvatar 
                 initials={getPlayerAbbr(rival)} 
                 background={rival.color} 
@@ -2873,25 +2838,18 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             </div>
           </div>
           
-          {(() => {
-            const difference = Math.abs(effectivePlayerHcp - effectiveRivalHcp);
-            if (difference > 0) {
-              const receiverName = effectivePlayerHcp > effectiveRivalHcp ? player.name : rival.name;
-              return (
-                <div className="bg-muted/50 p-2 rounded-lg text-center mt-2">
-                  <p className="text-sm">
-                    <strong>{receiverName}</strong> recibe{' '}
-                    <span className="text-base font-bold text-primary">{difference}</span> golpes
-                  </p>
-                </div>
-              );
-            }
-            return (
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Ambos jugadores juegan scratch
+          {strokesDifference > 0 ? (
+            <div className="bg-primary/10 p-2 rounded-lg text-center mt-2">
+              <p className="text-sm">
+                <strong>{playerReceivesStrokes ? player.name : rival.name}</strong> recibe{' '}
+                <span className="text-base font-bold text-primary">{strokesDifference}</span> golpe{strokesDifference !== 1 ? 's' : ''}
               </p>
-            );
-          })()}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Ambos jugadores juegan scratch (sin ventaja)
+            </p>
+          )}
         </div>
       </CardHeader>
       
