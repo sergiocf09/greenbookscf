@@ -158,13 +158,15 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                 <div className="absolute w-5 h-5 rounded-full border-2 border-green-500" />
               )}
               {hd.isSetWonHole && (
-                <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 flex items-center justify-center" />
+                <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-900/50 flex items-center justify-center z-10">
+                  {/* Show pata (rabbit) inside the winning circle if player has pata */}
+                  {hd.hasPata && !showTie && (
+                    <span className="text-[7px]">{renderPatas(1)}</span>
+                  )}
+                </div>
               )}
               {showTie && <span className="text-muted-foreground font-bold">=</span>}
               {hd.hasPata && !showTie && !hd.isSetWonHole && renderPatas(Math.min(hd.pataCount, 2))}
-              {hd.hasPata && !showTie && hd.isSetWonHole && (
-                <span className="absolute">{renderPatas(Math.min(hd.pataCount, 2))}</span>
-              )}
             </div>
             {/* Only show initials of the pata holder, not when a pata was lost to someone */}
             {(hd.hasPata && pataPlayer && !showTie) && (
