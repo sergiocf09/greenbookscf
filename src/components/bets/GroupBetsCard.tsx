@@ -38,7 +38,7 @@ interface StablefordPlayerResult {
   pointsFront: number;
   pointsBack: number;
   pointsTotal: number;
-  holePoints: Array<{ holeNumber: number; points: number; toPar: number }>;
+  holePoints: Array<{ holeNumber: number; points: number; toPar: number; strokesReceived: number }>;
 }
 
 const calculateStablefordPoints = (
@@ -81,7 +81,7 @@ const calculateStablefordPoints = (
       else if (toPar === 3) holePoint = points.tripleBogey;
       else holePoint = points.quadrupleOrWorse;
       
-      holePoints.push({ holeNumber: score.holeNumber, points: holePoint, toPar });
+      holePoints.push({ holeNumber: score.holeNumber, points: holePoint, toPar, strokesReceived });
       
       if (score.holeNumber <= 9) {
         pointsFront += holePoint;
@@ -1039,7 +1039,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <div 
                               key={h} 
                               className={cn(
-                                "text-center text-[9px] font-medium rounded py-0.5",
+                                "text-center text-[10px] font-bold rounded py-0.5 relative",
                                 !hp ? "text-muted-foreground" :
                                 hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
                                 hp.points >= 2 ? "bg-green-500/30 text-green-700" :
@@ -1049,6 +1049,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               )}
                             >
                               {hp?.points ?? '-'}
+                              {hp && hp.strokesReceived > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />
+                              )}
                             </div>
                           );
                         })}
@@ -1075,7 +1078,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <div 
                               key={h} 
                               className={cn(
-                                "text-center text-[9px] font-medium rounded py-0.5",
+                                "text-center text-[10px] font-bold rounded py-0.5 relative",
                                 !hp ? "text-muted-foreground" :
                                 hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
                                 hp.points >= 2 ? "bg-green-500/30 text-green-700" :
@@ -1085,6 +1088,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               )}
                             >
                               {hp?.points ?? '-'}
+                              {hp && hp.strokesReceived > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />
+                              )}
                             </div>
                           );
                         })}
