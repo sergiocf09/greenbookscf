@@ -3259,31 +3259,32 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const winnersCount = winnerIds.size;
       const losersCount = allPoints.length - winnersCount;
       
+      // Calculate amount - 0 if there are no losers or both players are in same position
+      let stablefordAmount = 0;
       if (losersCount > 0) {
         const amountFromLoserToWinner = amount / winnersCount;
         const isPlayerWinner = winnerIds.has(player.id);
         const isRivalWinner = winnerIds.has(rival.id);
         
-        const stablefordAmount = 
+        stablefordAmount = 
           isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
           !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
-        
-        if (stablefordAmount !== 0) {
-          groups.push({
-            key: 'stableford',
-            label: 'Stableford',
-            configKey: 'stableford',
-            segments: [],
-            getTotal: () => stablefordAmount,
-            getSegmentData: () => ({
-              playerNet: playerPoints,
-              rivalNet: rivalPoints,
-              amount: stablefordAmount,
-              description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
-            }),
-          });
-        }
       }
+      
+      // Always show Stableford when enabled - allows player to see points and disable if needed
+      groups.push({
+        key: 'stableford',
+        label: 'Stableford',
+        configKey: 'stableford',
+        segments: [],
+        getTotal: () => stablefordAmount,
+        getSegmentData: () => ({
+          playerNet: playerPoints,
+          rivalNet: rivalPoints,
+          amount: stablefordAmount,
+          description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
+        }),
+      });
     }
     
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
