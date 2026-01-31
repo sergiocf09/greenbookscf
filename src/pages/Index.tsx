@@ -4,6 +4,7 @@ import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
 import { CourseSelect } from '@/components/setup/CourseSelect';
 import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
+import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
 import { RoundHistory } from '@/components/RoundHistory';
@@ -18,6 +19,7 @@ import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
 import { useRealtimeScores } from '@/hooks/useRealtimeScores';
 import { useBetConfigPersistence } from '@/hooks/useBetConfigPersistence';
+import { useRoundHandicaps } from '@/hooks/useRoundHandicaps';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -35,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -58,7 +60,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
-type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets';
+type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -88,6 +90,7 @@ const Index = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
+  const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
@@ -156,6 +159,18 @@ const Index = () => {
     roundId: roundState.id,
     betConfig,
     setBetConfig,
+  });
+
+  // Bilateral handicaps hook - NEW dedicated table for handicap persistence
+  const {
+    isLoading: isLoadingHandicaps,
+    isLoaded: isHandicapsLoaded,
+    getStrokesForLocalPair,
+    setStrokesForLocalPair,
+  } = useRoundHandicaps({
+    roundId: roundState.id,
+    players,
+    roundPlayerIds,
   });
 
   // Ensure betConfig is loaded at least once for this round so debounced saves are enabled.
@@ -557,13 +572,72 @@ const Index = () => {
     setScores(initialScores);
   }, [course, players, initializePlayerScores]);
 
+  // Handle player removal - delete from database for persistence
+  const handleRemovePlayer = useCallback(async (playerId: string) => {
+    const rpId = roundPlayerIds.get(playerId);
+    
+    // If we have a round and round_player entry, delete from DB
+    if (roundState.id && rpId) {
+      try {
+        const { error } = await supabase
+          .from('round_players')
+          .delete()
+          .eq('id', rpId);
+        
+        if (error) {
+          devError('Error removing player from database:', error);
+          toast.error('Error al eliminar jugador (solo el organizador puede hacerlo)');
+          return;
+        }
+        
+        // Also remove any related handicaps
+        await supabase
+          .from('round_handicaps')
+          .delete()
+          .or(`player_a_id.eq.${rpId},player_b_id.eq.${rpId}`);
+        
+        // Remove from roundPlayerIds mapping
+        setRoundPlayerIds(prev => {
+          const next = new Map(prev);
+          next.delete(playerId);
+          return next;
+        });
+        
+        toast.success('Jugador eliminado');
+      } catch (err) {
+        devError('Error in handleRemovePlayer:', err);
+        toast.error('Error al eliminar jugador');
+        return;
+      }
+    }
+    
+    // Update local state
+    setPlayers(prev => prev.filter(p => p.id !== playerId));
+    
+    // Also clean up scores
+    setScores(prev => {
+      const next = new Map(prev);
+      next.delete(playerId);
+      return next;
+    });
+  }, [roundState.id, roundPlayerIds, setRoundPlayerIds, setPlayers, setScores]);
+
   // Handle players change - initialize scores for new players when round is active
   const handlePlayersChange = useCallback(async (newPlayers: Player[]) => {
     // Find new players (in newPlayers but not in current players)
     const currentPlayerIds = new Set(players.map(p => p.id));
     const addedPlayers = newPlayers.filter(p => !currentPlayerIds.has(p.id));
+    
+    // Find removed players
+    const newPlayerIds = new Set(newPlayers.map(p => p.id));
+    const removedPlayers = players.filter(p => !newPlayerIds.has(p.id));
 
-    // Update players first
+    // Handle removals first (persist to DB)
+    for (const player of removedPlayers) {
+      await handleRemovePlayer(player.id);
+    }
+
+    // Update players 
     setPlayers(newPlayers);
 
     // If round is in progress, initialize scores for new players
@@ -584,7 +658,7 @@ const Index = () => {
         await addPlayerToRound(player);
       }
     }
-  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound]);
+  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer]);
 
   // Create round in database (can do with 1 player to get share link)
   const handleCreateRound = async () => {
@@ -1252,8 +1326,9 @@ const Index = () => {
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
             <Tabs value={view} onValueChange={(v) => setView(v as AppView)}>
-              <TabsList className="w-full grid grid-cols-4 h-12">
+              <TabsList className="w-full grid grid-cols-5 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="handicaps" className="text-xs"><Sliders className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scoring" className="text-xs"><Users className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><LayoutGrid className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="bets" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
@@ -1355,6 +1430,18 @@ const Index = () => {
               </Button>
             )}
 
+            {/* Handicap Definition Button - show when 2+ players */}
+            {players.length >= 2 && roundState.id && (
+              <Button 
+                variant="outline" 
+                onClick={() => setView('handicaps')}
+                className="w-full"
+              >
+                <Sliders className="h-4 w-4 mr-2" />
+                Definir Hándicaps entre Jugadores
+              </Button>
+            )}
+
             {players.length >= 2 && <BetSetup config={betConfig} onChange={setBetConfig} players={players} />}
             
             {/* Action Buttons */}
@@ -1403,6 +1490,18 @@ const Index = () => {
               )}
             </div>
           </>
+        )}
+
+        {view === 'handicaps' && (
+          <HandicapMatrix
+            players={players}
+            playerGroups={playerGroups}
+            basePlayerId={profile?.id || ''}
+            roundPlayerIds={roundPlayerIds}
+            getStrokesForLocalPair={getStrokesForLocalPair}
+            setStrokesForLocalPair={setStrokesForLocalPair}
+            isLoading={isLoadingHandicaps}
+          />
         )}
 
         {view === 'scoring' && course && (
