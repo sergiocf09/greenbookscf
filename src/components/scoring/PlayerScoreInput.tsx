@@ -10,6 +10,7 @@ import {
 import { MarkerState, defaultMarkerState } from '@/types/golf';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { ScoreStepper } from './ScoreStepper';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface PlayerScoreInputProps {
   playerName: string;
@@ -93,7 +94,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         <div className="flex items-center gap-2">
           <PlayerAvatar initials={initials} background={avatarColor} size="md" className="shadow-sm" isLoggedInUser={isLoggedInUser} />
           <div>
-            <p className="font-semibold text-sm text-foreground">{playerName}</p>
+            <p className="font-semibold text-sm text-foreground">{formatPlayerName(playerName)}</p>
             {handicapStrokes > 0 && (
               <p className="text-[10px] text-muted-foreground">
                 +{handicapStrokes} golpe{handicapStrokes > 1 ? 's' : ''}

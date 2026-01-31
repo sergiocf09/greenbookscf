@@ -7,6 +7,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trophy, Users, Star, ChevronDown } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName } from '@/lib/playerInput';
 import { 
   calculateConejaSetResults, 
   getConejaHoleDisplays, 
@@ -808,7 +809,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center gap-2">
                 {culebrasResult.loser && (
                   <>
-                    <span className="text-sm font-medium">{culebrasResult.loser.name.split(' ')[0]} {culebrasResult.loser.initials}</span>
+                    <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name).split(' ')[0]} {culebrasResult.loser.initials}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
                 )}
@@ -834,7 +835,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" side="top">
                           <div className="text-xs">
-                            <p className="font-medium">{player?.name || 'Jugador'}</p>
+                            <p className="font-medium">{formatPlayerName(player?.name || 'Jugador')}</p>
                             <p className="text-muted-foreground">Hoyo {occ.holeNumber} - 3+ putts</p>
                           </div>
                         </PopoverContent>
@@ -864,7 +865,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   {pinguinosResult.loser && (
                     <>
-                      <span className="text-sm font-medium">{pinguinosResult.loser.name.split(' ')[0]} {pinguinosResult.loser.initials}</span>
+                      <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name).split(' ')[0]} {pinguinosResult.loser.initials}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
                   )}
@@ -890,7 +891,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-2" side="top">
                             <div className="text-xs">
-                              <p className="font-medium">{player?.name || 'Jugador'}</p>
+                              <p className="font-medium">{formatPlayerName(player?.name || 'Jugador')}</p>
                               <p className="text-muted-foreground">Hoyo {occ.holeNumber} - +3 o más sobre par</p>
                             </div>
                           </PopoverContent>
@@ -944,7 +945,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           <React.Fragment key={winner.playerId}>
                             {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
                             <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                            <span className="font-medium text-sm">{winner.name.split(' ')[0]}</span>
+                            <span className="font-medium text-sm">{formatPlayerName(winner.name).split(' ')[0]}</span>
                             <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
                           </React.Fragment>
                         ))}
@@ -1108,7 +1109,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-green-500 text-xs">🏆</span>
                       <PlayerAvatar initials={stablefordResults[0].player.initials} background={stablefordResults[0].player.color} size="sm" isLoggedInUser={stablefordResults[0].playerId === basePlayerId} />
-                      <span className="font-medium text-sm">{stablefordResults[0].player.name.split(' ')[0]}</span>
+                      <span className="font-medium text-sm">{formatPlayerName(stablefordResults[0].player.name).split(' ')[0]}</span>
                       <span className="text-[10px] text-muted-foreground">
                         {stablefordResults[0].pointsTotal} pts
                       </span>

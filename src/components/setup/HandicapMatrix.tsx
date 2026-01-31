@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Users, ArrowRight, ArrowLeft, Check, Minus, Plus, Save, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface HandicapMatrixProps {
   players: Player[];
@@ -231,7 +232,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                   size="sm"
                   isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
                 />
-                <span className="text-sm font-medium">{player.name}</span>
+                <span className="text-sm font-medium">{formatPlayerName(player.name)}</span>
               </button>
             ))}
           </div>
@@ -251,7 +252,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                   isLoggedInUser={selectedPlayer.id === basePlayerId || selectedPlayer.profileId === basePlayerId}
                 />
                 <div>
-                  <CardTitle className="text-base">{selectedPlayer.name}</CardTitle>
+                  <CardTitle className="text-base">{formatPlayerName(selectedPlayer.name)}</CardTitle>
                   <p className="text-xs text-muted-foreground">HCP Base: {selectedPlayer.handicap}</p>
                 </div>
               </div>
@@ -297,7 +298,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                       size="sm"
                       isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
                     />
-                    <span className="text-sm font-medium truncate">{rival.name}</span>
+                    <span className="text-sm font-medium truncate">{formatPlayerName(rival.name)}</span>
                   </div>
 
                   {/* Strokes control */}

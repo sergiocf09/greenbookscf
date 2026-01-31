@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Player, PlayerGroup } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
+import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { toast } from 'sonner';
 import { USGAHandicapDialog } from './USGAHandicapDialog';
 import { useAuth } from '@/contexts/AuthContext';

@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName } from '@/lib/playerInput';
 
 // BilateralHandicap is now imported from types/golf.ts
 
@@ -3482,10 +3483,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 size="sm" 
                 isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
               />
-              <span className="text-sm font-medium">{player.name}</span>
+              <span className="text-sm font-medium">{formatPlayerName(player.name)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{rival.name}</span>
+              <span className="text-sm font-medium">{formatPlayerName(rival.name)}</span>
               <PlayerAvatar 
                 initials={getPlayerAbbr(rival)} 
                 background={rival.color} 
@@ -3498,7 +3499,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           {strokesDifference > 0 ? (
             <div className="bg-primary/10 p-2 rounded-lg text-center mt-2">
               <p className="text-sm">
-                <strong>{playerReceivesStrokes ? player.name : rival.name}</strong> recibe{' '}
+                <strong>{formatPlayerName(playerReceivesStrokes ? player.name : rival.name)}</strong> recibe{' '}
                 <span className="text-base font-bold text-primary">{strokesDifference}</span> golpe{strokesDifference !== 1 ? 's' : ''}
               </p>
             </div>
@@ -3758,7 +3759,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Debug info - shows holes won per player for verification */}
                             {pairResult && (
                               <div className="text-[9px] text-muted-foreground bg-muted/20 p-1 rounded mb-1">
-                                Hoyos ganados: {player.name.substring(0,3)}={pairResult.winsA}, {rival.name.substring(0,3)}={pairResult.winsB} | 
+                                Hoyos ganados: {formatPlayerName(player.name).substring(0,3)}={pairResult.winsA}, {formatPlayerName(rival.name).substring(0,3)}={pairResult.winsB} | 
                                 Total jugados: {pairResult.settledHoles} | 
                                 Zapato: {pairResult.hasZapato ? `Sí (+$${pairResult.zapatoBonus})` : 'No'}
                               </div>
@@ -4503,7 +4504,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
             >
               {getPlayerAbbr(player)}
             </div>
-            {player.name}
+            {formatPlayerName(player.name)}
           </Label>
           <Input
             type="number"
@@ -4523,7 +4524,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
             >
               {getPlayerAbbr(rival)}
             </div>
-            {rival.name}
+            {formatPlayerName(rival.name)}
           </Label>
           <Input
             type="number"
@@ -4540,7 +4541,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
       {difference > 0 && (
         <div className="bg-muted/50 p-3 rounded-lg text-center">
           <p className="text-sm">
-            <strong>{playerReceives ? player.name : rival.name}</strong> recibe{' '}
+            <strong>{formatPlayerName(playerReceives ? player.name : rival.name)}</strong> recibe{' '}
             <span className="text-lg font-bold text-primary">{difference}</span> golpes
           </p>
         </div>
