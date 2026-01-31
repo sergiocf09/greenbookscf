@@ -41,10 +41,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   // State for which group to display
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
   
-  // Get players to display based on selected group
+  // Get players to display based on selected group, with logged-in player first
   const displayPlayers = useMemo(() => {
-    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [displayGroupIndex, players, playerGroups]);
+    const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    // Sort to put logged-in player first
+    return [...groupPlayers].sort((a, b) => {
+      const aIsBase = a.id === basePlayerId || a.profileId === basePlayerId;
+      const bIsBase = b.id === basePlayerId || b.profileId === basePlayerId;
+      if (aIsBase && !bIsBase) return -1;
+      if (!aIsBase && bIsBase) return 1;
+      return 0;
+    });
+  }, [displayGroupIndex, players, playerGroups, basePlayerId]);
   
   const hasMultipleGroups = playerGroups.length > 0;
   // IMPORTANT: Confirmation is per-player (score.confirmed).
