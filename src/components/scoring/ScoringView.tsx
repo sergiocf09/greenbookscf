@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
+import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2 } from 'lucide-react';
+import { Check, CheckCircle2, DollarSign } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
@@ -20,6 +21,7 @@ interface ScoringViewProps {
   betConfig: BetConfig;
   holePar: number;
   profile: { id: string } | null;
+  onAddSideBet?: (bet: SideBet) => void;
 }
 
 export const ScoringView: React.FC<ScoringViewProps> = ({
@@ -36,6 +38,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   betConfig,
   holePar,
   profile,
+  onAddSideBet,
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -156,11 +159,27 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         )}
       </Button>
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons and Side Bets */}
       <div className="flex gap-3 pt-2">
         <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1">
           ← Anterior
         </Button>
+        
+        {/* Side Bets Button */}
+        {onAddSideBet && (
+          <SideBetsDialog
+            players={getAllPlayersFromAllGroups(players, playerGroups)}
+            sideBets={betConfig.sideBets?.bets || []}
+            onAddSideBet={onAddSideBet}
+            basePlayerId={profile?.id}
+            trigger={
+              <Button variant="outline" size="icon" className="shrink-0">
+                <DollarSign className="h-4 w-4" />
+              </Button>
+            }
+          />
+        )}
+        
         <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1">
           Siguiente →
         </Button>

@@ -207,6 +207,80 @@ export interface ConejaSetResult {
   accumulatedSets: number[]; // Which sets are accumulated in this win (e.g., [1, 2] if set 1 and 2 accumulated into set 3)
 }
 
+// =====================================================
+// NEW BET TYPES
+// =====================================================
+
+// Putts bet - Individual, no handicap, direct putt comparison
+export interface PuttsBetConfig {
+  enabled: boolean;
+  frontAmount: number;
+  backAmount: number;
+  totalAmount: number;
+}
+
+// Side Bets - Quick capture, no handicap, direct money
+export interface SideBet {
+  id: string;
+  winners: string[];  // Player IDs who receive money
+  losers: string[];   // Player IDs who pay
+  amount: number;     // Amount per person
+  description?: string;
+  createdAt: string;
+}
+
+export interface SideBetsConfig {
+  enabled: boolean;
+  bets: SideBet[];
+}
+
+// Stableford - Group bet with configurable point values
+export interface StablefordPointConfig {
+  albatross: number;
+  eagle: number;
+  birdie: number;
+  par: number;
+  bogey: number;
+  doubleBogey: number;
+  tripleBogey: number;
+  quadrupleOrWorse: number;
+}
+
+export interface StablefordPlayerConfig {
+  playerId: string;
+  handicap: number;
+}
+
+export interface StablefordBetConfig {
+  enabled: boolean;
+  amount: number;
+  points: StablefordPointConfig;
+  playerHandicaps: StablefordPlayerConfig[];
+}
+
+// Presiones por Parejas - Team pressures
+export interface TeamPressuresBet {
+  id: string;
+  teamA: [string, string];
+  teamB: [string, string];
+  frontAmount: number;
+  backAmount: number;
+  totalAmount: number;
+  openingThreshold: 3 | 4; // Opens new pressure when diff reaches this
+  teamHandicaps: Record<string, number>; // Per-player handicaps for this bet
+  scoringType: 'lowBall' | 'highBall' | 'combined';
+  enabled: boolean;
+}
+
+export interface TeamPressuresBetConfig {
+  enabled: boolean;
+  bets: TeamPressuresBet[];
+}
+
+// =====================================================
+// MAIN BET CONFIG
+// =====================================================
+
 // Bet configuration types
 export interface BetConfig {
   medal: MedalBetConfig;
@@ -226,6 +300,11 @@ export interface BetConfig {
   betOverrides?: BetOverride[]; // Individual bet overrides
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
   crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> array of cross-group rival IDs
+  // NEW BET TYPES
+  putts: PuttsBetConfig;
+  sideBets: SideBetsConfig;
+  stableford: StablefordBetConfig;
+  teamPressures: TeamPressuresBetConfig;
 }
 
 export interface MedalBetConfig {
@@ -325,3 +404,40 @@ export interface BetHandicapOverride {
   playerAHandicap: number;
   playerBHandicap: number;
 }
+
+// Bet Category for UI organization
+export type BetCategory = 'individual' | 'parejas' | 'grupal';
+
+// Helper to classify bets by category
+export const BET_CATEGORIES: Record<string, BetCategory> = {
+  medal: 'individual',
+  pressures: 'individual',
+  skins: 'individual',
+  caros: 'individual',
+  oyeses: 'individual',
+  units: 'individual',
+  manchas: 'individual',
+  putts: 'individual',
+  // Parejas
+  carritos: 'parejas',
+  teamPressures: 'parejas',
+  // Grupal
+  coneja: 'grupal',
+  culebras: 'grupal',
+  pinguinos: 'grupal',
+  medalGeneral: 'grupal',
+  stableford: 'grupal',
+  rayas: 'individual', // Rayas is an aggregator of individual bets
+};
+
+// Default Stableford point values (flexible)
+export const DEFAULT_STABLEFORD_POINTS: StablefordPointConfig = {
+  albatross: 5,
+  eagle: 4,
+  birdie: 3,
+  par: 2,
+  bogey: 1,
+  doubleBogey: 0,
+  tripleBogey: -1,
+  quadrupleOrWorse: -2,
+};
