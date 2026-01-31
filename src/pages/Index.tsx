@@ -1559,7 +1559,26 @@ const Index = () => {
                 ...prev,
                 sideBets: {
                   ...prev.sideBets,
+                  enabled: true,
                   bets: [...(prev.sideBets?.bets || []), bet],
+                },
+              }));
+            }}
+            onUpdateSideBet={(bet) => {
+              setBetConfig(prev => ({
+                ...prev,
+                sideBets: {
+                  ...prev.sideBets,
+                  bets: (prev.sideBets?.bets || []).map(b => b.id === bet.id ? bet : b),
+                },
+              }));
+            }}
+            onDeleteSideBet={(betId) => {
+              setBetConfig(prev => ({
+                ...prev,
+                sideBets: {
+                  ...prev.sideBets,
+                  bets: (prev.sideBets?.bets || []).filter(b => b.id !== betId),
                 },
               }));
             }}

@@ -22,6 +22,8 @@ interface ScoringViewProps {
   holePar: number;
   profile: { id: string } | null;
   onAddSideBet?: (bet: SideBet) => void;
+  onUpdateSideBet?: (bet: SideBet) => void;
+  onDeleteSideBet?: (betId: string) => void;
 }
 
 export const ScoringView: React.FC<ScoringViewProps> = ({
@@ -39,6 +41,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   holePar,
   profile,
   onAddSideBet,
+  onUpdateSideBet,
+  onDeleteSideBet,
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -171,6 +175,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             players={getAllPlayersFromAllGroups(players, playerGroups)}
             sideBets={betConfig.sideBets?.bets || []}
             onAddSideBet={onAddSideBet}
+            onUpdateSideBet={onUpdateSideBet}
+            onDeleteSideBet={onDeleteSideBet}
             basePlayerId={profile?.id}
             trigger={
               <Button variant="outline" size="icon" className="shrink-0">

@@ -2710,6 +2710,128 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
+    // Putts - Individual bet (no handicap)
+    if (betConfig.putts?.enabled) {
+      const puttsFront = groupedSummaries['Putts Front']?.total || 0;
+      const puttsBack = groupedSummaries['Putts Back']?.total || 0;
+      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
+      const total = puttsFront + puttsBack + puttsTotal;
+      
+      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
+        groups.push({
+          key: 'putts',
+          label: 'Putts',
+          configKey: 'putts',
+          segments: [
+            { label: 'Front 9', key: 'putts_front' },
+            { label: 'Back 9', key: 'putts_back' },
+            { label: 'Total', key: 'putts_total' },
+          ],
+          getTotal: () => total,
+          getSegmentData: (segmentKey) => {
+            if (segmentKey === 'putts_front') {
+              const summary = groupedSummaries['Putts Front'];
+              return { playerNet: 0, rivalNet: 0, amount: puttsFront, description: summary?.details?.[0]?.description };
+            } else if (segmentKey === 'putts_back') {
+              const summary = groupedSummaries['Putts Back'];
+              return { playerNet: 0, rivalNet: 0, amount: puttsBack, description: summary?.details?.[0]?.description };
+            } else {
+              const summary = groupedSummaries['Putts Total'];
+              return { playerNet: 0, rivalNet: 0, amount: puttsTotal, description: summary?.details?.[0]?.description };
+            }
+          },
+        });
+      }
+    }
+    
+    // Side Bets - Direct money between players
+    if (betConfig.sideBets?.enabled && betConfig.sideBets.bets?.length > 0) {
+      const sideBetTotal = groupedSummaries['Side Bet']?.total || 0;
+      
+      // Check if any side bets involve this pair
+      const relevantBets = betConfig.sideBets.bets.filter(bet => {
+        const hasPlayer = bet.winners.includes(player.id) || bet.losers.includes(player.id);
+        const hasRival = bet.winners.includes(rival.id) || bet.losers.includes(rival.id);
+        return hasPlayer && hasRival;
+      });
+      
+      if (relevantBets.length > 0 || sideBetTotal !== 0) {
+        groups.push({
+          key: 'sideBets',
+          label: 'Side Bets',
+          configKey: 'sideBets',
+          segments: relevantBets.map((bet, i) => ({
+            label: bet.description || `Side Bet ${i + 1}`,
+            key: `sidebet_${bet.id}`,
+          })),
+          getTotal: () => sideBetTotal,
+          getSegmentData: (segmentKey) => {
+            const betId = segmentKey.replace('sidebet_', '');
+            const bet = betConfig.sideBets?.bets?.find(b => b.id === betId);
+            if (!bet) return { playerNet: 0, rivalNet: 0, amount: 0 };
+            
+            const isWinner = bet.winners.includes(player.id);
+            const amount = isWinner ? (bet.amount / bet.winners.length) : -(bet.amount / bet.winners.length);
+            
+            return {
+              playerNet: isWinner ? 1 : 0,
+              rivalNet: isWinner ? 0 : 1,
+              amount,
+              description: bet.description || 'Side Bet',
+            };
+          },
+        });
+      }
+    }
+    
+    // Stableford - Group bet with points
+    if (betConfig.stableford?.enabled) {
+      const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
+      
+      if (stablefordTotal !== 0) {
+        groups.push({
+          key: 'stableford',
+          label: 'Stableford',
+          configKey: 'stableford',
+          segments: [],
+          getTotal: () => stablefordTotal,
+          getSegmentData: () => {
+            const summary = groupedSummaries['Stableford'];
+            return {
+              playerNet: 0,
+              rivalNet: 0,
+              amount: stablefordTotal,
+              description: summary?.details?.[0]?.description,
+            };
+          },
+        });
+      }
+    }
+    
+    // Team Pressures - Pair pressures
+    if (betConfig.teamPressures?.enabled && betConfig.teamPressures.bets?.length > 0) {
+      const teamPressuresTotal = groupedSummaries['Presiones Parejas']?.total || 0;
+      
+      if (teamPressuresTotal !== 0) {
+        groups.push({
+          key: 'teamPressures',
+          label: 'Presiones Parejas',
+          configKey: 'teamPressures',
+          segments: [],
+          getTotal: () => teamPressuresTotal,
+          getSegmentData: () => {
+            const summary = groupedSummaries['Presiones Parejas'];
+            return {
+              playerNet: 0,
+              rivalNet: 0,
+              amount: teamPressuresTotal,
+              description: summary?.details?.[0]?.description,
+            };
+          },
+        });
+      }
+    }
+    
     return groups;
   }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
@@ -2732,6 +2854,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           case 'rayas': return 'Rayas';
           case 'medalGeneral': return 'Medal General';
           case 'coneja': return 'Coneja';
+          case 'putts': return 'Putts';
+          case 'sideBets': return 'Side Bet';
+          case 'stableford': return 'Stableford';
+          case 'teamPressures': return 'Presiones Parejas';
           default: return label;
         }
       };
