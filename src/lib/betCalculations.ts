@@ -984,7 +984,11 @@ export const calculateUnitsBets = (
       const netB = unitsB.positive - unitsB.negative;
       const diff = netA - netB;
       
-      if (diff !== 0) {
+      // Always generate summaries if either player has units, even if diff is 0
+      // This ensures the UI can display the correct $0 balance
+      const hasAnyUnits = unitsA.positive > 0 || unitsA.negative > 0 || unitsB.positive > 0 || unitsB.negative > 0;
+      
+      if (diff !== 0 || hasAnyUnits) {
         const amount = diff * config.units.valuePerPoint;
         
         summaries.push({
