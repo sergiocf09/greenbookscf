@@ -1738,7 +1738,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <div className="text-[11px] tabular-nums">
+                      <div className="text-sm tabular-nums">
                         <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                           F9 {frontBetsDisplay}
                         </span>
@@ -1746,8 +1746,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                           B9 {backBetsDisplay}
                         </span>
+                        <span className="text-muted-foreground"> · </span>
+                        <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          T {total18 >= 0 ? '+' : ''}{total18}
+                        </span>
                       </div>
-                      <div className={cn('text-sm font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                      <div className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                         {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
                       </div>
                     </div>
@@ -2219,14 +2223,14 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="text-[11px] tabular-nums">
+                <div className="text-sm tabular-nums">
                   <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}</span>
                   <span className="text-muted-foreground"> · </span>
                   <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}</span>
                   <span className="text-muted-foreground"> · </span>
                   <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
                 </div>
-                 <div className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamMoney))}>
+                 <div className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
                   {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
                 </div>
               </div>
