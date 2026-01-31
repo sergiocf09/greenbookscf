@@ -835,6 +835,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return total;
   };
 
+  // Get team pressures balance for a specific player (total from all team pressure bets)
+  const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
+    // Sum from betSummaries where this player is involved in Presiones Parejas
+    return betSummaries
+      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas')
+      .reduce((sum, s) => sum + s.amount, 0);
+  };
+
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   // Includes individual bets + Carritos + Team Pressures (all bet types)
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
@@ -892,14 +900,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       // If they're on the same team, no money changes between them
     });
     return total;
-  };
-  
-  // Get team pressures balance for a specific player (total from all team pressure bets)
-  const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
-    // Sum from betSummaries where this player is involved in Presiones Parejas
-    return betSummaries
-      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas')
-      .reduce((sum, s) => sum + s.amount, 0);
   };
   
   // Get team pressures balance between two specific players
