@@ -74,6 +74,11 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             carritos: { ...defaultBetConfig.carritos, ...loadedConfig.carritos },
             medalGeneral: { ...defaultBetConfig.medalGeneral, ...loadedConfig.medalGeneral },
             coneja: { ...defaultBetConfig.coneja, ...loadedConfig.coneja },
+            // New bet types
+            putts: { ...defaultBetConfig.putts, ...loadedConfig.putts },
+            sideBets: { ...defaultBetConfig.sideBets, ...loadedConfig.sideBets },
+            stableford: { ...defaultBetConfig.stableford, ...loadedConfig.stableford },
+            teamPressures: { ...defaultBetConfig.teamPressures, ...loadedConfig.teamPressures },
           });
         }
 
