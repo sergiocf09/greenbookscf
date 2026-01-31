@@ -1575,6 +1575,7 @@ const Index = () => {
               onBetConfigChange={setBetConfig}
               startingHole={startingHole}
               playerGroups={playerGroups}
+              getStrokesForLocalPair={getStrokesForLocalPair}
             />
             
             {/* Close Scorecard Button */}
