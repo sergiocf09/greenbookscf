@@ -287,14 +287,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         id="putts"
         title="Putts ⛳"
         description="Comparación directa de putts (sin hándicap)"
-        enabled={config.putts.enabled}
+        enabled={config.putts?.enabled ?? false}
         onToggle={(enabled) => onUpdateBet('putts', { enabled })}
         isExpanded={expandedSections.includes('putts')}
         onExpandChange={(open) => onToggleSection('putts', open)}
       >
-        <AmountInput label="Front 9" value={config.putts.frontAmount} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
-        <AmountInput label="Back 9" value={config.putts.backAmount} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
-        <AmountInput label="Total 18" value={config.putts.totalAmount} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
+        <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
+        <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
+        <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
         <p className="text-[9px] text-muted-foreground mt-2">
           ⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts totales.
         </p>
@@ -305,15 +305,15 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         id="rayas"
         title="Rayas"
         description="Agregador: Skins + Unidades + Oyes + Medal"
-        enabled={config.rayas.enabled}
+        enabled={config.rayas?.enabled ?? false}
         onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
         isExpanded={expandedSections.includes('rayas')}
         onExpandChange={(open) => onToggleSection('rayas', open)}
         color="gold"
       >
-        <AmountInput label="Front 9 (por raya)" value={config.rayas.frontValue} onChange={(v) => onUpdateBet('rayas', { frontValue: v })} />
-        <AmountInput label="Back 9 (por raya)" value={config.rayas.backValue} onChange={(v) => onUpdateBet('rayas', { backValue: v })} />
-        <AmountInput label="Medal Total (raya extra)" value={config.rayas.medalTotalValue} onChange={(v) => onUpdateBet('rayas', { medalTotalValue: v })} />
+        <AmountInput label="Front 9 (por raya)" value={config.rayas?.frontValue ?? 25} onChange={(v) => onUpdateBet('rayas', { frontValue: v })} />
+        <AmountInput label="Back 9 (por raya)" value={config.rayas?.backValue ?? 50} onChange={(v) => onUpdateBet('rayas', { backValue: v })} />
+        <AmountInput label="Medal Total (raya extra)" value={config.rayas?.medalTotalValue ?? 25} onChange={(v) => onUpdateBet('rayas', { medalTotalValue: v })} />
         
         <div className="flex items-center justify-between mt-2" onClick={(e) => e.stopPropagation()}>
           <Label className="text-xs text-muted-foreground">Variante Skins</Label>
@@ -330,7 +330,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
               }}
               className={cn(
                 "px-2 py-1 text-[10px] rounded transition-colors",
-                config.rayas.skinVariant === 'acumulados' 
+                (config.rayas?.skinVariant ?? 'acumulados') === 'acumulados' 
                   ? "bg-golf-gold text-golf-dark font-medium" 
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
@@ -346,7 +346,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
               }}
               className={cn(
                 "px-2 py-1 text-[10px] rounded transition-colors",
-                config.rayas.skinVariant === 'sinAcumulacion' 
+                (config.rayas?.skinVariant ?? 'acumulados') === 'sinAcumulacion' 
                   ? "bg-primary text-primary-foreground font-medium" 
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
