@@ -972,9 +972,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Players to show in "Balance vs" section
   // Always follows displayGroupIndex (the group selected in "Ver Grupo")
+  // Sorted so that logged-in player appears first
   const balanceVsPlayers = useMemo(() => {
-    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [displayGroupIndex, players, playerGroups]);
+    const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    
+    // Sort to put logged-in player first
+    if (!basePlayerId) return groupPlayers;
+    
+    return [...groupPlayers].sort((a, b) => {
+      const aIsBase = a.id === basePlayerId || a.profileId === basePlayerId;
+      const bIsBase = b.id === basePlayerId || b.profileId === basePlayerId;
+      if (aIsBase && !bIsBase) return -1;
+      if (!aIsBase && bIsBase) return 1;
+      return 0;
+    });
+  }, [displayGroupIndex, players, playerGroups, basePlayerId]);
   
   // Base player for "Balance vs" - must be from balanceVsPlayers or fallback
   const basePlayer = useMemo(() => {
