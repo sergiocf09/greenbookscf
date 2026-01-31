@@ -2,7 +2,7 @@
  * Hook for managing bilateral handicaps between player pairs
  * Source of truth: round_handicaps table with realtime sync
  */
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Player } from '@/types/golf';
 import { devError, devLog } from '@/lib/logger';
@@ -57,8 +57,21 @@ export const useRoundHandicaps = ({
   }, []);
 
   // Convert local player ID to round_player ID
+  // For guests, localId === round_player_id, so check if ID exists as value too
   const toRoundPlayerId = useCallback((localId: string): string | null => {
-    return roundPlayerIds.get(localId) || null;
+    // First check if it's a direct key match (profile_id for registered users, or id for guests)
+    const directMatch = roundPlayerIds.get(localId);
+    if (directMatch) return directMatch;
+    
+    // For guests restored from DB, their player.id IS the round_player_id
+    // Check if localId exists as a value in the map (meaning it's already a round_player_id)
+    const values = Array.from(roundPlayerIds.values());
+    if (values.includes(localId)) {
+      return localId;
+    }
+    
+    devLog('toRoundPlayerId: no mapping found for', localId, 'Map size:', roundPlayerIds.size, 'Keys:', Array.from(roundPlayerIds.keys()).slice(0, 5));
+    return null;
   }, [roundPlayerIds]);
 
   // Load handicaps from database
