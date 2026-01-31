@@ -12,13 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { DollarSign, Plus, X, Check } from 'lucide-react';
+import { DollarSign, Plus, X, Check, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface SideBetsDialogProps {
   players: Player[];
   sideBets: SideBet[];
   onAddSideBet: (bet: SideBet) => void;
+  onUpdateSideBet?: (bet: SideBet) => void;
+  onDeleteSideBet?: (betId: string) => void;
   trigger?: React.ReactNode;
   basePlayerId?: string;
 }
@@ -27,6 +30,8 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   players,
   sideBets,
   onAddSideBet,
+  onUpdateSideBet,
+  onDeleteSideBet,
   trigger,
   basePlayerId,
 }) => {
@@ -35,9 +40,17 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   const [losers, setLosers] = useState<string[]>([]);
   const [amount, setAmount] = useState(25);
   const [description, setDescription] = useState('');
+  const [editingBet, setEditingBet] = useState<SideBet | null>(null);
+
+  const resetForm = () => {
+    setWinners([]);
+    setLosers([]);
+    setAmount(25);
+    setDescription('');
+    setEditingBet(null);
+  };
 
   const toggleWinner = (playerId: string) => {
-    // Can't be both winner and loser
     if (losers.includes(playerId)) {
       setLosers(prev => prev.filter(id => id !== playerId));
     }
@@ -49,7 +62,6 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   };
 
   const toggleLoser = (playerId: string) => {
-    // Can't be both winner and loser
     if (winners.includes(playerId)) {
       setWinners(prev => prev.filter(id => id !== playerId));
     }
@@ -63,29 +75,54 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   const handleSubmit = () => {
     if (winners.length === 0 || losers.length === 0 || amount <= 0) return;
 
-    const newBet: SideBet = {
-      id: `side-${Date.now()}`,
-      winners,
-      losers,
-      amount,
-      description: description.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    };
-
-    onAddSideBet(newBet);
+    if (editingBet && onUpdateSideBet) {
+      onUpdateSideBet({
+        ...editingBet,
+        winners,
+        losers,
+        amount,
+        description: description.trim() || undefined,
+      });
+    } else {
+      const newBet: SideBet = {
+        id: `side-${Date.now()}`,
+        winners,
+        losers,
+        amount,
+        description: description.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      };
+      onAddSideBet(newBet);
+    }
     
-    // Reset form
-    setWinners([]);
-    setLosers([]);
-    setAmount(25);
-    setDescription('');
-    setOpen(false);
+    resetForm();
+  };
+
+  const handleEdit = (bet: SideBet) => {
+    setEditingBet(bet);
+    setWinners(bet.winners);
+    setLosers(bet.losers);
+    setAmount(bet.amount);
+    setDescription(bet.description || '');
+  };
+
+  const handleDelete = (betId: string) => {
+    if (onDeleteSideBet) {
+      onDeleteSideBet(betId);
+    }
   };
 
   const canSubmit = winners.length > 0 && losers.length > 0 && amount > 0;
 
+  const getPlayerName = (id: string) => {
+    const player = players.find(p => p.id === id);
+    return player?.name.split(' ')[0] || 'Desconocido';
+  };
+
+  const getPlayer = (id: string) => players.find(p => p.id === id);
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-1">
@@ -94,18 +131,73 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Side Bet
+            {editingBet ? 'Editar Side Bet' : 'Side Bets'}
           </DialogTitle>
           <DialogDescription>
-            Captura rápida de apuesta entre jugadores (sin hándicap)
+            Captura rápida de apuestas entre jugadores (sin hándicap)
           </DialogDescription>
         </DialogHeader>
 
+        {/* Existing Side Bets List */}
+        {sideBets.length > 0 && !editingBet && (
+          <div className="space-y-2 border-b border-border pb-3">
+            <Label className="text-xs font-medium text-muted-foreground">Side Bets Capturados</Label>
+            {sideBets.map(bet => {
+              const winnersStr = bet.winners.map(id => getPlayerName(id)).join(', ');
+              const losersStr = bet.losers.map(id => getPlayerName(id)).join(', ');
+              return (
+                <div 
+                  key={bet.id} 
+                  className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-xs"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-green-600 font-medium truncate">{winnersStr}</span>
+                      <span className="text-muted-foreground">←</span>
+                      <span className="text-destructive truncate">{losersStr}</span>
+                    </div>
+                    {bet.description && (
+                      <p className="text-[10px] text-muted-foreground truncate">{bet.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <span className="font-bold">${bet.amount}</span>
+                    {onUpdateSideBet && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleEdit(bet)}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {onDeleteSideBet && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(bet.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="space-y-4 py-2">
+          <Label className="text-sm font-medium">
+            {editingBet ? 'Editando apuesta' : 'Nueva Side Bet'}
+          </Label>
+          
           {/* Winners */}
           <div className="space-y-2">
             <Label className="text-xs font-medium text-green-600">¿Quién cobra? (Ganadores)</Label>
@@ -125,7 +217,10 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
                   >
                     <div 
                       className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
-                      style={{ backgroundColor: isSelected ? 'white' : player.color, color: isSelected ? player.color : 'white' }}
+                      style={{ 
+                        backgroundColor: isSelected ? 'white' : player.color, 
+                        color: isSelected ? player.color : 'white' 
+                      }}
                     >
                       {player.initials}
                     </div>
@@ -160,7 +255,10 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
                   >
                     <div 
                       className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
-                      style={{ backgroundColor: isSelected ? 'white' : player.color, color: isSelected ? 'hsl(var(--destructive))' : 'white' }}
+                      style={{ 
+                        backgroundColor: isSelected ? 'white' : player.color, 
+                        color: isSelected ? 'hsl(var(--destructive))' : 'white' 
+                      }}
                     >
                       {player.initials}
                     </div>
@@ -228,13 +326,18 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
+        <DialogFooter className="gap-2">
+          {editingBet && (
+            <Button variant="outline" onClick={resetForm} className="flex-1">
+              Cancelar Edición
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
+            Cerrar
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="gap-1">
             <Plus className="h-4 w-4" />
-            Agregar Side Bet
+            {editingBet ? 'Guardar' : 'Agregar'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -242,17 +345,23 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
   );
 };
 
-// Side Bets Summary Display (for dashboard)
+// Side Bets Summary Display (for dashboard) - Enhanced with edit/delete
 interface SideBetsSummaryProps {
   sideBets: SideBet[];
   players: Player[];
   basePlayerId?: string;
+  onUpdateSideBet?: (bet: SideBet) => void;
+  onDeleteSideBet?: (betId: string) => void;
+  showManagement?: boolean;
 }
 
 export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
   sideBets,
   players,
   basePlayerId,
+  onUpdateSideBet,
+  onDeleteSideBet,
+  showManagement = false,
 }) => {
   if (sideBets.length === 0) return null;
 
@@ -265,11 +374,9 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
     let balance = 0;
     for (const bet of sideBets) {
       if (bet.winners.includes(playerId)) {
-        // Receives from each loser
         balance += bet.amount * bet.losers.length / bet.winners.length;
       }
       if (bet.losers.includes(playerId)) {
-        // Pays to winners
         balance -= bet.amount;
       }
     }
@@ -281,7 +388,10 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
   return (
     <div className="border border-border rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Side Bets</span>
+        <span className="text-sm font-medium flex items-center gap-1">
+          <DollarSign className="h-4 w-4" />
+          Side Bets
+        </span>
         <span className={cn(
           'text-sm font-bold',
           baseBalance > 0 ? 'text-green-600' : baseBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -292,17 +402,131 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
       
       <div className="space-y-1">
         {sideBets.map(bet => (
-          <div key={bet.id} className="text-xs text-muted-foreground flex items-center gap-1">
-            <span className="text-green-600 font-medium">
-              {bet.winners.map(id => getPlayerName(id)).join(', ')}
-            </span>
-            <span>←</span>
-            <span className="text-destructive">
-              {bet.losers.map(id => getPlayerName(id)).join(', ')}
-            </span>
-            <span className="ml-auto font-medium">${bet.amount}</span>
+          <div key={bet.id} className="flex items-center justify-between text-xs gap-2">
+            <div className="flex items-center gap-1 min-w-0 flex-1">
+              <span className="text-green-600 font-medium truncate">
+                {bet.winners.map(id => getPlayerName(id)).join(', ')}
+              </span>
+              <span className="text-muted-foreground shrink-0">←</span>
+              <span className="text-destructive truncate">
+                {bet.losers.map(id => getPlayerName(id)).join(', ')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="font-medium">${bet.amount}</span>
+              {showManagement && onDeleteSideBet && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-destructive hover:text-destructive"
+                  onClick={() => onDeleteSideBet(bet.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+// Bilateral Side Bets - shows side bets between two specific players
+interface BilateralSideBetsProps {
+  sideBets: SideBet[];
+  players: Player[];
+  playerId: string;
+  rivalId: string;
+  onDeleteSideBet?: (betId: string) => void;
+}
+
+export const BilateralSideBets: React.FC<BilateralSideBetsProps> = ({
+  sideBets,
+  players,
+  playerId,
+  rivalId,
+  onDeleteSideBet,
+}) => {
+  // Filter to only bets involving both players
+  const relevantBets = sideBets.filter(bet => {
+    const hasPlayer = bet.winners.includes(playerId) || bet.losers.includes(playerId);
+    const hasRival = bet.winners.includes(rivalId) || bet.losers.includes(rivalId);
+    return hasPlayer && hasRival;
+  });
+
+  if (relevantBets.length === 0) return null;
+
+  const getPlayerName = (id: string) => {
+    const player = players.find(p => p.id === id);
+    return player?.name.split(' ')[0] || 'Desconocido';
+  };
+
+  // Calculate balance from playerId's perspective
+  const balance = relevantBets.reduce((sum, bet) => {
+    if (bet.winners.includes(playerId) && bet.losers.includes(rivalId)) {
+      return sum + (bet.amount / bet.winners.length);
+    }
+    if (bet.losers.includes(playerId) && bet.winners.includes(rivalId)) {
+      return sum - (bet.amount / bet.winners.length);
+    }
+    return sum;
+  }, 0);
+
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between p-3 bg-muted/30">
+        <span className="font-semibold text-sm flex items-center gap-1">
+          <DollarSign className="h-4 w-4" />
+          Side Bets
+        </span>
+        <span className={cn(
+          'text-lg font-bold',
+          balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+        )}>
+          {balance >= 0 ? '+' : ''}${balance}
+        </span>
+      </div>
+      
+      <div className="divide-y divide-border/30">
+        {relevantBets.map(bet => {
+          const isWinner = bet.winners.includes(playerId);
+          const betAmount = isWinner ? (bet.amount / bet.winners.length) : -(bet.amount / bet.winners.length);
+          
+          return (
+            <div key={bet.id} className="flex items-center justify-between p-2 bg-background/50 text-xs">
+              <div className="flex-1 min-w-0">
+                <span className={cn(
+                  'font-medium',
+                  isWinner ? 'text-green-600' : 'text-destructive'
+                )}>
+                  {isWinner ? 'Cobras' : 'Pagas'}
+                </span>
+                {bet.description && (
+                  <span className="text-muted-foreground ml-1">- {bet.description}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className={cn(
+                  'font-bold',
+                  betAmount > 0 ? 'text-green-600' : 'text-destructive'
+                )}>
+                  {betAmount >= 0 ? '+' : ''}${betAmount}
+                </span>
+                {onDeleteSideBet && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-destructive hover:text-destructive"
+                    onClick={() => onDeleteSideBet(bet.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

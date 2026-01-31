@@ -1,5 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
 import { calculateConejaBets } from './conejaCalculations';
@@ -1412,6 +1412,399 @@ export const calculateMedalGeneralBets = (
   return summaries;
 };
 
+// =====================================================
+// NEW BET CALCULATIONS
+// =====================================================
+
+// PUTTS: Direct comparison of putts (no handicap)
+export const calculatePuttsBets = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  startingHole: 1 | 10 = 1
+): BetSummary[] => {
+  if (!config.putts?.enabled) return [];
+  
+  const summaries: BetSummary[] = [];
+  const ranges = getSegmentHoleRanges(startingHole);
+  
+  const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
+    { key: 'front', holes: ranges.front, amount: config.putts.frontAmount || 0, label: 'Putts Front' },
+    { key: 'back', holes: ranges.back, amount: config.putts.backAmount || 0, label: 'Putts Back' },
+    { key: 'total', holes: [1, 18], amount: config.putts.totalAmount || 0, label: 'Putts Total' },
+  ];
+  
+  // Compare each pair of players
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const playerA = players[i];
+      const playerB = players[j];
+      
+      segments.forEach(({ key, holes, amount, label }) => {
+        if (amount <= 0) return;
+        
+        const [start, end] = holes;
+        
+        // Get putts for each player in this segment
+        const scoresA = (scores.get(playerA.id) || []).filter(s => 
+          s.confirmed && s.holeNumber >= start && s.holeNumber <= end && typeof s.putts === 'number'
+        );
+        const scoresB = (scores.get(playerB.id) || []).filter(s => 
+          s.confirmed && s.holeNumber >= start && s.holeNumber <= end && typeof s.putts === 'number'
+        );
+        
+        // Only count holes both players have
+        const aByHole = new Map(scoresA.map(s => [s.holeNumber, s]));
+        const bByHole = new Map(scoresB.map(s => [s.holeNumber, s]));
+        
+        let puttsA = 0;
+        let puttsB = 0;
+        let commonHoles = 0;
+        
+        for (let h = start; h <= end; h++) {
+          const a = aByHole.get(h);
+          const b = bByHole.get(h);
+          if (a && b) {
+            puttsA += a.putts || 0;
+            puttsB += b.putts || 0;
+            commonHoles++;
+          }
+        }
+        
+        if (commonHoles === 0) return;
+        
+        if (puttsA < puttsB) {
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: label,
+            amount: amount,
+            segment: key,
+            description: `${puttsA} vs ${puttsB} putts`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: label,
+            amount: -amount,
+            segment: key,
+            description: `${puttsB} vs ${puttsA} putts`,
+          });
+        } else if (puttsB < puttsA) {
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: label,
+            amount: amount,
+            segment: key,
+            description: `${puttsB} vs ${puttsA} putts`,
+          });
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: label,
+            amount: -amount,
+            segment: key,
+            description: `${puttsA} vs ${puttsB} putts`,
+          });
+        }
+        // Tie = no money changes hands
+      });
+    }
+  }
+  
+  return summaries;
+};
+
+// SIDE BETS: Direct money capture between players (no handicap)
+export const calculateSideBets = (
+  players: Player[],
+  config: BetConfig
+): BetSummary[] => {
+  if (!config.sideBets?.enabled || !config.sideBets.bets?.length) return [];
+  
+  const summaries: BetSummary[] = [];
+  
+  config.sideBets.bets.forEach(bet => {
+    const perWinnerAmount = (bet.amount * bet.losers.length) / bet.winners.length;
+    
+    bet.winners.forEach(winnerId => {
+      bet.losers.forEach(loserId => {
+        const amountPerPair = bet.amount / bet.winners.length;
+        
+        summaries.push({
+          playerId: winnerId,
+          vsPlayer: loserId,
+          betType: 'Side Bet',
+          amount: amountPerPair,
+          segment: 'total',
+          description: bet.description || 'Side Bet',
+        });
+        summaries.push({
+          playerId: loserId,
+          vsPlayer: winnerId,
+          betType: 'Side Bet',
+          amount: -amountPerPair,
+          segment: 'total',
+          description: bet.description || 'Side Bet',
+        });
+      });
+    });
+  });
+  
+  return summaries;
+};
+
+// STABLEFORD: Point-based scoring (group bet, each player vs pool)
+export const calculateStablefordBets = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse
+): BetSummary[] => {
+  if (!config.stableford?.enabled || players.length < 2) return [];
+  
+  const summaries: BetSummary[] = [];
+  const amount = config.stableford.amount || 100;
+  const points = config.stableford.points;
+  const playerHandicaps = config.stableford.playerHandicaps || [];
+  
+  // Calculate stableford points for each player
+  const playerPoints: { playerId: string; points: number }[] = [];
+  
+  players.forEach(player => {
+    const playerScores = scores.get(player.id) || [];
+    const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
+    if (confirmedScores.length === 0) return;
+    
+    // Get stableford handicap for this player
+    const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+    const handicap = playerHcp?.handicap ?? player.handicap;
+    const strokesPerHole = calculateStrokesPerHole(handicap, course);
+    
+    let totalPoints = 0;
+    confirmedScores.forEach(score => {
+      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+      const strokesReceived = strokesPerHole[score.holeNumber - 1] || 0;
+      const netScore = score.strokes - strokesReceived;
+      const toPar = netScore - holePar;
+      
+      // Assign points based on score relative to par
+      if (toPar <= -3) totalPoints += points.albatross;
+      else if (toPar === -2) totalPoints += points.eagle;
+      else if (toPar === -1) totalPoints += points.birdie;
+      else if (toPar === 0) totalPoints += points.par;
+      else if (toPar === 1) totalPoints += points.bogey;
+      else if (toPar === 2) totalPoints += points.doubleBogey;
+      else if (toPar === 3) totalPoints += points.tripleBogey;
+      else totalPoints += points.quadrupleOrWorse;
+    });
+    
+    playerPoints.push({ playerId: player.id, points: totalPoints });
+  });
+  
+  if (playerPoints.length < 2) return [];
+  
+  // Find the maximum points (winner)
+  const maxPoints = Math.max(...playerPoints.map(p => p.points));
+  const winners = playerPoints.filter(p => p.points === maxPoints);
+  const losers = playerPoints.filter(p => p.points !== maxPoints);
+  
+  if (losers.length === 0) return []; // Everyone tied
+  
+  // Losers pay winners
+  const totalPot = losers.length * amount;
+  const amountPerWinner = totalPot / winners.length;
+  
+  losers.forEach(loser => {
+    const amountToPayPerWinner = amount / winners.length;
+    
+    winners.forEach(winner => {
+      summaries.push({
+        playerId: loser.playerId,
+        vsPlayer: winner.playerId,
+        betType: 'Stableford',
+        amount: -amountToPayPerWinner,
+        segment: 'total',
+        description: `${loser.points} vs ${winner.points} pts`,
+      });
+      summaries.push({
+        playerId: winner.playerId,
+        vsPlayer: loser.playerId,
+        betType: 'Stableford',
+        amount: amountToPayPerWinner,
+        segment: 'total',
+        description: `${winner.points} vs ${loser.points} pts`,
+      });
+    });
+  });
+  
+  return summaries;
+};
+
+// TEAM PRESSURES: Pressure bets between pairs (lowball/highball/combined)
+// Opening threshold: 2 if lowball-only or highball-only, 3 if combined
+export const calculateTeamPressuresBets = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
+): BetSummary[] => {
+  if (!config.teamPressures?.enabled || !config.teamPressures.bets?.length) return [];
+  
+  const summaries: BetSummary[] = [];
+  const ranges = getSegmentHoleRanges(startingHole);
+  const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
+  const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+  
+  config.teamPressures.bets.forEach(bet => {
+    if (!bet.enabled) return;
+    
+    const { teamA, teamB, scoringType, teamHandicaps } = bet;
+    
+    // Opening threshold depends on scoring type
+    // If only lowball OR only highball: opens every 2
+    // If combined: opens when diff reaches 3
+    const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+    
+    // Get handicap for each player
+    const getHandicap = (playerId: string): number => {
+      return teamHandicaps?.[playerId] ?? 
+             players.find(p => p.id === playerId)?.handicap ?? 0;
+    };
+    
+    // Calculate strokes per hole for each player
+    const strokesMap = new Map<string, number[]>();
+    [...teamA, ...teamB].forEach(pid => {
+      strokesMap.set(pid, calculateStrokesPerHole(getHandicap(pid), course));
+    });
+    
+    // Get net score for a player on a hole
+    const getNet = (playerId: string, holeNum: number): number | null => {
+      const score = scores.get(playerId)?.find(s => s.holeNumber === holeNum && s.confirmed);
+      if (!score || typeof score.strokes !== 'number') return null;
+      const strokes = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+      return score.strokes - strokes;
+    };
+    
+    // Get hole result: +1 if teamA wins, -1 if teamB wins, 0 if tie
+    const getHoleResult = (holeNum: number): number | null => {
+      const netA1 = getNet(teamA[0], holeNum);
+      const netA2 = getNet(teamA[1], holeNum);
+      const netB1 = getNet(teamB[0], holeNum);
+      const netB2 = getNet(teamB[1], holeNum);
+      
+      if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
+      
+      let teamAPoints = 0;
+      let teamBPoints = 0;
+      
+      if (scoringType === 'lowBall' || scoringType === 'combined') {
+        const lowA = Math.min(netA1, netA2);
+        const lowB = Math.min(netB1, netB2);
+        if (lowA < lowB) teamAPoints++;
+        else if (lowB < lowA) teamBPoints++;
+      }
+      
+      if (scoringType === 'highBall' || scoringType === 'combined') {
+        const highA = Math.max(netA1, netA2);
+        const highB = Math.max(netB1, netB2);
+        if (highA < highB) teamAPoints++;
+        else if (highB < highA) teamBPoints++;
+      }
+      
+      if (teamAPoints > teamBPoints) return 1;
+      if (teamBPoints > teamAPoints) return -1;
+      return 0;
+    };
+    
+    // Process a nine and return array of bet balances
+    const processNine = (holes: number[]): number[] => {
+      const bets: number[] = [0];
+      
+      holes.forEach((holeNum, holeIndex) => {
+        const result = getHoleResult(holeNum);
+        if (result === null) return;
+        
+        // Apply result to all bets
+        for (let i = 0; i < bets.length; i++) {
+          bets[i] += result;
+        }
+        
+        // Check if last bet reached threshold - open new bet
+        const isLastHole = holeIndex === holes.length - 1;
+        if (!isLastHole) {
+          const lastBet = bets[bets.length - 1];
+          if (Math.abs(lastBet) >= openingThreshold) {
+            bets.push(0);
+          }
+        }
+      });
+      
+      return bets;
+    };
+    
+    const frontBets = processNine(frontHoles);
+    const backBets = processNine(backHoles);
+    
+    // Calculate money for team A
+    const frontIsTied = frontBets[0] === 0;
+    const frontWonA = frontBets.filter(b => b > 0).length;
+    const frontLostA = frontBets.filter(b => b < 0).length;
+    const frontNetBets = frontWonA - frontLostA;
+    
+    const backWonA = backBets.filter(b => b > 0).length;
+    const backLostA = backBets.filter(b => b < 0).length;
+    const backNetBets = backWonA - backLostA;
+    
+    // Carry logic: if front tied, back is worth 2x front + total
+    const effectiveBackValue = frontIsTied
+      ? (2 * bet.frontAmount + bet.totalAmount)
+      : bet.backAmount;
+    
+    const frontMoney = frontNetBets * bet.frontAmount;
+    const backMoney = backNetBets * effectiveBackValue;
+    
+    // Match 18 (only if front not tied)
+    const totalBets = [...frontBets, ...backBets];
+    const totalWonA = totalBets.filter(b => b > 0).length;
+    const totalLostA = totalBets.filter(b => b < 0).length;
+    const totalNetBets = frontIsTied ? 0 : (totalWonA - totalLostA > 0 ? 1 : totalWonA - totalLostA < 0 ? -1 : 0);
+    const matchMoney = frontIsTied ? 0 : totalNetBets * bet.totalAmount;
+    
+    const totalMoney = frontMoney + backMoney + matchMoney;
+    
+    // Split between team members: each pair member vs each opposing member
+    if (totalMoney !== 0) {
+      const perPairAmount = totalMoney / 4; // Split among all 4 pairs
+      
+      teamA.forEach(aId => {
+        teamB.forEach(bId => {
+          summaries.push({
+            playerId: aId,
+            vsPlayer: bId,
+            betType: 'Presiones Parejas',
+            amount: perPairAmount,
+            segment: 'total',
+            description: `Front: ${frontBets.join(',')} Back: ${backBets.join(',')}`,
+          });
+          summaries.push({
+            playerId: bId,
+            vsPlayer: aId,
+            betType: 'Presiones Parejas',
+            amount: -perPairAmount,
+            segment: 'total',
+            description: `Front: ${frontBets.map(b => -b).join(',')} Back: ${backBets.map(b => -b).join(',')}`,
+          });
+        });
+      });
+    }
+  });
+  
+  return summaries;
+};
+
 // Calculate ALL bet summaries with bet overrides and bilateral handicap overrides applied
 export const calculateAllBets = (
   players: Player[],
@@ -1462,6 +1855,10 @@ export const calculateAllBets = (
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMedalGeneralBets(players, scores, config, course),
     ...conejaSummaries,
+    ...calculatePuttsBets(players, scores, config, startingHole),
+    ...calculateSideBets(players, config),
+    ...calculateStablefordBets(players, scores, config, course),
+    ...calculateTeamPressuresBets(players, scores, config, course, startingHole),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
