@@ -296,6 +296,89 @@ export const useRoundHandicaps = ({
     [roundId, handicaps]
   );
 
+  /**
+   * Initialize bilateral handicaps for a new player against all existing players.
+   * Calculates default strokes based on the difference between player handicaps.
+   * 
+   * @param newPlayerId - The round_player_id of the new player
+   * @param newPlayerHandicap - The handicap of the new player
+   * @param existingPlayerIds - Array of round_player_ids for existing players
+   * @param existingPlayerHandicaps - Map from round_player_id to handicap
+   */
+  const initializeHandicapsForNewPlayer = useCallback(
+    async (
+      newPlayerId: string,
+      newPlayerHandicap: number,
+      existingPlayerIds: string[],
+      existingPlayerHandicaps: Map<string, number>
+    ): Promise<boolean> => {
+      if (!roundId) return false;
+
+      devLog('Initializing handicaps for new player:', newPlayerId, 'hcp:', newPlayerHandicap);
+      devLog('Against', existingPlayerIds.length, 'existing players');
+
+      const insertRecords: {
+        round_id: string;
+        player_a_id: string;
+        player_b_id: string;
+        strokes_given_by_a: number;
+      }[] = [];
+
+      for (const existingId of existingPlayerIds) {
+        if (existingId === newPlayerId) continue;
+
+        const existingHcp = existingPlayerHandicaps.get(existingId) ?? 0;
+        
+        // Calculate strokes: positive = player A gives strokes to B
+        // The player with higher handicap receives strokes
+        const strokeDiff = Math.round(newPlayerHandicap - existingHcp);
+        
+        // Normalize the pair (alphabetically smaller ID first)
+        const [normA, normB] = newPlayerId < existingId 
+          ? [newPlayerId, existingId] 
+          : [existingId, newPlayerId];
+        
+        // Check if pair already exists
+        const key = `${normA}-${normB}`;
+        if (handicaps.has(key)) {
+          devLog('Handicap already exists for pair:', key);
+          continue;
+        }
+
+        // If new player is normA, strokes_given_by_a = strokeDiff
+        // If new player is normB, we need to invert the sign
+        const strokesGivenByA = newPlayerId === normA ? strokeDiff : -strokeDiff;
+
+        insertRecords.push({
+          round_id: roundId,
+          player_a_id: normA,
+          player_b_id: normB,
+          strokes_given_by_a: strokesGivenByA,
+        });
+      }
+
+      if (insertRecords.length === 0) {
+        devLog('No new handicap records to insert');
+        return true;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('round_handicaps')
+          .insert(insertRecords);
+
+        if (error) throw error;
+
+        devLog('Initialized', insertRecords.length, 'bilateral handicap(s) for new player');
+        return true;
+      } catch (err) {
+        devError('Error initializing handicaps for new player:', err);
+        return false;
+      }
+    },
+    [roundId, handicaps]
+  );
+
   return {
     handicaps,
     isLoading,
@@ -308,5 +391,6 @@ export const useRoundHandicaps = ({
     getAllHandicapPairs,
     deleteHandicapPair,
     toRoundPlayerId,
+    initializeHandicapsForNewPlayer,
   };
 };
