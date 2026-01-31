@@ -1554,6 +1554,15 @@ const Index = () => {
             betConfig={betConfig}
             holePar={holePar}
             profile={profile}
+            onAddSideBet={(bet) => {
+              setBetConfig(prev => ({
+                ...prev,
+                sideBets: {
+                  ...prev.sideBets,
+                  bets: [...(prev.sideBets?.bets || []), bet],
+                },
+              }));
+            }}
           />
         )}
 
