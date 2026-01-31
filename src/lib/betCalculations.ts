@@ -653,6 +653,7 @@ export const calculateSkinsBets = (
       let frontHolesWonByA = 0;
       let frontHolesWonByB = 0;
       let frontHole9Tied = false;
+      let frontTiedHoles = 0;  // Count tied holes for Zapato rule
       
       for (let holeNum = 1; holeNum <= 9; holeNum++) {
         const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
@@ -675,8 +676,12 @@ export const calculateSkinsBets = (
           frontAccumulated = 0;
           frontHolesWithWinner++;
           frontHolesWonByB++;
-        } else if (holeNum === 9) {
-          frontHole9Tied = true;
+        } else {
+          // Tie
+          frontTiedHoles++;
+          if (holeNum === 9) {
+            frontHole9Tied = true;
+          }
         }
         // Tie = accumulate
       }
@@ -700,6 +705,7 @@ export const calculateSkinsBets = (
       let backHolesWonByA = 0;
       let backHolesWonByB = 0;
       let backHole18Tied = false;
+      let backTiedHoles = 0;  // Count tied holes for Zapato rule
       
       for (let holeNum = 10; holeNum <= 18; holeNum++) {
         const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
@@ -736,8 +742,12 @@ export const calculateSkinsBets = (
           backAccumulated = 0;
           backHolesWithWinner++;
           backHolesWonByB++;
-        } else if (holeNum === 18) {
-          backHole18Tied = true;
+        } else {
+          // Tie
+          backTiedHoles++;
+          if (holeNum === 18) {
+            backHole18Tied = true;
+          }
         }
         // Tie = accumulate (carried skins stay pending until someone wins)
       }
@@ -749,13 +759,17 @@ export const calculateSkinsBets = (
       const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
 
       // SKINS "zapato" (x2) rule (Skins ONLY):
-      // During a nine, if ONLY one player has any skins won so far (>=1) and the opponent has 0,
-      // Skins for that nine is doubled *at that moment*.
+      // Zapato applies ONLY when:
+      // 1. One player has won skins (>=1) and the opponent has 0
+      // 2. AND there are NO tied holes in the segment
+      // Tied holes automatically eliminate the Zapato, even if one player has all skins.
       // Note: This is independent of Oyeses; do not mix bet types.
       const hasZapatoFront =
-        (frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0);
+        frontTiedHoles === 0 &&
+        ((frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0));
       const hasZapatoBack =
-        (backSkinsA > 0 && backSkinsB === 0) || (backSkinsB > 0 && backSkinsA === 0);
+        backTiedHoles === 0 &&
+        ((backSkinsA > 0 && backSkinsB === 0) || (backSkinsB > 0 && backSkinsA === 0));
 
       // DOUBLING LOGIC:
       // Perfect sweep: won all 9 holes in the nine
@@ -1787,6 +1801,7 @@ export const getSkinsEvolution = (
     let totalSkinsB = 0;
     let holesWonByA = 0;
     let holesWonByB = 0;
+    let tiedHoles = 0;  // Count tied holes for Zapato rule
     
     holes.forEach(holeNum => {
       const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
@@ -1826,6 +1841,9 @@ export const getSkinsEvolution = (
         holesWonByB++;
         display = '-' + skinsWon;
         if (isAccumulated) accumulated = 0;
+      } else {
+        // Tie - count for Zapato rule
+        tiedHoles++;
       }
       // Tie = accumulate continues
       
@@ -1838,8 +1856,11 @@ export const getSkinsEvolution = (
       });
     });
     
-    // Zapato: one player has skins, the other has 0
-    const hasZapato = (holesWonByA > 0 && holesWonByB === 0) || (holesWonByB > 0 && holesWonByA === 0);
+    // Zapato: one player has skins, the other has 0, AND no tied holes
+    // Tied holes automatically eliminate the Zapato
+    const hasZapato = 
+      tiedHoles === 0 &&
+      ((holesWonByA > 0 && holesWonByB === 0) || (holesWonByB > 0 && holesWonByA === 0));
     
     return {
       segment,
