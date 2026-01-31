@@ -43,3 +43,16 @@ export const initialsFromPlayerName = (rawName: string) => {
   if (!initials) throw new Error('Nombre inválido');
   return initials;
 };
+
+/**
+ * Format a player name to Title Case for consistent display.
+ * E.g., "JUAN PÉREZ" -> "Juan Pérez", "maria garcia" -> "Maria Garcia"
+ */
+export const formatPlayerName = (name: string): string => {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
