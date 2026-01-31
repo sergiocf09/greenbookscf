@@ -2253,8 +2253,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
   // Get units/manchas details for display - including Cuatriput in manchas with color coding
   // Green = positive for base player (they receive), Red = negative for base player (they pay)
+  // IMPORTANT: Use confirmedScores to match the calculation engine, not allScores
   const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
-    const playerScores = allScores.get(playerId) || [];
+    const playerScores = confirmedScores.get(playerId) || [];
     const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean }[] = [];
     const isBasePlayer = playerId === player.id;
     
