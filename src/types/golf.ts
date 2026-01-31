@@ -160,12 +160,40 @@ export interface BilateralHandicap {
 // Rayas bet config - aggregator bet
 export type RayasSkinVariant = 'acumulados' | 'sinAcumulacion';
 
+// Rayas segment configuration (skins, units, oyes, medal)
+export interface RayasSegmentConfig {
+  enabled: boolean;
+  frontValue: number;
+  backValue: number;
+}
+
+// Rayas bilateral override for a specific player pair
+export interface RayasBilateralOverride {
+  rivalId: string; // The opponent player ID
+  enabled: boolean;
+  segments?: {
+    skins?: { enabled?: boolean; frontValue?: number; backValue?: number };
+    units?: { enabled?: boolean; frontValue?: number; backValue?: number };
+    oyes?: { enabled?: boolean; frontValue?: number; backValue?: number };
+    medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
+  };
+}
+
 export interface RayasBetConfig {
   enabled: boolean;
-  frontValue: number;     // Value per raya in Front 9
-  backValue: number;      // Value per raya in Back 9
+  frontValue: number;     // Default value per raya in Front 9
+  backValue: number;      // Default value per raya in Back 9
   medalTotalValue: number; // Value for the Medal Total raya
   skinVariant: RayasSkinVariant; // Whether skins accumulate in Rayas
+  // Per-segment configuration (optional, defaults to enabled with main values)
+  segments?: {
+    skins: RayasSegmentConfig;
+    units: RayasSegmentConfig;
+    oyes: RayasSegmentConfig;
+    medal: RayasSegmentConfig;
+  };
+  // Per-player bilateral overrides (keyed by logged-in player's ID)
+  bilateralOverrides?: Record<string, RayasBilateralOverride[]>;
 }
 
 // Medal General - Group bet for lowest net total score

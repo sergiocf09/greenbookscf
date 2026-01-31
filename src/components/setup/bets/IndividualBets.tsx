@@ -1,10 +1,11 @@
 import React from 'react';
-import { BetConfig, Player, OyesesPlayerConfig, OyesModality, RayasSkinVariant } from '@/types/golf';
+import { BetConfig, Player, OyesesPlayerConfig, OyesModality } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { RayasConfig } from './RayasConfig';
 
 interface IndividualBetsProps {
   config: BetConfig;
@@ -12,6 +13,7 @@ interface IndividualBetsProps {
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  basePlayerId?: string; // Logged-in player ID for bilateral configs
 }
 
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
@@ -20,6 +22,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   expandedSections,
   onToggleSection,
   onUpdateBet,
+  basePlayerId,
 }) => {
   return (
     <div className="space-y-3">
@@ -311,54 +314,12 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         onExpandChange={(open) => onToggleSection('rayas', open)}
         color="gold"
       >
-        <AmountInput label="Front 9 (por raya)" value={config.rayas?.frontValue ?? 25} onChange={(v) => onUpdateBet('rayas', { frontValue: v })} />
-        <AmountInput label="Back 9 (por raya)" value={config.rayas?.backValue ?? 50} onChange={(v) => onUpdateBet('rayas', { backValue: v })} />
-        <AmountInput label="Medal Total (raya extra)" value={config.rayas?.medalTotalValue ?? 25} onChange={(v) => onUpdateBet('rayas', { medalTotalValue: v })} />
-        
-        <div className="flex items-center justify-between mt-2" onClick={(e) => e.stopPropagation()}>
-          <Label className="text-xs text-muted-foreground">Variante Skins</Label>
-          <div 
-            className="flex gap-1"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onUpdateBet('rayas', { skinVariant: 'acumulados' as RayasSkinVariant });
-              }}
-              className={cn(
-                "px-2 py-1 text-[10px] rounded transition-colors",
-                (config.rayas?.skinVariant ?? 'acumulados') === 'acumulados' 
-                  ? "bg-golf-gold text-golf-dark font-medium" 
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-            >
-              Acum
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onUpdateBet('rayas', { skinVariant: 'sinAcumulacion' as RayasSkinVariant });
-              }}
-              className={cn(
-                "px-2 py-1 text-[10px] rounded transition-colors",
-                (config.rayas?.skinVariant ?? 'acumulados') === 'sinAcumulacion' 
-                  ? "bg-primary text-primary-foreground font-medium" 
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-            >
-              Sin Acum
-            </button>
-          </div>
-        </div>
-        
-        <p className="text-[9px] text-muted-foreground mt-2">
-          Rayas = Skins ganados + Unidades (+) + Oyes (el más cercano gana a todos) + Medal por segmento
-        </p>
+        <RayasConfig
+          config={config}
+          players={players}
+          basePlayerId={basePlayerId}
+          onUpdateRayas={(updates) => onUpdateBet('rayas', updates)}
+        />
       </BetSection>
     </div>
   );
