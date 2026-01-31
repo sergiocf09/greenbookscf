@@ -962,89 +962,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100}</span>
               </div>
               
-              {/* Toolkit visual - holes grid by player */}
-              <div className="bg-muted/30 rounded-lg p-2 space-y-2">
-                {/* Header row with hole numbers */}
-                <div className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 text-[8px] text-muted-foreground">
-                  <div></div>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
-                    <div key={h} className="text-center">{h}</div>
-                  ))}
-                  <div className="text-center font-semibold">F9</div>
-                </div>
-                {stablefordResults.map(result => (
-                  <div key={result.playerId} className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 items-center">
-                    <div className="flex items-center gap-1">
-                      <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                      <span className="text-[9px] font-medium truncate">{result.player.name.split(' ')[0]}</span>
-                    </div>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => {
-                      const hp = result.holePoints.find(p => p.holeNumber === h);
-                      return (
-                        <div 
-                          key={h} 
-                          className={cn(
-                            "text-center text-[9px] font-medium rounded py-0.5",
-                            !hp ? "text-muted-foreground" :
-                            hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                            hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                            hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                            hp.points === 0 ? "bg-muted/50" :
-                            "bg-red-500/20 text-destructive"
-                          )}
-                        >
-                          {hp?.points ?? '-'}
-                        </div>
-                      );
-                    })}
-                    <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
-                      {result.pointsFront}
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Back 9 */}
-                <div className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 text-[8px] text-muted-foreground mt-2">
-                  <div></div>
-                  {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
-                    <div key={h} className="text-center">{h}</div>
-                  ))}
-                  <div className="text-center font-semibold">B9</div>
-                </div>
-                {stablefordResults.map(result => (
-                  <div key={`${result.playerId}-back`} className="grid grid-cols-[60px_repeat(9,1fr)_40px] gap-0.5 items-center">
-                    <div className="flex items-center gap-1">
-                      <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                      <span className="text-[9px] font-medium truncate">{result.player.name.split(' ')[0]}</span>
-                    </div>
-                    {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => {
-                      const hp = result.holePoints.find(p => p.holeNumber === h);
-                      return (
-                        <div 
-                          key={h} 
-                          className={cn(
-                            "text-center text-[9px] font-medium rounded py-0.5",
-                            !hp ? "text-muted-foreground" :
-                            hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                            hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                            hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                            hp.points === 0 ? "bg-muted/50" :
-                            "bg-red-500/20 text-destructive"
-                          )}
-                        >
-                          {hp?.points ?? '-'}
-                        </div>
-                      );
-                    })}
-                    <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
-                      {result.pointsBack}
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Total row */}
-                <div className="border-t border-border/50 pt-2 mt-2">
-                  <div className="flex flex-wrap gap-2">
+              {/* Default view: Player totals with points (click for toolkit) */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className="flex flex-wrap gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
                     {stablefordResults.map((result, idx) => {
                       const isWinner = idx === 0 && result.pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0);
                       return (
@@ -1056,19 +977,109 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           )}
                         >
                           <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                          <span className={cn(
-                            "text-sm font-bold",
-                            isWinner ? "text-green-600" : ""
-                          )}>
-                            {result.pointsTotal} pts
-                          </span>
+                          <div className="flex flex-col items-start">
+                            <span className={cn(
+                              "text-sm font-bold",
+                              isWinner ? "text-green-600" : ""
+                            )}>
+                              {result.pointsTotal} pts
+                            </span>
+                            <span className="text-[8px] text-muted-foreground">
+                              F{result.pointsFront} B{result.pointsBack}
+                            </span>
+                          </div>
                           {isWinner && <Trophy className="h-3 w-3 text-amber-500" />}
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm flex items-center gap-2">
+                      <Star className="h-4 w-4 text-amber-500" />
+                      Stableford - Detalle por Hoyo
+                    </div>
+                    
+                    {/* Front 9 */}
+                    <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
+                      <div></div>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
+                        <div key={h} className="text-center">{h}</div>
+                      ))}
+                      <div className="text-center font-semibold">F9</div>
+                    </div>
+                    {stablefordResults.map(result => (
+                      <div key={result.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
+                        <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => {
+                          const hp = result.holePoints.find(p => p.holeNumber === h);
+                          return (
+                            <div 
+                              key={h} 
+                              className={cn(
+                                "text-center text-[9px] font-medium rounded py-0.5",
+                                !hp ? "text-muted-foreground" :
+                                hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                                hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                                hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                                hp.points === 0 ? "bg-muted/50" :
+                                "bg-red-500/20 text-destructive"
+                              )}
+                            >
+                              {hp?.points ?? '-'}
+                            </div>
+                          );
+                        })}
+                        <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
+                          {result.pointsFront}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Back 9 */}
+                    <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
+                      <div></div>
+                      {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
+                        <div key={h} className="text-center">{h}</div>
+                      ))}
+                      <div className="text-center font-semibold">B9</div>
+                    </div>
+                    {stablefordResults.map(result => (
+                      <div key={`${result.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
+                        <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                        {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => {
+                          const hp = result.holePoints.find(p => p.holeNumber === h);
+                          return (
+                            <div 
+                              key={h} 
+                              className={cn(
+                                "text-center text-[9px] font-medium rounded py-0.5",
+                                !hp ? "text-muted-foreground" :
+                                hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                                hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                                hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                                hp.points === 0 ? "bg-muted/50" :
+                                "bg-red-500/20 text-destructive"
+                              )}
+                            >
+                              {hp?.points ?? '-'}
+                            </div>
+                          );
+                        })}
+                        <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
+                          {result.pointsBack}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Total row in toolkit */}
+                    <div className="border-t border-border/50 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
+                      Toca afuera para cerrar
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               
               {/* Winner display */}
               {stablefordResults.length > 0 && stablefordResults[0].pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0) && (
