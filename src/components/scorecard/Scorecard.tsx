@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup } from '@/types/golf';
-import { calculateScoreToPar, getScoreName } from '@/lib/handicapUtils';
-import { Plus, Trophy, Users } from 'lucide-react';
+import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
+import { calculateScoreToPar, getScoreName, calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { Plus, Trophy, Users, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
@@ -20,6 +20,7 @@ interface ScorecardProps {
   startingHole?: 1 | 10;
   onLeaderboardClick?: () => void;
   playerGroups?: PlayerGroup[];
+  betConfig?: BetConfig;
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -35,6 +36,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   startingHole = 1,
   onLeaderboardClick,
   playerGroups = [],
+  betConfig,
 }) => {
   // State for which group to display
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -111,6 +113,50 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   const backNine = course.holes.slice(9, 18);
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
   const backPar = backNine.reduce((sum, h) => sum + h.par, 0);
+
+  // Calculate Stableford points for each player if enabled
+  const stablefordByPlayer = useMemo(() => {
+    if (!betConfig?.stableford?.enabled) return null;
+    
+    const points = betConfig.stableford.points || DEFAULT_STABLEFORD_POINTS;
+    const playerHandicaps = betConfig.stableford.playerHandicaps || [];
+    
+    const results: Map<string, { front: number; back: number; total: number }> = new Map();
+    
+    displayPlayers.forEach(player => {
+      const playerScores = scores.get(player.id) || [];
+      const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+      const handicap = playerHcp?.handicap ?? player.handicap;
+      const strokesPerHole = calculateStrokesPerHole(handicap, course);
+      
+      let front = 0;
+      let back = 0;
+      
+      playerScores.filter(s => s.confirmed && s.strokes > 0).forEach(score => {
+        const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+        const strokesReceived = strokesPerHole[score.holeNumber - 1] || 0;
+        const netScore = score.strokes - strokesReceived;
+        const toPar = netScore - holePar;
+        
+        let holePoint = 0;
+        if (toPar <= -3) holePoint = points.albatross;
+        else if (toPar === -2) holePoint = points.eagle;
+        else if (toPar === -1) holePoint = points.birdie;
+        else if (toPar === 0) holePoint = points.par;
+        else if (toPar === 1) holePoint = points.bogey;
+        else if (toPar === 2) holePoint = points.doubleBogey;
+        else if (toPar === 3) holePoint = points.tripleBogey;
+        else holePoint = points.quadrupleOrWorse;
+        
+        if (score.holeNumber <= 9) front += holePoint;
+        else back += holePoint;
+      });
+      
+      results.set(player.id, { front, back, total: front + back });
+    });
+    
+    return results;
+  }, [betConfig, displayPlayers, scores, course]);
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -331,6 +377,43 @@ export const Scorecard: React.FC<ScorecardProps> = ({
           </tbody>
         </table>
       </div>
+      
+      {/* Stableford Points Row */}
+      {stablefordByPlayer && (
+        <div className="border-t border-border p-2 bg-amber-500/5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Star className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Stableford</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {displayPlayers.map(player => {
+              const pts = stablefordByPlayer.get(player.id);
+              const maxPts = Math.max(...Array.from(stablefordByPlayer.values()).map(v => v.total));
+              const isLeader = pts?.total === maxPts && pts.total > 0;
+              return (
+                <div 
+                  key={player.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs",
+                    isLeader ? "bg-amber-500/20 border border-amber-500/40" : "bg-muted/50"
+                  )}
+                >
+                  <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                  <div className="flex flex-col">
+                    <span className={cn("font-bold", isLeader && "text-amber-600")}>
+                      {pts?.total ?? 0} pts
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">
+                      F:{pts?.front ?? 0} B:{pts?.back ?? 0}
+                    </span>
+                  </div>
+                  {isLeader && <Trophy className="h-3 w-3 text-amber-500" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

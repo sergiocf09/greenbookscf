@@ -1445,6 +1445,60 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       ))}
 
+      {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
+      {betConfig.teamPressures?.enabled && betConfig.teamPressures.bets?.filter(b => b.enabled).map((bet, idx) => {
+        // Calculate team pressures balance from betSummaries for this team
+        const teamAPressures = betSummaries.filter(s => 
+          s.betType === 'Presiones Parejas' && bet.teamA.includes(s.playerId)
+        );
+        const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Divide by 2 since each team member gets half
+        
+        const getPlayer = (id: string) => players.find(p => p.id === id);
+        const teamAPlayers = [getPlayer(bet.teamA[0]), getPlayer(bet.teamA[1])].filter(Boolean) as Player[];
+        const teamBPlayers = [getPlayer(bet.teamB[0]), getPlayer(bet.teamB[1])].filter(Boolean) as Player[];
+        
+        const isBaseInTeamA = bet.teamA.includes(basePlayer?.id || '');
+        const baseTeamBalance = isBaseInTeamA ? teamABalance : -teamABalance;
+        
+        if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
+        
+        return (
+          <Card key={`team-pressure-${idx}`}>
+            <CardHeader className="py-2">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Presiones Parejas {idx > 0 ? idx + 1 : ''}
+                </span>
+                <span className={cn(
+                  'text-lg font-bold',
+                  baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1">
+                  {(isBaseInTeamA ? teamAPlayers : teamBPlayers).map(p => (
+                    <PlayerAvatar key={p.id} initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayer?.id} />
+                  ))}
+                  <span className="text-muted-foreground mx-2">vs</span>
+                  {(isBaseInTeamA ? teamBPlayers : teamAPlayers).map(p => (
+                    <PlayerAvatar key={p.id} initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayer?.id} />
+                  ))}
+                </div>
+                <span className="text-muted-foreground">
+                  {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
+                   bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+
       {/* Grupales */}
       <GroupBetsCard
         players={players}
@@ -2710,12 +2764,27 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Putts - Individual bet (no handicap)
+    // Putts - Individual bet (no handicap) - Show total putts for each player
     if (betConfig.putts?.enabled) {
       const puttsFront = groupedSummaries['Putts Front']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back']?.total || 0;
       const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
       const total = puttsFront + puttsBack + puttsTotal;
+      
+      // Calculate total putts for each player
+      const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
+        const playerScores = allScores.get(playerId) || [];
+        return playerScores
+          .filter(s => s.confirmed && s.holeNumber >= startHole && s.holeNumber <= endHole && typeof s.putts === 'number')
+          .reduce((sum, s) => sum + (s.putts || 0), 0);
+      };
+      
+      const playerPuttsFront = getPlayerPutts(player.id, 1, 9);
+      const playerPuttsBack = getPlayerPutts(player.id, 10, 18);
+      const playerPuttsTotal = playerPuttsFront + playerPuttsBack;
+      const rivalPuttsFront = getPlayerPutts(rival.id, 1, 9);
+      const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
+      const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
       
       if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
         groups.push({
@@ -2730,14 +2799,26 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
             if (segmentKey === 'putts_front') {
-              const summary = groupedSummaries['Putts Front'];
-              return { playerNet: 0, rivalNet: 0, amount: puttsFront, description: summary?.details?.[0]?.description };
+              return { 
+                playerNet: playerPuttsFront, 
+                rivalNet: rivalPuttsFront, 
+                amount: puttsFront, 
+                description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
+              };
             } else if (segmentKey === 'putts_back') {
-              const summary = groupedSummaries['Putts Back'];
-              return { playerNet: 0, rivalNet: 0, amount: puttsBack, description: summary?.details?.[0]?.description };
+              return { 
+                playerNet: playerPuttsBack, 
+                rivalNet: rivalPuttsBack, 
+                amount: puttsBack, 
+                description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
+              };
             } else {
-              const summary = groupedSummaries['Putts Total'];
-              return { playerNet: 0, rivalNet: 0, amount: puttsTotal, description: summary?.details?.[0]?.description };
+              return { 
+                playerNet: playerPuttsTotal, 
+                rivalNet: rivalPuttsTotal, 
+                amount: puttsTotal, 
+                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
+              };
             }
           },
         });
@@ -2784,53 +2865,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Stableford - Group bet with points
-    if (betConfig.stableford?.enabled) {
-      const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
-      
-      if (stablefordTotal !== 0) {
-        groups.push({
-          key: 'stableford',
-          label: 'Stableford',
-          configKey: 'stableford',
-          segments: [],
-          getTotal: () => stablefordTotal,
-          getSegmentData: () => {
-            const summary = groupedSummaries['Stableford'];
-            return {
-              playerNet: 0,
-              rivalNet: 0,
-              amount: stablefordTotal,
-              description: summary?.details?.[0]?.description,
-            };
-          },
-        });
-      }
-    }
-    
-    // Team Pressures - Pair pressures
-    if (betConfig.teamPressures?.enabled && betConfig.teamPressures.bets?.length > 0) {
-      const teamPressuresTotal = groupedSummaries['Presiones Parejas']?.total || 0;
-      
-      if (teamPressuresTotal !== 0) {
-        groups.push({
-          key: 'teamPressures',
-          label: 'Presiones Parejas',
-          configKey: 'teamPressures',
-          segments: [],
-          getTotal: () => teamPressuresTotal,
-          getSegmentData: () => {
-            const summary = groupedSummaries['Presiones Parejas'];
-            return {
-              playerNet: 0,
-              rivalNet: 0,
-              amount: teamPressuresTotal,
-              description: summary?.details?.[0]?.description,
-            };
-          },
-        });
-      }
-    }
+    // NOTE: Stableford and Team Pressures are NOT shown in bilateral view
+    // They are displayed in GroupBetsCard and TeamPressuresCard respectively
     
     return groups;
   }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
