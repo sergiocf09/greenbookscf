@@ -122,8 +122,11 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
     // Determine if pata was lost on this hole (had more patas before)
     const pataLost = hd.isConfirmed && hd.previousPataCount > 0 && (!hd.hasPata || hd.pataCount < hd.previousPataCount);
     
-    // Show "=" if: tie, OR if someone lost all their patas
-    const showTie = hd.isConfirmed && (hd.isTie || (pataLost && !hd.hasPata));
+    // Show "=" ONLY if:
+    // 1. The hole was a tie (no absolute winner) AND no one has pata
+    // 2. OR someone lost all their patas and now no one has pata
+    // CRITICAL: If someone still HAS pata, show the rabbit, NOT the "="
+    const showTie = hd.isConfirmed && !hd.hasPata && (hd.isTie || pataLost);
     
     // When pata is lost but player still has patas, we show reduced rabbits (no winner indicator)
     // When hole is won and player gains pata, we show rabbits with their initials
