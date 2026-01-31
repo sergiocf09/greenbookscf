@@ -1566,7 +1566,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           const frontDetails = Array.from({ length: 9 }, (_, i) => getHoleDetail(i + 1));
           const backDetails = Array.from({ length: 9 }, (_, i) => getHoleDetail(i + 10));
           
-          // Calculate running balances
+          // Opening threshold is auto-determined by scoring type
+          const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+          
+          // Process a nine and return array of individual bet balances (like betCalculations.ts)
+          const processNine = (details: typeof frontDetails): number[] => {
+            const bets: number[] = [0];
+            
+            details.forEach((d, idx) => {
+              if (!d) return;
+              
+              // Apply result to all open bets
+              for (let i = 0; i < bets.length; i++) {
+                bets[i] += d.net;
+              }
+              
+              // Check if last bet reached threshold - open new bet
+              const isLastHole = idx === details.length - 1;
+              if (!isLastHole) {
+                const lastBet = bets[bets.length - 1];
+                if (Math.abs(lastBet) >= openingThreshold) {
+                  bets.push(0);
+                }
+              }
+            });
+            
+            return bets;
+          };
+          
+          const frontBets = processNine(frontDetails);
+          const backBets = processNine(backDetails);
+          
+          // Calculate running balances for tooltip
           let runningFront = 0;
           let runningBack = 0;
           const frontBalances = frontDetails.map(d => {
@@ -1578,7 +1609,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             return runningBack;
           });
           
-          return { frontDetails, backDetails, frontBalances, backBalances };
+          return { frontDetails, backDetails, frontBalances, backBalances, frontBets, backBets };
         };
         
         const holeDetails = getTeamPressureHoleDetails();
@@ -1599,6 +1630,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           ? holeDetails.backBalances 
           : holeDetails.backBalances.map(b => -b);
         
+        // Get individual bet results for display
+        const displayFrontBets = isBaseInTeamA 
+          ? holeDetails.frontBets 
+          : holeDetails.frontBets.map(b => -b);
+        const displayBackBets = isBaseInTeamA 
+          ? holeDetails.backBets 
+          : holeDetails.backBets.map(b => -b);
+        
+        // Format bets for display: +4+2 or -3-1
+        const formatBetsDisplay = (bets: number[]): string => {
+          return bets.map(b => (b >= 0 ? '+' : '') + b).join('');
+        };
+        
+        const frontBetsDisplay = formatBetsDisplay(displayFrontBets);
+        const backBetsDisplay = formatBetsDisplay(displayBackBets);
+        
+        // Keep totals for color coding (based on final running balance)
         const frontTotal = displayFrontBalances[8] || 0;
         const backTotal = displayBackBalances[8] || 0;
         
@@ -1649,7 +1697,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <p className="text-[10px] text-muted-foreground truncate">
                       {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
                        bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
-                      <span className="ml-1">(abre cada {bet.openingThreshold})</span>
                     </p>
                   </div>
 
@@ -1657,11 +1704,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="text-right">
                       <div className="text-[11px] tabular-nums">
                         <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          F9 {frontTotal >= 0 ? '+' : ''}{frontTotal}
+                          F9 {frontBetsDisplay}
                         </span>
                         <span className="text-muted-foreground"> · </span>
                         <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          B9 {backTotal >= 0 ? '+' : ''}{backTotal}
+                          B9 {backBetsDisplay}
                         </span>
                       </div>
                       <div className={cn('text-sm font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
