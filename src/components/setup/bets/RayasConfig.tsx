@@ -93,36 +93,35 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Global values */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Front 9 (default)</Label>
+      {/* Global values - single row */}
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Label className="text-[9px] text-muted-foreground">Front</Label>
           <Input
             type="number"
             value={rayas.frontValue}
             onChange={(e) => onUpdateRayas({ frontValue: Number(e.target.value) || 0 })}
-            className="h-8 text-sm"
+            className="h-7 text-sm"
           />
         </div>
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Back 9 (default)</Label>
+        <div className="flex-1">
+          <Label className="text-[9px] text-muted-foreground">Back</Label>
           <Input
             type="number"
             value={rayas.backValue}
             onChange={(e) => onUpdateRayas({ backValue: Number(e.target.value) || 0 })}
-            className="h-8 text-sm"
+            className="h-7 text-sm"
           />
         </div>
-      </div>
-      
-      <div>
-        <Label className="text-[10px] text-muted-foreground">Medal Total (raya extra)</Label>
-        <Input
-          type="number"
-          value={rayas.medalTotalValue}
-          onChange={(e) => onUpdateRayas({ medalTotalValue: Number(e.target.value) || 0 })}
-          className="h-8 text-sm w-1/2"
-        />
+        <div className="flex-1">
+          <Label className="text-[9px] text-muted-foreground">Medal Total</Label>
+          <Input
+            type="number"
+            value={rayas.medalTotalValue}
+            onChange={(e) => onUpdateRayas({ medalTotalValue: Number(e.target.value) || 0 })}
+            className="h-7 text-sm"
+          />
+        </div>
       </div>
       
       {/* Skin variant */}
@@ -166,8 +165,15 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
       
       {/* Segments configuration */}
       <div className="border-t pt-3">
-        <Label className="text-xs font-medium mb-2 block">Segmentos incluidos</Label>
-        <div className="space-y-2">
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs font-medium">Segmentos incluidos</Label>
+          <div className="flex gap-1 text-[9px] text-muted-foreground pr-1">
+            <span className="w-14 text-center">Front</span>
+            <span className="w-2"></span>
+            <span className="w-14 text-center">Back</span>
+          </div>
+        </div>
+        <div className="space-y-1">
           {SEGMENT_KEYS.map(segKey => {
             const segConfig = getSegmentConfig(segKey);
             const segInfo = SEGMENT_LABELS[segKey];
@@ -194,7 +200,6 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                       value={segConfig.frontValue}
                       onChange={(e) => updateSegment(segKey, { frontValue: Number(e.target.value) || 0 })}
                       className="h-6 w-14 text-[10px] text-center"
-                      title="Front 9"
                     />
                     <span className="text-[9px] text-muted-foreground">/</span>
                     <Input
@@ -202,7 +207,6 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                       value={segConfig.backValue}
                       onChange={(e) => updateSegment(segKey, { backValue: Number(e.target.value) || 0 })}
                       className="h-6 w-14 text-[10px] text-center"
-                      title="Back 9"
                     />
                   </div>
                 )}
@@ -210,9 +214,6 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
             );
           })}
         </div>
-        <p className="text-[9px] text-muted-foreground mt-1">
-          Valores: Front / Back por raya
-        </p>
       </div>
       
       {/* Bilateral overrides */}
@@ -294,13 +295,13 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                               });
                             }}
                             className={cn(
-                              "px-1 py-1 text-[9px] rounded transition-colors",
+                              "px-1 py-1 text-[8px] rounded transition-colors",
                               isSegEnabled
-                                ? "bg-golf-gold text-golf-dark font-medium"
-                                : "bg-muted text-muted-foreground line-through"
+                                ? "bg-emerald-100 text-emerald-800 font-medium"
+                                : "bg-muted text-muted-foreground line-through opacity-60"
                             )}
                           >
-                            {SEGMENT_LABELS[segKey].emoji}
+                            {SEGMENT_LABELS[segKey].name}
                           </button>
                         );
                       })}
