@@ -33,6 +33,24 @@ interface GroupBetsCardProps {
   onBetConfigChange?: (config: BetConfig) => void;
 }
 
+// Tie-break storage helper
+// We store tie-breaks as "<holeNumber>:<playerId>" so the selection only applies to that specific hole.
+// Legacy values without ":" are treated as unknown-hole and therefore NOT auto-applied (forces re-select).
+const parseTieBreak = (value?: string | null): { hole: number | null; playerId: string | null } => {
+  if (!value) return { hole: null, playerId: null };
+  const parts = String(value).split(':');
+  if (parts.length === 2) {
+    const hole = Number(parts[0]);
+    const playerId = parts[1];
+    return {
+      hole: Number.isFinite(hole) ? hole : null,
+      playerId: playerId || null,
+    };
+  }
+  // Legacy format (just playerId)
+  return { hole: null, playerId: String(value) };
+};
+
 // Stableford Points Calculator
 interface StablefordPlayerResult {
   playerId: string;
@@ -680,9 +698,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const overrideLoser = betConfig.culebras.tieBreakLoser;
-        if (overrideLoser && playersWithMaxPutts.some(c => c.playerId === overrideLoser)) {
-          const loserPlayer = players.find(p => p.id === overrideLoser);
+        const override = parseTieBreak(betConfig.culebras.tieBreakLoser);
+        // Only apply override if it was chosen for THIS tie hole
+        if (override.hole === maxHole && override.playerId && playersWithMaxPutts.some(c => c.playerId === override.playerId)) {
+          const loserPlayer = players.find(p => p.id === override.playerId);
           if (loserPlayer) {
             hasTie = false; // Tie resolved
             const totalLoss = amountPerPlayer * (players.length - 1);
@@ -789,9 +808,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const overrideLoser = betConfig.pinguinos.tieBreakLoser;
-        if (overrideLoser && playersWithMaxOverPar.some(p => p.playerId === overrideLoser)) {
-          const loserPlayer = players.find(p => p.id === overrideLoser);
+        const override = parseTieBreak(betConfig.pinguinos.tieBreakLoser);
+        // Only apply override if it was chosen for THIS tie hole
+        if (override.hole === maxHole && override.playerId && playersWithMaxOverPar.some(p => p.playerId === override.playerId)) {
+          const loserPlayer = players.find(p => p.id === override.playerId);
           if (loserPlayer) {
             hasTie = false; // Tie resolved
             const totalLoss = amountPerPlayer * (players.length - 1);
@@ -846,18 +866,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
-  const handleSelectTieBreakLoser = (betType: 'culebras' | 'pinguinos', playerId: string) => {
+  const handleSelectTieBreakLoser = (betType: 'culebras' | 'pinguinos', tieHole: number, playerId: string) => {
     if (!onBetConfigChange) return;
+    const value = `${tieHole}:${playerId}`;
     
     if (betType === 'culebras') {
       onBetConfigChange({
         ...betConfig,
-        culebras: { ...betConfig.culebras, tieBreakLoser: playerId },
+        culebras: { ...betConfig.culebras, tieBreakLoser: value },
       });
     } else {
       onBetConfigChange({
         ...betConfig,
-        pinguinos: { ...betConfig.pinguinos, tieBreakLoser: playerId },
+        pinguinos: { ...betConfig.pinguinos, tieBreakLoser: value },
       });
     }
   };
@@ -926,7 +947,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       variant="outline"
                       size="sm"
                       className="h-8"
-                      onClick={() => handleSelectTieBreakLoser('culebras', player.id)}
+                      onClick={() => handleSelectTieBreakLoser('culebras', culebrasResult.tieHole || 0, player.id)}
                     >
                       <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
                       <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
@@ -1014,7 +1035,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         variant="outline"
                         size="sm"
                         className="h-8"
-                        onClick={() => handleSelectTieBreakLoser('pinguinos', player.id)}
+                        onClick={() => handleSelectTieBreakLoser('pinguinos', pinguinosResult.tieHole || 0, player.id)}
                       >
                         <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
                         <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
