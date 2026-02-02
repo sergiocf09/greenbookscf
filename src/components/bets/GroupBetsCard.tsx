@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Users, Star, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Trophy, Users, Star, ChevronDown, Edit2, AlertTriangle, DollarSign, Plus, Minus } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName } from '@/lib/playerInput';
 import { 
@@ -21,6 +23,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface GroupBetsCardProps {
   players: Player[];
@@ -29,6 +37,7 @@ interface GroupBetsCardProps {
   course: GolfCourse;
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
+  onBetConfigChange?: (config: BetConfig) => void;
 }
 
 // Stableford Points Calculator
@@ -137,6 +146,10 @@ interface OccurrenceBetResult {
     color: string;
     totalLoss: number;
   } | null;
+  // Tie-breaker info
+  hasTie: boolean;
+  tiedPlayers: Player[];
+  tieHole: number | null;
 }
 
 // Coneja Section component with interactive toolkit
@@ -498,6 +511,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   course,
   basePlayerId,
   confirmedHoles = new Set(),
+  onBetConfigChange,
 }) => {
   // Check if all 18 holes are confirmed for all players
   const all18HolesConfirmed = useMemo(() => {
@@ -654,14 +668,42 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Find last player to pay (most recent culebra by hole number)
     let loser = null;
+    let hasTie = false;
+    let tiedPlayers: Player[] = [];
+    let tieHole: number | null = null;
+    
     if (allCulebras.length > 0) {
       const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
       const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
       const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
-      const loserCulebra = culebrasOnLastHole.find(c => c.putts === maxPutts);
+      const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
       
-      if (loserCulebra) {
-        const loserPlayer = players.find(p => p.id === loserCulebra.playerId);
+      // Check if there's a tie
+      if (playersWithMaxPutts.length > 1) {
+        hasTie = true;
+        tieHole = maxHole;
+        tiedPlayers = playersWithMaxPutts
+          .map(c => players.find(p => p.id === c.playerId))
+          .filter((p): p is Player => p !== undefined);
+        
+        // Check if there's a manual override
+        const overrideLoser = betConfig.culebras.tieBreakLoser;
+        if (overrideLoser && playersWithMaxPutts.some(c => c.playerId === overrideLoser)) {
+          const loserPlayer = players.find(p => p.id === overrideLoser);
+          if (loserPlayer) {
+            hasTie = false; // Tie resolved
+            const totalLoss = amountPerPlayer * (players.length - 1);
+            loser = {
+              playerId: loserPlayer.id,
+              name: loserPlayer.name,
+              initials: loserPlayer.initials,
+              color: loserPlayer.color,
+              totalLoss,
+            };
+          }
+        }
+      } else if (playersWithMaxPutts.length === 1) {
+        const loserPlayer = players.find(p => p.id === playersWithMaxPutts[0].playerId);
         if (loserPlayer) {
           const totalLoss = amountPerPlayer * (players.length - 1);
           loser = {
@@ -685,6 +727,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       amountPerPlayer,
       occurrences,
       loser,
+      hasTie,
+      tiedPlayers,
+      tieHole,
     };
   }, [players, scores, betConfig.culebras]);
 
@@ -732,14 +777,42 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Find last player to pay
     let loser = null;
+    let hasTie = false;
+    let tiedPlayers: Player[] = [];
+    let tieHole: number | null = null;
+    
     if (allPinguinos.length > 0) {
       const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
       const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
       const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
-      const loserPinguino = pinguinosOnLastHole.find(p => p.overPar === maxOverPar);
+      const playersWithMaxOverPar = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
       
-      if (loserPinguino) {
-        const loserPlayer = players.find(p => p.id === loserPinguino.playerId);
+      // Check if there's a tie
+      if (playersWithMaxOverPar.length > 1) {
+        hasTie = true;
+        tieHole = maxHole;
+        tiedPlayers = playersWithMaxOverPar
+          .map(p => players.find(pl => pl.id === p.playerId))
+          .filter((p): p is Player => p !== undefined);
+        
+        // Check if there's a manual override
+        const overrideLoser = betConfig.pinguinos.tieBreakLoser;
+        if (overrideLoser && playersWithMaxOverPar.some(p => p.playerId === overrideLoser)) {
+          const loserPlayer = players.find(p => p.id === overrideLoser);
+          if (loserPlayer) {
+            hasTie = false; // Tie resolved
+            const totalLoss = amountPerPlayer * (players.length - 1);
+            loser = {
+              playerId: loserPlayer.id,
+              name: loserPlayer.name,
+              initials: loserPlayer.initials,
+              color: loserPlayer.color,
+              totalLoss,
+            };
+          }
+        }
+      } else if (playersWithMaxOverPar.length === 1) {
+        const loserPlayer = players.find(p => p.id === playersWithMaxOverPar[0].playerId);
         if (loserPlayer) {
           const totalLoss = amountPerPlayer * (players.length - 1);
           loser = {
@@ -763,6 +836,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       amountPerPlayer,
       occurrences,
       loser,
+      hasTie,
+      tiedPlayers,
+      tieHole,
     };
   }, [players, scores, betConfig.pinguinos, course]);
 
@@ -774,6 +850,45 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
   const [showPinguinosDetail, setShowPinguinosDetail] = useState(false);
+  
+  // State for editing amounts
+  const [editingBetType, setEditingBetType] = useState<'culebras' | 'pinguinos' | null>(null);
+  const [editAmount, setEditAmount] = useState(0);
+  
+  // Handler for updating bet amounts
+  const handleSaveAmount = () => {
+    if (!onBetConfigChange || !editingBetType) return;
+    
+    if (editingBetType === 'culebras') {
+      onBetConfigChange({
+        ...betConfig,
+        culebras: { ...betConfig.culebras, valuePerOccurrence: editAmount },
+      });
+    } else if (editingBetType === 'pinguinos') {
+      onBetConfigChange({
+        ...betConfig,
+        pinguinos: { ...betConfig.pinguinos, valuePerOccurrence: editAmount },
+      });
+    }
+    setEditingBetType(null);
+  };
+  
+  // Handler for tie-breaker selection
+  const handleSelectTieBreakLoser = (betType: 'culebras' | 'pinguinos', playerId: string) => {
+    if (!onBetConfigChange) return;
+    
+    if (betType === 'culebras') {
+      onBetConfigChange({
+        ...betConfig,
+        culebras: { ...betConfig.culebras, tieBreakLoser: playerId },
+      });
+    } else {
+      onBetConfigChange({
+        ...betConfig,
+        pinguinos: { ...betConfig.pinguinos, tieBreakLoser: playerId },
+      });
+    }
+  };
   
   // Check if any group bet is enabled
   const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || conejaResult || betConfig.stableford?.enabled;
@@ -807,17 +922,63 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <span className="text-lg font-bold text-destructive">({culebrasResult.totalCount})</span>
               </div>
               <div className="flex items-center gap-2">
+                {culebrasResult.hasTie && (
+                  <span className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Empate
+                  </span>
+                )}
                 {culebrasResult.loser && (
                   <>
                     <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name).split(' ')[0]} {culebrasResult.loser.initials}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
                 )}
+                {onBetConfigChange && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditAmount(culebrasResult.valuePerOccurrence);
+                      setEditingBetType('culebras');
+                    }}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                )}
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCulebrasDetail && "rotate-180")} />
               </div>
             </div>
             
-            {showCulebrasDetail && culebrasResult.loser && (
+            {/* Tie-breaker UI */}
+            {culebrasResult.hasTie && culebrasResult.tiedPlayers.length > 0 && onBetConfigChange && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 ml-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                    Empate en Hoyo {culebrasResult.tieHole} - Selecciona quién paga
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {culebrasResult.tiedPlayers.map(player => (
+                    <Button
+                      key={player.id}
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => handleSelectTieBreakLoser('culebras', player.id)}
+                    >
+                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                      <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {showCulebrasDetail && (culebrasResult.loser || culebrasResult.hasTie) && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-muted-foreground">Hoyos con culebras:</span>
@@ -863,17 +1024,63 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <span className="text-lg font-bold text-destructive">({pinguinosResult.totalCount})</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {pinguinosResult.hasTie && (
+                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Empate
+                    </span>
+                  )}
                   {pinguinosResult.loser && (
                     <>
                       <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name).split(' ')[0]} {pinguinosResult.loser.initials}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
                   )}
+                  {onBetConfigChange && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditAmount(pinguinosResult.valuePerOccurrence);
+                        setEditingBetType('pinguinos');
+                      }}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showPinguinosDetail && "rotate-180")} />
                 </div>
               </div>
               
-              {showPinguinosDetail && pinguinosResult.loser && (
+              {/* Tie-breaker UI */}
+              {pinguinosResult.hasTie && pinguinosResult.tiedPlayers.length > 0 && onBetConfigChange && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 ml-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      Empate en Hoyo {pinguinosResult.tieHole} - Selecciona quién paga
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {pinguinosResult.tiedPlayers.map(player => (
+                      <Button
+                        key={player.id}
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => handleSelectTieBreakLoser('pinguinos', player.id)}
+                      >
+                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {showPinguinosDetail && (pinguinosResult.loser || pinguinosResult.hasTie) && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-muted-foreground">Hoyos con pingüinos:</span>
@@ -1128,6 +1335,61 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
       </CardContent>
+      
+      {/* Edit Amount Dialog */}
+      <Dialog open={!!editingBetType} onOpenChange={() => setEditingBetType(null)}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-sm">
+              Modificar {editingBetType === 'culebras' ? 'Culebras' : 'Pingüinos'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Valor por incidencia:</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setEditAmount(Math.max(0, editAmount - 25))}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex items-center gap-0.5">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(parseInt(e.target.value) || 0)}
+                    className="w-16 h-7 text-sm text-center px-1"
+                    min={0}
+                    step={25}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setEditAmount(editAmount + 25)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditingBetType(null)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveAmount} className="flex-1">
+                Guardar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

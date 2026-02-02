@@ -1184,7 +1184,7 @@ export const calculateCulebrasBets = (
   const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
   
   // If multiple players have culebra on same last hole, the one with more putts pays
-  // If tied putts, this should be resolved by user (handled in UI)
+  // If tied putts, check for manual override (tieBreakLoser)
   let lastPlayerToPay: string;
   
   if (culebrasOnLastHole.length === 1) {
@@ -1197,9 +1197,14 @@ export const calculateCulebrasBets = (
     if (playersWithMaxPutts.length === 1) {
       lastPlayerToPay = playersWithMaxPutts[0].playerId;
     } else {
-      // Exact tie - for now, use first player (UI should handle this)
-      // Store this as a tie that needs resolution
-      lastPlayerToPay = playersWithMaxPutts[0].playerId;
+      // Exact tie - check for manual override
+      const overrideLoser = config.culebras.tieBreakLoser;
+      if (overrideLoser && playersWithMaxPutts.some(c => c.playerId === overrideLoser)) {
+        lastPlayerToPay = overrideLoser;
+      } else {
+        // No override, use first player (UI should handle this)
+        lastPlayerToPay = playersWithMaxPutts[0].playerId;
+      }
     }
   }
   
@@ -1267,6 +1272,7 @@ export const calculatePinguinosBets = (
   const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
   
   // If multiple players have pinguino on same last hole, the one with worst score pays
+  // If tied, check for manual override (tieBreakLoser)
   let lastPlayerToPay: string;
   
   if (pinguinosOnLastHole.length === 1) {
@@ -1279,8 +1285,14 @@ export const calculatePinguinosBets = (
     if (playersWithWorst.length === 1) {
       lastPlayerToPay = playersWithWorst[0].playerId;
     } else {
-      // Exact tie - for now, use first player (UI should handle this)
-      lastPlayerToPay = playersWithWorst[0].playerId;
+      // Exact tie - check for manual override
+      const overrideLoser = config.pinguinos.tieBreakLoser;
+      if (overrideLoser && playersWithWorst.some(p => p.playerId === overrideLoser)) {
+        lastPlayerToPay = overrideLoser;
+      } else {
+        // No override, use first player (UI should handle this)
+        lastPlayerToPay = playersWithWorst[0].playerId;
+      }
     }
   }
   
@@ -1525,9 +1537,16 @@ export const calculateSideBets = (
   
   const summaries: BetSummary[] = [];
   
+  // Filter out invalid side bets (must have winners, losers, and positive amount)
+  const validBets = config.sideBets.bets.filter(bet => 
+    bet.winners?.length > 0 && 
+    bet.losers?.length > 0 && 
+    bet.amount > 0
+  );
+  
   // Side Bets: Each winner gets bet.amount from EACH loser
   // Example: $100 bet, 2 winners, 2 losers = each winner gets $200 total ($100 from each loser)
-  config.sideBets.bets.forEach(bet => {
+  validBets.forEach(bet => {
     bet.winners.forEach(winnerId => {
       bet.losers.forEach(loserId => {
         // Each winner gets the full bet amount from each loser

@@ -1966,6 +1966,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         course={course}
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
         confirmedHoles={confirmedHoles}
+        onBetConfigChange={onBetConfigChange}
       />
     </div>
   );
