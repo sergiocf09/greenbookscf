@@ -1960,7 +1960,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       {/* Grupales */}
       <GroupBetsCard
-        players={players}
+        players={allPlayersForCalculations}
         scores={confirmedScores}
         betConfig={effectiveBetConfig}
         course={course}
