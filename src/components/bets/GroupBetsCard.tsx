@@ -6,8 +6,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFA
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Trophy, Users, Star, ChevronDown, Edit2, AlertTriangle, DollarSign, Plus, Minus } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown, AlertTriangle } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName } from '@/lib/playerInput';
 import { 
@@ -23,12 +22,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface GroupBetsCardProps {
   players: Player[];
@@ -851,28 +844,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
   const [showPinguinosDetail, setShowPinguinosDetail] = useState(false);
   
-  // State for editing amounts
-  const [editingBetType, setEditingBetType] = useState<'culebras' | 'pinguinos' | null>(null);
-  const [editAmount, setEditAmount] = useState(0);
-  
-  // Handler for updating bet amounts
-  const handleSaveAmount = () => {
-    if (!onBetConfigChange || !editingBetType) return;
-    
-    if (editingBetType === 'culebras') {
-      onBetConfigChange({
-        ...betConfig,
-        culebras: { ...betConfig.culebras, valuePerOccurrence: editAmount },
-      });
-    } else if (editingBetType === 'pinguinos') {
-      onBetConfigChange({
-        ...betConfig,
-        pinguinos: { ...betConfig.pinguinos, valuePerOccurrence: editAmount },
-      });
-    }
-    setEditingBetType(null);
-  };
-  
+  // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
   const handleSelectTieBreakLoser = (betType: 'culebras' | 'pinguinos', playerId: string) => {
     if (!onBetConfigChange) return;
@@ -933,20 +905,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name).split(' ')[0]} {culebrasResult.loser.initials}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
-                )}
-                {onBetConfigChange && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditAmount(culebrasResult.valuePerOccurrence);
-                      setEditingBetType('culebras');
-                    }}
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
                 )}
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCulebrasDetail && "rotate-180")} />
               </div>
@@ -1035,20 +993,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name).split(' ')[0]} {pinguinosResult.loser.initials}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
-                  )}
-                  {onBetConfigChange && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditAmount(pinguinosResult.valuePerOccurrence);
-                        setEditingBetType('pinguinos');
-                      }}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
                   )}
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showPinguinosDetail && "rotate-180")} />
                 </div>
@@ -1335,61 +1279,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
       </CardContent>
-      
-      {/* Edit Amount Dialog */}
-      <Dialog open={!!editingBetType} onOpenChange={() => setEditingBetType(null)}>
-        <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-sm">
-              Modificar {editingBetType === 'culebras' ? 'Culebras' : 'Pingüinos'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Valor por incidencia:</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setEditAmount(Math.max(0, editAmount - 25))}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <div className="flex items-center gap-0.5">
-                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(parseInt(e.target.value) || 0)}
-                    className="w-16 h-7 text-sm text-center px-1"
-                    min={0}
-                    step={25}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setEditAmount(editAmount + 25)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditingBetType(null)} className="flex-1">
-                Cancelar
-              </Button>
-              <Button onClick={handleSaveAmount} className="flex-1">
-                Guardar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

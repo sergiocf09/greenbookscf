@@ -2901,9 +2901,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           label: 'Putts',
           configKey: 'putts',
           segments: [
-            { label: 'Front 9', key: 'putts_front' },
-            { label: 'Back 9', key: 'putts_back' },
-            { label: 'Total', key: 'putts_total' },
+            { label: 'Front 9', key: 'putts_front', overrideLabel: 'Putts Front 9' },
+            { label: 'Back 9', key: 'putts_back', overrideLabel: 'Putts Back 9' },
+            { label: 'Total', key: 'putts_total', overrideLabel: 'Putts Total' },
           ],
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
@@ -3727,7 +3727,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
                                       h.isWin ? 'bg-green-500/20 text-green-600' :
                                       h.isLoss ? 'bg-destructive/20 text-destructive' :
-                                      h.isAccumulated ? 'bg-accent/30 text-accent-foreground' :
+                                      h.isAccumulated ? 'bg-muted text-muted-foreground' :
                                       'bg-muted/30 text-muted-foreground'
                                     )}
                                     title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
@@ -3762,7 +3762,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
                                       h.isWin ? 'bg-green-500/20 text-green-600' :
                                       h.isLoss ? 'bg-destructive/20 text-destructive' :
-                                      h.isAccumulated ? 'bg-accent/30 text-accent-foreground' :
+                                      h.isAccumulated ? 'bg-muted text-muted-foreground' :
                                       'bg-muted/30 text-muted-foreground'
                                     )}
                                     title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
@@ -3818,7 +3818,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/30">
                               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/20"></span>Ganado</span>
                               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/20"></span>Perdido</span>
-                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-accent/30"></span>Acumulado</span>
+                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-muted"></span>Acumulado</span>
                               <span className="flex items-center gap-1">✗ = Sin green</span>
                               {hasZapato && <span className="flex items-center gap-1">🥾 = Bonus 100%</span>}
                             </div>
@@ -4161,7 +4161,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                                 'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
                                                 hole.winner === 'A' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                                                 hole.winner === 'B' ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
-                                                hole.accumulated > 0 ? 'bg-accent/30 text-accent-foreground' :
+                                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
                                                 'bg-muted/50 text-muted-foreground'
                                               )}>
                                                 {hole.winner === 'A' ? `+${hole.skinsWon}` :
@@ -4183,7 +4183,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
                                         <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
                                         <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdido</span>
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-accent/30"></span>Acum.</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>Acum.</span>
                                         <span>• = Empate</span>
                                       </div>
                                     </div>
@@ -4265,6 +4265,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     back: byLabel('Rayas Back') ?? (betConfig.rayas?.backValue || 25),
                     total: byLabel('Rayas Medal Total') ?? (betConfig.rayas?.medalTotalValue || 50),
                   };
+                case 'putts':
+                  return {
+                    front: byLabel('Putts Front 9') ?? (betConfig.putts?.frontAmount ?? 50),
+                    back: byLabel('Putts Back 9') ?? (betConfig.putts?.backAmount ?? 50),
+                    total: byLabel('Putts Total') ?? (betConfig.putts?.totalAmount ?? 100),
+                  };
                 default:
                   return undefined;
               }
@@ -4326,6 +4332,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   upsert('Rayas Front', overrides.front);
                   upsert('Rayas Back', overrides.back);
                   upsert('Rayas Medal Total', overrides.total);
+                  break;
+                case 'putts':
+                  upsert('Putts Front 9', overrides.front);
+                  upsert('Putts Back 9', overrides.back);
+                  upsert('Putts Total', overrides.total);
                   break;
                 case 'caros':
                   upsert('Caros', overrides.total);
@@ -4412,6 +4423,12 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           front: betConfig.rayas?.frontValue || 25, 
           back: betConfig.rayas?.backValue || 25, 
           total: betConfig.rayas?.medalTotalValue || 50 
+        };
+      case 'putts':
+        return {
+          front: betConfig.putts?.frontAmount ?? 50,
+          back: betConfig.putts?.backAmount ?? 50,
+          total: betConfig.putts?.totalAmount ?? 100,
         };
       default: 
         return {};
