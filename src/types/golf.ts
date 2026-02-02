@@ -376,6 +376,7 @@ export interface ManchasBetConfig {
 export interface CumulativeBetConfig {
   enabled: boolean;
   valuePerOccurrence: number;
+  tieBreakLoser?: string; // Manual override for who pays when tie on last hole
 }
 
 export interface CarritosBetConfig {

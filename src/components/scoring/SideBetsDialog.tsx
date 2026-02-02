@@ -366,7 +366,14 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
   onDeleteSideBet,
   showManagement = false,
 }) => {
-  if (sideBets.length === 0) return null;
+  // Filter out invalid side bets (must have winners, losers, and positive amount)
+  const validBets = sideBets.filter(bet => 
+    bet.winners?.length > 0 && 
+    bet.losers?.length > 0 && 
+    bet.amount > 0
+  );
+  
+  if (validBets.length === 0) return null;
 
   const getPlayerName = (id: string) => {
     const player = players.find(p => p.id === id);
@@ -375,7 +382,7 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
 
   const getPlayerBalance = (playerId: string): number => {
     let balance = 0;
-    for (const bet of sideBets) {
+    for (const bet of validBets) {
       if (bet.winners.includes(playerId)) {
         balance += bet.amount * bet.losers.length / bet.winners.length;
       }
@@ -404,7 +411,7 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
       </div>
       
       <div className="space-y-1">
-        {sideBets.map(bet => (
+        {validBets.map(bet => (
           <div key={bet.id} className="flex items-center justify-between text-xs gap-2">
             <div className="flex items-center gap-1 min-w-0 flex-1">
               <span className="text-green-600 font-medium truncate">
