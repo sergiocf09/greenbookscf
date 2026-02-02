@@ -1184,7 +1184,7 @@ export const calculateCulebrasBets = (
   const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
   
   // If multiple players have culebra on same last hole, the one with more putts pays
-  // If tied putts, check for manual override (tieBreakLoser)
+  // If tied putts, check for manual override (tieBreakLoser), scoped to the specific hole
   let lastPlayerToPay: string;
   
   if (culebrasOnLastHole.length === 1) {
@@ -1198,9 +1198,12 @@ export const calculateCulebrasBets = (
       lastPlayerToPay = playersWithMaxPutts[0].playerId;
     } else {
       // Exact tie - check for manual override
-      const overrideLoser = config.culebras.tieBreakLoser;
-      if (overrideLoser && playersWithMaxPutts.some(c => c.playerId === overrideLoser)) {
-        lastPlayerToPay = overrideLoser;
+      const rawOverride = config.culebras.tieBreakLoser;
+      const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
+      const overrideHole = Number(overrideHoleStr);
+      const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
+      if (isOverrideForThisHole && overridePlayerId && playersWithMaxPutts.some(c => c.playerId === overridePlayerId)) {
+        lastPlayerToPay = overridePlayerId;
       } else {
         // No override, use first player (UI should handle this)
         lastPlayerToPay = playersWithMaxPutts[0].playerId;
@@ -1272,7 +1275,7 @@ export const calculatePinguinosBets = (
   const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
   
   // If multiple players have pinguino on same last hole, the one with worst score pays
-  // If tied, check for manual override (tieBreakLoser)
+  // If tied, check for manual override (tieBreakLoser), scoped to the specific hole
   let lastPlayerToPay: string;
   
   if (pinguinosOnLastHole.length === 1) {
@@ -1286,9 +1289,12 @@ export const calculatePinguinosBets = (
       lastPlayerToPay = playersWithWorst[0].playerId;
     } else {
       // Exact tie - check for manual override
-      const overrideLoser = config.pinguinos.tieBreakLoser;
-      if (overrideLoser && playersWithWorst.some(p => p.playerId === overrideLoser)) {
-        lastPlayerToPay = overrideLoser;
+      const rawOverride = config.pinguinos.tieBreakLoser;
+      const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
+      const overrideHole = Number(overrideHoleStr);
+      const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
+      if (isOverrideForThisHole && overridePlayerId && playersWithWorst.some(p => p.playerId === overridePlayerId)) {
+        lastPlayerToPay = overridePlayerId;
       } else {
         // No override, use first player (UI should handle this)
         lastPlayerToPay = playersWithWorst[0].playerId;
