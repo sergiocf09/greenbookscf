@@ -1958,16 +1958,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
-      {/* Grupales */}
-      <GroupBetsCard
-        players={allPlayersForCalculations}
-        scores={confirmedScores}
-        betConfig={effectiveBetConfig}
-        course={course}
-        basePlayerId={basePlayer?.id || basePlayer?.profileId}
-        confirmedHoles={confirmedHoles}
-        onBetConfigChange={onBetConfigChange}
-      />
+      {/* Grupales - Use players with scores (keys in confirmedScores map) for accurate detection */}
+      {(() => {
+        // Filter to only include players that have scores in the confirmedScores map
+        // This ensures tie-breaker logic works correctly with all players who have data
+        const playersWithScores = allPlayersForCalculations.filter(p => confirmedScores.has(p.id));
+        return (
+          <GroupBetsCard
+            players={playersWithScores.length > 0 ? playersWithScores : players}
+            scores={confirmedScores}
+            betConfig={effectiveBetConfig}
+            course={course}
+            basePlayerId={basePlayer?.id || basePlayer?.profileId}
+            confirmedHoles={confirmedHoles}
+            onBetConfigChange={onBetConfigChange}
+          />
+        );
+      })()}
     </div>
   );
 };
