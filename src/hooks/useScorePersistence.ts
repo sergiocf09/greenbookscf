@@ -144,20 +144,26 @@ export const useScorePersistence = ({
     }
 
     try {
-      // Upsert the score
+      // IMPORTANT:
+      // Only persist fields that are explicitly provided in this partial update.
+      // Otherwise we can accidentally overwrite other columns with null/false
+      // (e.g. saving oyesProximity would wipe oyes_proximity_sangron, or reset confirmed).
+      const payload: any = {
+        round_player_id: rpId,
+        hole_number: holeNumber,
+      };
+
+      if (Object.prototype.hasOwnProperty.call(score, 'strokes')) payload.strokes = score.strokes;
+      if (Object.prototype.hasOwnProperty.call(score, 'putts')) payload.putts = score.putts;
+      if (Object.prototype.hasOwnProperty.call(score, 'netScore')) payload.net_score = score.netScore;
+      if (Object.prototype.hasOwnProperty.call(score, 'strokesReceived')) payload.strokes_received = score.strokesReceived;
+      if (Object.prototype.hasOwnProperty.call(score, 'oyesProximity')) payload.oyes_proximity = score.oyesProximity;
+      if (Object.prototype.hasOwnProperty.call(score, 'oyesProximitySangron')) payload.oyes_proximity_sangron = score.oyesProximitySangron;
+      if (Object.prototype.hasOwnProperty.call(score, 'confirmed')) payload.confirmed = score.confirmed;
+
       const { error } = await supabase
         .from('hole_scores')
-        .upsert({
-          round_player_id: rpId,
-          hole_number: holeNumber,
-          strokes: score.strokes,
-          putts: score.putts,
-          net_score: score.netScore,
-          strokes_received: score.strokesReceived,
-          oyes_proximity: score.oyesProximity ?? null,
-          oyes_proximity_sangron: score.oyesProximitySangron ?? null,
-          confirmed: score.confirmed ?? false,
-        } as any, {
+        .upsert(payload, {
           onConflict: 'round_player_id,hole_number',
           ignoreDuplicates: false,
         });
