@@ -40,6 +40,22 @@ interface RoundBetConfig {
     backValue: number;
     medalTotalValue: number;
     skinVariant: 'acumulados' | 'sinAcumulacion';
+    segments?: {
+      skins: { enabled: boolean; frontValue: number; backValue: number };
+      units: { enabled: boolean; frontValue: number; backValue: number };
+      oyes: { enabled: boolean; frontValue: number; backValue: number };
+      medal: { enabled: boolean; frontValue: number; backValue: number };
+    };
+    bilateralOverrides?: Record<string, Array<{
+      rivalId: string;
+      enabled: boolean;
+      segments?: {
+        skins?: { enabled?: boolean; frontValue?: number; backValue?: number };
+        units?: { enabled?: boolean; frontValue?: number; backValue?: number };
+        oyes?: { enabled?: boolean; frontValue?: number; backValue?: number; modality?: 'acumulados' | 'sangron' };
+        medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
+      };
+    }>>;
   };
   oyeses?: {
     enabled: boolean;
@@ -185,6 +201,8 @@ export const useBetConfigPersistence = ({
               backValue: dbConfig.rayas.backValue ?? prev.rayas.backValue,
               medalTotalValue: dbConfig.rayas.medalTotalValue ?? prev.rayas.medalTotalValue,
               skinVariant: dbConfig.rayas.skinVariant ?? prev.rayas.skinVariant,
+              segments: dbConfig.rayas.segments ?? prev.rayas.segments,
+              bilateralOverrides: dbConfig.rayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
             };
           }
           
@@ -323,6 +341,8 @@ export const useBetConfigPersistence = ({
           backValue: config.rayas.backValue,
           medalTotalValue: config.rayas.medalTotalValue,
           skinVariant: config.rayas.skinVariant,
+          segments: config.rayas.segments,
+          bilateralOverrides: config.rayas.bilateralOverrides,
         },
         oyeses: {
           enabled: config.oyeses.enabled,
