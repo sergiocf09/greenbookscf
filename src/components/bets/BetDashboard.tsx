@@ -3861,9 +3861,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           }
                         });
                         
-                        const frontValue = betConfig.rayas?.frontValue || 0;
-                        const backValue = betConfig.rayas?.backValue || 0;
-                        const medalValue = betConfig.rayas?.medalTotalValue || 0;
+                        // Get override amounts from Dashboard (if any) for this pair
+                        // This ensures the detail view shows the same values as calculations
+                        const amountOverrides = (() => {
+                          const overrides = effectiveBetConfig.betOverrides || [];
+                          const findOverride = (betType: string): number | undefined => {
+                            const match = overrides.find(o =>
+                              o.betType === betType &&
+                              o.enabled !== false &&
+                              o.amountOverride !== undefined &&
+                              ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                               (o.playerAId === rival.id && o.playerBId === player.id) ||
+                               (player.profileId && (o.playerAId === player.profileId || o.playerBId === player.profileId) &&
+                                (o.playerAId === rival.id || o.playerBId === rival.id)) ||
+                               (rival.profileId && (o.playerAId === rival.profileId || o.playerBId === rival.profileId) &&
+                                (o.playerAId === player.id || o.playerBId === player.id)))
+                            );
+                            return match?.amountOverride;
+                          };
+                          return {
+                            frontValue: findOverride('Rayas Front'),
+                            backValue: findOverride('Rayas Back'),
+                            medalTotalValue: findOverride('Rayas Medal Total'),
+                          };
+                        })();
+                        
+                        // Use override values if available, otherwise fall back to config
+                        const frontValue = amountOverrides.frontValue ?? betConfig.rayas?.frontValue ?? 0;
+                        const backValue = amountOverrides.backValue ?? betConfig.rayas?.backValue ?? 0;
+                        const medalValue = amountOverrides.medalTotalValue ?? betConfig.rayas?.medalTotalValue ?? 0;
                         
                         // Get source nets directly from sourceGroups (now includes Oyes from rayasResult)
                         const skinsNet = sourceGroups['skins'];
