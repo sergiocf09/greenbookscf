@@ -107,6 +107,7 @@ export const useScorePersistence = ({
               strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
               netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
               oyesProximity: dbScore.oyes_proximity ?? null,
+              oyesProximitySangron: (dbScore as any).oyes_proximity_sangron ?? null,
               confirmed: dbScore.confirmed ?? false,
             };
           }
@@ -154,8 +155,9 @@ export const useScorePersistence = ({
           net_score: score.netScore,
           strokes_received: score.strokesReceived,
           oyes_proximity: score.oyesProximity ?? null,
+          oyes_proximity_sangron: score.oyesProximitySangron ?? null,
           confirmed: score.confirmed ?? false,
-        }, {
+        } as any, {
           onConflict: 'round_player_id,hole_number',
           ignoreDuplicates: false,
         });

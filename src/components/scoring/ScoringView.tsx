@@ -179,14 +179,23 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           basePlayerId={profile?.id}
           currentHole={currentHole}
           isPar3={holePar === 3}
-          proximities={new Map(
+          proximitiesAcumulado={new Map(
             getAllPlayersFromAllGroups(players, playerGroups).map(p => {
               const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
               return [p.id, hs?.oyesProximity ?? null];
             })
           )}
-          onProximityChange={(playerId, proximity) => {
+          onProximityAcumuladoChange={(playerId, proximity) => {
             updateScore(playerId, currentHole, { oyesProximity: proximity });
+          }}
+          proximitiesSangron={new Map(
+            getAllPlayersFromAllGroups(players, playerGroups).map(p => {
+              const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
+              return [p.id, hs?.oyesProximitySangron ?? null];
+            })
+          )}
+          onProximitySangronChange={(playerId, proximity) => {
+            updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
           }}
         />
         

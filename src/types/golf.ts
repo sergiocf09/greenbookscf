@@ -35,7 +35,8 @@ export interface PlayerScore {
   putts: number;
   markers: MarkerState;
   strokesReceived: number; // Calculated from handicap
-  oyesProximity?: number | null; // Oyeses proximity order (1=closest, null=no number)
+  oyesProximity?: number | null; // Oyeses proximity order for Acumulado modality (1=closest, null=no number/didn't reach green)
+  oyesProximitySangron?: number | null; // Oyeses proximity order for Sangrón modality (must be complete when active)
   netScore: number; // strokes - strokesReceived
   confirmed: boolean; // Whether the score has been validated
 }
