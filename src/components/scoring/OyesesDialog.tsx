@@ -310,6 +310,11 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                 const isLoggedInUser = player.id === basePlayerId || player.profileId === basePlayerId;
                 const shortName = formatPlayerNameShort(player.name);
                 
+                // Get the actual value in the current tab's field (not fallback)
+                const actualTabValue = effectiveTab === 'acumulado' 
+                  ? proximitiesAcumulado.get(player.id)
+                  : proximitiesSangron.get(player.id);
+                
                 return (
                   <div key={player.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-shrink">
@@ -329,6 +334,10 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                       {proximityOptions.map((pos) => {
                         const isSelected = displayProximity === pos;
                         
+                        // For click logic: check if THIS tab actually has the value
+                        // If inherited, clicking should WRITE the value (not toggle off)
+                        const isActuallySetInThisTab = actualTabValue === pos;
+                        
                         // Check if position is taken by another player
                         const isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
                           ([pid, prox]) => pid !== player.id && prox === pos
@@ -340,7 +349,15 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                           <button
                             key={pos}
                             onClick={() => {
-                              onProximityChange(player.id, isSelected ? null : pos);
+                              // If it's inherited (shown but not actually set in this tab),
+                              // clicking should CONFIRM it (write to this tab)
+                              if (isInherited && isSelected) {
+                                // Inherited value is shown, user clicks to confirm it
+                                onProximityChange(player.id, pos);
+                              } else {
+                                // Normal toggle behavior
+                                onProximityChange(player.id, isActuallySetInThisTab ? null : pos);
+                              }
                             }}
                             className={cn(
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
@@ -374,7 +391,8 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             {effectiveTab === 'sangron' && (
               <>
                 <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse para resolver</p>
-                <p>• Los valores de Acumulado se reflejan automáticamente (espejo)</p>
+                <p>• Los valores de Acumulado se muestran como espejo (borde punteado)</p>
+                <p>• Click en un espejo lo confirma para Sangrón</p>
               </>
             )}
           </div>
