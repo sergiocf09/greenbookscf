@@ -4,8 +4,10 @@ import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
+import { OyesSangronDialog } from '@/components/scoring/OyesSangronDialog';
 import { Button } from '@/components/ui/button';
 import { Check, CheckCircle2, DollarSign } from 'lucide-react';
+import { hasAnySangronPairs } from '@/lib/rayasCalculations';
 
 interface ScoringViewProps {
   players: Player[];
@@ -175,10 +177,30 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       </Button>
 
       {/* Navigation Buttons and Side Bets */}
-      <div className="flex gap-3 pt-2">
-        <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1">
-          ← Anterior
+      <div className="flex gap-2 pt-2">
+        <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1 px-2 text-sm">
+          ← Ant
         </Button>
+        
+        {/* Oyes Sangrón Button - only show when there are Sangrón pairs and it's a par 3 */}
+        {hasAnySangronPairs(betConfig, getAllPlayersFromAllGroups(players, playerGroups)) && holePar === 3 && (
+          <OyesSangronDialog
+            players={getAllPlayersFromAllGroups(players, playerGroups)}
+            betConfig={betConfig}
+            basePlayerId={profile?.id}
+            currentHole={currentHole}
+            isPar3={holePar === 3}
+            sangronProximities={new Map(
+              displayPlayers.map(p => {
+                const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
+                return [p.id, hs?.oyesProximity ?? null];
+              })
+            )}
+            onProximityChange={(playerId, proximity) => {
+              updateScore(playerId, currentHole, { oyesProximity: proximity });
+            }}
+          />
+        )}
         
         {/* Side Bets Button */}
         {onAddSideBet && (
@@ -198,8 +220,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           />
         )}
         
-        <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1">
-          Siguiente →
+        <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1 px-2 text-sm">
+          Sig →
         </Button>
       </div>
     </>
