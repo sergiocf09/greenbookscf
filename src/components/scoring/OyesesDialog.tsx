@@ -151,6 +151,28 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   const sangronSetCount = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
   // Effective count for Sangrón = Sangrón + inherited from Acumulado
   const sangronEffectiveCount = Array.from(currentProximities.values()).filter(v => v !== null).length;
+
+  // UX helper: when Sangrón is showing a full "mirror" from Acumulado,
+  // allow confirming ALL inherited values in one click (writes ONLY to Sangrón field).
+  const canAcceptMirrors = useMemo(() => {
+    if (effectiveTab !== 'sangron') return false;
+    // Only meaningful when we have a full effective set, but not all explicitly set in Sangrón
+    if (sangronEffectiveCount !== players.length) return false;
+    if (sangronSetCount >= players.length) return false;
+    // At least one inherited value exists
+    return players.some((p) => isInheritedFromAcumulado(p.id));
+  }, [effectiveTab, sangronEffectiveCount, sangronSetCount, players]);
+
+  const handleAcceptMirrors = () => {
+    if (effectiveTab !== 'sangron') return;
+    players.forEach((p) => {
+      const sangronVal = proximitiesSangron.get(p.id);
+      const acumuladoVal = proximitiesAcumulado.get(p.id);
+      if (sangronVal === null && acumuladoVal !== null) {
+        onProximitySangronChange(p.id, acumuladoVal);
+      }
+    });
+  };
   
   // Check if all positions are filled (required for Sangrón)
   const allPositionsFilled = setCount === players.length;
@@ -398,10 +420,16 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           </div>
         </div>
         
-        <div className="flex justify-end pt-2">
-          <Button onClick={() => setOpen(false)}>
-            Listo
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          {effectiveTab === 'sangron' && canAcceptMirrors ? (
+            <Button variant="outline" onClick={handleAcceptMirrors}>
+              Aceptar espejos
+            </Button>
+          ) : (
+            <span />
+          )}
+
+          <Button onClick={() => setOpen(false)}>Listo</Button>
         </div>
       </DialogContent>
     </Dialog>
