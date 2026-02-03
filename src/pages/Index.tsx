@@ -779,6 +779,7 @@ const Index = () => {
         strokes_received: s.strokesReceived,
         net_score: s.netScore,
         oyes_proximity: null,
+        oyes_proximity_sangron: null,
         confirmed: true,
       }));
 
@@ -848,6 +849,7 @@ const Index = () => {
           net_score: score.netScore,
           strokes_received: score.strokesReceived,
           oyes_proximity: score.oyesProximity ?? null,
+          oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
           confirmed: score.confirmed ?? false,
         }, {
           onConflict: 'round_player_id,hole_number',
@@ -929,6 +931,7 @@ const Index = () => {
             netScore: holePar - strokesReceived,
             confirmed: false,
             oyesProximity: null,
+             oyesProximitySangron: null,
           };
 
           playerScores.push(baseScore);
@@ -942,7 +945,10 @@ const Index = () => {
           // Only unconfirm when the actual score changes.
           // Markers (unidades/manchas) should NOT force re-confirmation.
           const isScoringMutation =
-            updates.strokes !== undefined || updates.putts !== undefined || updates.oyesProximity !== undefined;
+            updates.strokes !== undefined ||
+            updates.putts !== undefined ||
+            updates.oyesProximity !== undefined ||
+            updates.oyesProximitySangron !== undefined;
 
           // Confirmation is per-player; do not rely on global confirmedHoles here.
           const shouldUnconfirm = isScoringMutation && wasConfirmed;
