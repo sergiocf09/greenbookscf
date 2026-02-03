@@ -923,7 +923,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 )}
                 {culebrasResult.loser && (
                   <>
-                    <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name).split(' ')[0]} {culebrasResult.loser.initials}</span>
+                    <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name)}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
                 )}
@@ -1011,7 +1011,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}
                   {pinguinosResult.loser && (
                     <>
-                      <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name).split(' ')[0]} {pinguinosResult.loser.initials}</span>
+                      <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name)}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
                   )}
