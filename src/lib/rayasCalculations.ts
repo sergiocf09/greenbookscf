@@ -116,6 +116,19 @@ export const getEffectiveSegmentConfig = (
  * Check if rayas bet is active between two players
  * Exported so Dashboard can filter pairs before rendering
  */
+/**
+ * Check if rayas bet is active between two players
+ * 
+ * SIMPLIFIED MODEL: A player "participates" in Rayas if they have ANY bilateral override
+ * marked as enabled (or no overrides at all = participates by default).
+ * 
+ * If EITHER player in a pair "participates", then Rayas is active for that pair.
+ * This means: if only Sergio is marked to play Rayas, then Sergio vs ALL others is active.
+ * If only Toño is marked, then Toño vs ALL others is active.
+ * If neither has overrides, ALL play (default behavior).
+ * 
+ * Exported so Dashboard can filter pairs before rendering.
+ */
 export const isRayasActiveForPair = (
   config: BetConfig,
   playerAId: string,
@@ -123,18 +136,64 @@ export const isRayasActiveForPair = (
 ): boolean => {
   if (!config.rayas?.enabled) return false;
   
+  // Check if bilateral overrides exist at all
+  const hasAnyOverrides = config.rayas?.bilateralOverrides && 
+    Object.keys(config.rayas.bilateralOverrides).length > 0;
+  
+  // If no overrides defined at all, everyone plays with everyone (default)
+  if (!hasAnyOverrides) {
+    return true;
+  }
+  
+  // Check specific override between these two players (explicit disable)
   const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
   const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
   
   const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
   const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
   
-  // If either player has disabled rayas with the other
+  // If there's an explicit disable between these two, respect it
   if (overrideForB?.enabled === false || overrideForA?.enabled === false) {
     return false;
   }
   
-  return true;
+  // SIMPLIFIED MODEL: Check if either player is a "Rayas participant"
+  // A player "participates" if they have at least one override with enabled=true
+  // OR if they have no overrides at all (default = participate)
+  
+  const playerAParticipates = (() => {
+    const overrides = config.rayas?.bilateralOverrides?.[playerAId];
+    if (!overrides || overrides.length === 0) {
+      // No overrides = check if ANY other player has this one as rival and enabled
+      // If not found anywhere, this player doesn't participate when others have explicit configs
+      for (const [otherId, otherOverrides] of Object.entries(config.rayas?.bilateralOverrides || {})) {
+        if (otherId === playerAId) continue;
+        const hasAsRival = otherOverrides?.find(o => o.rivalId === playerAId && o.enabled !== false);
+        if (hasAsRival) return true;
+      }
+      return false;
+    }
+    // Has overrides - participates if at least one is enabled
+    return overrides.some(o => o.enabled !== false);
+  })();
+  
+  const playerBParticipates = (() => {
+    const overrides = config.rayas?.bilateralOverrides?.[playerBId];
+    if (!overrides || overrides.length === 0) {
+      // No overrides = check if ANY other player has this one as rival and enabled
+      for (const [otherId, otherOverrides] of Object.entries(config.rayas?.bilateralOverrides || {})) {
+        if (otherId === playerBId) continue;
+        const hasAsRival = otherOverrides?.find(o => o.rivalId === playerBId && o.enabled !== false);
+        if (hasAsRival) return true;
+      }
+      return false;
+    }
+    // Has overrides - participates if at least one is enabled
+    return overrides.some(o => o.enabled !== false);
+  })();
+  
+  // Rayas is active for this pair if EITHER player participates
+  return playerAParticipates || playerBParticipates;
 };
 
 /**
@@ -531,9 +590,9 @@ const calculateRayasForPair = (
   }
   
   // =========== 3. OYES RAYAS (ABSOLUTE CLOSEST) ===========
-  // Only the ABSOLUTE closest player wins rayas vs ALL others
-  // This is handled at the multi-player level, not here
-  // We'll calculate this in calculateOyesRayasForAll below
+  // Only process if Oyes segment is enabled for this pair
+  // Oyes are handled at the multi-player level in calculateOyesRayasForAll below
+  // But the segment config must still be respected
   
   // =========== 4. MEDAL RAYAS ===========
   let medalTotalRayaWinner: string | null = null;
@@ -763,6 +822,9 @@ const processOyesHole = (
 /**
  * Calculate Oyes rayas for all players (absolute closest wins vs ALL)
  * Returns additional BetSummary entries for Oyes rayas
+ * 
+ * IMPORTANT: Respects the global oyes segment config (rayas.segments.oyes.enabled)
+ * If oyes is globally disabled, returns empty results.
  */
 const calculateOyesRayasForAll = (
   players: Player[],
@@ -773,9 +835,19 @@ const calculateOyesRayasForAll = (
   const summaries: BetSummary[] = [];
   const detailsByPair = new Map<string, RayaDetail[]>();
   
+  // Check if oyes segment is globally disabled
+  const oyesSegmentEnabled = config.rayas?.segments?.oyes?.enabled ?? true;
+  if (!oyesSegmentEnabled) {
+    // Oyes is disabled globally - return empty results
+    return { summaries, details: detailsByPair };
+  }
+  
   const par3Holes = getPar3Holes(course);
-  const frontValue = config.rayas.frontValue;
-  const backValue = config.rayas.backValue;
+  
+  // Use segment-specific values if available, otherwise fall back to global rayas values
+  const oyesSegmentConfig = config.rayas?.segments?.oyes;
+  const frontValue = oyesSegmentConfig?.frontValue ?? config.rayas.frontValue;
+  const backValue = oyesSegmentConfig?.backValue ?? config.rayas.backValue;
   
   // Separate Par 3s by segment
   const frontPar3s = par3Holes.filter(h => h <= 9);
@@ -926,8 +998,11 @@ export const getRayasDetailForPair = (
 ): RayasPairResult => {
   const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
   
-  // If we have all players, calculate Oyes details for this pair
-  if (allPlayers && allPlayers.length > 0) {
+  // Check if Oyes segment is enabled for THIS SPECIFIC PAIR (bilateral override)
+  const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerA.id, playerB.id);
+  
+  // If we have all players and Oyes is enabled for this pair, calculate Oyes details
+  if (allPlayers && allPlayers.length > 0 && oyesConfig.enabled) {
     const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course);
     
     // Get Oyes details for this specific pair
@@ -949,18 +1024,20 @@ export const getRayasDetailForPair = (
     // Merge details
     const mergedDetails = [...bilateralResult.details, ...normalizedOyesDetails];
     
-    // Recalculate amounts including Oyes
-    const frontValue = config.rayas?.frontValue || 0;
-    const backValue = config.rayas?.backValue || 0;
+    // Use bilateral override values for Oyes if available
+    const frontValue = oyesConfig.frontValue;
+    const backValue = oyesConfig.backValue;
     
-    // Sum up Oyes amounts for this pair
+    // Sum up Oyes amounts for this pair using the correct values
     let oyesFrontAmountA = 0;
     let oyesBackAmountA = 0;
     normalizedOyesDetails.forEach(d => {
+      // Override the valuePerRaya with the pair-specific value
+      const correctedValue = d.appliedSegment === 'front' ? frontValue : backValue;
       if (d.appliedSegment === 'front') {
-        oyesFrontAmountA += d.rayasCount * d.valuePerRaya;
+        oyesFrontAmountA += d.rayasCount * correctedValue;
       } else if (d.appliedSegment === 'back') {
-        oyesBackAmountA += d.rayasCount * d.valuePerRaya;
+        oyesBackAmountA += d.rayasCount * correctedValue;
       }
     });
     
