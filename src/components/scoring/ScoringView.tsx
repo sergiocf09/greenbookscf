@@ -186,7 +186,11 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             })
           )}
           onProximityAcumuladoChange={(playerId, proximity) => {
+            // Update Acumulado field
             updateScore(playerId, currentHole, { oyesProximity: proximity });
+            // ALSO update Sangrón field to keep them in sync for pairs using Sangrón modality
+            // The Sangrón field should mirror Acumulado when set via Acumulado tab
+            updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
           }}
           proximitiesSangron={new Map(
             getAllPlayersFromAllGroups(players, playerGroups).map(p => {
@@ -195,7 +199,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             })
           )}
           onProximitySangronChange={(playerId, proximity) => {
+            // Update Sangrón field
             updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
+            // ALSO update Acumulado field to keep them in sync
+            updateScore(playerId, currentHole, { oyesProximity: proximity });
           }}
         />
         
