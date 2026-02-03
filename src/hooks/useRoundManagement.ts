@@ -536,6 +536,7 @@ export const useRoundManagement = ({
                     strokesReceived: dbScore.strokes_received ?? strokesPerHole[i],
                     netScore: dbScore.net_score ?? (dbScore.strokes ?? holePar) - strokesPerHole[i],
                     oyesProximity: dbScore.oyes_proximity ?? null,
+                    oyesProximitySangron: (dbScore as any).oyes_proximity_sangron ?? null,
                     confirmed: dbScore.confirmed ?? false,
                   };
                 }
@@ -548,6 +549,8 @@ export const useRoundManagement = ({
                   markers: { ...defaultMarkerState },
                   strokesReceived: strokesPerHole[i],
                   netScore: holePar - strokesPerHole[i],
+                   oyesProximity: null,
+                   oyesProximitySangron: null,
                   confirmed: false,
                 };
               });
@@ -726,6 +729,8 @@ export const useRoundManagement = ({
             markers: { ...defaultMarkerState },
             strokesReceived: strokesPerHole[i],
             netScore: holePar - strokesPerHole[i],
+            oyesProximity: null,
+            oyesProximitySangron: null,
             confirmed: false,
           };
         });
@@ -777,6 +782,7 @@ export const useRoundManagement = ({
             strokes_received: score.strokesReceived,
             net_score: score.netScore,
             oyes_proximity: score.oyesProximity,
+              oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
             confirmed: true,
           });
         });

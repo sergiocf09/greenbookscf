@@ -91,8 +91,13 @@ export const getOyesesPairResult = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
 
-    const proximityA = scoreA?.oyesProximity ?? null;
-    const proximityB = scoreB?.oyesProximity ?? null;
+    const proximityAcumuladoA = scoreA?.oyesProximity ?? null;
+    const proximityAcumuladoB = scoreB?.oyesProximity ?? null;
+    const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
+    const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
+
+    const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
+    const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
     
     if (pairModality === 'acumulados') {
       // In Acumulados, a hole counts as played even if both miss (it can carry).
@@ -222,8 +227,13 @@ export const getOyesesDisplayData = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
     
-    const proximityA = scoreA?.oyesProximity ?? null;
-    const proximityB = scoreB?.oyesProximity ?? null;
+    const proximityAcumuladoA = scoreA?.oyesProximity ?? null;
+    const proximityAcumuladoB = scoreB?.oyesProximity ?? null;
+    const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
+    const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
+
+    const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
+    const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
     
     let holeA: OyesHoleDisplay = {
       holeNumber: holeNum,
@@ -368,8 +378,13 @@ export const calculateOyesesBets = (
         const scoreA = scoresA.find(s => s.holeNumber === holeNum);
         const scoreB = scoresB.find(s => s.holeNumber === holeNum);
 
-        const proximityA = scoreA?.oyesProximity ?? null;
-        const proximityB = scoreB?.oyesProximity ?? null;
+        const proximityAcumuladoA = scoreA?.oyesProximity ?? null;
+        const proximityAcumuladoB = scoreB?.oyesProximity ?? null;
+        const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
+        const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
+
+        const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
+        const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
         
          if (pairModality === 'acumulados') {
            // In Acumulados, the hole counts as played even if both miss (carry).
