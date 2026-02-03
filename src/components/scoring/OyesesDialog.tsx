@@ -3,9 +3,10 @@ import { Player, BetConfig } from '@/types/golf';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Target, Zap } from 'lucide-react';
+import { Target, Zap, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getOyesModalityForPair, hasAnySangronPairs } from '@/lib/rayasCalculations';
+import { formatPlayerNameShort } from '@/lib/playerInput';
 
 interface OyesesDialogProps {
   players: Player[];
@@ -85,21 +86,30 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
     return null;
   }
 
-  const proximityOptions = [1, 2, 3, 4, 5, 6];
+  // Dynamic proximity options based on player count
+  const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
 
   // Check how many proximities are set (for display purposes)
   const setCount = Array.from(proximities.values()).filter(v => v !== null).length;
+  
+  // Check if all positions are filled (required for Sangrón)
+  const allPositionsFilled = setCount === players.length;
+  
+  // Check if there are duplicate proximities
+  const proximityValues = Array.from(proximities.values()).filter(v => v !== null);
+  const hasDuplicates = proximityValues.length !== new Set(proximityValues).size;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
+          {trigger || (
           <Button 
             variant="outline" 
             size="icon" 
             className={cn(
               "shrink-0 relative",
-              setCount > 0 && "border-primary"
+              setCount > 0 && "border-primary",
+              modes.hasAnySangron && !allPositionsFilled && setCount > 0 && "border-destructive"
             )}
           >
             <Target className="h-4 w-4" />
@@ -107,7 +117,12 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
               <Zap className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-golf-gold fill-golf-gold" />
             )}
             {setCount > 0 && (
-              <span className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
+              <span className={cn(
+                "absolute -bottom-1 -right-1 text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold",
+                modes.hasAnySangron && !allPositionsFilled 
+                  ? "bg-destructive text-destructive-foreground" 
+                  : "bg-primary text-primary-foreground"
+              )}>
                 {setCount}
               </span>
             )}
@@ -143,6 +158,22 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             )}
           </div>
           
+          {/* Warning for Sangrón when not all positions are filled */}
+          {modes.hasAnySangron && !allPositionsFilled && (
+            <div className="flex items-center gap-2 text-xs text-golf-gold bg-golf-gold/10 px-3 py-2 rounded-md">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Sangrón requiere asignar todas las posiciones ({setCount}/{players.length})</span>
+            </div>
+          )}
+          
+          {/* Warning for duplicate positions */}
+          {hasDuplicates && (
+            <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Hay posiciones duplicadas</span>
+            </div>
+          )}
+          
           {players.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               No hay jugadores
@@ -152,22 +183,28 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
               {players.map((player) => {
                 const currentProximity = proximities.get(player.id);
                 const isLoggedInUser = player.id === basePlayerId || player.profileId === basePlayerId;
+                const shortName = formatPlayerNameShort(player.name);
                 
                 return (
-                  <div key={player.id} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div key={player.id} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-shrink">
                       <PlayerAvatar 
                         initials={player.initials} 
                         background={player.color} 
                         size="sm" 
                         isLoggedInUser={isLoggedInUser}
                       />
-                      <span className="font-medium text-sm truncate">{player.name}</span>
+                      <span className="font-medium text-sm truncate max-w-[80px]">{shortName}</span>
                     </div>
                     
                     <div className="flex gap-1 shrink-0">
                       {proximityOptions.map((pos) => {
                         const isSelected = currentProximity === pos;
+                        // Check if this position is taken by another player
+                        const isTakenByOther = !isSelected && Array.from(proximities.entries()).some(
+                          ([pid, prox]) => pid !== player.id && prox === pos
+                        );
+                        
                         return (
                           <button
                             key={pos}
@@ -176,8 +213,11 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
                                 ? "bg-golf-gold text-golf-dark" 
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                : isTakenByOther
+                                  ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}
+                            disabled={isTakenByOther}
                           >
                             {pos}
                           </button>
@@ -192,16 +232,21 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           
           {/* Help text */}
           <div className="text-[10px] text-muted-foreground space-y-1 pt-2 border-t">
-            <p>• Sin selección = no subió al green (acumula en modo Acumulado)</p>
+            {!modes.hasAnySangron && (
+              <p>• Sin selección = no subió al green (acumula en modo Acumulado)</p>
+            )}
             <p>• El número más bajo gana el hoyo</p>
             {modes.hasAnySangron && (
-              <p className="text-golf-gold">• Sangrón: se define ganador en cada hoyo, sin acumulación</p>
+              <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse</p>
             )}
           </div>
         </div>
         
         <div className="flex justify-end pt-2">
-          <Button onClick={() => setOpen(false)}>
+          <Button 
+            onClick={() => setOpen(false)}
+            disabled={modes.hasAnySangron && !allPositionsFilled}
+          >
             Listo
           </Button>
         </div>
