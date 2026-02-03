@@ -813,12 +813,15 @@ const processOyesSangronForPair = (
 /**
  * Process Oyes for a PAIR with Acumulados modality
  * 
- * Rules per hole for pair (A vs B):
- * - If neither has ranking: carry_oyes[A,B] += 1 (accumulates)
- * - If only one has ranking: that player wins (carry_oyes + 1) rayas, carry resets
- * - If both have ranking: lower ranking wins (carry_oyes + 1) rayas, carry resets
+ * CORRECTED CARRY LOGIC (segmented by vuelta):
+ * - carry_front[pair]: accumulates ONLY in Front Par 3s
+ * - carry_back[pair]: accumulates ONLY in Back Par 3s
  * 
- * This tracks accumulation PER PAIR, not globally.
+ * When a winner is determined in Back:
+ * 1. First liquidate any pending front carry (at FRONT value, attributed to FRONT segment)
+ * 2. Then liquidate back carry + current hole (at BACK value, attributed to BACK segment)
+ * 
+ * This ensures dashboard displays correct values per segment.
  */
 const processOyesAcumuladosForPair = (
   playerAId: string,
@@ -840,12 +843,12 @@ const processOyesAcumuladosForPair = (
   const frontPar3s = par3Holes.filter(h => h <= 9);
   const backPar3s = par3Holes.filter(h => h > 9);
   
-  // Track carry per segment
-  let frontCarry = 0;
-  let backCarry = 0;
+  // Track carry SEPARATELY per segment
+  let carryFront = 0; // Accumulates only from Front holes where nobody won
+  let carryBack = 0;  // Accumulates only from Back holes where nobody won
   
-  // Process Front 9
-  frontPar3s.forEach(holeNum => {
+  // Helper to determine winner for a hole
+  const getOyesWinner = (holeNum: number): { winnerId: string | null; loserId: string | null } => {
     const scoresA = scores.get(playerAId) || [];
     const scoresB = scores.get(playerBId) || [];
     
@@ -855,178 +858,160 @@ const processOyesAcumuladosForPair = (
     const proximityA = scoreA?.oyesProximity ?? null;
     const proximityB = scoreB?.oyesProximity ?? null;
     
-    let winnerId: string | null = null;
-    let loserId: string | null = null;
-    
     if (proximityA === null && proximityB === null) {
-      // Neither has ranking - accumulate
-      frontCarry += 1;
-      return;
+      // Neither has ranking - will accumulate
+      return { winnerId: null, loserId: null };
     } else if (proximityA !== null && proximityB === null) {
-      // Only A has ranking - A wins
-      winnerId = playerAId;
-      loserId = playerBId;
+      return { winnerId: playerAId, loserId: playerBId };
     } else if (proximityB !== null && proximityA === null) {
-      // Only B has ranking - B wins
-      winnerId = playerBId;
-      loserId = playerAId;
+      return { winnerId: playerBId, loserId: playerAId };
     } else {
       // Both have ranking - lower wins
       if (proximityA! < proximityB!) {
-        winnerId = playerAId;
-        loserId = playerBId;
+        return { winnerId: playerAId, loserId: playerBId };
       } else if (proximityB! < proximityA!) {
-        winnerId = playerBId;
-        loserId = playerAId;
+        return { winnerId: playerBId, loserId: playerAId };
       }
-      // Same ranking = tie, accumulate
-      if (!winnerId) {
-        frontCarry += 1;
-        return;
-      }
+      // Same ranking = tie
+      return { winnerId: null, loserId: null };
+    }
+  };
+  
+  // Process Front 9 Par 3s
+  frontPar3s.forEach(holeNum => {
+    const { winnerId, loserId } = getOyesWinner(holeNum);
+    
+    if (!winnerId) {
+      // No winner - accumulate in front carry
+      carryFront += 1;
+      return;
     }
     
-    if (winnerId && loserId) {
-      const rayasWon = frontCarry + 1;
-      frontCarry = 0;
-      
-      summaries.push({
-        playerId: winnerId,
-        vsPlayer: loserId,
-        betType: 'Rayas Oyes',
-        amount: rayasWon * oyesConfig.frontValue,
-        segment: 'front',
-        holeNumber: holeNum,
-        description: `Oyes H${holeNum}${rayasWon > 1 ? ` (${rayasWon} acum)` : ''}`,
-      });
-      summaries.push({
-        playerId: loserId,
-        vsPlayer: winnerId,
-        betType: 'Rayas Oyes',
-        amount: -rayasWon * oyesConfig.frontValue,
-        segment: 'front',
-        holeNumber: holeNum,
-        description: `Oyes H${holeNum}`,
-      });
-      
-      if (!detailsByPair.has(pairKey)) {
-        detailsByPair.set(pairKey, []);
-      }
-      detailsByPair.get(pairKey)!.push({
-        source: 'oyes',
-        segment: 'front',
-        holeNumber: holeNum,
-        description: `Oyes H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
-        rayasCount: winnerId === playerAId ? rayasWon : -rayasWon,
-        valuePerRaya: oyesConfig.frontValue,
-        appliedSegment: 'front',
-      });
+    // Winner found - pay front carry + this hole
+    const rayasWon = carryFront + 1;
+    carryFront = 0;
+    
+    summaries.push({
+      playerId: winnerId,
+      vsPlayer: loserId!,
+      betType: 'Rayas Oyes',
+      amount: rayasWon * oyesConfig.frontValue,
+      segment: 'front',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}${rayasWon > 1 ? ` (${rayasWon} acum)` : ''}`,
+    });
+    summaries.push({
+      playerId: loserId!,
+      vsPlayer: winnerId,
+      betType: 'Rayas Oyes',
+      amount: -rayasWon * oyesConfig.frontValue,
+      segment: 'front',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}`,
+    });
+    
+    if (!detailsByPair.has(pairKey)) {
+      detailsByPair.set(pairKey, []);
     }
+    detailsByPair.get(pairKey)!.push({
+      source: 'oyes',
+      segment: 'front',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
+      rayasCount: winnerId === playerAId ? rayasWon : -rayasWon,
+      valuePerRaya: oyesConfig.frontValue,
+      appliedSegment: 'front',
+    });
   });
   
-  // Carry pending front oyes to back
-  const pendingFrontCarry = frontCarry;
-  let frontCarryUsed = false;
+  // After Front 9 processing, any remaining carryFront needs to be paid
+  // when there's a winner in Back 9
+  const pendingFrontCarry = carryFront;
+  let frontCarrySettled = false;
   
-  // Process Back 9
+  // Process Back 9 Par 3s
   backPar3s.forEach(holeNum => {
-    const scoresA = scores.get(playerAId) || [];
-    const scoresB = scores.get(playerBId) || [];
+    const { winnerId, loserId } = getOyesWinner(holeNum);
     
-    const scoreA = scoresA.find(s => s.holeNumber === holeNum);
-    const scoreB = scoresB.find(s => s.holeNumber === holeNum);
-    
-    const proximityA = scoreA?.oyesProximity ?? null;
-    const proximityB = scoreB?.oyesProximity ?? null;
-    
-    let winnerId: string | null = null;
-    let loserId: string | null = null;
-    
-    if (proximityA === null && proximityB === null) {
-      // Neither has ranking - accumulate
-      backCarry += 1;
+    if (!winnerId) {
+      // No winner - accumulate in back carry
+      carryBack += 1;
       return;
-    } else if (proximityA !== null && proximityB === null) {
-      winnerId = playerAId;
-      loserId = playerBId;
-    } else if (proximityB !== null && proximityA === null) {
-      winnerId = playerBId;
-      loserId = playerAId;
-    } else {
-      if (proximityA! < proximityB!) {
-        winnerId = playerAId;
-        loserId = playerBId;
-      } else if (proximityB! < proximityA!) {
-        winnerId = playerBId;
-        loserId = playerAId;
-      }
-      if (!winnerId) {
-        backCarry += 1;
-        return;
-      }
     }
     
-    if (winnerId && loserId) {
-      // Back rayas
-      const backRayasWon = backCarry + 1;
-      backCarry = 0;
+    // Winner found!
+    // Step 1: If there's pending front carry, settle it FIRST (at front value, attributed to front segment)
+    if (!frontCarrySettled && pendingFrontCarry > 0) {
+      frontCarrySettled = true;
       
       summaries.push({
         playerId: winnerId,
-        vsPlayer: loserId,
+        vsPlayer: loserId!,
         betType: 'Rayas Oyes',
-        amount: backRayasWon * oyesConfig.backValue,
-        segment: 'back',
+        amount: pendingFrontCarry * oyesConfig.frontValue,
+        segment: 'front', // Attributed to FRONT segment
         holeNumber: holeNum,
-        description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (${backRayasWon} acum)` : ''}`,
+        description: `Oyes Carry del Front (${pendingFrontCarry} rayas)`,
       });
       summaries.push({
-        playerId: loserId,
+        playerId: loserId!,
         vsPlayer: winnerId,
         betType: 'Rayas Oyes',
-        amount: -backRayasWon * oyesConfig.backValue,
-        segment: 'back',
+        amount: -pendingFrontCarry * oyesConfig.frontValue,
+        segment: 'front', // Attributed to FRONT segment
         holeNumber: holeNum,
-        description: `Oyes H${holeNum}`,
+        description: `Oyes Carry del Front`,
       });
       
-      // Carried front oyes (pay at front value)
-      if (!frontCarryUsed && pendingFrontCarry > 0) {
-        frontCarryUsed = true;
-        summaries.push({
-          playerId: winnerId,
-          vsPlayer: loserId,
-          betType: 'Rayas Oyes',
-          amount: pendingFrontCarry * oyesConfig.frontValue,
-          segment: 'front',
-          holeNumber: holeNum,
-          description: `Oyes Carry del Front (${pendingFrontCarry})`,
-        });
-        summaries.push({
-          playerId: loserId,
-          vsPlayer: winnerId,
-          betType: 'Rayas Oyes',
-          amount: -pendingFrontCarry * oyesConfig.frontValue,
-          segment: 'front',
-          holeNumber: holeNum,
-          description: `Oyes Carry del Front`,
-        });
-      }
-      
-      const totalRayasWon = backRayasWon + (!frontCarryUsed ? 0 : pendingFrontCarry);
       if (!detailsByPair.has(pairKey)) {
         detailsByPair.set(pairKey, []);
       }
       detailsByPair.get(pairKey)!.push({
         source: 'oyes',
-        segment: 'back',
+        segment: 'front', // Attributed to FRONT for dashboard
         holeNumber: holeNum,
-        description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}${pendingFrontCarry > 0 && !frontCarryUsed ? ` +${pendingFrontCarry} carry` : ''}`,
-        rayasCount: winnerId === playerAId ? totalRayasWon : -totalRayasWon,
-        valuePerRaya: oyesConfig.backValue,
-        appliedSegment: 'back',
+        description: `Carry Front (${pendingFrontCarry} rayas pagadas en H${holeNum})`,
+        rayasCount: winnerId === playerAId ? pendingFrontCarry : -pendingFrontCarry,
+        valuePerRaya: oyesConfig.frontValue,
+        appliedSegment: 'front', // Front value applies
       });
     }
+    
+    // Step 2: Pay back carry + this hole (at back value, attributed to back segment)
+    const backRayasWon = carryBack + 1;
+    carryBack = 0;
+    
+    summaries.push({
+      playerId: winnerId,
+      vsPlayer: loserId!,
+      betType: 'Rayas Oyes',
+      amount: backRayasWon * oyesConfig.backValue,
+      segment: 'back',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (${backRayasWon} acum)` : ''}`,
+    });
+    summaries.push({
+      playerId: loserId!,
+      vsPlayer: winnerId,
+      betType: 'Rayas Oyes',
+      amount: -backRayasWon * oyesConfig.backValue,
+      segment: 'back',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}`,
+    });
+    
+    if (!detailsByPair.has(pairKey)) {
+      detailsByPair.set(pairKey, []);
+    }
+    detailsByPair.get(pairKey)!.push({
+      source: 'oyes',
+      segment: 'back',
+      holeNumber: holeNum,
+      description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
+      rayasCount: winnerId === playerAId ? backRayasWon : -backRayasWon,
+      valuePerRaya: oyesConfig.backValue,
+      appliedSegment: 'back',
+    });
   });
 };
 
