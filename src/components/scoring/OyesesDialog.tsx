@@ -134,6 +134,30 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
     return merged;
   }, [effectiveTab, proximitiesSangron, proximitiesAcumulado, players]);
 
+  // Helper function to check if a value is inherited from Acumulado
+  // NOTE: Defined as a stable callback (no useMemo needed, pure function)
+  const isInheritedFromAcumulado = (playerId: string): boolean => {
+    if (effectiveTab !== 'sangron') return false;
+    const sangronVal = proximitiesSangron.get(playerId);
+    const acumuladoVal = proximitiesAcumulado.get(playerId);
+    // Inherited = no Sangrón value but has Acumulado value
+    return sangronVal === null && acumuladoVal !== null;
+  };
+
+  // UX helper: when Sangrón is showing a full "mirror" from Acumulado,
+  // allow confirming ALL inherited values in one click (writes ONLY to Sangrón field).
+  // NOTE: This useMemo MUST be before any early returns
+  const canAcceptMirrors = useMemo(() => {
+    if (effectiveTab !== 'sangron') return false;
+    const sangronSet = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
+    const effectiveSet = Array.from(currentProximities.values()).filter(v => v !== null).length;
+    // Only meaningful when we have a full effective set, but not all explicitly set in Sangrón
+    if (effectiveSet !== players.length) return false;
+    if (sangronSet >= players.length) return false;
+    // At least one inherited value exists
+    return players.some((p) => isInheritedFromAcumulado(p.id));
+  }, [effectiveTab, proximitiesSangron, currentProximities, players]);
+
   // Don't render if not a Par 3 or Oyeses not enabled
   if (!isPar3 || !oyesesEnabled) {
     return null;
@@ -152,16 +176,6 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   // Effective count for Sangrón = Sangrón + inherited from Acumulado
   const sangronEffectiveCount = Array.from(currentProximities.values()).filter(v => v !== null).length;
 
-  // UX helper: when Sangrón is showing a full "mirror" from Acumulado,
-  // allow confirming ALL inherited values in one click (writes ONLY to Sangrón field).
-  const canAcceptMirrors = useMemo(() => {
-    if (effectiveTab !== 'sangron') return false;
-    // Only meaningful when we have a full effective set, but not all explicitly set in Sangrón
-    if (sangronEffectiveCount !== players.length) return false;
-    if (sangronSetCount >= players.length) return false;
-    // At least one inherited value exists
-    return players.some((p) => isInheritedFromAcumulado(p.id));
-  }, [effectiveTab, sangronEffectiveCount, sangronSetCount, players]);
 
   const handleAcceptMirrors = () => {
     if (effectiveTab !== 'sangron') return;
@@ -183,14 +197,6 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   const proximityValues = Array.from(currentProximities.values()).filter(v => v !== null);
   const hasDuplicates = proximityValues.length !== new Set(proximityValues).size;
   
-  // Check if a value is inherited from Acumulado (shown differently in UI)
-  const isInheritedFromAcumulado = (playerId: string): boolean => {
-    if (effectiveTab !== 'sangron') return false;
-    const sangronVal = proximitiesSangron.get(playerId);
-    const acumuladoVal = proximitiesAcumulado.get(playerId);
-    // Inherited = no Sangrón value but has Acumulado value
-    return sangronVal === null && acumuladoVal !== null;
-  };
 
   // Button badge logic
   const badgeCount = hasAcumulado && hasSangron 
