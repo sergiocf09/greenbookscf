@@ -300,16 +300,31 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                     <div className="flex gap-1 shrink-0">
                       {proximityOptions.map((pos) => {
                         const isSelected = displayProximity === pos;
-                        // Check if this position is taken by another player
-                        const isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
-                          ([pid, prox]) => pid !== player.id && prox === pos
-                        );
-                        // Also check inherited positions for Sangrón
-                        const isInheritedByOther = effectiveTab === 'sangron' && !isSelected && 
-                          Array.from(proximitiesAcumulado.entries()).some(
+                        
+                        // For Sangrón tab, we need to check both:
+                        // 1. Positions explicitly set in Sangrón (proximitiesSangron)
+                        // 2. Positions inherited from Acumulado (proximitiesAcumulado)
+                        let isTakenByOther = false;
+                        
+                        if (effectiveTab === 'sangron') {
+                          // Check if position is taken in Sangrón by another player
+                          const takenInSangron = Array.from(proximitiesSangron.entries()).some(
                             ([pid, prox]) => pid !== player.id && prox === pos
                           );
-                        const isDisabled = isTakenByOther || isInheritedByOther || isInherited;
+                          // Check if position is inherited from Acumulado by another player
+                          const inheritedByOther = Array.from(proximitiesAcumulado.entries()).some(
+                            ([pid, prox]) => pid !== player.id && prox === pos
+                          );
+                          isTakenByOther = takenInSangron || inheritedByOther;
+                        } else {
+                          // For Acumulado tab, just check Acumulado proximities
+                          isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
+                            ([pid, prox]) => pid !== player.id && prox === pos
+                          );
+                        }
+                        
+                        // A player with inherited position can't change it
+                        const isDisabled = isTakenByOther || isInherited;
                         
                         return (
                           <button
