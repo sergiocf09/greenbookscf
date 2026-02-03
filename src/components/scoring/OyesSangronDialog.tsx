@@ -31,7 +31,8 @@ export const OyesSangronDialog: React.FC<OyesSangronDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
 
-  // Get players who have at least one Sangrón pair
+  // Get ALL players who participate in any Sangrón pair (either as player or rival)
+  // If A plays Sangrón with B, both A and B need proximity tracking
   const sangronPlayers = useMemo(() => {
     const playerIds = new Set<string>();
     
@@ -40,8 +41,9 @@ export const OyesSangronDialog: React.FC<OyesSangronDialogProps> = ({
         if (player.id === rival.id) continue;
         const modality = getOyesModalityForPair(betConfig, player.id, rival.id);
         if (modality === 'sangron') {
+          // Both players in the pair need to track proximity
           playerIds.add(player.id);
-          break; // Player participates in at least one Sangrón, move to next player
+          playerIds.add(rival.id);
         }
       }
     }

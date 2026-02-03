@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Users, Star, ChevronDown, AlertTriangle } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, formatPlayerNameShort } from '@/lib/playerInput';
 import { 
   calculateConejaSetResults, 
   getConejaHoleDisplays, 
@@ -923,7 +923,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 )}
                 {culebrasResult.loser && (
                   <>
-                    <span className="text-sm font-medium">{formatPlayerName(culebrasResult.loser.name)}</span>
+                    <span className="text-sm font-medium">{formatPlayerNameShort(culebrasResult.loser.name)}</span>
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
                   </>
                 )}
@@ -1011,7 +1011,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}
                   {pinguinosResult.loser && (
                     <>
-                      <span className="text-sm font-medium">{formatPlayerName(pinguinosResult.loser.name)}</span>
+                      <span className="text-sm font-medium">{formatPlayerNameShort(pinguinosResult.loser.name)}</span>
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
                     </>
                   )}
