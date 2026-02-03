@@ -358,9 +358,6 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                         isLoggedInUser={isLoggedInUser}
                       />
                       <span className="font-medium text-sm truncate max-w-[80px]">{shortName}</span>
-                      {isInherited && (
-                        <span className="text-[9px] text-muted-foreground">(espejo)</span>
-                      )}
                     </div>
                     
                     <div className="flex gap-1 shrink-0">
@@ -396,8 +393,8 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
                                 ? isInherited
-                                  ? "bg-golf-gold/60 text-golf-dark border-2 border-dashed border-golf-gold" // Inherited = dashed border
-                                  : "bg-golf-gold text-golf-dark" // Captured = solid
+                                  ? "bg-background text-foreground border-2 border-primary" // Inherited = white bg with primary border
+                                  : "bg-golf-gold text-golf-dark" // Explicitly set = solid gold
                                 : isDisabled
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80"
