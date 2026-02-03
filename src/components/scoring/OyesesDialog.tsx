@@ -115,17 +115,10 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
     return 'acumulado';
   }, [showTabs, activeTab, hasAcumulado, hasSangron]);
 
-  // Don't render if not a Par 3 or Oyeses not enabled
-  if (!isPar3 || !oyesesEnabled) {
-    return null;
-  }
-
-  // Dynamic proximity options based on player count
-  const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
-
   // Get current proximities based on active tab
   // For Sangrón: use Sangrón values, but FALL BACK to Acumulado if Sangrón is empty
   // This allows the "mirror" behavior when all players have proximity in Acumulado
+  // NOTE: This useMemo MUST be before any early returns to follow React hooks rules
   const currentProximities = useMemo(() => {
     if (effectiveTab === 'acumulado') {
       return proximitiesAcumulado;
@@ -140,6 +133,14 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
     });
     return merged;
   }, [effectiveTab, proximitiesSangron, proximitiesAcumulado, players]);
+
+  // Don't render if not a Par 3 or Oyeses not enabled
+  if (!isPar3 || !oyesesEnabled) {
+    return null;
+  }
+
+  // Dynamic proximity options based on player count
+  const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
   
   const onProximityChange = effectiveTab === 'acumulado' ? onProximityAcumuladoChange : onProximitySangronChange;
   
