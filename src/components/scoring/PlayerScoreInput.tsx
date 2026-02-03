@@ -28,11 +28,6 @@ interface PlayerScoreInputProps {
   isBasePlayer?: boolean;
   playerId?: string;
   basePlayerId?: string;
-  // Oyeses props
-  isPar3?: boolean;
-  oyesEnabled?: boolean;
-  oyesProximity?: number | null;
-  onOyesProximityChange?: (proximity: number | null) => void;
 }
 
 export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
@@ -51,11 +46,6 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   isBasePlayer = false,
   playerId,
   basePlayerId,
-  // Oyeses props
-  isPar3 = false,
-  oyesEnabled = false,
-  oyesProximity,
-  onOyesProximityChange,
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const isLoggedInUser = playerId && basePlayerId ? playerId === basePlayerId : false;
@@ -82,8 +72,6 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
     onMarkersChange(newMarkers);
   };
 
-  const showOyesSelect = isPar3 && oyesEnabled && !!onOyesProximityChange;
-
   return (
     <div className={cn(
       "bg-card border rounded-xl p-3 space-y-2",
@@ -103,36 +91,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
           </div>
         </div>
         
-        {/* Score Display with auto-detected badges */}
         <div className="flex items-center gap-2">
-          {/* Proximidad Oyes (solo Par 3) - moved here for mobile visibility */}
-          {showOyesSelect && (
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted-foreground">🎯</span>
-              <select
-                value={oyesProximity ?? ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onOyesProximityChange(val === '' ? null : parseInt(val));
-                }}
-                className={cn(
-                  'h-7 w-12 text-xs text-center rounded border bg-background',
-                  oyesProximity
-                    ? 'border-primary text-primary font-bold'
-                    : 'border-muted-foreground/30 text-muted-foreground'
-                )}
-              >
-                <option value="">-</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-              </select>
-            </div>
-          )}
-
           {strokes > 0 && (
             <>
               <div className="flex gap-1">
@@ -149,9 +108,9 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         </div>
       </div>
 
-      {/* Inputs (Golpes + Putts + Proximidad Par 3) */}
+      {/* Inputs (Golpes + Putts) */}
       <div className="bg-muted/30 rounded-lg p-2">
-        <div className="grid grid-cols-[auto_auto] items-center gap-2">
+        <div className="grid grid-cols-2 items-center gap-2">
           <ScoreStepper
             label="Golpes"
             value={strokes}
