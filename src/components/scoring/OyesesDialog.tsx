@@ -373,27 +373,25 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                           ([pid, prox]) => pid !== player.id && prox === pos
                         );
                         
-                        const isDisabled = isTakenByOther;
+                        // In Sangrón tab: inherited values are READ-ONLY (cannot be modified)
+                        // User must use "Aceptar espejos" button to confirm all at once
+                        const isReadOnlyInherited = isInherited && isSelected;
+                        const isDisabled = isTakenByOther || isReadOnlyInherited;
                         
                         return (
                           <button
                             key={pos}
                             onClick={() => {
-                              // If it's inherited (shown but not actually set in this tab),
-                              // clicking should CONFIRM it (write to this tab)
-                              if (isInherited && isSelected) {
-                                // Inherited value is shown, user clicks to confirm it
-                                onProximityChange(player.id, pos);
-                              } else {
-                                // Normal toggle behavior
-                                onProximityChange(player.id, isActuallySetInThisTab ? null : pos);
-                              }
+                              // Inherited values are now read-only, no click action
+                              if (isReadOnlyInherited) return;
+                              // Normal toggle behavior
+                              onProximityChange(player.id, isActuallySetInThisTab ? null : pos);
                             }}
                             className={cn(
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
                                 ? isInherited
-                                  ? "bg-background text-foreground border-2 border-primary" // Inherited = white bg with primary border
+                                  ? "bg-background text-foreground border-2 border-primary cursor-default" // Inherited = read-only, white bg with green border
                                   : "bg-golf-gold text-golf-dark" // Explicitly set = solid gold
                                 : isDisabled
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
