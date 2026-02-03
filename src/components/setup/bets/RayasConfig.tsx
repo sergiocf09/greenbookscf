@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant, OyesModality } from '@/types/golf';
+import { BetConfig, Player, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant, OyesModality, RayasOyesMode } from '@/types/golf';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RayasConfigProps {
   config: BetConfig;
@@ -31,7 +32,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
 }) => {
   const [expandedBilateral, setExpandedBilateral] = React.useState(false);
   
-  const rayas = config.rayas ?? { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados' };
+  const rayas = config.rayas ?? { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados', oyesMode: 'allVsAll' as const };
   
   // Get default segment config
   const getSegmentConfig = (segmentKey: string): RayasSegmentConfig => {
@@ -161,6 +162,27 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
             Sin Acum
           </button>
         </div>
+      </div>
+      
+      {/* Oyes Mode Selector */}
+      <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+        <Label className="text-xs text-muted-foreground">Modalidad Oyeses</Label>
+        <Select
+          value={(rayas as any).oyesMode ?? 'allVsAll'}
+          onValueChange={(value) => onUpdateRayas({ oyesMode: value as RayasOyesMode })}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-[10px]">
+            <SelectValue placeholder="Seleccionar" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="singleWinner" className="text-[11px]">
+              Un solo ganador
+            </SelectItem>
+            <SelectItem value="allVsAll" className="text-[11px]">
+              Todos vs Todos
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       {/* Segments configuration */}

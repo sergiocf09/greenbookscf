@@ -195,14 +195,16 @@ export const useBetConfigPersistence = ({
           
           // Apply Rayas config if exists
           if (dbConfig.rayas) {
+            const dbRayas = dbConfig.rayas as any;
             newConfig.rayas = {
-              enabled: dbConfig.rayas.enabled ?? prev.rayas.enabled,
-              frontValue: dbConfig.rayas.frontValue ?? prev.rayas.frontValue,
-              backValue: dbConfig.rayas.backValue ?? prev.rayas.backValue,
-              medalTotalValue: dbConfig.rayas.medalTotalValue ?? prev.rayas.medalTotalValue,
-              skinVariant: dbConfig.rayas.skinVariant ?? prev.rayas.skinVariant,
-              segments: dbConfig.rayas.segments ?? prev.rayas.segments,
-              bilateralOverrides: dbConfig.rayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
+              enabled: dbRayas.enabled ?? prev.rayas.enabled,
+              frontValue: dbRayas.frontValue ?? prev.rayas.frontValue,
+              backValue: dbRayas.backValue ?? prev.rayas.backValue,
+              medalTotalValue: dbRayas.medalTotalValue ?? prev.rayas.medalTotalValue,
+              skinVariant: dbRayas.skinVariant ?? prev.rayas.skinVariant,
+              oyesMode: dbRayas.oyesMode ?? 'allVsAll',
+              segments: dbRayas.segments ?? prev.rayas.segments,
+              bilateralOverrides: dbRayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
             };
           }
           
