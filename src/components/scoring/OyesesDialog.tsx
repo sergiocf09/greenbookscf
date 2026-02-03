@@ -124,38 +124,60 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
 
   // Get current proximities based on active tab
-  const currentProximities = effectiveTab === 'acumulado' ? proximitiesAcumulado : proximitiesSangron;
+  // For Sangrón: use Sangrón values, but FALL BACK to Acumulado if Sangrón is empty
+  // This allows the "mirror" behavior when all players have proximity in Acumulado
+  const currentProximities = useMemo(() => {
+    if (effectiveTab === 'acumulado') {
+      return proximitiesAcumulado;
+    }
+    // For Sangrón tab: merge Acumulado as fallback where Sangrón is empty
+    const merged = new Map<string, number | null>();
+    players.forEach(p => {
+      const sangronVal = proximitiesSangron.get(p.id);
+      const acumuladoVal = proximitiesAcumulado.get(p.id);
+      // Use Sangrón if set, otherwise fall back to Acumulado
+      merged.set(p.id, sangronVal ?? acumuladoVal ?? null);
+    });
+    return merged;
+  }, [effectiveTab, proximitiesSangron, proximitiesAcumulado, players]);
+  
   const onProximityChange = effectiveTab === 'acumulado' ? onProximityAcumuladoChange : onProximitySangronChange;
   
   // Count how many proximities are set
   const setCount = Array.from(currentProximities.values()).filter(v => v !== null).length;
   const acumuladoSetCount = Array.from(proximitiesAcumulado.values()).filter(v => v !== null).length;
+  // For Sangrón, count how many have explicit Sangrón values (not inherited)
   const sangronSetCount = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
+  // Effective count for Sangrón = Sangrón + inherited from Acumulado
+  const sangronEffectiveCount = Array.from(currentProximities.values()).filter(v => v !== null).length;
   
   // Check if all positions are filled (required for Sangrón)
   const allPositionsFilled = setCount === players.length;
-  const sangronComplete = sangronSetCount === players.length;
+  // For Sangrón complete check, use effective count (including inherited)
+  const sangronComplete = effectiveTab === 'sangron' ? sangronEffectiveCount === players.length : sangronSetCount === players.length;
   
   // Check for duplicate proximities
   const proximityValues = Array.from(currentProximities.values()).filter(v => v !== null);
   const hasDuplicates = proximityValues.length !== new Set(proximityValues).size;
   
-  // REMOVED: Sangrón should NOT inherit from Acumulado anymore
-  // Each modality has its own independent proximity capture
-  // This is critical to avoid data contamination between modalities
-  const getInheritedPosition = (playerId: string): number | null => {
-    // No inheritance - each tab is independent
-    return null;
+  // Check if a value is inherited from Acumulado (shown differently in UI)
+  const isInheritedFromAcumulado = (playerId: string): boolean => {
+    if (effectiveTab !== 'sangron') return false;
+    const sangronVal = proximitiesSangron.get(playerId);
+    const acumuladoVal = proximitiesAcumulado.get(playerId);
+    // Inherited = no Sangrón value but has Acumulado value
+    return sangronVal === null && acumuladoVal !== null;
   };
 
   // Button badge logic
   const badgeCount = hasAcumulado && hasSangron 
-    ? Math.max(acumuladoSetCount, sangronSetCount)
+    ? Math.max(acumuladoSetCount, sangronEffectiveCount)
     : hasAcumulado 
       ? acumuladoSetCount 
-      : sangronSetCount;
+      : sangronEffectiveCount;
   
-  const needsAttention = hasSangron && !sangronComplete && (acumuladoSetCount > 0 || sangronSetCount > 0);
+  // Needs attention only if Sangrón is not complete (considering inherited values)
+  const needsAttention = hasSangron && !sangronComplete && sangronEffectiveCount < players.length && (acumuladoSetCount > 0 || sangronSetCount > 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -281,8 +303,8 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             <div className="space-y-3">
               {players.map((player) => {
                 const currentProximity = currentProximities.get(player.id);
-                // No more inheritance - isInherited is always false now
-                const isInherited = false;
+                // Check if value is inherited from Acumulado (for visual distinction)
+                const isInherited = isInheritedFromAcumulado(player.id);
                 const displayProximity = currentProximity;
                 const isLoggedInUser = player.id === basePlayerId || player.profileId === basePlayerId;
                 const shortName = formatPlayerNameShort(player.name);
@@ -297,14 +319,16 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                         isLoggedInUser={isLoggedInUser}
                       />
                       <span className="font-medium text-sm truncate max-w-[80px]">{shortName}</span>
+                      {isInherited && (
+                        <span className="text-[9px] text-muted-foreground">(espejo)</span>
+                      )}
                     </div>
                     
                     <div className="flex gap-1 shrink-0">
                       {proximityOptions.map((pos) => {
                         const isSelected = displayProximity === pos;
                         
-                        // Check if position is taken by another player IN THE CURRENT TAB ONLY
-                        // Each tab is now independent - no cross-tab checking
+                        // Check if position is taken by another player
                         const isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
                           ([pid, prox]) => pid !== player.id && prox === pos
                         );
@@ -320,7 +344,9 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                             className={cn(
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
-                                ? "bg-golf-gold text-golf-dark" 
+                                ? isInherited
+                                  ? "bg-golf-gold/60 text-golf-dark border-2 border-dashed border-golf-gold" // Inherited = dashed border
+                                  : "bg-golf-gold text-golf-dark" // Captured = solid
                                 : isDisabled
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -345,7 +371,10 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             )}
             <p>• El número más bajo gana el hoyo</p>
             {effectiveTab === 'sangron' && (
-              <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse para resolver en este hoyo</p>
+              <>
+                <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse para resolver</p>
+                <p>• Los valores de Acumulado se reflejan automáticamente (espejo)</p>
+              </>
             )}
           </div>
         </div>
