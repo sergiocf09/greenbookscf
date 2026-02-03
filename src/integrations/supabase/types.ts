@@ -266,6 +266,7 @@ export type Database = {
           id: string
           net_score: number | null
           oyes_proximity: number | null
+          oyes_proximity_sangron: number | null
           putts: number | null
           round_player_id: string
           strokes: number | null
@@ -279,6 +280,7 @@ export type Database = {
           id?: string
           net_score?: number | null
           oyes_proximity?: number | null
+          oyes_proximity_sangron?: number | null
           putts?: number | null
           round_player_id: string
           strokes?: number | null
@@ -292,6 +294,7 @@ export type Database = {
           id?: string
           net_score?: number | null
           oyes_proximity?: number | null
+          oyes_proximity_sangron?: number | null
           putts?: number | null
           round_player_id?: string
           strokes?: number | null

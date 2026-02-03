@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Player, BetConfig } from '@/types/golf';
+import { Player, BetConfig, OyesModality } from '@/types/golf';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -14,9 +14,12 @@ interface OyesesDialogProps {
   basePlayerId?: string;
   currentHole: number;
   isPar3: boolean;
-  // Map of playerId -> proximity (1-6 or null)
-  proximities: Map<string, number | null>;
-  onProximityChange: (playerId: string, proximity: number | null) => void;
+  // Proximities for Acumulado modality
+  proximitiesAcumulado: Map<string, number | null>;
+  onProximityAcumuladoChange: (playerId: string, proximity: number | null) => void;
+  // Proximities for Sangrón modality
+  proximitiesSangron: Map<string, number | null>;
+  onProximitySangronChange: (playerId: string, proximity: number | null) => void;
   trigger?: React.ReactNode;
 }
 
@@ -37,31 +40,49 @@ const isOyesesEnabled = (config: BetConfig): boolean => {
 };
 
 /**
- * Get which Oyeses modes are active for display purposes
+ * Analyze which Oyeses modalities are active across all bets and pairs
+ * Returns whether Acumulado-only, Sangrón-only, or both are active
  */
-const getActiveOyesesModes = (
+const analyzeActiveModalities = (
   config: BetConfig,
   players: Player[]
-): { hasStandalone: boolean; hasRayas: boolean; hasAnySangron: boolean } => {
-  const hasStandalone = config.oyeses?.enabled ?? false;
-  const hasRayas = config.rayas?.enabled && (config.rayas.segments?.oyes?.enabled ?? true);
+): { hasAcumulado: boolean; hasSangron: boolean; showTabs: boolean } => {
+  let hasAcumulado = false;
+  let hasSangron = false;
   
-  // Check for any Sangrón pairs (either in standalone or Rayas)
-  let hasAnySangron = false;
-  
-  // Check Rayas Sangrón
-  if (hasRayas) {
-    hasAnySangron = hasAnySangronPairs(config, players);
+  // Check standalone Oyeses bet
+  if (config.oyeses?.enabled && config.oyeses.playerConfigs) {
+    for (const pc of config.oyeses.playerConfigs) {
+      if (pc.enabled) {
+        if (pc.modality === 'sangron') hasSangron = true;
+        else hasAcumulado = true;
+      }
+    }
   }
   
-  // Check standalone Oyeses for Sangrón
-  if (hasStandalone && config.oyeses?.playerConfigs) {
-    const hasSangronPlayer = config.oyeses.playerConfigs.some(pc => pc.modality === 'sangron' && pc.enabled);
-    if (hasSangronPlayer) hasAnySangron = true;
+  // Check Rayas Oyes segment - iterate all pairs
+  if (config.rayas?.enabled && (config.rayas.segments?.oyes?.enabled ?? true)) {
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const modality = getOyesModalityForPair(config, players[i].id, players[j].id);
+        if (modality === 'sangron') hasSangron = true;
+        else hasAcumulado = true;
+      }
+    }
   }
   
-  return { hasStandalone, hasRayas, hasAnySangron };
+  // If no specific config found but Oyeses is enabled, default to Acumulado
+  if (!hasAcumulado && !hasSangron && isOyesesEnabled(config)) {
+    hasAcumulado = true;
+  }
+  
+  // Show tabs only when BOTH modalities coexist
+  const showTabs = hasAcumulado && hasSangron;
+  
+  return { hasAcumulado, hasSangron, showTabs };
 };
+
+type ActiveTab = 'acumulado' | 'sangron';
 
 export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   players,
@@ -69,17 +90,30 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   basePlayerId,
   currentHole,
   isPar3,
-  proximities,
-  onProximityChange,
+  proximitiesAcumulado,
+  onProximityAcumuladoChange,
+  proximitiesSangron,
+  onProximitySangronChange,
   trigger,
 }) => {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('acumulado');
 
   // Check if Oyeses is enabled at all
   const oyesesEnabled = useMemo(() => isOyesesEnabled(betConfig), [betConfig]);
   
-  // Get active modes info
-  const modes = useMemo(() => getActiveOyesesModes(betConfig, players), [betConfig, players]);
+  // Analyze active modalities
+  const { hasAcumulado, hasSangron, showTabs } = useMemo(
+    () => analyzeActiveModalities(betConfig, players),
+    [betConfig, players]
+  );
+  
+  // Determine effective tab (when no tabs, use the only active modality)
+  const effectiveTab: ActiveTab = useMemo(() => {
+    if (showTabs) return activeTab;
+    if (hasSangron && !hasAcumulado) return 'sangron';
+    return 'acumulado';
+  }, [showTabs, activeTab, hasAcumulado, hasSangron]);
 
   // Don't render if not a Par 3 or Oyeses not enabled
   if (!isPar3 || !oyesesEnabled) {
@@ -89,41 +123,63 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   // Dynamic proximity options based on player count
   const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
 
-  // Check how many proximities are set (for display purposes)
-  const setCount = Array.from(proximities.values()).filter(v => v !== null).length;
+  // Get current proximities based on active tab
+  const currentProximities = effectiveTab === 'acumulado' ? proximitiesAcumulado : proximitiesSangron;
+  const onProximityChange = effectiveTab === 'acumulado' ? onProximityAcumuladoChange : onProximitySangronChange;
+  
+  // Count how many proximities are set
+  const setCount = Array.from(currentProximities.values()).filter(v => v !== null).length;
+  const acumuladoSetCount = Array.from(proximitiesAcumulado.values()).filter(v => v !== null).length;
+  const sangronSetCount = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
   
   // Check if all positions are filled (required for Sangrón)
   const allPositionsFilled = setCount === players.length;
+  const sangronComplete = sangronSetCount === players.length;
   
-  // Check if there are duplicate proximities
-  const proximityValues = Array.from(proximities.values()).filter(v => v !== null);
+  // Check for duplicate proximities
+  const proximityValues = Array.from(currentProximities.values()).filter(v => v !== null);
   const hasDuplicates = proximityValues.length !== new Set(proximityValues).size;
+  
+  // For Sangrón tab: positions already set in Acumulado are "inherited" and locked
+  const getInheritedPosition = (playerId: string): number | null => {
+    if (effectiveTab !== 'sangron') return null;
+    return proximitiesAcumulado.get(playerId) ?? null;
+  };
+
+  // Button badge logic
+  const badgeCount = hasAcumulado && hasSangron 
+    ? Math.max(acumuladoSetCount, sangronSetCount)
+    : hasAcumulado 
+      ? acumuladoSetCount 
+      : sangronSetCount;
+  
+  const needsAttention = hasSangron && !sangronComplete && (acumuladoSetCount > 0 || sangronSetCount > 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-          {trigger || (
+        {trigger || (
           <Button 
             variant="outline" 
             size="icon" 
             className={cn(
               "shrink-0 relative",
-              setCount > 0 && "border-primary",
-              modes.hasAnySangron && !allPositionsFilled && setCount > 0 && "border-destructive"
+              badgeCount > 0 && "border-primary",
+              needsAttention && "border-destructive"
             )}
           >
             <Target className="h-4 w-4" />
-            {modes.hasAnySangron && (
+            {hasSangron && (
               <Zap className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-golf-gold fill-golf-gold" />
             )}
-            {setCount > 0 && (
+            {badgeCount > 0 && (
               <span className={cn(
                 "absolute -bottom-1 -right-1 text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold",
-                modes.hasAnySangron && !allPositionsFilled 
+                needsAttention 
                   ? "bg-destructive text-destructive-foreground" 
                   : "bg-primary text-primary-foreground"
               )}>
-                {setCount}
+                {badgeCount}
               </span>
             )}
           </Button>
@@ -134,35 +190,84 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
             Oyes - Hoyo {currentHole}
-            {modes.hasAnySangron && (
-              <span className="flex items-center gap-1 text-xs font-normal text-golf-gold">
-                <Zap className="h-3 w-3 fill-golf-gold" />
-                Sangrón
-              </span>
-            )}
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-2">
+          {/* Tabs - only show when both modalities coexist */}
+          {showTabs && (
+            <div className="flex gap-1 p-1 bg-muted rounded-lg">
+              <button
+                onClick={() => setActiveTab('acumulado')}
+                className={cn(
+                  "flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                  activeTab === 'acumulado' 
+                    ? "bg-background shadow text-foreground" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Acumulado
+                {acumuladoSetCount > 0 && (
+                  <span className="text-[10px] bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
+                    {acumuladoSetCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('sangron')}
+                className={cn(
+                  "flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-1.5",
+                  activeTab === 'sangron' 
+                    ? "bg-background shadow text-foreground" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Zap className="h-3.5 w-3.5 text-golf-gold fill-golf-gold" />
+                Sangrón
+                {sangronSetCount > 0 && (
+                  <span className={cn(
+                    "text-[10px] rounded-full w-4 h-4 flex items-center justify-center",
+                    sangronComplete 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-destructive text-destructive-foreground"
+                  )}>
+                    {sangronSetCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+          
+          {/* Mode indicator when no tabs */}
+          {!showTabs && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {effectiveTab === 'sangron' ? (
+                <>
+                  <Zap className="h-4 w-4 text-golf-gold fill-golf-gold" />
+                  <span>Modalidad Sangrón</span>
+                </>
+              ) : (
+                <span>Modalidad Acumulado</span>
+              )}
+            </div>
+          )}
+          
           <p className="text-sm text-muted-foreground">
             Selecciona el orden de proximidad al hoyo (1 = más cerca)
           </p>
           
-          {/* Active modes indicator */}
-          <div className="flex gap-2 text-[10px]">
-            {modes.hasStandalone && (
-              <span className="bg-muted px-2 py-0.5 rounded">📍 Oyes</span>
-            )}
-            {modes.hasRayas && (
-              <span className="bg-muted px-2 py-0.5 rounded">📊 Rayas</span>
-            )}
-          </div>
-          
           {/* Warning for Sangrón when not all positions are filled */}
-          {modes.hasAnySangron && !allPositionsFilled && (
+          {effectiveTab === 'sangron' && !allPositionsFilled && (
             <div className="flex items-center gap-2 text-xs text-golf-gold bg-golf-gold/10 px-3 py-2 rounded-md">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>Sangrón requiere asignar todas las posiciones ({setCount}/{players.length})</span>
+            </div>
+          )}
+          
+          {/* Inheritance info for Sangrón tab */}
+          {effectiveTab === 'sangron' && showTabs && acumuladoSetCount > 0 && (
+            <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+              Las posiciones de Acumulado están heredadas (bloqueadas). Completa las faltantes.
             </div>
           )}
           
@@ -181,7 +286,10 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           ) : (
             <div className="space-y-3">
               {players.map((player) => {
-                const currentProximity = proximities.get(player.id);
+                const currentProximity = currentProximities.get(player.id);
+                const inheritedPosition = getInheritedPosition(player.id);
+                const isInherited = inheritedPosition !== null && effectiveTab === 'sangron';
+                const displayProximity = isInherited ? inheritedPosition : currentProximity;
                 const isLoggedInUser = player.id === basePlayerId || player.profileId === basePlayerId;
                 const shortName = formatPlayerNameShort(player.name);
                 
@@ -195,29 +303,43 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                         isLoggedInUser={isLoggedInUser}
                       />
                       <span className="font-medium text-sm truncate max-w-[80px]">{shortName}</span>
+                      {isInherited && (
+                        <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded">heredado</span>
+                      )}
                     </div>
                     
                     <div className="flex gap-1 shrink-0">
                       {proximityOptions.map((pos) => {
-                        const isSelected = currentProximity === pos;
+                        const isSelected = displayProximity === pos;
                         // Check if this position is taken by another player
-                        const isTakenByOther = !isSelected && Array.from(proximities.entries()).some(
+                        const isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
                           ([pid, prox]) => pid !== player.id && prox === pos
                         );
+                        // Also check inherited positions for Sangrón
+                        const isInheritedByOther = effectiveTab === 'sangron' && !isSelected && 
+                          Array.from(proximitiesAcumulado.entries()).some(
+                            ([pid, prox]) => pid !== player.id && prox === pos
+                          );
+                        const isDisabled = isTakenByOther || isInheritedByOther || isInherited;
                         
                         return (
                           <button
                             key={pos}
-                            onClick={() => onProximityChange(player.id, isSelected ? null : pos)}
+                            onClick={() => {
+                              if (isInherited) return; // Can't change inherited positions
+                              onProximityChange(player.id, isSelected ? null : pos);
+                            }}
                             className={cn(
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
-                                ? "bg-golf-gold text-golf-dark" 
-                                : isTakenByOther
+                                ? isInherited
+                                  ? "bg-muted text-muted-foreground ring-2 ring-golf-gold"
+                                  : "bg-golf-gold text-golf-dark" 
+                                : isDisabled
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}
-                            disabled={isTakenByOther}
+                            disabled={isDisabled}
                           >
                             {pos}
                           </button>
@@ -232,12 +354,12 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           
           {/* Help text */}
           <div className="text-[10px] text-muted-foreground space-y-1 pt-2 border-t">
-            {!modes.hasAnySangron && (
-              <p>• Sin selección = no subió al green (acumula en modo Acumulado)</p>
+            {effectiveTab === 'acumulado' && (
+              <p>• Sin selección = no subió al green (acumula para el siguiente par 3)</p>
             )}
             <p>• El número más bajo gana el hoyo</p>
-            {modes.hasAnySangron && (
-              <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse</p>
+            {effectiveTab === 'sangron' && (
+              <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse para resolver en este hoyo</p>
             )}
           </div>
         </div>
@@ -245,7 +367,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
         <div className="flex justify-end pt-2">
           <Button 
             onClick={() => setOpen(false)}
-            disabled={modes.hasAnySangron && !allPositionsFilled}
+            disabled={effectiveTab === 'sangron' && !allPositionsFilled}
           >
             Listo
           </Button>

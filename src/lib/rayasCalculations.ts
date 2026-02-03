@@ -740,8 +740,9 @@ const processOyesSangronForPair = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
     
-    const proximityA = scoreA?.oyesProximity ?? null;
-    const proximityB = scoreB?.oyesProximity ?? null;
+    // Sangrón uses oyesProximitySangron field
+    const proximityA = scoreA?.oyesProximitySangron ?? null;
+    const proximityB = scoreB?.oyesProximitySangron ?? null;
     
     // Sangrón: both players need a proximity value to settle
     if (proximityA === null || proximityB === null) {
