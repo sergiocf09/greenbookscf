@@ -56,3 +56,28 @@ export const formatPlayerName = (name: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
+
+/**
+ * Format a player name as "FirstName L." (first name + last initial).
+ * E.g., "JUAN PÉREZ" -> "Juan P.", "maria garcia" -> "Maria G."
+ * If only one name, returns just that name.
+ */
+export const formatPlayerNameShort = (name: string): string => {
+  if (!name) return '';
+  const parts = name
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  
+  if (parts.length === 0) return '';
+  
+  const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+  
+  if (parts.length === 1) {
+    return firstName;
+  }
+  
+  // Get initial of second part (last name)
+  const lastInitial = parts[1].charAt(0).toUpperCase();
+  return `${firstName} ${lastInitial}.`;
+};
