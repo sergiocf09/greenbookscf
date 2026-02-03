@@ -71,6 +71,7 @@ export const useRealtimeScores = ({
           strokesReceived: record.strokes_received ?? strokesPerHole[holeIndex],
           netScore: record.net_score ?? (record.strokes ?? holePar) - strokesPerHole[holeIndex],
           oyesProximity: record.oyes_proximity ?? null,
+          oyesProximitySangron: record.oyes_proximity_sangron ?? null,
           confirmed: record.confirmed ?? false,
         };
 
