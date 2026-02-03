@@ -258,7 +258,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           
           {/* Warning for Sangrón when not all positions are filled */}
           {effectiveTab === 'sangron' && !allPositionsFilled && (
-            <div className="flex items-center gap-2 text-xs text-golf-gold bg-golf-gold/10 px-3 py-2 rounded-md">
+            <div className="flex items-center gap-2 text-xs text-foreground bg-muted px-3 py-2 rounded-md">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>Completar las {players.length} posiciones ({setCount}/{players.length})</span>
             </div>
@@ -296,9 +296,6 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                         isLoggedInUser={isLoggedInUser}
                       />
                       <span className="font-medium text-sm truncate max-w-[80px]">{shortName}</span>
-                      {isInherited && (
-                        <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded">heredado</span>
-                      )}
                     </div>
                     
                     <div className="flex gap-1 shrink-0">
