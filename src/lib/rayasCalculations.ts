@@ -734,6 +734,7 @@ const processOyesSangronForPair = (
   if (!oyesConfig.enabled) return;
   
   const pairKey = [playerAId, playerBId].sort().join('-');
+  const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   par3Holes.forEach(holeNum => {
     const segment: 'front' | 'back' = holeNum <= 9 ? 'front' : 'back';
@@ -803,7 +804,9 @@ const processOyesSangronForPair = (
         segment: segment,
         holeNumber: holeNum,
         description: `Oyes H${holeNum} (Sangrón)`,
-        rayasCount: winnerId === playerAId ? 1 : -1,
+        // IMPORTANT: store rayasCount with deterministic perspective based on sorted pair ids.
+        // This prevents sign flips when different call sites pass (A,B) in different order.
+        rayasCount: winnerId === idLow ? 1 : -1,
         valuePerRaya: segmentValue,
         appliedSegment: segment,
       });
@@ -839,6 +842,7 @@ const processOyesAcumuladosForPair = (
   if (!oyesConfig.enabled) return;
   
   const pairKey = [playerAId, playerBId].sort().join('-');
+  const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   // Separate par 3s by segment
   const frontPar3s = par3Holes.filter(h => h <= 9);
@@ -919,7 +923,8 @@ const processOyesAcumuladosForPair = (
       segment: 'front',
       holeNumber: holeNum,
       description: `Oyes H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
-      rayasCount: winnerId === playerAId ? rayasWon : -rayasWon,
+      // Deterministic perspective by sorted pair ids
+      rayasCount: winnerId === idLow ? rayasWon : -rayasWon,
       valuePerRaya: oyesConfig.frontValue,
       appliedSegment: 'front',
     });
@@ -972,7 +977,8 @@ const processOyesAcumuladosForPair = (
         segment: 'front', // Attributed to FRONT for dashboard
         holeNumber: holeNum,
         description: `Carry Front (${pendingFrontCarry} rayas pagadas en H${holeNum})`,
-        rayasCount: winnerId === playerAId ? pendingFrontCarry : -pendingFrontCarry,
+        // Deterministic perspective by sorted pair ids
+        rayasCount: winnerId === idLow ? pendingFrontCarry : -pendingFrontCarry,
         valuePerRaya: oyesConfig.frontValue,
         appliedSegment: 'front', // Front value applies
       });
@@ -1009,7 +1015,8 @@ const processOyesAcumuladosForPair = (
       segment: 'back',
       holeNumber: holeNum,
       description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}`,
-      rayasCount: winnerId === playerAId ? backRayasWon : -backRayasWon,
+      // Deterministic perspective by sorted pair ids
+      rayasCount: winnerId === idLow ? backRayasWon : -backRayasWon,
       valuePerRaya: oyesConfig.backValue,
       appliedSegment: 'back',
     });
