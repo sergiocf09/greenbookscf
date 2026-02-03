@@ -10,7 +10,7 @@ export const defaultBetConfig: BetConfig = {
   manchas: { enabled: true, valuePerPoint: 25 },
   culebras: { enabled: true, valuePerOccurrence: 25 },
   pinguinos: { enabled: false, valuePerOccurrence: 25 },
-  rayas: { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados' },
+  rayas: { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados', oyesMode: 'allVsAll' },
   carritos: { 
     enabled: false, 
     teamA: ['', ''], 

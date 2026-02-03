@@ -161,6 +161,11 @@ export interface BilateralHandicap {
 // Rayas bet config - aggregator bet
 export type RayasSkinVariant = 'acumulados' | 'sinAcumulacion';
 
+// Rayas Oyeses calculation mode
+// - singleWinner: The absolute closest (#1) wins rayas vs ALL other players
+// - allVsAll: Each pair is compared independently (hierarchical)
+export type RayasOyesMode = 'singleWinner' | 'allVsAll';
+
 // Rayas segment configuration (skins, units, oyes, medal)
 export interface RayasSegmentConfig {
   enabled: boolean;
@@ -186,6 +191,7 @@ export interface RayasBetConfig {
   backValue: number;      // Default value per raya in Back 9
   medalTotalValue: number; // Value for the Medal Total raya
   skinVariant: RayasSkinVariant; // Whether skins accumulate in Rayas
+  oyesMode: RayasOyesMode; // How Oyes winners are calculated: 'singleWinner' = #1 beats all, 'allVsAll' = compare by pair
   // Per-segment configuration (optional, defaults to enabled with main values)
   segments?: {
     skins: RayasSegmentConfig;

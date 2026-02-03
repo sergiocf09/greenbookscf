@@ -712,7 +712,12 @@ const calculateRayasForPair = (
 
 /**
  * Process Oyes for a PAIR with Sangrón modality (no accumulation)
- * Each hole is settled independently based on proximity comparison
+ * Each hole is settled independently based on proximity comparison between the two players.
+ * 
+ * Rules:
+ * - If both have a ranking: lower number wins
+ * - If only one has a ranking: that player wins
+ * - If neither has a ranking: tie (0 rayas)
  */
 const processOyesSangronForPair = (
   playerAId: string,
@@ -724,15 +729,15 @@ const processOyesSangronForPair = (
   detailsByPair: Map<string, RayaDetail[]>
 ): void => {
   const par3Holes = getPar3Holes(course);
-  const oyesSegmentConfig = config.rayas?.segments?.oyes;
-  const frontValue = oyesSegmentConfig?.frontValue ?? config.rayas.frontValue;
-  const backValue = oyesSegmentConfig?.backValue ?? config.rayas.backValue;
+  const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
+  
+  if (!oyesConfig.enabled) return;
   
   const pairKey = [playerAId, playerBId].sort().join('-');
   
   par3Holes.forEach(holeNum => {
     const segment: 'front' | 'back' = holeNum <= 9 ? 'front' : 'back';
-    const segmentValue = segment === 'front' ? frontValue : backValue;
+    const segmentValue = segment === 'front' ? oyesConfig.frontValue : oyesConfig.backValue;
     
     const scoresA = scores.get(playerAId) || [];
     const scoresB = scores.get(playerBId) || [];
@@ -740,27 +745,33 @@ const processOyesSangronForPair = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
     
-    // Sangrón uses oyesProximitySangron field
-    const proximityA = scoreA?.oyesProximitySangron ?? null;
-    const proximityB = scoreB?.oyesProximitySangron ?? null;
+    // Sangrón uses oyesProximitySangron field (with fallback to oyesProximity for compatibility)
+    const proximityA = scoreA?.oyesProximitySangron ?? scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximitySangron ?? scoreB?.oyesProximity ?? null;
     
-    // Sangrón: both players need a proximity value to settle
-    if (proximityA === null || proximityB === null) {
-      return; // Skip this hole - no settlement
-    }
-    
-    // Compare proximities directly
     let winnerId: string | null = null;
     let loserId: string | null = null;
     
-    if (proximityA < proximityB) {
+    if (proximityA !== null && proximityB !== null) {
+      // Both have ranking - lower wins
+      if (proximityA < proximityB) {
+        winnerId = playerAId;
+        loserId = playerBId;
+      } else if (proximityB < proximityA) {
+        winnerId = playerBId;
+        loserId = playerAId;
+      }
+      // Same ranking = tie, no winner
+    } else if (proximityA !== null && proximityB === null) {
+      // Only A has ranking - A wins
       winnerId = playerAId;
       loserId = playerBId;
-    } else if (proximityB < proximityA) {
+    } else if (proximityB !== null && proximityA === null) {
+      // Only B has ranking - B wins
       winnerId = playerBId;
       loserId = playerAId;
     }
-    // Tie: no winner
+    // Both null = tie (no winner)
     
     if (winnerId && loserId) {
       summaries.push({
@@ -800,126 +811,322 @@ const processOyesSangronForPair = (
 };
 
 /**
- * Process a single Oyes hole for Acumulados mode and return results
- * Used for pairs that DON'T have Sangrón modality
+ * Process Oyes for a PAIR with Acumulados modality
+ * 
+ * Rules per hole for pair (A vs B):
+ * - If neither has ranking: carry_oyes[A,B] += 1 (accumulates)
+ * - If only one has ranking: that player wins (carry_oyes + 1) rayas, carry resets
+ * - If both have ranking: lower ranking wins (carry_oyes + 1) rayas, carry resets
+ * 
+ * This tracks accumulation PER PAIR, not globally.
  */
-const processOyesHoleAcumulados = (
-  holeNum: number,
-  segment: 'front' | 'back',
-  players: Player[],
+const processOyesAcumuladosForPair = (
+  playerAId: string,
+  playerBId: string,
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  accumulatedOyes: number,
-  segmentValue: number,
+  course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>,
-  carriedFromFront: number = 0,
-  frontValue: number = 0
-): { won: boolean; winnerId: string | null } => {
-  // Find who has proximity numbers on this hole
-  const proximities: { playerId: string; proximity: number }[] = [];
+  detailsByPair: Map<string, RayaDetail[]>
+): void => {
+  const par3Holes = getPar3Holes(course);
+  const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
   
-  players.forEach(player => {
-    const playerScores = scores.get(player.id) || [];
-    const holeScore = playerScores.find(s => s.holeNumber === holeNum);
-    if (holeScore?.oyesProximity) {
-      proximities.push({ playerId: player.id, proximity: holeScore.oyesProximity });
+  if (!oyesConfig.enabled) return;
+  
+  const pairKey = [playerAId, playerBId].sort().join('-');
+  
+  // Separate par 3s by segment
+  const frontPar3s = par3Holes.filter(h => h <= 9);
+  const backPar3s = par3Holes.filter(h => h > 9);
+  
+  // Track carry per segment
+  let frontCarry = 0;
+  let backCarry = 0;
+  
+  // Process Front 9
+  frontPar3s.forEach(holeNum => {
+    const scoresA = scores.get(playerAId) || [];
+    const scoresB = scores.get(playerBId) || [];
+    
+    const scoreA = scoresA.find(s => s.holeNumber === holeNum);
+    const scoreB = scoresB.find(s => s.holeNumber === holeNum);
+    
+    const proximityA = scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximity ?? null;
+    
+    let winnerId: string | null = null;
+    let loserId: string | null = null;
+    
+    if (proximityA === null && proximityB === null) {
+      // Neither has ranking - accumulate
+      frontCarry += 1;
+      return;
+    } else if (proximityA !== null && proximityB === null) {
+      // Only A has ranking - A wins
+      winnerId = playerAId;
+      loserId = playerBId;
+    } else if (proximityB !== null && proximityA === null) {
+      // Only B has ranking - B wins
+      winnerId = playerBId;
+      loserId = playerAId;
+    } else {
+      // Both have ranking - lower wins
+      if (proximityA! < proximityB!) {
+        winnerId = playerAId;
+        loserId = playerBId;
+      } else if (proximityB! < proximityA!) {
+        winnerId = playerBId;
+        loserId = playerAId;
+      }
+      // Same ranking = tie, accumulate
+      if (!winnerId) {
+        frontCarry += 1;
+        return;
+      }
     }
-  });
-  
-  if (proximities.length === 0) {
-    // Nobody on the green - accumulate
-    return { won: false, winnerId: null };
-  }
-  
-  // Find the absolute closest (lowest proximity number)
-  proximities.sort((a, b) => a.proximity - b.proximity);
-  const closestPlayer = proximities[0];
-  
-  // Calculate Oyes won: 1 (current) + accumulated for this segment
-  const currentSegmentOyes = 1 + accumulatedOyes;
-  
-  // The closest player wins rayas against rivals WITH ACUMULADOS modality only
-  players.forEach(rival => {
-    if (rival.id === closestPlayer.playerId) return;
     
-    // Check if this pair uses Sangrón - if so, skip (handled separately)
-    const pairModality = getOyesModalityForPair(config, closestPlayer.playerId, rival.id);
-    if (pairModality === 'sangron') return;
-    
-    const pairKey = [closestPlayer.playerId, rival.id].sort().join('-');
-    
-    // Current segment Oyes
-    if (currentSegmentOyes > 0) {
+    if (winnerId && loserId) {
+      const rayasWon = frontCarry + 1;
+      frontCarry = 0;
+      
       summaries.push({
-        playerId: closestPlayer.playerId,
-        vsPlayer: rival.id,
+        playerId: winnerId,
+        vsPlayer: loserId,
         betType: 'Rayas Oyes',
-        amount: currentSegmentOyes * segmentValue,
-        segment: segment,
+        amount: rayasWon * oyesConfig.frontValue,
+        segment: 'front',
         holeNumber: holeNum,
-        description: `Oyes H${holeNum}${currentSegmentOyes > 1 ? ` (${currentSegmentOyes} acum)` : ''}`,
+        description: `Oyes H${holeNum}${rayasWon > 1 ? ` (${rayasWon} acum)` : ''}`,
       });
       summaries.push({
-        playerId: rival.id,
-        vsPlayer: closestPlayer.playerId,
+        playerId: loserId,
+        vsPlayer: winnerId,
         betType: 'Rayas Oyes',
-        amount: -currentSegmentOyes * segmentValue,
-        segment: segment,
+        amount: -rayasWon * oyesConfig.frontValue,
+        segment: 'front',
         holeNumber: holeNum,
         description: `Oyes H${holeNum}`,
       });
+      
+      if (!detailsByPair.has(pairKey)) {
+        detailsByPair.set(pairKey, []);
+      }
+      detailsByPair.get(pairKey)!.push({
+        source: 'oyes',
+        segment: 'front',
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum}${rayasWon > 1 ? ` (+${rayasWon - 1} acum)` : ''}`,
+        rayasCount: winnerId === playerAId ? rayasWon : -rayasWon,
+        valuePerRaya: oyesConfig.frontValue,
+        appliedSegment: 'front',
+      });
+    }
+  });
+  
+  // Carry pending front oyes to back
+  const pendingFrontCarry = frontCarry;
+  let frontCarryUsed = false;
+  
+  // Process Back 9
+  backPar3s.forEach(holeNum => {
+    const scoresA = scores.get(playerAId) || [];
+    const scoresB = scores.get(playerBId) || [];
+    
+    const scoreA = scoresA.find(s => s.holeNumber === holeNum);
+    const scoreB = scoresB.find(s => s.holeNumber === holeNum);
+    
+    const proximityA = scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximity ?? null;
+    
+    let winnerId: string | null = null;
+    let loserId: string | null = null;
+    
+    if (proximityA === null && proximityB === null) {
+      // Neither has ranking - accumulate
+      backCarry += 1;
+      return;
+    } else if (proximityA !== null && proximityB === null) {
+      winnerId = playerAId;
+      loserId = playerBId;
+    } else if (proximityB !== null && proximityA === null) {
+      winnerId = playerBId;
+      loserId = playerAId;
+    } else {
+      if (proximityA! < proximityB!) {
+        winnerId = playerAId;
+        loserId = playerBId;
+      } else if (proximityB! < proximityA!) {
+        winnerId = playerBId;
+        loserId = playerAId;
+      }
+      if (!winnerId) {
+        backCarry += 1;
+        return;
+      }
     }
     
-    // Carried Front Oyes
-    if (segment === 'back' && carriedFromFront > 0) {
+    if (winnerId && loserId) {
+      // Back rayas
+      const backRayasWon = backCarry + 1;
+      backCarry = 0;
+      
       summaries.push({
-        playerId: closestPlayer.playerId,
-        vsPlayer: rival.id,
+        playerId: winnerId,
+        vsPlayer: loserId,
         betType: 'Rayas Oyes',
-        amount: carriedFromFront * segmentValue,
+        amount: backRayasWon * oyesConfig.backValue,
         segment: 'back',
         holeNumber: holeNum,
-        description: `Oyes Carry del Front (${carriedFromFront})`,
+        description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (${backRayasWon} acum)` : ''}`,
+      });
+      summaries.push({
+        playerId: loserId,
+        vsPlayer: winnerId,
+        betType: 'Rayas Oyes',
+        amount: -backRayasWon * oyesConfig.backValue,
+        segment: 'back',
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum}`,
+      });
+      
+      // Carried front oyes (pay at front value)
+      if (!frontCarryUsed && pendingFrontCarry > 0) {
+        frontCarryUsed = true;
+        summaries.push({
+          playerId: winnerId,
+          vsPlayer: loserId,
+          betType: 'Rayas Oyes',
+          amount: pendingFrontCarry * oyesConfig.frontValue,
+          segment: 'front',
+          holeNumber: holeNum,
+          description: `Oyes Carry del Front (${pendingFrontCarry})`,
+        });
+        summaries.push({
+          playerId: loserId,
+          vsPlayer: winnerId,
+          betType: 'Rayas Oyes',
+          amount: -pendingFrontCarry * oyesConfig.frontValue,
+          segment: 'front',
+          holeNumber: holeNum,
+          description: `Oyes Carry del Front`,
+        });
+      }
+      
+      const totalRayasWon = backRayasWon + (!frontCarryUsed ? 0 : pendingFrontCarry);
+      if (!detailsByPair.has(pairKey)) {
+        detailsByPair.set(pairKey, []);
+      }
+      detailsByPair.get(pairKey)!.push({
+        source: 'oyes',
+        segment: 'back',
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum}${backRayasWon > 1 ? ` (+${backRayasWon - 1} acum)` : ''}${pendingFrontCarry > 0 && !frontCarryUsed ? ` +${pendingFrontCarry} carry` : ''}`,
+        rayasCount: winnerId === playerAId ? totalRayasWon : -totalRayasWon,
+        valuePerRaya: oyesConfig.backValue,
+        appliedSegment: 'back',
+      });
+    }
+  });
+};
+
+/**
+ * Process Oyes for Single Winner mode
+ * The absolute closest player (#1) wins 1 raya vs ALL other active players on that hole
+ */
+const processOyesSingleWinner = (
+  players: Player[],
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse,
+  summaries: BetSummary[],
+  detailsByPair: Map<string, RayaDetail[]>
+): void => {
+  const par3Holes = getPar3Holes(course);
+  
+  par3Holes.forEach(holeNum => {
+    const segment: 'front' | 'back' = holeNum <= 9 ? 'front' : 'back';
+    
+    // Find the absolute closest player (ranking = 1)
+    let closestPlayerId: string | null = null;
+    
+    for (const player of players) {
+      const playerScores = scores.get(player.id) || [];
+      const holeScore = playerScores.find(s => s.holeNumber === holeNum);
+      const proximity = holeScore?.oyesProximity ?? holeScore?.oyesProximitySangron ?? null;
+      
+      if (proximity === 1) {
+        closestPlayerId = player.id;
+        break;
+      }
+    }
+    
+    if (!closestPlayerId) {
+      // No winner on this hole (no #1 captured)
+      return;
+    }
+    
+    // Winner gets +1 raya vs ALL other players with active Rayas
+    players.forEach(rival => {
+      if (rival.id === closestPlayerId) return;
+      
+      // Check if rayas is active for this pair
+      if (!isRayasActiveForPair(config, closestPlayerId!, rival.id)) return;
+      
+      const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', closestPlayerId!, rival.id);
+      if (!oyesConfig.enabled) return;
+      
+      const segmentValue = segment === 'front' ? oyesConfig.frontValue : oyesConfig.backValue;
+      const pairKey = [closestPlayerId!, rival.id].sort().join('-');
+      
+      summaries.push({
+        playerId: closestPlayerId!,
+        vsPlayer: rival.id,
+        betType: 'Rayas Oyes',
+        amount: segmentValue,
+        segment: segment,
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum} (ganador único)`,
       });
       summaries.push({
         playerId: rival.id,
-        vsPlayer: closestPlayer.playerId,
+        vsPlayer: closestPlayerId!,
         betType: 'Rayas Oyes',
-        amount: -carriedFromFront * segmentValue,
-        segment: 'back',
+        amount: -segmentValue,
+        segment: segment,
         holeNumber: holeNum,
-        description: `Oyes Carry del Front`,
+        description: `Oyes H${holeNum} (ganador único)`,
       });
-    }
-    
-    // Add to details for audit
-    const totalOyesWon = currentSegmentOyes + (segment === 'back' ? carriedFromFront : 0);
-    if (!detailsByPair.has(pairKey)) {
-      detailsByPair.set(pairKey, []);
-    }
-    detailsByPair.get(pairKey)!.push({
-      source: 'oyes',
-      segment: segment,
-      holeNumber: holeNum,
-      description: `Oyes H${holeNum}${totalOyesWon > 1 ? ` (+${totalOyesWon - 1} acum)` : ''}`,
-      rayasCount: closestPlayer.playerId < rival.id ? totalOyesWon : -totalOyesWon,
-      valuePerRaya: segmentValue,
-      appliedSegment: segment,
+      
+      if (!detailsByPair.has(pairKey)) {
+        detailsByPair.set(pairKey, []);
+      }
+      detailsByPair.get(pairKey)!.push({
+        source: 'oyes',
+        segment: segment,
+        holeNumber: holeNum,
+        description: `Oyes H${holeNum} (ganador único)`,
+        rayasCount: closestPlayerId! === [closestPlayerId!, rival.id].sort()[0] ? 1 : -1,
+        valuePerRaya: segmentValue,
+        appliedSegment: segment,
+      });
     });
   });
-  
-  return { won: true, winnerId: closestPlayer.playerId };
 };
 
 /**
  * Calculate Oyes rayas for all players
- * Handles BOTH modalities:
- * - Acumulados: absolute closest wins vs ALL (with accumulation when nobody on green)
- * - Sangrón: direct comparison per pair, no accumulation
  * 
- * IMPORTANT: Respects the global oyes segment config (rayas.segments.oyes.enabled)
- * and per-pair modality settings (rayas.bilateralOverrides.*.segments.oyes.modality)
+ * Handles TWO main modes based on config.rayas.oyesMode:
+ * 
+ * 1. "singleWinner": The absolute closest (#1) wins rayas vs ALL other players
+ *    - Simple: whoever is #1 on a Par 3 wins 1 raya vs everyone else
+ *    - No accumulation, no modality distinction
+ * 
+ * 2. "allVsAll": Each pair is compared independently
+ *    - Respects per-pair modality (Acumulados vs Sangrón)
+ *    - Acumulados: accumulates when neither has ranking
+ *    - Sangrón: direct comparison, no accumulation
  */
 const calculateOyesRayasForAll = (
   players: Player[],
@@ -936,84 +1143,35 @@ const calculateOyesRayasForAll = (
     return { summaries, details: detailsByPair };
   }
   
-  const par3Holes = getPar3Holes(course);
+  const oyesMode = (config.rayas as any)?.oyesMode ?? 'allVsAll';
   
-  // Use segment-specific values if available
-  const oyesSegmentConfig = config.rayas?.segments?.oyes;
-  const frontValue = oyesSegmentConfig?.frontValue ?? config.rayas.frontValue;
-  const backValue = oyesSegmentConfig?.backValue ?? config.rayas.backValue;
-  
-  // 1. First, process all SANGRÓN pairs independently
-  const processedSangronPairs = new Set<string>();
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
-      const pairKey = [playerA.id, playerB.id].sort().join('-');
-      
-      // Skip if already processed or if Rayas not active for this pair
-      if (processedSangronPairs.has(pairKey)) continue;
-      if (!isRayasActiveForPair(config, playerA.id, playerB.id)) continue;
-      
-      const modality = getOyesModalityForPair(config, playerA.id, playerB.id);
-      if (modality === 'sangron') {
-        processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
-        processedSangronPairs.add(pairKey);
+  if (oyesMode === 'singleWinner') {
+    // Mode A: Un solo ganador - #1 beats all
+    processOyesSingleWinner(players, scores, config, course, summaries, detailsByPair);
+  } else {
+    // Mode B: Todos vs Todos - compare by pair with modality
+    const processedPairs = new Set<string>();
+    
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const playerA = players[i];
+        const playerB = players[j];
+        const pairKey = [playerA.id, playerB.id].sort().join('-');
+        
+        if (processedPairs.has(pairKey)) continue;
+        if (!isRayasActiveForPair(config, playerA.id, playerB.id)) continue;
+        
+        const modality = getOyesModalityForPair(config, playerA.id, playerB.id);
+        
+        if (modality === 'sangron') {
+          processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+        } else {
+          processOyesAcumuladosForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+        }
+        
+        processedPairs.add(pairKey);
       }
     }
-  }
-  
-  // 2. Process Acumulados mode for remaining pairs
-  // Only include players who have at least one Acumulados pair
-  const playersWithAcumulados = players.filter(player => {
-    return players.some(rival => {
-      if (rival.id === player.id) return false;
-      if (!isRayasActiveForPair(config, player.id, rival.id)) return false;
-      return getOyesModalityForPair(config, player.id, rival.id) === 'acumulados';
-    });
-  });
-  
-  if (playersWithAcumulados.length > 0) {
-    // Separate Par 3s by segment
-    const frontPar3s = par3Holes.filter(h => h <= 9);
-    const backPar3s = par3Holes.filter(h => h > 9);
-    
-    // Track accumulated Oyes per segment
-    let frontAccumulatedOyes = 0;
-    let backAccumulatedOyes = 0;
-    
-    // Process Front 9 Par 3s
-    frontPar3s.forEach(holeNum => {
-      const result = processOyesHoleAcumulados(
-        holeNum, 'front', playersWithAcumulados, scores, config,
-        frontAccumulatedOyes, frontValue, summaries, detailsByPair
-      );
-      if (result.won) {
-        frontAccumulatedOyes = 0;
-      } else {
-        frontAccumulatedOyes++;
-      }
-    });
-    
-    // Carry any unresolved Front Oyes to Back
-    const pendingFrontCarry = frontAccumulatedOyes;
-    
-    // Process Back 9 Par 3s
-    let frontCarryUsed = false;
-    backPar3s.forEach(holeNum => {
-      const carryToApply = !frontCarryUsed ? pendingFrontCarry : 0;
-      const result = processOyesHoleAcumulados(
-        holeNum, 'back', playersWithAcumulados, scores, config,
-        backAccumulatedOyes, backValue, summaries, detailsByPair,
-        carryToApply, frontValue
-      );
-      if (result.won) {
-        backAccumulatedOyes = 0;
-        if (!frontCarryUsed) frontCarryUsed = true;
-      } else {
-        backAccumulatedOyes++;
-      }
-    });
   }
   
   return { summaries, details: detailsByPair };

@@ -77,7 +77,7 @@ const createDefaultScores = (
   return scores;
 };
 
-const createRayasConfig = (frontValue = 100, backValue = 100, medalTotalValue = 200): BetConfig => ({
+const createRayasConfig = (frontValue = 100, backValue = 100, medalTotalValue = 200, oyesMode: 'singleWinner' | 'allVsAll' = 'singleWinner'): BetConfig => ({
   ...defaultBetConfig,
   rayas: {
     enabled: true,
@@ -85,6 +85,7 @@ const createRayasConfig = (frontValue = 100, backValue = 100, medalTotalValue = 
     backValue,
     medalTotalValue,
     skinVariant: 'acumulados',
+    oyesMode,
   },
 });
 
@@ -163,12 +164,12 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     expect(playerCWins.length).toBe(0);
   });
 
-  it('should accumulate Oyes when nobody hits the green', () => {
+  it('should accumulate Oyes when nobody hits the green (allVsAll mode)', () => {
     const course = createTestCourse();
     const players = createTestPlayers();
     
     // Hole 3 (Par 3): Nobody on green - accumulate
-    // Hole 6 (Par 3): Player A closest - wins 2 rayas (1 current + 1 accumulated)
+    // Hole 6 (Par 3): Player A closest - wins 2 rayas (1 current + 1 accumulated) per pair
     const scores = createDefaultScores(players, course, {
       'player-a': [
         { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
@@ -188,28 +189,32 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
       ],
     });
     
-    const config = createRayasConfig(100, 100, 200);
+    // Use allVsAll mode for accumulation
+    const config = createRayasConfig(100, 100, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
     const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
     
-    // Player A should win 2 rayas (1 + 1 accumulated) against each of B, C, D
+    // In allVsAll mode, accumulation is PER PAIR
+    // Player A vs B: both had null on H3 (accumulate), A=1 B=2 on H6 -> A wins 2 rayas
+    // Player A vs C: both null on H3 (accum), A=1 C=null on H6 -> A wins 2 rayas  
+    // Player A vs D: both null on H3 (accum), A=1 D=null on H6 -> A wins 2 rayas
+    
     const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     expect(playerAWins.length).toBe(3);
     
     // Each win should be 2 rayas * 100 = 200
     playerAWins.forEach(win => {
       expect(win.amount).toBe(200);
-      expect(win.description).toContain('(2 acum)');
     });
   });
 
-  it('should pay Front accumulated Oyes at Front value even when resolved in Back', () => {
+  it('should pay Front accumulated Oyes at Front value when resolved in Back (allVsAll mode)', () => {
     const course = createTestCourse();
     const players = createTestPlayers();
     
-    // Both Front Par 3s (hole 3 and 6): Nobody on green - accumulate 2 front oyes
-    // Back Par 3 (hole 12): Player A closest - wins current + 2 carried from front
+    // Both Front Par 3s (hole 3 and 6): Nobody on green - accumulate 2 front oyes per pair
+    // Back Par 3 (hole 12): Player A closest - wins current (1) + 2 carried from front
     const scores = createDefaultScores(players, course, {
       'player-a': [
         { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
@@ -233,8 +238,8 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
       ],
     });
     
-    // Different values for Front and Back to verify correct application
-    const config = createRayasConfig(100, 150, 200);
+    // Different values for Front and Back
+    const config = createRayasConfig(100, 150, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
     const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
@@ -242,26 +247,24 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     // Player A wins against each rival
     const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     
-    // New product rule: carried Front Oyes counts inside Back (so Back total rayas & amount match)
+    // In allVsAll with accumulation: 
+    // Front has 2 Par3s with no winner -> frontCarry = 2 per pair
+    // Back H12: A wins current (1 back) + carry (2 front at front value)
+    
+    // Should have front wins (carry paid at front value) + back wins (current at back value)
     const frontWins = playerAWins.filter(w => w.segment === 'front');
     const backWins = playerAWins.filter(w => w.segment === 'back');
     
-    expect(frontWins.length).toBe(0);
-    
-    // Back wins include:
-    // - carry: 2 accumulated * 150 = 300 per rival
-    // - current: 1 current * 150 = 150 per rival
-    const backCarryWins = backWins.filter(w => (w.description || '').includes('Carry'));
-    const backCurrentWins = backWins.filter(w => !(w.description || '').includes('Carry'));
-    
-    expect(backCarryWins.length).toBe(3);
-    backCarryWins.forEach(win => {
-      expect(win.amount).toBe(300);
+    // 3 rivals, front carry = 2 per rival at 100 = 200 per rival
+    expect(frontWins.length).toBe(3);
+    frontWins.forEach(win => {
+      expect(win.amount).toBe(200); // 2 * 100
     });
     
-    expect(backCurrentWins.length).toBe(3);
-    backCurrentWins.forEach(win => {
-      expect(win.amount).toBe(150);
+    // 3 rivals, back current = 1 per rival at 150 = 150 per rival
+    expect(backWins.length).toBe(3);
+    backWins.forEach(win => {
+      expect(win.amount).toBe(150); // 1 * 150
     });
   });
 
