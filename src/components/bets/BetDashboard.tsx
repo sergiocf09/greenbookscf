@@ -767,10 +767,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         allPlayersForCalculations
       );
       
-      // Sum rayas from details
+      // Get Dashboard override amounts for this pair
+      const overrides = effectiveBetConfig.betOverrides || [];
+      const findOverride = (betType: string): number | undefined => {
+        const match = overrides.find(o =>
+          o.betType === betType &&
+          o.enabled !== false &&
+          o.amountOverride !== undefined &&
+          ((o.playerAId === playerId && o.playerBId === rivalId) ||
+           (o.playerAId === rivalId && o.playerBId === playerId))
+        );
+        return match?.amountOverride;
+      };
+      const frontValue = findOverride('Rayas Front') ?? effectiveBetConfig.rayas?.frontValue ?? 0;
+      const backValue = findOverride('Rayas Back') ?? effectiveBetConfig.rayas?.backValue ?? 0;
+      const medalTotalValue = findOverride('Rayas Medal Total') ?? effectiveBetConfig.rayas?.medalTotalValue ?? 0;
+      
+      // Count rayas per segment and calculate amounts using override values
+      let frontRayas = 0;
+      let backRayas = 0;
+      let medalTotalRayas = 0;
       rayasResult.details.forEach((d) => {
-        rayasTotal += (d.rayasCount || 0) * (d.valuePerRaya || 0);
+        if (d.appliedSegment === 'front') frontRayas += d.rayasCount || 0;
+        else if (d.appliedSegment === 'back') backRayas += d.rayasCount || 0;
+        else if (d.appliedSegment === 'total') medalTotalRayas += d.rayasCount || 0;
       });
+      
+      rayasTotal = (frontRayas * frontValue) + (backRayas * backValue) + (medalTotalRayas * medalTotalValue);
     }
     
     // Calculate Medal General using the same logic as the detail view
@@ -3142,14 +3165,48 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         allPlayers
       );
       
-      // Calculate total from rayasResult.details (same as detail view)
-      const rayasTotalFromDetails = (() => {
-        let sum = 0;
-        rayasResultForTotal.details.forEach((d) => {
-          sum += (d.rayasCount || 0) * (d.valuePerRaya || 0);
-        });
-        return sum;
+      // Get Dashboard override amounts for this pair
+      const rayasAmountOverrides = (() => {
+        const overrides = effectiveBetConfig.betOverrides || [];
+        const findOverride = (betType: string): number | undefined => {
+          const match = overrides.find(o =>
+            o.betType === betType &&
+            o.enabled !== false &&
+            o.amountOverride !== undefined &&
+            ((o.playerAId === player.id && o.playerBId === rival.id) ||
+             (o.playerAId === rival.id && o.playerBId === player.id) ||
+             (player.profileId && (o.playerAId === player.profileId || o.playerBId === player.profileId) &&
+              (o.playerAId === rival.id || o.playerBId === rival.id)) ||
+             (rival.profileId && (o.playerAId === rival.profileId || o.playerBId === rival.profileId) &&
+              (o.playerAId === player.id || o.playerBId === player.id)))
+          );
+          return match?.amountOverride;
+        };
+        return {
+          frontValue: findOverride('Rayas Front') ?? betConfig.rayas?.frontValue ?? 0,
+          backValue: findOverride('Rayas Back') ?? betConfig.rayas?.backValue ?? 0,
+          medalTotalValue: findOverride('Rayas Medal Total') ?? betConfig.rayas?.medalTotalValue ?? 0,
+        };
       })();
+      
+      // Count rayas per segment from details
+      const rayasCounts = (() => {
+        let frontRayas = 0;
+        let backRayas = 0;
+        let medalTotalRayas = 0;
+        rayasResultForTotal.details.forEach((d) => {
+          if (d.appliedSegment === 'front') frontRayas += d.rayasCount || 0;
+          else if (d.appliedSegment === 'back') backRayas += d.rayasCount || 0;
+          else if (d.appliedSegment === 'total') medalTotalRayas += d.rayasCount || 0;
+        });
+        return { frontRayas, backRayas, medalTotalRayas };
+      })();
+      
+      // Calculate amounts using override values (not stale d.valuePerRaya)
+      const frontAmount = rayasCounts.frontRayas * rayasAmountOverrides.frontValue;
+      const backAmount = rayasCounts.backRayas * rayasAmountOverrides.backValue;
+      const medalAmount = rayasCounts.medalTotalRayas * rayasAmountOverrides.medalTotalValue;
+      const rayasTotalFromDetails = frontAmount + backAmount + medalAmount;
       
       groups.push({
         key: 'rayas',
@@ -3163,13 +3220,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         getTotal: () => rayasTotalFromDetails,
         getSegmentData: (segmentKey) => {
           if (segmentKey === 'rayas_front') {
-            // Calculate from details for consistency
-            let frontAmount = 0;
-            rayasResultForTotal.details.forEach((d) => {
-              if (d.appliedSegment === 'front') {
-                frontAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
-              }
-            });
             const summary = groupedSummaries['Rayas Front'];
             const match = summary?.details?.[0]?.description?.match(/(\d+) vs (\d+)/);
             return {
@@ -3179,12 +3229,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               description: summary?.details?.[0]?.description,
             };
           } else if (segmentKey === 'rayas_back') {
-            let backAmount = 0;
-            rayasResultForTotal.details.forEach((d) => {
-              if (d.appliedSegment === 'back') {
-                backAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
-              }
-            });
             const summary = groupedSummaries['Rayas Back'];
             const match = summary?.details?.[0]?.description?.match(/(\d+) vs (\d+)/);
             return {
@@ -3194,12 +3238,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               description: summary?.details?.[0]?.description,
             };
           } else {
-            let medalAmount = 0;
-            rayasResultForTotal.details.forEach((d) => {
-              if (d.appliedSegment === 'total') {
-                medalAmount += (d.rayasCount || 0) * (d.valuePerRaya || 0);
-              }
-            });
             const summary = groupedSummaries['Rayas Medal Total'];
             return {
               playerNet: 0,
@@ -3906,21 +3944,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // IMPORTANT:
                         // The Rayas audit table must be internally consistent:
                         // - The displayed rayas counts (front/back/total) come from rayasResult.details
-                        // - The money amounts MUST come from the SAME source, otherwise we can show
-                        //   "12 × $50 = $550" when the engine splits lines differently.
+                        // - The money amounts MUST use the OVERRIDE values (if any) for this pair
                         //
-                        // So: compute amounts directly from rayasResult.details by appliedSegment.
+                        // When Dashboard overrides exist, we must use those values instead of
+                        // the original valuePerRaya stored in details.
+                        //
+                        // Compute amounts using: rayas count * override value (or fallback to config)
                         const { frontTotalAmount, backTotalAmount, medalTotalAmount, grandTotal } = (() => {
-                          let front = 0;
-                          let back = 0;
-                          let total = 0;
+                          // Use override values if present, otherwise config values
+                          const effectiveFrontValue = amountOverrides.frontValue ?? betConfig.rayas?.frontValue ?? 0;
+                          const effectiveBackValue = amountOverrides.backValue ?? betConfig.rayas?.backValue ?? 0;
+                          const effectiveMedalValue = amountOverrides.medalTotalValue ?? betConfig.rayas?.medalTotalValue ?? 0;
 
-                          rayasResult.details.forEach((d) => {
-                            const amt = (d.rayasCount || 0) * (d.valuePerRaya || 0);
-                            if (d.appliedSegment === 'front') front += amt;
-                            else if (d.appliedSegment === 'back') back += amt;
-                            else total += amt;
-                          });
+                          // Calculate amounts by multiplying rayas count by the EFFECTIVE value
+                          // NOT by d.valuePerRaya which may be stale from initial setup
+                          const front = frontTotalRayas * effectiveFrontValue;
+                          const back = backTotalRayas * effectiveBackValue;
+                          const total = medalTotalRayas * effectiveMedalValue;
 
                           return {
                             frontTotalAmount: front,
