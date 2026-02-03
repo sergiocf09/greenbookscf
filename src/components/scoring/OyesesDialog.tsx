@@ -140,10 +140,12 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   const proximityValues = Array.from(currentProximities.values()).filter(v => v !== null);
   const hasDuplicates = proximityValues.length !== new Set(proximityValues).size;
   
-  // For Sangrón tab: positions already set in Acumulado are "inherited" and locked
+  // REMOVED: Sangrón should NOT inherit from Acumulado anymore
+  // Each modality has its own independent proximity capture
+  // This is critical to avoid data contamination between modalities
   const getInheritedPosition = (playerId: string): number | null => {
-    if (effectiveTab !== 'sangron') return null;
-    return proximitiesAcumulado.get(playerId) ?? null;
+    // No inheritance - each tab is independent
+    return null;
   };
 
   // Button badge logic
@@ -279,9 +281,9 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             <div className="space-y-3">
               {players.map((player) => {
                 const currentProximity = currentProximities.get(player.id);
-                const inheritedPosition = getInheritedPosition(player.id);
-                const isInherited = inheritedPosition !== null && effectiveTab === 'sangron';
-                const displayProximity = isInherited ? inheritedPosition : currentProximity;
+                // No more inheritance - isInherited is always false now
+                const isInherited = false;
+                const displayProximity = currentProximity;
                 const isLoggedInUser = player.id === basePlayerId || player.profileId === basePlayerId;
                 const shortName = formatPlayerNameShort(player.name);
                 
@@ -301,44 +303,24 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                       {proximityOptions.map((pos) => {
                         const isSelected = displayProximity === pos;
                         
-                        // For Sangrón tab, we need to check both:
-                        // 1. Positions explicitly set in Sangrón (proximitiesSangron)
-                        // 2. Positions inherited from Acumulado (proximitiesAcumulado)
-                        let isTakenByOther = false;
+                        // Check if position is taken by another player IN THE CURRENT TAB ONLY
+                        // Each tab is now independent - no cross-tab checking
+                        const isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
+                          ([pid, prox]) => pid !== player.id && prox === pos
+                        );
                         
-                        if (effectiveTab === 'sangron') {
-                          // Check if position is taken in Sangrón by another player
-                          const takenInSangron = Array.from(proximitiesSangron.entries()).some(
-                            ([pid, prox]) => pid !== player.id && prox === pos
-                          );
-                          // Check if position is inherited from Acumulado by another player
-                          const inheritedByOther = Array.from(proximitiesAcumulado.entries()).some(
-                            ([pid, prox]) => pid !== player.id && prox === pos
-                          );
-                          isTakenByOther = takenInSangron || inheritedByOther;
-                        } else {
-                          // For Acumulado tab, just check Acumulado proximities
-                          isTakenByOther = !isSelected && Array.from(currentProximities.entries()).some(
-                            ([pid, prox]) => pid !== player.id && prox === pos
-                          );
-                        }
-                        
-                        // A player with inherited position can't change it
-                        const isDisabled = isTakenByOther || isInherited;
+                        const isDisabled = isTakenByOther;
                         
                         return (
                           <button
                             key={pos}
                             onClick={() => {
-                              if (isInherited) return; // Can't change inherited positions
                               onProximityChange(player.id, isSelected ? null : pos);
                             }}
                             className={cn(
                               "w-7 h-7 rounded-full text-xs font-bold transition-all",
                               isSelected 
-                                ? isInherited
-                                  ? "bg-muted text-muted-foreground ring-2 ring-golf-gold"
-                                  : "bg-golf-gold text-golf-dark" 
+                                ? "bg-golf-gold text-golf-dark" 
                                 : isDisabled
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80"

@@ -417,3 +417,207 @@ describe('Rayas Zero-Sum Verification', () => {
     expect(totalSum).toBe(0);
   });
 });
+
+// ============== NEW QA TESTS ==============
+
+describe('Rayas Oyes - Sangrón Mode (Todos vs Todos)', () => {
+  it('should resolve each Par 3 immediately based on ranking comparison', () => {
+    const course = createTestCourse();
+    const players = createTestPlayers();
+    
+    // Create scores with Sangrón proximities
+    const scores = createDefaultScores(players, course, {
+      'player-a': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+      'player-b': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+      'player-c': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+      'player-d': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+    });
+    
+    // Manually set Sangrón proximities (separate from Acumulado)
+    const scoresA = scores.get('player-a')!;
+    const h3a = scoresA.find(s => s.holeNumber === 3)!;
+    (h3a as any).oyesProximitySangron = 1;
+    
+    const scoresB = scores.get('player-b')!;
+    const h3b = scoresB.find(s => s.holeNumber === 3)!;
+    (h3b as any).oyesProximitySangron = 2;
+    
+    const scoresC = scores.get('player-c')!;
+    const h3c = scoresC.find(s => s.holeNumber === 3)!;
+    (h3c as any).oyesProximitySangron = 3;
+    
+    const scoresD = scores.get('player-d')!;
+    const h3d = scoresD.find(s => s.holeNumber === 3)!;
+    (h3d as any).oyesProximitySangron = 4;
+    
+    // Configure with allVsAll mode and Sangrón modality
+    const config: BetConfig = {
+      ...defaultBetConfig,
+      rayas: {
+        enabled: true,
+        frontValue: 100,
+        backValue: 150,
+        medalTotalValue: 200,
+        skinVariant: 'acumulados',
+        oyesMode: 'allVsAll',
+        bilateralOverrides: {
+          'player-a': [
+            { rivalId: 'player-b', enabled: true, segments: { oyes: { enabled: true, modality: 'sangron' } } },
+            { rivalId: 'player-c', enabled: true, segments: { oyes: { enabled: true, modality: 'sangron' } } },
+            { rivalId: 'player-d', enabled: true, segments: { oyes: { enabled: true, modality: 'sangron' } } },
+          ],
+        },
+      },
+    };
+    
+    const summaries = calculateRayasBets(players, scores, config, course);
+    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    
+    // In Sangrón with this config:
+    // - A has sangron configured vs B, C, D
+    // - B, C, D do NOT have sangron configured with each other (use default acumulados)
+    // 
+    // For sangrón pairs (A vs B, A vs C, A vs D):
+    // A (1) beats B (2): A wins 1 raya vs B
+    // A (1) beats C (3): A wins 1 raya vs C
+    // A (1) beats D (4): A wins 1 raya vs D
+    // 
+    // For acumulados pairs (B vs C, B vs D, C vs D):
+    // These would use oyesProximity field (null for all), so no winner
+    
+    // Player A should win 3 rayas (vs B, C, D) in sangrón mode
+    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    expect(playerAWins.length).toBe(3);
+    expect(playerAWins.every(w => w.amount === 100)).toBe(true); // Front value
+    
+    // Verify A won against each of B, C, D
+    expect(playerAWins.some(w => w.vsPlayer === 'player-b')).toBe(true);
+    expect(playerAWins.some(w => w.vsPlayer === 'player-c')).toBe(true);
+    expect(playerAWins.some(w => w.vsPlayer === 'player-d')).toBe(true);
+  });
+
+  it('should handle partial rankings in Sangrón (one player without ranking loses)', () => {
+    const course = createTestCourse();
+    const players = createTestPlayers().slice(0, 2); // Just A and B
+    
+    const scores = createDefaultScores(players, course, {
+      'player-a': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+      'player-b': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
+    });
+    
+    // A has Sangrón ranking, B does not
+    const scoresA = scores.get('player-a')!;
+    const h3a = scoresA.find(s => s.holeNumber === 3)!;
+    (h3a as any).oyesProximitySangron = 1;
+    
+    // B has null (didn't make green in Sangrón)
+    const scoresB = scores.get('player-b')!;
+    const h3b = scoresB.find(s => s.holeNumber === 3)!;
+    (h3b as any).oyesProximitySangron = null;
+    
+    const config: BetConfig = {
+      ...defaultBetConfig,
+      rayas: {
+        enabled: true,
+        frontValue: 100,
+        backValue: 150,
+        medalTotalValue: 200,
+        skinVariant: 'acumulados',
+        oyesMode: 'allVsAll',
+        bilateralOverrides: {
+          'player-a': [
+            { rivalId: 'player-b', enabled: true, segments: { oyes: { enabled: true, modality: 'sangron' } } },
+          ],
+        },
+      },
+    };
+    
+    const summaries = calculateRayasBets(players, scores, config, course);
+    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    
+    // A should win vs B (has ranking vs no ranking)
+    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    expect(playerAWins.length).toBe(1);
+    expect(playerAWins[0].amount).toBe(100);
+    expect(playerAWins[0].vsPlayer).toBe('player-b');
+  });
+});
+
+describe('Rayas Oyes - Carry Front→Back Segmented Attribution', () => {
+  it('should attribute carried Front rayas to Front segment when resolved in Back', () => {
+    const course = createTestCourse();
+    const players = createTestPlayers().slice(0, 2); // Just A and B
+    
+    // Front Par 3s (H3, H6): Both empty → carry = 2
+    // Back Par 3 (H12): A wins → pays 2 rayas at FRONT value to FRONT segment
+    //                          + 1 raya at BACK value to BACK segment
+    const scores = createDefaultScores(players, course, {
+      'player-a': [
+        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 6, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 12, strokes: 3, netScore: 3, oyesProximity: 1 },
+      ],
+      'player-b': [
+        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 6, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 12, strokes: 3, netScore: 3, oyesProximity: 2 },
+      ],
+    });
+    
+    const config = createRayasConfig(50, 100, 200, 'allVsAll');
+    const summaries = calculateRayasBets(players, scores, config, course);
+    
+    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes' && s.playerId === 'player-a' && s.amount > 0);
+    
+    // Should have 2 entries: one for Front carry (2*50=100), one for Back current (1*100=100)
+    const frontEntry = oyesSummaries.find(s => s.segment === 'front');
+    const backEntry = oyesSummaries.find(s => s.segment === 'back');
+    
+    expect(frontEntry).toBeDefined();
+    expect(frontEntry?.amount).toBe(100); // 2 rayas * 50 front value
+    
+    expect(backEntry).toBeDefined();
+    expect(backEntry?.amount).toBe(100); // 1 raya * 100 back value
+    
+    // Total A won vs B: 200
+    const totalWon = oyesSummaries.reduce((sum, s) => sum + s.amount, 0);
+    expect(totalWon).toBe(200);
+  });
+
+  it('should NOT mix front carry with back carry', () => {
+    const course = createTestCourse();
+    const players = createTestPlayers().slice(0, 2);
+    
+    // Front Par 3s: H3 empty, H6 A wins
+    // Back Par 3s: H12 empty, H15 A wins
+    const scores = createDefaultScores(players, course, {
+      'player-a': [
+        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null }, // Front carry +1
+        { holeNumber: 6, strokes: 3, netScore: 3, oyesProximity: 1 },    // A wins front (1+1=2)
+        { holeNumber: 12, strokes: 4, netScore: 4, oyesProximity: null }, // Back carry +1
+        { holeNumber: 15, strokes: 3, netScore: 3, oyesProximity: 1 },   // A wins back (1+1=2)
+      ],
+      'player-b': [
+        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 6, strokes: 3, netScore: 3, oyesProximity: 2 },
+        { holeNumber: 12, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 15, strokes: 3, netScore: 3, oyesProximity: 2 },
+      ],
+    });
+    
+    const config = createRayasConfig(50, 100, 200, 'allVsAll');
+    const summaries = calculateRayasBets(players, scores, config, course);
+    
+    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes' && s.playerId === 'player-a');
+    
+    // Front: 2 rayas at 50 = 100
+    const frontWins = oyesSummaries.filter(s => s.segment === 'front' && s.amount > 0);
+    const frontTotal = frontWins.reduce((sum, s) => sum + s.amount, 0);
+    expect(frontTotal).toBe(100); // 2 * 50
+    
+    // Back: 2 rayas at 100 = 200
+    const backWins = oyesSummaries.filter(s => s.segment === 'back' && s.amount > 0);
+    const backTotal = backWins.reduce((sum, s) => sum + s.amount, 0);
+    expect(backTotal).toBe(200); // 2 * 100
+  });
+});
