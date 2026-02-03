@@ -18,9 +18,12 @@ import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair } fro
 import { calculateStrokesPerHole } from './handicapUtils';
 
 /**
- * Get effective segment configuration for a pair, respecting bilateral overrides
+ * Get effective segment configuration for a pair, respecting:
+ * 1. Global segment config (rayas.segments)
+ * 2. Bilateral overrides from RayasConfig (rayas.bilateralOverrides)
+ * 3. Amount overrides from Dashboard editing (betConfig.betOverrides)
  */
-const getEffectiveSegmentConfig = (
+export const getEffectiveSegmentConfig = (
   config: BetConfig,
   segmentKey: 'skins' | 'units' | 'oyes' | 'medal',
   playerAId: string,
@@ -37,6 +40,11 @@ const getEffectiveSegmentConfig = (
     frontValue: globalSeg?.frontValue ?? defaultFront,
     backValue: globalSeg?.backValue ?? defaultBack,
   };
+  
+  // If the global segment is disabled, return immediately
+  if (!baseConfig.enabled) {
+    return baseConfig;
+  }
   
   // Check for bilateral overrides (from either player's perspective)
   const overridesA = rayas?.bilateralOverrides?.[playerAId];
@@ -59,18 +67,56 @@ const getEffectiveSegmentConfig = (
     return { ...baseConfig, enabled: false };
   }
   
-  // Use overridden values if specified (prefer A's override, fallback to B's)
+  // Get values: prefer bilateral overrides, then global segment values
+  let frontValue = segOverrideFromA?.frontValue ?? segOverrideFromB?.frontValue ?? baseConfig.frontValue;
+  let backValue = segOverrideFromA?.backValue ?? segOverrideFromB?.backValue ?? baseConfig.backValue;
+  
+  // Check for Dashboard amount overrides (betConfig.betOverrides)
+  // These take precedence over all other values for this specific pair
+  const dashboardOverrides = config.betOverrides || [];
+  
+  // Map segment key to bet type labels used in Dashboard
+  const getBetTypeForSegment = (seg: string): string[] => {
+    switch (seg) {
+      case 'skins': return ['Rayas Front', 'Rayas Back']; // Skins use front/back values
+      case 'oyes': return ['Rayas Front', 'Rayas Back']; // Oyes also use front/back
+      case 'medal': return ['Rayas Front', 'Rayas Back', 'Rayas Medal Total'];
+      case 'units': return ['Rayas Front', 'Rayas Back'];
+      default: return [];
+    }
+  };
+  
+  // Find dashboard override for this pair and segment
+  const findDashboardOverride = (betType: string): number | undefined => {
+    const match = dashboardOverrides.find(o =>
+      o.betType === betType &&
+      o.enabled !== false &&
+      o.amountOverride !== undefined &&
+      ((o.playerAId === playerAId && o.playerBId === playerBId) ||
+       (o.playerAId === playerBId && o.playerBId === playerAId))
+    );
+    return match?.amountOverride;
+  };
+  
+  // Apply dashboard overrides if present
+  const frontOverride = findDashboardOverride('Rayas Front');
+  const backOverride = findDashboardOverride('Rayas Back');
+  
+  if (frontOverride !== undefined) frontValue = frontOverride;
+  if (backOverride !== undefined) backValue = backOverride;
+  
   return {
     enabled: baseConfig.enabled,
-    frontValue: segOverrideFromA?.frontValue ?? segOverrideFromB?.frontValue ?? baseConfig.frontValue,
-    backValue: segOverrideFromA?.backValue ?? segOverrideFromB?.backValue ?? baseConfig.backValue,
+    frontValue,
+    backValue,
   };
 };
 
 /**
  * Check if rayas bet is active between two players
+ * Exported so Dashboard can filter pairs before rendering
  */
-const isRayasActiveForPair = (
+export const isRayasActiveForPair = (
   config: BetConfig,
   playerAId: string,
   playerBId: string
@@ -89,6 +135,82 @@ const isRayasActiveForPair = (
   }
   
   return true;
+};
+
+/**
+ * Get amount overrides for Rayas from betConfig.betOverrides
+ * This allows per-pair amount customization from the Dashboard
+ */
+export const getRayasAmountOverrides = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): { frontValue?: number; backValue?: number; medalTotalValue?: number } => {
+  const overrides = config.betOverrides || [];
+  
+  const findOverride = (betType: string): number | undefined => {
+    const match = overrides.find(o => 
+      o.betType === betType &&
+      o.enabled !== false &&
+      ((o.playerAId === playerAId && o.playerBId === playerBId) ||
+       (o.playerAId === playerBId && o.playerBId === playerAId))
+    );
+    return match?.amountOverride;
+  };
+  
+  return {
+    frontValue: findOverride('Rayas Front'),
+    backValue: findOverride('Rayas Back'),
+    medalTotalValue: findOverride('Rayas Medal Total'),
+  };
+};
+
+/**
+ * Get the Oyes modality for a specific pair of players
+ * Returns 'acumulados' (default) or 'sangron' based on bilateral overrides
+ */
+export const getOyesModalityForPair = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): 'acumulados' | 'sangron' => {
+  const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
+  const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
+  
+  const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
+  const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
+  
+  // Check if either player has set a modality for Oyes with the other
+  const modalityFromA = overrideForB?.segments?.oyes?.modality;
+  const modalityFromB = overrideForA?.segments?.oyes?.modality;
+  
+  // If either has set 'sangron', use that (takes precedence)
+  if (modalityFromA === 'sangron' || modalityFromB === 'sangron') {
+    return 'sangron';
+  }
+  
+  return 'acumulados';
+};
+
+/**
+ * Check if there are any pairs playing Oyes Sangrón
+ * Used to determine if we need to show separate columns in score input
+ */
+export const hasAnySangronPairs = (
+  config: BetConfig,
+  players: { id: string }[]
+): boolean => {
+  if (!config.rayas?.enabled) return false;
+  
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      if (getOyesModalityForPair(config, players[i].id, players[j].id) === 'sangron') {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 };
 
 // Detailed raya tracking for audit
@@ -218,9 +340,12 @@ const calculateRayasForPair = (
   // Get effective segment configurations for this pair
   const skinsConfig = getEffectiveSegmentConfig(config, 'skins', playerA.id, playerB.id);
   const unitsConfig = getEffectiveSegmentConfig(config, 'units', playerA.id, playerB.id);
+  const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerA.id, playerB.id);
   const medalConfig = getEffectiveSegmentConfig(config, 'medal', playerA.id, playerB.id);
   
-  const medalTotalValue = config.rayas?.medalTotalValue ?? 25;
+  // Get medal total value with dashboard override support
+  const amountOverrides = getRayasAmountOverrides(config, playerA.id, playerB.id);
+  const medalTotalValue = amountOverrides.medalTotalValue ?? config.rayas?.medalTotalValue ?? 25;
   const useAccumulation = config.rayas?.skinVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========

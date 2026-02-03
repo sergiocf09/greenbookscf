@@ -174,7 +174,7 @@ export interface RayasBilateralOverride {
   segments?: {
     skins?: { enabled?: boolean; frontValue?: number; backValue?: number };
     units?: { enabled?: boolean; frontValue?: number; backValue?: number };
-    oyes?: { enabled?: boolean; frontValue?: number; backValue?: number };
+    oyes?: { enabled?: boolean; frontValue?: number; backValue?: number; modality?: OyesModality };
     medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
   };
 }

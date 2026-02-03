@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
+import { BetConfig, Player, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant, OyesModality } from '@/types/golf';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -270,41 +270,102 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                   </div>
                   
                   {isEnabled && isCustomized && (
-                    <div className="grid grid-cols-4 gap-1 mt-2">
-                      {SEGMENT_KEYS.map(segKey => {
-                        const segOverride = override?.segments?.[segKey as keyof typeof override.segments];
-                        const globalSeg = getSegmentConfig(segKey);
-                        const isSegEnabled = segOverride?.enabled ?? globalSeg.enabled;
-                        
-                        return (
-                          <button
-                            key={segKey}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const currentSegments = override?.segments ?? {};
-                              updateBilateralOverride(rival.id, {
-                                segments: {
-                                  ...currentSegments,
-                                  [segKey]: { 
-                                    ...currentSegments[segKey as keyof typeof currentSegments],
-                                    enabled: !isSegEnabled 
+                    <div className="space-y-2 mt-2">
+                      <div className="grid grid-cols-4 gap-1">
+                        {SEGMENT_KEYS.map(segKey => {
+                          const segOverride = override?.segments?.[segKey as keyof typeof override.segments];
+                          const globalSeg = getSegmentConfig(segKey);
+                          const isSegEnabled = segOverride?.enabled ?? globalSeg.enabled;
+                          
+                          return (
+                            <button
+                              key={segKey}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const currentSegments = override?.segments ?? {};
+                                updateBilateralOverride(rival.id, {
+                                  segments: {
+                                    ...currentSegments,
+                                    [segKey]: { 
+                                      ...currentSegments[segKey as keyof typeof currentSegments],
+                                      enabled: !isSegEnabled 
+                                    },
                                   },
-                                },
-                              });
-                            }}
-                            className={cn(
-                              "px-1 py-1 text-[8px] rounded transition-colors",
-                              isSegEnabled
-                                ? "bg-emerald-100 text-emerald-800 font-medium"
-                                : "bg-muted text-muted-foreground line-through opacity-60"
-                            )}
-                          >
-                            {SEGMENT_LABELS[segKey].name}
-                          </button>
-                        );
-                      })}
+                                });
+                              }}
+                              className={cn(
+                                "px-1 py-1 text-[8px] rounded transition-colors",
+                                isSegEnabled
+                                  ? "bg-emerald-100 text-emerald-800 font-medium"
+                                  : "bg-muted text-muted-foreground line-through opacity-60"
+                              )}
+                            >
+                              {SEGMENT_LABELS[segKey].name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Oyes modality selector - only show when Oyes is enabled for this rival */}
+                      {(override?.segments?.oyes?.enabled ?? getSegmentConfig('oyes').enabled) && (
+                        <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                          <span className="text-[9px] text-muted-foreground">Modalidad Oyes:</span>
+                          <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const currentSegments = override?.segments ?? {};
+                                updateBilateralOverride(rival.id, {
+                                  segments: {
+                                    ...currentSegments,
+                                    oyes: { 
+                                      ...currentSegments.oyes,
+                                      modality: 'acumulados' as OyesModality 
+                                    },
+                                  },
+                                });
+                              }}
+                              className={cn(
+                                "px-2 py-0.5 text-[9px] rounded transition-colors",
+                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'acumulados'
+                                  ? "bg-primary text-primary-foreground font-medium"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}
+                            >
+                              Acumulado
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const currentSegments = override?.segments ?? {};
+                                updateBilateralOverride(rival.id, {
+                                  segments: {
+                                    ...currentSegments,
+                                    oyes: { 
+                                      ...currentSegments.oyes,
+                                      modality: 'sangron' as OyesModality 
+                                    },
+                                  },
+                                });
+                              }}
+                              className={cn(
+                                "px-2 py-0.5 text-[9px] rounded transition-colors",
+                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'sangron'
+                                  ? "bg-golf-gold text-golf-dark font-medium"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}
+                            >
+                              Sangrón
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   

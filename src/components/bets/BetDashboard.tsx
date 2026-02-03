@@ -13,7 +13,7 @@ import {
   getSkinsEvolution,
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
-import { getRayasDetailForPair, RayasPairResult } from '@/lib/rayasCalculations';
+import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair } from '@/lib/rayasCalculations';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { GroupBetsCard, getMedalGeneralBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
@@ -750,12 +750,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       .reduce((sum, s) => sum + s.amount, 0);
     
     // Calculate correct Rayas total using getRayasDetailForPair
-    // BUT only if Rayas is not disabled for this pair
+    // BUT only if Rayas is not disabled for this pair (via Dashboard override OR bilateral RayasConfig)
     let rayasTotal = 0;
     // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
-    const isRayasDisabled = isBetDisabledForPair('Rayas', ['rayas']);
+    const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
+    const isRayasActiveForThisPair = isRayasActiveForPair(effectiveBetConfig, playerId, rivalId);
     
-    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabled) {
+    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
@@ -3127,7 +3128,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Rayas (Aggregator bet)
-    if (effectiveBetConfig.rayas?.enabled) {
+    // IMPORTANT: Check if Rayas is active for this pair (respects bilateral overrides from RayasConfig)
+    if (effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {
       // Pre-compute Rayas total from the same source used in the detail view
       // This ensures the header line matches the TOTAL RAYAS in the expanded detail
       const rayasResultForTotal = getRayasDetailForPair(
