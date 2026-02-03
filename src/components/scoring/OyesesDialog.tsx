@@ -144,19 +144,24 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
     return sangronVal === null && acumuladoVal !== null;
   };
 
-  // UX helper: when Sangrón is showing a full "mirror" from Acumulado,
-  // allow confirming ALL inherited values in one click (writes ONLY to Sangrón field).
-  // NOTE: This useMemo MUST be before any early returns
+  // UX helper: "Aceptar espejos" button ONLY appears when:
+  // 1. We're in Sangrón tab
+  // 2. 100% of players have Acumulado proximity set (complete mirror available)
+  // 3. None of the Sangrón values are explicitly set yet (all would be inherited)
+  // This provides a simple one-click confirmation for the common case.
   const canAcceptMirrors = useMemo(() => {
     if (effectiveTab !== 'sangron') return false;
-    const sangronSet = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
-    const effectiveSet = Array.from(currentProximities.values()).filter(v => v !== null).length;
-    // Only meaningful when we have a full effective set, but not all explicitly set in Sangrón
-    if (effectiveSet !== players.length) return false;
-    if (sangronSet >= players.length) return false;
-    // At least one inherited value exists
-    return players.some((p) => isInheritedFromAcumulado(p.id));
-  }, [effectiveTab, proximitiesSangron, currentProximities, players]);
+    
+    // Check if ALL players have Acumulado proximity (100% complete)
+    const acumuladoCount = Array.from(proximitiesAcumulado.values()).filter(v => v !== null).length;
+    const acumuladoComplete = acumuladoCount === players.length;
+    if (!acumuladoComplete) return false;
+    
+    // Check if ANY Sangrón value is already explicitly set
+    const sangronCount = Array.from(proximitiesSangron.values()).filter(v => v !== null).length;
+    // Only show button when NO Sangrón values are set (pure 100% mirror)
+    return sangronCount === 0;
+  }, [effectiveTab, proximitiesAcumulado, proximitiesSangron, players]);
 
   // Don't render if not a Par 3 or Oyeses not enabled
   if (!isPar3 || !oyesesEnabled) {
