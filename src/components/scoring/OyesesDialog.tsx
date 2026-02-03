@@ -256,12 +256,11 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             Selecciona el orden de proximidad al hoyo (1 = más cerca)
           </p>
           
-          {/* Warning for Sangrón when not all positions are filled */}
+          {/* Info for Sangrón - positions not filled = tie */}
           {effectiveTab === 'sangron' && !allPositionsFilled && (
-            <div className="flex items-center gap-2 text-xs text-foreground bg-muted px-3 py-2 rounded-md">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>Completar las {players.length} posiciones ({setCount}/{players.length})</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {setCount}/{players.length} posiciones
+            </p>
           )}
           
           {/* Warning for duplicate positions */}
@@ -355,10 +354,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
         </div>
         
         <div className="flex justify-end pt-2">
-          <Button 
-            onClick={() => setOpen(false)}
-            disabled={effectiveTab === 'sangron' && !allPositionsFilled}
-          >
+          <Button onClick={() => setOpen(false)}>
             Listo
           </Button>
         </div>
