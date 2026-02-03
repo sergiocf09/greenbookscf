@@ -55,11 +55,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-golf-green to-golf-green-light flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-primary/20 shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-golf-green">Golf Bets</CardTitle>
-          <CardDescription>by SCF</CardDescription>
+          <CardTitle className="text-2xl font-bold text-primary">GreenBook</CardTitle>
+          <CardDescription className="text-golf-gold font-semibold">by SCF</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
