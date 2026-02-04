@@ -89,7 +89,7 @@ const HoleRow: React.FC<HoleRowProps> = ({
           size="icon"
           className="h-7 w-7 rounded-full"
           onClick={() => onStrokesChange(Math.max(1, strokes - 1))}
-          disabled={strokes <= 1 || isConfirmed}
+          disabled={strokes <= 1}
         >
           <Minus className="h-3 w-3" />
         </Button>
@@ -101,7 +101,7 @@ const HoleRow: React.FC<HoleRowProps> = ({
           size="icon"
           className="h-7 w-7 rounded-full"
           onClick={() => onStrokesChange(strokes + 1)}
-          disabled={strokes >= 15 || isConfirmed}
+          disabled={strokes >= 15}
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -114,7 +114,7 @@ const HoleRow: React.FC<HoleRowProps> = ({
           size="icon"
           className="h-7 w-7 rounded-full"
           onClick={() => onPuttsChange(Math.max(0, putts - 1))}
-          disabled={putts <= 0 || isConfirmed}
+          disabled={putts <= 0}
         >
           <Minus className="h-3 w-3" />
         </Button>
@@ -126,7 +126,7 @@ const HoleRow: React.FC<HoleRowProps> = ({
           size="icon"
           className="h-7 w-7 rounded-full"
           onClick={() => onPuttsChange(Math.min(putts + 1, strokes))}
-          disabled={putts >= strokes || isConfirmed}
+          disabled={putts >= strokes}
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -188,17 +188,20 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     }
   }, [open, currentScores, course.holes]);
 
-  // Auto-save when strokes/putts change
-  const saveHole = useCallback(async (holeNumber: number) => {
-    const entry = scores[holeNumber];
-    if (!entry || entry.strokes <= 0 || confirmedInSession.has(holeNumber)) return;
+  // Auto-save when strokes/putts change - uses pendingSaveRef values to avoid stale closure
+  const saveHole = useCallback(async (holeNumber: number, strokesVal?: number, puttsVal?: number) => {
+    // Use provided values or fall back to current state
+    const strokes = strokesVal ?? scores[holeNumber]?.strokes;
+    const putts = puttsVal ?? scores[holeNumber]?.putts;
+    
+    if (!strokes || strokes <= 0) return;
     
     setSaving(true);
     try {
       await onSaveScores([{
         holeNumber,
-        strokes: entry.strokes,
-        putts: Math.min(entry.putts, entry.strokes),
+        strokes,
+        putts: Math.min(putts ?? 2, strokes),
       }]);
       setConfirmedInSession(prev => new Set(prev).add(holeNumber));
     } catch (error: any) {
@@ -207,36 +210,38 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [scores, onSaveScores, confirmedInSession]);
+  }, [scores, onSaveScores]);
 
   const handleStrokesChange = useCallback((hole: number, value: number) => {
-    setScores(prev => {
-      const newPutts = Math.min(prev[hole].putts, value);
-      return { ...prev, [hole]: { strokes: value, putts: newPutts } };
-    });
-    // Auto-confirm after a short delay
-    pendingSaveRef.current = { hole, strokes: value, putts: scores[hole]?.putts || 2 };
+    const newPutts = Math.min(scores[hole]?.putts ?? 2, value);
+    setScores(prev => ({ ...prev, [hole]: { strokes: value, putts: newPutts } }));
+    
+    // Auto-confirm after a short delay - pass values directly to avoid stale closure
+    pendingSaveRef.current = { hole, strokes: value, putts: newPutts };
     setTimeout(() => {
       if (pendingSaveRef.current?.hole === hole) {
-        saveHole(hole);
+        saveHole(hole, pendingSaveRef.current.strokes, pendingSaveRef.current.putts);
       }
     }, 800);
   }, [scores, saveHole]);
 
   const handlePuttsChange = useCallback((hole: number, value: number) => {
+    const currentStrokes = scores[hole]?.strokes ?? 4;
     setScores(prev => ({ ...prev, [hole]: { ...prev[hole], putts: value } }));
-    // Auto-confirm after a short delay
-    pendingSaveRef.current = { hole, strokes: scores[hole]?.strokes || 4, putts: value };
+    
+    // Auto-confirm after a short delay - pass values directly to avoid stale closure
+    pendingSaveRef.current = { hole, strokes: currentStrokes, putts: value };
     setTimeout(() => {
       if (pendingSaveRef.current?.hole === hole) {
-        saveHole(hole);
+        saveHole(hole, pendingSaveRef.current.strokes, pendingSaveRef.current.putts);
       }
     }, 800);
   }, [scores, saveHole]);
 
   const handleConfirmHole = useCallback((holeNumber: number) => {
-    saveHole(holeNumber);
-  }, [saveHole]);
+    const entry = scores[holeNumber];
+    saveHole(holeNumber, entry?.strokes, entry?.putts);
+  }, [scores, saveHole]);
 
   const getPar = (hole: number) => course.holes[hole - 1]?.par || 4;
 
