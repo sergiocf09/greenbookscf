@@ -641,6 +641,29 @@ const Index = () => {
       await handleRemovePlayer(player.id);
     }
 
+    // Detect handicap changes and persist to database
+    if (roundState.id) {
+      for (const newPlayer of newPlayers) {
+        const currentPlayer = players.find(p => p.id === newPlayer.id);
+        // Only persist if handicap changed for an existing player
+        if (currentPlayer && currentPlayer.handicap !== newPlayer.handicap) {
+          const roundPlayerId = roundPlayerIds.get(newPlayer.id);
+          if (roundPlayerId) {
+            // Persist handicap change to database
+            supabase
+              .from('round_players')
+              .update({ handicap_for_round: newPlayer.handicap })
+              .eq('id', roundPlayerId)
+              .then(({ error }) => {
+                if (error) {
+                  devError('Error persisting handicap change:', error);
+                }
+              });
+          }
+        }
+      }
+    }
+
     // Update players 
     setPlayers(newPlayers);
 
@@ -662,7 +685,7 @@ const Index = () => {
         await addPlayerToRound(player);
       }
     }
-  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer]);
+  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer, roundState.id, roundPlayerIds]);
 
   // Create round in database (can do with 1 player to get share link)
   const handleCreateRound = async () => {
