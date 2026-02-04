@@ -321,10 +321,10 @@ export interface TeamPressuresBetConfig {
 export type ZooAnimalType = 'camello' | 'pez' | 'gorila';
 
 // Zoo animal display info
-export const ZOO_ANIMALS: Record<ZooAnimalType, { label: string; emoji: string; description: string }> = {
-  camello: { label: 'Camello', emoji: '🐪', description: 'Trampa de arena (bunker)' },
-  pez: { label: 'Pez', emoji: '🐟', description: 'Irse al agua' },
-  gorila: { label: 'Gorila', emoji: '🦍', description: 'Irse out of bounds (OB)' },
+export const ZOO_ANIMALS: Record<ZooAnimalType, { label: string; labelPlural: string; emoji: string; description: string }> = {
+  camello: { label: 'Camello', labelPlural: 'Camellos', emoji: '🐪', description: 'Trampa de arena (bunker)' },
+  pez: { label: 'Pez', labelPlural: 'Peces', emoji: '🐟', description: 'Irse al agua' },
+  gorila: { label: 'Gorila', labelPlural: 'Gorilas', emoji: '🦍', description: 'Irse out of bounds (OB)' },
 };
 
 // A single zoo event occurrence

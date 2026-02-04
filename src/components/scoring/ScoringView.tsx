@@ -242,7 +242,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             basePlayerId={profile?.id}
             currentHole={currentHole}
             trigger={
-              <Button variant="outline" size="sm" className="shrink-0 text-xs px-2">
+              <Button variant="outline" size="sm" className="shrink-0 px-2 text-lg">
                 🐾
               </Button>
             }
