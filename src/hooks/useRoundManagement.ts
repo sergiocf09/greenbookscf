@@ -312,7 +312,7 @@ export const useRoundManagement = ({
           const allRoundPlayers = await retry<any[]>(() =>
             supabase
               .from('round_players')
-              .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color')
+              .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color, tee_color')
               .eq('round_id', activeRound.id) as any
           );
 
@@ -393,6 +393,7 @@ export const useRoundManagement = ({
               color,
               handicap: Number(rp.handicap_for_round) || 0,
               profileId: rp.profile_id || undefined,
+              teeColor: rp.tee_color || undefined,
             };
             
             // Add to restoredPlayers for score restoration

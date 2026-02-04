@@ -641,24 +641,37 @@ const Index = () => {
       await handleRemovePlayer(player.id);
     }
 
-    // Detect handicap changes and persist to database
+    // Detect handicap and tee color changes and persist to database
     if (roundState.id) {
       for (const newPlayer of newPlayers) {
         const currentPlayer = players.find(p => p.id === newPlayer.id);
-        // Only persist if handicap changed for an existing player
-        if (currentPlayer && currentPlayer.handicap !== newPlayer.handicap) {
+        if (currentPlayer) {
           const roundPlayerId = roundPlayerIds.get(newPlayer.id);
           if (roundPlayerId) {
-            // Persist handicap change to database
-            supabase
-              .from('round_players')
-              .update({ handicap_for_round: newPlayer.handicap })
-              .eq('id', roundPlayerId)
-              .then(({ error }) => {
-                if (error) {
-                  devError('Error persisting handicap change:', error);
-                }
-              });
+            const updates: { handicap_for_round?: number; tee_color?: string } = {};
+            
+            // Check handicap change
+            if (currentPlayer.handicap !== newPlayer.handicap) {
+              updates.handicap_for_round = newPlayer.handicap;
+            }
+            
+            // Check tee color change
+            if (currentPlayer.teeColor !== newPlayer.teeColor && newPlayer.teeColor) {
+              updates.tee_color = newPlayer.teeColor;
+            }
+            
+            // Only persist if there are changes
+            if (Object.keys(updates).length > 0) {
+              supabase
+                .from('round_players')
+                .update(updates)
+                .eq('id', roundPlayerId)
+                .then(({ error }) => {
+                  if (error) {
+                    devError('Error persisting player changes:', error);
+                  }
+                });
+            }
           }
         }
       }
