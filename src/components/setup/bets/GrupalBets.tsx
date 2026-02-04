@@ -133,7 +133,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Zoológico - NEW */}
       <BetSection
         id="zoologico"
-        title="Zoológico 🦁"
+        title="Zoológico 🐾"
         description="Camello (bunker), Pez (agua), Gorila (OB) - último paga"
         enabled={config.zoologico?.enabled ?? false}
         onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
