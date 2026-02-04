@@ -7,7 +7,7 @@ import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
-import { RoundHistory } from '@/components/RoundHistory';
+import { RoundHistory, CloneRoundData } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { HistoricalBalances } from '@/components/HistoricalBalances';
@@ -413,6 +413,57 @@ const Index = () => {
     
     // Force page reload to reset hook state
     window.location.reload();
+  }, []);
+
+  // Clone round: pre-populate setup with historical data
+  const handleCloneRound = useCallback((data: CloneRoundData) => {
+    // Close history dialog
+    setShowHistoryDialog(false);
+    
+    // Pre-populate course
+    setSelectedCourseId(data.courseId);
+    setTeeColor(data.teeColor as 'blue' | 'white' | 'yellow' | 'red');
+    setStartingHole(data.startingHole);
+    
+    // Merge bet config with defaults
+    setBetConfig(prev => ({
+      ...defaultBetConfig,
+      ...data.betConfig,
+      medal: { ...defaultBetConfig.medal, ...data.betConfig?.medal },
+      pressures: { ...defaultBetConfig.pressures, ...data.betConfig?.pressures },
+      skins: { ...defaultBetConfig.skins, ...data.betConfig?.skins },
+      caros: { ...defaultBetConfig.caros, ...data.betConfig?.caros },
+      units: { ...defaultBetConfig.units, ...data.betConfig?.units },
+      manchas: { ...defaultBetConfig.manchas, ...data.betConfig?.manchas },
+      culebras: { ...defaultBetConfig.culebras, ...data.betConfig?.culebras },
+      // Reset player-specific overrides since this is a new round
+      betOverrides: [],
+      bilateralHandicaps: [],
+      sideBets: { ...defaultBetConfig.sideBets, bets: [] },
+    }));
+    
+    // Pre-populate players from cloned round
+    const clonedPlayers: Player[] = data.players.map((p, idx) => ({
+      id: p.profileId || `cloned-guest-${idx}-${Date.now()}`,
+      name: p.name,
+      initials: p.initials,
+      color: p.color,
+      handicap: p.handicap,
+      profileId: p.profileId || undefined,
+    }));
+    
+    setPlayers(clonedPlayers);
+    
+    // Reset scores and confirmed holes for new round
+    setScores(new Map());
+    setConfirmedHoles(new Set());
+    setPlayerGroups([]);
+    
+    // Navigate to setup view for adjustments
+    setHasInitialNavigated(true);
+    setView('setup');
+    
+    toast.success(`Datos cargados de la ronda anterior. Ajusta fecha, jugadores y configuración, luego inicia la ronda.`);
   }, []);
 
   // Add a new player group
@@ -1845,6 +1896,7 @@ const Index = () => {
               setShowHistoryDialog(false);
               setShowScorecardDialog(true);
             }}
+            onCloneRound={handleCloneRound}
           />
         </DialogContent>
       </Dialog>
