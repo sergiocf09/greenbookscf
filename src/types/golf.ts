@@ -314,6 +314,40 @@ export interface TeamPressuresBetConfig {
 }
 
 // =====================================================
+// ZOOLOGICO BET (GROUP BET)
+// =====================================================
+
+// Types of zoo animals/events
+export type ZooAnimalType = 'camello' | 'pez' | 'gorila';
+
+// Zoo animal display info
+export const ZOO_ANIMALS: Record<ZooAnimalType, { label: string; emoji: string; description: string }> = {
+  camello: { label: 'Camello', emoji: '🐪', description: 'Trampa de arena (bunker)' },
+  pez: { label: 'Pez', emoji: '🐟', description: 'Irse al agua' },
+  gorila: { label: 'Gorila', emoji: '🦍', description: 'Irse out of bounds (OB)' },
+};
+
+// A single zoo event occurrence
+export interface ZooEvent {
+  id: string;
+  animalType: ZooAnimalType;
+  playerId: string;
+  holeNumber: number;
+  count: number; // How many times this event happened (can be 1, 2, 3+)
+  createdAt: string;
+}
+
+// Zoologico bet configuration
+export interface ZoologicoBetConfig {
+  enabled: boolean;
+  valuePerOccurrence: number; // Default $10
+  enabledAnimals: ZooAnimalType[]; // Which animals are enabled
+  events: ZooEvent[]; // Recorded events during the round
+  // Tie-breaker per animal type: "<holeNumber>:<playerId>"
+  tieBreakers?: Partial<Record<ZooAnimalType, string>>;
+}
+
+// =====================================================
 // MAIN BET CONFIG
 // =====================================================
 
@@ -341,6 +375,7 @@ export interface BetConfig {
   sideBets: SideBetsConfig;
   stableford: StablefordBetConfig;
   teamPressures: TeamPressuresBetConfig;
+  zoologico: ZoologicoBetConfig; // NEW: Zoo bet
 }
 
 export interface MedalBetConfig {
@@ -462,6 +497,7 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   coneja: 'grupal',
   culebras: 'grupal',
   pinguinos: 'grupal',
+  zoologico: 'grupal', // NEW: Zoo bet
   medalGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
