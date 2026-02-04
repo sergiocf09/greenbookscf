@@ -13,6 +13,7 @@ import { devError, devLog } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary } from '@/lib/betCalculations';
+import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 
 interface RoundState {
   id: string | null;
@@ -755,7 +756,11 @@ export const useRoundManagement = ({
 
   // Close the scorecard (complete the round)
   // allBetResults should be the full BetSummary[] array from calculateAllBets
-  const closeScorecard = useCallback(async (allBetResults: BetSummary[]) => {
+  // getStrokesForPair is optional function to get bilateral strokes for sliding calculation
+  const closeScorecard = useCallback(async (
+    allBetResults: BetSummary[],
+    getStrokesForPair?: (playerAId: string, playerBId: string) => number
+  ) => {
     if (!roundState.id || !profile || !course) return false;
 
     setIsLoading(true);
@@ -949,6 +954,81 @@ export const useRoundManagement = ({
               handicap: player.handicap,
               round_id: roundState.id,
             });
+        }
+      }
+
+      // Calculate and save sliding adjustments for logged-in player pairs
+      // Only if Presiones is enabled and we have a function to get strokes
+      if (getStrokesForPair && betConfig.pressures?.enabled) {
+        try {
+          const slidingResults = calculateSlidingResults(
+            players,
+            scores,
+            betConfig,
+            course,
+            getStrokesForPair
+          );
+
+          if (slidingResults.length > 0) {
+            // Prepare history records
+            const historyRecords = slidingResults.map(r => ({
+              round_id: roundState.id,
+              player_a_profile_id: r.playerAProfileId,
+              player_b_profile_id: r.playerBProfileId,
+              strokes_a_gives_b_used: r.strokesUsed,
+              front_main_winner: r.frontMainWinner,
+              back_main_winner: r.backMainWinner,
+              match_total_winner: r.matchTotalWinner,
+              carry_front_main: r.carryFrontMain,
+              strokes_a_gives_b_next: r.strokesNext,
+            }));
+
+            // Insert sliding history
+            const { error: slidingHistError } = await supabase
+              .from('sliding_history')
+              .insert(historyRecords);
+
+            if (slidingHistError) {
+              devError('Error saving sliding history:', slidingHistError);
+            } else {
+              devLog(`Saved sliding history for ${slidingResults.length} pairs`);
+            }
+
+            // Update sliding_current for each pair
+            for (const result of slidingResults) {
+              const { error: slidingCurrError } = await supabase
+                .from('sliding_current')
+                .upsert({
+                  player_a_profile_id: result.playerAProfileId,
+                  player_b_profile_id: result.playerBProfileId,
+                  strokes_a_gives_b_current: result.strokesNext,
+                  last_round_id: roundState.id,
+                  last_updated_at: new Date().toISOString(),
+                }, {
+                  onConflict: 'player_a_profile_id,player_b_profile_id',
+                });
+
+              if (slidingCurrError) {
+                devError('Error upserting sliding_current:', slidingCurrError);
+              }
+            }
+
+            // Log sliding results for debugging
+            slidingResults.forEach(r => {
+              const change = r.strokesNext - r.strokesUsed;
+              const desc = r.carryFrontMain 
+                ? 'Carry en Front → Sin ajuste' 
+                : change === 0 
+                  ? 'Empate Total → Sin ajuste'
+                  : change > 0 
+                    ? `A gana Total → +${change} golpe` 
+                    : `B gana Total → ${change} golpe`;
+              devLog(`Sliding ${r.playerAProfileId.slice(0,8)} vs ${r.playerBProfileId.slice(0,8)}: ${r.strokesUsed} → ${r.strokesNext} (${desc})`);
+            });
+          }
+        } catch (slidingError) {
+          devError('Error calculating/saving sliding:', slidingError);
+          // Don't fail the round closure for sliding errors
         }
       }
 

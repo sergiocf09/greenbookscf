@@ -1773,7 +1773,7 @@ const Index = () => {
               <Button 
                 variant="destructive"
                 onClick={async () => {
-                  const success = await closeScorecard(currentBetSummaries);
+                  const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
                   if (success) {
                     toast.success('Tarjeta cerrada exitosamente');
                   }
