@@ -157,6 +157,45 @@ export type Database = {
           },
         ]
       }
+      friendships: {
+        Row: {
+          created_at: string
+          friend_profile_id: string
+          id: string
+          owner_profile_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          friend_profile_id: string
+          id?: string
+          owner_profile_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          friend_profile_id?: string
+          id?: string
+          owner_profile_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_friend_profile_id_fkey"
+            columns: ["friend_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_courses: {
         Row: {
           country: string
@@ -1048,6 +1087,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_my_friends: {
+        Args: never
+        Returns: {
+          avatar_color: string
+          created_at: string
+          current_handicap: number
+          display_name: string
+          friend_profile_id: string
+          friendship_id: string
+          initials: string
+        }[]
+      }
       get_my_profile_id: { Args: never; Returns: string }
       get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
@@ -1061,6 +1112,16 @@ export type Database = {
         Returns: undefined
       }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
+      search_profiles: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_color: string
+          current_handicap: number
+          display_name: string
+          id: string
+          initials: string
+        }[]
+      }
     }
     Enums: {
       bet_type:

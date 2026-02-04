@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, User, Users2, Calculator } from 'lucide-react';
+import { Plus, X, User, Users2, Calculator, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,7 @@ interface PlayerSetupProps {
   showAddGroupButton?: boolean;
   defaultTeeColor?: string; // Round's default tee color
   courseId?: string | null; // Current course for Course Handicap calculation
+  onAddFromFriendsClick?: () => void; // Callback to open friends dialog
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -58,6 +59,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   showAddGroupButton = false,
   defaultTeeColor = 'white',
   courseId = null,
+  onAddFromFriendsClick,
 }) => {
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -321,19 +323,33 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
       {/* Add Player */}
       {players.length < maxPlayers && (
-        <div className="flex gap-2">
-          <Input
-            value={newPlayerName}
-            maxLength={100}
-            onChange={(e) => setNewPlayerName(e.target.value.slice(0, 100))}
-            placeholder="Nombre del nuevo jugador"
-            className="flex-1"
-            onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
-          />
-          <Button onClick={addPlayer} disabled={!newPlayerName.trim()}>
-            <Plus className="h-4 w-4 mr-1" />
-            Agregar
-          </Button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              value={newPlayerName}
+              maxLength={100}
+              onChange={(e) => setNewPlayerName(e.target.value.slice(0, 100))}
+              placeholder="Nombre del nuevo jugador"
+              className="flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
+            />
+            <Button onClick={addPlayer} disabled={!newPlayerName.trim()}>
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          </div>
+          
+          {/* Add from Friends Button */}
+          {onAddFromFriendsClick && (
+            <Button 
+              variant="outline" 
+              onClick={onAddFromFriendsClick}
+              className="w-full"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Agregar desde Amigos
+            </Button>
+          )}
         </div>
       )}
 

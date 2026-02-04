@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -61,6 +61,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
+import { FriendsDialog } from '@/components/friends/FriendsDialog';
+import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
+import { Friend } from '@/hooks/useFriends';
 
 type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
 
@@ -97,6 +100,8 @@ const Index = () => {
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
+  const [showFriendsDialog, setShowFriendsDialog] = useState(false);
+  const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
     Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>
@@ -803,6 +808,69 @@ const Index = () => {
     }
   }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer, roundState.id, roundPlayerIds]);
 
+  // Add players from friends selection
+  const handleAddPlayersFromFriends = useCallback(async (selectedPlayers: Array<{
+    profileId: string;
+    name: string;
+    initials: string;
+    color: string;
+    handicap: number;
+  }>) => {
+    const newPlayers: Player[] = selectedPlayers.map(p => ({
+      id: p.profileId,
+      name: p.name,
+      initials: p.initials,
+      color: p.color,
+      handicap: p.handicap,
+      profileId: p.profileId,
+      teeColor: teeColor,
+    }));
+
+    // Filter out players already in the round
+    const existingIds = new Set(players.map(p => p.profileId || p.id));
+    const playersToAdd = newPlayers.filter(p => !existingIds.has(p.id) && !existingIds.has(p.profileId));
+
+    if (playersToAdd.length === 0) {
+      toast.info('Todos los jugadores seleccionados ya están en la ronda');
+      return;
+    }
+
+    // Add to local state
+    setPlayers(prev => [...prev, ...playersToAdd]);
+
+    // If round exists, persist to database
+    if (roundState.id) {
+      for (const player of playersToAdd) {
+        await addPlayerToRound(player);
+      }
+      toast.success(`${playersToAdd.length} jugador(es) agregado(s)`);
+    }
+
+    // If round is in progress, initialize scores
+    if (isRoundStarted && course) {
+      setScores(prev => {
+        const newScores = new Map(prev);
+        for (const player of playersToAdd) {
+          if (!newScores.has(player.id)) {
+            newScores.set(player.id, initializePlayerScores(player));
+          }
+        }
+        return newScores;
+      });
+    }
+  }, [players, teeColor, roundState.id, isRoundStarted, course, addPlayerToRound, initializePlayerScores]);
+
+  // Handle adding a friend to the active round (from Friends dialog)
+  const handleAddFriendToRound = useCallback((friend: Friend) => {
+    handleAddPlayersFromFriends([{
+      profileId: friend.profileId,
+      name: friend.displayName,
+      initials: friend.initials,
+      color: friend.avatarColor,
+      handicap: friend.currentHandicap,
+    }]);
+  }, [handleAddPlayersFromFriends]);
+
   // Create round in database (can do with 1 player to get share link)
   const handleCreateRound = async () => {
     if (!course || !selectedCourseId) return;
@@ -1333,8 +1401,18 @@ const Index = () => {
             )}
           </div>
           
-          {/* Right: Profile Menu */}
-          <div className="flex items-center flex-shrink-0">
+          {/* Right: Friends + Profile Menu */}
+          <div className="flex items-center flex-shrink-0 gap-1">
+            {/* Friends Button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => setShowFriendsDialog(true)}
+            >
+              <Users className="h-5 w-5" />
+            </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -1598,6 +1676,7 @@ const Index = () => {
               onAddGroupClick={handleAddGroup}
               courseId={selectedCourseId}
               defaultTeeColor={teeColor}
+              onAddFromFriendsClick={() => setShowAddFromFriendsDialog(true)}
             />
             
             {/* Additional Groups */}
@@ -1826,6 +1905,8 @@ const Index = () => {
             onOpenChange={setShowAddPlayerDialog}
             roundId={roundState.id}
             onAddGuest={handleAddGuestFromScorecard}
+            onAddFromFriends={handleAddPlayersFromFriends}
+            existingPlayerIds={players.map(p => p.profileId || p.id)}
             currentPlayerCount={players.length + playerGroups.reduce((sum, g) => sum + g.players.length, 0)}
             maxPlayersRecommended={6}
           />
@@ -1971,6 +2052,23 @@ const Index = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Friends Dialog */}
+      <FriendsDialog
+        open={showFriendsDialog}
+        onOpenChange={setShowFriendsDialog}
+        onAddToRound={handleAddFriendToRound}
+        hasActiveRound={Boolean(roundState.id)}
+      />
+
+      {/* Add From Friends Dialog (for setup/scorecard) */}
+      <AddFromFriendsDialog
+        open={showAddFromFriendsDialog}
+        onOpenChange={setShowAddFromFriendsDialog}
+        onAddPlayers={handleAddPlayersFromFriends}
+        existingPlayerIds={players.map(p => p.profileId || p.id)}
+        multiSelect={true}
+      />
     </div>
   );
 };
