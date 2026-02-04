@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { GolfCourse, PlayerScore } from '@/types/golf';
 import { Zap, Minus, Plus, Check, ArrowLeft } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 interface QuickScoreEntryProps {
   open: boolean;
@@ -290,9 +290,9 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-sm h-[85vh] flex flex-col p-0 overflow-hidden">
         {/* Header */}
-        <DialogHeader className="px-4 pt-4 pb-2 border-b space-y-2">
+        <DialogHeader className="px-4 pt-4 pb-2 border-b space-y-2 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Zap className="h-4 w-4 text-primary" />
             Captura Rápida
@@ -307,7 +307,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         </DialogHeader>
 
         {/* Column Headers */}
-        <div className="grid grid-cols-[2.5rem_2rem_1fr_1fr_3rem] items-center gap-1 px-2 py-1.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b">
+        <div className="grid grid-cols-[2.5rem_2rem_1fr_1fr_3rem] items-center gap-1 px-2 py-1.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b shrink-0">
           <span className="text-center">Hoyo</span>
           <span className="text-center">Par</span>
           <span className="text-center">Golpes</span>
@@ -315,7 +315,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           <span className="text-center">OK</span>
         </div>
 
-        <ScrollArea className="flex-1">
+        <div className="flex-1 min-h-0 overflow-auto">
           {/* Front 9 */}
           <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
             IDA (1-9)
@@ -370,7 +370,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 : '-'}
             </span>
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer */}
         <div className="p-3 border-t">
