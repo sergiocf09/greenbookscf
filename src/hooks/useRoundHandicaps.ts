@@ -75,6 +75,8 @@ export const useRoundHandicaps = ({
   }, [roundPlayerIds]);
 
   // Load handicaps from database
+  // IMPORTANT: Normalize strokes when loading - if DB order differs from normalized order,
+  // we must invert the strokes value to maintain consistency
   const loadHandicaps = useCallback(async () => {
     if (!roundId) return;
 
@@ -89,16 +91,22 @@ export const useRoundHandicaps = ({
 
       const newMap = new Map<string, RoundHandicap>();
       (data || []).forEach((row: any) => {
+        // Normalize the pair - we need to check if the DB order matches our expected order
+        const [normA, normB, wasSwapped] = normalizePair(row.player_a_id, row.player_b_id);
+        
+        // If the DB order was swapped during normalization, we need to invert the strokes
+        const normalizedStrokes = wasSwapped ? -row.strokes_given_by_a : row.strokes_given_by_a;
+        
         const handicap: RoundHandicap = {
           id: row.id,
           roundId: row.round_id,
-          playerAId: row.player_a_id,
-          playerBId: row.player_b_id,
-          strokesGivenByA: row.strokes_given_by_a,
+          playerAId: normA,  // Always use normalized IDs
+          playerBId: normB,
+          strokesGivenByA: normalizedStrokes,  // Adjusted strokes based on normalization
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
-        const key = getKey(row.player_a_id, row.player_b_id);
+        const key = `${normA}-${normB}`;
         newMap.set(key, handicap);
       });
 
@@ -110,7 +118,7 @@ export const useRoundHandicaps = ({
     } finally {
       setIsLoading(false);
     }
-  }, [roundId, getKey]);
+  }, [roundId]);
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -146,13 +154,16 @@ export const useRoundHandicaps = ({
           } else {
             const row = payload.new as any;
             if (row?.player_a_id && row?.player_b_id) {
-              const key = getKey(row.player_a_id, row.player_b_id);
+              // Normalize the pair and strokes for realtime events too
+              const [normA, normB, wasSwapped] = normalizePair(row.player_a_id, row.player_b_id);
+              const normalizedStrokes = wasSwapped ? -row.strokes_given_by_a : row.strokes_given_by_a;
+              const key = `${normA}-${normB}`;
               const handicap: RoundHandicap = {
                 id: row.id,
                 roundId: row.round_id,
-                playerAId: row.player_a_id,
-                playerBId: row.player_b_id,
-                strokesGivenByA: row.strokes_given_by_a,
+                playerAId: normA,
+                playerBId: normB,
+                strokesGivenByA: normalizedStrokes,
                 createdAt: row.created_at,
                 updatedAt: row.updated_at,
               };
