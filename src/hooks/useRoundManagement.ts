@@ -765,16 +765,14 @@ export const useRoundManagement = ({
 
     setIsLoading(true);
     try {
-      // Update round status to completed
-      const { error: roundError } = await supabase
+      // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
+      // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
+      const { error: betConfigError } = await supabase
         .from('rounds')
-        .update({ 
-          status: 'completed',
-          bet_config: betConfig as any,
-        })
+        .update({ bet_config: betConfig as any })
         .eq('id', roundState.id);
 
-      if (roundError) throw roundError;
+      if (betConfigError) throw betConfigError;
 
       // Save all hole scores to database
       const scoreRecords: any[] = [];
@@ -873,72 +871,18 @@ export const useRoundManagement = ({
         // Don't fail the whole operation - the ledger transactions are still saved
       }
 
-      // Update player_vs_player for guests as well
-      // We need to update the PvP records to include guest names
-      for (const result of allBetResults) {
-        if (result.amount > 0) {
-          const winner = players.find(p => p.id === result.playerId);
-          const loser = players.find(p => p.id === result.vsPlayer);
-          
-          if (winner && loser) {
-            const winnerIsGuest = !winner.profileId;
-            const loserIsGuest = !loser.profileId;
-            
-            // If at least one is a guest, we need to track in player_vs_player
-            if (winnerIsGuest || loserIsGuest) {
-              // Determine player A and B (normalized order)
-              const [playerA, playerB] = winner.id < loser.id ? [winner, loser] : [loser, winner];
-              const winnerIsA = playerA.id === winner.id;
-              
-              // Check if record exists
-              const { data: existing } = await supabase
-                .from('player_vs_player')
-                .select('*')
-                .or(
-                  playerA.profileId 
-                    ? `player_a_id.eq.${playerA.profileId}` 
-                    : `player_a_name.eq.${playerA.name},player_a_is_guest.eq.true`
-                )
-                .or(
-                  playerB.profileId 
-                    ? `player_b_id.eq.${playerB.profileId}` 
-                    : `player_b_name.eq.${playerB.name},player_b_is_guest.eq.true`
-                )
-                .maybeSingle();
-
-              if (existing) {
-                // Update existing record
-                await supabase
-                  .from('player_vs_player')
-                  .update({
-                    rounds_played: existing.rounds_played + 1,
-                    total_won_by_a: existing.total_won_by_a + (winnerIsA ? result.amount : 0),
-                    total_won_by_b: existing.total_won_by_b + (winnerIsA ? 0 : result.amount),
-                    last_played_at: new Date().toISOString(),
-                    last_round_id: roundState.id,
-                  })
-                  .eq('id', existing.id);
-              } else {
-                // Create new record
-                await supabase
-                  .from('player_vs_player')
-                  .insert({
-                    player_a_id: playerA.profileId || null,
-                    player_a_name: playerA.profileId ? null : playerA.name,
-                    player_a_is_guest: !playerA.profileId,
-                    player_b_id: playerB.profileId || null,
-                    player_b_name: playerB.profileId ? null : playerB.name,
-                    player_b_is_guest: !playerB.profileId,
-                    total_won_by_a: winnerIsA ? result.amount : 0,
-                    total_won_by_b: winnerIsA ? 0 : result.amount,
-                    rounds_played: 1,
-                    last_played_at: new Date().toISOString(),
-                    last_round_id: roundState.id,
-                  });
-              }
-            }
-          }
+      // Repair/ensure PvP + ledger consistency for guest-inclusive rounds.
+      // This is SECURITY DEFINER on the backend, and is idempotent.
+      // (If ledger/PvP already exist for this round, it returns without changes.)
+      try {
+        const { error: rebuildError } = await supabase.rpc('rebuild_round_financials_from_snapshot', {
+          p_round_id: roundState.id,
+        });
+        if (rebuildError) {
+          devError('Error rebuilding round financials from snapshot:', rebuildError);
         }
+      } catch (e) {
+        devError('Exception rebuilding round financials from snapshot:', e);
       }
 
       // NOTE: Player vs Player (PvP) records for registered players are updated server-side
@@ -1031,6 +975,14 @@ export const useRoundManagement = ({
           // Don't fail the round closure for sliding errors
         }
       }
+
+      // Mark the round as completed ONLY at the very end.
+      const { error: roundCompleteError } = await supabase
+        .from('rounds')
+        .update({ status: 'completed' })
+        .eq('id', roundState.id);
+
+      if (roundCompleteError) throw roundCompleteError;
 
       setRoundState(prev => ({ ...prev, status: 'completed' }));
       toast.success('Tarjeta cerrada y guardada');
