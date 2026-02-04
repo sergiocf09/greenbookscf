@@ -4179,38 +4179,43 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           : `${pressureDisplayRaw}${carrySuffix}`;
 
                         // Content to wrap in Popover
+                        // Zoológico segments only show the animal label (no "X vs X" comparison)
+                        const isZoologico = group.key === 'zoologico';
+                        
                         const segmentContent = (
                           <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground w-16">{segment.label}</span>
-                            {/* Score comparison */}
-                            <div className="flex items-center gap-1.5 text-sm">
-                              {isPressures ? (
-                                <span className={cn(
-                                  'font-semibold cursor-pointer hover:underline',
-                                  data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                                )}>
-                                  {pressureDisplay}
-                                </span>
-                              ) : (
-                                <>
+                            <span className="text-sm text-muted-foreground">{segment.label}</span>
+                            {/* Score comparison - skip for Zoológico */}
+                            {!isZoologico && (
+                              <div className="flex items-center gap-1.5 text-sm">
+                                {isPressures ? (
                                   <span className={cn(
-                                    'font-semibold min-w-[28px] text-center cursor-pointer hover:underline',
-                                    data.playerNet < data.rivalNet ? 'text-green-600' : 
-                                    data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                                    'font-semibold cursor-pointer hover:underline',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                                   )}>
-                                    {isSkins ? `${data.playerNet}` : data.playerNet || '-'}
+                                    {pressureDisplay}
                                   </span>
-                                  <span className="text-muted-foreground">vs</span>
-                                  <span className={cn(
-                                    'font-semibold min-w-[28px] text-center',
-                                    data.rivalNet < data.playerNet ? 'text-green-600' : 
-                                    data.rivalNet > data.playerNet ? 'text-destructive' : ''
-                                  )}>
-                                    {isSkins ? `${data.rivalNet}` : data.rivalNet || '-'}
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                                ) : (
+                                  <>
+                                    <span className={cn(
+                                      'font-semibold min-w-[28px] text-center cursor-pointer hover:underline',
+                                      data.playerNet < data.rivalNet ? 'text-green-600' : 
+                                      data.playerNet > data.rivalNet ? 'text-destructive' : ''
+                                    )}>
+                                      {isSkins ? `${data.playerNet}` : data.playerNet || '-'}
+                                    </span>
+                                    <span className="text-muted-foreground">vs</span>
+                                    <span className={cn(
+                                      'font-semibold min-w-[28px] text-center',
+                                      data.rivalNet < data.playerNet ? 'text-green-600' : 
+                                      data.rivalNet > data.playerNet ? 'text-destructive' : ''
+                                    )}>
+                                      {isSkins ? `${data.rivalNet}` : data.rivalNet || '-'}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
 
