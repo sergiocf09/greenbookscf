@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LayoutGrid, Trophy } from 'lucide-react';
+import { Loader2, LayoutGrid, Trophy, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
 import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState } from '@/types/golf';
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer } from '@/lib/roundSnapshot';
+import { devError, devLog } from '@/lib/logger';
 
 interface PlayerScoreData {
   playerId: string;
@@ -32,20 +34,45 @@ interface HistoricalRoundViewProps {
 export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   roundId,
   courseId,
-  players: initialPlayers,
+  players: fallbackPlayers,
   teeColor,
   date,
   course,
 }) => {
   const [activeTab, setActiveTab] = useState<'scorecard' | 'bets'>('scorecard');
-  const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [loading, setLoading] = useState(true);
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+  const [snapshot, setSnapshot] = useState<RoundSnapshot | null>(null);
+  
+  // Fallback state for rounds without snapshot
+  const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [markers, setMarkers] = useState<Map<string, Map<number, MarkerState>>>(new Map());
 
-  // Fetch bet config and markers from the round
+  // Fetch snapshot or fallback to legacy data
   useEffect(() => {
     const fetchRoundData = async () => {
       try {
+        // First, try to get the snapshot
+        const { data: snapshotData, error: snapshotError } = await supabase
+          .from('round_snapshots')
+          .select('snapshot_json')
+          .eq('round_id', roundId)
+          .maybeSingle();
+
+        if (!snapshotError && snapshotData?.snapshot_json) {
+          const snap = snapshotData.snapshot_json as unknown;
+          if (isValidSnapshot(snap)) {
+            devLog('Using immutable snapshot for round:', roundId);
+            setSnapshot(snap);
+            setHasSnapshot(true);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // No valid snapshot - fall back to legacy behavior
+        devLog('No snapshot found, using legacy data for round:', roundId);
+        
         // Fetch bet config from round
         const { data: roundData, error: roundError } = await supabase
           .from('rounds')
@@ -74,7 +101,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             carritos: { ...defaultBetConfig.carritos, ...loadedConfig.carritos },
             medalGeneral: { ...defaultBetConfig.medalGeneral, ...loadedConfig.medalGeneral },
             coneja: { ...defaultBetConfig.coneja, ...loadedConfig.coneja },
-            // New bet types
             putts: { ...defaultBetConfig.putts, ...loadedConfig.putts },
             sideBets: { ...defaultBetConfig.sideBets, ...loadedConfig.sideBets },
             stableford: { ...defaultBetConfig.stableford, ...loadedConfig.stableford },
@@ -82,7 +108,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           });
         }
 
-        // Fetch markers for each player's hole scores
+        // Fetch markers for each player's hole scores (legacy)
         const { data: roundPlayers } = await supabase
           .from('round_players')
           .select('id, profile_id')
@@ -97,7 +123,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
               .select('hole_number')
               .eq('round_player_id', rp.id);
 
-            // Get markers for each hole score
             const playerMarkers = new Map<number, MarkerState>();
             
             if (holeScores) {
@@ -107,7 +132,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                   .select('marker_type')
                   .eq('hole_score_id', rp.id);
                 
-                // Reconstruct marker state
                 const markerState: MarkerState = { ...defaultMarkerState };
                 if (holeMarkers) {
                   for (const m of holeMarkers) {
@@ -126,7 +150,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           setMarkers(markersMap);
         }
       } catch (err) {
-        console.error('Error fetching round data:', err);
+        devError('Error fetching round data:', err);
       } finally {
         setLoading(false);
       }
@@ -135,9 +159,21 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     fetchRoundData();
   }, [roundId]);
 
-  // Convert PlayerScoreData to Player objects for BetDashboard
+  // Convert snapshot players to Player objects for BetDashboard
   const dashboardPlayers: Player[] = useMemo(() => {
-    return initialPlayers.map(p => ({
+    if (hasSnapshot && snapshot) {
+      return snapshot.players.map((p: SnapshotPlayer) => ({
+        id: p.id,
+        name: p.name,
+        initials: p.initials,
+        color: p.color,
+        handicap: p.handicap,
+        profileId: p.profileId || undefined,
+      }));
+    }
+    
+    // Fallback to legacy data
+    return fallbackPlayers.map(p => ({
       id: p.playerId,
       name: p.playerName,
       initials: p.initials,
@@ -145,19 +181,38 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       handicap: p.handicap,
       profileId: p.playerId,
     }));
-  }, [initialPlayers]);
+  }, [hasSnapshot, snapshot, fallbackPlayers]);
 
   // Convert to Map<string, PlayerScore[]> for BetDashboard
   const dashboardScores: Map<string, PlayerScore[]> = useMemo(() => {
     const scoresMap = new Map<string, PlayerScore[]>();
     
-    // Calculate strokes per hole for each player based on their handicap
+    if (hasSnapshot && snapshot) {
+      // Use snapshot scores directly - NO RECALCULATION
+      Object.entries(snapshot.scores).forEach(([playerId, scores]) => {
+        const playerScores: PlayerScore[] = (scores as SnapshotHoleScore[]).map(s => ({
+          playerId,
+          holeNumber: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts,
+          markers: { ...defaultMarkerState, ...s.markers } as MarkerState,
+          strokesReceived: s.strokesReceived,
+          oyesProximity: s.oyesProximity ?? null,
+          netScore: s.netScore,
+          confirmed: true,
+        }));
+        scoresMap.set(playerId, playerScores);
+      });
+      return scoresMap;
+    }
+    
+    // Fallback: legacy behavior with recalculation (for old rounds)
     const strokesPerHoleByPlayer: Record<string, number[]> = {};
     dashboardPlayers.forEach(player => {
       strokesPerHoleByPlayer[player.id] = calculateStrokesPerHole(player.handicap, course);
     });
     
-    initialPlayers.forEach(player => {
+    fallbackPlayers.forEach(player => {
       const playerScores: PlayerScore[] = player.scores.map(s => {
         const hole = course.holes.find(h => h.number === s.holeNumber);
         const par = hole?.par || 4;
@@ -184,7 +239,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           strokesReceived,
           oyesProximity: s.oyesProximity ?? null,
           netScore: s.strokes - strokesReceived,
-          confirmed: true, // Historical scores are always confirmed
+          confirmed: true,
         };
       });
       
@@ -192,12 +247,36 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     });
     
     return scoresMap;
-  }, [initialPlayers, course, dashboardPlayers, markers]);
+  }, [hasSnapshot, snapshot, fallbackPlayers, course, dashboardPlayers, markers]);
+
+  // Get bet config from snapshot or fallback
+  const effectiveBetConfig = useMemo(() => {
+    if (hasSnapshot && snapshot) {
+      return snapshot.betConfig;
+    }
+    return betConfig;
+  }, [hasSnapshot, snapshot, betConfig]);
 
   // All 18 holes are confirmed for historical view
   const confirmedHoles = useMemo(() => {
     return new Set(Array.from({ length: 18 }, (_, i) => i + 1));
   }, []);
+
+  // Get display data from snapshot or fallback
+  const displayData = useMemo(() => {
+    if (hasSnapshot && snapshot) {
+      return {
+        courseName: snapshot.courseName,
+        teeColor: snapshot.teeColor,
+        date: snapshot.date,
+      };
+    }
+    return {
+      courseName: course.name,
+      teeColor,
+      date,
+    };
+  }, [hasSnapshot, snapshot, course.name, teeColor, date]);
 
   if (loading) {
     return (
@@ -211,10 +290,22 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center pb-2 border-b border-border">
-        <h3 className="font-semibold text-lg text-primary">{course.name}</h3>
+        <h3 className="font-semibold text-lg text-primary">{displayData.courseName}</h3>
         <p className="text-sm text-muted-foreground">
-          {format(new Date(date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {teeColor}
+          {format(new Date(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
         </p>
+        {hasSnapshot && (
+          <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            Vista histórica inmutable
+          </p>
+        )}
+        {!hasSnapshot && (
+          <p className="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Ronda anterior al sistema de snapshots
+          </p>
+        )}
       </div>
 
       {/* Tabs */}
@@ -233,9 +324,9 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         <TabsContent value="scorecard" className="mt-4">
           <HistoricalScorecard
             course={course}
-            players={initialPlayers}
-            teeColor={teeColor}
-            date={date}
+            players={fallbackPlayers}
+            teeColor={displayData.teeColor}
+            date={displayData.date}
           />
         </TabsContent>
 
@@ -243,7 +334,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           <BetDashboard
             players={dashboardPlayers}
             scores={dashboardScores}
-            betConfig={betConfig}
+            betConfig={effectiveBetConfig}
             course={course}
             confirmedHoles={confirmedHoles}
           />

@@ -426,8 +426,13 @@ export type Database = {
         Row: {
           id: string
           last_played_at: string | null
-          player_a_id: string
-          player_b_id: string
+          last_round_id: string | null
+          player_a_id: string | null
+          player_a_is_guest: boolean
+          player_a_name: string | null
+          player_b_id: string | null
+          player_b_is_guest: boolean
+          player_b_name: string | null
           rounds_played: number
           total_won_by_a: number
           total_won_by_b: number
@@ -436,8 +441,13 @@ export type Database = {
         Insert: {
           id?: string
           last_played_at?: string | null
-          player_a_id: string
-          player_b_id: string
+          last_round_id?: string | null
+          player_a_id?: string | null
+          player_a_is_guest?: boolean
+          player_a_name?: string | null
+          player_b_id?: string | null
+          player_b_is_guest?: boolean
+          player_b_name?: string | null
           rounds_played?: number
           total_won_by_a?: number
           total_won_by_b?: number
@@ -446,14 +456,26 @@ export type Database = {
         Update: {
           id?: string
           last_played_at?: string | null
-          player_a_id?: string
-          player_b_id?: string
+          last_round_id?: string | null
+          player_a_id?: string | null
+          player_a_is_guest?: boolean
+          player_a_name?: string | null
+          player_b_id?: string | null
+          player_b_is_guest?: boolean
+          player_b_name?: string | null
           rounds_played?: number
           total_won_by_a?: number
           total_won_by_b?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "player_vs_player_last_round_id_fkey"
+            columns: ["last_round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "player_vs_player_player_a_id_fkey"
             columns: ["player_a_id"]
@@ -643,6 +665,41 @@ export type Database = {
             foreignKeyName: "round_players_round_id_fkey"
             columns: ["round_id"]
             isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_snapshots: {
+        Row: {
+          closed_at: string
+          created_at: string
+          id: string
+          round_id: string
+          snapshot_json: Json
+          snapshot_version: number
+        }
+        Insert: {
+          closed_at?: string
+          created_at?: string
+          id?: string
+          round_id: string
+          snapshot_json: Json
+          snapshot_version?: number
+        }
+        Update: {
+          closed_at?: string
+          created_at?: string
+          id?: string
+          round_id?: string
+          snapshot_json?: Json
+          snapshot_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_snapshots_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
             referencedRelation: "rounds"
             referencedColumns: ["id"]
           },
