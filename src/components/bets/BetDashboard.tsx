@@ -1195,10 +1195,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
                       />
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
-                          <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
-                        </div>
+                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
                         {tablaGeneralMode === 'all' && hasMultipleGroups && crossGroupOthers.length > 0 && (
                           <span className="text-[9px] text-muted-foreground/70">
                             +{crossGroupOthers.length} de otros grupos
