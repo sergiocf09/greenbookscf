@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateScoreToPar, getScoreName, calculateStrokesPerHole } from '@/lib/handicapUtils';
-import { Plus, Trophy, Users, Star } from 'lucide-react';
+import { Plus, Trophy, Users, Star, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScorecardProps {
   players: Player[];
@@ -21,6 +22,7 @@ interface ScorecardProps {
   onLeaderboardClick?: () => void;
   playerGroups?: PlayerGroup[];
   betConfig?: BetConfig;
+  onQuickScoreClick?: (player: Player) => void;
 }
 
 export const Scorecard: React.FC<ScorecardProps> = ({
@@ -37,6 +39,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   onLeaderboardClick,
   playerGroups = [],
   betConfig,
+  onQuickScoreClick,
 }) => {
   // State for which group to display
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -265,7 +268,28 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 <td className="px-2 py-1 sticky left-0 bg-card">
                   <div className="flex items-center gap-1">
                     <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                    <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
+                    <span className="font-medium truncate max-w-[50px] text-xs">{player.name.split(' ')[0]}</span>
+                    {onQuickScoreClick && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onQuickScoreClick(player);
+                              }}
+                              className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Zap className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            Captura rápida
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </td>
                 {firstNine.map(hole => {
@@ -352,7 +376,28 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   <td className="px-2 py-1 sticky left-0 bg-card">
                     <div className="flex items-center gap-1">
                       <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                      <span className="font-medium truncate max-w-[60px] text-xs">{player.name.split(' ')[0]}</span>
+                      <span className="font-medium truncate max-w-[50px] text-xs">{player.name.split(' ')[0]}</span>
+                      {onQuickScoreClick && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onQuickScoreClick(player);
+                                }}
+                                className="p-0.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                <Zap className="h-3 w-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="text-xs">
+                              Captura rápida
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </td>
                   {secondNine.map(hole => {

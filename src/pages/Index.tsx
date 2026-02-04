@@ -14,6 +14,7 @@ import { HistoricalBalances } from '@/components/HistoricalBalances';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
+import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -102,6 +103,7 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
+  const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
     Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>
@@ -816,49 +818,166 @@ const Index = () => {
     color: string;
     handicap: number;
   }>) => {
-    const newPlayers: Player[] = selectedPlayers.map(p => ({
-      id: p.profileId,
-      name: p.name,
-      initials: p.initials,
-      color: p.color,
-      handicap: p.handicap,
-      profileId: p.profileId,
-      teeColor: teeColor,
-    }));
+    if (!roundState.id || !roundState.groupId || !course) {
+      // Pre-round setup flow
+      const newPlayers: Player[] = selectedPlayers.map(p => ({
+        id: p.profileId,
+        name: p.name,
+        initials: p.initials,
+        color: p.color,
+        handicap: p.handicap,
+        profileId: p.profileId,
+        teeColor: teeColor,
+      }));
 
-    // Filter out players already in the round
-    const existingIds = new Set(players.map(p => p.profileId || p.id));
-    const playersToAdd = newPlayers.filter(p => !existingIds.has(p.id) && !existingIds.has(p.profileId));
+      const existingIds = new Set(players.map(p => p.profileId || p.id));
+      const playersToAdd = newPlayers.filter(p => !existingIds.has(p.id) && !existingIds.has(p.profileId));
 
-    if (playersToAdd.length === 0) {
-      toast.info('Todos los jugadores seleccionados ya están en la ronda');
+      if (playersToAdd.length === 0) {
+        toast.info('Todos los jugadores seleccionados ya están en la ronda');
+        return;
+      }
+
+      setPlayers(prev => [...prev, ...playersToAdd]);
       return;
     }
 
-    // Add to local state
-    setPlayers(prev => [...prev, ...playersToAdd]);
-
-    // If round exists, persist to database
-    if (roundState.id) {
-      for (const player of playersToAdd) {
-        await addPlayerToRound(player);
+    // Mid-round: add with full persistence like handleAddGuestFromScorecard
+    for (const playerData of selectedPlayers) {
+      // Skip if already in round
+      const existingIds = new Set(players.map(p => p.profileId || p.id));
+      if (existingIds.has(playerData.profileId)) {
+        continue;
       }
-      toast.success(`${playersToAdd.length} jugador(es) agregado(s)`);
-    }
 
-    // If round is in progress, initialize scores
-    if (isRoundStarted && course) {
-      setScores(prev => {
-        const newScores = new Map(prev);
-        for (const player of playersToAdd) {
-          if (!newScores.has(player.id)) {
-            newScores.set(player.id, initializePlayerScores(player));
+      try {
+        // 1) Create round_player entry
+        const { data: rpRow, error: rpErr } = await supabase
+          .from('round_players')
+          .insert({
+            round_id: roundState.id,
+            group_id: roundState.groupId,
+            profile_id: playerData.profileId,
+            handicap_for_round: playerData.handicap ?? 0,
+            is_organizer: false,
+            tee_color: teeColor,
+          })
+          .select('id')
+          .single();
+
+        if (rpErr || !rpRow?.id) {
+          devError('Error adding friend to round:', rpErr);
+          toast.error(`Error al agregar ${playerData.name}`);
+          continue;
+        }
+
+        const newPlayerId = rpRow.id as string;
+
+        // 2) Create local player object
+        const newPlayer: Player = {
+          id: newPlayerId,
+          name: playerData.name,
+          initials: playerData.initials,
+          color: playerData.color,
+          handicap: playerData.handicap ?? 0,
+          profileId: playerData.profileId,
+          teeColor: teeColor,
+        };
+
+        // 3) Add to players list
+        setPlayers(prev => [...prev, newPlayer]);
+
+        // 4) Update roundPlayerIds mapping
+        setRoundPlayerIds(prev => {
+          const next = new Map(prev);
+          next.set(newPlayerId, newPlayerId);
+          // Also map profileId -> round_player_id for lookups
+          next.set(playerData.profileId, newPlayerId);
+          return next;
+        });
+
+        // 5) Initialize hole scores (all 18 holes, unconfirmed initially)
+        const strokesPerHole = calculateStrokesPerHole(playerData.handicap ?? 0, course);
+        const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
+          const holeNumber = i + 1;
+          const holePar = course.holes[i]?.par || 4;
+          return {
+            playerId: newPlayerId,
+            holeNumber,
+            strokes: holePar, // Default to par
+            putts: 2,
+            markers: { ...defaultMarkerState },
+            strokesReceived: strokesPerHole[i] ?? 0,
+            netScore: holePar - (strokesPerHole[i] ?? 0),
+            confirmed: false, // Not confirmed yet - user needs to enter actual scores
+          };
+        });
+
+        setScores(prev => {
+          const next = new Map(prev);
+          next.set(newPlayerId, newPlayerScores);
+          return next;
+        });
+
+        // 6) Persist hole_scores to database (unconfirmed, with default par values)
+        const scoreRecords = newPlayerScores.map(s => ({
+          round_player_id: newPlayerId,
+          hole_number: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts,
+          strokes_received: s.strokesReceived,
+          net_score: s.netScore,
+          oyes_proximity: null,
+          oyes_proximity_sangron: null,
+          confirmed: false,
+        }));
+
+        const { error: scoresErr } = await supabase
+          .from('hole_scores')
+          .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
+
+        if (scoresErr) {
+          devError('Error persisting hole_scores for friend:', scoresErr);
+        }
+
+        // 7) Initialize bilateral handicaps against all existing players
+        const existingPlayerRpIds: string[] = [];
+        const existingPlayerHandicaps = new Map<string, number>();
+
+        for (const existingPlayer of players) {
+          const rpId = roundPlayerIds.get(existingPlayer.id);
+          if (rpId && rpId !== newPlayerId) {
+            existingPlayerRpIds.push(rpId);
+            existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
           }
         }
-        return newScores;
-      });
+
+        for (const group of playerGroups) {
+          for (const existingPlayer of group.players) {
+            const rpId = roundPlayerIds.get(existingPlayer.id);
+            if (rpId && rpId !== newPlayerId && !existingPlayerRpIds.includes(rpId)) {
+              existingPlayerRpIds.push(rpId);
+              existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
+            }
+          }
+        }
+
+        if (existingPlayerRpIds.length > 0) {
+          await initializeHandicapsForNewPlayer(
+            newPlayerId,
+            newPlayer.handicap,
+            existingPlayerRpIds,
+            existingPlayerHandicaps
+          );
+        }
+
+        toast.success(`${playerData.name} agregado a la ronda`);
+      } catch (err) {
+        devError('Exception adding friend mid-round:', err);
+        toast.error(`Error al agregar ${playerData.name}`);
+      }
     }
-  }, [players, teeColor, roundState.id, isRoundStarted, course, addPlayerToRound, initializePlayerScores]);
+  }, [players, teeColor, roundState.id, roundState.groupId, course, roundPlayerIds, playerGroups, initializeHandicapsForNewPlayer, setRoundPlayerIds]);
 
   // Handle adding a friend to the active round (from Friends dialog)
   const handleAddFriendToRound = useCallback((friend: Friend) => {
@@ -1885,6 +2004,7 @@ const Index = () => {
               startingHole={startingHole}
               onLeaderboardClick={() => setShowLeaderboardDialog(true)}
               playerGroups={playerGroups}
+              onQuickScoreClick={(player) => setQuickScorePlayer(player)}
             />
             
             <LeaderboardDialog
@@ -2071,6 +2191,76 @@ const Index = () => {
         existingPlayerIds={players.map(p => p.profileId || p.id)}
         multiSelect={true}
       />
+
+      {/* Quick Score Entry Dialog */}
+      {quickScorePlayer && course && (
+        <QuickScoreEntry
+          open={Boolean(quickScorePlayer)}
+          onOpenChange={(open) => !open && setQuickScorePlayer(null)}
+          playerName={quickScorePlayer.name}
+          playerInitials={quickScorePlayer.initials}
+          playerColor={quickScorePlayer.color}
+          playerId={quickScorePlayer.id}
+          course={course}
+          currentScores={scores.get(quickScorePlayer.id) || []}
+          onSaveScores={async (newScores) => {
+            const playerId = quickScorePlayer.id;
+            const rpId = roundPlayerIds.get(playerId);
+            
+            // Update local state
+            setScores(prev => {
+              const next = new Map(prev);
+              const existing = next.get(playerId) || [];
+              const updated = [...existing];
+              
+              for (const s of newScores) {
+                const idx = updated.findIndex(x => x.holeNumber === s.holeNumber);
+                const holePar = course.holes[s.holeNumber - 1]?.par || 4;
+                const strokesPerHole = calculateStrokesPerHole(quickScorePlayer.handicap, course);
+                const strokesReceived = strokesPerHole[s.holeNumber - 1] || 0;
+                
+                const scoreData: PlayerScore = {
+                  playerId,
+                  holeNumber: s.holeNumber,
+                  strokes: s.strokes,
+                  putts: s.putts,
+                  markers: idx >= 0 ? updated[idx].markers : { ...defaultMarkerState },
+                  strokesReceived,
+                  netScore: s.strokes - strokesReceived,
+                  confirmed: true,
+                };
+                
+                if (idx >= 0) {
+                  updated[idx] = scoreData;
+                } else {
+                  updated.push(scoreData);
+                }
+              }
+              
+              next.set(playerId, updated);
+              return next;
+            });
+            
+            // Persist to database
+            if (rpId && roundState.id) {
+              const strokesPerHole = calculateStrokesPerHole(quickScorePlayer.handicap, course);
+              const scoreRecords = newScores.map(s => ({
+                round_player_id: rpId,
+                hole_number: s.holeNumber,
+                strokes: s.strokes,
+                putts: s.putts,
+                strokes_received: strokesPerHole[s.holeNumber - 1] || 0,
+                net_score: s.strokes - (strokesPerHole[s.holeNumber - 1] || 0),
+                confirmed: true,
+              }));
+              
+              await supabase
+                .from('hole_scores')
+                .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
