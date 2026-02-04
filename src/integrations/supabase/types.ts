@@ -525,6 +525,42 @@ export type Database = {
         }
         Relationships: []
       }
+      round_close_attempts: {
+        Row: {
+          ended_at: string | null
+          error_message: string | null
+          error_stage: string | null
+          id: string
+          organizer_profile_id: string
+          report_json: Json | null
+          round_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          ended_at?: string | null
+          error_message?: string | null
+          error_stage?: string | null
+          id?: string
+          organizer_profile_id: string
+          report_json?: Json | null
+          round_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          ended_at?: string | null
+          error_message?: string | null
+          error_stage?: string | null
+          id?: string
+          organizer_profile_id?: string
+          report_json?: Json | null
+          round_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       round_groups: {
         Row: {
           created_at: string
@@ -964,6 +1000,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      begin_round_close_attempt: {
+        Args: { p_lock_seconds?: number; p_round_id: string }
+        Returns: Json
+      }
       create_round:
         | {
             Args: {
@@ -996,6 +1036,16 @@ export type Database = {
           }
       finalize_round_bets: {
         Args: { p_ledger: Json; p_round_id: string }
+        Returns: undefined
+      }
+      finish_round_close_attempt: {
+        Args: {
+          p_attempt_id: string
+          p_error_message?: string
+          p_error_stage?: string
+          p_report?: Json
+          p_status: string
+        }
         Returns: undefined
       }
       get_my_profile_id: { Args: never; Returns: string }

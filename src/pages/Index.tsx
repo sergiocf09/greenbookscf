@@ -60,6 +60,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 
 type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
 
@@ -94,6 +95,7 @@ const Index = () => {
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
+  const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
@@ -119,6 +121,7 @@ const Index = () => {
   const {
     roundState,
     isLoading,
+    isClosing,
     isRestoring,
     isRoundStarted,
     pendingRound,
@@ -132,6 +135,7 @@ const Index = () => {
     setRoundDate,
     copyShareLink,
     getShareableLink,
+    lastCloseReport,
   } = useRoundManagement({
     players,
     setPlayers,
@@ -1799,11 +1803,9 @@ const Index = () => {
                 variant="destructive"
                 onClick={async () => {
                   const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-                  if (success) {
-                    toast.success('Tarjeta cerrada exitosamente');
-                  }
+                  if (!success) setShowCloseAttemptDialog(true);
                 }}
-                disabled={isLoading}
+                disabled={isLoading || isClosing}
                 className="w-full mt-4"
               >
                 <Lock className="h-4 w-4 mr-2" />
@@ -1846,6 +1848,21 @@ const Index = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <CloseAttemptDialog
+        open={showCloseAttemptDialog}
+        onOpenChange={setShowCloseAttemptDialog}
+        report={lastCloseReport}
+        onRetry={
+          isClosing
+            ? undefined
+            : async () => {
+                setShowCloseAttemptDialog(false);
+                const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
+                if (!success) setShowCloseAttemptDialog(true);
+              }
+        }
+      />
 
       {/* Handicap Calculator Dialog */}
       <Dialog open={showHandicapDialog} onOpenChange={setShowHandicapDialog}>

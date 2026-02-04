@@ -14,6 +14,13 @@ import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary } from '@/lib/betCalculations';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
+import {
+  type CloseAttemptReport,
+  newCloseAttemptReport,
+  pushStageFail,
+  pushStageOk,
+  type CloseStage,
+} from '@/lib/closeAttemptReport';
 
 interface RoundState {
   id: string | null;
@@ -78,10 +85,13 @@ export const useRoundManagement = ({
   });
   const [roundPlayerIds, setRoundPlayerIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
   const [pendingRound, setPendingRound] = useState<PendingRoundInfo | null>(null);
   const [pendingRounds, setPendingRounds] = useState<PendingRoundInfo[]>([]);
   const hasRestoredRef = useRef(false);
+  const closeInFlightRef = useRef(false);
+  const [lastCloseReport, setLastCloseReport] = useState<CloseAttemptReport | null>(null);
 
   const isRoundStarted = roundState.status !== 'setup';
 
@@ -768,8 +778,103 @@ export const useRoundManagement = ({
   ) => {
     if (!roundState.id || !profile || !course) return false;
 
+    // Local lock (prevents double-tap / re-entrancy)
+    if (closeInFlightRef.current || isClosing) {
+      const report = newCloseAttemptReport({
+        roundId: roundState.id,
+        currentRoundStatus: roundState.status,
+        userId: profile?.id,
+        playersCount: players.length,
+        loggedPlayers: players.filter((p) => p.profileId && isUuid(p.profileId)).length,
+        guestPlayers: players.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
+        invalidProfileIds: players
+          .filter((p) => p.profileId && !isUuid(p.profileId))
+          .map((p) => ({ playerId: p.id, name: p.name, profileId: p.profileId as string })),
+      });
+      pushStageFail(report, 'validateInputs', 'Cierre en proceso');
+      setLastCloseReport(report);
+      toast('Cierre en proceso');
+      return false;
+    }
+
+    closeInFlightRef.current = true;
+    setIsClosing(true);
+    setLastCloseReport(null);
+
     setIsLoading(true);
+
+    // Build base report early
+    const invalidProfileIds = players
+      .filter((p) => p.profileId && !isUuid(p.profileId))
+      .map((p) => ({ playerId: p.id, name: p.name, profileId: p.profileId as string }));
+
+    const report: CloseAttemptReport = newCloseAttemptReport({
+      roundId: roundState.id,
+      currentRoundStatus: roundState.status,
+      userId: profile?.id,
+      playersCount: players.length,
+      loggedPlayers: players.filter((p) => p.profileId && isUuid(p.profileId)).length,
+      guestPlayers: players.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
+      invalidProfileIds,
+    });
+
+    const fail = async (stage: CloseStage, err: unknown, attemptId?: string) => {
+      pushStageFail(report, stage, err);
+      setLastCloseReport({ ...report });
+      devError('CloseAttemptReport failed:', report);
+      try {
+        if (attemptId) {
+          await supabase.rpc('finish_round_close_attempt', {
+            p_attempt_id: attemptId,
+            p_status: 'failed',
+            p_error_stage: stage,
+            p_error_message: String((err as any)?.message ?? err ?? 'Error'),
+            p_report: report as any,
+          });
+        }
+      } catch (e) {
+        devError('Failed finishing round close attempt:', e);
+      }
+    };
+
     try {
+      // Stage: validateInputs
+      pushStageOk(report, 'validateInputs');
+
+      // Backend idempotency lock
+      let attemptId: string | undefined;
+      try {
+        const { data: attemptData, error: attemptErr } = await supabase.rpc('begin_round_close_attempt', {
+          p_round_id: roundState.id,
+          p_lock_seconds: 60,
+        });
+        if (attemptErr) throw attemptErr;
+
+        const state = (attemptData as any)?.state;
+        if (state === 'already_closed') {
+          pushStageOk(report, 'beginAttempt');
+          setLastCloseReport({ ...report });
+          setRoundState((prev) => ({ ...prev, status: 'completed' }));
+          toast.success('Ronda ya estaba cerrada');
+          return true;
+        }
+
+        if (state === 'locked') {
+          pushStageFail(report, 'beginAttempt', 'Ya hay un cierre en proceso (lock backend)');
+          setLastCloseReport({ ...report });
+          toast('Cierre en proceso (backend)');
+          return false;
+        }
+
+        attemptId = (attemptData as any)?.attempt_id;
+        report.attemptId = attemptId;
+        pushStageOk(report, 'beginAttempt');
+      } catch (e) {
+        await fail('beginAttempt', e);
+        toast.error('No se pudo iniciar el cierre (lock)');
+        return false;
+      }
+
       // Guardrail: if any player has a malformed profileId (e.g. a shortened code like "01f284d7"),
       // treat them as a guest for persistence purposes so backend UUID casts don't fail.
       const sanitizedPlayers = players.map((p) => {
@@ -785,12 +890,18 @@ export const useRoundManagement = ({
 
       // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
       // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
-      const { error: betConfigError } = await supabase
-        .from('rounds')
-        .update({ bet_config: betConfig as any })
-        .eq('id', roundState.id);
-
-      if (betConfigError) throw betConfigError;
+      try {
+        const { error: betConfigError } = await supabase
+          .from('rounds')
+          .update({ bet_config: betConfig as any })
+          .eq('id', roundState.id);
+        if (betConfigError) throw betConfigError;
+        pushStageOk(report, 'saveBetConfig');
+      } catch (e) {
+        await fail('saveBetConfig', e, report.attemptId);
+        toast.error('Error al guardar configuración');
+        return false;
+      }
 
       // Save all hole scores to database
       const scoreRecords: any[] = [];
@@ -814,15 +925,21 @@ export const useRoundManagement = ({
       }
 
       // Upsert scores
-      if (scoreRecords.length > 0) {
-        const { error: scoresError } = await supabase
-          .from('hole_scores')
-          .upsert(scoreRecords, { 
-            onConflict: 'round_player_id,hole_number',
-            ignoreDuplicates: false 
-          });
-
-        if (scoresError) throw scoresError;
+      try {
+        if (scoreRecords.length > 0) {
+          const { error: scoresError } = await supabase
+            .from('hole_scores')
+            .upsert(scoreRecords, {
+              onConflict: 'round_player_id,hole_number',
+              ignoreDuplicates: false,
+            });
+          if (scoresError) throw scoresError;
+        }
+        pushStageOk(report, 'writeScores');
+      } catch (e) {
+        await fail('writeScores', e, report.attemptId);
+        toast.error('Error al guardar scores');
+        return false;
       }
 
       // Save ledger transactions for bet results (only for registered players)
@@ -849,44 +966,66 @@ export const useRoundManagement = ({
         }
       });
 
-      if (ledgerRecords.length > 0) {
-        const { error: ledgerError } = await supabase.rpc('finalize_round_bets', {
-          p_round_id: roundState.id,
-          p_ledger: ledgerRecords,
-        });
-
-        if (ledgerError) throw ledgerError;
+      try {
+        if (ledgerRecords.length > 0) {
+          const { error: ledgerError } = await supabase.rpc('finalize_round_bets', {
+            p_round_id: roundState.id,
+            p_ledger: ledgerRecords,
+          });
+          if (ledgerError) throw ledgerError;
+        }
+        pushStageOk(report, 'finalizeRoundBets');
+      } catch (e) {
+        await fail('finalizeRoundBets', e, report.attemptId);
+        toast.error('Error al finalizar apuestas');
+        return false;
       }
 
       // Generate and save the round snapshot for historical view
       // This snapshot is immutable and will be used for all future historical views
-      const snapshot = generateRoundSnapshot(
-        roundState.id,
-        course,
-        sanitizedPlayers,
-        scores,
-        betConfig,
-        allBetResults,
-        roundState.teeColor,
-        roundState.startingHole,
-        roundState.date.toISOString().split('T')[0]
-      );
+      let snapshot: any = null;
+      try {
+        snapshot = generateRoundSnapshot(
+          roundState.id,
+          course,
+          sanitizedPlayers,
+          scores,
+          betConfig,
+          allBetResults,
+          roundState.teeColor,
+          roundState.startingHole,
+          roundState.date.toISOString().split('T')[0]
+        );
+        pushStageOk(report, 'createSnapshot');
+      } catch (e) {
+        await fail('createSnapshot', e, report.attemptId);
+        toast.error('Error al generar snapshot');
+        return false;
+      }
 
-      const { error: snapshotError } = await supabase
-        .from('round_snapshots')
-        .upsert({
-          round_id: roundState.id,
-          snapshot_json: snapshot as any,
-          snapshot_version: 1,
-          closed_at: new Date().toISOString(),
-        }, {
-          onConflict: 'round_id',
-          ignoreDuplicates: false,
-        });
+      try {
+        const { error: snapshotError } = await supabase
+          .from('round_snapshots')
+          .upsert(
+            {
+              round_id: roundState.id,
+              snapshot_json: snapshot as any,
+              snapshot_version: 1,
+              closed_at: new Date().toISOString(),
+            },
+            {
+              onConflict: 'round_id',
+              ignoreDuplicates: false,
+            }
+          );
 
-      if (snapshotError) {
-        devError('Error saving round snapshot:', snapshotError);
-        // Don't fail the whole operation - the ledger transactions are still saved
+        if (snapshotError) throw snapshotError;
+        pushStageOk(report, 'saveSnapshot');
+      } catch (e) {
+        // Snapshot SHOULD be reliable; fail to make it diagnosable and to avoid partial "closed" states.
+        await fail('saveSnapshot', e, report.attemptId);
+        toast.error('Error al guardar snapshot');
+        return false;
       }
 
       // Repair/ensure PvP + ledger consistency for guest-inclusive rounds.
@@ -898,25 +1037,33 @@ export const useRoundManagement = ({
         });
         if (rebuildError) {
           devError('Error rebuilding round financials from snapshot:', rebuildError);
+          // keep going (not fatal)
+        } else {
+          pushStageOk(report, 'rebuildFinancials');
         }
       } catch (e) {
         devError('Exception rebuilding round financials from snapshot:', e);
+        // keep going (not fatal)
       }
 
       // NOTE: Player vs Player (PvP) records for registered players are updated server-side
       // within the finalize_round_bets RPC function for security.
 
       // Update handicap history for all players with profiles
-      for (const player of sanitizedPlayers) {
-        if (player.profileId && isUuid(player.profileId)) {
-          await supabase
-            .from('handicap_history')
-            .insert({
+      try {
+        for (const player of sanitizedPlayers) {
+          if (player.profileId && isUuid(player.profileId)) {
+            await supabase.from('handicap_history').insert({
               profile_id: player.profileId,
               handicap: player.handicap,
               round_id: roundState.id,
             });
+          }
         }
+        pushStageOk(report, 'saveHandicapHistory');
+      } catch (e) {
+        // Not fatal to closing.
+        devError('Error saving handicap history:', e);
       }
 
       // Calculate and save sliding adjustments for logged-in player pairs
@@ -988,6 +1135,7 @@ export const useRoundManagement = ({
               devLog(`Sliding ${r.playerAProfileId.slice(0,8)} vs ${r.playerBProfileId.slice(0,8)}: ${r.strokesUsed} → ${r.strokesNext} (${desc})`);
             });
           }
+          pushStageOk(report, 'updateSliding');
         } catch (slidingError) {
           devError('Error calculating/saving sliding:', slidingError);
           // Don't fail the round closure for sliding errors
@@ -995,22 +1143,47 @@ export const useRoundManagement = ({
       }
 
       // Mark the round as completed ONLY at the very end.
-      const { error: roundCompleteError } = await supabase
-        .from('rounds')
-        .update({ status: 'completed' })
-        .eq('id', roundState.id);
+      try {
+        const { error: roundCompleteError } = await supabase
+          .from('rounds')
+          .update({ status: 'completed' })
+          .eq('id', roundState.id);
+        if (roundCompleteError) throw roundCompleteError;
+        pushStageOk(report, 'setRoundClosed');
+      } catch (e) {
+        await fail('setRoundClosed', e, report.attemptId);
+        toast.error('No se pudo marcar la ronda como cerrada');
+        return false;
+      }
 
-      if (roundCompleteError) throw roundCompleteError;
+      // Close attempt succeeded
+      try {
+        if (report.attemptId) {
+          await supabase.rpc('finish_round_close_attempt', {
+            p_attempt_id: report.attemptId,
+            p_status: 'succeeded',
+            p_error_stage: null,
+            p_error_message: null,
+            p_report: report as any,
+          });
+        }
+      } catch (e) {
+        devError('Failed to finish close attempt as succeeded:', e);
+      }
 
       setRoundState(prev => ({ ...prev, status: 'completed' }));
       toast.success('Tarjeta cerrada y guardada');
+      setLastCloseReport({ ...report });
       return true;
     } catch (error) {
-      devError('Error closing scorecard:', error);
+      // Unknown/unexpected stage
+      await fail('setRoundClosed', error, report.attemptId);
       toast.error('Error al cerrar la tarjeta');
       return false;
     } finally {
       setIsLoading(false);
+      setIsClosing(false);
+      closeInFlightRef.current = false;
     }
   }, [roundState.id, roundState.teeColor, roundState.startingHole, roundState.date, profile, scores, players, betConfig, roundPlayerIds, isValidBetType, isUuid, course]);
 
@@ -1261,6 +1434,8 @@ export const useRoundManagement = ({
     roundPlayerIds,
     setRoundPlayerIds,
     isLoading,
+    isClosing,
+    lastCloseReport,
     isRestoring,
     isRoundStarted,
     pendingRound,
@@ -1275,3 +1450,4 @@ export const useRoundManagement = ({
     copyShareLink,
   };
 };
+
