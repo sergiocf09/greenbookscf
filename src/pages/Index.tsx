@@ -1401,17 +1401,19 @@ const Index = () => {
             )}
           </div>
           
-          {/* Right: Friends + Profile Menu */}
+          {/* Right: Friends (only in setup) + Profile Menu */}
           <div className="flex items-center flex-shrink-0 gap-1">
-            {/* Friends Button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => setShowFriendsDialog(true)}
-            >
-              <Users className="h-5 w-5" />
-            </Button>
+            {/* Friends Button - only show in setup view */}
+            {view === 'setup' && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => setShowFriendsDialog(true)}
+              >
+                <Users className="h-5 w-5" />
+              </Button>
+            )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
