@@ -2193,7 +2193,26 @@ const Index = () => {
       />
 
       {/* Quick Score Entry Dialog */}
-      {quickScorePlayer && course && (
+      {quickScorePlayer && course && (() => {
+        // Calculate holes confirmed by OTHER players (excluding the quick score player)
+        const otherPlayers = players.filter(p => p.id !== quickScorePlayer.id);
+        const holesConfirmedByOthers = new Set<number>();
+        
+        if (otherPlayers.length > 0) {
+          for (let h = 1; h <= 18; h++) {
+            // A hole is "round confirmed" if at least one other player has confirmed it
+            const someOtherConfirmed = otherPlayers.some(p => {
+              const playerScores = scores.get(p.id) || [];
+              const holeScore = playerScores.find(s => s.holeNumber === h);
+              return holeScore?.confirmed === true;
+            });
+            if (someOtherConfirmed) {
+              holesConfirmedByOthers.add(h);
+            }
+          }
+        }
+        
+        return (
         <QuickScoreEntry
           open={Boolean(quickScorePlayer)}
           onOpenChange={(open) => !open && setQuickScorePlayer(null)}
@@ -2203,7 +2222,7 @@ const Index = () => {
           playerId={quickScorePlayer.id}
           course={course}
           currentScores={scores.get(quickScorePlayer.id) || []}
-          roundConfirmedHoles={confirmedHoles}
+          roundConfirmedHoles={holesConfirmedByOthers}
           onSaveScores={async (newScores) => {
             const playerId = quickScorePlayer.id;
             const rpId = roundPlayerIds.get(playerId);
@@ -2261,7 +2280,8 @@ const Index = () => {
             }
           }}
         />
-      )}
+        );
+      })()}
     </div>
   );
 };
