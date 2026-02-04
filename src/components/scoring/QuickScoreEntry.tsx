@@ -55,9 +55,12 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     return initial;
   });
 
+  // Track which holes the user actually modified in this session (dirty tracking)
+  const [dirtyHoles, setDirtyHoles] = useState<Set<number>>(new Set());
+
   const [saving, setSaving] = useState(false);
 
-  // Reset scores when dialog opens with new data
+  // Reset scores AND dirty state when dialog opens with new data
   React.useEffect(() => {
     if (open) {
       const initial: Record<number, { strokes: number | ''; putts: number | '' }> = {};
@@ -69,10 +72,14 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         };
       }
       setScores(initial);
+      setDirtyHoles(new Set()); // Reset dirty tracking on open
     }
   }, [open, currentScores]);
 
   const handleStrokesChange = useCallback((hole: number, value: string) => {
+    // Mark hole as dirty (user touched it)
+    setDirtyHoles(prev => new Set(prev).add(hole));
+    
     if (value === '') {
       setScores(prev => ({
         ...prev,
@@ -90,6 +97,9 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   }, []);
 
   const handlePuttsChange = useCallback((hole: number, value: string) => {
+    // Mark hole as dirty (user touched it)
+    setDirtyHoles(prev => new Set(prev).add(hole));
+    
     if (value === '') {
       setScores(prev => ({
         ...prev,
@@ -106,7 +116,19 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     }
   }, []);
 
-  // Count filled holes
+  // Count dirty holes with valid input (these are what will be saved)
+  const dirtyHolesWithInput = useMemo(() => {
+    let count = 0;
+    for (let h = 1; h <= 18; h++) {
+      if (dirtyHoles.has(h)) {
+        const s = scores[h]?.strokes;
+        if (typeof s === 'number' && s > 0) count++;
+      }
+    }
+    return count;
+  }, [scores, dirtyHoles]);
+
+  // Count all filled holes (for display purposes)
   const filledHoles = useMemo(() => {
     return Object.values(scores).filter(s => s.strokes !== '' && typeof s.strokes === 'number' && s.strokes > 0).length;
   }, [scores]);
@@ -131,14 +153,19 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   }, [scores]);
 
   const handleSave = async () => {
-    // Collect all scores that have strokes entered
+    // CRITICAL: Only save holes where the user actually made input (dirty holes)
+    // This prevents auto-confirming holes that weren't touched
     const scoresToSave: { holeNumber: number; strokes: number; putts: number }[] = [];
     
     for (let h = 1; h <= 18; h++) {
+      // Only process holes that were actually modified by the user
+      if (!dirtyHoles.has(h)) continue;
+      
       const entry = scores[h];
       const strokes = typeof entry.strokes === 'number' ? entry.strokes : 0;
       const putts = typeof entry.putts === 'number' ? entry.putts : 2;
       
+      // Only save if there's a valid strokes value
       if (strokes > 0) {
         scoresToSave.push({
           holeNumber: h,
@@ -156,7 +183,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     setSaving(true);
     try {
       await onSaveScores(scoresToSave);
-      toast.success(`${scoresToSave.length} hoyos guardados`);
+      toast.success(`${scoresToSave.length} hoyo${scoresToSave.length !== 1 ? 's' : ''} guardado${scoresToSave.length !== 1 ? 's' : ''} y confirmado${scoresToSave.length !== 1 ? 's' : ''}`);
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving quick scores:', error);
@@ -214,6 +241,14 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
             <span className="font-normal text-muted-foreground">{playerName}</span>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Visual legend for new players */}
+        {isNewPlayer && roundConfirmedHoles.size > 0 && (
+          <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md flex items-center gap-2">
+            <span className="w-4 h-4 rounded-full ring-2 ring-green-500 bg-white inline-block flex-shrink-0" />
+            <span>= Avance del grupo (referencia). Solo se confirmarán los hoyos donde captures scores.</span>
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* Front 9 */}
@@ -358,14 +393,24 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={saving || filledHoles === 0}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Guardando...' : `Guardar ${filledHoles} hoyo${filledHoles !== 1 ? 's' : ''}`}
-          </Button>
+        <DialogFooter className="gap-2 flex-col sm:flex-row">
+          <div className="text-xs text-muted-foreground flex-1">
+            {filledHoles > 0 && dirtyHolesWithInput === 0 && (
+              <span>Modifica al menos un hoyo para guardar</span>
+            )}
+            {dirtyHolesWithInput > 0 && (
+              <span>Se confirmarán {dirtyHolesWithInput} hoyo{dirtyHolesWithInput !== 1 ? 's' : ''} editado{dirtyHolesWithInput !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving || dirtyHolesWithInput === 0}>
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Guardando...' : `Guardar ${dirtyHolesWithInput} hoyo${dirtyHolesWithInput !== 1 ? 's' : ''}`}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
