@@ -5,18 +5,33 @@
  * cada jugador respecto a cada otro jugador de la ronda.
  * 
  * Esta es la ÚNICA fuente de verdad para hándicaps bilaterales.
+ * 
+ * Features:
+ * - Shows current strokes between players
+ * - Shows sliding suggestions from previous rounds (if available)
+ * - Allows manual override of strokes
  */
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Player, PlayerGroup } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Users, ArrowRight, ArrowLeft, Check, Minus, Plus, Save, RefreshCw } from 'lucide-react';
+import { Loader2, Users, ArrowRight, ArrowLeft, Minus, Plus, Save, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
+import { supabase } from '@/integrations/supabase/client';
+import { devLog, devError } from '@/lib/logger';
+import { Badge } from '@/components/ui/badge';
+
+interface SlidingSuggestion {
+  playerAProfileId: string;
+  playerBProfileId: string;
+  suggestedStrokes: number;
+  lastRoundId: string | null;
+}
 
 interface HandicapMatrixProps {
   players: Player[];
@@ -41,6 +56,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>(basePlayerId);
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
+  const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
 
   // Get all players including those in additional groups
   // Sorted so that logged-in player appears first
@@ -64,8 +80,115 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     });
   }, [players, playerGroups, basePlayerId]);
 
+  // Load sliding suggestions for logged-in player pairs
+  useEffect(() => {
+    const loadSlidingSuggestions = async () => {
+      // Get all logged-in players' profile IDs
+      const profileIds = allPlayers
+        .filter(p => p.profileId)
+        .map(p => p.profileId!);
+      
+      if (profileIds.length < 2) return;
+
+      try {
+        // Query sliding_current for all pairs where both players are in our list
+        const { data, error } = await supabase
+          .from('sliding_current')
+          .select('*')
+          .or(
+            profileIds.map(id => `player_a_profile_id.eq.${id}`).join(',')
+          );
+
+        if (error) {
+          devError('Error loading sliding suggestions:', error);
+          return;
+        }
+
+        // Filter to only include pairs where BOTH players are in our list
+        const profileIdSet = new Set(profileIds);
+        const filtered = (data || []).filter(entry =>
+          profileIdSet.has(entry.player_a_profile_id) &&
+          profileIdSet.has(entry.player_b_profile_id)
+        );
+
+        // Build suggestions map keyed by "profileA::profileB" (normalized)
+        const suggestionsMap = new Map<string, SlidingSuggestion>();
+        for (const entry of filtered) {
+          const key = `${entry.player_a_profile_id}::${entry.player_b_profile_id}`;
+          suggestionsMap.set(key, {
+            playerAProfileId: entry.player_a_profile_id,
+            playerBProfileId: entry.player_b_profile_id,
+            suggestedStrokes: entry.strokes_a_gives_b_current,
+            lastRoundId: entry.last_round_id,
+          });
+        }
+
+        setSlidingSuggestions(suggestionsMap);
+        devLog('Loaded sliding suggestions for', suggestionsMap.size, 'pairs');
+      } catch (err) {
+        devError('Exception loading sliding suggestions:', err);
+      }
+    };
+
+    loadSlidingSuggestions();
+  }, [allPlayers]);
+
+  // Get sliding suggestion for a specific rival (relative to selected player)
+  const getSlidingSuggestion = useCallback(
+    (rivalId: string): { strokes: number; hasSliding: boolean } => {
+      const selectedPlayerProfile = allPlayers.find(p => p.id === selectedPlayerId)?.profileId;
+      const rivalProfile = allPlayers.find(p => p.id === rivalId)?.profileId;
+
+      if (!selectedPlayerProfile || !rivalProfile) {
+        return { strokes: 0, hasSliding: false };
+      }
+
+      // Normalize the pair (smaller ID first)
+      const [normA, normB] = selectedPlayerProfile < rivalProfile
+        ? [selectedPlayerProfile, rivalProfile]
+        : [rivalProfile, selectedPlayerProfile];
+      
+      const key = `${normA}::${normB}`;
+      const suggestion = slidingSuggestions.get(key);
+
+      if (!suggestion) {
+        return { strokes: 0, hasSliding: false };
+      }
+
+      // If selected player is normA, strokes are direct
+      // If selected player is normB, we need to negate
+      const strokes = selectedPlayerProfile === normA 
+        ? suggestion.suggestedStrokes 
+        : -suggestion.suggestedStrokes;
+
+      return { strokes, hasSliding: true };
+    },
+    [selectedPlayerId, allPlayers, slidingSuggestions]
+  );
+
   const selectedPlayer = allPlayers.find((p) => p.id === selectedPlayerId);
   const rivals = allPlayers.filter((p) => p.id !== selectedPlayerId);
+
+  // Update pending changes locally
+  const updatePendingStrokes = useCallback(
+    (rivalId: string, strokes: number) => {
+      const key = `${selectedPlayerId}::${rivalId}`;
+      setPendingChanges((prev) => new Map(prev).set(key, strokes));
+    },
+    [selectedPlayerId]
+  );
+
+  // Apply sliding suggestion to a rival
+  const applySlidingSuggestion = useCallback(
+    (rivalId: string) => {
+      const { strokes, hasSliding } = getSlidingSuggestion(rivalId);
+      if (hasSliding) {
+        updatePendingStrokes(rivalId, strokes);
+        toast.success('Sugerencia de Sliding aplicada');
+      }
+    },
+    [getSlidingSuggestion, updatePendingStrokes]
+  );
 
   // Get the current strokes for a rival (from pending or saved)
   const getStrokesForRival = useCallback(
@@ -77,15 +200,6 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       return getStrokesForLocalPair(selectedPlayerId, rivalId);
     },
     [selectedPlayerId, pendingChanges, getStrokesForLocalPair]
-  );
-
-  // Update pending changes locally
-  const updatePendingStrokes = useCallback(
-    (rivalId: string, strokes: number) => {
-      const key = `${selectedPlayerId}::${rivalId}`;
-      setPendingChanges((prev) => new Map(prev).set(key, strokes));
-    },
-    [selectedPlayerId]
   );
 
   // Increment/decrement strokes
@@ -281,81 +395,109 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
               const hasChange = pendingChanges.has(key);
               const isGiving = strokes > 0;
               const isReceiving = strokes < 0;
+              
+              // Get sliding suggestion for this rival
+              const sliding = getSlidingSuggestion(rival.id);
+              const hasSliding = sliding.hasSliding;
+              const slidingDiffers = hasSliding && sliding.strokes !== strokes;
 
               return (
                 <div
                   key={rival.id}
                   className={cn(
-                    'flex items-center gap-3 p-3 rounded-lg border',
+                    'flex flex-col gap-2 p-3 rounded-lg border',
                     hasChange ? 'border-primary bg-primary/5' : 'border-border'
                   )}
                 >
-                  {/* Rival info */}
-                  <div className="flex items-center gap-2 min-w-[120px]">
-                    <PlayerAvatar
-                      initials={rival.initials}
-                      background={rival.color}
-                      size="sm"
-                      isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
-                    />
-                    <span className="text-sm font-medium truncate">{formatPlayerName(rival.name)}</span>
-                  </div>
-
-                  {/* Strokes control */}
-                  <div className="flex-1 flex items-center justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => adjustStrokes(rival.id, -1)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-
-                    <div className="flex items-center gap-1 min-w-[100px] justify-center">
-                      {isGiving && (
-                        <>
-                          <ArrowRight className="h-4 w-4 text-destructive" />
-                          <span className="text-destructive font-bold">Da {Math.abs(strokes)}</span>
-                        </>
-                      )}
-                      {isReceiving && (
-                        <>
-                          <ArrowLeft className="h-4 w-4 text-green-600" />
-                          <span className="text-green-600 font-bold">Recibe {Math.abs(strokes)}</span>
-                        </>
-                      )}
-                      {strokes === 0 && (
-                        <span className="text-muted-foreground">Scratch</span>
-                      )}
+                  <div className="flex items-center gap-3">
+                    {/* Rival info */}
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <PlayerAvatar
+                        initials={rival.initials}
+                        background={rival.color}
+                        size="sm"
+                        isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
+                      />
+                      <span className="text-sm font-medium truncate">{formatPlayerName(rival.name)}</span>
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => adjustStrokes(rival.id, 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    {/* Strokes control */}
+                    <div className="flex-1 flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => adjustStrokes(rival.id, -1)}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+
+                      <div className="flex items-center gap-1 min-w-[90px] justify-center">
+                        {isGiving && (
+                          <>
+                            <ArrowRight className="h-4 w-4 text-destructive" />
+                            <span className="text-destructive font-bold">Da {Math.abs(strokes)}</span>
+                          </>
+                        )}
+                        {isReceiving && (
+                          <>
+                            <ArrowLeft className="h-4 w-4 text-green-600" />
+                            <span className="text-green-600 font-bold">Recibe {Math.abs(strokes)}</span>
+                          </>
+                        )}
+                        {strokes === 0 && (
+                          <span className="text-muted-foreground">Scratch</span>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => adjustStrokes(rival.id, 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Quick input */}
+                    <Input
+                      type="number"
+                      value={strokes}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        updatePendingStrokes(rival.id, Math.max(-36, Math.min(36, val)));
+                      }}
+                      className="w-14 h-8 text-center text-sm"
+                      min={-36}
+                      max={36}
+                    />
+
+                    {hasChange && (
+                      <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                        <RefreshCw className="h-2.5 w-2.5 text-primary-foreground" />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Quick input */}
-                  <Input
-                    type="number"
-                    value={strokes}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value) || 0;
-                      updatePendingStrokes(rival.id, Math.max(-36, Math.min(36, val)));
-                    }}
-                    className="w-16 h-8 text-center text-sm"
-                    min={-36}
-                    max={36}
-                  />
-
-                  {hasChange && (
-                    <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                      <RefreshCw className="h-2.5 w-2.5 text-primary-foreground" />
+                  {/* Sliding suggestion row */}
+                  {hasSliding && slidingDiffers && (
+                    <div className="flex items-center justify-between pl-10 pr-2">
+                      <Badge 
+                        variant="outline" 
+                        className="gap-1 text-xs bg-amber-50 text-amber-700 border-amber-300"
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Sliding sugerido: {sliding.strokes > 0 ? `Da ${sliding.strokes}` : sliding.strokes < 0 ? `Recibe ${Math.abs(sliding.strokes)}` : 'Scratch'}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                        onClick={() => applySlidingSuggestion(rival.id)}
+                      >
+                        Aplicar
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -366,7 +508,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       )}
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <ArrowRight className="h-3 w-3 text-destructive" />
           <span>Da golpes (desventaja)</span>
@@ -375,6 +517,12 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
           <ArrowLeft className="h-3 w-3 text-green-600" />
           <span>Recibe golpes (ventaja)</span>
         </div>
+        {slidingSuggestions.size > 0 && (
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-amber-600" />
+            <span>Sugerencia de Sliding</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -759,6 +759,119 @@ export type Database = {
           },
         ]
       }
+      sliding_current: {
+        Row: {
+          id: string
+          last_round_id: string | null
+          last_updated_at: string
+          player_a_profile_id: string
+          player_b_profile_id: string
+          strokes_a_gives_b_current: number
+        }
+        Insert: {
+          id?: string
+          last_round_id?: string | null
+          last_updated_at?: string
+          player_a_profile_id: string
+          player_b_profile_id: string
+          strokes_a_gives_b_current?: number
+        }
+        Update: {
+          id?: string
+          last_round_id?: string | null
+          last_updated_at?: string
+          player_a_profile_id?: string
+          player_b_profile_id?: string
+          strokes_a_gives_b_current?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sliding_current_last_round_id_fkey"
+            columns: ["last_round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sliding_current_player_a_profile_id_fkey"
+            columns: ["player_a_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sliding_current_player_b_profile_id_fkey"
+            columns: ["player_b_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sliding_history: {
+        Row: {
+          back_main_winner: string
+          carry_front_main: boolean
+          created_at: string
+          front_main_winner: string
+          id: string
+          match_total_winner: string
+          player_a_profile_id: string
+          player_b_profile_id: string
+          round_id: string
+          strokes_a_gives_b_next: number
+          strokes_a_gives_b_used: number
+        }
+        Insert: {
+          back_main_winner: string
+          carry_front_main?: boolean
+          created_at?: string
+          front_main_winner: string
+          id?: string
+          match_total_winner: string
+          player_a_profile_id: string
+          player_b_profile_id: string
+          round_id: string
+          strokes_a_gives_b_next?: number
+          strokes_a_gives_b_used?: number
+        }
+        Update: {
+          back_main_winner?: string
+          carry_front_main?: boolean
+          created_at?: string
+          front_main_winner?: string
+          id?: string
+          match_total_winner?: string
+          player_a_profile_id?: string
+          player_b_profile_id?: string
+          round_id?: string
+          strokes_a_gives_b_next?: number
+          strokes_a_gives_b_used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sliding_history_player_a_profile_id_fkey"
+            columns: ["player_a_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sliding_history_player_b_profile_id_fkey"
+            columns: ["player_b_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sliding_history_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_bets: {
         Row: {
           amount: number
