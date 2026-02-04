@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
+import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 
 type HoleScores = Record<number, number | ''>;
 
@@ -25,6 +26,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   roundId: string;
   onAddGuest: (payload: AddGuestPayload) => Promise<void>;
+  onAddFromFriends?: (players: Array<{
+    profileId: string;
+    name: string;
+    initials: string;
+    color: string;
+    handicap: number;
+  }>) => void;
+  existingPlayerIds?: string[];
   currentPlayerCount?: number;
   maxPlayersRecommended?: number;
 }
@@ -34,10 +43,13 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   onOpenChange,
   roundId,
   onAddGuest,
+  onAddFromFriends,
+  existingPlayerIds = [],
   currentPlayerCount = 0,
   maxPlayersRecommended = 6,
 }) => {
-  const [tab, setTab] = useState<'guest' | 'invite'>('guest');
+  const [tab, setTab] = useState<'guest' | 'friends' | 'invite'>('guest');
+  const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3B82F6');
   const [handicap, setHandicap] = useState<number | ''>('');
@@ -120,9 +132,13 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-          <TabsList className="grid grid-cols-2 w-full">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="guest">Invitado</TabsTrigger>
-            <TabsTrigger value="invite">Usuario (link)</TabsTrigger>
+            <TabsTrigger value="friends">
+              <Users className="h-3.5 w-3.5 mr-1" />
+              Amigos
+            </TabsTrigger>
+            <TabsTrigger value="invite">Link</TabsTrigger>
           </TabsList>
 
           <TabsContent value="guest" className="mt-4 space-y-4">
@@ -196,6 +212,22 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
             </div>
           </TabsContent>
 
+          <TabsContent value="friends" className="mt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Selecciona jugadores de tu lista de amigos para agregarlos a la ronda.
+            </p>
+            <Button 
+              onClick={() => setShowFriendsDialog(true)} 
+              className="w-full"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Abrir Lista de Amigos
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Los jugadores agregados competirán en los 18 hoyos. Podrás capturar sus scores parcialmente.
+            </p>
+          </TabsContent>
+
           <TabsContent value="invite" className="mt-4 space-y-3">
             <p className="text-sm text-muted-foreground">
               Para agregar un usuario registrado, compártele este link para que se una a la ronda.
@@ -214,6 +246,21 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Friends Dialog */}
+        <AddFromFriendsDialog
+          open={showFriendsDialog}
+          onOpenChange={setShowFriendsDialog}
+          onAddPlayers={(players) => {
+            if (onAddFromFriends) {
+              onAddFromFriends(players);
+              setShowFriendsDialog(false);
+              onOpenChange(false);
+            }
+          }}
+          existingPlayerIds={existingPlayerIds}
+          multiSelect={true}
+        />
       </DialogContent>
     </Dialog>
   );
