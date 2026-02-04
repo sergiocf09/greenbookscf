@@ -10,6 +10,7 @@ import { BetDashboard } from '@/components/bets/BetDashboard';
 import { RoundHistory } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
+import { HistoricalBalances } from '@/components/HistoricalBalances';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
@@ -37,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -85,6 +86,7 @@ const Index = () => {
     scoresRef.current = scores;
   }, [scores]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showBalancesDialog, setShowBalancesDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -1233,6 +1235,10 @@ const Index = () => {
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowBalancesDialog(true)}>
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Balances Históricos
+                </DropdownMenuItem>
                 {pendingRounds && pendingRounds.length > 0 && (
                   <DropdownMenuItem onClick={() => setShowPendingRoundDialog(true)}>
                     <Play className="h-4 w-4 mr-2 text-destructive" />
@@ -1772,6 +1778,18 @@ const Index = () => {
               onClose={() => setShowShareDialog(false)} 
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Historical Balances Dialog */}
+      <Dialog open={showBalancesDialog} onOpenChange={setShowBalancesDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Balances Históricos</DialogTitle>
+          </DialogHeader>
+          <HistoricalBalances 
+            onClose={() => setShowBalancesDialog(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

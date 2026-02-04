@@ -11,6 +11,8 @@ import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { devError, devLog } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
+import { generateRoundSnapshot } from '@/lib/roundSnapshot';
+import { BetSummary } from '@/lib/betCalculations';
 
 interface RoundState {
   id: string | null;
@@ -751,8 +753,9 @@ export const useRoundManagement = ({
   }, [roundState.id, course, players, setScores]);
 
   // Close the scorecard (complete the round)
-  const closeScorecard = useCallback(async (allBetResults: any[]) => {
-    if (!roundState.id || !profile) return false;
+  // allBetResults should be the full BetSummary[] array from calculateAllBets
+  const closeScorecard = useCallback(async (allBetResults: BetSummary[]) => {
+    if (!roundState.id || !profile || !course) return false;
 
     setIsLoading(true);
     try {
@@ -782,7 +785,7 @@ export const useRoundManagement = ({
             strokes_received: score.strokesReceived,
             net_score: score.netScore,
             oyes_proximity: score.oyesProximity,
-              oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
+            oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
             confirmed: true,
           });
         });
@@ -800,20 +803,21 @@ export const useRoundManagement = ({
         if (scoresError) throw scoresError;
       }
 
-      // Save ledger transactions for bet results
+      // Save ledger transactions for bet results (only for registered players)
       const ledgerRecords: any[] = [];
       allBetResults.forEach(result => {
-        if (result.amount !== 0 && result.fromPlayerId && result.toPlayerId) {
-          // Get profile IDs from players
-          const fromPlayer = players.find(p => p.id === result.fromPlayerId);
-          const toPlayer = players.find(p => p.id === result.toPlayerId);
+        if (result.amount > 0) {
+          // Get players - winner is playerId, loser is vsPlayer
+          const winner = players.find(p => p.id === result.playerId);
+          const loser = players.find(p => p.id === result.vsPlayer);
           
-          if (fromPlayer?.profileId && toPlayer?.profileId) {
+          // Only create ledger entries for registered players (with profileId)
+          if (winner?.profileId && loser?.profileId) {
             const betType = isValidBetType(result.betType) ? result.betType : 'medal_total';
             ledgerRecords.push({
-              from_profile_id: fromPlayer.profileId,
-              to_profile_id: toPlayer.profileId,
-              amount: Math.abs(result.amount),
+              from_profile_id: loser.profileId,
+              to_profile_id: winner.profileId,
+              amount: result.amount,
               bet_type: betType,
               segment: result.segment || 'total',
               hole_number: result.holeNumber || null,
@@ -832,9 +836,107 @@ export const useRoundManagement = ({
         if (ledgerError) throw ledgerError;
       }
 
-      // NOTE: Player vs Player (PvP) records are now updated server-side
+      // Generate and save the round snapshot for historical view
+      // This snapshot is immutable and will be used for all future historical views
+      const snapshot = generateRoundSnapshot(
+        roundState.id,
+        course,
+        players,
+        scores,
+        betConfig,
+        allBetResults,
+        roundState.teeColor,
+        roundState.startingHole,
+        roundState.date.toISOString().split('T')[0]
+      );
+
+      const { error: snapshotError } = await supabase
+        .from('round_snapshots')
+        .upsert({
+          round_id: roundState.id,
+          snapshot_json: snapshot as any,
+          snapshot_version: 1,
+          closed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'round_id',
+          ignoreDuplicates: false,
+        });
+
+      if (snapshotError) {
+        devError('Error saving round snapshot:', snapshotError);
+        // Don't fail the whole operation - the ledger transactions are still saved
+      }
+
+      // Update player_vs_player for guests as well
+      // We need to update the PvP records to include guest names
+      for (const result of allBetResults) {
+        if (result.amount > 0) {
+          const winner = players.find(p => p.id === result.playerId);
+          const loser = players.find(p => p.id === result.vsPlayer);
+          
+          if (winner && loser) {
+            const winnerIsGuest = !winner.profileId;
+            const loserIsGuest = !loser.profileId;
+            
+            // If at least one is a guest, we need to track in player_vs_player
+            if (winnerIsGuest || loserIsGuest) {
+              // Determine player A and B (normalized order)
+              const [playerA, playerB] = winner.id < loser.id ? [winner, loser] : [loser, winner];
+              const winnerIsA = playerA.id === winner.id;
+              
+              // Check if record exists
+              const { data: existing } = await supabase
+                .from('player_vs_player')
+                .select('*')
+                .or(
+                  playerA.profileId 
+                    ? `player_a_id.eq.${playerA.profileId}` 
+                    : `player_a_name.eq.${playerA.name},player_a_is_guest.eq.true`
+                )
+                .or(
+                  playerB.profileId 
+                    ? `player_b_id.eq.${playerB.profileId}` 
+                    : `player_b_name.eq.${playerB.name},player_b_is_guest.eq.true`
+                )
+                .maybeSingle();
+
+              if (existing) {
+                // Update existing record
+                await supabase
+                  .from('player_vs_player')
+                  .update({
+                    rounds_played: existing.rounds_played + 1,
+                    total_won_by_a: existing.total_won_by_a + (winnerIsA ? result.amount : 0),
+                    total_won_by_b: existing.total_won_by_b + (winnerIsA ? 0 : result.amount),
+                    last_played_at: new Date().toISOString(),
+                    last_round_id: roundState.id,
+                  })
+                  .eq('id', existing.id);
+              } else {
+                // Create new record
+                await supabase
+                  .from('player_vs_player')
+                  .insert({
+                    player_a_id: playerA.profileId || null,
+                    player_a_name: playerA.profileId ? null : playerA.name,
+                    player_a_is_guest: !playerA.profileId,
+                    player_b_id: playerB.profileId || null,
+                    player_b_name: playerB.profileId ? null : playerB.name,
+                    player_b_is_guest: !playerB.profileId,
+                    total_won_by_a: winnerIsA ? result.amount : 0,
+                    total_won_by_b: winnerIsA ? 0 : result.amount,
+                    rounds_played: 1,
+                    last_played_at: new Date().toISOString(),
+                    last_round_id: roundState.id,
+                  });
+              }
+            }
+          }
+        }
+      }
+
+      // NOTE: Player vs Player (PvP) records for registered players are updated server-side
       // within the finalize_round_bets RPC function for security.
-      // This prevents client-side manipulation of head-to-head statistics.
 
       // Update handicap history for all players with profiles
       for (const player of players) {
@@ -859,7 +961,7 @@ export const useRoundManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [roundState.id, profile, scores, players, betConfig, roundPlayerIds, isValidBetType]);
+  }, [roundState.id, roundState.teeColor, roundState.startingHole, roundState.date, profile, scores, players, betConfig, roundPlayerIds, isValidBetType, course]);
 
   // Add a player to an active round (creates round_player entry in DB)
   const addPlayerToRound = useCallback(async (player: Player, targetGroupId?: string | null): Promise<boolean> => {
