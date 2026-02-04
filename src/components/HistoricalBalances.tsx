@@ -56,10 +56,10 @@ interface HistoricalBalancesProps {
   onClose?: () => void;
 }
 
-export const HistoricalBalances: React.FC<HistoricalBalancesProps> = ({ 
+export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBalancesProps>(({ 
   onViewRound,
   onClose 
-}) => {
+}, ref) => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rivals, setRivals] = useState<RivalBalance[]>([]);
@@ -443,4 +443,6 @@ export const HistoricalBalances: React.FC<HistoricalBalancesProps> = ({
       </div>
     </div>
   );
-};
+});
+
+HistoricalBalances.displayName = 'HistoricalBalances';

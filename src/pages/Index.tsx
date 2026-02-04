@@ -79,6 +79,7 @@ const Index = () => {
   const [currentHole, setCurrentHole] = useState(1);
   const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
   const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
+  const [currentBetSummaries, setCurrentBetSummaries] = useState<any[]>([]);
 
   // Keep an always-fresh reference to scores to avoid stale closures when persisting confirmations.
   const scoresRef = useRef<Map<string, PlayerScore[]>>(new Map());
@@ -1713,6 +1714,7 @@ const Index = () => {
               basePlayerId={profile?.id}
               confirmedHoles={confirmedHoles}
               onBetConfigChange={setBetConfig}
+              onBetSummariesChange={setCurrentBetSummaries}
               startingHole={startingHole}
               playerGroups={playerGroups}
               getStrokesForLocalPair={getStrokesForLocalPair}
@@ -1724,9 +1726,7 @@ const Index = () => {
               <Button 
                 variant="destructive"
                 onClick={async () => {
-                  // TODO: Collect all bet results from BetDashboard
-                  const allBetResults: any[] = [];
-                  const success = await closeScorecard(allBetResults);
+                  const success = await closeScorecard(currentBetSummaries);
                   if (success) {
                     toast.success('Tarjeta cerrada exitosamente');
                   }
