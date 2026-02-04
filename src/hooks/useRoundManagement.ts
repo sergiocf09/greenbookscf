@@ -236,6 +236,11 @@ export const useRoundManagement = ({
     []
   );
 
+  const isUuid = useCallback((value: unknown): value is string => {
+    if (typeof value !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }, []);
+
   // Restore active round on mount
   useEffect(() => {
     if (!profile || hasRestoredRef.current) return;
@@ -765,6 +770,19 @@ export const useRoundManagement = ({
 
     setIsLoading(true);
     try {
+      // Guardrail: if any player has a malformed profileId (e.g. a shortened code like "01f284d7"),
+      // treat them as a guest for persistence purposes so backend UUID casts don't fail.
+      const sanitizedPlayers = players.map((p) => {
+        if (!p.profileId) return p;
+        if (isUuid(p.profileId)) return p;
+        devError('Malformed profileId detected; treating as guest for closeScorecard:', {
+          playerId: p.id,
+          profileId: p.profileId,
+          name: p.name,
+        });
+        return { ...p, profileId: undefined };
+      });
+
       // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
       // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
       const { error: betConfigError } = await supabase
@@ -812,11 +830,11 @@ export const useRoundManagement = ({
       allBetResults.forEach(result => {
         if (result.amount > 0) {
           // Get players - winner is playerId, loser is vsPlayer
-          const winner = players.find(p => p.id === result.playerId);
-          const loser = players.find(p => p.id === result.vsPlayer);
+          const winner = sanitizedPlayers.find(p => p.id === result.playerId);
+          const loser = sanitizedPlayers.find(p => p.id === result.vsPlayer);
           
           // Only create ledger entries for registered players (with profileId)
-          if (winner?.profileId && loser?.profileId) {
+          if (winner?.profileId && loser?.profileId && isUuid(winner.profileId) && isUuid(loser.profileId)) {
             const betType = isValidBetType(result.betType) ? result.betType : 'medal_total';
             ledgerRecords.push({
               from_profile_id: loser.profileId,
@@ -845,7 +863,7 @@ export const useRoundManagement = ({
       const snapshot = generateRoundSnapshot(
         roundState.id,
         course,
-        players,
+        sanitizedPlayers,
         scores,
         betConfig,
         allBetResults,
@@ -889,8 +907,8 @@ export const useRoundManagement = ({
       // within the finalize_round_bets RPC function for security.
 
       // Update handicap history for all players with profiles
-      for (const player of players) {
-        if (player.profileId) {
+      for (const player of sanitizedPlayers) {
+        if (player.profileId && isUuid(player.profileId)) {
           await supabase
             .from('handicap_history')
             .insert({
@@ -906,7 +924,7 @@ export const useRoundManagement = ({
       if (getStrokesForPair && betConfig.pressures?.enabled) {
         try {
           const slidingResults = calculateSlidingResults(
-            players,
+            sanitizedPlayers,
             scores,
             betConfig,
             course,
@@ -994,7 +1012,7 @@ export const useRoundManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [roundState.id, roundState.teeColor, roundState.startingHole, roundState.date, profile, scores, players, betConfig, roundPlayerIds, isValidBetType, course]);
+  }, [roundState.id, roundState.teeColor, roundState.startingHole, roundState.date, profile, scores, players, betConfig, roundPlayerIds, isValidBetType, isUuid, course]);
 
   // Add a player to an active round (creates round_player entry in DB)
   const addPlayerToRound = useCallback(async (player: Player, targetGroupId?: string | null): Promise<boolean> => {
