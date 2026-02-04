@@ -577,6 +577,53 @@ const Index = () => {
     setScores(initialScores);
   }, [course, players, initializePlayerScores]);
 
+  // Handle global tee color change - propagate to all players without explicit tee
+  const handleTeeColorChange = useCallback((newTeeColor: 'blue' | 'white' | 'yellow' | 'red') => {
+    setTeeColor(newTeeColor);
+    
+    // Update all players that don't have an explicit tee set (or have the old default)
+    // When round is active, also persist to database
+    const updatedPlayers = players.map(p => ({
+      ...p,
+      teeColor: p.teeColor === teeColor || !p.teeColor ? newTeeColor : p.teeColor,
+    }));
+    
+    setPlayers(updatedPlayers);
+    
+    // Persist tee changes to database if round exists
+    if (roundState.id) {
+      for (const player of updatedPlayers) {
+        const originalPlayer = players.find(p => p.id === player.id);
+        // Only update if tee actually changed
+        if (originalPlayer && originalPlayer.teeColor !== player.teeColor) {
+          const rpId = roundPlayerIds.get(player.id);
+          if (rpId) {
+            supabase
+              .from('round_players')
+              .update({ tee_color: player.teeColor })
+              .eq('id', rpId)
+              .then(({ error }) => {
+                if (error) {
+                  devError('Error persisting tee color change:', error);
+                }
+              });
+          }
+        }
+      }
+    }
+    
+    // Also update player groups
+    if (playerGroups.length > 0) {
+      setPlayerGroups(prevGroups => prevGroups.map(group => ({
+        ...group,
+        players: group.players.map(p => ({
+          ...p,
+          teeColor: p.teeColor === teeColor || !p.teeColor ? newTeeColor : p.teeColor,
+        })),
+      })));
+    }
+  }, [teeColor, players, setPlayers, roundState.id, roundPlayerIds, playerGroups, setPlayerGroups]);
+
   // Handle player removal - delete from database for persistence
   const handleRemovePlayer = useCallback(async (playerId: string) => {
     const rpId = roundPlayerIds.get(playerId);
@@ -1458,7 +1505,7 @@ const Index = () => {
               selectedCourseId={selectedCourseId} 
               onChange={setSelectedCourseId}
               teeColor={teeColor}
-              onTeeColorChange={setTeeColor}
+              onTeeColorChange={handleTeeColorChange}
               startingHole={startingHole}
               onStartingHoleChange={setStartingHole}
               enabled={enableCourseCatalog}

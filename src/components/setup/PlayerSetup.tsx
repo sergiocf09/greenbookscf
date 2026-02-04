@@ -141,6 +141,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       initials,
       color: playerColors[players.length % playerColors.length],
       handicap: 0, // Default to 0, user can optionally load USGA handicap
+      teeColor: defaultTeeColor, // Inherit round's default tee color
     };
 
     onChange([...players, newPlayer]);

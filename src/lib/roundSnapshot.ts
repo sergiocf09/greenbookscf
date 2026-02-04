@@ -25,6 +25,7 @@ export interface SnapshotPlayer {
   handicap: number;
   profileId?: string | null;
   isGuest: boolean;
+  teeColor?: string;
 }
 
 // Structure of a score in the snapshot
@@ -119,6 +120,7 @@ export function generateRoundSnapshot(
     handicap: p.handicap,
     profileId: p.profileId || null,
     isGuest: !p.profileId,
+    teeColor: p.teeColor,
   }));
 
   // Build scores snapshot

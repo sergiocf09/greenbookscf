@@ -987,8 +987,9 @@ export const useRoundManagement = ({
             round_id: roundState.id,
             group_id: groupId,
             profile_id: player.profileId,
-            handicap_for_round: 0,
+            handicap_for_round: player.handicap || 0,
             is_organizer: false,
+            tee_color: player.teeColor || roundState.teeColor || 'white',
           })
           .select('id')
           .single();
@@ -1026,11 +1027,12 @@ export const useRoundManagement = ({
             round_id: roundState.id,
             group_id: groupId,
             profile_id: null,
-            handicap_for_round: 0,
+            handicap_for_round: player.handicap || 0,
             is_organizer: false,
             guest_name: safeName,
             guest_initials: safeInitials,
             guest_color: guestColor,
+            tee_color: player.teeColor || roundState.teeColor || 'white',
           })
           .select('id')
           .single();
