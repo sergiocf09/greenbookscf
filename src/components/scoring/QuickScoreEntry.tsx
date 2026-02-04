@@ -25,6 +25,8 @@ interface QuickScoreEntryProps {
   playerId: string;
   course: GolfCourse;
   currentScores: PlayerScore[];
+  /** Holes confirmed at round level (by any other player) */
+  roundConfirmedHoles?: Set<number>;
   onSaveScores: (scores: { holeNumber: number; strokes: number; putts: number }[]) => Promise<void>;
 }
 
@@ -37,6 +39,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   playerId,
   course,
   currentScores,
+  roundConfirmedHoles = new Set(),
   onSaveScores,
 }) => {
   // Initialize state from current scores
@@ -166,8 +169,18 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   // Get par for display
   const getPar = (hole: number) => course.holes[hole - 1]?.par || 4;
 
-  // Check if hole is confirmed
-  const isHoleConfirmed = (hole: number) => {
+  // Check if player is "new" (has no confirmed holes of their own)
+  const isNewPlayer = useMemo(() => {
+    return !currentScores.some(s => s.confirmed === true);
+  }, [currentScores]);
+
+  // Check if hole should show green circle
+  // For new players: show green if confirmed by round (other players)
+  // For existing players: show green if confirmed by this player
+  const isHoleHighlighted = (hole: number) => {
+    if (isNewPlayer) {
+      return roundConfirmedHoles.has(hole);
+    }
     const existing = currentScores.find(s => s.holeNumber === hole);
     return existing?.confirmed === true;
   };
@@ -214,7 +227,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                   <div key={h} className="flex items-center justify-center">
                     <span className={cn(
                       "w-6 h-6 flex items-center justify-center rounded-full font-semibold",
-                      isHoleConfirmed(h) && "ring-2 ring-green-500 bg-white"
+                      isHoleHighlighted(h) && "ring-2 ring-green-500 bg-white"
                     )}>{h}</span>
                   </div>
                 ))}
@@ -277,7 +290,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                   <div key={h} className="flex items-center justify-center">
                     <span className={cn(
                       "w-6 h-6 flex items-center justify-center rounded-full font-semibold",
-                      isHoleConfirmed(h) && "ring-2 ring-green-500 bg-white"
+                      isHoleHighlighted(h) && "ring-2 ring-green-500 bg-white"
                     )}>{h}</span>
                   </div>
                 ))}
