@@ -60,7 +60,10 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
 
   const [saving, setSaving] = useState(false);
 
-  // Reset scores AND dirty state when dialog opens with new data
+  // Keep track of initial values to detect changes, stored as a ref to avoid re-renders
+  const initialScoresRef = React.useRef<Record<number, { strokes: number | ''; putts: number | '' }>>({});
+  
+  // Reset scores AND dirty state ONLY when dialog opens (not on currentScores changes while open)
   React.useEffect(() => {
     if (open) {
       const initial: Record<number, { strokes: number | ''; putts: number | '' }> = {};
@@ -72,12 +75,14 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         };
       }
       setScores(initial);
+      initialScoresRef.current = JSON.parse(JSON.stringify(initial)); // Deep copy
       setDirtyHoles(new Set()); // Reset dirty tracking on open
     }
-  }, [open, currentScores]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]); // Intentionally only depends on 'open' to prevent reset while dialog is open
 
   const handleStrokesChange = useCallback((hole: number, value: string) => {
-    // Mark hole as dirty (user touched it)
+    // Always mark as dirty when user interacts - we'll validate against initial on save
     setDirtyHoles(prev => new Set(prev).add(hole));
     
     if (value === '') {
@@ -85,19 +90,19 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         ...prev,
         [hole]: { ...prev[hole], strokes: '' },
       }));
-      return;
-    }
-    const num = parseInt(value, 10);
-    if (Number.isFinite(num) && num >= 0) {
-      setScores(prev => ({
-        ...prev,
-        [hole]: { ...prev[hole], strokes: num },
-      }));
+    } else {
+      const num = parseInt(value, 10);
+      if (Number.isFinite(num) && num >= 0) {
+        setScores(prev => ({
+          ...prev,
+          [hole]: { ...prev[hole], strokes: num },
+        }));
+      }
     }
   }, []);
 
   const handlePuttsChange = useCallback((hole: number, value: string) => {
-    // Mark hole as dirty (user touched it)
+    // Always mark as dirty when user interacts
     setDirtyHoles(prev => new Set(prev).add(hole));
     
     if (value === '') {
@@ -105,28 +110,47 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         ...prev,
         [hole]: { ...prev[hole], putts: '' },
       }));
-      return;
-    }
-    const num = parseInt(value, 10);
-    if (Number.isFinite(num) && num >= 0) {
-      setScores(prev => ({
-        ...prev,
-        [hole]: { ...prev[hole], putts: num },
-      }));
+    } else {
+      const num = parseInt(value, 10);
+      if (Number.isFinite(num) && num >= 0) {
+        setScores(prev => ({
+          ...prev,
+          [hole]: { ...prev[hole], putts: num },
+        }));
+      }
     }
   }, []);
 
-  // Count dirty holes with valid input (these are what will be saved)
+  // Helper function to check if a hole has actually changed from initial
+  const hasHoleChanged = useCallback((hole: number): boolean => {
+    if (!dirtyHoles.has(hole)) return false;
+    
+    const current = scores[hole];
+    const initial = initialScoresRef.current[hole];
+    
+    const currentStrokes = current?.strokes;
+    const initialStrokes = initial?.strokes;
+    const currentPutts = current?.putts;
+    const initialPutts = initial?.putts;
+    
+    // Compare strokes: both empty counts as no change
+    const strokesChanged = currentStrokes !== initialStrokes;
+    const puttsChanged = currentPutts !== initialPutts;
+    
+    return strokesChanged || puttsChanged;
+  }, [scores, dirtyHoles]);
+
+  // Count holes that have actually changed and have valid input
   const dirtyHolesWithInput = useMemo(() => {
     let count = 0;
     for (let h = 1; h <= 18; h++) {
-      if (dirtyHoles.has(h)) {
+      if (hasHoleChanged(h)) {
         const s = scores[h]?.strokes;
         if (typeof s === 'number' && s > 0) count++;
       }
     }
     return count;
-  }, [scores, dirtyHoles]);
+  }, [scores, hasHoleChanged]);
 
   // Count all filled holes (for display purposes)
   const filledHoles = useMemo(() => {
@@ -153,13 +177,13 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   }, [scores]);
 
   const handleSave = async () => {
-    // CRITICAL: Only save holes where the user actually made input (dirty holes)
-    // This prevents auto-confirming holes that weren't touched
+    // CRITICAL: Only save holes where the user actually changed the value from initial
+    // This prevents auto-confirming holes that weren't modified
     const scoresToSave: { holeNumber: number; strokes: number; putts: number }[] = [];
     
     for (let h = 1; h <= 18; h++) {
       // Only process holes that were actually modified by the user
-      if (!dirtyHoles.has(h)) continue;
+      if (!hasHoleChanged(h)) continue;
       
       const entry = scores[h];
       const strokes = typeof entry.strokes === 'number' ? entry.strokes : 0;
