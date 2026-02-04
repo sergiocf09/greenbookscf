@@ -3150,6 +3150,52 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
+    // Zoológico - Show enabled animals with amounts for this pair
+    if (betConfig.zoologico?.enabled) {
+      const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+      const valuePerOccurrence = betConfig.zoologico.valuePerOccurrence || 10;
+      
+      // Calculate totals from zoo summaries for each animal
+      // Note: betType uses singular labels ("Zoológico Camello", etc.)
+      const animalLabels: Record<string, string> = {
+        camello: 'Zoológico Camello',
+        pez: 'Zoológico Pez',
+        gorila: 'Zoológico Gorila',
+      };
+      
+      const zooTotal = enabledAnimals.reduce((sum, animal) => {
+        return sum + (groupedSummaries[animalLabels[animal]]?.total || 0);
+      }, 0);
+      
+      // Build segments for each enabled animal in order: Camellos, Peces, Gorilas (display plural)
+      const orderedAnimals: Array<'camello' | 'pez' | 'gorila'> = ['camello', 'pez', 'gorila'];
+      const segments = orderedAnimals
+        .filter(a => enabledAnimals.includes(a))
+        .map(animal => ({
+          label: animal === 'camello' ? '🐪 Camellos' : animal === 'pez' ? '🐟 Peces' : '🦍 Gorilas',
+          key: `zoo_${animal}`,
+        }));
+      
+      groups.push({
+        key: 'zoologico',
+        label: 'Zoológico 🐾',
+        configKey: 'zoologico',
+        segments,
+        getTotal: () => zooTotal,
+        getSegmentData: (segmentKey) => {
+          const animal = segmentKey.replace('zoo_', '') as 'camello' | 'pez' | 'gorila';
+          const summaryKey = animalLabels[animal];
+          const summary = groupedSummaries[summaryKey];
+          return {
+            playerNet: 0,
+            rivalNet: 0,
+            amount: summary?.total || 0,
+            description: `$${valuePerOccurrence}/incidencia`,
+          };
+        },
+      });
+    }
+    
     // Rayas (Aggregator bet)
     // IMPORTANT: Check if Rayas is active for this pair (respects bilateral overrides from RayasConfig)
     if (effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {

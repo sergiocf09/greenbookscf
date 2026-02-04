@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ZooEvent, ZooAnimalType, ZOO_ANIMALS, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -12,9 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, X, Trash2, Edit2, Minus, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface ZoologicoDialogProps {
   players: Player[];
@@ -35,69 +33,82 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
   enabledAnimals,
   valuePerOccurrence,
   onAddEvent,
-  onUpdateEvent,
   onDeleteEvent,
   trigger,
-  basePlayerId,
   currentHole,
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState<ZooAnimalType | null>(null);
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
-  const [count, setCount] = useState(1);
-  const [editingEvent, setEditingEvent] = useState<ZooEvent | null>(null);
+  // Support multiple player selection with counts
+  const [selectedPlayers, setSelectedPlayers] = useState<Map<string, number>>(new Map());
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
   const resetForm = () => {
     setSelectedAnimal(null);
-    setSelectedPlayer(null);
-    setCount(1);
-    setEditingEvent(null);
+    setSelectedPlayers(new Map());
+    setEditingEventId(null);
+  };
+
+  const togglePlayer = (playerId: string) => {
+    setSelectedPlayers(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(playerId)) {
+        newMap.delete(playerId);
+      } else {
+        newMap.set(playerId, 1);
+      }
+      return newMap;
+    });
+  };
+
+  const updatePlayerCount = (playerId: string, delta: number) => {
+    setSelectedPlayers(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(playerId) || 1;
+      const newCount = Math.max(1, current + delta);
+      newMap.set(playerId, newCount);
+      return newMap;
+    });
   };
 
   const handleSubmit = () => {
-    if (!selectedAnimal || !selectedPlayer || count <= 0) return;
+    if (!selectedAnimal || selectedPlayers.size === 0) return;
 
-    if (editingEvent) {
-      onUpdateEvent({
-        ...editingEvent,
-        animalType: selectedAnimal,
-        playerId: selectedPlayer,
-        count,
-      });
-    } else {
+    // Create an event for each selected player with their count
+    selectedPlayers.forEach((count, playerId) => {
       const newEvent: ZooEvent = {
-        id: `zoo-${Date.now()}`,
+        id: `zoo-${Date.now()}-${playerId}`,
         animalType: selectedAnimal,
-        playerId: selectedPlayer,
+        playerId,
         holeNumber: currentHole || 1,
         count,
         createdAt: new Date().toISOString(),
       };
       onAddEvent(newEvent);
-    }
+    });
     
     resetForm();
-  };
-
-  const handleEdit = (event: ZooEvent) => {
-    setEditingEvent(event);
-    setSelectedAnimal(event.animalType);
-    setSelectedPlayer(event.playerId);
-    setCount(event.count);
   };
 
   const handleDelete = (eventId: string) => {
     onDeleteEvent(eventId);
   };
 
-  const canSubmit = selectedAnimal && selectedPlayer && count > 0;
+  const canSubmit = selectedAnimal && selectedPlayers.size > 0;
 
   const getPlayerName = (id: string) => {
     const player = players.find(p => p.id === id);
     return player?.name.split(' ')[0] || 'Desconocido';
   };
 
-  const getPlayer = (id: string) => players.find(p => p.id === id);
+  // Calculate total cost for display
+  const totalCost = useMemo(() => {
+    let total = 0;
+    selectedPlayers.forEach((count) => {
+      total += count * valuePerOccurrence;
+    });
+    return total;
+  }, [selectedPlayers, valuePerOccurrence]);
 
   // Sort events by hole number, then by creation time
   const sortedEvents = useMemo(() => {
@@ -116,14 +127,14 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-1">
-            🦁 Zoológico
+            🐾 Zoológico
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            🦁 Zoológico
+            🐾 Zoológico
           </DialogTitle>
           <DialogDescription>
             Registra eventos: Camello (bunker), Pez (agua), Gorila (OB)
@@ -131,11 +142,11 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
         </DialogHeader>
 
         {/* Existing Events List */}
-        {sortedEvents.length > 0 && !editingEvent && (
+        {sortedEvents.length > 0 && !editingEventId && (
           <div className="space-y-2 border-b border-border pb-3">
             <Label className="text-xs font-medium text-muted-foreground">Eventos Registrados</Label>
             {sortedEvents.map(event => {
-              const player = getPlayer(event.playerId);
+              const player = players.find(p => p.id === event.playerId);
               const animal = ZOO_ANIMALS[event.animalType];
               return (
                 <div 
@@ -158,14 +169,6 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6"
-                      onClick={() => handleEdit(event)}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
                       className="h-6 w-6 text-destructive hover:text-destructive"
                       onClick={() => handleDelete(event.id)}
                     >
@@ -180,7 +183,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
 
         <div className="space-y-4 py-2">
           <Label className="text-sm font-medium">
-            {editingEvent ? 'Editando evento' : 'Nuevo Evento'}
+            Nuevo Evento (H{currentHole || 1})
           </Label>
           
           {/* Animal Selection */}
@@ -193,7 +196,10 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                 return (
                   <button
                     key={animal}
-                    onClick={() => setSelectedAnimal(animal)}
+                    onClick={() => {
+                      setSelectedAnimal(animal);
+                      setSelectedPlayers(new Map()); // Reset players when changing animal
+                    }}
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border',
                       isSelected 
@@ -210,106 +216,121 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
             </div>
           </div>
 
-          {/* Player Selection */}
+          {/* Player Selection - Multi-select with counts */}
           {selectedAnimal && (
             <div className="space-y-2">
-              <Label className="text-xs font-medium">¿Quién cometió la incidencia?</Label>
-              <div className="flex flex-wrap gap-2">
+              <Label className="text-xs font-medium">¿Quién cometió la incidencia? (selecciona todos)</Label>
+              <div className="space-y-2">
                 {players.map(player => {
-                  const isSelected = selectedPlayer === player.id;
+                  const isSelected = selectedPlayers.has(player.id);
+                  const count = selectedPlayers.get(player.id) || 0;
+                  
                   return (
-                    <button
+                    <div 
                       key={player.id}
-                      onClick={() => setSelectedPlayer(player.id)}
                       className={cn(
-                        'flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs font-medium transition-all border',
+                        'flex items-center justify-between p-2 rounded-lg border transition-all',
                         isSelected 
-                          ? 'bg-destructive text-destructive-foreground border-destructive'
-                          : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                          ? 'bg-destructive/10 border-destructive/50'
+                          : 'bg-muted/30 border-border hover:bg-muted/50 cursor-pointer'
                       )}
+                      onClick={() => !isSelected && togglePlayer(player.id)}
                     >
-                      <div 
-                        className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
-                        style={{ 
-                          backgroundColor: isSelected ? 'white' : player.color, 
-                          color: isSelected ? 'hsl(var(--destructive))' : 'white' 
-                        }}
-                      >
-                        {player.initials}
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                          style={{ 
+                            backgroundColor: isSelected ? 'hsl(var(--destructive))' : player.color, 
+                            color: 'white' 
+                          }}
+                        >
+                          {player.initials}
+                        </div>
+                        <span className="text-sm font-medium">{player.name.split(' ')[0]}</span>
                       </div>
-                      {player.name.split(' ')[0]}
-                      {isSelected && <X className="h-3 w-3" />}
-                    </button>
+                      
+                      {isSelected ? (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (count <= 1) {
+                                togglePlayer(player.id);
+                              } else {
+                                updatePlayerCount(player.id, -1);
+                              }
+                            }}
+                          >
+                            {count <= 1 ? <X className="h-3 w-3" /> : <span className="text-xs">−</span>}
+                          </Button>
+                          <span className="w-6 text-center text-sm font-bold text-destructive">{count}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updatePlayerCount(player.id, 1);
+                            }}
+                          >
+                            <span className="text-xs">+</span>
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePlayer(player.id);
+                          }}
+                        >
+                          Seleccionar
+                        </Button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {/* Count Selector */}
-          {selectedPlayer && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">¿Cuántas veces?</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCount(Math.max(1, count - 1))}
-                  disabled={count <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Input
-                  type="number"
-                  value={count}
-                  onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-center"
-                  min={1}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setCount(count + 1)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  ${valuePerOccurrence * count} total
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Summary */}
           {canSubmit && (
-            <div className="p-3 bg-muted/50 rounded-lg text-xs">
-              <div className="flex items-center gap-2">
+            <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-1">
+              <div className="flex items-center gap-2 font-medium">
                 <span className="text-lg">{selectedAnimal && ZOO_ANIMALS[selectedAnimal].emoji}</span>
-                <span>
-                  {getPlayerName(selectedPlayer!)} en H{currentHole || 1}
-                  {count > 1 && <span className="font-bold text-destructive"> ×{count}</span>}
-                </span>
+                <span>H{currentHole || 1} - Resumen:</span>
+              </div>
+              {Array.from(selectedPlayers.entries()).map(([playerId, count]) => (
+                <div key={playerId} className="flex items-center justify-between pl-7">
+                  <span>{getPlayerName(playerId)}</span>
+                  <span className="font-bold text-destructive">
+                    {count > 1 && `×${count} = `}${valuePerOccurrence * count}
+                  </span>
+                </div>
+              ))}
+              <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
+                <span>Total:</span>
+                <span className="text-destructive">${totalCost}</span>
               </div>
             </div>
           )}
         </div>
 
         <DialogFooter className="gap-2">
-          {editingEvent && (
-            <Button variant="outline" onClick={resetForm} className="flex-1">
-              Cancelar Edición
-            </Button>
-          )}
           <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
             Cerrar
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="gap-1">
             <Plus className="h-4 w-4" />
-            {editingEvent ? 'Guardar' : 'Agregar'}
+            Agregar {selectedPlayers.size > 1 ? `(${selectedPlayers.size})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
