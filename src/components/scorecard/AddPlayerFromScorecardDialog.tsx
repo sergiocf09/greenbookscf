@@ -4,9 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
+import { AlertTriangle } from 'lucide-react';
 
 type HoleScores = Record<number, number | ''>;
 
@@ -23,6 +25,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   roundId: string;
   onAddGuest: (payload: AddGuestPayload) => Promise<void>;
+  currentPlayerCount?: number;
+  maxPlayersRecommended?: number;
 }
 
 export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
@@ -30,6 +34,8 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   onOpenChange,
   roundId,
   onAddGuest,
+  currentPlayerCount = 0,
+  maxPlayersRecommended = 6,
 }) => {
   const [tab, setTab] = useState<'guest' | 'invite'>('guest');
   const [name, setName] = useState('');
@@ -42,6 +48,8 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   );
 
   const shareLink = useMemo(() => `${window.location.origin}/join/${roundId}`, [roundId]);
+  
+  const isOverRecommendedLimit = currentPlayerCount >= maxPlayersRecommended;
 
   const canSave = useMemo(() => {
     const parsed = (() => {
@@ -118,6 +126,15 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
           </TabsList>
 
           <TabsContent value="guest" className="mt-4 space-y-4">
+            {isOverRecommendedLimit && (
+              <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                  Ya tienes {currentPlayerCount} jugadores (máximo recomendado: {maxPlayersRecommended}). 
+                  Puedes continuar, pero algunas apuestas pueden no estar optimizadas para más jugadores.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-end">
               <div>
                 <label className="text-xs text-muted-foreground">Nombre</label>

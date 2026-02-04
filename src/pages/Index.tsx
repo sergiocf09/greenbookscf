@@ -1656,12 +1656,14 @@ const Index = () => {
           </>
         )}
 
-        {roundState.id && (
+{roundState.id && (
           <AddPlayerFromScorecardDialog
             open={showAddPlayerDialog}
             onOpenChange={setShowAddPlayerDialog}
             roundId={roundState.id}
             onAddGuest={handleAddGuestFromScorecard}
+            currentPlayerCount={players.length + playerGroups.reduce((sum, g) => sum + g.players.length, 0)}
+            maxPlayersRecommended={6}
           />
         )}
 
