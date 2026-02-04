@@ -70,6 +70,7 @@ interface BetDashboardProps {
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
   onBetConfigChange?: (config: BetConfig) => void;
+  onBetSummariesChange?: (summaries: BetSummary[]) => void;
   startingHole?: 1 | 10;
   playerGroups?: PlayerGroup[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
@@ -84,6 +85,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   basePlayerId,
   confirmedHoles = new Set(),
   onBetConfigChange,
+  onBetSummariesChange,
   startingHole = 1,
   playerGroups = [],
   getStrokesForLocalPair,
@@ -195,6 +197,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     () => calculateAllBets(allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles),
     [allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles]
   );
+  
+  // Notify parent when bet summaries change
+  useEffect(() => {
+    onBetSummariesChange?.(betSummaries);
+  }, [betSummaries, onBetSummariesChange]);
   
   // Calculate ALL Carritos results (primary + additional teams)
   // NEW SCORING: Per hole - lowball wins 1pt, highball wins 1pt, combined wins 1pt (0-3 pts per hole)
