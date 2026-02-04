@@ -2203,6 +2203,7 @@ const Index = () => {
           playerId={quickScorePlayer.id}
           course={course}
           currentScores={scores.get(quickScorePlayer.id) || []}
+          roundConfirmedHoles={confirmedHoles}
           onSaveScores={async (newScores) => {
             const playerId = quickScorePlayer.id;
             const rpId = roundPlayerIds.get(playerId);
