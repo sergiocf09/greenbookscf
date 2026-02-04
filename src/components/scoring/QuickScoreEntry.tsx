@@ -122,23 +122,30 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   }, []);
 
   // Helper function to check if a hole should be saved
-  // RULE: If the user interacted with the field (dirty) and there's a valid strokes value, save it
-  // We don't compare with initial values - any user input counts as a valid change to confirm
-  const shouldSaveHole = useCallback((hole: number): boolean => {
+  // RULE: If the user touched strokes OR putts, and strokes has a valid number > 0, save it
+  // This allows: writing strokes only, writing putts only (if strokes exists), or both
+  const shouldSaveHole = (hole: number): boolean => {
+    // Must have interacted with this hole
     if (!dirtyHoles.has(hole)) return false;
     
-    const s = scores[hole]?.strokes;
-    return typeof s === 'number' && s > 0;
-  }, [scores, dirtyHoles]);
+    // Must have valid strokes to save (can't save a hole without strokes)
+    const strokesVal = scores[hole]?.strokes;
+    return typeof strokesVal === 'number' && strokesVal > 0;
+  };
 
-  // Count holes that user touched and have valid input (these will be saved)
+  // Count holes that user touched and have valid strokes (these will be saved)
   const dirtyHolesWithInput = useMemo(() => {
     let count = 0;
     for (let h = 1; h <= 18; h++) {
-      if (shouldSaveHole(h)) count++;
+      if (dirtyHoles.has(h)) {
+        const strokesVal = scores[h]?.strokes;
+        if (typeof strokesVal === 'number' && strokesVal > 0) {
+          count++;
+        }
+      }
     }
     return count;
-  }, [shouldSaveHole]);
+  }, [scores, dirtyHoles]);
 
   // Count all filled holes (for display purposes)
   const filledHoles = useMemo(() => {
