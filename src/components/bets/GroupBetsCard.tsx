@@ -939,7 +939,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {culebrasResult && (
           <div className="space-y-2">
             <div 
-              className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+              className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
               onClick={() => setShowCulebrasDetail(!showCulebrasDetail)}
             >
               <div className="flex items-center gap-2">
@@ -955,10 +955,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   </span>
                 )}
                 {culebrasResult.loser && (
-                  <>
-                    <span className="text-sm font-medium">{formatPlayerNameShort(culebrasResult.loser.name)}</span>
+                  <div className="flex flex-col items-end">
                     <span className="text-destructive font-bold text-sm">-${culebrasResult.loser.totalLoss}</span>
-                  </>
+                    <span className="text-xs text-muted-foreground">{formatPlayerNameShort(culebrasResult.loser.name)}</span>
+                  </div>
                 )}
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCulebrasDetail && "rotate-180")} />
               </div>
@@ -1027,7 +1027,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {culebrasResult && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div 
-                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+                className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
                 onClick={() => setShowPinguinosDetail(!showPinguinosDetail)}
               >
                 <div className="flex items-center gap-2">
@@ -1043,10 +1043,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     </span>
                   )}
                   {pinguinosResult.loser && (
-                    <>
-                      <span className="text-sm font-medium">{formatPlayerNameShort(pinguinosResult.loser.name)}</span>
+                    <div className="flex flex-col items-end">
                       <span className="text-destructive font-bold text-sm">-${pinguinosResult.loser.totalLoss}</span>
-                    </>
+                      <span className="text-xs text-muted-foreground">{formatPlayerNameShort(pinguinosResult.loser.name)}</span>
+                    </div>
                   )}
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showPinguinosDetail && "rotate-180")} />
                 </div>
@@ -1117,7 +1117,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {idx > 0 && <div className="border-t border-border/30" />}
             <div className="space-y-2">
               <div 
-                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+                className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
                 onClick={() => setShowZooDetail(showZooDetail === result.animalType ? null : result.animalType)}
               >
                 <div className="flex items-center gap-2">
@@ -1133,10 +1133,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     </span>
                   )}
                   {result.loser && (
-                    <>
-                      <span className="text-sm font-medium">{formatPlayerNameShort(result.loser.name)}</span>
+                    <div className="flex flex-col items-end">
                       <span className="text-destructive font-bold text-sm">-${result.loser.totalLoss}</span>
-                    </>
+                      <span className="text-xs text-muted-foreground">{formatPlayerNameShort(result.loser.name)}</span>
+                    </div>
                   )}
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showZooDetail === result.animalType && "rotate-180")} />
                 </div>
