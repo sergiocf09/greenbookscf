@@ -2309,6 +2309,7 @@ export interface ZoologicoAnimalResult {
   animalType: ZooAnimalType;
   emoji: string;
   label: string;
+  labelPlural: string;
   totalOccurrences: number;
   events: Array<{
     playerId: string;
@@ -2448,6 +2449,7 @@ export const calculateZoologicoAnimalResult = (
     animalType,
     emoji: animalInfo.emoji,
     label: animalInfo.label,
+    labelPlural: animalInfo.labelPlural,
     totalOccurrences,
     events: mappedEvents,
     valuePerOccurrence,

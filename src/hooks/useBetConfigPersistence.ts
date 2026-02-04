@@ -14,6 +14,7 @@ import {
   UnitsBetConfig,
   ManchasBetConfig,
   CumulativeBetConfig,
+  ZoologicoBetConfig,
 } from '@/types/golf';
 import { devError, devLog } from '@/lib/logger';
 
@@ -133,6 +134,7 @@ interface RoundBetConfig {
       enabled: boolean;
     }>;
   };
+  zoologico?: ZoologicoBetConfig;
 }
 
 export const useBetConfigPersistence = ({
@@ -302,6 +304,17 @@ export const useBetConfigPersistence = ({
             };
           }
           
+          // Apply Zoologico config if exists
+          if (dbConfig.zoologico) {
+            newConfig.zoologico = {
+              enabled: dbConfig.zoologico.enabled ?? prev.zoologico.enabled,
+              valuePerOccurrence: dbConfig.zoologico.valuePerOccurrence ?? prev.zoologico.valuePerOccurrence,
+              enabledAnimals: dbConfig.zoologico.enabledAnimals ?? prev.zoologico.enabledAnimals,
+              events: dbConfig.zoologico.events ?? prev.zoologico.events,
+              tieBreakers: dbConfig.zoologico.tieBreakers ?? prev.zoologico.tieBreakers,
+            };
+          }
+          
           return newConfig;
         });
         
@@ -387,6 +400,7 @@ export const useBetConfigPersistence = ({
           enabled: config.teamPressures.enabled,
           bets: config.teamPressures.bets,
         },
+        zoologico: config.zoologico,
       };
 
       const { error } = await supabase

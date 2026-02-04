@@ -1122,7 +1122,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{result.emoji}</span>
-                  <span className="font-medium text-sm">{result.label}s</span>
+                  <span className="font-medium text-sm">{result.labelPlural}</span>
                   <span className="text-lg font-bold text-destructive">({result.totalOccurrences})</span>
                 </div>
                 <div className="flex items-center gap-2">
