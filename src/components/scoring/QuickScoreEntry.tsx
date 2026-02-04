@@ -121,36 +121,24 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     }
   }, []);
 
-  // Helper function to check if a hole has actually changed from initial
-  const hasHoleChanged = useCallback((hole: number): boolean => {
+  // Helper function to check if a hole should be saved
+  // RULE: If the user interacted with the field (dirty) and there's a valid strokes value, save it
+  // We don't compare with initial values - any user input counts as a valid change to confirm
+  const shouldSaveHole = useCallback((hole: number): boolean => {
     if (!dirtyHoles.has(hole)) return false;
     
-    const current = scores[hole];
-    const initial = initialScoresRef.current[hole];
-    
-    const currentStrokes = current?.strokes;
-    const initialStrokes = initial?.strokes;
-    const currentPutts = current?.putts;
-    const initialPutts = initial?.putts;
-    
-    // Compare strokes: both empty counts as no change
-    const strokesChanged = currentStrokes !== initialStrokes;
-    const puttsChanged = currentPutts !== initialPutts;
-    
-    return strokesChanged || puttsChanged;
+    const s = scores[hole]?.strokes;
+    return typeof s === 'number' && s > 0;
   }, [scores, dirtyHoles]);
 
-  // Count holes that have actually changed and have valid input
+  // Count holes that user touched and have valid input (these will be saved)
   const dirtyHolesWithInput = useMemo(() => {
     let count = 0;
     for (let h = 1; h <= 18; h++) {
-      if (hasHoleChanged(h)) {
-        const s = scores[h]?.strokes;
-        if (typeof s === 'number' && s > 0) count++;
-      }
+      if (shouldSaveHole(h)) count++;
     }
     return count;
-  }, [scores, hasHoleChanged]);
+  }, [shouldSaveHole]);
 
   // Count all filled holes (for display purposes)
   const filledHoles = useMemo(() => {
@@ -177,13 +165,12 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   }, [scores]);
 
   const handleSave = async () => {
-    // CRITICAL: Only save holes where the user actually changed the value from initial
-    // This prevents auto-confirming holes that weren't modified
+    // Save holes where the user made input (touched the field and entered a valid value)
     const scoresToSave: { holeNumber: number; strokes: number; putts: number }[] = [];
     
     for (let h = 1; h <= 18; h++) {
-      // Only process holes that were actually modified by the user
-      if (!hasHoleChanged(h)) continue;
+      // Only process holes that user interacted with and have valid input
+      if (!shouldSaveHole(h)) continue;
       
       const entry = scores[h];
       const strokes = typeof entry.strokes === 'number' ? entry.strokes : 0;
