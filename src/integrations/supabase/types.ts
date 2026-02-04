@@ -1006,6 +1006,10 @@ export type Database = {
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
+      rebuild_round_financials_from_snapshot: {
+        Args: { p_round_id: string }
+        Returns: undefined
+      }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
     }
     Enums: {

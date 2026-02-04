@@ -1319,7 +1319,32 @@ const Index = () => {
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowBalancesDialog(true)}>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    // Best-effort repair: if the latest completed round has a snapshot but is missing
+                    // persisted balances/ledger (e.g. a past partial close), rebuild from snapshot.
+                    try {
+                      const { data: latestCompleted, error } = await supabase
+                        .from('rounds')
+                        .select('id')
+                        .eq('status', 'completed')
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                      if (!error && latestCompleted?.id) {
+                        await supabase.rpc('rebuild_round_financials_from_snapshot', {
+                          p_round_id: latestCompleted.id,
+                        });
+                      }
+                    } catch (e) {
+                      // Silent: if repair fails, we still open the dialog and let it load normally.
+                      devError('Balances repair attempt failed:', e);
+                    }
+
+                    setShowBalancesDialog(true);
+                  }}
+                >
                   <DollarSign className="h-4 w-4 mr-2" />
                   Balances Históricos
                 </DropdownMenuItem>
