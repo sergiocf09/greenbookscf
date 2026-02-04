@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,20 @@ interface PlayerScoreData {
   totalStrokes: number;
 }
 
+export interface CloneRoundData {
+  courseId: string;
+  teeColor: string;
+  startingHole: 1 | 10;
+  betConfig: any;
+  players: {
+    profileId: string | null;
+    name: string;
+    initials: string;
+    color: string;
+    handicap: number;
+  }[];
+}
+
 interface RoundHistoryProps {
   onClose?: () => void;
   onViewRound?: (roundData: {
@@ -54,9 +68,10 @@ interface RoundHistoryProps {
     teeColor: string;
     date: string;
   }) => void;
+  onCloneRound?: (roundData: CloneRoundData) => void;
 }
 
-export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound }) => {
+export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound }) => {
   const { profile } = useAuth();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +80,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   const [roundToDelete, setRoundToDelete] = useState<RoundHistoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [loadingScorecard, setLoadingScorecard] = useState<string | null>(null);
+  const [loadingClone, setLoadingClone] = useState<string | null>(null);
 
   const fetchRounds = async () => {
     if (!profile) return;
@@ -268,6 +284,79 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     }
   };
 
+  const handleCloneRound = async (e: React.MouseEvent, round: RoundHistoryItem) => {
+    e.stopPropagation();
+    
+    if (!onCloneRound) {
+      toast.info('Función de duplicación no disponible');
+      return;
+    }
+
+    setLoadingClone(round.id);
+    
+    try {
+      // Get round details including bet_config and starting_hole
+      const { data: roundData, error: roundError } = await supabase
+        .from('rounds')
+        .select('bet_config, starting_hole')
+        .eq('id', round.id)
+        .single();
+
+      if (roundError) throw roundError;
+
+      // Get all players in this round (including guests)
+      const { data: roundPlayers, error: rpError } = await supabase
+        .from('round_players')
+        .select(`
+          id,
+          profile_id,
+          handicap_for_round,
+          guest_name,
+          guest_initials,
+          guest_color,
+          profiles(display_name, initials, avatar_color)
+        `)
+        .eq('round_id', round.id);
+
+      if (rpError) throw rpError;
+
+      // Build players list for cloning
+      const clonePlayers = (roundPlayers || []).map((rp: any) => {
+        const profileData = rp.profiles as any;
+        const isGuest = !rp.profile_id;
+        
+        return {
+          profileId: rp.profile_id,
+          name: isGuest 
+            ? (rp.guest_name || 'Invitado') 
+            : (profileData?.display_name || 'Jugador'),
+          initials: isGuest 
+            ? (rp.guest_initials || 'IN') 
+            : (profileData?.initials || 'XX'),
+          color: isGuest 
+            ? (rp.guest_color || '#3B82F6') 
+            : (profileData?.avatar_color || '#3B82F6'),
+          handicap: Number(rp.handicap_for_round) || 0,
+        };
+      });
+
+      onCloneRound({
+        courseId: round.courseId,
+        teeColor: round.teeColor,
+        startingHole: (roundData?.starting_hole === 10 ? 10 : 1) as 1 | 10,
+        betConfig: roundData?.bet_config || {},
+        players: clonePlayers,
+      });
+
+      toast.success('Datos cargados. Ajusta y guarda la nueva ronda.');
+    } catch (err) {
+      devError('Error cloning round:', err);
+      toast.error('Error al cargar datos de la ronda');
+    } finally {
+      setLoadingClone(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -356,6 +445,22 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         )}
                         Ver Tarjeta
                       </Button>
+                      {onCloneRound && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => handleCloneRound(e, round)}
+                          disabled={loadingClone === round.id}
+                        >
+                          {loadingClone === round.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Copy className="h-4 w-4 mr-1" />
+                          )}
+                          Duplicar
+                        </Button>
+                      )}
                       {round.isOrganizer && (
                         <Button
                           variant="outline"
