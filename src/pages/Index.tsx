@@ -1588,6 +1588,33 @@ const Index = () => {
                 },
               }));
             }}
+            onAddZooEvent={(event) => {
+              setBetConfig(prev => ({
+                ...prev,
+                zoologico: {
+                  ...prev.zoologico,
+                  events: [...(prev.zoologico?.events || []), event],
+                },
+              }));
+            }}
+            onUpdateZooEvent={(event) => {
+              setBetConfig(prev => ({
+                ...prev,
+                zoologico: {
+                  ...prev.zoologico,
+                  events: (prev.zoologico?.events || []).map(e => e.id === event.id ? event : e),
+                },
+              }));
+            }}
+            onDeleteZooEvent={(eventId) => {
+              setBetConfig(prev => ({
+                ...prev,
+                zoologico: {
+                  ...prev.zoologico,
+                  events: (prev.zoologico?.events || []).filter(e => e.id !== eventId),
+                },
+              }));
+            }}
           />
         )}
 
