@@ -1078,7 +1078,7 @@ const Index = () => {
       const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
         const holeNumber = i + 1;
         const holePar = course.holes[i]?.par || 4;
-        const strokes = payload.strokesByHole[holeNumber] ?? holePar;
+        const strokes = holePar; // Default to par, user can edit via Quick Score
         const strokesReceived = strokesPerHole[i] ?? 0;
         return {
           playerId: newPlayerId,
@@ -1088,7 +1088,7 @@ const Index = () => {
           markers: { ...defaultMarkerState },
           strokesReceived,
           netScore: strokes - strokesReceived,
-          confirmed: true,
+          confirmed: false, // Not confirmed until user captures
         };
       });
 
@@ -1098,7 +1098,7 @@ const Index = () => {
         return next;
       });
 
-      // 4) Persist hole_scores (confirmed)
+      // 4) Persist hole_scores (not confirmed, awaiting Quick Score entry)
       const scoreRecords = newPlayerScores.map((s) => ({
         round_player_id: newPlayerId,
         hole_number: s.holeNumber,
@@ -1108,7 +1108,7 @@ const Index = () => {
         net_score: s.netScore,
         oyes_proximity: null,
         oyes_proximity_sangron: null,
-        confirmed: true,
+        confirmed: false,
       }));
 
       const { error: scoresErr } = await supabase

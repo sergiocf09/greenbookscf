@@ -166,6 +166,12 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   // Get par for display
   const getPar = (hole: number) => course.holes[hole - 1]?.par || 4;
 
+  // Check if hole is confirmed
+  const isHoleConfirmed = (hole: number) => {
+    const existing = currentScores.find(s => s.holeNumber === hole);
+    return existing?.confirmed === true;
+  };
+
   // Get score color based on relation to par
   const getScoreStyle = (hole: number, strokes: number | '') => {
     if (strokes === '' || strokes <= 0) return '';
@@ -177,6 +183,11 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
     if (diff === 1) return 'text-orange-500 font-bold';
     if (diff >= 2) return 'text-destructive font-bold';
     return '';
+  };
+
+  // Select all text on focus for easy replacement
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
   };
 
   return (
@@ -200,7 +211,12 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 {/* Header Row */}
                 <div className="font-medium text-muted-foreground text-center">Hoyo</div>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
-                  <div key={h} className="text-center font-semibold">{h}</div>
+                  <div key={h} className="flex items-center justify-center">
+                    <span className={cn(
+                      "w-6 h-6 flex items-center justify-center rounded-full font-semibold",
+                      isHoleConfirmed(h) && "ring-2 ring-green-500 bg-white"
+                    )}>{h}</span>
+                  </div>
                 ))}
                 
                 {/* Par Row */}
@@ -220,6 +236,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                     max={15}
                     value={scores[h]?.strokes}
                     onChange={(e) => handleStrokesChange(h, e.target.value)}
+                    onFocus={handleInputFocus}
                     className={cn(
                       'h-8 text-center px-1 text-sm',
                       getScoreStyle(h, scores[h]?.strokes)
@@ -238,6 +255,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                     max={10}
                     value={scores[h]?.putts}
                     onChange={(e) => handlePuttsChange(h, e.target.value)}
+                    onFocus={handleInputFocus}
                     className="h-8 text-center px-1 text-sm text-muted-foreground"
                   />
                 ))}
@@ -256,7 +274,12 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 {/* Header Row */}
                 <div className="font-medium text-muted-foreground text-center">Hoyo</div>
                 {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
-                  <div key={h} className="text-center font-semibold">{h}</div>
+                  <div key={h} className="flex items-center justify-center">
+                    <span className={cn(
+                      "w-6 h-6 flex items-center justify-center rounded-full font-semibold",
+                      isHoleConfirmed(h) && "ring-2 ring-green-500 bg-white"
+                    )}>{h}</span>
+                  </div>
                 ))}
                 
                 {/* Par Row */}
@@ -276,6 +299,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                     max={15}
                     value={scores[h]?.strokes}
                     onChange={(e) => handleStrokesChange(h, e.target.value)}
+                    onFocus={handleInputFocus}
                     className={cn(
                       'h-8 text-center px-1 text-sm',
                       getScoreStyle(h, scores[h]?.strokes)
@@ -294,6 +318,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                     max={10}
                     value={scores[h]?.putts}
                     onChange={(e) => handlePuttsChange(h, e.target.value)}
+                    onFocus={handleInputFocus}
                     className="h-8 text-center px-1 text-sm text-muted-foreground"
                   />
                 ))}

@@ -11,14 +11,13 @@ import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { AlertTriangle, Users } from 'lucide-react';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 
-type HoleScores = Record<number, number | ''>;
+
 
 export interface AddGuestPayload {
   name: string;
   initials: string;
   color: string; // hex
   handicap: number; // Course handicap for this round
-  strokesByHole: Record<number, number>; // 1..18
 }
 
 interface Props {
@@ -55,51 +54,27 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
   const [handicap, setHandicap] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
 
-  const [scores, setScores] = useState<HoleScores>(() =>
-    Object.fromEntries(Array.from({ length: 18 }, (_, i) => [i + 1, ''])) as HoleScores
-  );
-
   const shareLink = useMemo(() => `${window.location.origin}/join/${roundId}`, [roundId]);
   
   const isOverRecommendedLimit = currentPlayerCount >= maxPlayersRecommended;
 
   const canSave = useMemo(() => {
-    const parsed = (() => {
-      try {
-        validatePlayerName(name);
-        return true;
-      } catch {
-        return false;
-      }
-    })();
-
-    if (!parsed) return false;
-    for (let h = 1; h <= 18; h++) {
-      const v = scores[h];
-      if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return false;
+    try {
+      validatePlayerName(name);
+      return true;
+    } catch {
+      return false;
     }
-    return true;
-  }, [name, scores]);
-
-  const setScore = (hole: number, value: string) => {
-    const num = value === '' ? '' : Number(value);
-    setScores((prev) => ({
-      ...prev,
-      [hole]: value === '' ? '' : Number.isFinite(num) ? num : prev[hole],
-    }));
-  };
+  }, [name]);
 
   const handleSaveGuest = async () => {
     if (!canSave) {
-      toast.error('Completa nombre y 18 hoyos');
+      toast.error('Ingresa un nombre válido');
       return;
     }
 
     setSaving(true);
     try {
-      const strokesByHole: Record<number, number> = {};
-      for (let h = 1; h <= 18; h++) strokesByHole[h] = scores[h] as number;
-
       const safeName = validatePlayerName(name);
 
       await onAddGuest({
@@ -107,14 +82,12 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
         initials: initialsFromPlayerName(safeName),
         color,
         handicap: typeof handicap === 'number' ? handicap : 0,
-        strokesByHole,
       });
 
-      toast.success('Jugador agregado y scores confirmados');
+      toast.success('Jugador agregado. Usa ⚡ para capturar scores.');
       onOpenChange(false);
       setName('');
       setHandicap('');
-      setScores(Object.fromEntries(Array.from({ length: 18 }, (_, i) => [i + 1, ''])) as HoleScores);
       setTab('guest');
     } catch (e: any) {
       console.error(e);
@@ -179,28 +152,9 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
               </div>
             </div>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-9 gap-2">
-                  {Array.from({ length: 18 }, (_, i) => i + 1).map((hole) => (
-                    <div key={hole} className="space-y-1">
-                      <div className="text-[10px] text-muted-foreground text-center">H{hole}</div>
-                      <Input
-                        inputMode="numeric"
-                        type="number"
-                        min={1}
-                        value={scores[hole]}
-                        onChange={(e) => setScore(hole, e.target.value)}
-                        className={cn('h-8 text-center px-2', 'text-sm')}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-3">
-                  Se guardan los 18 hoyos como <span className="font-medium">confirmados</span>.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="text-xs text-muted-foreground">
+              El jugador se agregará a la ronda. Usa el ícono ⚡ en el scorecard para capturar sus scores.
+            </p>
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
