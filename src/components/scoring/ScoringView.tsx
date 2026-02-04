@@ -243,7 +243,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             currentHole={currentHole}
             trigger={
               <Button variant="outline" size="sm" className="shrink-0 text-xs px-2">
-                🦁
+                🐾
               </Button>
             }
           />

@@ -1,9 +1,10 @@
-// Group Bets Card - Medal General, Culebras, Pinguinos, Coneja, Stableford consolidated display
+// Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Users, Star, ChevronDown, AlertTriangle } from 'lucide-react';
@@ -860,9 +861,24 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return calculateStablefordPoints(players, scores, course, betConfig);
   }, [players, scores, course, betConfig]);
 
+  // Calculate Zoologico results for each animal type
+  const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
+    if (!betConfig.zoologico?.enabled || players.length < 2) return [];
+    
+    const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+    // Maintain order: camello, pez, gorila
+    const orderedAnimals: ZooAnimalType[] = ['camello', 'pez', 'gorila'];
+    
+    return orderedAnimals
+      .filter(animal => enabledAnimals.includes(animal))
+      .map(animal => calculateZoologicoAnimalResult(animal, players, betConfig.zoologico))
+      .filter((r): r is ZoologicoAnimalResult => r !== null);
+  }, [players, betConfig.zoologico]);
+
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
   const [showPinguinosDetail, setShowPinguinosDetail] = useState(false);
+  const [showZooDetail, setShowZooDetail] = useState<ZooAnimalType | null>(null);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -882,9 +898,26 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       });
     }
   };
+
+  // Handler for Zoologico tie-breaker
+  const handleSelectZooTieBreakLoser = (animalType: ZooAnimalType, tieHole: number, playerId: string) => {
+    if (!onBetConfigChange) return;
+    const value = `${tieHole}:${playerId}`;
+    
+    onBetConfigChange({
+      ...betConfig,
+      zoologico: {
+        ...betConfig.zoologico,
+        tieBreakers: {
+          ...(betConfig.zoologico?.tieBreakers || {}),
+          [animalType]: value,
+        },
+      },
+    });
+  };
   
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || conejaResult || betConfig.stableford?.enabled;
+  const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled;
 
   if (!hasAnyBet) {
     return null;
@@ -1077,10 +1110,100 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
 
+        {/* Zoologico - Camellos, Peces, Gorilas (after Pingüinos, before Coneja) */}
+        {zoologicoResults.map((result, idx) => (
+          <React.Fragment key={result.animalType}>
+            {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t border-border/50" />}
+            {idx > 0 && <div className="border-t border-border/30" />}
+            <div className="space-y-2">
+              <div 
+                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+                onClick={() => setShowZooDetail(showZooDetail === result.animalType ? null : result.animalType)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{result.emoji}</span>
+                  <span className="font-medium text-sm">{result.label}s</span>
+                  <span className="text-lg font-bold text-destructive">({result.totalOccurrences})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {result.hasTie && (
+                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Empate
+                    </span>
+                  )}
+                  {result.loser && (
+                    <>
+                      <span className="text-sm font-medium">{formatPlayerNameShort(result.loser.name)}</span>
+                      <span className="text-destructive font-bold text-sm">-${result.loser.totalLoss}</span>
+                    </>
+                  )}
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showZooDetail === result.animalType && "rotate-180")} />
+                </div>
+              </div>
+              
+              {/* Tie-breaker UI */}
+              {result.hasTie && result.tiedPlayers.length > 0 && onBetConfigChange && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 ml-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      Empate en Hoyo {result.tieHole} - Selecciona quién paga
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {result.tiedPlayers.map(player => (
+                      <Button
+                        key={player.id}
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => handleSelectZooTieBreakLoser(result.animalType, result.tieHole || 0, player.id)}
+                      >
+                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {showZooDetail === result.animalType && (result.loser || result.hasTie) && result.events.length > 0 && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">Incidencias:</span>
+                    <span className="text-xs">${result.valuePerOccurrence} c/u × {result.totalOccurrences} = ${result.amountPerPlayer}/jug</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.events.map((event, eventIdx) => (
+                      <Popover key={eventIdx}>
+                        <PopoverTrigger asChild>
+                          <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
+                            H{event.holeNumber} - {event.playerInitials}{event.count > 1 ? ` (×${event.count})` : ''}
+                          </span>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" side="top">
+                          <div className="text-xs">
+                            <p className="font-medium">{formatPlayerName(event.playerName)}</p>
+                            <p className="text-muted-foreground">
+                              Hoyo {event.holeNumber} - {result.emoji} {ZOO_ANIMALS[result.animalType].description}
+                              {event.count > 1 && ` (${event.count} veces)`}
+                            </p>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </React.Fragment>
+        ))}
+
         {/* Coneja - Patas system (before Medal General) */}
         {conejaResult && (
           <>
-            {(culebrasResult || pinguinosResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
             <ConejaSection
               conejaResult={conejaResult}
               players={players}
@@ -1097,7 +1220,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Medal General - Show only winners */}
         {medalGeneralResult && (
           <>
-            {(culebrasResult || pinguinosResult || conejaResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t border-border/50" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

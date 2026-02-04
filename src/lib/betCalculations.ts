@@ -1,5 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet, ZooAnimalType, ZooEvent, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
 import { calculateConejaBets } from './conejaCalculations';
@@ -1876,6 +1876,7 @@ export const calculateAllBets = (
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config),
     ...calculatePinguinosBets(players, scores, config, course),
+    ...calculateZoologicoBets(players, config),
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMedalGeneralBets(players, scores, config, course),
     ...conejaSummaries,
@@ -2299,3 +2300,204 @@ export const getSkinsEvolution = (
 };
 
 // Note: Uses existing getHoleScore function defined earlier in this file
+
+// =====================================================
+// ZOOLOGICO CALCULATIONS
+// =====================================================
+
+export interface ZoologicoAnimalResult {
+  animalType: ZooAnimalType;
+  emoji: string;
+  label: string;
+  totalOccurrences: number;
+  events: Array<{
+    playerId: string;
+    playerName: string;
+    playerInitials: string;
+    holeNumber: number;
+    count: number;
+  }>;
+  valuePerOccurrence: number;
+  amountPerPlayer: number;
+  loser: {
+    playerId: string;
+    name: string;
+    initials: string;
+    color: string;
+    totalLoss: number;
+  } | null;
+  hasTie: boolean;
+  tiedPlayers: Player[];
+  tieHole: number | null;
+}
+
+/**
+ * Parse tie-breaker for Zoológico (stored as "<holeNumber>:<playerId>")
+ */
+const parseZooTieBreak = (value?: string | null): { hole: number | null; playerId: string | null } => {
+  if (!value) return { hole: null, playerId: null };
+  const parts = String(value).split(':');
+  if (parts.length === 2) {
+    const hole = Number(parts[0]);
+    const playerId = parts[1];
+    return {
+      hole: Number.isFinite(hole) ? hole : null,
+      playerId: playerId || null,
+    };
+  }
+  return { hole: null, playerId: String(value) };
+};
+
+/**
+ * Calculate Zoológico results for a specific animal type
+ */
+export const calculateZoologicoAnimalResult = (
+  animalType: ZooAnimalType,
+  players: Player[],
+  zoologicoConfig: ZoologicoBetConfig,
+): ZoologicoAnimalResult | null => {
+  if (!zoologicoConfig?.enabled) return null;
+  if (!zoologicoConfig.enabledAnimals?.includes(animalType)) return null;
+
+  const animalInfo = ZOO_ANIMALS[animalType];
+  const valuePerOccurrence = zoologicoConfig.valuePerOccurrence || 10;
+  const events = zoologicoConfig.events || [];
+
+  // Filter events for this animal type
+  const animalEvents = events.filter(e => e.animalType === animalType);
+  
+  // Map events with player info
+  const mappedEvents = animalEvents.map(e => {
+    const player = players.find(p => p.id === e.playerId);
+    return {
+      playerId: e.playerId,
+      playerName: player?.name || 'Jugador',
+      playerInitials: player?.initials || '?',
+      holeNumber: e.holeNumber,
+      count: e.count || 1,
+    };
+  }).sort((a, b) => a.holeNumber - b.holeNumber);
+
+  // Total occurrences (sum of counts)
+  const totalOccurrences = mappedEvents.reduce((sum, e) => sum + e.count, 0);
+  const amountPerPlayer = totalOccurrences * valuePerOccurrence;
+
+  // Find last player (highest hole number with events)
+  let loser: ZoologicoAnimalResult['loser'] = null;
+  let hasTie = false;
+  let tiedPlayers: Player[] = [];
+  let tieHole: number | null = null;
+
+  if (animalEvents.length > 0) {
+    const maxHole = Math.max(...animalEvents.map(e => e.holeNumber));
+    const eventsOnLastHole = animalEvents.filter(e => e.holeNumber === maxHole);
+    
+    // Get unique players on last hole with their max count
+    const playerCountsOnLastHole = new Map<string, number>();
+    eventsOnLastHole.forEach(e => {
+      const current = playerCountsOnLastHole.get(e.playerId) || 0;
+      playerCountsOnLastHole.set(e.playerId, current + (e.count || 1));
+    });
+    
+    const maxCount = Math.max(...Array.from(playerCountsOnLastHole.values()));
+    const playersWithMaxCount = Array.from(playerCountsOnLastHole.entries())
+      .filter(([, count]) => count === maxCount)
+      .map(([playerId]) => playerId);
+
+    if (playersWithMaxCount.length > 1) {
+      hasTie = true;
+      tieHole = maxHole;
+      tiedPlayers = playersWithMaxCount
+        .map(pid => players.find(p => p.id === pid))
+        .filter((p): p is Player => p !== undefined);
+
+      // Check for manual override
+      const tieBreakers = zoologicoConfig.tieBreakers || {};
+      const override = parseZooTieBreak(tieBreakers[animalType]);
+      
+      if (override.hole === maxHole && override.playerId && playersWithMaxCount.includes(override.playerId)) {
+        const loserPlayer = players.find(p => p.id === override.playerId);
+        if (loserPlayer) {
+          hasTie = false;
+          const totalLoss = amountPerPlayer * (players.length - 1);
+          loser = {
+            playerId: loserPlayer.id,
+            name: loserPlayer.name,
+            initials: loserPlayer.initials,
+            color: loserPlayer.color,
+            totalLoss,
+          };
+        }
+      }
+    } else if (playersWithMaxCount.length === 1) {
+      const loserPlayer = players.find(p => p.id === playersWithMaxCount[0]);
+      if (loserPlayer) {
+        const totalLoss = amountPerPlayer * (players.length - 1);
+        loser = {
+          playerId: loserPlayer.id,
+          name: loserPlayer.name,
+          initials: loserPlayer.initials,
+          color: loserPlayer.color,
+          totalLoss,
+        };
+      }
+    }
+  }
+
+  return {
+    animalType,
+    emoji: animalInfo.emoji,
+    label: animalInfo.label,
+    totalOccurrences,
+    events: mappedEvents,
+    valuePerOccurrence,
+    amountPerPlayer,
+    loser,
+    hasTie,
+    tiedPlayers,
+    tieHole,
+  };
+};
+
+/**
+ * Calculate Zoológico bets for the ledger
+ */
+export const calculateZoologicoBets = (
+  players: Player[],
+  config: BetConfig,
+): BetSummary[] => {
+  if (!config.zoologico?.enabled || players.length < 2) return [];
+
+  const summaries: BetSummary[] = [];
+  const enabledAnimals = config.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+
+  enabledAnimals.forEach(animalType => {
+    const result = calculateZoologicoAnimalResult(animalType, players, config.zoologico);
+    if (!result || !result.loser || result.totalOccurrences === 0) return;
+
+    // Loser pays each other player
+    players.forEach(player => {
+      if (player.id === result.loser!.playerId) return;
+      
+      summaries.push({
+        playerId: player.id,
+        vsPlayer: result.loser!.playerId,
+        betType: `Zoológico ${result.label}`,
+        amount: result.amountPerPlayer,
+        segment: 'total',
+        description: `${result.emoji} ${result.totalOccurrences} incidencias`,
+      });
+      
+      summaries.push({
+        playerId: result.loser!.playerId,
+        vsPlayer: player.id,
+        betType: `Zoológico ${result.label}`,
+        amount: -result.amountPerPlayer,
+        segment: 'total',
+        description: `${result.emoji} ${result.totalOccurrences} incidencias`,
+      });
+    });
+  });
+
+  return summaries;
+};
