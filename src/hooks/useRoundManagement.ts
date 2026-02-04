@@ -30,6 +30,7 @@ interface RoundState {
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
   startingHole: 1 | 10;
   groupId: string | null;
+  organizerProfileId: string | null;
 }
 
 export interface PendingRoundInfo {
@@ -82,6 +83,7 @@ export const useRoundManagement = ({
     teeColor: 'white',
     startingHole: 1,
     groupId: null,
+    organizerProfileId: null,
   });
   const [roundPlayerIds, setRoundPlayerIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
@@ -354,6 +356,7 @@ export const useRoundManagement = ({
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
             startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
             groupId: mainGroupId,
+            organizerProfileId: activeRound.organizer_id,
           });
           
           // Also update parent state for starting hole
@@ -702,6 +705,7 @@ export const useRoundManagement = ({
         teeColor: teeColor as any,
         startingHole: startingHole,
         groupId: result.group_id,
+        organizerProfileId: result.organizer_profile_id,
       });
 
       setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));

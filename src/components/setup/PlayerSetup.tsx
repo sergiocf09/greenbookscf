@@ -46,6 +46,7 @@ interface PlayerSetupProps {
   defaultTeeColor?: string; // Round's default tee color
   courseId?: string | null; // Current course for Course Handicap calculation
   onAddFromFriendsClick?: () => void; // Callback to open friends dialog
+  organizerProfileId?: string | null; // Profile ID of the round organizer - cannot be deleted
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -60,6 +61,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   defaultTeeColor = 'white',
   courseId = null,
   onAddFromFriendsClick,
+  organizerProfileId = null,
 }) => {
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -151,7 +153,19 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   };
 
   const removePlayer = (id: string) => {
+    // Check if this player is the organizer - organizers cannot be removed
+    const playerToRemove = players.find(p => p.id === id);
+    if (playerToRemove && organizerProfileId && playerToRemove.profileId === organizerProfileId) {
+      toast.error('El organizador de la ronda no puede ser eliminado');
+      return;
+    }
     onChange(players.filter(p => p.id !== id));
+  };
+
+  // Check if a player is the organizer (cannot be deleted)
+  const isPlayerOrganizer = (player: Player): boolean => {
+    if (!organizerProfileId) return false;
+    return player.profileId === organizerProfileId;
   };
 
   const updatePlayer = (id: string, updates: Partial<Player>) => {
@@ -309,14 +323,17 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               </Button>
             </div>
             
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => removePlayer(player.id)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Hide delete button for organizer - organizer cannot be removed */}
+            {!isPlayerOrganizer(player) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => removePlayer(player.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         ))}
       </div>

@@ -688,6 +688,13 @@ const Index = () => {
 
   // Handle player removal - delete from database for persistence
   const handleRemovePlayer = useCallback(async (playerId: string) => {
+    // Check if this player is the organizer - organizers cannot be removed
+    const playerToRemove = players.find(p => p.id === playerId);
+    if (playerToRemove && roundState.organizerProfileId && playerToRemove.profileId === roundState.organizerProfileId) {
+      toast.error('El organizador de la ronda no puede ser eliminado');
+      return;
+    }
+    
     const rpId = roundPlayerIds.get(playerId);
     
     // If we have a round and round_player entry, delete from DB
@@ -734,7 +741,7 @@ const Index = () => {
       next.delete(playerId);
       return next;
     });
-  }, [roundState.id, roundPlayerIds, setRoundPlayerIds, setPlayers, setScores]);
+  }, [roundState.id, roundState.organizerProfileId, roundPlayerIds, setRoundPlayerIds, setPlayers, setScores, players]);
 
   // Handle players change - initialize scores for new players when round is active
   const handlePlayersChange = useCallback(async (newPlayers: Player[]) => {
@@ -1798,6 +1805,7 @@ const Index = () => {
               courseId={selectedCourseId}
               defaultTeeColor={teeColor}
               onAddFromFriendsClick={() => setShowAddFromFriendsDialog(true)}
+              organizerProfileId={roundState.organizerProfileId}
             />
             
             {/* Additional Groups */}
@@ -1825,6 +1833,7 @@ const Index = () => {
                   maxPlayers={6}
                   courseId={selectedCourseId}
                   defaultTeeColor={teeColor}
+                  organizerProfileId={roundState.organizerProfileId}
                 />
               </div>
             ))}
@@ -2051,20 +2060,28 @@ const Index = () => {
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
             />
             
-            {/* Close Scorecard Button */}
+            {/* Close Scorecard Button - only visible to organizer */}
             {isRoundStarted && roundState.status !== 'completed' && (
-              <Button 
-                variant="destructive"
-                onClick={async () => {
-                  const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-                  if (!success) setShowCloseAttemptDialog(true);
-                }}
-                disabled={isLoading || isClosing}
-                className="w-full mt-4"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Cerrar Tarjeta y Guardar
-              </Button>
+              <>
+                {profile?.id === roundState.organizerProfileId ? (
+                  <Button 
+                    variant="destructive"
+                    onClick={async () => {
+                      const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
+                      if (!success) setShowCloseAttemptDialog(true);
+                    }}
+                    disabled={isLoading || isClosing}
+                    className="w-full mt-4"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Cerrar Tarjeta y Guardar
+                  </Button>
+                ) : (
+                  <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
+                    Solo el organizador puede cerrar la tarjeta
+                  </div>
+                )}
+              </>
             )}
             
             {roundState.status === 'completed' && (
