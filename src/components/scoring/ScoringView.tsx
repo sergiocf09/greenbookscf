@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
+import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { Button } from '@/components/ui/button';
 import { Check, CheckCircle2, DollarSign } from 'lucide-react';
 
@@ -25,6 +26,10 @@ interface ScoringViewProps {
   onAddSideBet?: (bet: SideBet) => void;
   onUpdateSideBet?: (bet: SideBet) => void;
   onDeleteSideBet?: (betId: string) => void;
+  // Zoologico handlers
+  onAddZooEvent?: (event: ZooEvent) => void;
+  onUpdateZooEvent?: (event: ZooEvent) => void;
+  onDeleteZooEvent?: (eventId: string) => void;
 }
 
 export const ScoringView: React.FC<ScoringViewProps> = ({
@@ -44,6 +49,9 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onAddSideBet,
   onUpdateSideBet,
   onDeleteSideBet,
+  onAddZooEvent,
+  onUpdateZooEvent,
+  onDeleteZooEvent,
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -216,6 +224,26 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             trigger={
               <Button variant="outline" size="icon" className="shrink-0">
                 <DollarSign className="h-4 w-4" />
+              </Button>
+            }
+          />
+        )}
+        
+        {/* Zoológico Button */}
+        {betConfig.zoologico?.enabled && onAddZooEvent && (
+          <ZoologicoDialog
+            players={getAllPlayersFromAllGroups(players, playerGroups)}
+            events={betConfig.zoologico?.events || []}
+            enabledAnimals={betConfig.zoologico?.enabledAnimals || ['camello', 'pez', 'gorila']}
+            valuePerOccurrence={betConfig.zoologico?.valuePerOccurrence ?? 10}
+            onAddEvent={onAddZooEvent}
+            onUpdateEvent={onUpdateZooEvent}
+            onDeleteEvent={onDeleteZooEvent}
+            basePlayerId={profile?.id}
+            currentHole={currentHole}
+            trigger={
+              <Button variant="outline" size="sm" className="shrink-0 text-xs px-2">
+                🦁
               </Button>
             }
           />

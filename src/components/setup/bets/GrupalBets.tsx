@@ -1,12 +1,13 @@
 import React from 'react';
-import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
+import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface GrupalBetsProps {
   config: BetConfig;
@@ -127,6 +128,66 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         color="red"
       >
         <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
+      </BetSection>
+
+      {/* Zoológico - NEW */}
+      <BetSection
+        id="zoologico"
+        title="Zoológico 🦁"
+        description="Camello (bunker), Pez (agua), Gorila (OB) - último paga"
+        enabled={config.zoologico?.enabled ?? false}
+        onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
+        isExpanded={expandedSections.includes('zoologico')}
+        onExpandChange={(open) => onToggleSection('zoologico', open)}
+        color="red"
+      >
+        <AmountInput 
+          label="Valor por incidencia" 
+          value={config.zoologico?.valuePerOccurrence ?? 10} 
+          onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} 
+        />
+        
+        {/* Animal selection - ordered: Camellos, Peces, Gorilas */}
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs text-muted-foreground">Animales habilitados</Label>
+          <div className="flex flex-wrap gap-2">
+            {(['camello', 'pez', 'gorila'] as ZooAnimalType[]).map(animal => {
+              const info = ZOO_ANIMALS[animal];
+              const enabledAnimals = config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila'];
+              const isEnabled = enabledAnimals.includes(animal);
+              
+              return (
+                <button
+                  key={animal}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const current = config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila'];
+                    const newAnimals = isEnabled 
+                      ? current.filter(a => a !== animal)
+                      : [...current, animal];
+                    onUpdateBet('zoologico', { enabledAnimals: newAnimals });
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                    isEnabled 
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
+                  )}
+                >
+                  <span className="text-base">{info.emoji}</span>
+                  {info.label}
+                  {isEnabled && <Check className="h-3 w-3" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+        <p className="text-[9px] text-muted-foreground mt-2">
+          El último jugador en cometer cada tipo de incidencia paga a todos los demás.
+        </p>
       </BetSection>
 
       {/* Medal General */}

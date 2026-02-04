@@ -36,4 +36,12 @@ export const defaultBetConfig: BetConfig = {
     playerHandicaps: [] 
   },
   teamPressures: { enabled: false, bets: [] },
+  // ZOOLOGICO - NEW
+  zoologico: {
+    enabled: false,
+    valuePerOccurrence: 10, // Default $10 as per spec
+    enabledAnimals: ['camello', 'pez', 'gorila'], // All enabled by default
+    events: [],
+    tieBreakers: {},
+  },
 };
