@@ -134,7 +134,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Team Pressures - NEW */}
       <BetSection
         id="teamPressures"
-        title="Presiones por Parejas 🆕"
+        title="Presiones por Parejas"
         description="Match play por equipos, apertura automática"
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => onUpdateBet('teamPressures', { enabled })}
