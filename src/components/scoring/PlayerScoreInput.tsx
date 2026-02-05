@@ -127,19 +127,19 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             value={strokes}
             min={1}
             onChange={onStrokesChange}
-            className="flex-1"
+            className="shrink-0"
           />
           
           {/* Green Units Popover */}
           <Popover>
             <PopoverTrigger asChild>
               <button className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0",
+                "w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0",
                 activeUnits.length > 0 
                   ? "bg-green-500 text-white" 
                   : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
               )}>
-                <Check className="h-5 w-5" strokeWidth={2.5} />
+                <Check className="h-4 w-4" strokeWidth={2.5} />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2" align="end">
@@ -165,11 +165,19 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
           
           {/* Active Units Labels */}
           {activeUnits.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 flex-1">
               {activeUnits.map(m => (
-                <span key={m.key} className="text-xs text-green-600 dark:text-green-400">
-                  {markerLabels[m.key]}
-                </span>
+                <div key={m.key} className="relative inline-flex items-center">
+                  <button
+                    onClick={() => toggleMarker(m.key)}
+                    className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
+                  >
+                    <X className="h-2 w-2" strokeWidth={3} />
+                  </button>
+                  <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded">
+                    {markerLabels[m.key]}
+                  </span>
+                </div>
               ))}
             </div>
           )}
@@ -182,27 +190,19 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             value={putts}
             min={0}
             onChange={onPuttsChange}
-            className="flex-1"
+            className="shrink-0"
           />
-          
-          {/* Auto-detected putt badges */}
-          {mergedMarkers.culebra && !mergedMarkers.cuatriput && (
-            <AutoDetectedBadge type="culebra" show={true} />
-          )}
-          {mergedMarkers.cuatriput && (
-            <AutoDetectedBadge type="cuatriput" show={true} />
-          )}
           
           {/* Red Stains Popover */}
           <Popover>
             <PopoverTrigger asChild>
               <button className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0",
+                "w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0",
                 activeStains.length > 0 
                   ? "bg-destructive text-destructive-foreground" 
                   : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
               )}>
-                <X className="h-5 w-5" strokeWidth={2.5} />
+                <X className="h-4 w-4" strokeWidth={2.5} />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2" align="end">
@@ -226,16 +226,35 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             </PopoverContent>
           </Popover>
           
-          {/* Active Stains Labels */}
-          {activeStains.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+          {/* Active Stains Labels + Auto-detected badges */}
+          <div className="flex flex-wrap gap-1.5 flex-1 items-center">
+            {/* Auto-detected putt badges */}
+            {mergedMarkers.culebra && !mergedMarkers.cuatriput && (
+              <AutoDetectedBadge type="culebra" show={true} />
+            )}
+            {mergedMarkers.cuatriput && (
+              <AutoDetectedBadge type="cuatriput" show={true} />
+            )}
+            
+            {/* Manual stains */}
+            {activeStains.length > 0 && (
+              <>
               {activeStains.map(m => (
-                <span key={m.key} className="text-xs text-destructive">
-                  {markerLabels[m.key]}
-                </span>
+                <div key={m.key} className="relative inline-flex items-center">
+                  <button
+                    onClick={() => toggleMarker(m.key)}
+                    className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
+                  >
+                    <X className="h-2 w-2" strokeWidth={3} />
+                  </button>
+                  <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                    {markerLabels[m.key]}
+                  </span>
+                </div>
               ))}
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
