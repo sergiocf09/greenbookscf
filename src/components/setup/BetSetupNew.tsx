@@ -20,7 +20,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
-  const [expandedSections, setExpandedSections] = useState<string[]>(['medal']);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
   const pendingScrollRestoreRef = useRef<number | null>(null);
