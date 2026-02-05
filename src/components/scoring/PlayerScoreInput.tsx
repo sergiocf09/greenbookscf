@@ -262,18 +262,10 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         {/* Right: Score Display */}
         {strokes > 0 && (
           <div className="flex items-center gap-1.5">
-            {handicapStrokes > 0 ? (
-              <>
-                <span className="text-xs text-muted-foreground">Neto</span>
-                <span className={cn('text-sm font-semibold', getScoreColor(netToPar))}>
-                  {netScore} ({netToPar >= 0 ? '+' : ''}{netToPar})
-                </span>
-              </>
-            ) : (
-              <span className={cn('text-sm font-semibold', getScoreColor(scoreToPar))}>
-                {strokes} ({scoreToPar >= 0 ? '+' : ''}{scoreToPar})
-              </span>
-            )}
+            <span className="text-xs text-muted-foreground">Neto</span>
+            <span className={cn('text-sm font-semibold', getScoreColor(handicapStrokes > 0 ? netToPar : scoreToPar))}>
+              {handicapStrokes > 0 ? netScore : strokes} ({(handicapStrokes > 0 ? netToPar : scoreToPar) >= 0 ? '+' : ''}{handicapStrokes > 0 ? netToPar : scoreToPar})
+            </span>
           </div>
         )}
       </div>
