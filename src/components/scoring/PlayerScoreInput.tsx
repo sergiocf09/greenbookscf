@@ -188,154 +188,92 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         </div>
       </div>
 
-      {/* Net Score Display + Marker Icons */}
-      {handicapStrokes > 0 && strokes > 0 ? (
-        <div className="flex items-center justify-between pt-1 border-t border-border/50">
-          <span className="text-xs text-muted-foreground">Neto</span>
-          
-          {/* Centered Marker Icons */}
-          <div className="flex items-center gap-3">
-            {/* Green Units Popover */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                  activeUnits.length > 0 
-                    ? "bg-green-500 text-white" 
-                    : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                )}>
-                  <Check className="h-5 w-5" strokeWidth={2.5} />
+      {/* Marker Icons + Score Display */}
+      <div className="flex items-center justify-between pt-1 border-t border-border/50">
+        {/* Green Units Popover - aligned with minus buttons (left) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+              activeUnits.length > 0 
+                ? "bg-green-500 text-white" 
+                : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+            )}>
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <div className="flex flex-col gap-1">
+              {manualUnitMarkers.map(marker => (
+                <button
+                  key={marker.key}
+                  onClick={() => toggleMarker(marker.key)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
+                    markers[marker.key]
+                      ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <span>{marker.emoji}</span>
+                  <span>{marker.label}</span>
                 </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="center">
-                <div className="flex flex-col gap-1">
-                  {manualUnitMarkers.map(marker => (
-                    <button
-                      key={marker.key}
-                      onClick={() => toggleMarker(marker.key)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
-                        markers[marker.key]
-                          ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <span>{marker.emoji}</span>
-                      <span>{marker.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-            
-            {/* Red Stains Popover */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                  activeStains.length > 0 
-                    ? "bg-destructive text-destructive-foreground" 
-                    : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                )}>
-                  <X className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="center">
-                <div className="flex flex-col gap-1">
-                  {manualStainMarkers.map(marker => (
-                    <button
-                      key={marker.key}
-                      onClick={() => toggleMarker(marker.key)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
-                        markers[marker.key]
-                          ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <span>{marker.emoji}</span>
-                      <span>{marker.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        {/* Net/Gross Score Display - centered */}
+        {strokes > 0 && (
+          <div className="flex items-center gap-1.5">
+            {handicapStrokes > 0 ? (
+              <>
+                <span className="text-xs text-muted-foreground">Neto</span>
+                <span className={cn('text-sm font-semibold', getScoreColor(netToPar))}>
+                  {netScore} ({netToPar >= 0 ? '+' : ''}{netToPar})
+                </span>
+              </>
+            ) : (
+              <span className={cn('text-sm font-semibold', getScoreColor(scoreToPar))}>
+                {strokes} ({scoreToPar >= 0 ? '+' : ''}{scoreToPar})
+              </span>
+            )}
           </div>
-          
-          <span className={cn('text-sm font-semibold', getScoreColor(netToPar))}>
-            {netScore} ({netToPar >= 0 ? '+' : ''}{netToPar})
-          </span>
-        </div>
-      ) : (
-        /* Show marker icons even when no handicap strokes */
-        <div className="flex items-center justify-center pt-1 border-t border-border/50 gap-3">
-          {/* Green Units Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                activeUnits.length > 0 
-                  ? "bg-green-500 text-white" 
-                  : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-              )}>
-                <Check className="h-5 w-5" strokeWidth={2.5} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="center">
-              <div className="flex flex-col gap-1">
-                {manualUnitMarkers.map(marker => (
-                  <button
-                    key={marker.key}
-                    onClick={() => toggleMarker(marker.key)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
-                      markers[marker.key]
-                        ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    <span>{marker.emoji}</span>
-                    <span>{marker.label}</span>
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          {/* Red Stains Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                activeStains.length > 0 
-                  ? "bg-destructive text-destructive-foreground" 
-                  : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-              )}>
-                <X className="h-5 w-5" strokeWidth={2.5} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="center">
-              <div className="flex flex-col gap-1">
-                {manualStainMarkers.map(marker => (
-                  <button
-                    key={marker.key}
-                    onClick={() => toggleMarker(marker.key)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
-                      markers[marker.key]
-                        ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    <span>{marker.emoji}</span>
-                    <span>{marker.label}</span>
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
+        )}
+        
+        {/* Red Stains Popover - aligned with plus buttons (right) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+              activeStains.length > 0 
+                ? "bg-destructive text-destructive-foreground" 
+                : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+            )}>
+              <X className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="end">
+            <div className="flex flex-col gap-1">
+              {manualStainMarkers.map(marker => (
+                <button
+                  key={marker.key}
+                  onClick={() => toggleMarker(marker.key)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
+                    markers[marker.key]
+                      ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <span>{marker.emoji}</span>
+                  <span>{marker.label}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 };
