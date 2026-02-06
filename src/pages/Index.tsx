@@ -301,7 +301,31 @@ const Index = () => {
     }
   }, [pendingRounds, isRestoring, roundState.id, isRoundStarted, players.length, selectedCourseId]);
 
-  // Load summaries for pending rounds (so the user recognizes them)
+  // Persist players when round is created (players added before round creation)
+  const persistedPlayersForRoundRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!roundState.id || !roundState.groupId) return;
+    if (isRestoring) return;
+    if (persistedPlayersForRoundRef.current === roundState.id) return;
+    
+    const persistUnmappedPlayers = async () => {
+      for (const player of players) {
+        // Skip if already mapped (already persisted)
+        if (roundPlayerIds.has(player.id)) continue;
+        if (player.profileId && roundPlayerIds.has(player.profileId)) continue;
+        
+        // Skip guests (they need different handling)
+        if (!player.profileId) continue;
+        
+        // Persist this player
+        await addPlayerToRound(player, roundState.groupId!);
+      }
+      persistedPlayersForRoundRef.current = roundState.id;
+    };
+    
+    void persistUnmappedPlayers();
+  }, [roundState.id, roundState.groupId, players, roundPlayerIds, addPlayerToRound, isRestoring]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -797,7 +821,19 @@ const Index = () => {
     // Update players 
     setPlayers(newPlayers);
 
-    // If round is in progress, initialize scores for new players
+    // If we have a round ID and added players, persist them to database
+    // This works both for setup mode AND in_progress mode
+    if (roundState.id && roundState.groupId && addedPlayers.length > 0) {
+      // Persist new players to round_players table
+      for (const player of addedPlayers) {
+        // Skip if already persisted
+        if (!roundPlayerIds.has(player.id)) {
+          await addPlayerToRound(player);
+        }
+      }
+    }
+
+    // If round is in progress, also initialize scores for new players
     if (isRoundStarted && course && addedPlayers.length > 0) {
       setScores(prev => {
         const newScores = new Map(prev);
@@ -809,13 +845,8 @@ const Index = () => {
         }
         return newScores;
       });
-
-      // Add players to the round in database
-      for (const player of addedPlayers) {
-        await addPlayerToRound(player);
-      }
     }
-  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer, roundState.id, roundPlayerIds]);
+  }, [players, isRoundStarted, course, initializePlayerScores, setPlayers, addPlayerToRound, handleRemovePlayer, roundState.id, roundState.groupId, roundPlayerIds]);
 
   // Add players from friends selection
   const handleAddPlayersFromFriends = useCallback(async (selectedPlayers: Array<{
@@ -825,8 +856,8 @@ const Index = () => {
     color: string;
     handicap: number;
   }>) => {
-    if (!roundState.id || !roundState.groupId || !course) {
-      // Pre-round setup flow
+    // Case 1: Round not created yet - just add locally
+    if (!roundState.id) {
       const newPlayers: Player[] = selectedPlayers.map(p => ({
         id: p.profileId,
         name: p.name,
@@ -849,7 +880,14 @@ const Index = () => {
       return;
     }
 
-    // Mid-round: add with full persistence like handleAddGuestFromScorecard
+    // Case 2: Round exists but no group - shouldn't happen, but handle gracefully
+    if (!roundState.groupId) {
+      devError('Round exists but no groupId - cannot add players');
+      toast.error('Error de estado: no hay grupo disponible');
+      return;
+    }
+
+    // Case 3: Round exists - persist players to database
     for (const playerData of selectedPlayers) {
       // Skip if already in round
       const existingIds = new Set(players.map(p => p.profileId || p.id));
@@ -903,51 +941,53 @@ const Index = () => {
           return next;
         });
 
-        // 5) Initialize hole scores (all 18 holes, unconfirmed initially)
-        const strokesPerHole = calculateStrokesPerHole(playerData.handicap ?? 0, course);
-        const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
-          const holeNumber = i + 1;
-          const holePar = course.holes[i]?.par || 4;
-          return {
-            playerId: newPlayerId,
-            holeNumber,
-            strokes: holePar, // Default to par
-            putts: 2,
-            markers: { ...defaultMarkerState },
-            strokesReceived: strokesPerHole[i] ?? 0,
-            netScore: holePar - (strokesPerHole[i] ?? 0),
-            confirmed: false, // Not confirmed yet - user needs to enter actual scores
-          };
-        });
+        // 5) Initialize hole scores only if course is available
+        if (course) {
+          const strokesPerHole = calculateStrokesPerHole(playerData.handicap ?? 0, course);
+          const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
+            const holeNumber = i + 1;
+            const holePar = course.holes[i]?.par || 4;
+            return {
+              playerId: newPlayerId,
+              holeNumber,
+              strokes: holePar, // Default to par
+              putts: 2,
+              markers: { ...defaultMarkerState },
+              strokesReceived: strokesPerHole[i] ?? 0,
+              netScore: holePar - (strokesPerHole[i] ?? 0),
+              confirmed: false, // Not confirmed yet - user needs to enter actual scores
+            };
+          });
 
-        setScores(prev => {
-          const next = new Map(prev);
-          next.set(newPlayerId, newPlayerScores);
-          return next;
-        });
+          setScores(prev => {
+            const next = new Map(prev);
+            next.set(newPlayerId, newPlayerScores);
+            return next;
+          });
 
-        // 6) Persist hole_scores to database (unconfirmed, with default par values)
-        const scoreRecords = newPlayerScores.map(s => ({
-          round_player_id: newPlayerId,
-          hole_number: s.holeNumber,
-          strokes: s.strokes,
-          putts: s.putts,
-          strokes_received: s.strokesReceived,
-          net_score: s.netScore,
-          oyes_proximity: null,
-          oyes_proximity_sangron: null,
-          confirmed: false,
-        }));
+          // Persist hole_scores to database (unconfirmed, with default par values)
+          const scoreRecords = newPlayerScores.map(s => ({
+            round_player_id: newPlayerId,
+            hole_number: s.holeNumber,
+            strokes: s.strokes,
+            putts: s.putts,
+            strokes_received: s.strokesReceived,
+            net_score: s.netScore,
+            oyes_proximity: null,
+            oyes_proximity_sangron: null,
+            confirmed: false,
+          }));
 
-        const { error: scoresErr } = await supabase
-          .from('hole_scores')
-          .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
+          const { error: scoresErr } = await supabase
+            .from('hole_scores')
+            .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
 
-        if (scoresErr) {
-          devError('Error persisting hole_scores for friend:', scoresErr);
+          if (scoresErr) {
+            devError('Error persisting hole_scores for friend:', scoresErr);
+          }
         }
 
-        // 7) Initialize bilateral handicaps against all existing players
+        // 6) Initialize bilateral handicaps against all existing players
         const existingPlayerRpIds: string[] = [];
         const existingPlayerHandicaps = new Map<string, number>();
 
@@ -1004,7 +1044,7 @@ const Index = () => {
     if (!roundState.id) {
       const result = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (result) {
-        // Show share dialog after successful creation
+        // The useEffect will automatically persist any unmapped players
         setShowShareDialog(true);
       }
     }
@@ -1018,6 +1058,8 @@ const Index = () => {
     if (!roundState.id) {
       const roundId = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (!roundId) return;
+      // Wait for useEffect to persist unmapped players
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     // Initialize scores and start
