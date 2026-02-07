@@ -57,12 +57,21 @@ export interface SnapshotLedgerEntry {
 export interface SnapshotPlayerBalance {
   playerId: string;
   playerName: string;
+  totalGross: number; // Total gross strokes (18 holes)
   totalNet: number; // Positive = won, Negative = lost
   vsBalances: {
     rivalId: string;
     rivalName: string;
     netAmount: number; // Positive = won from this rival
+    slidingStrokes?: number; // Strokes given/received (positive = gave, negative = received)
   }[];
+}
+
+// Bilateral handicaps for the round
+export interface SnapshotBilateralHandicap {
+  playerAId: string;
+  playerBId: string;
+  strokesGivenByA: number; // Positive = A gives to B, Negative = A receives from B
 }
 
 // Complete round snapshot structure
@@ -90,6 +99,9 @@ export interface RoundSnapshot {
   // Player balances summary
   balances: SnapshotPlayerBalance[];
   
+  // Bilateral handicaps for the round
+  bilateralHandicaps?: SnapshotBilateralHandicap[];
+  
   // Course par for display
   coursePar: number;
   
@@ -109,7 +121,8 @@ export function generateRoundSnapshot(
   betSummaries: BetSummary[],
   teeColor: string,
   startingHole: 1 | 10,
-  date: string
+  date: string,
+  bilateralHandicaps?: Map<string, number> // key format: "playerAId::playerBId"
 ): RoundSnapshot {
   // Build players snapshot
   const snapshotPlayers: SnapshotPlayer[] = players.map(p => ({
@@ -197,7 +210,31 @@ export function generateRoundSnapshot(
     }
   }
 
-  // Build balances array
+  // Calculate gross totals per player
+  const grossTotals = new Map<string, number>();
+  for (const [playerId, playerScores] of scores) {
+    const totalGross = playerScores.reduce((sum, s) => sum + (s.strokes || 0), 0);
+    grossTotals.set(playerId, totalGross);
+  }
+
+  // Helper to get sliding strokes for a pair
+  const getSlidingForPair = (playerAId: string, playerBId: string): number | undefined => {
+    if (!bilateralHandicaps) return undefined;
+    
+    // Try both orderings
+    const key1 = `${playerAId}::${playerBId}`;
+    const key2 = `${playerBId}::${playerAId}`;
+    
+    if (bilateralHandicaps.has(key1)) {
+      return bilateralHandicaps.get(key1);
+    } else if (bilateralHandicaps.has(key2)) {
+      // Negate because the order is reversed
+      return -(bilateralHandicaps.get(key2) || 0);
+    }
+    return undefined;
+  };
+
+  // Build balances array with gross totals and sliding
   const balances: SnapshotPlayerBalance[] = players.map(p => {
     const balance = balanceMap.get(p.id)!;
     const vsBalances = Array.from(balance.vs.entries()).map(([rivalId, netAmount]) => {
@@ -206,16 +243,33 @@ export function generateRoundSnapshot(
         rivalId,
         rivalName: rival?.name || 'Unknown',
         netAmount,
+        slidingStrokes: getSlidingForPair(p.id, rivalId),
       };
     });
 
     return {
       playerId: p.id,
       playerName: p.name,
+      totalGross: grossTotals.get(p.id) || 0,
       totalNet: balance.total,
       vsBalances,
     };
   });
+
+  // Build bilateral handicaps array
+  const snapshotHandicaps: SnapshotBilateralHandicap[] = [];
+  if (bilateralHandicaps) {
+    for (const [key, strokes] of bilateralHandicaps) {
+      const [playerAId, playerBId] = key.split('::');
+      if (playerAId && playerBId) {
+        snapshotHandicaps.push({
+          playerAId,
+          playerBId,
+          strokesGivenByA: strokes,
+        });
+      }
+    }
+  }
 
   // Calculate course par
   const coursePar = course.holes.reduce((sum, h) => sum + h.par, 0);
@@ -233,6 +287,7 @@ export function generateRoundSnapshot(
     betConfig,
     ledger,
     balances,
+    bilateralHandicaps: snapshotHandicaps.length > 0 ? snapshotHandicaps : undefined,
     coursePar,
     closedAt: new Date().toISOString(),
   };
