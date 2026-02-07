@@ -257,6 +257,34 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     return betConfig;
   }, [hasSnapshot, snapshot, betConfig]);
 
+  // When using snapshots, bilateral handicaps must come from the snapshot too.
+  // Bet engine expects BilateralHandicap[] with absolute handicaps per side.
+  const snapshotBilateralHandicapsForEngine = useMemo(() => {
+    if (!hasSnapshot || !snapshot?.bilateralHandicaps) return [];
+
+    return snapshot.bilateralHandicaps
+      .filter((h) => h && typeof h.strokesGivenByA === 'number')
+      .map((h) => {
+        const strokes = h.strokesGivenByA;
+        if (strokes >= 0) {
+          // A gives strokes to B → B is weaker → B gets handicap=strokes, A=0
+          return {
+            playerAId: h.playerAId,
+            playerBId: h.playerBId,
+            playerAHandicap: 0,
+            playerBHandicap: strokes,
+          };
+        }
+        // A receives strokes from B → A is weaker → A gets handicap=|strokes|, B=0
+        return {
+          playerAId: h.playerAId,
+          playerBId: h.playerBId,
+          playerAHandicap: Math.abs(strokes),
+          playerBHandicap: 0,
+        };
+      });
+  }, [hasSnapshot, snapshot]);
+
   // All 18 holes are confirmed for historical view
   const confirmedHoles = useMemo(() => {
     return new Set(Array.from({ length: 18 }, (_, i) => i + 1));
@@ -337,6 +365,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             betConfig={effectiveBetConfig}
             course={course}
             confirmedHoles={confirmedHoles}
+            startingHole={hasSnapshot && snapshot ? snapshot.startingHole : undefined}
+            getBilateralHandicapsForEngine={
+              hasSnapshot && snapshot
+                ? () => snapshotBilateralHandicapsForEngine
+                : undefined
+            }
           />
         </TabsContent>
       </Tabs>
