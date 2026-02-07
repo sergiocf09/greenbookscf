@@ -7,7 +7,7 @@ import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { BetDashboard } from '@/components/bets/BetDashboard';
-import { RoundHistory, CloneRoundData } from '@/components/RoundHistory';
+import { RoundHistory, CloneRoundData, FullCloneRoundData } from '@/components/RoundHistory';
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { HistoricalBalances } from '@/components/HistoricalBalances';
@@ -499,7 +499,161 @@ const Index = () => {
     toast.success(`Datos cargados de la ronda anterior. Ajusta fecha, jugadores y configuración, luego inicia la ronda.`);
   }, []);
 
-  // Add a new player group
+  // Clone full round: copy everything including scores and create a new in_progress round
+  const handleCloneFullRound = useCallback(async (data: FullCloneRoundData) => {
+    // Close history dialog
+    setShowHistoryDialog(false);
+    
+    try {
+      toast.info('Creando ronda con scores precargados...');
+      
+      // Create a new round via RPC
+      const { data: roundResult, error: createError } = await supabase.rpc('create_round', {
+        p_course_id: data.courseId,
+        p_tee_color: data.teeColor,
+        p_date: format(new Date(), 'yyyy-MM-dd'),
+        p_bet_config: data.betConfig,
+        p_starting_hole: data.startingHole,
+      });
+
+      if (createError) throw createError;
+      const newRoundData = roundResult?.[0];
+      if (!newRoundData?.round_id) throw new Error('No se pudo crear la ronda');
+
+      const newRoundId = newRoundData.round_id;
+      const newGroupId = newRoundData.group_id;
+
+      // Map old player IDs to new ones
+      const playerIdMap = new Map<string, string>();
+      
+      // Add all players (skip the organizer who's already added)
+      for (let i = 0; i < data.players.length; i++) {
+        const p = data.players[i];
+        const originalId = (p as any).originalId;
+        
+        // Check if this is the current user (organizer)
+        if (p.profileId === profile?.id) {
+          // Map original ID to the round_player_id created by create_round
+          playerIdMap.set(originalId, newRoundData.round_player_id);
+          
+          // Update handicap for the organizer
+          await supabase
+            .from('round_players')
+            .update({ handicap_for_round: p.handicap, tee_color: p.teeColor || null })
+            .eq('id', newRoundData.round_player_id);
+          continue;
+        }
+        
+        // Insert other players
+        const isGuest = !p.profileId;
+        const { data: insertedPlayer, error: insertErr } = await supabase
+          .from('round_players')
+          .insert({
+            round_id: newRoundId,
+            group_id: newGroupId,
+            profile_id: isGuest ? null : p.profileId,
+            handicap_for_round: p.handicap,
+            guest_name: isGuest ? p.name : null,
+            guest_initials: isGuest ? p.initials : null,
+            guest_color: isGuest ? p.color : null,
+            tee_color: p.teeColor || null,
+            is_organizer: false,
+          })
+          .select('id')
+          .single();
+
+        if (insertErr) {
+          devError('Error adding player:', insertErr);
+          continue;
+        }
+        
+        if (insertedPlayer?.id && originalId) {
+          playerIdMap.set(originalId, insertedPlayer.id);
+        }
+      }
+
+      // Insert scores for each player
+      for (const [originalPlayerId, playerScores] of Object.entries(data.scores)) {
+        const newPlayerId = playerIdMap.get(originalPlayerId);
+        if (!newPlayerId) {
+          devError(`No mapping found for player ${originalPlayerId}`);
+          continue;
+        }
+
+        for (const score of playerScores as any[]) {
+          // Insert hole score
+          const { data: insertedScore, error: scoreErr } = await supabase
+            .from('hole_scores')
+            .insert({
+              round_player_id: newPlayerId,
+              hole_number: score.holeNumber,
+              strokes: score.strokes,
+              putts: score.putts,
+              oyes_proximity: score.oyesProximity,
+              oyes_proximity_sangron: score.oyesProximitySangron,
+              confirmed: true, // Pre-confirm all scores
+            })
+            .select('id')
+            .single();
+
+          if (scoreErr) {
+            devError('Error inserting score:', scoreErr);
+            continue;
+          }
+
+          // Insert markers if any
+          if (insertedScore?.id && score.markers) {
+            for (const [markerKey, isActive] of Object.entries(score.markers)) {
+              if (!isActive) continue;
+              const dbMarkerType = markerKeyToDb[markerKey as keyof typeof markerKeyToDb];
+              if (!dbMarkerType) continue;
+
+              await supabase.from('hole_markers').insert({
+                hole_score_id: insertedScore.id,
+                marker_type: dbMarkerType as any,
+                is_auto_detected: false,
+              });
+            }
+          }
+        }
+      }
+
+      // Insert bilateral handicaps with new player IDs
+      for (const bh of data.bilateralHandicaps) {
+        const newPlayerAId = playerIdMap.get(bh.playerAId);
+        const newPlayerBId = playerIdMap.get(bh.playerBId);
+        
+        if (newPlayerAId && newPlayerBId) {
+          await supabase.from('round_handicaps').insert({
+            round_id: newRoundId,
+            player_a_id: newPlayerAId,
+            player_b_id: newPlayerBId,
+            strokes_given_by_a: bh.strokesGivenByA,
+          });
+        }
+      }
+
+      // Update round to in_progress
+      await supabase
+        .from('rounds')
+        .update({ status: 'in_progress' })
+        .eq('id', newRoundId);
+
+      // Navigate to the new round by triggering a reload with restoration
+      sessionStorage.setItem('restore_round_id', newRoundId);
+      toast.success('Ronda duplicada. Redirigiendo...');
+      
+      // Small delay to show the toast
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
+    } catch (err: any) {
+      devError('Error cloning full round:', err);
+      toast.error('Error al duplicar la ronda: ' + (err.message || 'Error desconocido'));
+    }
+  }, [profile?.id]);
+
   const handleAddGroup = useCallback(async () => {
     if (!roundState.id) {
       toast.error('Primero crea/selecciona una ronda');
@@ -2158,6 +2312,7 @@ const Index = () => {
               setShowScorecardDialog(true);
             }}
             onCloneRound={handleCloneRound}
+            onCloneFullRound={handleCloneFullRound}
           />
         </DialogContent>
       </Dialog>

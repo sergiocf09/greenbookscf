@@ -56,7 +56,15 @@ export interface CloneRoundData {
     initials: string;
     color: string;
     handicap: number;
+    teeColor?: string;
   }[];
+}
+
+// Extended interface for full round duplication (including scores)
+export interface FullCloneRoundData extends CloneRoundData {
+  scores: Record<string, { holeNumber: number; strokes: number; putts: number; oyesProximity?: number | null; oyesProximitySangron?: number | null; markers?: Record<string, boolean> }[]>;
+  bilateralHandicaps: { playerAId: string; playerBId: string; strokesGivenByA: number }[];
+  sourceRoundId: string;
 }
 
 interface RoundHistoryProps {
@@ -69,9 +77,10 @@ interface RoundHistoryProps {
     date: string;
   }) => void;
   onCloneRound?: (roundData: CloneRoundData) => void;
+  onCloneFullRound?: (roundData: FullCloneRoundData) => void;
 }
 
-export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound }) => {
+export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound, onCloneFullRound }) => {
   const { profile } = useAuth();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,6 +364,84 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     }
   };
 
+  // Full clone: copy entire round including scores, handicaps, and markers from snapshot
+  const handleCloneFullRound = async (e: React.MouseEvent, round: RoundHistoryItem) => {
+    e.stopPropagation();
+    
+    if (!onCloneFullRound) {
+      toast.info('Función de duplicación íntegra no disponible');
+      return;
+    }
+
+    setLoadingClone(`full-${round.id}`);
+    
+    try {
+      // Get snapshot for this round
+      const { data: snapshotData, error: snapshotError } = await supabase
+        .from('round_snapshots')
+        .select('snapshot_json')
+        .eq('round_id', round.id)
+        .single();
+
+      if (snapshotError || !snapshotData) {
+        throw new Error('Snapshot no encontrado para esta ronda');
+      }
+
+      const snapshot = snapshotData.snapshot_json as any;
+      
+      // Extract players with their round_player IDs for mapping
+      const snapshotPlayers = (snapshot.players || []) as any[];
+      const clonePlayers = snapshotPlayers.map((p: any) => ({
+        originalId: p.id, // Store original ID for score mapping
+        profileId: p.profileId || null,
+        name: p.name,
+        initials: p.initials,
+        color: p.color,
+        handicap: p.handicap,
+        teeColor: p.teeColor,
+      }));
+
+      // Extract scores mapped by original player ID
+      const snapshotScores = snapshot.scores || {};
+      const scores: Record<string, any[]> = {};
+      for (const [playerId, playerScores] of Object.entries(snapshotScores)) {
+        scores[playerId] = (playerScores as any[]).map((s: any) => ({
+          holeNumber: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts,
+          oyesProximity: s.oyesProximity,
+          oyesProximitySangron: s.oyesProximitySangron,
+          markers: s.markers || {},
+        }));
+      }
+
+      // Extract bilateral handicaps
+      const bilateralHandicaps = (snapshot.bilateralHandicaps || []).map((bh: any) => ({
+        playerAId: bh.playerAId,
+        playerBId: bh.playerBId,
+        strokesGivenByA: bh.strokesGivenByA,
+      }));
+
+      onCloneFullRound({
+        courseId: round.courseId,
+        teeColor: round.teeColor,
+        startingHole: (snapshot.startingHole === 10 ? 10 : 1) as 1 | 10,
+        betConfig: snapshot.betConfig || {},
+        players: clonePlayers,
+        scores,
+        bilateralHandicaps,
+        sourceRoundId: round.id,
+      });
+
+      toast.success('Ronda íntegra cargada con todos los scores. Revisa y cierra la tarjeta.');
+    } catch (err) {
+      devError('Error full cloning round:', err);
+      toast.error('Error al cargar ronda íntegra');
+    } finally {
+      setLoadingClone(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -428,45 +515,64 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     </div>
                     
                     {/* Action buttons */}
-                    <div className="flex gap-2 pt-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={(e) => handleViewRound(e, round)}
-                        disabled={loadingScorecard === round.id}
-                      >
-                        {loadingScorecard === round.id ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        ) : (
-                          <Eye className="h-4 w-4 mr-1" />
-                        )}
-                        Ver Tarjeta
-                      </Button>
-                      {onCloneRound && (
+                    <div className="flex flex-col gap-2 pt-1">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={(e) => handleCloneRound(e, round)}
-                          disabled={loadingClone === round.id}
+                          onClick={(e) => handleViewRound(e, round)}
+                          disabled={loadingScorecard === round.id}
                         >
-                          {loadingClone === round.id ? (
+                          {loadingScorecard === round.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Eye className="h-4 w-4 mr-1" />
+                          )}
+                          Ver Tarjeta
+                        </Button>
+                        {onCloneRound && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={(e) => handleCloneRound(e, round)}
+                            disabled={loadingClone === round.id || loadingClone === `full-${round.id}`}
+                          >
+                            {loadingClone === round.id ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Copy className="h-4 w-4 mr-1" />
+                            )}
+                            Duplicar
+                          </Button>
+                        )}
+                        {round.isOrganizer && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => handleDeleteClick(e, round)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {/* Full clone button - only for organizers */}
+                      {round.isOrganizer && onCloneFullRound && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => handleCloneFullRound(e, round)}
+                          disabled={loadingClone === `full-${round.id}` || loadingClone === round.id}
+                        >
+                          {loadingClone === `full-${round.id}` ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                           ) : (
                             <Copy className="h-4 w-4 mr-1" />
                           )}
-                          Duplicar
-                        </Button>
-                      )}
-                      {round.isOrganizer && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => handleDeleteClick(e, round)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                          Duplicar Íntegra (con scores)
                         </Button>
                       )}
                     </div>
