@@ -221,17 +221,43 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         return;
       }
 
-      // Fetch snapshots for these rounds
-      const { data: snapshots, error: snapError } = await supabase
-        .from('round_snapshots')
-        .select('round_id, snapshot_json')
-        .in('round_id', roundIds);
+      // Fetch snapshots and round_handicaps in parallel
+      const [snapshotsResult, handicapsResult] = await Promise.all([
+        supabase
+          .from('round_snapshots')
+          .select('round_id, snapshot_json')
+          .in('round_id', roundIds),
+        supabase
+          .from('round_handicaps')
+          .select(`
+            round_id, 
+            strokes_given_by_a,
+            player_a:round_players!round_handicaps_player_a_id_fkey(profile_id),
+            player_b:round_players!round_handicaps_player_b_id_fkey(profile_id)
+          `)
+          .in('round_id', roundIds)
+      ]);
 
-      if (snapError) throw snapError;
+      if (snapshotsResult.error) throw snapshotsResult.error;
+
+      // Build a map of round_id -> handicaps with profile_ids for quick lookup
+      const handicapsByRound = new Map<string, { profileAId: string | null; profileBId: string | null; strokes: number }[]>();
+      for (const h of handicapsResult.data || []) {
+        if (!handicapsByRound.has(h.round_id)) {
+          handicapsByRound.set(h.round_id, []);
+        }
+        const profileA = (h.player_a as any)?.profile_id || null;
+        const profileB = (h.player_b as any)?.profile_id || null;
+        handicapsByRound.get(h.round_id)!.push({
+          profileAId: profileA,
+          profileBId: profileB,
+          strokes: h.strokes_given_by_a,
+        });
+      }
 
       const sharedRoundsList: SharedRound[] = [];
 
-      for (const snapshotRow of snapshots || []) {
+      for (const snapshotRow of snapshotsResult.data || []) {
         const snap = snapshotRow.snapshot_json as unknown;
         if (!isValidSnapshot(snap)) continue;
 
@@ -261,8 +287,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         const userGross = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
         const rivalGross = rivalScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
 
-        // Get sliding from bilateral handicaps
+        // Get sliding from bilateral handicaps in snapshot first
         let slidingStrokes: number | undefined = undefined;
+        
         if (snap.bilateralHandicaps) {
           const handicap = snap.bilateralHandicaps.find(
             (h: any) => 
@@ -270,16 +297,33 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               (h.playerAId === rivalPlayer.id && h.playerBId === userPlayer.id)
           );
           if (handicap) {
-            // If user is A, positive means gave strokes; if user is B, negate
             slidingStrokes = handicap.playerAId === userPlayer.id 
               ? handicap.strokesGivenByA 
               : -handicap.strokesGivenByA;
           }
         }
 
-        // Also check vsBalance for sliding if not found in bilateralHandicaps
+        // Fallback to vsBalance sliding
         if (slidingStrokes === undefined && vsRivalBalance.slidingStrokes !== undefined) {
           slidingStrokes = vsRivalBalance.slidingStrokes;
+        }
+
+        // Fallback to round_handicaps table if not in snapshot
+        // Use profileId for matching since that's what we fetched
+        if (slidingStrokes === undefined) {
+          const roundHandicaps = handicapsByRound.get(snap.roundId) || [];
+          const userProfileId = userPlayer.profileId;
+          const rivalProfileId = rivalPlayer.profileId;
+          
+          const handicapRecord = roundHandicaps.find(
+            h => (h.profileAId === userProfileId && h.profileBId === rivalProfileId) ||
+                 (h.profileAId === rivalProfileId && h.profileBId === userProfileId)
+          );
+          if (handicapRecord) {
+            slidingStrokes = handicapRecord.profileAId === userProfileId
+              ? handicapRecord.strokes
+              : -handicapRecord.strokes;
+          }
         }
 
         sharedRoundsList.push({
