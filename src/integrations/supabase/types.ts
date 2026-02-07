@@ -1111,10 +1111,15 @@ export type Database = {
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
+      rebuild_all_missing_sliding_history: { Args: never; Returns: Json }
       rebuild_all_pvp_from_snapshots: { Args: never; Returns: Json }
       rebuild_round_financials_from_snapshot: {
         Args: { p_round_id: string }
         Returns: undefined
+      }
+      rebuild_sliding_history_from_snapshot: {
+        Args: { p_round_id: string }
+        Returns: Json
       }
       rebuild_snapshot_bilateral_handicaps: { Args: never; Returns: Json }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }

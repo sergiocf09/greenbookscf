@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
-import { devError, devLog } from '@/lib/logger';
+import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary } from '@/lib/betCalculations';
@@ -1017,6 +1017,19 @@ export const useRoundManagement = ({
       } catch (e) {
         devError('Error fetching bilateral handicaps for snapshot (non-fatal):', e);
         // Non-fatal - continue without bilateral handicaps in snapshot
+      }
+
+      // VALIDATION: Check if bilateral handicaps are expected but missing
+      // This helps diagnose issues where sliding won't be calculated correctly
+      const loggedInPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
+      const expectedPairs = (loggedInPlayers.length * (loggedInPlayers.length - 1)) / 2;
+      const actualPairs = bilateralHandicapsMap?.size || 0;
+      
+      if (betConfig.pressures?.enabled && loggedInPlayers.length >= 2 && actualPairs === 0) {
+        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} logged-in players but no bilateral handicaps found. Sliding calculations will be incomplete.`);
+        devWarn(`Expected ~${expectedPairs} pairs, found ${actualPairs}. Check round_handicaps table for round ${roundState.id}`);
+      } else if (betConfig.pressures?.enabled && actualPairs < expectedPairs) {
+        devWarn(`⚠️ VALIDATION: Expected ${expectedPairs} bilateral handicap pairs, found ${actualPairs}. Some sliding may be missing.`);
       }
 
       // Generate and save the round snapshot for historical view
