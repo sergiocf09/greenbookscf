@@ -4,9 +4,9 @@
  * Displays the accumulated historical balance of bets for the logged-in user:
  * - Total net amount (won or lost)
  * - Ranking of rivals (from most won to most lost)
- * - Detail per rival with rounds shared
+ * - Detail per rival with rounds shared (from immutable snapshots)
  * 
- * Uses player_vs_player table which includes both registered players and guests.
+ * Uses player_vs_player table for rankings and round_snapshots for detailed round info.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -24,13 +24,15 @@ import {
   ChevronRight,
   ArrowLeft,
   Calendar,
-  Minus
+  Minus,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
+import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 
 interface RivalBalance {
   id: string;
@@ -49,6 +51,9 @@ interface SharedRound {
   date: string;
   courseName: string;
   netAmount: number;
+  userGross?: number;
+  rivalGross?: number;
+  slidingStrokes?: number; // Positive = user gave strokes, Negative = user received strokes
 }
 
 interface HistoricalBalancesProps {
@@ -190,7 +195,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     fetchBalances();
   }, [profile]);
 
-  // Fetch shared rounds with a specific rival
+  // Fetch shared rounds with a specific rival - reading from snapshots for accurate data
   const fetchRivalDetail = async (rival: RivalBalance) => {
     if (!profile) return;
     
@@ -198,64 +203,100 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     setSelectedRival(rival);
     
     try {
-      // Get ledger transactions between this user and the rival
+      // Get all completed rounds where both user and rival participated
+      // First, get round IDs from ledger transactions
       const { data: transactions, error } = await supabase
         .from('ledger_transactions')
-        .select(`
-          round_id,
-          amount,
-          from_profile_id,
-          to_profile_id,
-          rounds(date, golf_courses(name))
-        `)
-        .or(`from_profile_id.eq.${profile.id},to_profile_id.eq.${profile.id}`)
-        .or(
-          rival.profileId 
-            ? `from_profile_id.eq.${rival.profileId},to_profile_id.eq.${rival.profileId}`
-            : ''
-        );
+        .select('round_id')
+        .or(`from_profile_id.eq.${profile.id},to_profile_id.eq.${profile.id}`);
 
       if (error) throw error;
 
-      // Group by round and calculate net
-      const roundMap = new Map<string, SharedRound>();
+      // Get unique round IDs
+      const roundIds = [...new Set((transactions || []).map(t => t.round_id))];
       
-      for (const tx of transactions || []) {
-        const round = tx.rounds as any;
-        if (!round) continue;
-        
-        const roundId = tx.round_id;
-        
-        // Check if this transaction involves both the user and the rival
-        const involvesUser = tx.from_profile_id === profile.id || tx.to_profile_id === profile.id;
-        const involvesRival = rival.profileId && 
-          (tx.from_profile_id === rival.profileId || tx.to_profile_id === rival.profileId);
-        
-        if (!involvesUser || !involvesRival) continue;
-
-        if (!roundMap.has(roundId)) {
-          roundMap.set(roundId, {
-            roundId,
-            date: round.date,
-            courseName: round.golf_courses?.name || 'Campo desconocido',
-            netAmount: 0,
-          });
-        }
-
-        const entry = roundMap.get(roundId)!;
-        
-        // Calculate net for this user
-        if (tx.to_profile_id === profile.id) {
-          entry.netAmount += tx.amount;
-        } else if (tx.from_profile_id === profile.id) {
-          entry.netAmount -= tx.amount;
-        }
+      if (roundIds.length === 0) {
+        setSharedRounds([]);
+        setLoadingDetail(false);
+        return;
       }
 
-      const rounds = Array.from(roundMap.values());
-      rounds.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Fetch snapshots for these rounds
+      const { data: snapshots, error: snapError } = await supabase
+        .from('round_snapshots')
+        .select('round_id, snapshot_json')
+        .in('round_id', roundIds);
+
+      if (snapError) throw snapError;
+
+      const sharedRoundsList: SharedRound[] = [];
+
+      for (const snapshotRow of snapshots || []) {
+        const snap = snapshotRow.snapshot_json as unknown;
+        if (!isValidSnapshot(snap)) continue;
+
+        // Find user and rival in this snapshot
+        const userId = profile.id;
+        const rivalId = rival.profileId;
+        
+        // For guests, match by name
+        const userPlayer = snap.players.find((p: any) => p.profileId === userId);
+        const rivalPlayer = rival.isGuest
+          ? snap.players.find((p: any) => p.isGuest && p.name === rival.rivalName)
+          : snap.players.find((p: any) => p.profileId === rivalId);
+
+        if (!userPlayer || !rivalPlayer) continue;
+
+        // Get balance from snapshot
+        const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
+        const vsRivalBalance = userBalance?.vsBalances.find(
+          (vb: any) => vb.rivalId === rivalPlayer.id
+        );
+
+        if (!vsRivalBalance) continue;
+
+        // Calculate gross scores
+        const userScores = snap.scores[userPlayer.id] || [];
+        const rivalScores = snap.scores[rivalPlayer.id] || [];
+        const userGross = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+        const rivalGross = rivalScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+
+        // Get sliding from bilateral handicaps
+        let slidingStrokes: number | undefined = undefined;
+        if (snap.bilateralHandicaps) {
+          const handicap = snap.bilateralHandicaps.find(
+            (h: any) => 
+              (h.playerAId === userPlayer.id && h.playerBId === rivalPlayer.id) ||
+              (h.playerAId === rivalPlayer.id && h.playerBId === userPlayer.id)
+          );
+          if (handicap) {
+            // If user is A, positive means gave strokes; if user is B, negate
+            slidingStrokes = handicap.playerAId === userPlayer.id 
+              ? handicap.strokesGivenByA 
+              : -handicap.strokesGivenByA;
+          }
+        }
+
+        // Also check vsBalance for sliding if not found in bilateralHandicaps
+        if (slidingStrokes === undefined && vsRivalBalance.slidingStrokes !== undefined) {
+          slidingStrokes = vsRivalBalance.slidingStrokes;
+        }
+
+        sharedRoundsList.push({
+          roundId: snap.roundId,
+          date: snap.date,
+          courseName: snap.courseName,
+          netAmount: vsRivalBalance.netAmount,
+          userGross,
+          rivalGross,
+          slidingStrokes,
+        });
+      }
+
+      // Sort by date descending
+      sharedRoundsList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      setSharedRounds(rounds);
+      setSharedRounds(sharedRoundsList);
     } catch (err) {
       devError('Error fetching rival detail:', err);
     } finally {
@@ -303,8 +344,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            selectedRival.netAmount > 0 ? 'text-green-600' : 
-            selectedRival.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
+            selectedRival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
+            selectedRival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
             {selectedRival.netAmount > 0 && <TrendingUp className="h-5 w-5" />}
             {selectedRival.netAmount < 0 && <TrendingDown className="h-5 w-5" />}
@@ -314,7 +355,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </div>
 
         {/* Shared rounds list */}
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[350px]">
           {loadingDetail ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -323,33 +364,74 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No hay rondas detalladas disponibles</p>
+              <p className="text-xs mt-1">Las rondas sin snapshot no mostrarán detalles</p>
             </div>
           ) : (
             <div className="space-y-2 pr-4">
-              {sharedRounds.map((round) => (
-                <button
-                  key={round.roundId}
-                  onClick={() => onViewRound?.(round.roundId)}
-                  className="w-full p-3 bg-card border border-border rounded-lg flex items-center justify-between hover:bg-muted/50 transition-colors"
-                >
-                  <div className="text-left">
-                    <p className="font-medium text-sm">{round.courseName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(round.date), "d MMM yyyy", { locale: es })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'font-semibold',
-                      round.netAmount > 0 ? 'text-green-600' : 
-                      round.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
-                    )}>
-                      {round.netAmount >= 0 ? '+' : ''}${round.netAmount}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </button>
-              ))}
+              {sharedRounds.map((round) => {
+                const hasScores = round.userGross !== undefined && round.rivalGross !== undefined;
+                const slidingDisplay = round.slidingStrokes !== undefined 
+                  ? (round.slidingStrokes > 0 
+                      ? `+${round.slidingStrokes} (doy)` 
+                      : round.slidingStrokes < 0 
+                        ? `${round.slidingStrokes} (recibo)` 
+                        : '0')
+                  : null;
+
+                return (
+                  <button
+                    key={round.roundId}
+                    onClick={() => onViewRound?.(round.roundId)}
+                    className="w-full p-3 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  >
+                    {/* Header row: date and course */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{round.courseName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(round.date), "d MMM yyyy", { locale: es })}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+
+                    {/* Detail row: Scores, Sliding, Money */}
+                    <div className="flex items-center justify-between text-xs border-t border-border/50 pt-2 mt-1">
+                      {/* Scores */}
+                      <div className="flex items-center gap-3">
+                        {hasScores ? (
+                          <>
+                            <div className="flex items-center gap-1">
+                              <Target className="h-3 w-3 text-primary" />
+                              <span className="font-medium">Yo: {round.userGross}</span>
+                            </div>
+                            <span className="text-muted-foreground">vs</span>
+                            <span className="font-medium">{round.rivalGross}</span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">Sin datos</span>
+                        )}
+                      </div>
+
+                      {/* Sliding */}
+                      {slidingDisplay && (
+                        <span className="text-muted-foreground px-2 py-0.5 bg-muted rounded text-[10px]">
+                          {slidingDisplay}
+                        </span>
+                      )}
+
+                      {/* Money */}
+                      <span className={cn(
+                        'font-bold text-sm',
+                        round.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
+                        round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {round.netAmount >= 0 ? '+' : ''}${round.netAmount}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </ScrollArea>
@@ -379,7 +461,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            totalNet > 0 ? 'text-green-600' : totalNet < 0 ? 'text-red-500' : 'text-muted-foreground'
+            totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
             {totalNet > 0 && <TrendingUp className="h-5 w-5" />}
             {totalNet < 0 && <TrendingDown className="h-5 w-5" />}
@@ -429,8 +511,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     'font-semibold',
-                    rival.netAmount > 0 ? 'text-green-600' : 
-                    rival.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
+                    rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
+                    rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                   )}>
                     {rival.netAmount >= 0 ? '+' : ''}${rival.netAmount}
                   </span>

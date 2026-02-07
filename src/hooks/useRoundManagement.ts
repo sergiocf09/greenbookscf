@@ -985,6 +985,40 @@ export const useRoundManagement = ({
         return false;
       }
 
+      // Fetch bilateral handicaps from round_handicaps table for the snapshot
+      // These are stored with round_player_ids, we need to convert to local player IDs
+      let bilateralHandicapsMap: Map<string, number> | undefined;
+      try {
+        const { data: rhData, error: rhError } = await supabase
+          .from('round_handicaps')
+          .select('player_a_id, player_b_id, strokes_given_by_a')
+          .eq('round_id', roundState.id);
+
+        if (rhError) throw rhError;
+
+        if (rhData && rhData.length > 0) {
+          bilateralHandicapsMap = new Map();
+          
+          // Create reverse lookup from round_player_id to local player id
+          const rpIdToLocalId = new Map<string, string>();
+          for (const [localId, rpId] of roundPlayerIds) {
+            rpIdToLocalId.set(rpId, localId);
+          }
+
+          for (const rh of rhData) {
+            const localA = rpIdToLocalId.get(rh.player_a_id);
+            const localB = rpIdToLocalId.get(rh.player_b_id);
+            if (localA && localB) {
+              const key = `${localA}::${localB}`;
+              bilateralHandicapsMap.set(key, rh.strokes_given_by_a);
+            }
+          }
+        }
+      } catch (e) {
+        devError('Error fetching bilateral handicaps for snapshot (non-fatal):', e);
+        // Non-fatal - continue without bilateral handicaps in snapshot
+      }
+
       // Generate and save the round snapshot for historical view
       // This snapshot is immutable and will be used for all future historical views
       let snapshot: any = null;
@@ -998,7 +1032,8 @@ export const useRoundManagement = ({
           allBetResults,
           roundState.teeColor,
           roundState.startingHole,
-          roundState.date.toISOString().split('T')[0]
+          roundState.date.toISOString().split('T')[0],
+          bilateralHandicapsMap
         );
         pushStageOk(report, 'createSnapshot');
       } catch (e) {
