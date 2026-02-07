@@ -263,6 +263,7 @@ export interface SideBet {
   description?: string;
   holeNumber?: number; // Hole where the side bet was created
   createdAt: string;
+  deleted?: boolean; // Soft delete flag
 }
 
 export interface SideBetsConfig {
@@ -345,6 +346,7 @@ export interface ZoologicoBetConfig {
   events: ZooEvent[]; // Recorded events during the round
   // Tie-breaker per animal type: "<holeNumber>:<playerId>"
   tieBreakers?: Partial<Record<ZooAnimalType, string>>;
+  participantIds?: string[]; // Player IDs that participate (empty/undefined = all)
 }
 
 // =====================================================
@@ -403,6 +405,8 @@ export interface SkinsBetConfig {
 export interface CarosBetConfig {
   enabled: boolean;
   amount: number; // Per hole 15-18
+  startHole?: number; // Default 15
+  endHole?: number; // Default 18
 }
 
 export interface UnitsBetConfig {
@@ -419,6 +423,7 @@ export interface CumulativeBetConfig {
   enabled: boolean;
   valuePerOccurrence: number;
   tieBreakLoser?: string; // Manual override for who pays when tie on last hole
+  participantIds?: string[]; // Player IDs that participate (empty/undefined = all)
 }
 
 export interface CarritosBetConfig {

@@ -4,7 +4,7 @@ export const defaultBetConfig: BetConfig = {
   medal: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 100 },
   pressures: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 50 },
   skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: false, modality: 'acumulados' },
-  caros: { enabled: true, amount: 200 },
+  caros: { enabled: true, amount: 200, startHole: 15, endHole: 18 },
   oyeses: { enabled: false, amount: 25, playerConfigs: [] },
   units: { enabled: true, valuePerPoint: 25 },
   manchas: { enabled: true, valuePerPoint: 25 },

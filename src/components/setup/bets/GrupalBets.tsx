@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Minus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ParticipantSelector } from './ParticipantSelector';
 
 interface GrupalBetsProps {
   config: BetConfig;
@@ -114,6 +115,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         color="red"
       >
         <AmountInput label="Valor por culebra" value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
+        
+        <ParticipantSelector
+          players={players}
+          participantIds={config.culebras.participantIds}
+          onParticipantsChange={(ids) => onUpdateBet('culebras', { participantIds: ids })}
+        />
       </BetSection>
 
       {/* Pinguinos */}
@@ -128,6 +135,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         color="red"
       >
         <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
+        
+        <ParticipantSelector
+          players={players}
+          participantIds={config.pinguinos.participantIds}
+          onParticipantsChange={(ids) => onUpdateBet('pinguinos', { participantIds: ids })}
+        />
       </BetSection>
 
       {/* Zoológico - NEW */}
@@ -184,6 +197,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             })}
           </div>
         </div>
+        
+        <ParticipantSelector
+          players={players}
+          participantIds={config.zoologico?.participantIds}
+          onParticipantsChange={(ids) => onUpdateBet('zoologico', { participantIds: ids })}
+        />
         
         <p className="text-[9px] text-muted-foreground mt-2">
           El último jugador en cometer cada tipo de incidencia paga a todos los demás.

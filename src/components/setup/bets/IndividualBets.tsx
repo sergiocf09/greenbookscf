@@ -124,13 +124,45 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       <BetSection
         id="caros"
         title="Caros"
-        description="Hoyos 15-18 (ganador único)"
+        description={`Hoyos ${config.caros.startHole ?? 15}-${config.caros.endHole ?? 18} (ganador único)`}
         enabled={config.caros.enabled}
         onToggle={(enabled) => onUpdateBet('caros', { enabled })}
         isExpanded={expandedSections.includes('caros')}
         onExpandChange={(open) => onToggleSection('caros', open)}
       >
         <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
+        
+        {/* Hole range config */}
+        <div className="flex items-center gap-2 mt-2">
+          <Label className="text-xs text-muted-foreground">Rango:</Label>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              max={17}
+              value={config.caros.startHole ?? 15}
+              onChange={(e) => {
+                const start = Math.max(1, Math.min(17, parseInt(e.target.value) || 15));
+                onUpdateBet('caros', { startHole: start });
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
+            />
+            <span className="text-xs text-muted-foreground">a</span>
+            <input
+              type="number"
+              min={2}
+              max={18}
+              value={config.caros.endHole ?? 18}
+              onChange={(e) => {
+                const end = Math.max(2, Math.min(18, parseInt(e.target.value) || 18));
+                onUpdateBet('caros', { endHole: end });
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
+            />
+          </div>
+        </div>
       </BetSection>
 
       {/* Oyeses */}
