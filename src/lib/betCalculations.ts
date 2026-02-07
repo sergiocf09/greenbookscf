@@ -860,7 +860,7 @@ export const calculateSkinsBets = (
   return summaries;
 };
 
-// CAROS: Holes 15-18 special bet - Single amount per pair (not per hole)
+// CAROS: Configurable hole range (default 15-18) special bet - Single amount per pair (not per hole)
 // Win by 1 or more net strokes = win the single bet amount
 export const calculateCarosBets = (
   players: Player[],
@@ -873,7 +873,9 @@ export const calculateCarosBets = (
   if (!config.caros.enabled || config.caros.amount <= 0) return [];
   
   const summaries: BetSummary[] = [];
-  const caroHoles = [15, 16, 17, 18];
+  const startHole = config.caros.startHole ?? 15;
+  const endHole = config.caros.endHole ?? 18;
+  const caroHoles = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
   
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
@@ -1152,6 +1154,7 @@ export const calculateManchasBets = (
 
 // CULEBRAS: 3+ putts - ONLY the LAST player to make one pays ALL occurrences to ALL others
 // Find which hole(s) have culebras and determine the last one
+// Only considers players in participantIds (if provided)
 export const calculateCulebrasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -1161,10 +1164,18 @@ export const calculateCulebrasBets = (
   
   const summaries: BetSummary[] = [];
   
-  // Find all culebras with their hole numbers
+  // Filter players by participation config
+  const participantIds = config.culebras.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
+  if (participatingPlayers.length < 2) return [];
+  
+  // Find all culebras with their hole numbers (only from participating players)
   const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
   
-  players.forEach(player => {
+  participatingPlayers.forEach(player => {
     const playerScores = scores.get(player.id) || [];
     playerScores.forEach(score => {
       if (score.putts >= 3) {
@@ -1214,8 +1225,8 @@ export const calculateCulebrasBets = (
   const totalCulebras = allCulebras.length;
   const amountPerPlayer = totalCulebras * config.culebras.valuePerOccurrence;
   
-  // Last player pays each other player
-  players.forEach(player => {
+  // Last player pays each other participating player
+  participatingPlayers.forEach(player => {
     if (player.id === lastPlayerToPay) return;
     
     summaries.push({
@@ -1240,6 +1251,7 @@ export const calculateCulebrasBets = (
 };
 
 // PINGUINOS: Triple bogey or worse (3+ over par) - ONLY the LAST player pays ALL
+// Only considers players in participantIds (if provided)
 export const calculatePinguinosBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -1250,10 +1262,18 @@ export const calculatePinguinosBets = (
   
   const summaries: BetSummary[] = [];
   
-  // Find all pinguinos with their hole numbers
+  // Filter players by participation config
+  const participantIds = config.pinguinos.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
+  if (participatingPlayers.length < 2) return [];
+  
+  // Find all pinguinos with their hole numbers (only from participating players)
   const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
   
-  players.forEach(player => {
+  participatingPlayers.forEach(player => {
     const playerScores = scores.get(player.id) || [];
     playerScores.forEach(score => {
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
@@ -1305,8 +1325,8 @@ export const calculatePinguinosBets = (
   const totalPinguinos = allPinguinos.length;
   const amountPerPlayer = totalPinguinos * config.pinguinos.valuePerOccurrence;
   
-  // Last player pays each other player
-  players.forEach(player => {
+  // Last player pays each other participating player
+  participatingPlayers.forEach(player => {
     if (player.id === lastPlayerToPay) return;
     
     summaries.push({
@@ -1543,11 +1563,12 @@ export const calculateSideBets = (
   
   const summaries: BetSummary[] = [];
   
-  // Filter out invalid side bets (must have winners, losers, and positive amount)
+  // Filter out invalid side bets (must have winners, losers, positive amount, and not deleted)
   const validBets = config.sideBets.bets.filter(bet => 
     bet.winners?.length > 0 && 
     bet.losers?.length > 0 && 
-    bet.amount > 0
+    bet.amount > 0 &&
+    !bet.deleted
   );
   
   // Side Bets: Each winner gets bet.amount from EACH loser
@@ -2463,6 +2484,7 @@ export const calculateZoologicoAnimalResult = (
 
 /**
  * Calculate Zoológico bets for the ledger
+ * Only considers players in participantIds (if provided)
  */
 export const calculateZoologicoBets = (
   players: Player[],
@@ -2472,13 +2494,21 @@ export const calculateZoologicoBets = (
 
   const summaries: BetSummary[] = [];
   const enabledAnimals = config.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+  
+  // Filter players by participation config
+  const participantIds = config.zoologico.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
+  if (participatingPlayers.length < 2) return [];
 
   enabledAnimals.forEach(animalType => {
-    const result = calculateZoologicoAnimalResult(animalType, players, config.zoologico);
+    const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, config.zoologico);
     if (!result || !result.loser || result.totalOccurrences === 0) return;
 
-    // Loser pays each other player
-    players.forEach(player => {
+    // Loser pays each other participating player
+    participatingPlayers.forEach(player => {
       if (player.id === result.loser!.playerId) return;
       
       summaries.push({

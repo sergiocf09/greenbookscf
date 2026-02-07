@@ -62,6 +62,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
+import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
@@ -100,6 +101,7 @@ const Index = () => {
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
+  const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
@@ -2108,10 +2110,7 @@ const Index = () => {
                 {profile?.id === roundState.organizerProfileId ? (
                   <Button 
                     variant="destructive"
-                    onClick={async () => {
-                      const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-                      if (!success) setShowCloseAttemptDialog(true);
-                    }}
+                    onClick={() => setShowCloseConfirmDialog(true)}
                     disabled={isLoading || isClosing}
                     className="w-full mt-4"
                   >
@@ -2176,6 +2175,17 @@ const Index = () => {
                 if (!success) setShowCloseAttemptDialog(true);
               }
         }
+      />
+
+      <CloseRoundConfirmDialog
+        open={showCloseConfirmDialog}
+        onOpenChange={setShowCloseConfirmDialog}
+        isLoading={isClosing}
+        onConfirm={async () => {
+          setShowCloseConfirmDialog(false);
+          const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
+          if (!success) setShowCloseAttemptDialog(true);
+        }}
       />
 
       {/* Handicap Calculator Dialog */}
