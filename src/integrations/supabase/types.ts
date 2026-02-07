@@ -1073,6 +1073,10 @@ export type Database = {
               round_player_id: string
             }[]
           }
+      delete_round_with_financials: {
+        Args: { p_round_id: string }
+        Returns: undefined
+      }
       finalize_round_bets: {
         Args: { p_ledger: Json; p_round_id: string }
         Returns: undefined

@@ -179,17 +179,15 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
     setDeleting(true);
     try {
-      // Delete the round (this will cascade to round_players, hole_scores, etc.)
+      // Use the RPC function that handles all cleanup including player_vs_player balances
       const { error } = await supabase
-        .from('rounds')
-        .delete()
-        .eq('id', roundToDelete.id);
+        .rpc('delete_round_with_financials', { p_round_id: roundToDelete.id });
 
       if (error) throw error;
 
       // Remove from local state
       setRounds(prev => prev.filter(r => r.id !== roundToDelete.id));
-      toast.success('Ronda eliminada');
+      toast.success('Ronda eliminada y balances actualizados');
     } catch (err) {
       devError('Error deleting round:', err);
       toast.error('Error al eliminar la ronda. Solo el organizador puede eliminarla.');
