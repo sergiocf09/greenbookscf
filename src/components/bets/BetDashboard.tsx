@@ -3539,9 +3539,36 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups, betConfig.betOverrides, player, rival]);
   
-  // Get strokes from round_handicaps (centralized source of truth)
+  // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
-  const strokesFromMatrix = getStrokesForLocalPair ? getStrokesForLocalPair(player.id, rival.id) : 0;
+  const strokesFromMatrix = useMemo(() => {
+    // First try the live matrix hook (for active rounds)
+    if (getStrokesForLocalPair) {
+      return getStrokesForLocalPair(player.id, rival.id);
+    }
+    
+    // Fallback: read from effectiveBetConfig.bilateralHandicaps (for historical views)
+    const bilateral = effectiveBetConfig.bilateralHandicaps?.find(
+      (h) =>
+        (h.playerAId === player.id && h.playerBId === rival.id) ||
+        (h.playerAId === rival.id && h.playerBId === player.id)
+    );
+    if (!bilateral) return 0;
+    
+    // Convert the absolute handicaps back to strokes difference
+    // In the engine format: playerAHandicap=0, playerBHandicap=N means A gives N strokes to B
+    const isPlayerA = bilateral.playerAId === player.id;
+    if (isPlayerA) {
+      // If player is A: A.hcp=0, B.hcp=N → A gives N to B → positive
+      // If player is A: A.hcp=N, B.hcp=0 → A receives N from B → negative
+      return bilateral.playerBHandicap - bilateral.playerAHandicap;
+    } else {
+      // Player is B: A.hcp=0, B.hcp=N → B receives N from A → negative
+      // Player is B: A.hcp=N, B.hcp=0 → B gives N to A → positive
+      return bilateral.playerAHandicap - bilateral.playerBHandicap;
+    }
+  }, [getStrokesForLocalPair, effectiveBetConfig.bilateralHandicaps, player.id, rival.id]);
+  
   const strokesDifference = Math.abs(strokesFromMatrix);
   const playerReceivesStrokes = strokesFromMatrix < 0; // Negative means player receives
 
