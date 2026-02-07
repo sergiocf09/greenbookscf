@@ -1111,6 +1111,7 @@ export type Database = {
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
+      rebuild_all_pvp_from_snapshots: { Args: never; Returns: Json }
       rebuild_round_financials_from_snapshot: {
         Args: { p_round_id: string }
         Returns: undefined
