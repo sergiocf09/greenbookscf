@@ -93,13 +93,17 @@ export function useSlidingPersistence() {
     }
 
     try {
-      // Query for all pairs where both players are in our list
+      // Query for all pairs where either player is in our list
+      // We need to search both columns to find all relevant pairs
+      const orConditions = [
+        ...profileIds.map(id => `player_a_profile_id.eq.${id}`),
+        ...profileIds.map(id => `player_b_profile_id.eq.${id}`)
+      ].join(',');
+      
       const { data, error } = await supabase
         .from('sliding_current')
         .select('*')
-        .or(
-          profileIds.map(id => `player_a_profile_id.eq.${id}`).join(',')
-        );
+        .or(orConditions);
 
       if (error) {
         devError('Error loading sliding_current:', error);
