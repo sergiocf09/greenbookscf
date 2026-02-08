@@ -1172,13 +1172,18 @@ export const calculateCulebrasBets = (
   
   if (participatingPlayers.length < 2) return [];
   
-  // Find all culebras with their hole numbers (only from participating players)
+  // Create a set of participating player IDs for fast lookup
+  const participatingPlayerIds = new Set(participatingPlayers.map(p => p.id));
+  
+  // Find all culebras with their hole numbers (ONLY from participating players)
+  // This ensures that if a player is excluded from this bet, their culebras don't count
   const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
   
   participatingPlayers.forEach(player => {
     const playerScores = scores.get(player.id) || [];
     playerScores.forEach(score => {
-      if (score.putts >= 3) {
+      // Only count if player is participating AND has 3+ putts
+      if (participatingPlayerIds.has(player.id) && score.putts >= 3) {
         allCulebras.push({ 
           playerId: player.id, 
           holeNumber: score.holeNumber,
@@ -1270,7 +1275,11 @@ export const calculatePinguinosBets = (
   
   if (participatingPlayers.length < 2) return [];
   
-  // Find all pinguinos with their hole numbers (only from participating players)
+  // Create a set of participating player IDs for fast lookup
+  const participatingPlayerIds = new Set(participatingPlayers.map(p => p.id));
+  
+  // Find all pinguinos with their hole numbers (ONLY from participating players)
+  // This ensures that if a player is excluded from this bet, their pinguinos don't count
   const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
   
   participatingPlayers.forEach(player => {
@@ -1278,7 +1287,8 @@ export const calculatePinguinosBets = (
     playerScores.forEach(score => {
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
       const overPar = score.strokes - holePar;
-      if (overPar >= 3) { // Triple bogey or worse
+      // Only count if player is participating AND has triple bogey or worse
+      if (participatingPlayerIds.has(player.id) && overPar >= 3) {
         allPinguinos.push({ 
           playerId: player.id, 
           holeNumber: score.holeNumber,
@@ -2384,9 +2394,19 @@ export const calculateZoologicoAnimalResult = (
   const animalInfo = ZOO_ANIMALS[animalType];
   const valuePerOccurrence = zoologicoConfig.valuePerOccurrence || 10;
   const events = zoologicoConfig.events || [];
+  
+  // Get participant IDs (only count events from participating players)
+  const participantIds = zoologicoConfig.participantIds;
+  const participantPlayerIds = new Set(
+    participantIds && participantIds.length > 0
+      ? players.filter(p => participantIds.includes(p.id)).map(p => p.id)
+      : players.map(p => p.id)
+  );
 
-  // Filter events for this animal type
-  const animalEvents = events.filter(e => e.animalType === animalType);
+  // Filter events for this animal type AND only from participating players
+  const animalEvents = events.filter(e => 
+    e.animalType === animalType && participantPlayerIds.has(e.playerId)
+  );
   
   // Map events with player info
   const mappedEvents = animalEvents.map(e => {
@@ -2400,7 +2420,7 @@ export const calculateZoologicoAnimalResult = (
     };
   }).sort((a, b) => a.holeNumber - b.holeNumber);
 
-  // Total occurrences (sum of counts)
+  // Total occurrences (sum of counts) - only from participating players
   const totalOccurrences = mappedEvents.reduce((sum, e) => sum + e.count, 0);
   const amountPerPlayer = totalOccurrences * valuePerOccurrence;
 
