@@ -127,9 +127,17 @@ export const useRoundHandicaps = ({
     // Initial load
     void loadHandicaps();
 
-    // Setup realtime subscription
+    // Setup realtime subscription with unique channel name per round
+    const channelName = `round_handicaps_sync:${roundId}`;
+    
+    // Remove any existing channel with this name first
+    const existingChannel = supabase.getChannels().find(ch => ch.topic === channelName);
+    if (existingChannel) {
+      supabase.removeChannel(existingChannel);
+    }
+    
     const channel = supabase
-      .channel(`round_handicaps:${roundId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -139,7 +147,7 @@ export const useRoundHandicaps = ({
           filter: `round_id=eq.${roundId}`,
         },
         (payload) => {
-          devLog('Round handicaps realtime event:', payload.eventType);
+          devLog('Round handicaps realtime event:', payload.eventType, payload);
 
           if (payload.eventType === 'DELETE') {
             const old = payload.old as any;
@@ -148,6 +156,7 @@ export const useRoundHandicaps = ({
               setHandicaps((prev) => {
                 const next = new Map(prev);
                 next.delete(key);
+                devLog('Realtime: Deleted handicap for pair', key);
                 return next;
               });
             }
@@ -167,12 +176,17 @@ export const useRoundHandicaps = ({
                 createdAt: row.created_at,
                 updatedAt: row.updated_at,
               };
-              setHandicaps((prev) => new Map(prev).set(key, handicap));
+              setHandicaps((prev) => {
+                devLog('Realtime: Updated handicap for pair', key, '=', normalizedStrokes);
+                return new Map(prev).set(key, handicap);
+              });
             }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        devLog('Round handicaps subscription status:', status);
+      });
 
     subscriptionRef.current = channel;
 
@@ -183,6 +197,13 @@ export const useRoundHandicaps = ({
       }
     };
   }, [roundId, loadHandicaps, getKey]);
+  // Create a stable version key that changes when handicaps Map changes
+  // This ensures callbacks that depend on handicaps will update
+  const handicapsVersion = useMemo(() => {
+    // Create a fingerprint of the handicaps map for dependency tracking
+    const entries = Array.from(handicaps.entries());
+    return entries.map(([k, v]) => `${k}:${v.strokesGivenByA}`).join('|');
+  }, [handicaps]);
 
   // Get strokes for a specific pair (using round_player IDs)
   const getStrokesForPair = useCallback(
@@ -196,7 +217,8 @@ export const useRoundHandicaps = ({
       // If swapped, invert the strokes
       return swapped ? -handicap.strokesGivenByA : handicap.strokesGivenByA;
     },
-    [handicaps]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handicaps, handicapsVersion]
   );
 
   // Get strokes using local player IDs (convenience wrapper)
