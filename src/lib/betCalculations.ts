@@ -2446,6 +2446,9 @@ export const calculateZoologicoAnimalResult = (
       .filter(([, count]) => count === maxCount)
       .map(([playerId]) => playerId);
 
+    // Number of participating players (for loss calculation)
+    const participantCount = participantPlayerIds.size;
+    
     if (playersWithMaxCount.length > 1) {
       hasTie = true;
       tieHole = maxHole;
@@ -2461,7 +2464,7 @@ export const calculateZoologicoAnimalResult = (
         const loserPlayer = players.find(p => p.id === override.playerId);
         if (loserPlayer) {
           hasTie = false;
-          const totalLoss = amountPerPlayer * (players.length - 1);
+          const totalLoss = amountPerPlayer * (participantCount - 1);
           loser = {
             playerId: loserPlayer.id,
             name: loserPlayer.name,
@@ -2474,7 +2477,7 @@ export const calculateZoologicoAnimalResult = (
     } else if (playersWithMaxCount.length === 1) {
       const loserPlayer = players.find(p => p.id === playersWithMaxCount[0]);
       if (loserPlayer) {
-        const totalLoss = amountPerPlayer * (players.length - 1);
+        const totalLoss = amountPerPlayer * (participantCount - 1);
         loser = {
           playerId: loserPlayer.id,
           name: loserPlayer.name,
