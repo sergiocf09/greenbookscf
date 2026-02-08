@@ -197,13 +197,6 @@ export const useRoundHandicaps = ({
       }
     };
   }, [roundId, loadHandicaps, getKey]);
-  // Create a stable version key that changes when handicaps Map changes
-  // This ensures callbacks that depend on handicaps will update
-  const handicapsVersion = useMemo(() => {
-    // Create a fingerprint of the handicaps map for dependency tracking
-    const entries = Array.from(handicaps.entries());
-    return entries.map(([k, v]) => `${k}:${v.strokesGivenByA}`).join('|');
-  }, [handicaps]);
 
   // Get strokes for a specific pair (using round_player IDs)
   const getStrokesForPair = useCallback(
@@ -217,8 +210,7 @@ export const useRoundHandicaps = ({
       // If swapped, invert the strokes
       return swapped ? -handicap.strokesGivenByA : handicap.strokesGivenByA;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handicaps, handicapsVersion]
+    [handicaps]
   );
 
   // Get strokes using local player IDs (convenience wrapper)
