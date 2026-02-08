@@ -3493,7 +3493,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
-  }, [betConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
+  }, [betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance from the bet type groups for consistency
   // This ensures the header total matches the sum of all bet type rows
