@@ -643,11 +643,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     }
 
     const valuePerOccurrence = betConfig.culebras.valuePerOccurrence || 25;
+    
+    // Filter to only participating players
+    const participantIds = betConfig.culebras.participantIds;
+    const participatingPlayers = participantIds && participantIds.length > 0
+      ? players.filter(p => participantIds.includes(p.id))
+      : players;
+    
+    if (participatingPlayers.length < 2) return null;
 
-    // Find all culebras (3+ putts)
+    // Find all culebras (3+ putts) - ONLY from participating players
     const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
 
-    players.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       // NOTE: `scores` is already filtered to confirmed holes by BetDashboard.
       // Late-joined players may have `confirmed=false` on previously confirmed holes;
@@ -670,7 +678,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const occurrences: OccurrenceInfo[] = allCulebras
       .sort((a, b) => a.holeNumber - b.holeNumber)
       .map(c => {
-        const player = players.find(p => p.id === c.playerId);
+        const player = participatingPlayers.find(p => p.id === c.playerId);
         return {
           playerId: c.playerId,
           playerInitial: player?.initials?.charAt(0) || '?',
@@ -695,17 +703,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         hasTie = true;
         tieHole = maxHole;
         tiedPlayers = playersWithMaxPutts
-          .map(c => players.find(p => p.id === c.playerId))
+          .map(c => participatingPlayers.find(p => p.id === c.playerId))
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
         const override = parseTieBreak(betConfig.culebras.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxPutts.some(c => c.playerId === override.playerId)) {
-          const loserPlayer = players.find(p => p.id === override.playerId);
+          const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
           if (loserPlayer) {
             hasTie = false; // Tie resolved
-            const totalLoss = amountPerPlayer * (players.length - 1);
+            const totalLoss = amountPerPlayer * (participatingPlayers.length - 1);
             loser = {
               playerId: loserPlayer.id,
               name: loserPlayer.name,
@@ -716,9 +724,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           }
         }
       } else if (playersWithMaxPutts.length === 1) {
-        const loserPlayer = players.find(p => p.id === playersWithMaxPutts[0].playerId);
+        const loserPlayer = participatingPlayers.find(p => p.id === playersWithMaxPutts[0].playerId);
         if (loserPlayer) {
-          const totalLoss = amountPerPlayer * (players.length - 1);
+          const totalLoss = amountPerPlayer * (participatingPlayers.length - 1);
           loser = {
             playerId: loserPlayer.id,
             name: loserPlayer.name,
@@ -753,11 +761,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     }
 
     const valuePerOccurrence = betConfig.pinguinos.valuePerOccurrence || 25;
+    
+    // Filter to only participating players
+    const participantIds = betConfig.pinguinos.participantIds;
+    const participatingPlayers = participantIds && participantIds.length > 0
+      ? players.filter(p => participantIds.includes(p.id))
+      : players;
+    
+    if (participatingPlayers.length < 2) return null;
 
-    // Find all pinguinos (triple bogey or worse = +3 or more over par)
+    // Find all pinguinos (triple bogey or worse = +3 or more over par) - ONLY from participating players
     const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
 
-    players.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       // Same rationale as Culebras: rely on parent filtering by confirmed holes.
       playerScores.forEach(score => {
@@ -780,7 +796,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const occurrences: OccurrenceInfo[] = allPinguinos
       .sort((a, b) => a.holeNumber - b.holeNumber)
       .map(p => {
-        const player = players.find(pl => pl.id === p.playerId);
+        const player = participatingPlayers.find(pl => pl.id === p.playerId);
         return {
           playerId: p.playerId,
           playerInitial: player?.initials?.charAt(0) || '?',
@@ -805,17 +821,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         hasTie = true;
         tieHole = maxHole;
         tiedPlayers = playersWithMaxOverPar
-          .map(p => players.find(pl => pl.id === p.playerId))
+          .map(p => participatingPlayers.find(pl => pl.id === p.playerId))
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
         const override = parseTieBreak(betConfig.pinguinos.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxOverPar.some(p => p.playerId === override.playerId)) {
-          const loserPlayer = players.find(p => p.id === override.playerId);
+          const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
           if (loserPlayer) {
             hasTie = false; // Tie resolved
-            const totalLoss = amountPerPlayer * (players.length - 1);
+            const totalLoss = amountPerPlayer * (participatingPlayers.length - 1);
             loser = {
               playerId: loserPlayer.id,
               name: loserPlayer.name,
@@ -826,9 +842,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           }
         }
       } else if (playersWithMaxOverPar.length === 1) {
-        const loserPlayer = players.find(p => p.id === playersWithMaxOverPar[0].playerId);
+        const loserPlayer = participatingPlayers.find(p => p.id === playersWithMaxOverPar[0].playerId);
         if (loserPlayer) {
-          const totalLoss = amountPerPlayer * (players.length - 1);
+          const totalLoss = amountPerPlayer * (participatingPlayers.length - 1);
           loser = {
             playerId: loserPlayer.id,
             name: loserPlayer.name,
