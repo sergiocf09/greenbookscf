@@ -316,10 +316,7 @@ const Index = () => {
         if (roundPlayerIds.has(player.id)) continue;
         if (player.profileId && roundPlayerIds.has(player.profileId)) continue;
         
-        // Skip guests (they need different handling)
-        if (!player.profileId) continue;
-        
-        // Persist this player
+        // Persist this player (addPlayerToRound handles both registered and guest players)
         await addPlayerToRound(player, roundState.groupId!);
       }
       persistedPlayersForRoundRef.current = roundState.id;
