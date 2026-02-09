@@ -959,7 +959,14 @@ export const useRoundManagement = ({
           
           // Only create ledger entries for registered players (with profileId)
           if (winner?.profileId && loser?.profileId && isUuid(winner.profileId) && isUuid(loser.profileId)) {
-            const betType = isValidBetType(result.betType) ? result.betType : 'medal_total';
+            // Map human-readable labels to DB enum values
+            const labelToEnum: Record<string, string> = {
+              'Carritos Front': 'carritos_front',
+              'Carritos Back': 'carritos_back',
+              'Carritos Total': 'carritos_total',
+            };
+            const mappedType = labelToEnum[result.betType] ?? result.betType;
+            const betType = isValidBetType(mappedType) ? mappedType : 'medal_total';
             ledgerRecords.push({
               from_profile_id: loser.profileId,
               to_profile_id: winner.profileId,
