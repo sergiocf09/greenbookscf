@@ -2664,7 +2664,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
-  const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
+  const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
+  const getPlayerAbbr = (p: Player) => disambiguatedAbbrsLocal.get(p.id) || p.initials;
 
   // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
   const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
@@ -3647,26 +3648,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             </span>
           </div>
           
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-2">
-              <PlayerAvatar 
-                initials={getPlayerAbbr(player)} 
-                background={player.color} 
-                size="sm" 
-                isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
-              />
-              <span className="text-sm font-medium">{formatPlayerName(player.name)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{formatPlayerName(rival.name)}</span>
-              <PlayerAvatar 
-                initials={getPlayerAbbr(rival)} 
-                background={rival.color} 
-                size="sm" 
-                isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
-              />
-            </div>
-          </div>
+          
+
           
           {strokesDifference > 0 ? (
             <div className="bg-primary/10 p-2 rounded-lg text-center mt-2">
