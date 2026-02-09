@@ -160,7 +160,9 @@ export function generateRoundSnapshot(
   for (const summary of betSummaries) {
     if (summary.amount <= 0) continue; // Only process winning side
     
-    const pairKey = [summary.playerId, summary.vsPlayer, summary.betType, summary.segment, summary.holeNumber || 0]
+    // Include description to differentiate multiple entries of the same bet type
+    // between the same pair (e.g., Coneja Set 1 vs Set 2 with different winners)
+    const pairKey = [summary.playerId, summary.vsPlayer, summary.betType, summary.segment, summary.holeNumber || 0, summary.description || '']
       .sort()
       .join(':');
     
