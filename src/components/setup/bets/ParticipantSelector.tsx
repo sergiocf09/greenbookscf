@@ -3,6 +3,7 @@ import { Player } from '@/types/golf';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface ParticipantSelectorProps {
   players: Player[];
@@ -57,7 +58,7 @@ export const ParticipantSelector: React.FC<ParticipantSelectorProps> = ({
                 >
                   {player.initials}
                 </div>
-                <span className="text-xs">{player.name}</span>
+                <span className="text-xs">{formatPlayerName(player.name)}</span>
               </div>
               <Switch
                 checked={isActive}

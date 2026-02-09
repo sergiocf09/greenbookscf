@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { RayasConfig } from './RayasConfig';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface IndividualBetsProps {
   config: BetConfig;
@@ -240,7 +241,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                   >
                     {player.initials}
                   </div>
-                  <span className="text-xs">{player.name}</span>
+                  <span className="text-xs">{formatPlayerName(player.name)}</span>
                 </div>
                 
                 {isEnabled && (

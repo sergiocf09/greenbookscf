@@ -58,7 +58,7 @@ import {
 } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials, disambiguateShortNames } from '@/lib/playerInput';
 
 // BilateralHandicap is now imported from types/golf.ts
 
@@ -893,8 +893,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return getSortedPlayersForDisplay(players);
   }, [players, betSummaries, allCarritosResults]);
 
-  // Get player name abbreviation (first 3 letters)
-  const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
+  // Get player abbreviation with disambiguation
+  const disambiguatedAbbrs = useMemo(() => disambiguateInitials(allPlayersForCalculations), [allPlayersForCalculations]);
+  const disambiguatedNames = useMemo(() => disambiguateShortNames(allPlayersForCalculations), [allPlayersForCalculations]);
+  const getPlayerAbbr = (player: Player) => disambiguatedAbbrs.get(player.id) || player.initials;
   
   // Get carritos balance between two specific players
   // Returns the balance from playerA's perspective vs playerB
@@ -1202,7 +1204,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
                       />
                       <div className="flex flex-col">
-                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <span className="font-medium text-sm">{formatPlayerName(player.name).split(' ')[0]}</span>
                         <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
                         {tablaGeneralMode === 'all' && hasMultipleGroups && crossGroupOthers.length > 0 && (
                           <span className="text-[9px] text-muted-foreground/70">
@@ -1306,7 +1308,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center gap-2 min-w-0">
             <span className="text-muted-foreground">Balance de</span>
-            <span className="font-bold truncate">{basePlayer?.name || '—'}</span>
+            <span className="font-bold truncate">{formatPlayerName(basePlayer?.name || '—')}</span>
             <span className="text-muted-foreground">vs:</span>
           </CardTitle>
 
@@ -1455,7 +1457,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   size="sm" 
                                   isLoggedInUser={player.id === basePlayerId}
                                 />
-                                <span className="text-sm font-medium">{player.name.split(' ')[0]}</span>
+                                <span className="text-sm font-medium">{formatPlayerName(player.name).split(' ')[0]}</span>
                                 {isAdded && <Check className="h-4 w-4" />}
                               </button>
                             );
@@ -2083,7 +2085,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   } | null>(null);
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
-  const getPlayerAbbr = (player: Player) => player.name.substring(0, 3).toUpperCase();
+  const getPlayerAbbr = (player: Player) => player.initials;
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
 
@@ -3838,7 +3840,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
                                 style={{ backgroundColor: player.color }}
                               >
-                                {player.name.substring(0, 3).toUpperCase()}
+                                {player.initials}
                               </div>
                               <div className="flex gap-1 overflow-x-auto">
                                 {playerAHoles.map(h => (
@@ -3929,7 +3931,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Debug info - shows holes won per player for verification */}
                             {pairResult && (
                               <div className="text-[9px] text-muted-foreground bg-muted/20 p-1 rounded mb-1">
-                                Hoyos ganados: {formatPlayerName(player.name).substring(0,3)}={pairResult.winsA}, {formatPlayerName(rival.name).substring(0,3)}={pairResult.winsB} | 
+                                Hoyos ganados: {player.initials}={pairResult.winsA}, {rival.initials}={pairResult.winsB} | 
                                 Total jugados: {pairResult.settledHoles} | 
                                 Zapato: {pairResult.hasZapato ? `Sí (+$${pairResult.zapatoBonus})` : 'No'}
                               </div>

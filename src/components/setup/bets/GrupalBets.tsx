@@ -9,6 +9,7 @@ import { Plus, Minus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ParticipantSelector } from './ParticipantSelector';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface GrupalBetsProps {
   config: BetConfig;
@@ -253,7 +254,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                   >
                     {player.initials}
                   </div>
-                  <span className="text-xs font-medium">{player.name}</span>
+                   <span className="text-xs font-medium">{formatPlayerName(player.name)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -417,7 +418,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                   >
                     {player.initials}
                   </div>
-                  <span className="text-xs font-medium">{player.name}</span>
+                  <span className="text-xs font-medium">{formatPlayerName(player.name)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
