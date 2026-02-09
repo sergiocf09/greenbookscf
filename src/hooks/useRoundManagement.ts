@@ -453,22 +453,25 @@ export const useRoundManagement = ({
           setPlayers(mainGroupPlayers);
           if (setPlayerGroups) setPlayerGroups(additionalGroups);
 
-          // If user has enough completed rounds, auto-apply their USGA handicap into this round
+          // Only auto-apply USGA handicap if the user's current handicap_for_round is still 0 (default).
+          // If it was manually set or previously calculated, preserve the user's choice.
           const myRoundPlayerId = rpIdMap.get(profile.id);
-          void applyMyUsgaHandicapIfAvailable(myRoundPlayerId);
-
-          // Sanitize my handicap for unfinished rounds: keep 0 unless we can compute a valid USGA index.
-          if (activeRound.status !== 'completed' && myRoundPlayerId) {
+          if (myRoundPlayerId) {
             const myRpRow = (allRoundPlayers || []).find((rp: any) => rp.id === myRoundPlayerId);
-            const current = Number(myRpRow?.handicap_for_round);
-            const isInvalid = !Number.isFinite(current) || current < 0 || current > 54;
-            if (isInvalid) {
-              // Update backend so the wrong value doesn't keep coming back on future restores.
+            const currentHcp = Number(myRpRow?.handicap_for_round);
+            
+            if (!Number.isFinite(currentHcp) || currentHcp < 0 || currentHcp > 54) {
+              // Invalid handicap: reset to 0 and try USGA
               void supabase
                 .from('round_players')
                 .update({ handicap_for_round: 0 })
                 .eq('id', myRoundPlayerId);
+              void applyMyUsgaHandicapIfAvailable(myRoundPlayerId);
+            } else if (currentHcp === 0) {
+              // Default handicap: try to auto-apply USGA
+              void applyMyUsgaHandicapIfAvailable(myRoundPlayerId);
             }
+            // If currentHcp > 0 and valid: keep the manually set value, don't overwrite
           }
 
           // Restore course selection

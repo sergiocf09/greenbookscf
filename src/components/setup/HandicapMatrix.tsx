@@ -95,12 +95,16 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
       try {
         // Query sliding_current for all pairs where both players are in our list
+        // Search both columns to cover all pair combinations
+        const orConditions = [
+          ...profileIds.map(id => `player_a_profile_id.eq.${id}`),
+          ...profileIds.map(id => `player_b_profile_id.eq.${id}`)
+        ].join(',');
+        
         const { data, error } = await supabase
           .from('sliding_current')
           .select('*')
-          .or(
-            profileIds.map(id => `player_a_profile_id.eq.${id}`).join(',')
-          );
+          .or(orConditions);
 
         if (error) {
           devError('Error loading sliding suggestions:', error);
