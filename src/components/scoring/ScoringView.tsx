@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
@@ -79,6 +80,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     return getAllPlayersFromAllGroups(players, playerGroups);
   }, [players, playerGroups]);
 
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(displayPlayers), [displayPlayers]);
+
   // Check if hole is confirmed for the CURRENTLY DISPLAYED group only
   const isHoleConfirmedForDisplayGroup = useCallback(
     (holeNumber: number): boolean => {
@@ -143,7 +146,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           <PlayerScoreInput
             key={player.id}
             playerName={player.name}
-            playerInitials={player.initials}
+            playerInitials={disambiguatedInitials.get(player.id) || player.initials}
             avatarColor={player.color}
             holeNumber={currentHole}
             par={holePar}
