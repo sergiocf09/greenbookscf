@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Users, ArrowRight, ArrowLeft, Minus, Plus, Save, RefreshCw, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog, devError } from '@/lib/logger';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +79,9 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       return 0;
     });
   }, [players, playerGroups, basePlayerId]);
+
+  // Disambiguate initials across all players
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
 
   // Load sliding suggestions for logged-in player pairs
   useEffect(() => {
@@ -341,7 +344,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 )}
               >
                 <PlayerAvatar
-                  initials={player.initials}
+                  initials={disambiguatedInitials.get(player.id) || player.initials}
                   background={player.color}
                   size="sm"
                   isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
@@ -359,8 +362,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <PlayerAvatar
-                  initials={selectedPlayer.initials}
+                  <PlayerAvatar
+                    initials={disambiguatedInitials.get(selectedPlayer.id) || selectedPlayer.initials}
                   background={selectedPlayer.color}
                   size="md"
                   isLoggedInUser={selectedPlayer.id === basePlayerId || selectedPlayer.profileId === basePlayerId}
@@ -413,7 +416,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                     {/* Rival info */}
                     <div className="flex items-center gap-2 min-w-[100px]">
                       <PlayerAvatar
-                        initials={rival.initials}
+                        initials={disambiguatedInitials.get(rival.id) || rival.initials}
                         background={rival.color}
                         size="sm"
                         isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
