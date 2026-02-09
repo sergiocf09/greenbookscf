@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 
 interface ScorecardProps {
   players: Player[];
@@ -58,6 +59,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   }, [displayGroupIndex, players, playerGroups, basePlayerId]);
   
   const hasMultipleGroups = playerGroups.length > 0;
+  
+  // Disambiguate initials for displayed players
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(displayPlayers), [displayPlayers]);
   // IMPORTANT: Confirmation is per-player (score.confirmed).
   // We keep the confirmedHoles prop only for backwards compatibility, but we don't
   // rely on it for rendering or totals.
@@ -267,8 +271,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <tr key={player.id} className="border-t border-border/50">
                 <td className="px-2 py-1 sticky left-0 bg-card">
                   <div className="flex items-center gap-1">
-                    <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                    <span className="font-medium truncate max-w-[50px] text-xs">{player.name.split(' ')[0]}</span>
+                    <PlayerAvatar initials={disambiguatedInitials.get(player.id) || player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                    <span className="font-medium truncate max-w-[50px] text-xs">{formatPlayerName(player.name).split(' ')[0]}</span>
                     {onQuickScoreClick && (
                       <TooltipProvider>
                         <Tooltip>
@@ -375,8 +379,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 <tr key={player.id} className="border-t border-border/50">
                   <td className="px-2 py-1 sticky left-0 bg-card">
                     <div className="flex items-center gap-1">
-                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                      <span className="font-medium truncate max-w-[50px] text-xs">{player.name.split(' ')[0]}</span>
+                      <PlayerAvatar initials={disambiguatedInitials.get(player.id) || player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                      <span className="font-medium truncate max-w-[50px] text-xs">{formatPlayerName(player.name).split(' ')[0]}</span>
                       {onQuickScoreClick && (
                         <TooltipProvider>
                           <Tooltip>
@@ -451,7 +455,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     isLeader ? "bg-amber-500/20 border border-amber-500/40" : "bg-muted/50"
                   )}
                 >
-                  <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                  <PlayerAvatar initials={disambiguatedInitials.get(player.id) || player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
                   <div className="flex flex-col">
                     <span className={cn("font-bold", isLeader && "text-amber-600")}>
                       {pts?.total ?? 0} pts

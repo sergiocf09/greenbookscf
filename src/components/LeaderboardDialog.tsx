@@ -18,6 +18,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown } from 'lucide-react';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { formatPlayerNameShort, disambiguateInitials } from '@/lib/playerInput';
 
 interface LeaderboardDialogProps {
   open: boolean;
@@ -45,15 +46,6 @@ interface LeaderboardEntry {
 
 type SortMode = 'net' | 'gross' | 'stableford';
 
-// Format name as "FirstName L." where L is first initial of last name
-const formatPlayerName = (fullName: string): string => {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  const firstName = parts[0];
-  const lastInitial = parts[parts.length - 1]?.[0]?.toUpperCase() || '';
-  return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
-};
-
 export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   open,
   onOpenChange,
@@ -66,6 +58,14 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
   basePlayerId,
 }) => {
   const [sortMode, setSortMode] = useState<SortMode>('net');
+
+  // Disambiguate initials across all players
+  const allPlayersFlat = useMemo(() => {
+    const all = [...players];
+    playerGroups.forEach(g => all.push(...g.players));
+    return all;
+  }, [players, playerGroups]);
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(allPlayersFlat), [allPlayersFlat]);
 
   const leaderboard = useMemo((): LeaderboardEntry[] => {
     if (!course) return [];
@@ -277,13 +277,13 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                     <TableCell className="px-1 py-1">
                       <div className="flex items-center gap-1.5">
                         <PlayerAvatar 
-                          initials={entry.player.initials} 
+                          initials={disambiguatedInitials.get(entry.player.id) || entry.player.initials} 
                           background={entry.player.color} 
                           size="sm" 
                           isLoggedInUser={entry.player.id === basePlayerId}
                         />
                         <span className="font-medium text-xs truncate">
-                          {formatPlayerName(entry.player.name)}
+                          {formatPlayerNameShort(entry.player.name)}
                         </span>
                       </div>
                     </TableCell>

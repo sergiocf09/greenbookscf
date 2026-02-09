@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Player, BetConfig } from '@/types/golf';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface BetSummary {
   playerId: string;
@@ -181,7 +182,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground w-5">{index + 1}</span>
                 <PlayerAvatar initials={player.initials} background={player.color} size="md" isLoggedInUser={player.id === basePlayerId} />
-                <span className="font-medium">{player.name}</span>
+                <span className="font-medium">{formatPlayerName(player.name)}</span>
               </div>
               <div className={cn(
                 'text-lg font-bold flex items-center gap-1',

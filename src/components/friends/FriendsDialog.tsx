@@ -8,6 +8,7 @@ import { Search, UserPlus, UserMinus, Users, Loader2 } from 'lucide-react';
 import { useFriends, Friend, SearchResult } from '@/hooks/useFriends';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface FriendsDialogProps {
   open: boolean;
@@ -176,7 +177,7 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound 
         size="md"
       />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{friend.displayName}</p>
+        <p className="font-medium text-sm truncate">{formatPlayerName(friend.displayName)}</p>
         <p className="text-xs text-muted-foreground">
           HCP: {friend.currentHandicap}
         </p>
@@ -221,7 +222,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend
         size="md"
       />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{result.displayName}</p>
+        <p className="font-medium text-sm truncate">{formatPlayerName(result.displayName)}</p>
         <p className="text-xs text-muted-foreground">
           HCP: {result.currentHandicap}
         </p>
