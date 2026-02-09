@@ -46,7 +46,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { devError } from '@/lib/logger';
+import { devError, devWarn } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
@@ -520,8 +520,11 @@ const Index = () => {
       const newRoundId = newRoundData.round_id;
       const newGroupId = newRoundData.group_id;
 
-      // Map old player IDs to new ones
+      // Map old player IDs (from snapshot) to new round_player_ids
       const playerIdMap = new Map<string, string>();
+      // Also track guest ID remapping for betConfig (old snapshot id → new round_player_id)
+      const guestIdRemap = new Map<string, string>();
+      let failedPlayers = 0;
       
       // Add all players (skip the organizer who's already added)
       for (let i = 0; i < data.players.length; i++) {
@@ -560,57 +563,80 @@ const Index = () => {
           .single();
 
         if (insertErr) {
-          devError('Error adding player:', insertErr);
+          devError(`Error adding player ${p.name}:`, insertErr);
+          failedPlayers++;
           continue;
         }
         
         if (insertedPlayer?.id && originalId) {
           playerIdMap.set(originalId, insertedPlayer.id);
+          if (isGuest) {
+            guestIdRemap.set(originalId, insertedPlayer.id);
+          }
         }
       }
 
+      if (failedPlayers > 0) {
+        devWarn(`${failedPlayers} jugador(es) no se pudieron agregar`);
+      }
+
       // Insert scores for each player
+      let failedScores = 0;
       for (const [originalPlayerId, playerScores] of Object.entries(data.scores)) {
         const newPlayerId = playerIdMap.get(originalPlayerId);
         if (!newPlayerId) {
           devError(`No mapping found for player ${originalPlayerId}`);
+          failedScores++;
           continue;
         }
 
-        for (const score of playerScores as any[]) {
-          // Insert hole score
-          const { data: insertedScore, error: scoreErr } = await supabase
-            .from('hole_scores')
-            .insert({
-              round_player_id: newPlayerId,
-              hole_number: score.holeNumber,
-              strokes: score.strokes,
-              putts: score.putts,
-              oyes_proximity: score.oyesProximity,
-              oyes_proximity_sangron: score.oyesProximitySangron,
-              confirmed: true, // Pre-confirm all scores
-            })
-            .select('id')
-            .single();
+        // Batch insert all scores for this player
+        const scoreInserts = (playerScores as any[]).map((score: any) => ({
+          round_player_id: newPlayerId,
+          hole_number: score.holeNumber,
+          strokes: score.strokes,
+          putts: score.putts,
+          oyes_proximity: score.oyesProximity,
+          oyes_proximity_sangron: score.oyesProximitySangron,
+          confirmed: true,
+        }));
 
-          if (scoreErr) {
-            devError('Error inserting score:', scoreErr);
-            continue;
-          }
+        const { data: insertedScores, error: scoreErr } = await supabase
+          .from('hole_scores')
+          .insert(scoreInserts)
+          .select('id, hole_number');
 
-          // Insert markers if any
-          if (insertedScore?.id && score.markers) {
+        if (scoreErr) {
+          devError(`Error inserting scores for player ${originalPlayerId}:`, scoreErr);
+          failedScores++;
+          continue;
+        }
+
+        // Insert markers if any (batch by hole)
+        if (insertedScores?.length) {
+          const scoreIdByHole = new Map<number, string>();
+          insertedScores.forEach((s: any) => scoreIdByHole.set(s.hole_number, s.id));
+
+          const markerInserts: { hole_score_id: string; marker_type: any; is_auto_detected: boolean }[] = [];
+          for (const score of playerScores as any[]) {
+            if (!score.markers) continue;
+            const holeScoreId = scoreIdByHole.get(score.holeNumber);
+            if (!holeScoreId) continue;
+            
             for (const [markerKey, isActive] of Object.entries(score.markers)) {
               if (!isActive) continue;
               const dbMarkerType = markerKeyToDb[markerKey as keyof typeof markerKeyToDb];
               if (!dbMarkerType) continue;
-
-              await supabase.from('hole_markers').insert({
-                hole_score_id: insertedScore.id,
+              markerInserts.push({
+                hole_score_id: holeScoreId,
                 marker_type: dbMarkerType as any,
                 is_auto_detected: false,
               });
             }
+          }
+
+          if (markerInserts.length > 0) {
+            await supabase.from('hole_markers').insert(markerInserts);
           }
         }
       }
@@ -630,20 +656,35 @@ const Index = () => {
         }
       }
 
-      // Update round to in_progress
+      // Remap guest player IDs in betConfig so team bets reference the new round_player_ids
+      let remappedBetConfig = data.betConfig;
+      if (guestIdRemap.size > 0) {
+        let configJson = JSON.stringify(data.betConfig);
+        for (const [oldId, newId] of guestIdRemap) {
+          configJson = configJson.split(oldId).join(newId);
+        }
+        remappedBetConfig = JSON.parse(configJson);
+      }
+
+      // Update round to in_progress with remapped betConfig
       await supabase
         .from('rounds')
-        .update({ status: 'in_progress' })
+        .update({ status: 'in_progress', bet_config: remappedBetConfig })
         .eq('id', newRoundId);
 
-      // Navigate to the new round by triggering a reload with restoration
+      // Navigate to the new round by triggering restore
       sessionStorage.setItem('restore_round_id', newRoundId);
-      toast.success('Ronda duplicada. Redirigiendo...');
       
-      // Small delay to show the toast
+      if (failedScores > 0) {
+        toast.warning(`Ronda duplicada con ${failedScores} score(s) incompletos. Redirigiendo...`);
+      } else {
+        toast.success('Ronda duplicada exitosamente. Redirigiendo...');
+      }
+      
+      // Force reload to trigger restore mechanism
       setTimeout(() => {
         window.location.reload();
-      }, 500);
+      }, 300);
       
     } catch (err: any) {
       devError('Error cloning full round:', err);
