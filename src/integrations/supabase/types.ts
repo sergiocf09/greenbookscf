@@ -1121,6 +1121,7 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: Json
       }
+      rebuild_snapshot_balances_from_ledger: { Args: never; Returns: Json }
       rebuild_snapshot_bilateral_handicaps: { Args: never; Returns: Json }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
       search_profiles: {
