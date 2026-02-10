@@ -51,6 +51,7 @@ import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
+import { ProfileDialog } from '@/components/ProfileDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,10 +75,6 @@ const Index = () => {
   const { profile, signOut, updateProfile } = useAuth();
 
   const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [manualHandicap, setManualHandicap] = useState<string>("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
   const [view, setView] = useState<AppView>('setup');
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -818,11 +815,6 @@ const Index = () => {
     }
   }, [profile, players.length, isRestoring]);
 
-  // Keep dialog fields in sync
-  useEffect(() => {
-    if (!profile) return;
-    setManualHandicap(String(profile.current_handicap ?? ""));
-  }, [profile?.id, profile?.current_handicap]);
 
   // Can create and start round with just 1 player (for solo score tracking)
   const canCreateRound = players.length >= 1 && course !== null;
@@ -1865,112 +1857,7 @@ const Index = () => {
             </DropdownMenu>
           </div>
 
-          <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Perfil</DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-5">
-                <div className="flex items-center gap-3">
-                  {profile?.initials && (
-                    <PlayerAvatar
-                      initials={profile.initials}
-                      background={profile.avatar_color || "#3B82F6"}
-                      size="md"
-                    />
-                  )}
-                  <div>
-                    <p className="font-semibold leading-tight">{profile?.display_name}</p>
-                    <p className="text-xs text-muted-foreground">Ajustes de cuenta</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="manual-handicap">Handicap (manual)</Label>
-                  <Input
-                    id="manual-handicap"
-                    inputMode="decimal"
-                    value={manualHandicap}
-                    onChange={(e) => setManualHandicap(e.target.value)}
-                    placeholder="Ej. 12.4"
-                  />
-                  <Button
-                    type="button"
-                    className="w-full"
-                    disabled={!profile || savingProfile}
-                    onClick={async () => {
-                      if (!profile) return;
-                      const parsed = Number(String(manualHandicap).replace(",", "."));
-                      if (!Number.isFinite(parsed)) {
-                        toast.error("Handicap inválido");
-                        return;
-                      }
-
-                      setSavingProfile(true);
-                      try {
-                        await updateProfile({ current_handicap: parsed });
-                        toast.success("Handicap actualizado");
-                      } catch (e: any) {
-                        toast.error("No se pudo actualizar", { description: e?.message });
-                      } finally {
-                        setSavingProfile(false);
-                      }
-                    }}
-                  >
-                    {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar Handicap"}
-                  </Button>
-                </div>
-
-                <div className="border-t border-border pt-4 space-y-2">
-                  <Label htmlFor="new-password">Cambiar contraseña</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Nueva contraseña"
-                    minLength={6}
-                  />
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirmar contraseña"
-                    minLength={6}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    disabled={!newPassword || newPassword.length < 6 || savingProfile}
-                    onClick={async () => {
-                      if (newPassword !== confirmPassword) {
-                        toast.error("Las contraseñas no coinciden");
-                        return;
-                      }
-
-                      setSavingProfile(true);
-                      try {
-                        const { error } = await supabase.auth.updateUser({ password: newPassword });
-                        if (error) throw error;
-                        toast.success("Contraseña actualizada");
-                        setNewPassword("");
-                        setConfirmPassword("");
-                      } catch (e: any) {
-                        toast.error("No se pudo actualizar la contraseña", { description: e?.message });
-                      } finally {
-                        setSavingProfile(false);
-                      }
-                    }}
-                  >
-                    {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : "Actualizar contraseña"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
         </div>
       </header>
 
