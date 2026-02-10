@@ -206,17 +206,24 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     setSelectedRival(rival);
     
     try {
-      // Get all completed rounds where both user and rival participated
-      // First, get round IDs from ledger transactions
-      const { data: transactions, error } = await supabase
-        .from('ledger_transactions')
-        .select('round_id')
-        .or(`from_profile_id.eq.${profile.id},to_profile_id.eq.${profile.id}`);
+      // Get round IDs from both ledger transactions AND snapshots
+      // (some pre-migration rounds only have guest balances in snapshots, no ledger entries)
+      const [ledgerResult, snapshotsListResult] = await Promise.all([
+        supabase
+          .from('ledger_transactions')
+          .select('round_id')
+          .or(`from_profile_id.eq.${profile.id},to_profile_id.eq.${profile.id}`),
+        supabase
+          .from('round_snapshots')
+          .select('round_id')
+      ]);
 
-      if (error) throw error;
+      if (ledgerResult.error) throw ledgerResult.error;
 
-      // Get unique round IDs
-      const roundIds = [...new Set((transactions || []).map(t => t.round_id))];
+      // Combine round IDs from both sources
+      const ledgerRoundIds = (ledgerResult.data || []).map(t => t.round_id);
+      const snapshotRoundIds = (snapshotsListResult.data || []).map(s => s.round_id);
+      const roundIds = [...new Set([...ledgerRoundIds, ...snapshotRoundIds])];
       
       if (roundIds.length === 0) {
         setSharedRounds([]);
