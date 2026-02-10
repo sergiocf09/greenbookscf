@@ -59,18 +59,23 @@ export const getAdjustedScoresForPair = (
     playerB.profileId
   );
   
-  // If no override, return original scores
-  if (!override) return scores;
+  // Determine bilateral handicaps for each player.
+  // If an override exists, use it. Otherwise, default to SCRATCH (0, 0)
+  // so that bilateral comparisons (pressures, skins, medal, etc.) never
+  // accidentally use individual round handicaps.
+  let handicapA = 0;
+  let handicapB = 0;
   
-  // Determine which player is A and which is B in the override
-  // Check both id and profileId for matching
-  const matchesPlayerA = (id: string) => 
-    id === playerA.id || (playerA.profileId && id === playerA.profileId);
-  const isPlayerAFirst = matchesPlayerA(override.playerAId);
-  const handicapA = isPlayerAFirst ? override.playerAHandicap : override.playerBHandicap;
-  const handicapB = isPlayerAFirst ? override.playerBHandicap : override.playerAHandicap;
+  if (override) {
+    // Determine which player is A and which is B in the override
+    const matchesPlayerA = (id: string) => 
+      id === playerA.id || (playerA.profileId && id === playerA.profileId);
+    const isPlayerAFirst = matchesPlayerA(override.playerAId);
+    handicapA = isPlayerAFirst ? override.playerAHandicap : override.playerBHandicap;
+    handicapB = isPlayerAFirst ? override.playerBHandicap : override.playerAHandicap;
+  }
   
-  // Calculate strokes per hole for each player with overridden handicaps
+  // Calculate strokes per hole for each player with bilateral handicaps
   const strokesPerHoleA = calculateStrokesPerHole(handicapA, course);
   const strokesPerHoleB = calculateStrokesPerHole(handicapB, course);
   
