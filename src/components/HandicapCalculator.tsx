@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, TrendingDown, TrendingUp, Minus, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 
 interface RoundScore {
   date: string;
@@ -233,7 +234,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
               )}
             >
               <span className="text-muted-foreground text-xs">
-                {new Date(round.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
+                {parseLocalDate(round.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
               </span>
               <span className="text-center">{round.grossScore}</span>
               <span className={cn(

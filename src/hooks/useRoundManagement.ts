@@ -13,6 +13,7 @@ import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary } from '@/lib/betCalculations';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
   type CloseAttemptReport,
@@ -351,7 +352,7 @@ export const useRoundManagement = ({
           setRoundState({
             id: activeRound.id,
             status: activeRound.status as 'setup' | 'in_progress' | 'completed',
-            date: new Date(activeRound.date),
+            date: parseLocalDate(activeRound.date),
             courseId: activeRound.course_id,
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
             startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
@@ -635,7 +636,7 @@ export const useRoundManagement = ({
         const mappedPending: PendingRoundInfo[] = (rounds || []).map((r: any) => ({
           roundId: r.id,
           status: r.status as 'setup' | 'in_progress',
-          date: new Date(r.date),
+          date: parseLocalDate(r.date),
           courseId: r.course_id,
           courseName: r.golf_courses?.name ?? undefined,
           teeColor: r.tee_color as any,

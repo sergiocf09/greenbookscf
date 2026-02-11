@@ -11,6 +11,7 @@ import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer } from '@/lib/roundSnapshot';
 import { devError, devLog } from '@/lib/logger';
+import { parseLocalDate } from '@/lib/dateUtils';
 
 interface PlayerScoreData {
   playerId: string;
@@ -320,7 +321,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       <div className="text-center pb-2 border-b border-border">
         <h3 className="font-semibold text-lg text-primary">{displayData.courseName}</h3>
         <p className="text-sm text-muted-foreground">
-          {format(new Date(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
+          {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
         </p>
         {hasSnapshot && (
           <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">

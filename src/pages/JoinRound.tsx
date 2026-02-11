@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 
 interface GroupInfo {
   id: string;
@@ -196,7 +197,7 @@ const JoinRound = () => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span>
-                  {format(new Date(roundInfo.date), "EEEE d 'de' MMMM", { locale: es })}
+                  {format(parseLocalDate(roundInfo.date), "EEEE d 'de' MMMM", { locale: es })}
                 </span>
               </div>
               <div className="text-sm text-muted-foreground">

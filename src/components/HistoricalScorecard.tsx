@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { GolfCourse } from '@/types/golf';
 
 interface PlayerScoreData {
@@ -67,7 +68,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
         <h3 className="text-sm font-semibold text-primary">{course.name}</h3>
         <p className="text-[10px] text-muted-foreground">
-          {format(new Date(date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {teeColor}
+          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {teeColor}
         </p>
       </div>
 
