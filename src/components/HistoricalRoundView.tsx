@@ -372,6 +372,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                 ? () => snapshotBilateralHandicapsForEngine
                 : undefined
             }
+            snapshotBalances={hasSnapshot && snapshot ? snapshot.balances : undefined}
           />
         </TabsContent>
       </Tabs>
