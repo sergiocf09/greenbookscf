@@ -41,6 +41,7 @@ interface RoundBetConfig {
     backValue: number;
     medalTotalValue: number;
     skinVariant: 'acumulados' | 'sinAcumulacion';
+    oyesMode?: 'allVsAll' | 'singleWinner';
     segments?: {
       skins: { enabled: boolean; frontValue: number; backValue: number };
       units: { enabled: boolean; frontValue: number; backValue: number };
@@ -356,6 +357,7 @@ export const useBetConfigPersistence = ({
           backValue: config.rayas.backValue,
           medalTotalValue: config.rayas.medalTotalValue,
           skinVariant: config.rayas.skinVariant,
+          oyesMode: config.rayas.oyesMode,
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
         },
