@@ -4318,7 +4318,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       data.playerNet < data.rivalNet ? 'text-green-600' : 
                                       data.playerNet > data.rivalNet ? 'text-destructive' : ''
                                     )}>
-                                      {isSkins ? `${data.playerNet}` : data.playerNet || '-'}
+                                      {isSkins ? `${data.playerNet}` : (data.playerNet !== undefined && data.playerNet !== null ? data.playerNet : '-')}
                                     </span>
                                     <span className="text-muted-foreground">vs</span>
                                     <span className={cn(
@@ -4326,7 +4326,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       data.rivalNet < data.playerNet ? 'text-green-600' : 
                                       data.rivalNet > data.playerNet ? 'text-destructive' : ''
                                     )}>
-                                      {isSkins ? `${data.rivalNet}` : data.rivalNet || '-'}
+                                      {isSkins ? `${data.rivalNet}` : (data.rivalNet !== undefined && data.rivalNet !== null ? data.rivalNet : '-')}
                                     </span>
                                   </>
                                 )}
