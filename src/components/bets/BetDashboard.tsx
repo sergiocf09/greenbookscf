@@ -742,9 +742,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // - Medal General: calculated dynamically using getMedalGeneralBilateralResult
     // - Carritos: pair bets shown separately in Tabla General
     // - Presiones Parejas: pair bets shown separately in Tabla General
+    // - Any bet type disabled via betOverrides for this pair
     // These exclusions ensure the bilateral balance matches the detail view and
     // separates individual bets from pair bets in the Tabla General.
     const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+    
+    // Map engine betType labels to the override key used by isBetDisabledForPair
+    const betTypeToOverrideKey = (betType: string): { label: string; aliases: string[] } => {
+      if (betType.startsWith('Medal') && betType !== 'Medal General') return { label: 'Medal', aliases: ['medal'] };
+      if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return { label: 'Presiones', aliases: ['pressures'] };
+      if (betType.startsWith('Skins')) return { label: 'Skins', aliases: ['skins'] };
+      if (betType === 'Caros') return { label: 'Caros', aliases: ['caros'] };
+      if (betType === 'Oyes') return { label: 'Oyes', aliases: ['oyeses'] };
+      if (betType === 'Unidades') return { label: 'Unidades', aliases: ['units'] };
+      if (betType === 'Manchas') return { label: 'Manchas', aliases: ['manchas'] };
+      if (betType === 'Culebras') return { label: 'Culebras', aliases: ['culebras'] };
+      if (betType.includes('Pingüino')) return { label: 'Pingüinos', aliases: ['pinguinos'] };
+      if (betType === 'Coneja') return { label: 'Coneja', aliases: ['coneja'] };
+      if (betType === 'Putts' || betType.startsWith('Putts')) return { label: 'Putts', aliases: ['putts'] };
+      if (betType === 'Side Bet') return { label: 'Side Bet', aliases: ['sideBets', 'sidebets'] };
+      if (betType === 'Stableford') return { label: 'Stableford', aliases: ['stableford'] };
+      return { label: betType, aliases: [] };
+    };
+    
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -754,6 +774,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         s.betType !== 'Presiones Parejas' &&
         !carritosTypes.includes(s.betType)
       )
+      .filter(s => {
+        // Check if this bet type is disabled via override for this pair
+        const { label, aliases } = betTypeToOverrideKey(s.betType);
+        return !isBetDisabledForPair(label, aliases);
+      })
       .reduce((sum, s) => sum + s.amount, 0);
     
     // Calculate correct Rayas total using getRayasDetailForPair
@@ -2813,6 +2838,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Medal General';
         case 'coneja':
           return 'Coneja';
+        case 'sideBets':
+          return 'Side Bet';
+        case 'putts':
+          return 'Putts';
+        case 'stableford':
+          return 'Stableford';
+        case 'teamPressures':
+          return 'Presiones Parejas';
         default:
           return overrideLabel;
       }
@@ -3454,6 +3487,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       
       // Check if any side bets involve this pair
       const relevantBets = betConfig.sideBets.bets.filter(bet => {
+        if (bet.deleted) return false;
         const hasPlayer = bet.winners.includes(player.id) || bet.losers.includes(player.id);
         const hasRival = bet.winners.includes(rival.id) || bet.losers.includes(rival.id);
         return hasPlayer && hasRival;
