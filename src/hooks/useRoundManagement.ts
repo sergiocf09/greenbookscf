@@ -501,6 +501,12 @@ export const useRoundManagement = ({
               carritosTeams: incoming.carritosTeams ?? defaultBetConfig.carritosTeams,
               betOverrides: incoming.betOverrides ?? defaultBetConfig.betOverrides,
               bilateralHandicaps: incoming.bilateralHandicaps ?? defaultBetConfig.bilateralHandicaps,
+              crossGroupRivals: incoming.crossGroupRivals ?? defaultBetConfig.crossGroupRivals,
+              sideBets: incoming.sideBets ?? defaultBetConfig.sideBets,
+              putts: { ...defaultBetConfig.putts, ...incoming.putts },
+              stableford: incoming.stableford ?? defaultBetConfig.stableford,
+              teamPressures: incoming.teamPressures ?? defaultBetConfig.teamPressures,
+              zoologico: incoming.zoologico ?? defaultBetConfig.zoologico,
             };
             setBetConfig(merged);
           }
