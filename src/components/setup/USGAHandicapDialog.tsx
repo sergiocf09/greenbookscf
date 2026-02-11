@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useUSGAHandicap, RoundDifferential } from '@/hooks/useUSGAHandicap';
 import { Loader2, TrendingDown, Calendar, Flag, CheckCircle2, AlertCircle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -286,7 +287,7 @@ const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Calendar className="h-3 w-3" />
-          <span>{format(new Date(round.date), 'dd MMM yyyy', { locale: es })}</span>
+          <span>{format(parseLocalDate(round.date), 'dd MMM yyyy', { locale: es })}</span>
           <span className="text-[10px]">
             (R:{round.courseRating}/S:{round.slopeRating})
           </span>

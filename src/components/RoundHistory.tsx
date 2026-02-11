@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { devError } from '@/lib/logger';
+import { parseLocalDate } from '@/lib/dateUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -480,7 +481,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <p className="font-medium text-sm">{round.courseName}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(round.date), "d MMM yyyy", { locale: es })}
+                        {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
                       </p>
                     </div>
                   </div>
@@ -591,7 +592,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             <AlertDialogTitle>¿Eliminar esta ronda?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminarán todos los scores, 
-              transacciones y datos asociados a esta ronda del {roundToDelete && format(new Date(roundToDelete.date), "d 'de' MMMM, yyyy", { locale: es })}.
+              transacciones y datos asociados a esta ronda del {roundToDelete && format(parseLocalDate(roundToDelete.date), "d 'de' MMMM, yyyy", { locale: es })}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

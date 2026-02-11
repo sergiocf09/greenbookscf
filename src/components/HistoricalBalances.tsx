@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -348,7 +349,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       }
 
       // Sort by date descending
-      sharedRoundsList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      sharedRoundsList.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
       
       setSharedRounds(sharedRoundsList);
     } catch (err) {
@@ -443,7 +444,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       <div>
                         <p className="font-medium text-sm">{round.courseName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(round.date), "d MMM yyyy", { locale: es })}
+                          {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
                         </p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
