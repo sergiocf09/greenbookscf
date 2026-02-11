@@ -2028,9 +2028,11 @@ export const calculateTeamPressuresBets = (
     
     const totalMoney = frontMoney + backMoney + matchMoney;
     
-    // Split between team members: each pair member vs each opposing member
+    // Split 50/50: each loser pays 50% to EACH winner
+    // So per cross-pair amount = totalMoney / 2
+    // Each person has 2 opponents → total per person = 2 * (totalMoney/2) = totalMoney
     if (totalMoney !== 0) {
-      const perPairAmount = totalMoney / 4; // Split among all 4 pairs
+      const perPairAmount = totalMoney / 2; // Each loser pays half to each winner
       
       teamA.forEach(aId => {
         teamB.forEach(bId => {
