@@ -1665,7 +1665,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             return runningBack;
           });
           
-          return { frontDetails, backDetails, frontBalances, backBalances, frontBets, backBets, frontSnapshots, backSnapshots };
+          // Compute running Total 18 cumulative (main line across all 18 holes)
+          let runningTotal = 0;
+          const totalBalances: number[] = [];
+          frontDetails.forEach(d => {
+            if (d) runningTotal += d.net;
+            totalBalances.push(runningTotal);
+          });
+          backDetails.forEach(d => {
+            if (d) runningTotal += d.net;
+            totalBalances.push(runningTotal);
+          });
+          
+          return { frontDetails, backDetails, frontBalances, backBalances, frontBets, backBets, frontSnapshots, backSnapshots, totalBalances };
         };
         
         const holeDetails = getTeamPressureHoleDetails();
@@ -1693,6 +1705,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const displayBackSnapshots = isBaseInTeamA 
           ? holeDetails.backSnapshots 
           : holeDetails.backSnapshots.map(snap => snap.map(b => -b));
+        
+        // Total 18 running cumulative (18 entries)
+        const displayTotalBalances = isBaseInTeamA 
+          ? holeDetails.totalBalances 
+          : holeDetails.totalBalances.map(b => -b);
         
         // Get individual bet results for display
         const displayFrontBets = isBaseInTeamA 
@@ -1969,16 +1986,65 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       </TooltipProvider>
                     </div>
                     
-                    {/* Total 18 Summary */}
-                    <div className="pt-2 border-t border-border/50">
+                    {/* Total 18 - Running cumulative across all 18 holes */}
+                    <div className="space-y-1 pt-2 border-t border-border/50">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Total 18</span>
-                        <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {total18 >= 0 ? '+' : ''}{total18}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {total18 >= 0 ? '+' : ''}{total18}
+                          </span>
+                          <span className={cn('text-xs font-bold tabular-nums', 
+                            (() => {
+                              const matchMoney = (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount / 2;
+                              return matchMoney > 0 ? 'text-green-600' : matchMoney < 0 ? 'text-destructive' : 'text-muted-foreground';
+                            })()
+                          )}>
+                            {(() => {
+                              const frontMainTied = displayFrontBets[0] === 0;
+                              const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount / 2;
+                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+' : ''}$${matchMoney}` : (frontMainTied ? 'Carry' : '$0');
+                            })()}
+                          </span>
+                        </div>
                       </div>
+                      <TooltipProvider>
+                        <div className="grid grid-cols-18 gap-[2px]" style={{ gridTemplateColumns: 'repeat(18, minmax(0, 1fr))' }}>
+                          {Array.from({ length: 18 }, (_, i) => {
+                            const holeNum = i + 1;
+                            const balance = displayTotalBalances[i];
+                            const isFront = i < 9;
+                            const detail = isFront ? displayFrontDetails[i] : displayBackDetails[i - 9];
+                            const hasData = detail !== null;
+                            
+                            return (
+                              <Tooltip key={holeNum}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={cn(
+                                      'h-7 rounded-sm border bg-background/60 flex flex-col items-center justify-center',
+                                      !hasData ? 'border-border text-muted-foreground' :
+                                      balance > 0 ? 'border-green-600/40 text-green-600' :
+                                      balance < 0 ? 'border-destructive/40 text-destructive' :
+                                      'border-border text-muted-foreground'
+                                    )}
+                                  >
+                                    <span className="text-[7px] opacity-70">{holeNum}</span>
+                                    <span className={cn('text-[8px] font-bold tabular-nums leading-tight', !hasData && 'text-muted-foreground')}>
+                                      {!hasData ? '–' : balance === 0 ? 'E' : (balance > 0 ? '+' : '') + balance}
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  Hoyo {holeNum} • Match Total: {!hasData ? '–' : balance === 0 ? 'Even' : (balance > 0 ? '+' : '') + balance}
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        (Primera apuesta F9 + Primera apuesta B9)
+                        Línea principal acumulada F9 + B9 {displayFrontBets[0] === 0 ? '(Carry)' : ''}
                       </p>
                     </div>
                   </div>
