@@ -3392,11 +3392,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             };
           } else {
             const summary = groupedSummaries['Rayas Medal Total'];
+            // Show net scores for Medal Total so you can see who's winning
+            const playerNet = getNetScoreForSegmentWithBilateral(player.id, rival.id, 'total');
+            const rivalNet = getNetScoreForSegmentWithBilateral(rival.id, player.id, 'total');
             return {
-              playerNet: 0,
-              rivalNet: 0,
+              playerNet,
+              rivalNet,
               amount: medalAmount,
-              description: summary?.details?.[0]?.description,
+              description: summary?.details?.[0]?.description ?? (playerNet !== rivalNet ? `${playerNet} vs ${rivalNet}` : undefined),
             };
           }
         },
@@ -3452,17 +3455,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Medal General (Group bet shown in bilateral view) - only after the round is complete (all players 18 confirmed)
-    // IMPORTANT: Use allPlayers (not players) to check completion and calculate results,
-    // matching the logic in getCorrectedBilateralBalance for consistency.
-    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
-      return allPlayers.every((p) => {
-        const pScores = confirmedScores.get(p.id) || [];
-        return pScores.some((s) => s.holeNumber === h);
-      });
-    });
-    
-    if (betConfig.medalGeneral?.enabled && allPlayersComplete) {
+    // Medal General (Group bet shown in bilateral view) - show partial results during round
+    if (betConfig.medalGeneral?.enabled) {
       const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
       if (medalResult) {
         groups.push({
@@ -3525,6 +3519,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Stableford - Group bet shown in bilateral view (like Medal General)
+    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) =>
+      allPlayers.every((p) => (confirmedScores.get(p.id) || []).some((s) => s.holeNumber === h))
+    );
     if (betConfig.stableford?.enabled && allPlayersComplete) {
       const points = betConfig.stableford.points || {
         albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: -1, quadrupleOrWorse: -2
