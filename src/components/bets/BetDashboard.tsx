@@ -4210,20 +4210,39 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
 
                             
-                            {/* Medal Total row - only show when all 18 holes confirmed */}
-                            {hasAll18 && medalValue > 0 && medalTotalRayas !== 0 && (
-                              <div className="flex items-center justify-between text-sm bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">Medal Total</span>
-                                  <span className={cn('font-bold text-base', medalTotalRayas > 0 ? 'text-green-600' : medalTotalRayas < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                    {medalTotalRayas === 0 ? '=' : medalTotalRayas > 0 ? '1' : '-1'}
+                            {/* Medal Total row - show during round as partial, definitive when all 18 confirmed */}
+                            {medalValue > 0 && (() => {
+                              const playerNetTotal = getNetScoreForSegmentWithBilateral(player.id, rival.id, 'total');
+                              const rivalNetTotal = getNetScoreForSegmentWithBilateral(rival.id, player.id, 'total');
+                              const hasScores = playerNetTotal !== null && rivalNetTotal !== null && 
+                                (confirmedScores.get(player.id)?.length ?? 0) > 0 && (confirmedScores.get(rival.id)?.length ?? 0) > 0;
+                              if (!hasScores && !hasAll18) return null;
+                              
+                              return (
+                                <div className={cn(
+                                  "flex items-center justify-between text-sm rounded px-2 py-1.5 border",
+                                  hasAll18 ? "bg-primary/10 border-primary/20" : "bg-amber-500/10 border-amber-500/20"
+                                )}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">Medal Total</span>
+                                    {hasScores && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({playerNetTotal} vs {rivalNetTotal})
+                                      </span>
+                                    )}
+                                    <span className={cn('font-bold text-base', medalTotalRayas > 0 ? 'text-green-600' : medalTotalRayas < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                      {medalTotalRayas === 0 ? '=' : medalTotalRayas > 0 ? '1' : '-1'}
+                                    </span>
+                                    {!hasAll18 && (
+                                      <span className="text-[9px] text-amber-600 font-medium">Parcial</span>
+                                    )}
+                                  </div>
+                                  <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                    {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
                                   </span>
                                 </div>
-                                <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                  {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
-                                </span>
-                              </div>
-                            )}
+                              );
+                            })()}
                             
                             {/* Grand Total */}
                             <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
