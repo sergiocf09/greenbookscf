@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
+import { SnapshotPlayerBalance } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { 
   calculateAllBets, 
@@ -75,6 +76,7 @@ interface BetDashboardProps {
   playerGroups?: PlayerGroup[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getBilateralHandicapsForEngine?: () => BilateralHandicap[];
+  snapshotBalances?: SnapshotPlayerBalance[];
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -90,6 +92,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   playerGroups = [],
   getStrokesForLocalPair,
   getBilateralHandicapsForEngine,
+  snapshotBalances,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -1173,13 +1176,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardContent className="pt-0">
           <div className="space-y-2">
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
+              // When snapshot balances are available, use them directly (immutable source of truth)
+              const snapshotBal = snapshotBalances?.find(b => b.playerId === player.id);
+              
               // Base total: ONLY bets vs players inside the selected group - use corrected balance
               // Individual balance EXCLUDES Carritos and Team Pressures (pair bets)
               const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-              const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
-              const carritosBalance = getCarritosBalanceForPlayer(player.id);
-              const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
-              const totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
+              const individualBalance = snapshotBal ? 0 : getCorrectedPlayerBalance(player.id, groupRivalIds);
+              const carritosBalance = snapshotBal ? 0 : getCarritosBalanceForPlayer(player.id);
+              const teamPressuresBalance = snapshotBal ? 0 : getTeamPressuresBalanceForPlayer(player.id);
+              const totalBalance = snapshotBal ? snapshotBal.totalNet : (individualBalance + carritosBalance + teamPressuresBalance);
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
               
@@ -1198,11 +1204,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
               
               // Calculate total for "all" mode including cross-group bets using corrected balance
-              const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                // Cross-group: only this player's explicitly selected rivals - use corrected balance
+              const crossGroupBalance = snapshotBal ? 0 : crossGroupOthers.reduce((sum, rival) => {
                 return sum + getCorrectedBilateralBalance(player.id, rival.id);
               }, 0);
-              const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+              const displayBalance = snapshotBal ? snapshotBal.totalNet : (tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance);
               
               return (
                 <div key={player.id}>
@@ -1253,12 +1258,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-8 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
+                        // When snapshot balances available, use them for bilateral amounts
+                        const snapshotVsBal = snapshotBal?.vsBalances.find(vb => vb.rivalId === other.id);
+                        
                         // Use corrected balance that calculates Rayas correctly
                         // This is the individual balance EXCLUDING Carritos and Team Pressures
-                        const vsIndividualBalance = getCorrectedBilateralBalance(player.id, other.id);
-                        const vsCarritosBalance = getCarritosBalanceVsPlayer(player.id, other.id);
-                        const vsTeamPressuresBalance = getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
+                        const vsIndividualBalance = snapshotVsBal ? snapshotVsBal.netAmount : getCorrectedBilateralBalance(player.id, other.id);
+                        const vsCarritosBalance = snapshotVsBal ? 0 : getCarritosBalanceVsPlayer(player.id, other.id);
+                        const vsTeamPressuresBalance = snapshotVsBal ? 0 : getTeamPressuresBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = snapshotVsBal ? snapshotVsBal.netAmount : (vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance);
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -1319,10 +1327,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
-              const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-              return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
-            }, 0)} 
+            Σ = ${snapshotBalances 
+              ? snapshotBalances.reduce((sum, b) => sum + b.totalNet, 0)
+              : tablaGeneralPlayers.reduce((sum, p) => {
+                const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
+                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+              }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
         </CardContent>
