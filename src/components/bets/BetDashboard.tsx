@@ -1536,7 +1536,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const teamAPressures = betSummaries.filter(s => 
           s.betType === 'Presiones Parejas' && bet.teamA.includes(s.playerId)
         );
-        const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Divide by 2 since each team member gets half
+        const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Each member's share (team total / 2 members)
         
         const getPlayer = (id: string) => players.find(p => p.id === id);
         const teamAPlayers = [getPlayer(bet.teamA[0]), getPlayer(bet.teamA[1])].filter(Boolean) as Player[];
@@ -1996,13 +1996,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           </span>
                           <span className={cn('text-xs font-bold tabular-nums', 
                             (() => {
-                              const matchMoney = (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount / 2;
+                              const matchMoney = (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
                               return matchMoney > 0 ? 'text-green-600' : matchMoney < 0 ? 'text-destructive' : 'text-muted-foreground';
                             })()
                           )}>
                             {(() => {
                               const frontMainTied = displayFrontBets[0] === 0;
-                              const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount / 2;
+                              const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
                               return matchMoney !== 0 ? `${matchMoney >= 0 ? '+' : ''}$${matchMoney}` : (frontMainTied ? 'Carry' : '$0');
                             })()}
                           </span>
