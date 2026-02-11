@@ -2021,12 +2021,10 @@ export const calculateTeamPressuresBets = (
     const frontMoney = frontNetBets * bet.frontAmount;
     const backMoney = backNetBets * effectiveBackValue;
     
-    // Match 18 (only if front not tied)
-    const totalBets = [...frontBets, ...backBets];
-    const totalWonA = totalBets.filter(b => b > 0).length;
-    const totalLostA = totalBets.filter(b => b < 0).length;
-    const totalNetBets = frontIsTied ? 0 : (totalWonA - totalLostA > 0 ? 1 : totalWonA - totalLostA < 0 ? -1 : 0);
-    const matchMoney = frontIsTied ? 0 : totalNetBets * bet.totalAmount;
+    // Match 18: sum of MAIN (first) lines from Front and Back
+    // This is a single bet worth totalAmount based on who wins the net across 18 holes
+    const matchTotal = frontBets[0] + backBets[0];
+    const matchMoney = frontIsTied ? 0 : (matchTotal > 0 ? 1 : matchTotal < 0 ? -1 : 0) * bet.totalAmount;
     
     const totalMoney = frontMoney + backMoney + matchMoney;
     
