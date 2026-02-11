@@ -562,14 +562,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { setResults, holeDisplays, winners, amount };
   }, [players, scores, course, betConfig, confirmedHoles]);
 
-  // Calculate Medal General - only show after all 18 holes are confirmed
+  // Calculate Medal General - show partial results during round
   const medalGeneralResult = useMemo((): MedalGeneralResult | null => {
     if (!betConfig.medalGeneral?.enabled || players.length < 2) {
-      return null;
-    }
-
-    // Only show Medal General results at end of round (all 18 holes confirmed)
-    if (!all18HolesConfirmed) {
       return null;
     }
 
@@ -1233,7 +1228,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
 
-        {/* Medal General - Show only winners */}
+        {/* Medal General - Show winners (or partial leader) */}
         {medalGeneralResult && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t border-border/50" />}
@@ -1242,15 +1237,25 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-yellow-500" />
                   <span className="font-medium text-sm">Medal General</span>
+                  {!all18HolesConfirmed && (
+                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Parcial</span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">${medalGeneralResult.amount} c/u</span>
               </div>
               
               {medalGeneralResult.hasValidScores && medalGeneralResult.winners.length > 0 ? (
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className={cn(
+                  'rounded-lg p-3',
+                  all18HolesConfirmed 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-amber-500/10 border border-amber-500/30'
+                )}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-green-500 text-sm">🏆</span>
+                      <span className={cn('text-sm', all18HolesConfirmed ? 'text-green-500' : 'text-amber-500')}>
+                        {all18HolesConfirmed ? '🏆' : '📊'}
+                      </span>
                       <div className="flex items-center gap-1">
                         {medalGeneralResult.winners.map((winner, idx) => (
                           <React.Fragment key={winner.playerId}>
@@ -1262,8 +1267,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         ))}
                       </div>
                     </div>
-                    <span className="text-green-600 font-bold text-sm">
-                      +${medalGeneralResult.winners[0]?.amountWon || 0}
+                    <span className={cn('font-bold text-sm', all18HolesConfirmed ? 'text-green-600' : 'text-amber-600')}>
+                      {all18HolesConfirmed ? '+' : '~'}${medalGeneralResult.winners[0]?.amountWon || 0}
                     </span>
                   </div>
                   {medalGeneralResult.winners.length > 1 && (
