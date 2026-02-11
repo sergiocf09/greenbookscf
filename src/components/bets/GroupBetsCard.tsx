@@ -1237,9 +1237,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-yellow-500" />
                   <span className="font-medium text-sm">Medal General</span>
-                  {!all18HolesConfirmed && (
-                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Parcial</span>
-                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">${medalGeneralResult.amount} c/u</span>
               </div>

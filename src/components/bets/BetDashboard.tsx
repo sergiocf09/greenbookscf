@@ -4233,9 +4233,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     <span className={cn('font-bold text-base', medalTotalRayas > 0 ? 'text-green-600' : medalTotalRayas < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                       {medalTotalRayas === 0 ? '=' : medalTotalRayas > 0 ? '1' : '-1'}
                                     </span>
-                                    {!hasAll18 && (
-                                      <span className="text-[9px] text-amber-600 font-medium">Parcial</span>
-                                    )}
                                   </div>
                                   <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                     {medalTotalAmount >= 0 ? '+' : ''}${medalTotalAmount}
