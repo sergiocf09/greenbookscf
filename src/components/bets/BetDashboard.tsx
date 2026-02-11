@@ -870,9 +870,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }, 0);
   };
   
-  // Get balance for base player vs each rival (using corrected calculation)
-  const getRivalBalance = (rivalId: string) => 
-    getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+  // Get balance for base player vs each rival
+  // When snapshot balances are available (historical view), use them as the single source of truth
+  const getRivalBalance = (rivalId: string): number => {
+    if (snapshotBalances && basePlayer) {
+      const baseBal = snapshotBalances.find(b => b.playerId === basePlayer.id);
+      const vsBal = baseBal?.vsBalances.find(vb => vb.rivalId === rivalId);
+      return vsBal?.netAmount ?? 0;
+    }
+    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+  };
   
   // Get grouped summaries for selected pair
   const getGroupedSummaries = (rivalId: string) =>
@@ -1550,6 +1557,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           confirmedHoles={confirmedHoles}
           startingHole={startingHole}
           getStrokesForLocalPair={getStrokesForLocalPair}
+          snapshotVsBalance={snapshotBalances ? getRivalBalance(selectedRival) : undefined}
         />
       )}
 
@@ -2739,6 +2747,7 @@ interface BilateralDetailProps {
   confirmedHoles: Set<number>;
   startingHole?: 1 | 10;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+  snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -2762,6 +2771,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   confirmedHoles,
   startingHole = 1,
   getStrokesForLocalPair,
+  snapshotVsBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -3606,10 +3616,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   }, [betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance from the bet type groups for consistency
-  // This ensures the header total matches the sum of all bet type rows
+  // When snapshotVsBalance is provided (historical view), use it as the immutable source of truth
   const computedTotalBalance = useMemo(() => {
+    if (typeof snapshotVsBalance === 'number') return snapshotVsBalance;
+    
     return betTypeGroups.reduce((sum, group) => {
-      // Check if bet is disabled via override
       const normalizeLabel = (label: string) => {
         switch (label) {
           case 'medal': return 'Medal';
@@ -3642,12 +3653,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
       );
       
-      // Skip disabled bets
       if (override?.enabled === false) return sum;
       
       return sum + group.getTotal();
     }, 0);
-  }, [betTypeGroups, betConfig.betOverrides, player, rival]);
+  }, [snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
   
   // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
