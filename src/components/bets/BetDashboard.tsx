@@ -3990,7 +3990,103 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 {/* Segment rows */}
                 {hasSegments && isExpanded && !isDisabled && (
                   <div className="divide-y divide-border/30">
-                    {group.key === 'units' || group.key === 'manchas' ? (
+                    {/* Skins: variant selector + segments */}
+                    {group.key === 'skins' ? (
+                      <div>
+                        {/* Always-editable Skins variant selector for this pair */}
+                        {!isHistorical && onBetConfigChange && (() => {
+                          const globalModality = betConfig.skins.modality ?? 'acumulados';
+                          const playerVariants = betConfig.skins.playerSkinVariants;
+                          const pairOverrides = betConfig.skins.pairSkinVariantOverrides;
+                          const pairKey = [player.id, rival.id].sort().join('_');
+                          
+                          // Detect conflict
+                          const variantA = playerVariants?.[player.id] ?? globalModality;
+                          const variantB = playerVariants?.[rival.id] ?? globalModality;
+                          const hasExplicitOverride = !!pairOverrides?.[pairKey];
+                          const hasConflict = variantA !== variantB && !hasExplicitOverride;
+                          const activeVariant = pairOverrides?.[pairKey] ?? (variantA === variantB ? variantA : globalModality);
+                          
+                          return (
+                            <div className={cn(
+                              "mx-4 mt-3 mb-2 rounded-lg p-3 space-y-2 border",
+                              hasConflict 
+                                ? "bg-amber-500/10 border-amber-500/30" 
+                                : "bg-muted/30 border-border/50"
+                            )}>
+                              <div className="flex items-center gap-2">
+                                <Settings2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-medium">
+                                  {hasConflict ? 'Conflicto de modalidad' : 'Modalidad (este par)'}
+                                </span>
+                              </div>
+                              {hasConflict && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {formatPlayerName(player.name)}: <span className="font-medium">{variantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{variantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
+                                </p>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant={activeVariant === 'acumulados' ? 'default' : 'outline'}
+                                  className="h-7 text-xs flex-1"
+                                  onClick={() => {
+                                    onBetConfigChange({
+                                      ...betConfig,
+                                      skins: {
+                                        ...betConfig.skins,
+                                        pairSkinVariantOverrides: {
+                                          ...betConfig.skins.pairSkinVariantOverrides,
+                                          [pairKey]: 'acumulados',
+                                        },
+                                      },
+                                    });
+                                  }}
+                                >
+                                  Acumulados
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={activeVariant === 'sinAcumular' ? 'default' : 'outline'}
+                                  className="h-7 text-xs flex-1"
+                                  onClick={() => {
+                                    onBetConfigChange({
+                                      ...betConfig,
+                                      skins: {
+                                        ...betConfig.skins,
+                                        pairSkinVariantOverrides: {
+                                          ...betConfig.skins.pairSkinVariantOverrides,
+                                          [pairKey]: 'sinAcumular',
+                                        },
+                                      },
+                                    });
+                                  }}
+                                >
+                                  Sin Acumulación
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        {/* Standard segment rows for Skins */}
+                        {group.segments.map((segment) => {
+                          const data = group.getSegmentData(segment.key);
+                          return (
+                            <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                              <span className="text-xs text-muted-foreground">{segment.label}</span>
+                              <div className="flex items-center gap-3">
+                                {data.description && (
+                                  <span className="text-[10px] text-muted-foreground">{data.description}</span>
+                                )}
+                                <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                  {data.amount >= 0 ? '+' : ''}${data.amount}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
                     ) : group.key === 'oyeses' ? (
                       // Oyeses detail - show proximity order per player per hole
@@ -4272,22 +4368,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const playerVariantA = effectiveBetConfig.rayas?.playerSkinVariants?.[player.id] ?? effectiveBetConfig.rayas?.skinVariant ?? 'acumulados';
                         const playerVariantB = effectiveBetConfig.rayas?.playerSkinVariants?.[rival.id] ?? effectiveBetConfig.rayas?.skinVariant ?? 'acumulados';
                         
+                        // Determine which variant is active for this pair
+                        const activePairVariant = skinConflict.variant;
+                        
                         return (
                           <div className="px-4 py-3 pl-6 bg-background/50 space-y-2">
-                            {/* Skin variant conflict resolution */}
-                            {skinConflict.hasConflict && !isHistorical && onBetConfigChange && (
-                              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-2">
+                            {/* Always-editable Skins variant selector for this pair */}
+                            {!isHistorical && onBetConfigChange && (
+                              <div className={cn(
+                                "rounded-lg p-3 space-y-2 border",
+                                skinConflict.hasConflict 
+                                  ? "bg-amber-500/10 border-amber-500/30" 
+                                  : "bg-muted/30 border-border/50"
+                              )}>
                                 <div className="flex items-center gap-2">
-                                  <Settings2 className="h-4 w-4 text-amber-600" />
-                                  <span className="text-xs font-medium text-amber-700">Conflicto de modalidad Skins</span>
+                                  <Settings2 className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-xs font-medium">
+                                    {skinConflict.hasConflict ? 'Conflicto de modalidad Skins' : 'Modalidad Skins (este par)'}
+                                  </span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {formatPlayerName(player.name)} usa <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span> y {formatPlayerName(rival.name)} usa <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span>.
-                                </p>
+                                {skinConflict.hasConflict && (
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {formatPlayerName(player.name)} usa <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span> y {formatPlayerName(rival.name)} usa <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span>.
+                                  </p>
+                                )}
                                 <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    variant={skinConflict.variant === 'acumulados' ? 'default' : 'outline'}
+                                    variant={activePairVariant === 'acumulados' ? 'default' : 'outline'}
                                     className="h-7 text-xs flex-1"
                                     onClick={() => {
                                       const pairKey = getPairKey(player.id, rival.id);
@@ -4307,7 +4415,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   </Button>
                                   <Button
                                     size="sm"
-                                    variant={skinConflict.variant === 'sinAcumulacion' ? 'default' : 'outline'}
+                                    variant={activePairVariant === 'sinAcumulacion' ? 'default' : 'outline'}
                                     className="h-7 text-xs flex-1"
                                     onClick={() => {
                                       const pairKey = getPairKey(player.id, rival.id);
@@ -4442,7 +4550,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Variant indicator */}
                             <div className="text-[9px] text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                              {betConfig.rayas?.skinVariant === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'} | 
+                              {activePairVariant === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'} | 
                               Front ${frontValue}, Back ${backValue}, Medal ${medalValue}
                             </div>
                           </div>
