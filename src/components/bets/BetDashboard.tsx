@@ -1595,9 +1595,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
       {betConfig.teamPressures?.enabled && betConfig.teamPressures.bets?.filter(b => b.enabled).map((bet, idx) => {
-        // Calculate team pressures balance from betSummaries for this team
+        // Calculate team pressures balance from betSummaries for THIS specific bet only
         const teamAPressures = betSummaries.filter(s => 
-          s.betType === 'Presiones Parejas' && bet.teamA.includes(s.playerId)
+          s.betType === 'Presiones Parejas' && s.betId === bet.id && bet.teamA.includes(s.playerId)
         );
         const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Each member's share (team total / 2 members)
         

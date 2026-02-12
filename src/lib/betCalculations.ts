@@ -17,6 +17,7 @@ export interface BetSummary {
   units?: number; // signed unit count (e.g., -7 skins, +2 presiones)
   baseUnitAmount?: number; // value per unit (e.g., $25 per skin)
   multiplier?: number; // e.g., x2 for skins zapato/sweep
+  betId?: string; // Identifies specific bet instance (e.g., team pressure bet id)
 }
 
 // Get bilateral handicap for a specific pair of players
@@ -2039,6 +2040,7 @@ export const calculateTeamPressuresBets = (
             amount: perPairAmount,
             segment: 'total',
             description: `Front: ${frontBets.join(',')} Back: ${backBets.join(',')}`,
+            betId: bet.id,
           });
           summaries.push({
             playerId: bId,
@@ -2047,6 +2049,7 @@ export const calculateTeamPressuresBets = (
             amount: -perPairAmount,
             segment: 'total',
             description: `Front: ${frontBets.map(b => -b).join(',')} Back: ${backBets.map(b => -b).join(',')}`,
+            betId: bet.id,
           });
         });
       });
