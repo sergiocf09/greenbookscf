@@ -407,6 +407,8 @@ export interface SkinsBetConfig {
   carryOver: boolean; // If skins carry from 9 to 10
   modality?: 'acumulados' | 'sinAcumular'; // acumulados = ties add to pot; sinAcumular = ties are void
   participantIds?: string[];
+  playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-player skin variant override
+  pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-pair override (key = sorted "idA_idB")
 }
 
 export interface CarosBetConfig {
