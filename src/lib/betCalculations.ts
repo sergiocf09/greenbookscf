@@ -4,6 +4,7 @@ import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
 import { calculateConejaBets } from './conejaCalculations';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
+import { devLog } from './logger';
 
 export interface BetSummary {
   playerId: string;
@@ -2024,6 +2025,8 @@ export const calculateTeamPressuresBets = (
     const matchMoney = frontIsTied ? 0 : (matchTotal > 0 ? 1 : matchTotal < 0 ? -1 : 0) * bet.totalAmount;
     
     const totalMoney = frontMoney + backMoney + matchMoney;
+    
+    devLog(`[TeamPressures] bet=${bet.id} frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} frontIsTied=${frontIsTied}`);
     
     // Split 50/50: each loser pays 50% to EACH winner
     // So per cross-pair amount = totalMoney / 2
