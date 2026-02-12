@@ -3548,23 +3548,43 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Medal General (Group bet shown in bilateral view) - show partial results during round
+    // Medal General (Group bet shown in bilateral view)
+    // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
     if (betConfig.medalGeneral?.enabled) {
-      const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
-      if (medalResult) {
-        groups.push({
-          key: 'medalGeneral',
-          label: 'Medal General',
-          configKey: 'medalGeneral',
-          segments: [],
-          getTotal: () => medalResult.amount,
-          getSegmentData: () => ({
-            playerNet: medalResult.playerNet,
-            rivalNet: medalResult.rivalNet,
-            amount: medalResult.amount,
-            description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
-          }),
-        });
+      if (isHistorical) {
+        const medalTotal = groupedSummaries['Medal General']?.total || 0;
+        if (medalTotal !== 0) {
+          groups.push({
+            key: 'medalGeneral',
+            label: 'Medal General',
+            configKey: 'medalGeneral',
+            segments: [],
+            getTotal: () => medalTotal,
+            getSegmentData: () => ({
+              playerNet: 0,
+              rivalNet: 0,
+              amount: medalTotal,
+              description: groupedSummaries['Medal General']?.details?.[0]?.description || '',
+            }),
+          });
+        }
+      } else {
+        const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
+        if (medalResult) {
+          groups.push({
+            key: 'medalGeneral',
+            label: 'Medal General',
+            configKey: 'medalGeneral',
+            segments: [],
+            getTotal: () => medalResult.amount,
+            getSegmentData: () => ({
+              playerNet: medalResult.playerNet,
+              rivalNet: medalResult.rivalNet,
+              amount: medalResult.amount,
+              description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
+            }),
+          });
+        }
       }
     }
     
@@ -3612,75 +3632,94 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Stableford - Group bet shown in bilateral view (like Medal General)
-    const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) =>
-      allPlayers.every((p) => (confirmedScores.get(p.id) || []).some((s) => s.holeNumber === h))
-    );
-    if (betConfig.stableford?.enabled && allPlayersComplete) {
-      const points = betConfig.stableford.points || {
-        albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: -1, quadrupleOrWorse: -2
-      };
-      const playerHandicaps = betConfig.stableford.playerHandicaps || [];
-      const amount = betConfig.stableford.amount || 100;
-      
-      const calcPoints = (p: Player): number => {
-        const pScores = confirmedScores.get(p.id) || [];
-        const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
-        const strokesPerHole = calculateStrokesPerHole(hcp, course);
-        
-        return pScores.reduce((sum, s) => {
-          if (!s.confirmed || !s.strokes) return sum;
-          const holePar = course.holes[s.holeNumber - 1]?.par || 4;
-          const received = strokesPerHole[s.holeNumber - 1] || 0;
-          const netScore = s.strokes - received;
-          const toPar = netScore - holePar;
+    // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
+    if (betConfig.stableford?.enabled) {
+      if (isHistorical) {
+        const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
+        if (stablefordTotal !== 0) {
+          groups.push({
+            key: 'stableford',
+            label: 'Stableford',
+            configKey: 'stableford',
+            segments: [],
+            getTotal: () => stablefordTotal,
+            getSegmentData: () => ({
+              playerNet: 0,
+              rivalNet: 0,
+              amount: stablefordTotal,
+              description: groupedSummaries['Stableford']?.details?.[0]?.description || '',
+            }),
+          });
+        }
+      } else {
+        const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) =>
+          allPlayers.every((p) => (confirmedScores.get(p.id) || []).some((s) => s.holeNumber === h))
+        );
+        if (allPlayersComplete) {
+          const points = betConfig.stableford.points || {
+            albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: -1, quadrupleOrWorse: -2
+          };
+          const playerHandicaps = betConfig.stableford.playerHandicaps || [];
+          const amount = betConfig.stableford.amount || 100;
           
-          if (toPar <= -3) return sum + points.albatross;
-          if (toPar === -2) return sum + points.eagle;
-          if (toPar === -1) return sum + points.birdie;
-          if (toPar === 0) return sum + points.par;
-          if (toPar === 1) return sum + points.bogey;
-          if (toPar === 2) return sum + points.doubleBogey;
-          if (toPar === 3) return sum + points.tripleBogey;
-          return sum + points.quadrupleOrWorse;
-        }, 0);
-      };
-      
-      const playerPoints = calcPoints(player);
-      const rivalPoints = calcPoints(rival);
-      
-      // Calculate all players' points for proper group payout
-      const allPoints = allPlayers.map(p => ({ playerId: p.id, points: calcPoints(p) }));
-      const maxPoints = Math.max(...allPoints.map(p => p.points));
-      const winnerIds = new Set(allPoints.filter(p => p.points === maxPoints).map(p => p.playerId));
-      const winnersCount = winnerIds.size;
-      const losersCount = allPoints.length - winnersCount;
-      
-      // Calculate amount - 0 if there are no losers or both players are in same position
-      let stablefordAmount = 0;
-      if (losersCount > 0) {
-        const amountFromLoserToWinner = amount / winnersCount;
-        const isPlayerWinner = winnerIds.has(player.id);
-        const isRivalWinner = winnerIds.has(rival.id);
-        
-        stablefordAmount = 
-          isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
-          !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
+          const calcPoints = (p: Player): number => {
+            const pScores = confirmedScores.get(p.id) || [];
+            const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
+            const strokesPerHole = calculateStrokesPerHole(hcp, course);
+            
+            return pScores.reduce((sum, s) => {
+              if (!s.confirmed || !s.strokes) return sum;
+              const holePar = course.holes[s.holeNumber - 1]?.par || 4;
+              const received = strokesPerHole[s.holeNumber - 1] || 0;
+              const netScore = s.strokes - received;
+              const toPar = netScore - holePar;
+              
+              if (toPar <= -3) return sum + points.albatross;
+              if (toPar === -2) return sum + points.eagle;
+              if (toPar === -1) return sum + points.birdie;
+              if (toPar === 0) return sum + points.par;
+              if (toPar === 1) return sum + points.bogey;
+              if (toPar === 2) return sum + points.doubleBogey;
+              if (toPar === 3) return sum + points.tripleBogey;
+              return sum + points.quadrupleOrWorse;
+            }, 0);
+          };
+          
+          const playerPoints = calcPoints(player);
+          const rivalPoints = calcPoints(rival);
+          
+          const allPoints = allPlayers.map(p => ({ playerId: p.id, points: calcPoints(p) }));
+          const maxPoints = Math.max(...allPoints.map(p => p.points));
+          const winnerIds = new Set(allPoints.filter(p => p.points === maxPoints).map(p => p.playerId));
+          const winnersCount = winnerIds.size;
+          const losersCount = allPoints.length - winnersCount;
+          
+          let stablefordAmount = 0;
+          if (losersCount > 0) {
+            const amountFromLoserToWinner = amount / winnersCount;
+            const isPlayerWinner = winnerIds.has(player.id);
+            const isRivalWinner = winnerIds.has(rival.id);
+            
+            stablefordAmount = 
+              isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
+              !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
+          }
+          
+          groups.push({
+            key: 'stableford',
+            label: 'Stableford',
+            configKey: 'stableford',
+            segments: [],
+            getTotal: () => stablefordAmount,
+            getSegmentData: () => ({
+              playerNet: playerPoints,
+              rivalNet: rivalPoints,
+              amount: stablefordAmount,
+              description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
+            }),
+          });
+        }
       }
-      
-      // Always show Stableford when enabled - allows player to see points and disable if needed
-      groups.push({
-        key: 'stableford',
-        label: 'Stableford',
-        configKey: 'stableford',
-        segments: [],
-        getTotal: () => stablefordAmount,
-        getSegmentData: () => ({
-          playerNet: playerPoints,
-          rivalNet: rivalPoints,
-          amount: stablefordAmount,
-          description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
-        }),
-      });
     }
     
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
