@@ -310,3 +310,42 @@ export function isValidSnapshot(snapshot: unknown): snapshot is RoundSnapshot {
     Array.isArray(s.balances)
   );
 }
+
+/**
+ * Convert snapshot ledger entries to BetSummary[] format.
+ * Each ledger entry (from loser → winner) produces two BetSummary items:
+ *   - Winner side: positive amount
+ *   - Loser side:  negative amount
+ * This allows groupSummariesByType() and all balance helpers to work unchanged.
+ */
+export function snapshotLedgerToBetSummaries(ledger: SnapshotLedgerEntry[]): import('./betCalculations').BetSummary[] {
+  const summaries: import('./betCalculations').BetSummary[] = [];
+
+  for (const entry of ledger) {
+    if (entry.amount <= 0) continue;
+
+    // Winner (toPlayer) gets positive
+    summaries.push({
+      playerId: entry.toPlayerId,
+      vsPlayer: entry.fromPlayerId,
+      betType: entry.betType,
+      amount: entry.amount,
+      segment: entry.segment,
+      holeNumber: entry.holeNumber,
+      description: entry.description,
+    });
+
+    // Loser (fromPlayer) gets negative
+    summaries.push({
+      playerId: entry.fromPlayerId,
+      vsPlayer: entry.toPlayerId,
+      betType: entry.betType,
+      amount: -entry.amount,
+      segment: entry.segment,
+      holeNumber: entry.holeNumber,
+      description: entry.description,
+    });
+  }
+
+  return summaries;
+}
