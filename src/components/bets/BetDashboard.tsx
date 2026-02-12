@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
-import { SnapshotPlayerBalance } from '@/lib/roundSnapshot';
+import { SnapshotPlayerBalance, SnapshotLedgerEntry, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { 
   calculateAllBets, 
@@ -77,6 +77,7 @@ interface BetDashboardProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getBilateralHandicapsForEngine?: () => BilateralHandicap[];
   snapshotBalances?: SnapshotPlayerBalance[];
+  snapshotLedger?: SnapshotLedgerEntry[];
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -93,6 +94,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   getStrokesForLocalPair,
   getBilateralHandicapsForEngine,
   snapshotBalances,
+  snapshotLedger,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -195,10 +197,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     };
   }, [betConfig, getBilateralHandicapsForEngine]);
 
+  // When snapshot ledger is available (historical view), derive bet summaries from it
+  // instead of recalculating with the engine. This is the single source of truth.
+  const isHistorical = !!snapshotLedger && !!snapshotBalances;
+
   // Calculate all bets using only confirmed scores (all groups). UI will filter per mode.
+  const liveBetSummaries = useMemo(
+    () => isHistorical ? [] : calculateAllBets(allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles),
+    [allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles, isHistorical]
+  );
+
   const betSummaries = useMemo(
-    () => calculateAllBets(allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles),
-    [allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles]
+    () => isHistorical ? snapshotLedgerToBetSummaries(snapshotLedger!) : liveBetSummaries,
+    [isHistorical, snapshotLedger, liveBetSummaries]
   );
   
   // Notify parent when bet summaries change
@@ -671,7 +682,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Get corrected bilateral balance that uses getRayasDetailForPair for Rayas consistency
   // This ensures the Tabla General uses the same Rayas calculation as the BilateralDetail
   // IMPORTANT: Also respects betOverrides (cancelled bets) for each pair
+  // HISTORICAL MODE: When snapshot data is available, read directly from snapshot balances
   const getCorrectedBilateralBalance = (playerId: string, rivalId: string): number => {
+    // Historical: single source of truth from snapshot
+    if (snapshotBalances) {
+      const bal = snapshotBalances.find(b => b.playerId === playerId);
+      return bal?.vsBalances.find(vb => vb.rivalId === rivalId)?.netAmount ?? 0;
+    }
+
     // Get balance from betSummaries for non-Rayas bets
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
     const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
@@ -903,8 +921,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   };
 
   // Get team pressures balance for a specific player (total from all team pressure bets)
+  // Historical mode: team pressures are already included in snapshot balances
   const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
-    // Sum from betSummaries where this player is involved in Presiones Parejas
+    if (isHistorical) return 0; // Already in snapshot balances
     return betSummaries
       .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas')
       .reduce((sum, s) => sum + s.amount, 0);
@@ -1558,6 +1577,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           startingHole={startingHole}
           getStrokesForLocalPair={getStrokesForLocalPair}
           snapshotVsBalance={snapshotBalances ? getRivalBalance(selectedRival) : undefined}
+          isHistorical={isHistorical}
         />
       )}
 
@@ -2748,6 +2768,7 @@ interface BilateralDetailProps {
   startingHole?: 1 | 10;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
+  isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -2772,6 +2793,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   startingHole = 1,
   getStrokesForLocalPair,
   snapshotVsBalance,
+  isHistorical = false,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -3324,8 +3346,40 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Rayas (Aggregator bet)
-    // IMPORTANT: Check if Rayas is active for this pair (respects bilateral overrides from RayasConfig)
+    // HISTORICAL: Read directly from snapshot ledger via groupedSummaries
+    // LIVE: Recalculate from scores
     if (effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {
+      if (isHistorical) {
+        // Historical mode: use ledger-derived groupedSummaries directly
+        const rayasFrontTotal = groupedSummaries['Rayas Front']?.total || 0;
+        const rayasBackTotal = groupedSummaries['Rayas Back']?.total || 0;
+        const rayasMedalTotal = groupedSummaries['Rayas Medal Total']?.total || 0;
+        const rayasTotalFromLedger = rayasFrontTotal + rayasBackTotal + rayasMedalTotal;
+        
+        if (rayasTotalFromLedger !== 0 || rayasFrontTotal !== 0 || rayasBackTotal !== 0 || rayasMedalTotal !== 0) {
+          groups.push({
+            key: 'rayas',
+            label: 'Rayas',
+            configKey: 'rayas',
+            segments: [
+              { label: 'Front 9', key: 'rayas_front' },
+              { label: 'Back 9', key: 'rayas_back' },
+              { label: 'Medal Total', key: 'rayas_medal' },
+            ],
+            getTotal: () => rayasTotalFromLedger,
+            getSegmentData: (segmentKey) => {
+              const summaryKey = segmentKey === 'rayas_front' ? 'Rayas Front' : segmentKey === 'rayas_back' ? 'Rayas Back' : 'Rayas Medal Total';
+              const summary = groupedSummaries[summaryKey];
+              return {
+                playerNet: 0,
+                rivalNet: 0,
+                amount: summary?.total || 0,
+                description: summary?.details?.[0]?.description,
+              };
+            },
+          });
+        }
+      } else {
       // Pre-compute Rayas total from the same source used in the detail view
       // This ensures the header line matches the TOTAL RAYAS in the expanded detail
       const rayasResultForTotal = getRayasDetailForPair(
@@ -3424,54 +3478,73 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           }
         },
       });
+      } // end else (live mode)
     }
     
     // Coneja - Group bet shown in bilateral view (before Medal General)
+    // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
     if (effectiveBetConfig.coneja?.enabled && players.length >= 2) {
-      // Calculate Coneja results for this pair
-      const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
-      
-      // Find results where player wins from rival or rival wins from player
-      const playerWinsFromRival = conejaBets
-        .filter(b => b.winnerId === player.id && b.loserId === rival.id)
-        .reduce((sum, b) => sum + b.amount, 0);
-      const rivalWinsFromPlayer = conejaBets
-        .filter(b => b.winnerId === rival.id && b.loserId === player.id)
-        .reduce((sum, b) => sum + b.amount, 0);
-      
-      const conejaBalance = playerWinsFromRival - rivalWinsFromPlayer;
-      
-      // Only show if there's activity
-      if (conejaBalance !== 0 || conejaBets.some(b => 
-        (b.winnerId === player.id && b.loserId === rival.id) || 
-        (b.winnerId === rival.id && b.loserId === player.id)
-      )) {
-        groups.push({
-          key: 'coneja',
-          label: 'Coneja',
-          configKey: 'coneja',
-          segments: [],
-          getTotal: () => conejaBalance,
-          getSegmentData: () => {
-            const wonSets = conejaBets
-              .filter(b => b.winnerId === player.id && b.loserId === rival.id)
-              .map(b => b.setNumber);
-            const lostSets = conejaBets
-              .filter(b => b.winnerId === rival.id && b.loserId === player.id)
-              .map(b => b.setNumber);
-            const description = wonSets.length > 0 
-              ? `Ganado: Set${wonSets.length > 1 ? 's' : ''} ${wonSets.join(', ')}`
-              : lostSets.length > 0
-                ? `Perdido: Set${lostSets.length > 1 ? 's' : ''} ${lostSets.join(', ')}`
-                : 'Sin resultado';
-            return {
-              playerNet: playerWinsFromRival,
-              rivalNet: rivalWinsFromPlayer,
-              amount: conejaBalance,
-              description,
-            };
-          },
-        });
+      if (isHistorical) {
+        const conejaTotal = groupedSummaries['Coneja']?.total || 0;
+        if (conejaTotal !== 0) {
+          groups.push({
+            key: 'coneja',
+            label: 'Coneja',
+            configKey: 'coneja',
+            segments: [],
+            getTotal: () => conejaTotal,
+            getSegmentData: () => ({
+              playerNet: 0,
+              rivalNet: 0,
+              amount: conejaTotal,
+              description: groupedSummaries['Coneja']?.details?.[0]?.description || '',
+            }),
+          });
+        }
+      } else {
+        // Calculate Coneja results for this pair
+        const conejaBets = calculateConejaBets(allPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
+        
+        const playerWinsFromRival = conejaBets
+          .filter(b => b.winnerId === player.id && b.loserId === rival.id)
+          .reduce((sum, b) => sum + b.amount, 0);
+        const rivalWinsFromPlayer = conejaBets
+          .filter(b => b.winnerId === rival.id && b.loserId === player.id)
+          .reduce((sum, b) => sum + b.amount, 0);
+        
+        const conejaBalance = playerWinsFromRival - rivalWinsFromPlayer;
+        
+        if (conejaBalance !== 0 || conejaBets.some(b => 
+          (b.winnerId === player.id && b.loserId === rival.id) || 
+          (b.winnerId === rival.id && b.loserId === player.id)
+        )) {
+          groups.push({
+            key: 'coneja',
+            label: 'Coneja',
+            configKey: 'coneja',
+            segments: [],
+            getTotal: () => conejaBalance,
+            getSegmentData: () => {
+              const wonSets = conejaBets
+                .filter(b => b.winnerId === player.id && b.loserId === rival.id)
+                .map(b => b.setNumber);
+              const lostSets = conejaBets
+                .filter(b => b.winnerId === rival.id && b.loserId === player.id)
+                .map(b => b.setNumber);
+              const description = wonSets.length > 0 
+                ? `Ganado: Set${wonSets.length > 1 ? 's' : ''} ${wonSets.join(', ')}`
+                : lostSets.length > 0
+                  ? `Perdido: Set${lostSets.length > 1 ? 's' : ''} ${lostSets.join(', ')}`
+                  : 'Sin resultado';
+              return {
+                playerNet: playerWinsFromRival,
+                rivalNet: rivalWinsFromPlayer,
+                amount: conejaBalance,
+                description,
+              };
+            },
+          });
+        }
       }
     }
     
