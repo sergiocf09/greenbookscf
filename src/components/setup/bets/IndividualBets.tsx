@@ -6,6 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { RayasConfig } from './RayasConfig';
+import { ParticipantSelector } from './ParticipantSelector';
+import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
 
 interface IndividualBetsProps {
@@ -14,8 +16,14 @@ interface IndividualBetsProps {
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
-  basePlayerId?: string; // Logged-in player ID for bilateral configs
+  basePlayerId?: string;
 }
+
+/** Helper: count active participants */
+const countParticipants = (participantIds: string[] | undefined, totalPlayers: number): string => {
+  if (!participantIds || participantIds.length === 0) return `Todos (${totalPlayers})`;
+  return `${participantIds.length} de ${totalPlayers}`;
+};
 
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
   config,
@@ -44,6 +52,17 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
         <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.medal.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.medal.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('medal', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Pressures */}
@@ -59,6 +78,17 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
         <AmountInput label="Match 18" value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.pressures.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.pressures.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('pressures', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Skins */}
@@ -74,51 +104,55 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
         <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
 
-        <div className="flex items-center justify-between mt-2" onClick={(e) => e.stopPropagation()}>
-          <Label className="text-xs text-muted-foreground">Modalidad</Label>
-          <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onUpdateBet('skins', { modality: 'acumulados' });
-              }}
-              className={cn(
-                'px-2 py-1 text-[10px] rounded transition-colors',
-                (config.skins.modality ?? 'acumulados') === 'acumulados'
-                  ? 'bg-golf-gold text-golf-dark font-medium'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              Acum
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onUpdateBet('skins', { modality: 'sinAcumular' });
-              }}
-              className={cn(
-                'px-2 py-1 text-[10px] rounded transition-colors',
-                (config.skins.modality ?? 'acumulados') === 'sinAcumular'
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              Sin Acum
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
-          <Switch
-            checked={config.skins.carryOver}
-            onCheckedChange={(v) => onUpdateBet('skins', { carryOver: v })}
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.skins.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.skins.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('skins', { participantIds: ids })}
           />
-        </div>
+        </CollapsibleSubSection>
+
+        <CollapsibleSubSection
+          label="Configuración"
+          summary={`${(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'}${config.skins.carryOver ? ' · Arrastre' : ''}`}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+              <Label className="text-xs text-muted-foreground">Modalidad</Label>
+              <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skins', { modality: 'acumulados' }); }}
+                  className={cn('px-2 py-1 text-[10px] rounded transition-colors',
+                    (config.skins.modality ?? 'acumulados') === 'acumulados'
+                      ? 'bg-golf-gold text-golf-dark font-medium'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  )}
+                >Acum</button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skins', { modality: 'sinAcumular' }); }}
+                  className={cn('px-2 py-1 text-[10px] rounded transition-colors',
+                    (config.skins.modality ?? 'acumulados') === 'sinAcumular'
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  )}
+                >Sin Acum</button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
+              <Switch
+                checked={config.skins.carryOver}
+                onCheckedChange={(v) => onUpdateBet('skins', { carryOver: v })}
+              />
+            </div>
+          </div>
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Caros */}
@@ -132,38 +166,49 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         onExpandChange={(open) => onToggleSection('caros', open)}
       >
         <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
-        
-        {/* Hole range config */}
-        <div className="flex items-center gap-2 mt-2">
-          <Label className="text-xs text-muted-foreground">Rango:</Label>
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min={1}
-              max={17}
-              value={config.caros.startHole ?? 15}
-              onChange={(e) => {
-                const start = Math.max(1, Math.min(17, parseInt(e.target.value) || 15));
-                onUpdateBet('caros', { startHole: start });
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
-            />
-            <span className="text-xs text-muted-foreground">a</span>
-            <input
-              type="number"
-              min={2}
-              max={18}
-              value={config.caros.endHole ?? 18}
-              onChange={(e) => {
-                const end = Math.max(2, Math.min(18, parseInt(e.target.value) || 18));
-                onUpdateBet('caros', { endHole: end });
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
-            />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.caros.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.caros.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('caros', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
+
+        <CollapsibleSubSection
+          label="Configuración"
+          summary={`Hoyos ${config.caros.startHole ?? 15} a ${config.caros.endHole ?? 18}`}
+        >
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Rango:</Label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number" min={1} max={17}
+                value={config.caros.startHole ?? 15}
+                onChange={(e) => {
+                  const start = Math.max(1, Math.min(17, parseInt(e.target.value) || 15));
+                  onUpdateBet('caros', { startHole: start });
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
+              />
+              <span className="text-xs text-muted-foreground">a</span>
+              <input
+                type="number" min={2} max={18}
+                value={config.caros.endHole ?? 18}
+                onChange={(e) => {
+                  const end = Math.max(2, Math.min(18, parseInt(e.target.value) || 18));
+                  onUpdateBet('caros', { endHole: end });
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-12 h-6 text-center text-xs p-1 border rounded bg-background"
+              />
+            </div>
           </div>
-        </div>
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Oyeses */}
@@ -193,101 +238,71 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           value={config.oyeses.amount} 
           onChange={(v) => onUpdateBet('oyeses', { amount: v })} 
         />
-        
-        <div className="space-y-2 mt-3">
-          <Label className="text-xs font-medium">Modalidad por jugador</Label>
-          <p className="text-[10px] text-muted-foreground mb-2">
-            Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.
-          </p>
-          
-          {players.map(player => {
-            const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
-            const isEnabled = playerConfig?.enabled ?? true;
-            const modality = playerConfig?.modality ?? 'acumulados';
+
+        <CollapsibleSubSection
+          label="Configuración"
+          summary="Modalidad por jugador"
+        >
+          <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground mb-2">
+              Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.
+            </p>
             
-            const updatePlayerOyes = (updates: Partial<OyesesPlayerConfig>) => {
-              const existingConfigs = [...config.oyeses.playerConfigs];
-              const idx = existingConfigs.findIndex(pc => pc.playerId === player.id);
-              if (idx >= 0) {
-                existingConfigs[idx] = { ...existingConfigs[idx], ...updates };
-              } else {
-                existingConfigs.push({
-                  playerId: player.id,
-                  modality: 'acumulados',
-                  enabled: true,
-                  ...updates,
-                });
-              }
-              onUpdateBet('oyeses', { playerConfigs: existingConfigs });
-            };
-            
-            return (
-              <div 
-                key={player.id} 
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-lg transition-colors",
-                  isEnabled ? "bg-muted/50" : "bg-muted/20 opacity-60"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={isEnabled}
-                    onCheckedChange={(v) => updatePlayerOyes({ enabled: v })}
-                    className="scale-75"
-                  />
-                  <div 
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold"
-                    style={{ backgroundColor: player.color }}
-                  >
-                    {player.initials}
+            {players.map(player => {
+              const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
+              const isEnabled = playerConfig?.enabled ?? true;
+              const modality = playerConfig?.modality ?? 'acumulados';
+              
+              const updatePlayerOyes = (updates: Partial<OyesesPlayerConfig>) => {
+                const existingConfigs = [...config.oyeses.playerConfigs];
+                const idx = existingConfigs.findIndex(pc => pc.playerId === player.id);
+                if (idx >= 0) {
+                  existingConfigs[idx] = { ...existingConfigs[idx], ...updates };
+                } else {
+                  existingConfigs.push({ playerId: player.id, modality: 'acumulados', enabled: true, ...updates });
+                }
+                onUpdateBet('oyeses', { playerConfigs: existingConfigs });
+              };
+              
+              return (
+                <div 
+                  key={player.id} 
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-lg transition-colors",
+                    isEnabled ? "bg-muted/50" : "bg-muted/20 opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Switch checked={isEnabled} onCheckedChange={(v) => updatePlayerOyes({ enabled: v })} className="scale-75" />
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: player.color }}>
+                      {player.initials}
+                    </div>
+                    <span className="text-xs">{formatPlayerName(player.name)}</span>
                   </div>
-                  <span className="text-xs">{formatPlayerName(player.name)}</span>
+                  
+                  {isEnabled && (
+                    <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'acumulados' }); }}
+                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                          modality === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >Acum</button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'sangron' }); }}
+                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                          modality === 'sangron' ? "bg-destructive text-destructive-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >Sang</button>
+                    </div>
+                  )}
                 </div>
-                
-                {isEnabled && (
-                  <div 
-                    className="flex gap-1"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        updatePlayerOyes({ modality: 'acumulados' });
-                      }}
-                      className={cn(
-                        "px-2 py-1 text-[10px] rounded transition-colors",
-                        modality === 'acumulados' 
-                          ? "bg-golf-gold text-golf-dark font-medium" 
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}
-                    >
-                      Acum
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        updatePlayerOyes({ modality: 'sangron' });
-                      }}
-                      className={cn(
-                        "px-2 py-1 text-[10px] rounded transition-colors",
-                        modality === 'sangron' 
-                          ? "bg-destructive text-destructive-foreground font-medium" 
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}
-                    >
-                      Sang
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Units */}
@@ -302,6 +317,17 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         color="gold"
       >
         <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.units.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.units.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('units', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
       </BetSection>
 
       {/* Manchas */}
@@ -316,9 +342,20 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         color="red"
       >
         <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.manchas.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.manchas.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('manchas', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
       </BetSection>
 
-      {/* Putts - NEW */}
+      {/* Putts */}
       <BetSection
         id="putts"
         title="Putts ⛳"
@@ -331,6 +368,18 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
         <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.putts?.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.putts?.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('putts', { participantIds: ids })}
+          />
+        </CollapsibleSubSection>
+
         <p className="text-[9px] text-muted-foreground mt-2">
           ⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts totales.
         </p>

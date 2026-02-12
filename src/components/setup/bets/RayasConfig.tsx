@@ -7,11 +7,13 @@ import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CollapsibleSubSection } from './CollapsibleSubSection';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface RayasConfigProps {
   config: BetConfig;
   players: Player[];
-  basePlayerId?: string; // Logged-in player
+  basePlayerId?: string;
   onUpdateRayas: (updates: Partial<BetConfig['rayas']>) => void;
 }
 
@@ -34,13 +36,11 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
   
   const rayas = config.rayas ?? { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados', oyesMode: 'allVsAll' as const };
   
-  // Get default segment config
   const getSegmentConfig = (segmentKey: string): RayasSegmentConfig => {
     const seg = rayas.segments?.[segmentKey as keyof typeof rayas.segments];
     return seg ?? { enabled: true, frontValue: rayas.frontValue, backValue: rayas.backValue };
   };
   
-  // Update a specific segment
   const updateSegment = (segmentKey: string, updates: Partial<RayasSegmentConfig>) => {
     const currentSegments = rayas.segments ?? {
       skins: { enabled: true, frontValue: rayas.frontValue, backValue: rayas.backValue },
@@ -57,13 +57,11 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
     });
   };
   
-  // Get bilateral overrides for logged-in player
   const getBilateralOverrides = (): RayasBilateralOverride[] => {
     if (!basePlayerId) return [];
     return rayas.bilateralOverrides?.[basePlayerId] ?? [];
   };
   
-  // Update bilateral override for a specific rival
   const updateBilateralOverride = (rivalId: string, updates: Partial<RayasBilateralOverride>) => {
     if (!basePlayerId) return;
     
@@ -81,176 +79,152 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
     onUpdateRayas({ bilateralOverrides: currentOverrides });
   };
   
-  // Get rival override
   const getRivalOverride = (rivalId: string): RayasBilateralOverride | undefined => {
     return getBilateralOverrides().find(o => o.rivalId === rivalId);
   };
   
-  // Rivals for bilateral config (all players except logged-in)
   const rivals = useMemo(() => {
     if (!basePlayerId) return [];
     return players.filter(p => p.id !== basePlayerId && p.profileId !== basePlayerId);
   }, [players, basePlayerId]);
 
+  // Per-player skin variant helpers
+  const getPlayerSkinVariant = (playerId: string): RayasSkinVariant => {
+    return rayas.playerSkinVariants?.[playerId] ?? rayas.skinVariant ?? 'acumulados';
+  };
+
+  const updatePlayerSkinVariant = (playerId: string, variant: RayasSkinVariant) => {
+    const current = rayas.playerSkinVariants ? { ...rayas.playerSkinVariants } : {};
+    current[playerId] = variant;
+    onUpdateRayas({ playerSkinVariants: current });
+  };
+
+  // Count how many players differ from default
+  const customSkinVariantCount = players.filter(p => {
+    const pv = rayas.playerSkinVariants?.[p.id];
+    return pv !== undefined && pv !== (rayas.skinVariant ?? 'acumulados');
+  }).length;
+
+  const configSummary = `${(rayas.skinVariant ?? 'acumulados') === 'acumulados' ? 'Acum' : 'Sin Acum'} · ${(rayas as any).oyesMode === 'singleWinner' ? '1 Ganador' : 'Todos vs Todos'}${customSkinVariantCount > 0 ? ` · ${customSkinVariantCount} personaliz.` : ''}`;
+
   return (
     <div className="space-y-4">
-      {/* Global values - single row */}
+      {/* Global values - always visible */}
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <Label className="text-[9px] text-muted-foreground">Front</Label>
-          <Input
-            type="number"
-            value={rayas.frontValue}
-            onChange={(e) => onUpdateRayas({ frontValue: Number(e.target.value) || 0 })}
-            className="h-7 text-sm"
-          />
+          <Input type="number" value={rayas.frontValue} onChange={(e) => onUpdateRayas({ frontValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
         </div>
         <div className="flex-1">
           <Label className="text-[9px] text-muted-foreground">Back</Label>
-          <Input
-            type="number"
-            value={rayas.backValue}
-            onChange={(e) => onUpdateRayas({ backValue: Number(e.target.value) || 0 })}
-            className="h-7 text-sm"
-          />
+          <Input type="number" value={rayas.backValue} onChange={(e) => onUpdateRayas({ backValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
         </div>
         <div className="flex-1">
           <Label className="text-[9px] text-muted-foreground">Medal Total</Label>
-          <Input
-            type="number"
-            value={rayas.medalTotalValue}
-            onChange={(e) => onUpdateRayas({ medalTotalValue: Number(e.target.value) || 0 })}
-            className="h-7 text-sm"
-          />
+          <Input type="number" value={rayas.medalTotalValue} onChange={(e) => onUpdateRayas({ medalTotalValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
         </div>
       </div>
-      
-      {/* Skin variant */}
-      <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-        <Label className="text-xs text-muted-foreground">Variante Skins</Label>
-        <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onUpdateRayas({ skinVariant: 'acumulados' as RayasSkinVariant });
-            }}
-            className={cn(
-              "px-2 py-1 text-[10px] rounded transition-colors",
-              (rayas.skinVariant ?? 'acumulados') === 'acumulados' 
-                ? "bg-golf-gold text-golf-dark font-medium" 
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-          >
-            Acum
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onUpdateRayas({ skinVariant: 'sinAcumulacion' as RayasSkinVariant });
-            }}
-            className={cn(
-              "px-2 py-1 text-[10px] rounded transition-colors",
-              (rayas.skinVariant ?? 'acumulados') === 'sinAcumulacion' 
-                ? "bg-primary text-primary-foreground font-medium" 
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-          >
-            Sin Acum
-          </button>
-        </div>
-      </div>
-      
-      {/* Oyes Mode Selector */}
-      <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-        <Label className="text-xs text-muted-foreground">Modalidad Oyeses</Label>
-        <Select
-          value={(rayas as any).oyesMode ?? 'allVsAll'}
-          onValueChange={(value) => onUpdateRayas({ oyesMode: value as RayasOyesMode })}
-        >
-          <SelectTrigger className="w-[140px] h-8 text-[10px]">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="singleWinner" className="text-[11px]">
-              Un solo ganador
-            </SelectItem>
-            <SelectItem value="allVsAll" className="text-[11px]">
-              Todos vs Todos
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {/* Segments configuration */}
-      <div className="border-t pt-3">
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-xs font-medium">Segmentos incluidos</Label>
-          <div className="flex gap-1 text-[9px] text-muted-foreground pr-1">
-            <span className="w-14 text-center">Front</span>
-            <span className="w-2"></span>
-            <span className="w-14 text-center">Back</span>
+
+      {/* Configuration - collapsed by default */}
+      <CollapsibleSubSection label="Configuración" summary={configSummary}>
+        <div className="space-y-4">
+          {/* Skin variant (default) */}
+          <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+            <Label className="text-xs text-muted-foreground">Variante Skins (global)</Label>
+            <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ skinVariant: 'acumulados' as RayasSkinVariant }); }}
+                className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                  (rayas.skinVariant ?? 'acumulados') === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}>Acum</button>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ skinVariant: 'sinAcumulacion' as RayasSkinVariant }); }}
+                className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                  (rayas.skinVariant ?? 'acumulados') === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}>Sin Acum</button>
+            </div>
+          </div>
+
+          {/* Per-player skin variant */}
+          <div className="space-y-2">
+            <Label className="text-[10px] text-muted-foreground">Variante Skins por jugador</Label>
+            <p className="text-[9px] text-muted-foreground">
+              Si dos jugadores tienen variantes distintas, en el dashboard se muestra la opción de elegir cuál prevalece.
+            </p>
+            {players.map(player => {
+              const variant = getPlayerSkinVariant(player.id);
+              const isDefault = !rayas.playerSkinVariants?.[player.id] || rayas.playerSkinVariants[player.id] === (rayas.skinVariant ?? 'acumulados');
+              return (
+                <div key={player.id} className={cn("flex items-center justify-between p-2 rounded-lg transition-colors", isDefault ? "bg-muted/30" : "bg-primary/5 border border-primary/20")}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: player.color }}>
+                      {player.initials}
+                    </div>
+                    <span className="text-xs">{formatPlayerName(player.name)}</span>
+                  </div>
+                  <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'acumulados'); }}
+                      className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                        variant === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}>Acum</button>
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'sinAcumulacion'); }}
+                      className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                        variant === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}>Sin Acum</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Oyes Mode Selector */}
+          <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+            <Label className="text-xs text-muted-foreground">Modalidad Oyeses</Label>
+            <Select value={(rayas as any).oyesMode ?? 'allVsAll'} onValueChange={(value) => onUpdateRayas({ oyesMode: value as RayasOyesMode })}>
+              <SelectTrigger className="w-[140px] h-8 text-[10px]"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="singleWinner" className="text-[11px]">Un solo ganador</SelectItem>
+                <SelectItem value="allVsAll" className="text-[11px]">Todos vs Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Segments configuration */}
+          <div className="border-t pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-medium">Segmentos incluidos</Label>
+              <div className="flex gap-1 text-[9px] text-muted-foreground pr-1">
+                <span className="w-14 text-center">Front</span>
+                <span className="w-2"></span>
+                <span className="w-14 text-center">Back</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              {SEGMENT_KEYS.map(segKey => {
+                const segConfig = getSegmentConfig(segKey);
+                const segInfo = SEGMENT_LABELS[segKey];
+                
+                return (
+                  <div key={segKey} className={cn("flex items-center gap-2 p-2 rounded-lg transition-colors", segConfig.enabled ? "bg-muted/50" : "bg-muted/20 opacity-60")}>
+                    <Switch checked={segConfig.enabled} onCheckedChange={(v) => updateSegment(segKey, { enabled: v })} className="scale-75" />
+                    <span className="text-xs flex-1">{segInfo.emoji} {segInfo.name}</span>
+                    {segConfig.enabled && (
+                      <div className="flex items-center gap-1">
+                        <Input type="number" value={segConfig.frontValue} onChange={(e) => updateSegment(segKey, { frontValue: Number(e.target.value) || 0 })} className="h-6 w-14 text-[10px] text-center" />
+                        <span className="text-[9px] text-muted-foreground">/</span>
+                        <Input type="number" value={segConfig.backValue} onChange={(e) => updateSegment(segKey, { backValue: Number(e.target.value) || 0 })} className="h-6 w-14 text-[10px] text-center" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-        <div className="space-y-1">
-          {SEGMENT_KEYS.map(segKey => {
-            const segConfig = getSegmentConfig(segKey);
-            const segInfo = SEGMENT_LABELS[segKey];
-            
-            return (
-              <div 
-                key={segKey}
-                className={cn(
-                  "flex items-center gap-2 p-2 rounded-lg transition-colors",
-                  segConfig.enabled ? "bg-muted/50" : "bg-muted/20 opacity-60"
-                )}
-              >
-                <Switch
-                  checked={segConfig.enabled}
-                  onCheckedChange={(v) => updateSegment(segKey, { enabled: v })}
-                  className="scale-75"
-                />
-                <span className="text-xs flex-1">{segInfo.emoji} {segInfo.name}</span>
-                
-                {segConfig.enabled && (
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      value={segConfig.frontValue}
-                      onChange={(e) => updateSegment(segKey, { frontValue: Number(e.target.value) || 0 })}
-                      className="h-6 w-14 text-[10px] text-center"
-                    />
-                    <span className="text-[9px] text-muted-foreground">/</span>
-                    <Input
-                      type="number"
-                      value={segConfig.backValue}
-                      onChange={(e) => updateSegment(segKey, { backValue: Number(e.target.value) || 0 })}
-                      className="h-6 w-14 text-[10px] text-center"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      </CollapsibleSubSection>
       
       {/* Bilateral overrides */}
       {rivals.length > 0 && (
-        <Collapsible open={expandedBilateral} onOpenChange={setExpandedBilateral}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full border-t pt-3">
-            <Label className="text-xs font-medium cursor-pointer">Personalizar por rival</Label>
-            {expandedBilateral ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )}
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent className="space-y-2 mt-2">
+        <CollapsibleSubSection label="Personalizar por rival" summary={`${rivals.length} rivales`}>
+          <div className="space-y-2">
             <p className="text-[9px] text-muted-foreground mb-2">
               Puedes desactivar Rayas o ajustar segmentos con rivales específicos.
             </p>
@@ -261,33 +235,17 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
               const isEnabled = override?.enabled ?? true;
               
               return (
-                <div 
-                  key={rival.id}
-                  className={cn(
-                    "p-2 rounded-lg transition-colors border",
-                    isCustomized ? "border-primary/30 bg-primary/5" : "border-transparent bg-muted/30"
-                  )}
-                >
+                <div key={rival.id} className={cn("p-2 rounded-lg transition-colors border", isCustomized ? "border-primary/30 bg-primary/5" : "border-transparent bg-muted/30")}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
-                        style={{ backgroundColor: rival.color }}
-                      >
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: rival.color }}>
                         {rival.initials}
                       </div>
                       <span className="text-xs font-medium">{rival.name}</span>
                     </div>
-                    
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-muted-foreground">
-                        {isEnabled ? 'Activo' : 'Desactivado'}
-                      </span>
-                      <Switch
-                        checked={isEnabled}
-                        onCheckedChange={(v) => updateBilateralOverride(rival.id, { enabled: v })}
-                        className="scale-75"
-                      />
+                      <span className="text-[9px] text-muted-foreground">{isEnabled ? 'Activo' : 'Desactivado'}</span>
+                      <Switch checked={isEnabled} onCheckedChange={(v) => updateBilateralOverride(rival.id, { enabled: v })} className="scale-75" />
                     </div>
                   </div>
                   
@@ -300,91 +258,44 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                           const isSegEnabled = segOverride?.enabled ?? globalSeg.enabled;
                           
                           return (
-                            <button
-                              key={segKey}
-                              type="button"
+                            <button key={segKey} type="button"
                               onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                                e.preventDefault(); e.stopPropagation();
                                 const currentSegments = override?.segments ?? {};
                                 updateBilateralOverride(rival.id, {
-                                  segments: {
-                                    ...currentSegments,
-                                    [segKey]: { 
-                                      ...currentSegments[segKey as keyof typeof currentSegments],
-                                      enabled: !isSegEnabled 
-                                    },
-                                  },
+                                  segments: { ...currentSegments, [segKey]: { ...currentSegments[segKey as keyof typeof currentSegments], enabled: !isSegEnabled } },
                                 });
                               }}
-                              className={cn(
-                                "px-1 py-1 text-[8px] rounded transition-colors",
-                                isSegEnabled
-                                  ? "bg-emerald-100 text-emerald-800 font-medium"
-                                  : "bg-muted text-muted-foreground line-through opacity-60"
+                              className={cn("px-1 py-1 text-[8px] rounded transition-colors",
+                                isSegEnabled ? "bg-emerald-100 text-emerald-800 font-medium" : "bg-muted text-muted-foreground line-through opacity-60"
                               )}
-                            >
-                              {SEGMENT_LABELS[segKey].name}
-                            </button>
+                            >{SEGMENT_LABELS[segKey].name}</button>
                           );
                         })}
                       </div>
                       
-                      {/* Oyes modality selector - only show when Oyes is enabled for this rival */}
                       {(override?.segments?.oyes?.enabled ?? getSegmentConfig('oyes').enabled) && (
                         <div className="flex items-center justify-between pt-1 border-t border-border/30">
                           <span className="text-[9px] text-muted-foreground">Modalidad Oyes:</span>
                           <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
-                            <button
-                              type="button"
+                            <button type="button"
                               onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                                e.preventDefault(); e.stopPropagation();
                                 const currentSegments = override?.segments ?? {};
-                                updateBilateralOverride(rival.id, {
-                                  segments: {
-                                    ...currentSegments,
-                                    oyes: { 
-                                      ...currentSegments.oyes,
-                                      modality: 'acumulados' as OyesModality 
-                                    },
-                                  },
-                                });
+                                updateBilateralOverride(rival.id, { segments: { ...currentSegments, oyes: { ...currentSegments.oyes, modality: 'acumulados' as OyesModality } } });
                               }}
-                              className={cn(
-                                "px-2 py-0.5 text-[9px] rounded transition-colors",
-                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'acumulados'
-                                  ? "bg-primary text-primary-foreground font-medium"
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              )}
-                            >
-                              Acumulado
-                            </button>
-                            <button
-                              type="button"
+                              className={cn("px-2 py-0.5 text-[9px] rounded transition-colors",
+                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'acumulados' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}>Acumulado</button>
+                            <button type="button"
                               onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                                e.preventDefault(); e.stopPropagation();
                                 const currentSegments = override?.segments ?? {};
-                                updateBilateralOverride(rival.id, {
-                                  segments: {
-                                    ...currentSegments,
-                                    oyes: { 
-                                      ...currentSegments.oyes,
-                                      modality: 'sangron' as OyesModality 
-                                    },
-                                  },
-                                });
+                                updateBilateralOverride(rival.id, { segments: { ...currentSegments, oyes: { ...currentSegments.oyes, modality: 'sangron' as OyesModality } } });
                               }}
-                              className={cn(
-                                "px-2 py-0.5 text-[9px] rounded transition-colors",
-                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'sangron'
-                                  ? "bg-golf-gold text-golf-dark font-medium"
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              )}
-                            >
-                              Sangrón
-                            </button>
+                              className={cn("px-2 py-0.5 text-[9px] rounded transition-colors",
+                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'sangron' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}>Sangrón</button>
                           </div>
                         </div>
                       )}
@@ -392,23 +303,16 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                   )}
                   
                   {!isCustomized && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        updateBilateralOverride(rival.id, { enabled: true });
-                      }}
+                    <button type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateBilateralOverride(rival.id, { enabled: true }); }}
                       className="text-[9px] text-primary hover:underline"
-                    >
-                      + Personalizar
-                    </button>
+                    >+ Personalizar</button>
                   )}
                 </div>
               );
             })}
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+        </CollapsibleSubSection>
       )}
       
       <p className="text-[9px] text-muted-foreground">
