@@ -1967,9 +1967,7 @@ export const calculateTeamPressuresBets = (
         else if (highB < highA) teamBPoints++;
       }
       
-      if (teamAPoints > teamBPoints) return 1;
-      if (teamBPoints > teamAPoints) return -1;
-      return 0;
+      return teamAPoints - teamBPoints;
     };
     
     // Process a nine and return array of bet balances
