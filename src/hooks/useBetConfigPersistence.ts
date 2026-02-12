@@ -42,6 +42,8 @@ interface RoundBetConfig {
     medalTotalValue: number;
     skinVariant: 'acumulados' | 'sinAcumulacion';
     oyesMode?: 'allVsAll' | 'singleWinner';
+    playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumulacion'>;
+    pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumulacion'>;
     segments?: {
       skins: { enabled: boolean; frontValue: number; backValue: number };
       units: { enabled: boolean; frontValue: number; backValue: number };
@@ -206,6 +208,8 @@ export const useBetConfigPersistence = ({
               medalTotalValue: dbRayas.medalTotalValue ?? prev.rayas.medalTotalValue,
               skinVariant: dbRayas.skinVariant ?? prev.rayas.skinVariant,
               oyesMode: dbRayas.oyesMode ?? 'allVsAll',
+              playerSkinVariants: dbRayas.playerSkinVariants ?? prev.rayas.playerSkinVariants,
+              pairSkinVariantOverrides: dbRayas.pairSkinVariantOverrides ?? prev.rayas.pairSkinVariantOverrides,
               segments: dbRayas.segments ?? prev.rayas.segments,
               bilateralOverrides: dbRayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
             };
@@ -358,6 +362,8 @@ export const useBetConfigPersistence = ({
           medalTotalValue: config.rayas.medalTotalValue,
           skinVariant: config.rayas.skinVariant,
           oyesMode: config.rayas.oyesMode,
+          playerSkinVariants: config.rayas.playerSkinVariants,
+          pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
         },

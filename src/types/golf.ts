@@ -193,6 +193,8 @@ export interface RayasBetConfig {
   skinVariant: RayasSkinVariant; // Default skins variant
   oyesMode: RayasOyesMode; // How Oyes winners are calculated: 'singleWinner' = #1 beats all, 'allVsAll' = compare by pair
   playerSkinVariants?: Record<string, RayasSkinVariant>; // Per-player skin variant override (playerId -> variant)
+  // Per-pair skin variant resolution when players disagree. Key = sorted "idA_idB"
+  pairSkinVariantOverrides?: Record<string, RayasSkinVariant>;
   // Per-segment configuration (optional, defaults to enabled with main values)
   segments?: {
     skins: RayasSegmentConfig;

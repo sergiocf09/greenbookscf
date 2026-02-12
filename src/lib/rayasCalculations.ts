@@ -13,7 +13,7 @@
  * - Skins accumulated from Front pay at Front rate when resolved in Back
  */
 
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
 import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair } from './betCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
 
@@ -252,6 +252,53 @@ export const getOyesModalityForPair = (
 };
 
 /**
+ * Get the effective skin variant for a pair of players.
+ * Priority: 1) Explicit pair override (pairSkinVariantOverrides)
+ *           2) If both players agree on their playerSkinVariants, use that
+ *           3) If conflict (or no per-player config), fall back to global skinVariant
+ * 
+ * Returns an object with the variant and whether there's an unresolved conflict.
+ */
+export const getPairKey = (idA: string, idB: string): string => {
+  return [idA, idB].sort().join('_');
+};
+
+export const getSkinVariantConflict = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): { variant: RayasSkinVariant; hasConflict: boolean } => {
+  const globalVariant = config.rayas?.skinVariant ?? 'acumulados';
+  const playerVariants = config.rayas?.playerSkinVariants;
+  const pairOverrides = config.rayas?.pairSkinVariantOverrides;
+  
+  // 1) Check explicit pair override
+  const pairKey = getPairKey(playerAId, playerBId);
+  if (pairOverrides?.[pairKey]) {
+    return { variant: pairOverrides[pairKey], hasConflict: false };
+  }
+  
+  // 2) Check per-player variants
+  const variantA = playerVariants?.[playerAId] ?? globalVariant;
+  const variantB = playerVariants?.[playerBId] ?? globalVariant;
+  
+  if (variantA === variantB) {
+    return { variant: variantA, hasConflict: false };
+  }
+  
+  // 3) Conflict - no pair override set yet, default to global
+  return { variant: globalVariant, hasConflict: true };
+};
+
+export const getEffectiveSkinVariantForPair = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): RayasSkinVariant => {
+  return getSkinVariantConflict(config, playerAId, playerBId).variant;
+};
+
+/**
  * Check if there are any pairs playing Oyes Sangrón
  * Used to determine if we need to show separate columns in score input
  */
@@ -405,7 +452,8 @@ const calculateRayasForPair = (
   // Get medal total value with dashboard override support
   const amountOverrides = getRayasAmountOverrides(config, playerA.id, playerB.id);
   const medalTotalValue = amountOverrides.medalTotalValue ?? config.rayas?.medalTotalValue ?? 25;
-  const useAccumulation = config.rayas?.skinVariant === 'acumulados';
+  const effectiveVariant = getEffectiveSkinVariantForPair(config, playerA.id, playerB.id);
+  const useAccumulation = effectiveVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
   if (skinsConfig.enabled) {

@@ -14,7 +14,7 @@ import {
   getSkinsEvolution,
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
-import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair } from '@/lib/rayasCalculations';
+import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey } from '@/lib/rayasCalculations';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { GroupBetsCard, getMedalGeneralBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
@@ -4267,8 +4267,67 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const confirmedHolesCountB = confirmedScores.get(rival.id)?.length || 0;
                         const hasAll18 = confirmedHolesCountA >= 18 && confirmedHolesCountB >= 18;
                         
+                        // Check for skin variant conflict
+                        const skinConflict = getSkinVariantConflict(effectiveBetConfig, player.id, rival.id);
+                        const playerVariantA = effectiveBetConfig.rayas?.playerSkinVariants?.[player.id] ?? effectiveBetConfig.rayas?.skinVariant ?? 'acumulados';
+                        const playerVariantB = effectiveBetConfig.rayas?.playerSkinVariants?.[rival.id] ?? effectiveBetConfig.rayas?.skinVariant ?? 'acumulados';
+                        
                         return (
                           <div className="px-4 py-3 pl-6 bg-background/50 space-y-2">
+                            {/* Skin variant conflict resolution */}
+                            {skinConflict.hasConflict && !isHistorical && onBetConfigChange && (
+                              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Settings2 className="h-4 w-4 text-amber-600" />
+                                  <span className="text-xs font-medium text-amber-700">Conflicto de modalidad Skins</span>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {formatPlayerName(player.name)} usa <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span> y {formatPlayerName(rival.name)} usa <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span>.
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant={skinConflict.variant === 'acumulados' ? 'default' : 'outline'}
+                                    className="h-7 text-xs flex-1"
+                                    onClick={() => {
+                                      const pairKey = getPairKey(player.id, rival.id);
+                                      onBetConfigChange({
+                                        ...betConfig,
+                                        rayas: {
+                                          ...betConfig.rayas,
+                                          pairSkinVariantOverrides: {
+                                            ...betConfig.rayas?.pairSkinVariantOverrides,
+                                            [pairKey]: 'acumulados',
+                                          },
+                                        },
+                                      });
+                                    }}
+                                  >
+                                    Acumulados
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant={skinConflict.variant === 'sinAcumulacion' ? 'default' : 'outline'}
+                                    className="h-7 text-xs flex-1"
+                                    onClick={() => {
+                                      const pairKey = getPairKey(player.id, rival.id);
+                                      onBetConfigChange({
+                                        ...betConfig,
+                                        rayas: {
+                                          ...betConfig.rayas,
+                                          pairSkinVariantOverrides: {
+                                            ...betConfig.rayas?.pairSkinVariantOverrides,
+                                            [pairKey]: 'sinAcumulacion',
+                                          },
+                                        },
+                                      });
+                                    }}
+                                  >
+                                    Sin Acumulación
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                             {/* Header row */}
                             <div className="grid grid-cols-5 gap-1 text-[10px] font-medium text-muted-foreground border-b border-border/30 pb-1">
                               <div>Fuente</div>
