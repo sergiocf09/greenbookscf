@@ -105,17 +105,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
 
         <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.skins.participantIds, players.length)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.skins.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('skins', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
-
-        <CollapsibleSubSection
           label="Configuración"
           summary={`${(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'}${config.skins.carryOver ? ' · Arrastre' : ''}`}
         >
@@ -153,7 +142,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
               />
             </div>
 
-            {/* Per-player variant config (same pattern as Rayas) */}
+            {/* Per-player variant config */}
             <CollapsibleSubSection
               label="Modalidad por jugador"
               summary={(() => {
@@ -220,6 +209,17 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
               </div>
             </CollapsibleSubSection>
           </div>
+        </CollapsibleSubSection>
+
+        <CollapsibleSubSection
+          label="Participantes"
+          summary={countParticipants(config.skins.participantIds, players.length)}
+        >
+          <ParticipantSelector
+            players={players}
+            participantIds={config.skins.participantIds}
+            onParticipantsChange={(ids) => onUpdateBet('skins', { participantIds: ids })}
+          />
         </CollapsibleSubSection>
       </BetSection>
 
