@@ -190,8 +190,9 @@ export interface RayasBetConfig {
   frontValue: number;     // Default value per raya in Front 9
   backValue: number;      // Default value per raya in Back 9
   medalTotalValue: number; // Value for the Medal Total raya
-  skinVariant: RayasSkinVariant; // Whether skins accumulate in Rayas
+  skinVariant: RayasSkinVariant; // Default skins variant
   oyesMode: RayasOyesMode; // How Oyes winners are calculated: 'singleWinner' = #1 beats all, 'allVsAll' = compare by pair
+  playerSkinVariants?: Record<string, RayasSkinVariant>; // Per-player skin variant override (playerId -> variant)
   // Per-segment configuration (optional, defaults to enabled with main values)
   segments?: {
     skins: RayasSegmentConfig;
@@ -252,6 +253,7 @@ export interface PuttsBetConfig {
   frontAmount: number;
   backAmount: number;
   totalAmount: number;
+  participantIds?: string[];
 }
 
 // Side Bets - Quick capture, no handicap, direct money
@@ -385,6 +387,7 @@ export interface MedalBetConfig {
   frontAmount: number;
   backAmount: number;
   totalAmount: number;
+  participantIds?: string[];
 }
 
 export interface PressureBetConfig {
@@ -392,6 +395,7 @@ export interface PressureBetConfig {
   frontAmount: number;
   backAmount: number;
   totalAmount: number; // Match 18 bet amount
+  participantIds?: string[];
 }
 
 export interface SkinsBetConfig {
@@ -400,6 +404,7 @@ export interface SkinsBetConfig {
   backValue: number;
   carryOver: boolean; // If skins carry from 9 to 10
   modality?: 'acumulados' | 'sinAcumular'; // acumulados = ties add to pot; sinAcumular = ties are void
+  participantIds?: string[];
 }
 
 export interface CarosBetConfig {
@@ -407,16 +412,19 @@ export interface CarosBetConfig {
   amount: number; // Per hole 15-18
   startHole?: number; // Default 15
   endHole?: number; // Default 18
+  participantIds?: string[];
 }
 
 export interface UnitsBetConfig {
   enabled: boolean;
   valuePerPoint: number;
+  participantIds?: string[];
 }
 
 export interface ManchasBetConfig {
   enabled: boolean;
   valuePerPoint: number;
+  participantIds?: string[];
 }
 
 export interface CumulativeBetConfig {
