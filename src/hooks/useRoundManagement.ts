@@ -968,9 +968,23 @@ export const useRoundManagement = ({
           if (winner?.profileId && loser?.profileId && isUuid(winner.profileId) && isUuid(loser.profileId)) {
             // Map human-readable labels to DB enum values
             const labelToEnum: Record<string, string> = {
+              'Medal Front 9': 'medal_front',
+              'Medal Back 9': 'medal_back',
+              'Medal Total': 'medal_total',
+              'Presiones Front': 'pressure_front',
+              'Presiones Back': 'pressure_back',
+              'Presiones Match 18': 'medal_total',
+              'Presiones Parejas': 'pressure_front',
               'Carritos Front': 'carritos_front',
               'Carritos Back': 'carritos_back',
               'Carritos Total': 'carritos_total',
+              'Caros': 'caros',
+              'Unidades': 'units',
+              'Manchas': 'manchas',
+              'Culebras': 'culebras',
+              'Pingüinos': 'pinguinos',
+              'Coneja': 'coneja',
+              'Side Bet': 'medal_total',
             };
             const mappedType = labelToEnum[result.betType] ?? result.betType;
             const betType = isValidBetType(mappedType) ? mappedType : 'medal_total';
