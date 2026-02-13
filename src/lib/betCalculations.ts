@@ -2203,9 +2203,25 @@ export const calculateAllBets = (
         // we must NOT allow the regular segment override ("Presiones Back") to overwrite
         // the computed carry value (Front×2 + Match18).
         const isCarryLabel = summaryType.includes('(carry');
-        const matchesBetType = isCarryLabel
-          ? summaryType === overrideType
-          : summaryType.includes(overrideType);
+        
+        // CRITICAL: Prevent false-positive collisions between related bet types.
+        // 'medal' override must NOT match 'medal general' or 'rayas medal total'.
+        // 'rayas' override must NOT match 'rayas medal total' (different bet category).
+        const matchesBetType = (() => {
+          if (isCarryLabel) return summaryType === overrideType;
+          
+          // Exact collision guards:
+          // 'medal' (bilateral head-to-head) vs 'medal general' (group pool)
+          if (overrideType === 'medal' && (summaryType.includes('medal general') || summaryType.includes('rayas medal'))) {
+            return false;
+          }
+          // 'rayas' (bilateral rayas) vs 'rayas medal total' (different category treated by medal override)
+          if (overrideType === 'rayas' && summaryType.includes('rayas medal')) {
+            return false;
+          }
+          
+          return summaryType.includes(overrideType);
+        })();
         return matchesPair && matchesBetType;
       });
       
