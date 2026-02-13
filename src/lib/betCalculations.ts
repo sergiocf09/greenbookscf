@@ -194,6 +194,12 @@ export const calculateMedalBets = (
 ): BetSummary[] => {
   if (!config.medal.enabled) return [];
   
+  // Filter players by participation config
+  const participantIds = config.medal.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   
   const segments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
@@ -202,10 +208,10 @@ export const calculateMedalBets = (
     { key: 'total', amount: config.medal.totalAmount, label: 'Medal Total' },
   ];
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -278,6 +284,12 @@ export const calculatePressureBets = (
 ): BetSummary[] => {
   if (!config.pressures.enabled) return [];
   
+  // Filter players by participation config
+  const participantIds = config.pressures.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   
   // Get hole ranges based on starting hole
@@ -313,10 +325,10 @@ export const calculatePressureBets = (
       : undefined;
   };
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -570,6 +582,12 @@ export const calculateSkinsBets = (
 ): BetSummary[] => {
   if (!config.skins.enabled) return [];
 
+  // Filter players by participation config
+  const participantIds = config.skins.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+
   const summaries: BetSummary[] = [];
 
   // Helper: get effective skins modality for a specific pair
@@ -592,10 +610,10 @@ export const calculateSkinsBets = (
   };
 
   // For each pair of players, calculate bilateral skins
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
 
       // Get adjusted scores for this pair based on bilateral handicap overrides
@@ -875,15 +893,21 @@ export const calculateCarosBets = (
 ): BetSummary[] => {
   if (!config.caros.enabled || config.caros.amount <= 0) return [];
   
+  // Filter players by participation config
+  const participantIds = config.caros.participantIds;
+  const participatingPlayers = participantIds && participantIds.length > 0
+    ? players.filter(p => participantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   const startHole = config.caros.startHole ?? 15;
   const endHole = config.caros.endHole ?? 18;
   const caroHoles = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -959,6 +983,12 @@ export const calculateUnitsBets = (
 ): BetSummary[] => {
   if (!config.units.enabled || config.units.valuePerPoint <= 0) return [];
   
+  // Filter players by participation config
+  const unitParticipantIds = config.units.participantIds;
+  const participatingPlayers = unitParticipantIds && unitParticipantIds.length > 0
+    ? players.filter(p => unitParticipantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   
   const countUnits = (playerId: string): { positive: number; negative: number } => {
@@ -990,8 +1020,8 @@ export const calculateUnitsBets = (
     return { positive, negative };
   };
   
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
       
@@ -1041,6 +1071,12 @@ export const calculateManchasBets = (
 ): BetSummary[] => {
   if (!config.manchas.enabled || config.manchas.valuePerPoint <= 0) return [];
   
+  // Filter players by participation config
+  const manchasParticipantIds = config.manchas.participantIds;
+  const participatingPlayers = manchasParticipantIds && manchasParticipantIds.length > 0
+    ? players.filter(p => manchasParticipantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   
   // Manual manchas that are persisted to database
@@ -1074,10 +1110,10 @@ export const calculateManchasBets = (
   };
   
   // Calculate bilateral manchas (excluding cuatriput)
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       const manchasA = countManchas(playerA.id);
       const manchasB = countManchas(playerB.id);
@@ -1476,6 +1512,12 @@ export const calculatePuttsBets = (
 ): BetSummary[] => {
   if (!config.putts?.enabled) return [];
   
+  // Filter players by participation config
+  const puttParticipantIds = config.putts.participantIds;
+  const participatingPlayers = puttParticipantIds && puttParticipantIds.length > 0
+    ? players.filter(p => puttParticipantIds.includes(p.id))
+    : players;
+  
   const summaries: BetSummary[] = [];
   const ranges = getSegmentHoleRanges(startingHole);
   
@@ -1486,10 +1528,10 @@ export const calculatePuttsBets = (
   ];
   
   // Compare each pair of players
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       segments.forEach(({ key, holes, amount, label }) => {
         if (amount <= 0) return;
