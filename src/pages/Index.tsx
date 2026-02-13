@@ -653,11 +653,12 @@ const Index = () => {
         }
       }
 
-      // Remap guest player IDs in betConfig so team bets reference the new round_player_ids
+      // Remap ALL player IDs in betConfig so team bets, side bets, and pressures
+      // reference the new round_player_ids (not just guests)
       let remappedBetConfig = data.betConfig;
-      if (guestIdRemap.size > 0) {
+      if (playerIdMap.size > 0) {
         let configJson = JSON.stringify(data.betConfig);
-        for (const [oldId, newId] of guestIdRemap) {
+        for (const [oldId, newId] of playerIdMap) {
           configJson = configJson.split(oldId).join(newId);
         }
         remappedBetConfig = JSON.parse(configJson);
