@@ -532,6 +532,10 @@ const Index = () => {
         if (p.profileId === profile?.id) {
           // Map original ID to the round_player_id created by create_round
           playerIdMap.set(originalId, newRoundData.round_player_id);
+          // Also map profile_id → new round_player_id so betOverrides using profile IDs get remapped
+          if (p.profileId) {
+            playerIdMap.set(p.profileId, newRoundData.round_player_id);
+          }
           
           // Update handicap for the organizer
           await supabase
@@ -567,6 +571,10 @@ const Index = () => {
         
         if (insertedPlayer?.id && originalId) {
           playerIdMap.set(originalId, insertedPlayer.id);
+          // Also map profile_id → new round_player_id for betOverrides using profile IDs
+          if (p.profileId) {
+            playerIdMap.set(p.profileId, insertedPlayer.id);
+          }
           if (isGuest) {
             guestIdRemap.set(originalId, insertedPlayer.id);
           }
@@ -662,6 +670,18 @@ const Index = () => {
           configJson = configJson.split(oldId).join(newId);
         }
         remappedBetConfig = JSON.parse(configJson);
+      }
+
+      // CRITICAL: Clean up betOverrides that reference stale player IDs from prior clones.
+      // Only keep overrides where BOTH playerAId and playerBId exist in the new round.
+      const newPlayerIds = new Set(playerIdMap.values());
+      if (remappedBetConfig.betOverrides && Array.isArray(remappedBetConfig.betOverrides)) {
+        remappedBetConfig = {
+          ...remappedBetConfig,
+          betOverrides: remappedBetConfig.betOverrides.filter((ov: any) =>
+            newPlayerIds.has(ov.playerAId) && newPlayerIds.has(ov.playerBId)
+          ),
+        };
       }
 
       // Update round to in_progress with remapped betConfig
