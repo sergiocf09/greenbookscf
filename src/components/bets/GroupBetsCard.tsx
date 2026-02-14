@@ -535,32 +535,40 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     );
   }, [players, scores]);
 
-  // Calculate Coneja results
+  // Helper: get players in the same group as the base player (for per-group bets)
+  const sameGroupPlayers = useMemo(() => {
+    const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+    const baseGroupId = basePlayer?.groupId;
+    if (!baseGroupId) return players; // No group info = single group, use all
+    return players.filter(p => p.groupId === baseGroupId);
+  }, [players, basePlayerId]);
+
+  // Calculate Coneja results (scoped to same group)
   const conejaResult = useMemo(() => {
-    if (!betConfig.coneja?.enabled || players.length < 2) return null;
+    if (!betConfig.coneja?.enabled || sameGroupPlayers.length < 2) return null;
     
-    const setResults = calculateConejaSetResults(players, scores, course, betConfig, confirmedHoles);
-    const holeDisplays = getConejaHoleDisplays(players, scores, course, betConfig, confirmedHoles);
+    const setResults = calculateConejaSetResults(sameGroupPlayers, scores, course, betConfig, confirmedHoles);
+    const holeDisplays = getConejaHoleDisplays(sameGroupPlayers, scores, course, betConfig, confirmedHoles);
     const amount = betConfig.coneja.amount || 50;
     
     // Get winners for display
     const winners = setResults
       .filter(sr => sr.winnerId)
       .map(sr => {
-        const winner = players.find(p => p.id === sr.winnerId);
+        const winner = sameGroupPlayers.find(p => p.id === sr.winnerId);
         const numConejas = sr.isAccumulated && sr.accumulatedSets.length > 0 ? sr.accumulatedSets.length : 1;
         return {
           setNumber: sr.setNumber,
           player: winner,
           accumulatedSets: sr.accumulatedSets,
-          amount: amount * numConejas * (players.length - 1),
+          amount: amount * numConejas * (sameGroupPlayers.length - 1),
           isAccumulated: sr.isAccumulated,
           wonOnHole: sr.wonOnHole,
         };
       });
     
     return { setResults, holeDisplays, winners, amount };
-  }, [players, scores, course, betConfig, confirmedHoles]);
+  }, [sameGroupPlayers, scores, course, betConfig, confirmedHoles]);
 
   // Calculate Medal General - show partial results during round
   const medalGeneralResult = useMemo((): MedalGeneralResult | null => {
@@ -631,13 +639,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
   }, [players, scores, betConfig.medalGeneral, course, all18HolesConfirmed]);
 
-  // Helper: get players in the same group as the base player (for per-group bets)
-  const sameGroupPlayers = useMemo(() => {
-    const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
-    const baseGroupId = basePlayer?.groupId;
-    if (!baseGroupId) return players; // No group info = single group, use all
-    return players.filter(p => p.groupId === baseGroupId);
-  }, [players, basePlayerId]);
+
 
   // Calculate Culebras - show count and loser payment (scoped to same group)
   const culebrasResult = useMemo((): OccurrenceBetResult | null => {
