@@ -543,6 +543,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return players.filter(p => p.groupId === baseGroupId);
   }, [players, basePlayerId]);
 
+  // Helper: resolve participants for this group, handling template inheritance.
+  // When participantIds was set for Group 1 only, Group 2 players won't be in the list.
+  // In that case, treat it as "all group players participate".
+  const resolveGroupParticipants = (participantIds: string[] | undefined): typeof sameGroupPlayers => {
+    if (!participantIds || participantIds.length === 0) return sameGroupPlayers;
+    const groupPlayersInList = sameGroupPlayers.filter(p => participantIds.includes(p.id));
+    // If NONE of this group's players are in the list, it means participantIds
+    // was set for another group (template) - include all group players
+    if (groupPlayersInList.length === 0) return sameGroupPlayers;
+    return groupPlayersInList;
+  };
+
   // Calculate Coneja results (scoped to same group)
   const conejaResult = useMemo(() => {
     if (!betConfig.coneja?.enabled || sameGroupPlayers.length < 2) return null;
@@ -649,11 +661,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     const valuePerOccurrence = betConfig.culebras.valuePerOccurrence || 25;
     
-    // Filter to only participating players within the same group
-    const participantIds = betConfig.culebras.participantIds;
-    const participatingPlayers = participantIds && participantIds.length > 0
-      ? sameGroupPlayers.filter(p => participantIds.includes(p.id))
-      : sameGroupPlayers;
+    // Filter to only participating players within the same group (with template inheritance)
+    const participatingPlayers = resolveGroupParticipants(betConfig.culebras.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
@@ -767,11 +776,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     const valuePerOccurrence = betConfig.pinguinos.valuePerOccurrence || 25;
     
-    // Filter to only participating players within the same group
-    const participantIds = betConfig.pinguinos.participantIds;
-    const participatingPlayers = participantIds && participantIds.length > 0
-      ? sameGroupPlayers.filter(p => participantIds.includes(p.id))
-      : sameGroupPlayers;
+    // Filter to only participating players within the same group (with template inheritance)
+    const participatingPlayers = resolveGroupParticipants(betConfig.pinguinos.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
