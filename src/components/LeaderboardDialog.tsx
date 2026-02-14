@@ -270,11 +270,11 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
               </TableHeader>
               <TableBody>
                 {leaderboard.map((entry, idx) => (
-                  <TableRow key={entry.player.id} className="text-xs">
-                    <TableCell className="text-center font-medium text-muted-foreground px-1 py-1">
+                  <TableRow key={entry.player.id} className="text-sm">
+                    <TableCell className="text-center font-bold text-muted-foreground px-1 py-1.5 text-base">
                       {entry.holesPlayed > 0 ? idx + 1 : '-'}
                     </TableCell>
-                    <TableCell className="px-1 py-1">
+                    <TableCell className="px-1 py-1.5">
                       <div className="flex items-center gap-1.5">
                         <PlayerAvatar 
                           initials={disambiguatedInitials.get(entry.player.id) || entry.player.initials} 
@@ -282,25 +282,25 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                           size="sm" 
                           isLoggedInUser={entry.player.id === basePlayerId}
                         />
-                        <span className="font-medium text-xs truncate">
+                        <span className="font-semibold text-sm truncate">
                           {formatPlayerNameShort(entry.player.name)}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground px-1 py-1">
+                    <TableCell className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5">
                       {entry.groupNumber}
                     </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground px-1 py-1">
+                    <TableCell className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5">
                       {entry.holesPlayed > 0 ? entry.lastConfirmedHole : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center px-1 py-1', getVsParColor(entry.grossVsPar))}>
+                    <TableCell className={cn('text-center text-base px-1 py-1.5', getVsParColor(entry.grossVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.grossVsPar) : '-'}
                     </TableCell>
-                    <TableCell className={cn('text-center px-1 py-1', getVsParColor(entry.netVsPar))}>
+                    <TableCell className={cn('text-center text-base px-1 py-1.5', getVsParColor(entry.netVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.netVsPar) : '-'}
                     </TableCell>
                     {stablefordEnabled && (
-                      <TableCell className="text-center px-1 py-1 font-bold text-amber-600">
+                      <TableCell className="text-center text-base px-1 py-1.5 font-extrabold text-amber-600">
                         {entry.holesPlayed > 0 ? entry.stablefordPoints : '-'}
                       </TableCell>
                     )}
