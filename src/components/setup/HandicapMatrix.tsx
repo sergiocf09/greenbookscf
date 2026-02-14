@@ -60,7 +60,22 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
   // Determine which group the base player belongs to
   const totalGroups = 1 + playerGroups.length;
-  const [selectedGroupIndex, setSelectedGroupIndex] = useState(0);
+  
+  // Auto-detect the group that contains the logged-in player
+  const defaultGroupIndex = useMemo(() => {
+    // Check if base player is in main group (index 0)
+    const inMain = players.some(p => p.id === basePlayerId || p.profileId === basePlayerId);
+    if (inMain) return 0;
+    // Check additional groups
+    for (let i = 0; i < playerGroups.length; i++) {
+      if (playerGroups[i].players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) {
+        return i + 1;
+      }
+    }
+    return 0;
+  }, [players, playerGroups, basePlayerId]);
+  
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState(defaultGroupIndex);
 
   // Get players per group
   const getGroupPlayers = (groupIndex: number): Player[] => {
