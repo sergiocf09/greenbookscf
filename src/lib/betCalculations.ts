@@ -6,6 +6,50 @@ import { calculateConejaBets } from './conejaCalculations';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 import { devLog } from './logger';
 
+// Helper: group players by their groupId for per-group bet scoping
+// Players without groupId are all placed in a single "ungrouped" bucket
+export const groupPlayersByGroup = (players: Player[]): Player[][] => {
+  const hasAnyGroup = players.some(p => p.groupId);
+  if (!hasAnyGroup) return [players]; // Single group, no splitting needed
+  
+  const groups = new Map<string, Player[]>();
+  players.forEach(p => {
+    const gid = p.groupId || '__ungrouped__';
+    if (!groups.has(gid)) groups.set(gid, []);
+    groups.get(gid)!.push(p);
+  });
+  return Array.from(groups.values());
+};
+
+/**
+ * Resolve participating players for a bet, handling multi-group template inheritance.
+ * 
+ * Problem: When the organizer sets up bets, participantIds gets populated with Group 1 player IDs.
+ * When Group 2 players join, they aren't in participantIds, so they get excluded from all bets.
+ * 
+ * Solution: If participantIds is set but NONE of the current group's players are in it,
+ * treat it as "template not customized for this group" and include all group players.
+ * If at least one group player IS in participantIds, respect the explicit selection.
+ */
+const resolveParticipantsForGroup = (
+  allPlayers: Player[],
+  participantIds: string[] | undefined,
+  groupPlayers: Player[]
+): Player[] => {
+  // No participantIds = everyone participates
+  if (!participantIds || participantIds.length === 0) return groupPlayers;
+  
+  // Check how many of this group's players are in participantIds
+  const groupPlayersInList = groupPlayers.filter(p => participantIds.includes(p.id));
+  
+  // If NONE of this group's players are in the list, it means participantIds
+  // was set for another group (template) - include all group players
+  if (groupPlayersInList.length === 0) return groupPlayers;
+  
+  // Otherwise, respect the explicit selection for this group
+  return groupPlayersInList;
+};
+
 export interface BetSummary {
   playerId: string;
   vsPlayer: string;
@@ -194,11 +238,11 @@ export const calculateMedalBets = (
 ): BetSummary[] => {
   if (!config.medal.enabled) return [];
   
-  // Filter players by participation config
-  const participantIds = config.medal.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
+  // Filter players by participation config, respecting multi-group template inheritance
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
+    resolveParticipantsForGroup(players, config.medal.participantIds, groupPlayers)
+  );
   
   const summaries: BetSummary[] = [];
   
@@ -284,11 +328,11 @@ export const calculatePressureBets = (
 ): BetSummary[] => {
   if (!config.pressures.enabled) return [];
   
-  // Filter players by participation config
-  const participantIds = config.pressures.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
+  // Filter players by participation config, respecting multi-group template inheritance
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
+    resolveParticipantsForGroup(players, config.pressures.participantIds, groupPlayers)
+  );
   
   const summaries: BetSummary[] = [];
   
@@ -582,11 +626,11 @@ export const calculateSkinsBets = (
 ): BetSummary[] => {
   if (!config.skins.enabled) return [];
 
-  // Filter players by participation config
-  const participantIds = config.skins.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
+  // Filter players by participation config, respecting multi-group template inheritance
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
+    resolveParticipantsForGroup(players, config.skins.participantIds, groupPlayers)
+  );
 
   const summaries: BetSummary[] = [];
 
@@ -894,11 +938,11 @@ export const calculateCarosBets = (
 ): BetSummary[] => {
   if (!config.caros.enabled || config.caros.amount <= 0) return [];
   
-  // Filter players by participation config
-  const participantIds = config.caros.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
+  // Filter players by participation config, respecting multi-group template inheritance
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
+    resolveParticipantsForGroup(players, config.caros.participantIds, groupPlayers)
+  );
   
   const summaries: BetSummary[] = [];
   const startHole = config.caros.startHole ?? 15;
@@ -976,6 +1020,7 @@ export const calculateCarosBets = (
 };
 
 // UNITS: Birdies/Eagles/Albatross (positive) - Cuatriput counts as negative unit
+// Scoped PER GROUP: each group resolves independently
 export const calculateUnitsBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -983,12 +1028,6 @@ export const calculateUnitsBets = (
   course: GolfCourse
 ): BetSummary[] => {
   if (!config.units.enabled || config.units.valuePerPoint <= 0) return [];
-  
-  // Filter players by participation config
-  const unitParticipantIds = config.units.participantIds;
-  const participatingPlayers = unitParticipantIds && unitParticipantIds.length > 0
-    ? players.filter(p => unitParticipantIds.includes(p.id))
-    : players;
   
   const summaries: BetSummary[] = [];
   
@@ -1021,62 +1060,72 @@ export const calculateUnitsBets = (
     return { positive, negative };
   };
   
-  for (let i = 0; i < participatingPlayers.length; i++) {
-    for (let j = i + 1; j < participatingPlayers.length; j++) {
-      const playerA = participatingPlayers[i];
-      const playerB = participatingPlayers[j];
-      
-      const unitsA = countUnits(playerA.id);
-      const unitsB = countUnits(playerB.id);
-      
-      // Net units = (positive - negative) for each player
-      const netA = unitsA.positive - unitsA.negative;
-      const netB = unitsB.positive - unitsB.negative;
-      const diff = netA - netB;
-      
-      // Always generate summaries if either player has units, even if diff is 0
-      // This ensures the UI can display the correct $0 balance
-      const hasAnyUnits = unitsA.positive > 0 || unitsA.negative > 0 || unitsB.positive > 0 || unitsB.negative > 0;
-      
-      if (diff !== 0 || hasAnyUnits) {
-        const amount = diff * config.units.valuePerPoint;
+  // Group players by groupId for per-group calculation
+  const playersByGroup = groupPlayersByGroup(players);
+  
+  playersByGroup.forEach(groupPlayers => {
+    if (groupPlayers.length < 2) return;
+    
+    // Resolve participants for this specific group (handles template inheritance)
+    const participatingPlayers = resolveParticipantsForGroup(
+      players,
+      config.units.participantIds,
+      groupPlayers
+    );
+    
+    if (participatingPlayers.length < 2) return;
+  
+    for (let i = 0; i < participatingPlayers.length; i++) {
+      for (let j = i + 1; j < participatingPlayers.length; j++) {
+        const playerA = participatingPlayers[i];
+        const playerB = participatingPlayers[j];
         
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Unidades',
-          amount: amount,
-          segment: 'total',
-          description: `${netA} vs ${netB} unidades (${unitsA.positive}+ ${unitsA.negative}- vs ${unitsB.positive}+ ${unitsB.negative}-)`,
-        });
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Unidades',
-          amount: -amount,
-          segment: 'total',
-          description: `${netB} vs ${netA} unidades (${unitsB.positive}+ ${unitsB.negative}- vs ${unitsA.positive}+ ${unitsA.negative}-)`,
-        });
+        const unitsA = countUnits(playerA.id);
+        const unitsB = countUnits(playerB.id);
+        
+        // Net units = (positive - negative) for each player
+        const netA = unitsA.positive - unitsA.negative;
+        const netB = unitsB.positive - unitsB.negative;
+        const diff = netA - netB;
+        
+        // Always generate summaries if either player has units, even if diff is 0
+        const hasAnyUnits = unitsA.positive > 0 || unitsA.negative > 0 || unitsB.positive > 0 || unitsB.negative > 0;
+        
+        if (diff !== 0 || hasAnyUnits) {
+          const amount = diff * config.units.valuePerPoint;
+          
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Unidades',
+            amount: amount,
+            segment: 'total',
+            description: `${netA} vs ${netB} unidades (${unitsA.positive}+ ${unitsA.negative}- vs ${unitsB.positive}+ ${unitsB.negative}-)`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Unidades',
+            amount: -amount,
+            segment: 'total',
+            description: `${netB} vs ${netA} unidades (${unitsB.positive}+ ${unitsB.negative}- vs ${unitsA.positive}+ ${unitsA.negative}-)`,
+          });
+        }
       }
     }
-  }
+  });
   
   return summaries;
 };
 
 // MANCHAS: Negative markers - Cuatriput pays to ALL other players
+// Scoped PER GROUP: each group resolves independently
 export const calculateManchasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig
 ): BetSummary[] => {
   if (!config.manchas.enabled || config.manchas.valuePerPoint <= 0) return [];
-  
-  // Filter players by participation config
-  const manchasParticipantIds = config.manchas.participantIds;
-  const participatingPlayers = manchasParticipantIds && manchasParticipantIds.length > 0
-    ? players.filter(p => manchasParticipantIds.includes(p.id))
-    : players;
   
   const summaries: BetSummary[] = [];
   
@@ -1110,103 +1159,104 @@ export const calculateManchasBets = (
     return playerScores.filter(s => s.putts >= 4 || s.markers.cuatriput).length;
   };
   
-  // Calculate bilateral manchas (excluding cuatriput)
-  for (let i = 0; i < participatingPlayers.length; i++) {
-    for (let j = i + 1; j < participatingPlayers.length; j++) {
-      const playerA = participatingPlayers[i];
-      const playerB = participatingPlayers[j];
-      
-      const manchasA = countManchas(playerA.id);
-      const manchasB = countManchas(playerB.id);
-      const diff = manchasB - manchasA; // Player with FEWER manchas wins
-      
-      if (diff !== 0) {
-        const amount = diff * config.manchas.valuePerPoint;
+  // Group players by groupId for per-group calculation
+  const playersByGroup = groupPlayersByGroup(players);
+  
+  playersByGroup.forEach(groupPlayers => {
+    if (groupPlayers.length < 2) return;
+    
+    // Resolve participants for this specific group (handles template inheritance)
+    const participatingPlayers = resolveParticipantsForGroup(
+      players,
+      config.manchas.participantIds,
+      groupPlayers
+    );
+    
+    if (participatingPlayers.length < 2) return;
+  
+    // Calculate bilateral manchas (excluding cuatriput)
+    for (let i = 0; i < participatingPlayers.length; i++) {
+      for (let j = i + 1; j < participatingPlayers.length; j++) {
+        const playerA = participatingPlayers[i];
+        const playerB = participatingPlayers[j];
         
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Manchas',
-          amount: amount,
-          segment: 'total',
-          description: `${manchasA} vs ${manchasB} manchas`,
-        });
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Manchas',
-          amount: -amount,
-          segment: 'total',
-          description: `${manchasB} vs ${manchasA} manchas`,
-        });
-      }
-      
-      // Add cuatriput payments - each cuatriput pays to each other player
-      const cuatriputsA = countCuatriputs(playerA.id);
-      const cuatriputsB = countCuatriputs(playerB.id);
-      
-      // Player A pays for their cuatriputs to player B
-      if (cuatriputsA > 0) {
-        const cuatriputAmount = cuatriputsA * config.manchas.valuePerPoint;
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Manchas',
-          amount: -cuatriputAmount,
-          segment: 'total',
-          description: `Cuatriput x${cuatriputsA}`,
-        });
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Manchas',
-          amount: cuatriputAmount,
-          segment: 'total',
-          description: `Cuatriput rival x${cuatriputsA}`,
-        });
-      }
-      
-      // Player B pays for their cuatriputs to player A
-      if (cuatriputsB > 0) {
-        const cuatriputAmount = cuatriputsB * config.manchas.valuePerPoint;
-        summaries.push({
-          playerId: playerB.id,
-          vsPlayer: playerA.id,
-          betType: 'Manchas',
-          amount: -cuatriputAmount,
-          segment: 'total',
-          description: `Cuatriput x${cuatriputsB}`,
-        });
-        summaries.push({
-          playerId: playerA.id,
-          vsPlayer: playerB.id,
-          betType: 'Manchas',
-          amount: cuatriputAmount,
-          segment: 'total',
-          description: `Cuatriput rival x${cuatriputsB}`,
-        });
+        const manchasA = countManchas(playerA.id);
+        const manchasB = countManchas(playerB.id);
+        const diff = manchasB - manchasA; // Player with FEWER manchas wins
+        
+        if (diff !== 0) {
+          const amount = diff * config.manchas.valuePerPoint;
+          
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Manchas',
+            amount: amount,
+            segment: 'total',
+            description: `${manchasA} vs ${manchasB} manchas`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Manchas',
+            amount: -amount,
+            segment: 'total',
+            description: `${manchasB} vs ${manchasA} manchas`,
+          });
+        }
+        
+        // Add cuatriput payments - each cuatriput pays to each other player
+        const cuatriputsA = countCuatriputs(playerA.id);
+        const cuatriputsB = countCuatriputs(playerB.id);
+        
+        // Player A pays for their cuatriputs to player B
+        if (cuatriputsA > 0) {
+          const cuatriputAmount = cuatriputsA * config.manchas.valuePerPoint;
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Manchas',
+            amount: -cuatriputAmount,
+            segment: 'total',
+            description: `Cuatriput x${cuatriputsA}`,
+          });
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Manchas',
+            amount: cuatriputAmount,
+            segment: 'total',
+            description: `Cuatriput rival x${cuatriputsA}`,
+          });
+        }
+        
+        // Player B pays for their cuatriputs to player A
+        if (cuatriputsB > 0) {
+          const cuatriputAmount = cuatriputsB * config.manchas.valuePerPoint;
+          summaries.push({
+            playerId: playerB.id,
+            vsPlayer: playerA.id,
+            betType: 'Manchas',
+            amount: -cuatriputAmount,
+            segment: 'total',
+            description: `Cuatriput x${cuatriputsB}`,
+          });
+          summaries.push({
+            playerId: playerA.id,
+            vsPlayer: playerB.id,
+            betType: 'Manchas',
+            amount: cuatriputAmount,
+            segment: 'total',
+            description: `Cuatriput rival x${cuatriputsB}`,
+          });
+        }
       }
     }
-  }
+  });
   
   return summaries;
 };
 
-// CULEBRAS: 3+ putts - ONLY the LAST player to make one pays ALL occurrences to ALL others
-// Helper: group players by their groupId for per-group bet scoping
-// Players without groupId are all placed in a single "ungrouped" bucket
-const groupPlayersByGroup = (players: Player[]): Player[][] => {
-  const hasAnyGroup = players.some(p => p.groupId);
-  if (!hasAnyGroup) return [players]; // Single group, no splitting needed
-  
-  const groups = new Map<string, Player[]>();
-  players.forEach(p => {
-    const gid = p.groupId || '__ungrouped__';
-    if (!groups.has(gid)) groups.set(gid, []);
-    groups.get(gid)!.push(p);
-  });
-  return Array.from(groups.values());
-};
 
 // Find which hole(s) have culebras and determine the last one
 // Only considers players in participantIds (if provided)
@@ -1218,21 +1268,20 @@ export const calculateCulebrasBets = (
 ): BetSummary[] => {
   if (!config.culebras.enabled || config.culebras.valuePerOccurrence <= 0) return [];
   
-  // Filter players by participation config
-  const participantIds = config.culebras.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
-  
-  if (participatingPlayers.length < 2) return [];
-  
-  // Group players by groupId for per-group calculation
-  const playersByGroup = groupPlayersByGroup(participatingPlayers);
+  // Group ALL players by groupId first, then resolve participants per group
+  const playersByGroup = groupPlayersByGroup(players);
   
   const allSummaries: BetSummary[] = [];
   
   playersByGroup.forEach(groupPlayers => {
-    if (groupPlayers.length < 2) return;
+    // Resolve participants for this specific group (handles template inheritance)
+    const participatingPlayers = resolveParticipantsForGroup(
+      players,
+      config.culebras.participantIds,
+      groupPlayers
+    );
+    
+    if (participatingPlayers.length < 2) return;
     
     const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
     
@@ -1321,23 +1370,22 @@ export const calculatePinguinosBets = (
 ): BetSummary[] => {
   if (!config.pinguinos.enabled || config.pinguinos.valuePerOccurrence <= 0) return [];
   
-  // Filter players by participation config
-  const participantIds = config.pinguinos.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
-  
-  if (participatingPlayers.length < 2) return [];
-  
-  // Group players by groupId for per-group calculation
-  const playersByGroup = groupPlayersByGroup(participatingPlayers);
+  // Group ALL players by groupId first, then resolve participants per group
+  const playersByGroup = groupPlayersByGroup(players);
   
   const allSummaries: BetSummary[] = [];
   
   playersByGroup.forEach(groupPlayers => {
-    if (groupPlayers.length < 2) return;
+    // Resolve participants for this specific group (handles template inheritance)
+    const participatingPlayers = resolveParticipantsForGroup(
+      players,
+      config.pinguinos.participantIds,
+      groupPlayers
+    );
     
-    const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
+    if (participatingPlayers.length < 2) return;
+    
+    const groupPlayerIds = new Set(participatingPlayers.map(p => p.id));
     
     const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
     
@@ -2673,11 +2721,15 @@ export const calculateZoologicoAnimalResult = (
   const valuePerOccurrence = zoologicoConfig.valuePerOccurrence || 10;
   const events = zoologicoConfig.events || [];
   
-  // Get participant IDs (only count events from participating players)
+  // Get participant IDs - resolve with multi-group template inheritance
   const participantIds = zoologicoConfig.participantIds;
   const participantPlayerIds = new Set(
     participantIds && participantIds.length > 0
-      ? players.filter(p => participantIds.includes(p.id)).map(p => p.id)
+      ? (() => {
+          const inList = players.filter(p => participantIds.includes(p.id));
+          // If no players match (template from another group), include all
+          return inList.length > 0 ? inList.map(p => p.id) : players.map(p => p.id);
+        })()
       : players.map(p => p.id)
   );
 
@@ -2798,18 +2850,18 @@ export const calculateZoologicoBets = (
   const enabledAnimals = config.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
   
   // Filter players by participation config
-  const participantIds = config.zoologico.participantIds;
-  const participatingPlayers = participantIds && participantIds.length > 0
-    ? players.filter(p => participantIds.includes(p.id))
-    : players;
-  
-  if (participatingPlayers.length < 2) return [];
-
-  // Group players by groupId for per-group calculation
-  const playersByGroup = groupPlayersByGroup(participatingPlayers);
+  // Group ALL players by groupId first, then resolve participants per group
+  const playersByGroup = groupPlayersByGroup(players);
 
   playersByGroup.forEach(groupPlayers => {
-    if (groupPlayers.length < 2) return;
+    // Resolve participants for this specific group (handles template inheritance)
+    const participatingPlayers = resolveParticipantsForGroup(
+      players,
+      config.zoologico.participantIds,
+      groupPlayers
+    );
+    
+    if (participatingPlayers.length < 2) return;
 
     enabledAnimals.forEach(animalType => {
       const result = calculateZoologicoAnimalResult(animalType, groupPlayers, config.zoologico);
