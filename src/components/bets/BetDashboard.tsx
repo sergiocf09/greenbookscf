@@ -1557,6 +1557,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {selectedRival && basePlayer && rivals.find(p => p.id === selectedRival) && (
         <BilateralDetail
           players={players}
+          groupPlayers={balanceVsPlayers}
           allPlayers={allPlayersForCalculations}
           player={basePlayer}
           rival={rivals.find(p => p.id === selectedRival)!}
@@ -2748,6 +2749,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 // Bilateral Detail Component - Reorganized with bet type rows and override capability
 interface BilateralDetailProps {
   players: Player[];
+  groupPlayers: Player[]; // Players scoped to the current display group (for template inheritance checks)
   allPlayers: Player[]; // All players across all groups for Oyes calculations
   player: Player;
   rival: Player;
@@ -2773,6 +2775,7 @@ interface BilateralDetailProps {
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
   players,
+  groupPlayers,
   allPlayers,
   player,
   rival,
@@ -3021,10 +3024,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     if (playerIn && rivalIn) return true;
     
-    // Template inheritance: if NO player from the current group (players prop) is in
+    // Template inheritance: if NO player from the current group is in
     // participantIds, it means the list was set for a different group (template).
     // In that case, all current-group players participate by default.
-    const anyGroupPlayerInList = players.some(p => participantIds.includes(p.id));
+    // CRITICAL: Use groupPlayers (scoped to display group), NOT players (all groups).
+    const anyGroupPlayerInList = groupPlayers.some(p => participantIds.includes(p.id));
     if (!anyGroupPlayerInList) return true;
     
     // Some current-group players are explicitly listed but not both of this pair
