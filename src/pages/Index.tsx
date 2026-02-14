@@ -38,6 +38,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -2108,59 +2109,70 @@ const Index = () => {
                   <span className="text-sm font-medium">{group.name}</span>
                   {/* Only organizer can delete groups */}
                   {profile?.id === roundState.organizerProfileId && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-destructive hover:text-destructive"
-                      onClick={async () => {
-                        // Delete from DB first (round_players then round_groups)
-                        if (roundState.id) {
-                          try {
-                            // Delete round_players in this group
-                            const { error: rpErr } = await supabase
-                              .from('round_players')
-                              .delete()
-                              .eq('group_id', group.id);
-                            if (rpErr) throw rpErr;
-
-                            // Delete the round_group itself
-                            const { error: rgErr } = await supabase
-                              .from('round_groups')
-                              .delete()
-                              .eq('id', group.id);
-                            if (rgErr) throw rgErr;
-                          } catch (err: any) {
-                            devError('Error deleting group from DB:', err);
-                            toast.error('Error al eliminar grupo');
-                            return;
-                          }
-                        }
-
-                        // Remove associated players from scores
-                        const groupPlayerIds = new Set(group.players.map(p => p.id));
-                        setScores(prev => {
-                          const next = new Map(prev);
-                          groupPlayerIds.forEach(id => next.delete(id));
-                          return next;
-                        });
-
-                        // Remove from roundPlayerIds
-                        setRoundPlayerIds(prev => {
-                          const next = new Map(prev);
-                          groupPlayerIds.forEach(id => {
-                            next.delete(id);
-                            const player = group.players.find(p => p.id === id);
-                            if (player?.profileId) next.delete(player.profileId);
-                          });
-                          return next;
-                        });
-
-                        setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
-                        toast.success(`${group.name} eliminado`);
-                      }}
-                    >
-                      Eliminar
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-destructive hover:text-destructive"
+                        >
+                          Eliminar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar {group.name}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Se eliminarán todos los jugadores y scores de este grupo. Esta acción no se puede deshacer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={async () => {
+                              if (roundState.id) {
+                                try {
+                                  const { error: rpErr } = await supabase
+                                    .from('round_players')
+                                    .delete()
+                                    .eq('group_id', group.id);
+                                  if (rpErr) throw rpErr;
+                                  const { error: rgErr } = await supabase
+                                    .from('round_groups')
+                                    .delete()
+                                    .eq('id', group.id);
+                                  if (rgErr) throw rgErr;
+                                } catch (err: any) {
+                                  devError('Error deleting group from DB:', err);
+                                  toast.error('Error al eliminar grupo');
+                                  return;
+                                }
+                              }
+                              const groupPlayerIds = new Set(group.players.map(p => p.id));
+                              setScores(prev => {
+                                const next = new Map(prev);
+                                groupPlayerIds.forEach(id => next.delete(id));
+                                return next;
+                              });
+                              setRoundPlayerIds(prev => {
+                                const next = new Map(prev);
+                                groupPlayerIds.forEach(id => {
+                                  next.delete(id);
+                                  const player = group.players.find(p => p.id === id);
+                                  if (player?.profileId) next.delete(player.profileId);
+                                });
+                                return next;
+                              });
+                              setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
+                              toast.success(`${group.name} eliminado`);
+                            }}
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
                 <PlayerSetup
