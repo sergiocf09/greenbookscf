@@ -5,14 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Player, PlayerScore, GolfCourse, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
@@ -221,16 +213,16 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
               No hay jugadores registrados
             </p>
           ) : (
-            <Table className="table-fixed w-full">
-              <TableHeader className="sticky top-0 z-10 bg-background">
-                <TableRow className="text-xs">
-                  <TableHead className="w-7 text-center px-1 py-1.5">#</TableHead>
-                  <TableHead className="px-1 py-1.5">Jugador</TableHead>
-                  <TableHead className="text-center w-8 px-1 py-1.5">Grp</TableHead>
-                  <TableHead className="text-center w-9 px-1 py-1.5">Hoyo</TableHead>
-                  <TableHead 
+            <table className="table-fixed w-full caption-bottom text-sm">
+              <thead className="sticky top-0 z-10 bg-background [&_tr]:border-b">
+                <tr className="text-xs border-b">
+                  <th className="h-9 w-7 text-center px-1 py-1.5 align-middle font-medium text-muted-foreground">#</th>
+                  <th className="h-9 px-1 py-1.5 text-left align-middle font-medium text-muted-foreground">Jugador</th>
+                  <th className="h-9 text-center w-8 px-1 py-1.5 align-middle font-medium text-muted-foreground">Grp</th>
+                  <th className="h-9 text-center w-9 px-1 py-1.5 align-middle font-medium text-muted-foreground">Hoyo</th>
+                  <th 
                     className={cn(
-                      "text-center w-12 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
+                      "h-9 text-center w-12 px-1 py-1.5 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors",
                       sortMode === 'gross' && "bg-muted"
                     )}
                     onClick={() => handleSortClick('gross')}
@@ -239,10 +231,10 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                       Gross
                       {sortMode === 'gross' && <ArrowUpDown className="h-3 w-3" />}
                     </div>
-                  </TableHead>
-                  <TableHead 
+                  </th>
+                  <th 
                     className={cn(
-                      "text-center w-12 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
+                      "h-9 text-center w-12 px-1 py-1.5 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors",
                       sortMode === 'net' && "bg-muted"
                     )}
                     onClick={() => handleSortClick('net')}
@@ -251,11 +243,11 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                       Neto
                       {sortMode === 'net' && <ArrowUpDown className="h-3 w-3" />}
                     </div>
-                  </TableHead>
+                  </th>
                   {stablefordEnabled && (
-                    <TableHead 
+                    <th 
                       className={cn(
-                        "text-center w-10 px-1 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors",
+                        "h-9 text-center w-10 px-1 py-1.5 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors",
                         sortMode === 'stableford' && "bg-muted"
                       )}
                       onClick={() => handleSortClick('stableford')}
@@ -264,17 +256,17 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                         Stb
                         {sortMode === 'stableford' && <ArrowUpDown className="h-3 w-3" />}
                       </div>
-                    </TableHead>
+                    </th>
                   )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody className="[&_tr:last-child]:border-0">
                 {leaderboard.map((entry, idx) => (
-                  <TableRow key={entry.player.id} className="text-sm">
-                    <TableCell className="text-center font-bold text-muted-foreground px-1 py-1.5 text-base">
+                  <tr key={entry.player.id} className="text-sm border-b transition-colors hover:bg-muted/50">
+                    <td className="text-center font-bold text-muted-foreground px-1 py-1.5 text-base align-middle">
                       {entry.holesPlayed > 0 ? idx + 1 : '-'}
-                    </TableCell>
-                    <TableCell className="px-1 py-1.5">
+                    </td>
+                    <td className="px-1 py-1.5 align-middle">
                       <div className="flex items-center gap-1.5">
                         <PlayerAvatar 
                           initials={disambiguatedInitials.get(entry.player.id) || entry.player.initials} 
@@ -286,28 +278,28 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                           {formatPlayerNameShort(entry.player.name)}
                         </span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5">
+                    </td>
+                    <td className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5 align-middle">
                       {entry.groupNumber}
-                    </TableCell>
-                    <TableCell className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5">
+                    </td>
+                    <td className="text-center text-sm font-semibold text-muted-foreground px-1 py-1.5 align-middle">
                       {entry.holesPlayed > 0 ? entry.lastConfirmedHole : '-'}
-                    </TableCell>
-                    <TableCell className={cn('text-center text-base px-1 py-1.5', getVsParColor(entry.grossVsPar))}>
+                    </td>
+                    <td className={cn('text-center text-base px-1 py-1.5 align-middle', getVsParColor(entry.grossVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.grossVsPar) : '-'}
-                    </TableCell>
-                    <TableCell className={cn('text-center text-base px-1 py-1.5', getVsParColor(entry.netVsPar))}>
+                    </td>
+                    <td className={cn('text-center text-base px-1 py-1.5 align-middle', getVsParColor(entry.netVsPar))}>
                       {entry.holesPlayed > 0 ? formatVsPar(entry.netVsPar) : '-'}
-                    </TableCell>
+                    </td>
                     {stablefordEnabled && (
-                      <TableCell className="text-center text-base px-1 py-1.5 font-extrabold text-amber-600">
+                      <td className="text-center text-base px-1 py-1.5 font-extrabold text-amber-600 align-middle">
                         {entry.holesPlayed > 0 ? entry.stablefordPoints : '-'}
-                      </TableCell>
+                      </td>
                     )}
-                  </TableRow>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           )}
         </div>
       </DialogContent>
