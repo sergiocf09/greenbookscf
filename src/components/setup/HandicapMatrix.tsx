@@ -58,27 +58,32 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
 
-  // Get all players including those in additional groups
-  // Sorted so that logged-in player appears first
+  // Determine which group the base player belongs to
+  const totalGroups = 1 + playerGroups.length;
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState(0);
+
+  // Get players per group
+  const getGroupPlayers = (groupIndex: number): Player[] => {
+    if (groupIndex === 0) return players;
+    return playerGroups[groupIndex - 1]?.players || [];
+  };
+
+  const getGroupLabel = (groupIndex: number): string => {
+    if (groupIndex === 0) return playerGroups.length > 0 ? 'Grupo 1' : 'Todos';
+    return playerGroups[groupIndex - 1]?.name || `Grupo ${groupIndex + 1}`;
+  };
+
+  // Players for the currently selected group, sorted with logged-in player first
   const allPlayers = useMemo(() => {
-    const mainPlayers = [...players];
-    playerGroups.forEach((g) => {
-      g.players.forEach((p) => {
-        if (!mainPlayers.some((mp) => mp.id === p.id)) {
-          mainPlayers.push(p);
-        }
-      });
-    });
-    
-    // Sort to put logged-in player first
-    return mainPlayers.sort((a, b) => {
+    const groupPlayers = getGroupPlayers(selectedGroupIndex);
+    return [...groupPlayers].sort((a, b) => {
       const aIsBase = a.id === basePlayerId || a.profileId === basePlayerId;
       const bIsBase = b.id === basePlayerId || b.profileId === basePlayerId;
       if (aIsBase && !bIsBase) return -1;
       if (!aIsBase && bIsBase) return 1;
       return 0;
     });
-  }, [players, playerGroups, basePlayerId]);
+  }, [players, playerGroups, basePlayerId, selectedGroupIndex]);
 
   // Disambiguate initials across all players
   const disambiguatedInitials = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
@@ -321,6 +326,41 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             Esta configuración es la fuente única de verdad para todas las apuestas.
           </CardDescription>
         </CardHeader>
+
+        {/* Group tabs - only show when there are multiple groups */}
+        {totalGroups > 1 && (
+          <CardContent className="pt-0 pb-3">
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: totalGroups }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (hasPendingChanges) {
+                      toast.warning('Guarda los cambios antes de cambiar de grupo');
+                      return;
+                    }
+                    setSelectedGroupIndex(i);
+                    // Reset selected player to first in new group
+                    const newGroupPlayers = getGroupPlayers(i);
+                    if (newGroupPlayers.length > 0) {
+                      const baseInGroup = newGroupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+                      setSelectedPlayerId(baseInGroup?.id || newGroupPlayers[0].id);
+                    }
+                  }}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
+                    selectedGroupIndex === i
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {getGroupLabel(i)}
+                  <span className="ml-1 text-[10px] opacity-70">({getGroupPlayers(i).length})</span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Player selector */}

@@ -2126,28 +2126,33 @@ export const calculateAllBets = (
 ): BetSummary[] => {
   const bilateralHandicaps = config.bilateralHandicaps;
   
-  // Convert Coneja bets to BetSummary format
+  // Convert Coneja bets to BetSummary format (scoped PER GROUP)
   const conejaSummaries: BetSummary[] = [];
   if (config.coneja?.enabled && players.length >= 2) {
-    const conejaBets = calculateConejaBets(players, scores, course, config, confirmedHoles);
-    conejaBets.forEach(bet => {
-      // Winner gets positive amount
-      conejaSummaries.push({
-        playerId: bet.winnerId,
-        vsPlayer: bet.loserId,
-        betType: 'Coneja',
-        amount: bet.amount,
-        segment: 'total',
-        description: bet.description,
-      });
-      // Loser gets negative amount
-      conejaSummaries.push({
-        playerId: bet.loserId,
-        vsPlayer: bet.winnerId,
-        betType: 'Coneja',
-        amount: -bet.amount,
-        segment: 'total',
-        description: bet.description,
+    // Group players by groupId for per-group Coneja calculation
+    const playersByGroup = groupPlayersByGroup(players);
+    
+    playersByGroup.forEach(groupPlayers => {
+      if (groupPlayers.length < 2) return;
+      
+      const conejaBets = calculateConejaBets(groupPlayers, scores, course, config, confirmedHoles);
+      conejaBets.forEach(bet => {
+        conejaSummaries.push({
+          playerId: bet.winnerId,
+          vsPlayer: bet.loserId,
+          betType: 'Coneja',
+          amount: bet.amount,
+          segment: 'total',
+          description: bet.description,
+        });
+        conejaSummaries.push({
+          playerId: bet.loserId,
+          vsPlayer: bet.winnerId,
+          betType: 'Coneja',
+          amount: -bet.amount,
+          segment: 'total',
+          description: bet.description,
+        });
       });
     });
   }
