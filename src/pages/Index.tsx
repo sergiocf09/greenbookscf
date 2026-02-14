@@ -2106,17 +2106,62 @@ const Index = () => {
               <div key={group.id} className="space-y-2">
                 <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
                   <span className="text-sm font-medium">{group.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
-                      toast.success(`${group.name} eliminado`);
-                    }}
-                  >
-                    Eliminar
-                  </Button>
+                  {/* Only organizer can delete groups */}
+                  {profile?.id === roundState.organizerProfileId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-destructive hover:text-destructive"
+                      onClick={async () => {
+                        // Delete from DB first (round_players then round_groups)
+                        if (roundState.id) {
+                          try {
+                            // Delete round_players in this group
+                            const { error: rpErr } = await supabase
+                              .from('round_players')
+                              .delete()
+                              .eq('group_id', group.id);
+                            if (rpErr) throw rpErr;
+
+                            // Delete the round_group itself
+                            const { error: rgErr } = await supabase
+                              .from('round_groups')
+                              .delete()
+                              .eq('id', group.id);
+                            if (rgErr) throw rgErr;
+                          } catch (err: any) {
+                            devError('Error deleting group from DB:', err);
+                            toast.error('Error al eliminar grupo');
+                            return;
+                          }
+                        }
+
+                        // Remove associated players from scores
+                        const groupPlayerIds = new Set(group.players.map(p => p.id));
+                        setScores(prev => {
+                          const next = new Map(prev);
+                          groupPlayerIds.forEach(id => next.delete(id));
+                          return next;
+                        });
+
+                        // Remove from roundPlayerIds
+                        setRoundPlayerIds(prev => {
+                          const next = new Map(prev);
+                          groupPlayerIds.forEach(id => {
+                            next.delete(id);
+                            const player = group.players.find(p => p.id === id);
+                            if (player?.profileId) next.delete(player.profileId);
+                          });
+                          return next;
+                        });
+
+                        setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
+                        toast.success(`${group.name} eliminado`);
+                      }}
+                    >
+                      Eliminar
+                    </Button>
+                  )}
                 </div>
                 <PlayerSetup
                   players={group.players}
