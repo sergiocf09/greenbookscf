@@ -808,15 +808,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Template inheritance check: if participantIds only contains players from a different
     // group, treat it as a template and allow all current-group players.
     // This must match the BilateralDetail's bothParticipate logic.
+    // CRITICAL: Determine the group from the PLAYER itself, not from displayGroupIndex (UI state),
+    // so this works correctly regardless of which group tab is selected.
     const bothParticipateForBalance = (participantIds: string[] | undefined): boolean => {
       if (!participantIds || participantIds.length === 0) return true;
       const playerIn = participantIds.includes(playerId);
       const rivalIn = participantIds.includes(rivalId);
       if (playerIn && rivalIn) return true;
 
-      // Determine the group of the player being calculated
-      const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
-      const anyGroupPlayerInList = groupPlayers.some(p => participantIds.includes(p.id));
+      // Find which group the player belongs to dynamically
+      const isInMainPlayers = players.some(p => p.id === playerId);
+      let playerGroupPlayers: Player[];
+      if (isInMainPlayers) {
+        playerGroupPlayers = players; // Group 0 (main players array)
+      } else {
+        const foundGroup = playerGroups.find(g => g.players.some(p => p.id === playerId));
+        playerGroupPlayers = foundGroup?.players || players;
+      }
+
+      const anyGroupPlayerInList = playerGroupPlayers.some(p => participantIds.includes(p.id));
       if (!anyGroupPlayerInList) return true; // template — all participate
 
       return false;
