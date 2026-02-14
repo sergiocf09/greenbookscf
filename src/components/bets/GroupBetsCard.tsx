@@ -631,19 +631,27 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
   }, [players, scores, betConfig.medalGeneral, course, all18HolesConfirmed]);
 
-  // Calculate Culebras - show count and loser payment
+  // Helper: get players in the same group as the base player (for per-group bets)
+  const sameGroupPlayers = useMemo(() => {
+    const basePlayer = players.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+    const baseGroupId = basePlayer?.groupId;
+    if (!baseGroupId) return players; // No group info = single group, use all
+    return players.filter(p => p.groupId === baseGroupId);
+  }, [players, basePlayerId]);
+
+  // Calculate Culebras - show count and loser payment (scoped to same group)
   const culebrasResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.culebras?.enabled || players.length < 2) {
+    if (!betConfig.culebras?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
     const valuePerOccurrence = betConfig.culebras.valuePerOccurrence || 25;
     
-    // Filter to only participating players
+    // Filter to only participating players within the same group
     const participantIds = betConfig.culebras.participantIds;
     const participatingPlayers = participantIds && participantIds.length > 0
-      ? players.filter(p => participantIds.includes(p.id))
-      : players;
+      ? sameGroupPlayers.filter(p => participantIds.includes(p.id))
+      : sameGroupPlayers;
     
     if (participatingPlayers.length < 2) return null;
 
@@ -747,21 +755,21 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [players, scores, betConfig.culebras]);
+  }, [sameGroupPlayers, scores, betConfig.culebras]);
 
-  // Calculate Pinguinos - show count and loser payment
+  // Calculate Pinguinos - show count and loser payment (scoped to same group)
   const pinguinosResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.pinguinos?.enabled || players.length < 2) {
+    if (!betConfig.pinguinos?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
     const valuePerOccurrence = betConfig.pinguinos.valuePerOccurrence || 25;
     
-    // Filter to only participating players
+    // Filter to only participating players within the same group
     const participantIds = betConfig.pinguinos.participantIds;
     const participatingPlayers = participantIds && participantIds.length > 0
-      ? players.filter(p => participantIds.includes(p.id))
-      : players;
+      ? sameGroupPlayers.filter(p => participantIds.includes(p.id))
+      : sameGroupPlayers;
     
     if (participatingPlayers.length < 2) return null;
 
@@ -865,16 +873,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [players, scores, betConfig.pinguinos, course]);
+  }, [sameGroupPlayers, scores, betConfig.pinguinos, course]);
 
   // Calculate Stableford points for each player
   const stablefordResults = useMemo(() => {
     return calculateStablefordPoints(players, scores, course, betConfig);
   }, [players, scores, course, betConfig]);
 
-  // Calculate Zoologico results for each animal type
+  // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
-    if (!betConfig.zoologico?.enabled || players.length < 2) return [];
+    if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
     
     const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
     // Maintain order: camello, pez, gorila
@@ -882,9 +890,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     
     return orderedAnimals
       .filter(animal => enabledAnimals.includes(animal))
-      .map(animal => calculateZoologicoAnimalResult(animal, players, betConfig.zoologico))
+      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, betConfig.zoologico))
       .filter((r): r is ZoologicoAnimalResult => r !== null);
-  }, [players, betConfig.zoologico]);
+  }, [sameGroupPlayers, betConfig.zoologico]);
 
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);

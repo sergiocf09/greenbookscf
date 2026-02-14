@@ -26,6 +26,7 @@ export interface Player {
   teamHandicap?: number; // Specific handicap for team bets (Carritos)
   profileId?: string; // Link to database profile
   teeColor?: string; // Player's selected tee (white, blue, yellow, red). NULL = use round default.
+  groupId?: string; // Group ID for multi-group rounds (used to scope per-group bets)
 }
 
 export interface PlayerScore {

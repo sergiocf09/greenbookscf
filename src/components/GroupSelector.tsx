@@ -89,12 +89,18 @@ export const getPlayersForGroup = (
   return playerGroups[groupIndex - 1]?.players || [];
 };
 
-// Helper to get all players from all groups
+// Helper to get all players from all groups, tagging each with their groupId
 export const getAllPlayersFromAllGroups = (
   mainPlayers: Player[],
   playerGroups: PlayerGroup[]
 ): Player[] => {
-  const all = [...mainPlayers];
-  playerGroups.forEach(g => all.push(...g.players));
+  // Tag main group players with a synthetic group id if they don't have one
+  const mainGroupId = 'main';
+  const all = mainPlayers.map(p => p.groupId ? p : { ...p, groupId: mainGroupId });
+  playerGroups.forEach(g => {
+    g.players.forEach(p => {
+      all.push(p.groupId ? p : { ...p, groupId: g.id });
+    });
+  });
   return all;
 };

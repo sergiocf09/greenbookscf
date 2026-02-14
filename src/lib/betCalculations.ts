@@ -1192,16 +1192,30 @@ export const calculateManchasBets = (
 };
 
 // CULEBRAS: 3+ putts - ONLY the LAST player to make one pays ALL occurrences to ALL others
+// Helper: group players by their groupId for per-group bet scoping
+// Players without groupId are all placed in a single "ungrouped" bucket
+const groupPlayersByGroup = (players: Player[]): Player[][] => {
+  const hasAnyGroup = players.some(p => p.groupId);
+  if (!hasAnyGroup) return [players]; // Single group, no splitting needed
+  
+  const groups = new Map<string, Player[]>();
+  players.forEach(p => {
+    const gid = p.groupId || '__ungrouped__';
+    if (!groups.has(gid)) groups.set(gid, []);
+    groups.get(gid)!.push(p);
+  });
+  return Array.from(groups.values());
+};
+
 // Find which hole(s) have culebras and determine the last one
 // Only considers players in participantIds (if provided)
+// Scoped PER GROUP: each group resolves independently
 export const calculateCulebrasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig
 ): BetSummary[] => {
   if (!config.culebras.enabled || config.culebras.valuePerOccurrence <= 0) return [];
-  
-  const summaries: BetSummary[] = [];
   
   // Filter players by participation config
   const participantIds = config.culebras.participantIds;
@@ -1211,91 +1225,93 @@ export const calculateCulebrasBets = (
   
   if (participatingPlayers.length < 2) return [];
   
-  // Create a set of participating player IDs for fast lookup
-  const participatingPlayerIds = new Set(participatingPlayers.map(p => p.id));
+  // Group players by groupId for per-group calculation
+  const playersByGroup = groupPlayersByGroup(participatingPlayers);
   
-  // Find all culebras with their hole numbers (ONLY from participating players)
-  // This ensures that if a player is excluded from this bet, their culebras don't count
-  const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
+  const allSummaries: BetSummary[] = [];
   
-  participatingPlayers.forEach(player => {
-    const playerScores = scores.get(player.id) || [];
-    playerScores.forEach(score => {
-      // Only count if player is participating AND has 3+ putts
-      if (participatingPlayerIds.has(player.id) && score.putts >= 3) {
-        allCulebras.push({ 
-          playerId: player.id, 
-          holeNumber: score.holeNumber,
-          putts: score.putts 
-        });
-      }
-    });
-  });
-  
-  if (allCulebras.length === 0) return [];
-  
-  // Find the last hole with culebras
-  const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
-  const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
-  
-  // If multiple players have culebra on same last hole, the one with more putts pays
-  // If tied putts, check for manual override (tieBreakLoser), scoped to the specific hole
-  let lastPlayerToPay: string;
-  
-  if (culebrasOnLastHole.length === 1) {
-    lastPlayerToPay = culebrasOnLastHole[0].playerId;
-  } else {
-    // Multiple culebras on last hole - pick the one with most putts
-    const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
-    const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
+  playersByGroup.forEach(groupPlayers => {
+    if (groupPlayers.length < 2) return;
     
-    if (playersWithMaxPutts.length === 1) {
-      lastPlayerToPay = playersWithMaxPutts[0].playerId;
+    const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
+    
+    // Find all culebras with their hole numbers (ONLY from this group's players)
+    const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
+    
+    groupPlayers.forEach(player => {
+      const playerScores = scores.get(player.id) || [];
+      playerScores.forEach(score => {
+        if (groupPlayerIds.has(player.id) && score.putts >= 3) {
+          allCulebras.push({ 
+            playerId: player.id, 
+            holeNumber: score.holeNumber,
+            putts: score.putts 
+          });
+        }
+      });
+    });
+    
+    if (allCulebras.length === 0) return;
+    
+    // Find the last hole with culebras
+    const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+    const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
+    
+    let lastPlayerToPay: string;
+    
+    if (culebrasOnLastHole.length === 1) {
+      lastPlayerToPay = culebrasOnLastHole[0].playerId;
     } else {
-      // Exact tie - check for manual override
-      const rawOverride = config.culebras.tieBreakLoser;
-      const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
-      const overrideHole = Number(overrideHoleStr);
-      const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
-      if (isOverrideForThisHole && overridePlayerId && playersWithMaxPutts.some(c => c.playerId === overridePlayerId)) {
-        lastPlayerToPay = overridePlayerId;
-      } else {
-        // No override, use first player (UI should handle this)
+      const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
+      const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
+      
+      if (playersWithMaxPutts.length === 1) {
         lastPlayerToPay = playersWithMaxPutts[0].playerId;
+      } else {
+        const rawOverride = config.culebras.tieBreakLoser;
+        const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
+        const overrideHole = Number(overrideHoleStr);
+        const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
+        if (isOverrideForThisHole && overridePlayerId && playersWithMaxPutts.some(c => c.playerId === overridePlayerId)) {
+          lastPlayerToPay = overridePlayerId;
+        } else {
+          lastPlayerToPay = playersWithMaxPutts[0].playerId;
+        }
       }
     }
-  }
-  
-  const totalCulebras = allCulebras.length;
-  const amountPerPlayer = totalCulebras * config.culebras.valuePerOccurrence;
-  
-  // Last player pays each other participating player
-  participatingPlayers.forEach(player => {
-    if (player.id === lastPlayerToPay) return;
     
-    summaries.push({
-      playerId: lastPlayerToPay,
-      vsPlayer: player.id,
-      betType: 'Culebras',
-      amount: -amountPerPlayer,
-      segment: 'total',
-      description: `Último en culebra - paga ${totalCulebras} culebras`,
-    });
-    summaries.push({
-      playerId: player.id,
-      vsPlayer: lastPlayerToPay,
-      betType: 'Culebras',
-      amount: amountPerPlayer,
-      segment: 'total',
-      description: `Recibe de culebras x${totalCulebras}`,
+    const totalCulebras = allCulebras.length;
+    const amountPerPlayer = totalCulebras * config.culebras.valuePerOccurrence;
+    
+    // Last player pays each other player IN THE SAME GROUP
+    groupPlayers.forEach(player => {
+      if (player.id === lastPlayerToPay) return;
+      
+      allSummaries.push({
+        playerId: lastPlayerToPay,
+        vsPlayer: player.id,
+        betType: 'Culebras',
+        amount: -amountPerPlayer,
+        segment: 'total',
+        description: `Último en culebra - paga ${totalCulebras} culebras`,
+      });
+      allSummaries.push({
+        playerId: player.id,
+        vsPlayer: lastPlayerToPay,
+        betType: 'Culebras',
+        amount: amountPerPlayer,
+        segment: 'total',
+        description: `Recibe de culebras x${totalCulebras}`,
+      });
     });
   });
   
-  return summaries;
+  return allSummaries;
 };
 
 // PINGUINOS: Triple bogey or worse (3+ over par) - ONLY the LAST player pays ALL
 // Only considers players in participantIds (if provided)
+// Scoped PER GROUP: each group resolves independently
 export const calculatePinguinosBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -1303,8 +1319,6 @@ export const calculatePinguinosBets = (
   course: GolfCourse
 ): BetSummary[] => {
   if (!config.pinguinos.enabled || config.pinguinos.valuePerOccurrence <= 0) return [];
-  
-  const summaries: BetSummary[] = [];
   
   // Filter players by participation config
   const participantIds = config.pinguinos.participantIds;
@@ -1314,89 +1328,88 @@ export const calculatePinguinosBets = (
   
   if (participatingPlayers.length < 2) return [];
   
-  // Create a set of participating player IDs for fast lookup
-  const participatingPlayerIds = new Set(participatingPlayers.map(p => p.id));
+  // Group players by groupId for per-group calculation
+  const playersByGroup = groupPlayersByGroup(participatingPlayers);
   
-  // Find all pinguinos with their hole numbers (ONLY from participating players)
-  // This ensures that if a player is excluded from this bet, their pinguinos don't count
-  const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
+  const allSummaries: BetSummary[] = [];
   
-  participatingPlayers.forEach(player => {
-    const playerScores = scores.get(player.id) || [];
-    playerScores.forEach(score => {
-      const holePar = course.holes[score.holeNumber - 1]?.par || 4;
-      const overPar = score.strokes - holePar;
-      // Only count if player is participating AND has triple bogey or worse
-      if (participatingPlayerIds.has(player.id) && overPar >= 3) {
-        allPinguinos.push({ 
-          playerId: player.id, 
-          holeNumber: score.holeNumber,
-          overPar 
-        });
-      }
-    });
-  });
-  
-  if (allPinguinos.length === 0) return [];
-  
-  // Find the last hole with pinguinos
-  const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
-  const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
-  
-  // If multiple players have pinguino on same last hole, the one with worst score pays
-  // If tied, check for manual override (tieBreakLoser), scoped to the specific hole
-  let lastPlayerToPay: string;
-  
-  if (pinguinosOnLastHole.length === 1) {
-    lastPlayerToPay = pinguinosOnLastHole[0].playerId;
-  } else {
-    // Multiple pinguinos on last hole - pick the one with worst score (most over par)
-    const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
-    const playersWithWorst = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
+  playersByGroup.forEach(groupPlayers => {
+    if (groupPlayers.length < 2) return;
     
-    if (playersWithWorst.length === 1) {
-      lastPlayerToPay = playersWithWorst[0].playerId;
+    const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
+    
+    const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
+    
+    groupPlayers.forEach(player => {
+      const playerScores = scores.get(player.id) || [];
+      playerScores.forEach(score => {
+        const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+        const overPar = score.strokes - holePar;
+        if (groupPlayerIds.has(player.id) && overPar >= 3) {
+          allPinguinos.push({ 
+            playerId: player.id, 
+            holeNumber: score.holeNumber,
+            overPar 
+          });
+        }
+      });
+    });
+    
+    if (allPinguinos.length === 0) return;
+    
+    const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+    const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
+    
+    let lastPlayerToPay: string;
+    
+    if (pinguinosOnLastHole.length === 1) {
+      lastPlayerToPay = pinguinosOnLastHole[0].playerId;
     } else {
-      // Exact tie - check for manual override
-      const rawOverride = config.pinguinos.tieBreakLoser;
-      const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
-      const overrideHole = Number(overrideHoleStr);
-      const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
-      if (isOverrideForThisHole && overridePlayerId && playersWithWorst.some(p => p.playerId === overridePlayerId)) {
-        lastPlayerToPay = overridePlayerId;
-      } else {
-        // No override, use first player (UI should handle this)
+      const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
+      const playersWithWorst = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
+      
+      if (playersWithWorst.length === 1) {
         lastPlayerToPay = playersWithWorst[0].playerId;
+      } else {
+        const rawOverride = config.pinguinos.tieBreakLoser;
+        const [overrideHoleStr, overridePlayerId] = typeof rawOverride === 'string' ? rawOverride.split(':') : [];
+        const overrideHole = Number(overrideHoleStr);
+        const isOverrideForThisHole = Number.isFinite(overrideHole) && overrideHole === maxHole;
+        if (isOverrideForThisHole && overridePlayerId && playersWithWorst.some(p => p.playerId === overridePlayerId)) {
+          lastPlayerToPay = overridePlayerId;
+        } else {
+          lastPlayerToPay = playersWithWorst[0].playerId;
+        }
       }
     }
-  }
-  
-  const totalPinguinos = allPinguinos.length;
-  const amountPerPlayer = totalPinguinos * config.pinguinos.valuePerOccurrence;
-  
-  // Last player pays each other participating player
-  participatingPlayers.forEach(player => {
-    if (player.id === lastPlayerToPay) return;
     
-    summaries.push({
-      playerId: lastPlayerToPay,
-      vsPlayer: player.id,
-      betType: 'Pingüinos',
-      amount: -amountPerPlayer,
-      segment: 'total',
-      description: `Último en pingüino - paga ${totalPinguinos} pingüinos`,
-    });
-    summaries.push({
-      playerId: player.id,
-      vsPlayer: lastPlayerToPay,
-      betType: 'Pingüinos',
-      amount: amountPerPlayer,
-      segment: 'total',
-      description: `Recibe de pingüinos x${totalPinguinos}`,
+    const totalPinguinos = allPinguinos.length;
+    const amountPerPlayer = totalPinguinos * config.pinguinos.valuePerOccurrence;
+    
+    // Last player pays each other player IN THE SAME GROUP
+    groupPlayers.forEach(player => {
+      if (player.id === lastPlayerToPay) return;
+      
+      allSummaries.push({
+        playerId: lastPlayerToPay,
+        vsPlayer: player.id,
+        betType: 'Pingüinos',
+        amount: -amountPerPlayer,
+        segment: 'total',
+        description: `Último en pingüino - paga ${totalPinguinos} pingüinos`,
+      });
+      allSummaries.push({
+        playerId: player.id,
+        vsPlayer: lastPlayerToPay,
+        betType: 'Pingüinos',
+        amount: amountPerPlayer,
+        segment: 'total',
+        description: `Recibe de pingüinos x${totalPinguinos}`,
+      });
     });
   });
   
-  return summaries;
+  return allSummaries;
 };
 
 // Calculate Medal General group bet - lowest net total wins
@@ -2767,6 +2780,7 @@ export const calculateZoologicoAnimalResult = (
 /**
  * Calculate Zoológico bets for the ledger
  * Only considers players in participantIds (if provided)
+ * Scoped PER GROUP: each group resolves independently
  */
 export const calculateZoologicoBets = (
   players: Player[],
@@ -2774,7 +2788,7 @@ export const calculateZoologicoBets = (
 ): BetSummary[] => {
   if (!config.zoologico?.enabled || players.length < 2) return [];
 
-  const summaries: BetSummary[] = [];
+  const allSummaries: BetSummary[] = [];
   const enabledAnimals = config.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
   
   // Filter players by participation config
@@ -2785,33 +2799,40 @@ export const calculateZoologicoBets = (
   
   if (participatingPlayers.length < 2) return [];
 
-  enabledAnimals.forEach(animalType => {
-    const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, config.zoologico);
-    if (!result || !result.loser || result.totalOccurrences === 0) return;
+  // Group players by groupId for per-group calculation
+  const playersByGroup = groupPlayersByGroup(participatingPlayers);
 
-    // Loser pays each other participating player
-    participatingPlayers.forEach(player => {
-      if (player.id === result.loser!.playerId) return;
-      
-      summaries.push({
-        playerId: player.id,
-        vsPlayer: result.loser!.playerId,
-        betType: `Zoológico ${result.label}`,
-        amount: result.amountPerPlayer,
-        segment: 'total',
-        description: `${result.emoji} ${result.totalOccurrences} incidencias`,
-      });
-      
-      summaries.push({
-        playerId: result.loser!.playerId,
-        vsPlayer: player.id,
-        betType: `Zoológico ${result.label}`,
-        amount: -result.amountPerPlayer,
-        segment: 'total',
-        description: `${result.emoji} ${result.totalOccurrences} incidencias`,
+  playersByGroup.forEach(groupPlayers => {
+    if (groupPlayers.length < 2) return;
+
+    enabledAnimals.forEach(animalType => {
+      const result = calculateZoologicoAnimalResult(animalType, groupPlayers, config.zoologico);
+      if (!result || !result.loser || result.totalOccurrences === 0) return;
+
+      // Loser pays each other player IN THE SAME GROUP
+      groupPlayers.forEach(player => {
+        if (player.id === result.loser!.playerId) return;
+        
+        allSummaries.push({
+          playerId: player.id,
+          vsPlayer: result.loser!.playerId,
+          betType: `Zoológico ${result.label}`,
+          amount: result.amountPerPlayer,
+          segment: 'total',
+          description: `${result.emoji} ${result.totalOccurrences} incidencias`,
+        });
+        
+        allSummaries.push({
+          playerId: result.loser!.playerId,
+          vsPlayer: player.id,
+          betType: `Zoológico ${result.label}`,
+          amount: -result.amountPerPlayer,
+          segment: 'total',
+          description: `${result.emoji} ${result.totalOccurrences} incidencias`,
+        });
       });
     });
   });
 
-  return summaries;
+  return allSummaries;
 };
