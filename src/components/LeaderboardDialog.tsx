@@ -222,7 +222,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
             </p>
           ) : (
             <Table className="table-fixed w-full">
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow className="text-xs">
                   <TableHead className="w-7 text-center px-1 py-1.5">#</TableHead>
                   <TableHead className="px-1 py-1.5">Jugador</TableHead>
