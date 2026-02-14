@@ -786,51 +786,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return { label: betType, aliases: [] };
     };
 
-    // Map engine betType labels to betConfig participantIds (for template inheritance check)
-    const getParticipantIdsForBetType = (betType: string): string[] | undefined => {
-      if (betType.startsWith('Medal') && betType !== 'Medal General') return betConfig.medal?.participantIds;
-      if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return betConfig.pressures?.participantIds;
-      if (betType.startsWith('Skins')) return betConfig.skins?.participantIds;
-      if (betType === 'Caros') return betConfig.caros?.participantIds;
-      if (betType === 'Oyes') return betConfig.oyeses?.playerConfigs?.filter(c => c.enabled).map(c => c.playerId);
-      if (betType === 'Unidades') return betConfig.units?.participantIds;
-      if (betType === 'Manchas') return betConfig.manchas?.participantIds;
-      if (betType === 'Culebras') return betConfig.culebras?.participantIds;
-      if (betType.includes('Pingüino')) return betConfig.pinguinos?.participantIds;
-      if (betType === 'Coneja') return undefined; // group bet, handled separately
-      if (betType === 'Putts' || betType.startsWith('Putts')) return betConfig.putts?.participantIds;
-      if (betType === 'Side Bet') return undefined;
-      if (betType === 'Stableford') return undefined;
-      if (betType.includes('Zoo') || betType.includes('Camello') || betType.includes('Pez') || betType.includes('Gorila')) return betConfig.zoologico?.participantIds;
-      return undefined;
-    };
 
-    // Template inheritance check: if participantIds only contains players from a different
-    // group, treat it as a template and allow all current-group players.
-    // This must match the BilateralDetail's bothParticipate logic.
-    // CRITICAL: Determine the group from the PLAYER itself, not from displayGroupIndex (UI state),
-    // so this works correctly regardless of which group tab is selected.
-    const bothParticipateForBalance = (participantIds: string[] | undefined): boolean => {
-      if (!participantIds || participantIds.length === 0) return true;
-      const playerIn = participantIds.includes(playerId);
-      const rivalIn = participantIds.includes(rivalId);
-      if (playerIn && rivalIn) return true;
-
-      // Find which group the player belongs to dynamically
-      const isInMainPlayers = players.some(p => p.id === playerId);
-      let playerGroupPlayers: Player[];
-      if (isInMainPlayers) {
-        playerGroupPlayers = players; // Group 0 (main players array)
-      } else {
-        const foundGroup = playerGroups.find(g => g.players.some(p => p.id === playerId));
-        playerGroupPlayers = foundGroup?.players || players;
-      }
-
-      const anyGroupPlayerInList = playerGroupPlayers.some(p => participantIds.includes(p.id));
-      if (!anyGroupPlayerInList) return true; // template — all participate
-
-      return false;
-    };
     
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
@@ -845,12 +801,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Check if this bet type is disabled via override for this pair
         const { label, aliases } = betTypeToOverrideKey(s.betType);
         return !isBetDisabledForPair(label, aliases);
-      })
-      .filter(s => {
-        // Apply template inheritance: exclude bets where participantIds
-        // explicitly lists players from this group but NOT this pair
-        const participantIds = getParticipantIdsForBetType(s.betType);
-        return bothParticipateForBalance(participantIds);
       })
       .reduce((sum, s) => sum + s.amount, 0);
     
