@@ -1227,7 +1227,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
             <ConejaSection
               conejaResult={conejaResult}
-              players={players}
+              players={sameGroupPlayers}
               scores={scores}
               course={course}
               betConfig={betConfig}
