@@ -3009,9 +3009,26 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   };
   
   // Helper: check if both player and rival participate in a given bet's participantIds
+  // Applies template-inheritance logic: if participantIds contains ONLY players from
+  // another group (i.e. none of the current group's players are listed), treat it as
+  // a template config and include everyone (return true).
   const bothParticipate = (participantIds: string[] | undefined): boolean => {
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
-    return participantIds.includes(player.id) && participantIds.includes(rival.id);
+    
+    // Check if either player or rival is in the list
+    const playerIn = participantIds.includes(player.id);
+    const rivalIn = participantIds.includes(rival.id);
+    
+    if (playerIn && rivalIn) return true;
+    
+    // Template inheritance: if NO player from the current group (players prop) is in
+    // participantIds, it means the list was set for a different group (template).
+    // In that case, all current-group players participate by default.
+    const anyGroupPlayerInList = players.some(p => participantIds.includes(p.id));
+    if (!anyGroupPlayerInList) return true;
+    
+    // Some current-group players are explicitly listed but not both of this pair
+    return false;
   };
 
   // Group bet types for organized display
