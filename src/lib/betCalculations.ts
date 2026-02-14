@@ -785,10 +785,11 @@ export const calculateSkinsBets = (
       // 2. AND there are NO tied holes in the segment
       // Tied holes automatically eliminate the Zapato, even if one player has all skins.
       // Note: This is independent of Oyeses; do not mix bet types.
-      const hasZapatoFront =
+      const skinsZapatoEnabled = config.skins.zapatoEnabled !== false; // defaults to true
+      const hasZapatoFront = skinsZapatoEnabled &&
         frontTiedHoles === 0 &&
         ((frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0));
-      const hasZapatoBack =
+      const hasZapatoBack = skinsZapatoEnabled &&
         backTiedHoles === 0 &&
         ((backSkinsA > 0 && backSkinsB === 0) || (backSkinsB > 0 && backSkinsA === 0));
 
