@@ -1022,8 +1022,8 @@ export const calculateUnitsBets = (
   
   for (let i = 0; i < participatingPlayers.length; i++) {
     for (let j = i + 1; j < participatingPlayers.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       const unitsA = countUnits(playerA.id);
       const unitsB = countUnits(playerB.id);

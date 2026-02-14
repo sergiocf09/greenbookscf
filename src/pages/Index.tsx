@@ -102,6 +102,7 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
+  const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
@@ -1233,6 +1234,151 @@ const Index = () => {
     }
   }, [players, teeColor, roundState.id, roundState.groupId, course, roundPlayerIds, playerGroups, initializeHandicapsForNewPlayer, setRoundPlayerIds]);
 
+  // Add players from friends to a SPECIFIC additional group
+  const handleAddPlayersFromFriendsToGroup = useCallback(async (
+    targetGroupId: string,
+    selectedPlayers: Array<{
+      profileId: string;
+      name: string;
+      initials: string;
+      color: string;
+      handicap: number;
+    }>
+  ) => {
+    if (!roundState.id) return;
+
+    // Collect all existing IDs across main + all groups
+    const allExistingIds = new Set([
+      ...players.map(p => p.profileId || p.id),
+      ...playerGroups.flatMap(g => g.players.map(p => p.profileId || p.id)),
+    ]);
+
+    for (const playerData of selectedPlayers) {
+      if (allExistingIds.has(playerData.profileId)) continue;
+
+      try {
+        const { data: rpRow, error: rpErr } = await supabase
+          .from('round_players')
+          .insert({
+            round_id: roundState.id,
+            group_id: targetGroupId,
+            profile_id: playerData.profileId,
+            handicap_for_round: playerData.handicap ?? 0,
+            is_organizer: false,
+            tee_color: teeColor,
+          })
+          .select('id')
+          .single();
+
+        if (rpErr || !rpRow?.id) {
+          devError('Error adding friend to group:', rpErr);
+          toast.error(`Error al agregar ${playerData.name}`);
+          continue;
+        }
+
+        const newPlayerId = rpRow.id as string;
+
+        const newPlayer: Player = {
+          id: newPlayerId,
+          name: playerData.name,
+          initials: playerData.initials,
+          color: playerData.color,
+          handicap: playerData.handicap ?? 0,
+          profileId: playerData.profileId,
+          teeColor: teeColor,
+        };
+
+        // Add to the specific group
+        setPlayerGroups(prev => prev.map(g =>
+          g.id === targetGroupId ? { ...g, players: [...g.players, newPlayer] } : g
+        ));
+
+        // Update roundPlayerIds
+        setRoundPlayerIds(prev => {
+          const next = new Map(prev);
+          next.set(newPlayerId, newPlayerId);
+          next.set(playerData.profileId, newPlayerId);
+          return next;
+        });
+
+        // Initialize hole scores if course available
+        if (course) {
+          const strokesPerHole = calculateStrokesPerHole(playerData.handicap ?? 0, course);
+          const newPlayerScores: PlayerScore[] = Array.from({ length: 18 }, (_, i) => {
+            const holePar = course.holes[i]?.par || 4;
+            return {
+              playerId: newPlayerId,
+              holeNumber: i + 1,
+              strokes: holePar,
+              putts: 2,
+              markers: { ...defaultMarkerState },
+              strokesReceived: strokesPerHole[i] ?? 0,
+              netScore: holePar - (strokesPerHole[i] ?? 0),
+              confirmed: false,
+            };
+          });
+
+          setScores(prev => {
+            const next = new Map(prev);
+            next.set(newPlayerId, newPlayerScores);
+            return next;
+          });
+
+          const scoreRecords = newPlayerScores.map(s => ({
+            round_player_id: newPlayerId,
+            hole_number: s.holeNumber,
+            strokes: s.strokes,
+            putts: s.putts,
+            strokes_received: s.strokesReceived,
+            net_score: s.netScore,
+            oyes_proximity: null,
+            oyes_proximity_sangron: null,
+            confirmed: false,
+          }));
+
+          await supabase
+            .from('hole_scores')
+            .upsert(scoreRecords, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
+        }
+
+        // Initialize bilateral handicaps against all existing players
+        const existingPlayerRpIds: string[] = [];
+        const existingPlayerHandicaps = new Map<string, number>();
+
+        for (const existingPlayer of players) {
+          const rpId = roundPlayerIds.get(existingPlayer.id);
+          if (rpId && rpId !== newPlayerId) {
+            existingPlayerRpIds.push(rpId);
+            existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
+          }
+        }
+        for (const group of playerGroups) {
+          for (const existingPlayer of group.players) {
+            const rpId = roundPlayerIds.get(existingPlayer.id);
+            if (rpId && rpId !== newPlayerId && !existingPlayerRpIds.includes(rpId)) {
+              existingPlayerRpIds.push(rpId);
+              existingPlayerHandicaps.set(rpId, existingPlayer.handicap);
+            }
+          }
+        }
+
+        if (existingPlayerRpIds.length > 0) {
+          await initializeHandicapsForNewPlayer(
+            newPlayerId,
+            newPlayer.handicap,
+            existingPlayerRpIds,
+            existingPlayerHandicaps
+          );
+        }
+
+        toast.success(`${playerData.name} agregado al grupo`);
+      } catch (err) {
+        devError('Exception adding friend to group:', err);
+        toast.error(`Error al agregar ${playerData.name}`);
+      }
+    }
+  }, [roundState.id, players, playerGroups, teeColor, course, roundPlayerIds, initializeHandicapsForNewPlayer, setRoundPlayerIds]);
+
   // Handle adding a friend to the active round (from Friends dialog)
   const handleAddFriendToRound = useCallback((friend: Friend) => {
     handleAddPlayersFromFriends([{
@@ -1948,7 +2094,10 @@ const Index = () => {
               onAddGroupClick={handleAddGroup}
               courseId={selectedCourseId}
               defaultTeeColor={teeColor}
-              onAddFromFriendsClick={() => setShowAddFromFriendsDialog(true)}
+              onAddFromFriendsClick={() => {
+                setAddFriendsTargetGroupId(null); // null = main group
+                setShowAddFromFriendsDialog(true);
+              }}
               organizerProfileId={roundState.organizerProfileId}
             />
             
@@ -1977,6 +2126,10 @@ const Index = () => {
                   maxPlayers={6}
                   courseId={selectedCourseId}
                   defaultTeeColor={teeColor}
+                  onAddFromFriendsClick={() => {
+                    setAddFriendsTargetGroupId(group.id);
+                    setShowAddFromFriendsDialog(true);
+                  }}
                   organizerProfileId={roundState.organizerProfileId}
                 />
               </div>
@@ -2356,9 +2509,21 @@ const Index = () => {
       {/* Add From Friends Dialog (for setup/scorecard) */}
       <AddFromFriendsDialog
         open={showAddFromFriendsDialog}
-        onOpenChange={setShowAddFromFriendsDialog}
-        onAddPlayers={handleAddPlayersFromFriends}
-        existingPlayerIds={players.map(p => p.profileId || p.id)}
+        onOpenChange={(open) => {
+          setShowAddFromFriendsDialog(open);
+          if (!open) setAddFriendsTargetGroupId(null);
+        }}
+        onAddPlayers={(selectedPlayers) => {
+          if (addFriendsTargetGroupId) {
+            void handleAddPlayersFromFriendsToGroup(addFriendsTargetGroupId, selectedPlayers);
+          } else {
+            void handleAddPlayersFromFriends(selectedPlayers);
+          }
+        }}
+        existingPlayerIds={[
+          ...players.map(p => p.profileId || p.id),
+          ...playerGroups.flatMap(g => g.players.map(p => p.profileId || p.id)),
+        ]}
         multiSelect={true}
       />
 
