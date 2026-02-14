@@ -140,6 +140,7 @@ export interface OyesesPlayerConfig {
 export interface OyesesBetConfig {
   enabled: boolean;
   amount: number;
+  zapatoEnabled?: boolean; // Whether Zapato (x2 when one player wins all oyes) is active. Defaults to true.
   playerConfigs: OyesesPlayerConfig[];
 }
 
@@ -407,6 +408,7 @@ export interface SkinsBetConfig {
   backValue: number;
   carryOver: boolean; // If skins carry from 9 to 10
   modality?: 'acumulados' | 'sinAcumular'; // acumulados = ties add to pot; sinAcumular = ties are void
+  zapatoEnabled?: boolean; // Whether Zapato (x2 when one player wins all skins) is active. Defaults to true.
   participantIds?: string[];
   playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-player skin variant override
   pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-pair override (key = sorted "idA_idB")

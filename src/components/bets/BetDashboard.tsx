@@ -4074,23 +4074,100 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
                           );
                         })()}
-                        {/* Standard segment rows for Skins */}
+                        {/* Standard segment rows for Skins - with evolution popover */}
                         {group.segments.map((segment) => {
                           const data = group.getSegmentData(segment.key);
+                          const segmentType: 'front' | 'back' = segment.key.includes('front') ? 'front' : 'back';
+                          const skinsEvo = getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole);
+                          const skinsSegData = skinsEvo?.[segmentType];
+                          
                           return (
                             <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                              <span className="text-xs text-muted-foreground">{segment.label}</span>
-                              <div className="flex items-center gap-3">
-                                {data.description && (
-                                  <span className="text-[10px] text-muted-foreground">{data.description}</span>
-                                )}
-                                <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                  {data.amount >= 0 ? '+' : ''}${data.amount}
-                                </span>
-                              </div>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="flex items-center gap-3 text-left">
+                                    <span className="text-xs text-muted-foreground cursor-pointer hover:underline">{segment.label}</span>
+                                    {data.description && (
+                                      <span className="text-[10px] text-muted-foreground cursor-pointer">{data.description}</span>
+                                    )}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-3" side="top">
+                                  {skinsSegData && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between gap-4">
+                                        <span className="font-medium text-sm">Skins {segment.label}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {(betConfig.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'Sin acumular' : 'Acumulados'}
+                                        </span>
+                                      </div>
+                                      <div className="overflow-x-auto">
+                                        <div className="flex gap-0.5 min-w-max">
+                                          {skinsSegData.holes.map((hole) => (
+                                            <div key={hole.holeNumber} className="flex flex-col items-center">
+                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                              <div className={cn(
+                                                'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                                hole.winner === 'A' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                hole.winner === 'B' ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {hole.winner === 'A' ? `+${hole.skinsWon}` :
+                                                 hole.winner === 'B' ? `-${hole.skinsWon}` :
+                                                 hole.accumulated > 0 ? `(${hole.accumulated})` : '•'}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
+                                        <span>{player.initials}: <span className="font-bold text-green-600">{skinsSegData.totalSkinsA}</span></span>
+                                        <span className="text-muted-foreground">vs</span>
+                                        <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegData.totalSkinsB}</span></span>
+                                        {skinsSegData.hasZapato && <span className="ml-1">🥾</span>}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdido</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>Acum.</span>
+                                        <span>• = Empate</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                              <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                {data.amount >= 0 ? '+' : ''}${data.amount}
+                              </span>
                             </div>
                           );
                         })}
+                        {/* Zapato toggle for Skins */}
+                        {!isHistorical && onBetConfigChange && (
+                          <div className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50 border-t border-border/20">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">🥾</span>
+                              <span className="text-xs font-medium">Zapato (x2)</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={betConfig.skins.zapatoEnabled !== false ? 'default' : 'outline'}
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                onBetConfigChange({
+                                  ...betConfig,
+                                  skins: {
+                                    ...betConfig.skins,
+                                    zapatoEnabled: betConfig.skins.zapatoEnabled !== false ? false : true,
+                                  },
+                                });
+                              }}
+                            >
+                              {betConfig.skins.zapatoEnabled !== false ? 'Activado' : 'Desactivado'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
@@ -4259,6 +4336,31 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <span className="flex items-center gap-1">✗ = Sin green</span>
                               {hasZapato && <span className="flex items-center gap-1">🥾 = Bonus 100%</span>}
                             </div>
+                            {/* Zapato toggle for Oyeses */}
+                            {!isHistorical && onBetConfigChange && (
+                              <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">🥾</span>
+                                  <span className="text-xs font-medium">Zapato Oyes (x2)</span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant={betConfig.oyeses.zapatoEnabled !== false ? 'default' : 'outline'}
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    onBetConfigChange({
+                                      ...betConfig,
+                                      oyeses: {
+                                        ...betConfig.oyeses,
+                                        zapatoEnabled: betConfig.oyeses.zapatoEnabled !== false ? false : true,
+                                      },
+                                    });
+                                  }}
+                                >
+                                  {betConfig.oyeses.zapatoEnabled !== false ? 'Activado' : 'Desactivado'}
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         );
                       })()
