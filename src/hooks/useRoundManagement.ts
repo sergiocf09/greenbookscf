@@ -1382,8 +1382,31 @@ export const useRoundManagement = ({
 
             const replaceId = (value: string) => (value === oldId ? newId : value);
 
+            // Helper to migrate participantIds arrays across all bet types
+            const migrateParticipantIds = (ids?: string[]): string[] | undefined => {
+              if (!ids || ids.length === 0) return ids;
+              return ids.map(replaceId);
+            };
+
             return {
               ...safePrev,
+              medal: { ...safePrev.medal, participantIds: migrateParticipantIds(safePrev.medal.participantIds) },
+              pressures: { ...safePrev.pressures, participantIds: migrateParticipantIds(safePrev.pressures.participantIds) },
+              skins: { ...safePrev.skins, participantIds: migrateParticipantIds(safePrev.skins.participantIds) },
+              caros: { ...safePrev.caros, participantIds: migrateParticipantIds(safePrev.caros.participantIds) },
+              units: { ...safePrev.units, participantIds: migrateParticipantIds(safePrev.units.participantIds) },
+              manchas: { ...safePrev.manchas, participantIds: migrateParticipantIds(safePrev.manchas.participantIds) },
+              culebras: { ...safePrev.culebras, participantIds: migrateParticipantIds(safePrev.culebras.participantIds) },
+              pinguinos: { ...safePrev.pinguinos, participantIds: migrateParticipantIds(safePrev.pinguinos.participantIds) },
+              putts: { ...safePrev.putts, participantIds: migrateParticipantIds(safePrev.putts.participantIds) },
+              zoologico: safePrev.zoologico ? { ...safePrev.zoologico, participantIds: migrateParticipantIds(safePrev.zoologico.participantIds) } : safePrev.zoologico,
+              stableford: {
+                ...safePrev.stableford,
+                playerHandicaps: (safePrev.stableford.playerHandicaps ?? []).map((ph) => ({
+                  ...ph,
+                  playerId: replaceId(ph.playerId),
+                })),
+              },
               carritos: {
                 ...safePrev.carritos,
                 teamA: [replaceId(safePrev.carritos.teamA[0]), replaceId(safePrev.carritos.teamA[1])],
@@ -1424,6 +1447,14 @@ export const useRoundManagement = ({
                 playerAId: replaceId(h.playerAId),
                 playerBId: replaceId(h.playerBId),
               })),
+              crossGroupRivals: safePrev.crossGroupRivals
+                ? Object.fromEntries(
+                    Object.entries(safePrev.crossGroupRivals).map(([pid, rivals]) => [
+                      replaceId(pid),
+                      rivals.map(replaceId),
+                    ])
+                  )
+                : safePrev.crossGroupRivals,
             };
           });
         }
