@@ -92,6 +92,7 @@ interface RoundBetConfig {
     frontAmount: number;
     backAmount: number;
     totalAmount: number;
+    participantIds?: string[];
   };
   sideBets?: {
     enabled: boolean;
@@ -263,6 +264,7 @@ export const useBetConfigPersistence = ({
           frontAmount: dbConfig.putts.frontAmount ?? prev.putts.frontAmount,
           backAmount: dbConfig.putts.backAmount ?? prev.putts.backAmount,
           totalAmount: dbConfig.putts.totalAmount ?? prev.putts.totalAmount,
+          participantIds: dbConfig.putts.participantIds ?? prev.putts.participantIds,
         };
       }
       
@@ -296,6 +298,7 @@ export const useBetConfigPersistence = ({
           enabledAnimals: dbConfig.zoologico.enabledAnimals ?? prev.zoologico.enabledAnimals,
           events: dbConfig.zoologico.events ?? prev.zoologico.events,
           tieBreakers: dbConfig.zoologico.tieBreakers ?? prev.zoologico.tieBreakers,
+          participantIds: dbConfig.zoologico.participantIds ?? prev.zoologico.participantIds,
         };
       }
       
@@ -354,6 +357,7 @@ export const useBetConfigPersistence = ({
           frontAmount: config.putts.frontAmount,
           backAmount: config.putts.backAmount,
           totalAmount: config.putts.totalAmount,
+          participantIds: config.putts.participantIds,
         },
         sideBets: {
           enabled: config.sideBets.enabled,
