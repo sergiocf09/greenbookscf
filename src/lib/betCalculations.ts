@@ -42,9 +42,23 @@ const resolveParticipantsForGroup = (
   // Check how many of this group's players are in participantIds
   const groupPlayersInList = groupPlayers.filter(p => participantIds.includes(p.id));
   
-  // If NONE of this group's players are in the list, it means participantIds
-  // was set for another group (template) - include all group players
-  if (groupPlayersInList.length === 0) return groupPlayers;
+  if (groupPlayersInList.length === 0) {
+    // Distinguish "template from another group" vs "stale/orphaned IDs":
+    // If participantIds references players from OTHER groups, it's a template → include all.
+    // If participantIds references NO valid player at all, IDs are stale → include all (safe default).
+    // If participantIds references ONLY players from other groups, it's a template → include all.
+    const allPlayerIds = new Set(allPlayers.map(p => p.id));
+    const anyValidReference = participantIds.some(id => allPlayerIds.has(id));
+    
+    if (anyValidReference) {
+      // Template inheritance: IDs belong to other groups — include all group players
+      return groupPlayers;
+    }
+    
+    // All IDs are stale/orphaned — safe default: include all group players
+    // (This prevents the engine from silently including everyone when the UI shows nobody)
+    return groupPlayers;
+  }
   
   // Otherwise, respect the explicit selection for this group
   return groupPlayersInList;
