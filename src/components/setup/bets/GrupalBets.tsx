@@ -12,9 +12,11 @@ import { ParticipantSelector } from './ParticipantSelector';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
 
-const countParticipants = (participantIds: string[] | undefined, totalPlayers: number): string => {
-  if (!participantIds || participantIds.length === 0) return `Todos (${totalPlayers})`;
-  return `${participantIds.length} de ${totalPlayers}`;
+const countParticipants = (participantIds: string[] | undefined, players: Player[]): string => {
+  if (!participantIds || participantIds.length === 0) return `Todos (${players.length})`;
+  const validIds = participantIds.filter(id => players.some(p => p.id === id));
+  if (validIds.length === 0 || validIds.length === players.length) return `Todos (${players.length})`;
+  return `${validIds.length} de ${players.length}`;
 };
 
 interface GrupalBetsProps {
@@ -121,7 +123,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.culebras.participantIds, players.length)}
+          summary={countParticipants(config.culebras.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -146,7 +148,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.pinguinos.participantIds, players.length)}
+          summary={countParticipants(config.pinguinos.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -175,7 +177,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.zoologico?.participantIds, players.length)}
+          summary={countParticipants(config.zoologico?.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
