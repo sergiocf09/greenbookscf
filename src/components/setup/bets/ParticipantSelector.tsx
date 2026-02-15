@@ -19,8 +19,10 @@ export const ParticipantSelector: React.FC<ParticipantSelectorProps> = ({
   label = 'Participantes de la apuesta',
 }) => {
   // If participantIds is undefined or empty, all players participate by default
-  const activeParticipants = participantIds && participantIds.length > 0
-    ? participantIds
+  // Filter out stale/orphaned IDs that don't match any current player
+  const validParticipantIds = participantIds?.filter(id => players.some(p => p.id === id));
+  const activeParticipants = validParticipantIds && validParticipantIds.length > 0
+    ? validParticipantIds
     : players.map(p => p.id);
 
   const togglePlayer = (playerId: string) => {

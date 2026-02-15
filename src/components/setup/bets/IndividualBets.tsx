@@ -19,10 +19,12 @@ interface IndividualBetsProps {
   basePlayerId?: string;
 }
 
-/** Helper: count active participants */
-const countParticipants = (participantIds: string[] | undefined, totalPlayers: number): string => {
-  if (!participantIds || participantIds.length === 0) return `Todos (${totalPlayers})`;
-  return `${participantIds.length} de ${totalPlayers}`;
+/** Helper: count active participants, filtering stale IDs against actual player list */
+const countParticipants = (participantIds: string[] | undefined, players: Player[]): string => {
+  if (!participantIds || participantIds.length === 0) return `Todos (${players.length})`;
+  const validIds = participantIds.filter(id => players.some(p => p.id === id));
+  if (validIds.length === 0 || validIds.length === players.length) return `Todos (${players.length})`;
+  return `${validIds.length} de ${players.length}`;
 };
 
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
@@ -55,7 +57,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.medal.participantIds, players.length)}
+          summary={countParticipants(config.medal.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -81,7 +83,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.pressures.participantIds, players.length)}
+          summary={countParticipants(config.pressures.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -213,7 +215,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.skins.participantIds, players.length)}
+          summary={countParticipants(config.skins.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -237,7 +239,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.caros.participantIds, players.length)}
+          summary={countParticipants(config.caros.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -388,7 +390,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.units.participantIds, players.length)}
+          summary={countParticipants(config.units.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -413,7 +415,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.manchas.participantIds, players.length)}
+          summary={countParticipants(config.manchas.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
@@ -439,7 +441,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
         <CollapsibleSubSection
           label="Participantes"
-          summary={countParticipants(config.putts?.participantIds, players.length)}
+          summary={countParticipants(config.putts?.participantIds, players)}
         >
           <ParticipantSelector
             players={players}
