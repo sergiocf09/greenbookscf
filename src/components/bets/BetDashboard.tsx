@@ -1930,7 +1930,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {/* Hole by hole grid with tooltips */}
                   <div className="bg-muted/30 rounded-lg p-2 space-y-2">
                     <div className="text-[10px] text-muted-foreground text-center">
-                      Toca/hover en un hoyo para ver el desglose
+                      Toca en un hoyo para ver el desglose
                     </div>
                     
                     {/* Front 9 */}
@@ -1941,21 +1941,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {frontBetsDisplay}
                         </span>
                       </div>
-                      <TooltipProvider>
-                        <div className="grid grid-cols-9 gap-1">
+                      <div className="grid grid-cols-9 gap-1">
                           {displayFrontDetails.map((detail, idx) => {
                             const holeNum = idx + 1;
                             const runningBalance = displayFrontBalances[idx];
                             const snapshot = displayFrontSnapshots[idx] || [];
-                            // Format the snapshot as the pressure display
                             const pressureDisplay = formatBetsDisplay(snapshot);
-                            // Use sum of all bets for color
                             const snapshotSum = snapshot.reduce((a, b) => a + b, 0);
                             
                             const pill = (
                               <div
                                 className={cn(
-                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
                                   detail === null ? 'border-border text-muted-foreground' :
                                   snapshotSum > 0 ? 'border-green-600/40 text-green-600' :
                                   snapshotSum < 0 ? 'border-destructive/40 text-destructive' :
@@ -1972,23 +1969,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             if (!detail) return <div key={holeNum}>{pill}</div>;
                             
                             return (
-                              <Tooltip key={holeNum}>
-                                <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                                <TooltipContent side="top" className="w-80">
+                              <Popover key={holeNum}>
+                                <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                                <PopoverContent side="top" className="w-72 p-3">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
-                                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                                      <span>Tu equipo</span>
-                                      <span>Rival</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                      <span className="flex items-center gap-1 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a1.net}</span></span>
-                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b1.net}</span></span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                      <span className="flex items-center gap-1 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a2.net}</span></span>
-                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b2.net}</span></span>
-                                    </div>
+                                    <TeamHoleGrid
+                                      teamAPlayers={displayTeamAPlayers}
+                                      teamBPlayers={displayTeamBPlayers}
+                                      detail={{ netA1: detail.a1.net, hcpA1: detail.a1.hcp, netA2: detail.a2.net, hcpA2: detail.a2.hcp, netB1: detail.b1.net, hcpB1: detail.b1.hcp, netB2: detail.b2.net, hcpB2: detail.b2.hcp }}
+                                    />
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
                                         <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
@@ -2002,12 +1992,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       Presiones: {pressureDisplay}
                                     </p>
                                   </div>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             );
                           })}
                         </div>
-                      </TooltipProvider>
                     </div>
                     
                     {/* Back 9 */}
@@ -2018,11 +2007,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {backBetsDisplay}
                         </span>
                       </div>
-                      <TooltipProvider>
-                        <div className="grid grid-cols-9 gap-1">
+                      <div className="grid grid-cols-9 gap-1">
                           {displayBackDetails.map((detail, idx) => {
                             const holeNum = idx + 10;
-                            const runningBalance = displayBackBalances[idx];
                             const snapshot = displayBackSnapshots[idx] || [];
                             const pressureDisplay = formatBetsDisplay(snapshot);
                             const snapshotSum = snapshot.reduce((a, b) => a + b, 0);
@@ -2030,7 +2017,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             const pill = (
                               <div
                                 className={cn(
-                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                                  'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
                                   detail === null ? 'border-border text-muted-foreground' :
                                   snapshotSum > 0 ? 'border-green-600/40 text-green-600' :
                                   snapshotSum < 0 ? 'border-destructive/40 text-destructive' :
@@ -2047,23 +2034,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             if (!detail) return <div key={holeNum}>{pill}</div>;
                             
                             return (
-                              <Tooltip key={holeNum}>
-                                <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                                <TooltipContent side="top" className="w-80">
+                              <Popover key={holeNum}>
+                                <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                                <PopoverContent side="top" className="w-72 p-3">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
-                                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                                      <span>Tu equipo</span>
-                                      <span>Rival</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                      <span className="flex items-center gap-1 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a1.net}</span></span>
-                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b1.net}</span></span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                      <span className="flex items-center gap-1 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a2.net}</span></span>
-                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b2.net}</span></span>
-                                    </div>
+                                    <TeamHoleGrid
+                                      teamAPlayers={displayTeamAPlayers}
+                                      teamBPlayers={displayTeamBPlayers}
+                                      detail={{ netA1: detail.a1.net, hcpA1: detail.a1.hcp, netA2: detail.a2.net, hcpA2: detail.a2.hcp, netB1: detail.b1.net, hcpB1: detail.b1.hcp, netB2: detail.b2.net, hcpB2: detail.b2.hcp }}
+                                    />
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
                                         <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
@@ -2077,12 +2057,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       Presiones: {pressureDisplay}
                                     </p>
                                   </div>
-                                </TooltipContent>
-                              </Tooltip>
+                                </PopoverContent>
+                              </Popover>
                             );
                           })}
                         </div>
-                      </TooltipProvider>
                     </div>
                     
                     {/* Total 18 - Running cumulative across all 18 holes */}
@@ -2170,6 +2149,47 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     </div>
   );
 };
+
+// Shared aligned player grid for tooltips/popovers in Carritos and Foursomes
+// Layout: Left side [Name Score Dot] | Right side [Dot Score Name]
+// Scores are vertically aligned across all rows via grid columns
+const TeamHoleGrid: React.FC<{
+  teamAPlayers: { name: string }[];
+  teamBPlayers: { name: string }[];
+  detail: {
+    netA1: number; hcpA1: number;
+    netA2: number; hcpA2: number;
+    netB1: number; hcpB1: number;
+    netB2: number; hcpB2: number;
+  };
+}> = ({ teamAPlayers, teamBPlayers, detail }) => (
+  <div className="space-y-0.5">
+    <div className="flex justify-between text-[10px] text-muted-foreground">
+      <span>Tu equipo</span>
+      <span>Rival</span>
+    </div>
+    {/* Player row 1 */}
+    <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+      <span className="truncate text-left">{teamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="font-medium text-right px-1">{detail.netA1}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span />
+      <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="font-medium text-left px-1">{detail.netB1}</span>
+      <span className="truncate text-right">{teamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+    </div>
+    {/* Player row 2 */}
+    <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+      <span className="truncate text-left">{teamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="font-medium text-right px-1">{detail.netA2}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span />
+      <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="font-medium text-left px-1">{detail.netB2}</span>
+      <span className="truncate text-right">{teamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+    </div>
+  </div>
+);
 
 // Carritos Results Card - Updated for point-based scoring
 interface CarritosResultsCardProps {
@@ -2337,15 +2357,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     setHoleDialogOpen(true);
   };
 
-  const ScoreLine = ({ name, hcp, net }: { name: string; hcp: number; net: number }) => (
-    <p className="flex items-center justify-between gap-2 text-sm">
-      <span className="truncate">{name}</span>
-      <span className="flex items-center gap-2 tabular-nums">
-        {hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" aria-label="Stroke aplicado" />}
-        <span>{net}</span>
-      </span>
-    </p>
-  );
+  // Unused legacy ScoreLine - replaced by TeamHoleGrid below
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
   const getNetPill = (n: number) => (n > 0 ? 'border-green-600/40 text-green-600' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
@@ -2470,7 +2482,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             {/* Puntos por hoyo */}
             <div className="bg-muted/30 rounded-lg p-2 space-y-2">
               <div className="text-[10px] text-muted-foreground text-center">
-                Toca/hover en un hoyo para ver el desglose (• = stroke aplicado).
+                Toca en un hoyo para ver el desglose (• = stroke aplicado).
               </div>
 
           {/* Front 9 */}
@@ -2481,8 +2493,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
               </span>
             </div>
-            <TooltipProvider>
-              <div className="grid grid-cols-9 gap-1">
+            <div className="grid grid-cols-9 gap-1">
                 {baseNetByHoleFront.map((net, idx) => {
                 const hole = idx + 1;
                 const detail = baseHoleDetailsFront[idx];
@@ -2490,13 +2501,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 const pill = (
                   <div
                     className={cn(
-                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
                       net === null ? 'border-border text-muted-foreground' : getNetPill(net),
-                      isMobile ? 'cursor-pointer' : 'cursor-default'
                     )}
-                    onClick={isMobile ? () => openHoleDetail(hole, net, detail) : undefined}
-                    role={isMobile ? 'button' : undefined}
-                    tabIndex={isMobile ? 0 : undefined}
                   >
                     <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
                     <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
@@ -2505,65 +2512,43 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   </div>
                 );
 
-                if (isMobile || net === null) return <div key={hole}>{pill}</div>;
+                if (net === null || !detail) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                if (isMobile) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
 
                 return (
-                  <Tooltip key={hole}>
-                    <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                    <TooltipContent side="top" className="w-80">
-                      {!detail ? (
-                        <div className="text-xs">
-                          <p className="font-medium">Hoyo {hole}</p>
-                          <p className="text-muted-foreground">Sin scores confirmados de los 4 jugadores.</p>
+                  <Popover key={hole}>
+                    <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                    <PopoverContent side="top" className="w-72 p-3">
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <TeamHoleGrid
+                          teamAPlayers={displayTeamAPlayers}
+                          teamBPlayers={displayTeamBPlayers}
+                          detail={detail}
+                        />
+                        <div className="pt-1 border-t border-border/50">
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                          )}
+                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
-                      ) : (
-                        <div className="text-xs space-y-1">
-                          <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>Tu equipo</span>
-                            <span>Rival</span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA1}</span></span>
-                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB1}</span></span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA2}</span></span>
-                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB2}</span></span>
-                          </div>
-
-                          <div className="pt-1 border-t border-border/50">
-                            {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Bola Baja</span>
-                                <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
-                              </p>
-                            )}
-                            {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Bola Alta</span>
-                                <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
-                              </p>
-                            )}
-                            {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Suma</span>
-                                <span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span>
-                              </p>
-                            )}
-                            <p className="flex justify-between font-medium">
-                              <span>Puntos</span>
-                              <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 );
               })}
               </div>
-            </TooltipProvider>
           </div>
 
           {/* Back 9 */}
@@ -2574,8 +2559,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
               </span>
             </div>
-            <TooltipProvider>
-              <div className="grid grid-cols-9 gap-1">
+            <div className="grid grid-cols-9 gap-1">
                 {baseNetByHoleBack.map((net, idx) => {
                 const hole = idx + 10;
                 const detail = baseHoleDetailsBack[idx];
@@ -2583,13 +2567,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 const pill = (
                   <div
                     className={cn(
-                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center',
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
                       net === null ? 'border-border text-muted-foreground' : getNetPill(net),
-                      isMobile ? 'cursor-pointer' : 'cursor-default'
                     )}
-                    onClick={isMobile ? () => openHoleDetail(hole, net, detail) : undefined}
-                    role={isMobile ? 'button' : undefined}
-                    tabIndex={isMobile ? 0 : undefined}
                   >
                     <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
                     <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
@@ -2598,65 +2578,43 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   </div>
                 );
 
-                if (isMobile || net === null) return <div key={hole}>{pill}</div>;
+                if (net === null || !detail) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                if (isMobile) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
 
                 return (
-                  <Tooltip key={hole}>
-                    <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                    <TooltipContent side="top" className="w-80">
-                      {!detail ? (
-                        <div className="text-xs">
-                          <p className="font-medium">Hoyo {hole}</p>
-                          <p className="text-muted-foreground">Sin scores confirmados de los 4 jugadores.</p>
+                  <Popover key={hole}>
+                    <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                    <PopoverContent side="top" className="w-72 p-3">
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <TeamHoleGrid
+                          teamAPlayers={displayTeamAPlayers}
+                          teamBPlayers={displayTeamBPlayers}
+                          detail={detail}
+                        />
+                        <div className="pt-1 border-t border-border/50">
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                          )}
+                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
-                      ) : (
-                        <div className="text-xs space-y-1">
-                          <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>Tu equipo</span>
-                            <span>Rival</span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA1}</span></span>
-                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB1}</span></span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA2}</span></span>
-                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB2}</span></span>
-                          </div>
-
-                          <div className="pt-1 border-t border-border/50">
-                            {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Bola Baja</span>
-                                <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
-                              </p>
-                            )}
-                            {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Bola Alta</span>
-                                <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
-                              </p>
-                            )}
-                            {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                              <p className="flex justify-between">
-                                <span>Suma</span>
-                                <span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span>
-                              </p>
-                            )}
-                            <p className="flex justify-between font-medium">
-                              <span>Puntos</span>
-                              <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 );
               })}
               </div>
-            </TooltipProvider>
           </div>
 
               {/* Total */}
@@ -2694,20 +2652,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         pts
                       </div>
 
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] text-muted-foreground">
-                      <span>Tu equipo</span>
-                      <span>Rival</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="flex items-center gap-1 tabular-nums">{selectedHole.detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netA1}</span></span>
-                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{selectedHole.detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netB1}</span></span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="flex items-center gap-1 tabular-nums">{selectedHole.detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netA2}</span></span>
-                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{selectedHole.detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netB2}</span></span>
-                    </div>
-                  </div>
+                      <TeamHoleGrid
+                        teamAPlayers={displayTeamAPlayers}
+                        teamBPlayers={displayTeamBPlayers}
+                        detail={selectedHole.detail}
+                      />
 
                   <div className="pt-2 border-t border-border/50 text-sm">
                     {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
