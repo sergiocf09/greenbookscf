@@ -3334,16 +3334,30 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         label: 'Caros',
         configKey: 'caros',
         segments: [
-          { label: 'Hoyos 15-18', key: 'caros_all' },
+          { label: '15-18', key: 'caros_all' },
         ],
         getTotal: () => groupedSummaries['Caros']?.total || 0,
         getSegmentData: () => {
           const summary = groupedSummaries['Caros'];
           const description = summary?.details?.[0]?.description || '';
           const match = description.match(/(\d+) vs (\d+)/);
+          // Compute actual net strokes for holes 15-18 so ties show real scores (not 0 vs 0)
+          const carosPlayerNet = (() => {
+            if (match) return parseInt(match[1]);
+            // Fallback: compute directly from confirmed scores
+            const playerScores = confirmedScores.get(player.id) || [];
+            return playerScores.filter(s => s.holeNumber >= 15 && s.holeNumber <= 18)
+              .reduce((sum, s) => sum + (Number.isFinite(s.netScore) ? s.netScore : (s.strokes || 0)), 0);
+          })();
+          const carosRivalNet = (() => {
+            if (match) return parseInt(match[2]);
+            const rivalScores = confirmedScores.get(rival.id) || [];
+            return rivalScores.filter(s => s.holeNumber >= 15 && s.holeNumber <= 18)
+              .reduce((sum, s) => sum + (Number.isFinite(s.netScore) ? s.netScore : (s.strokes || 0)), 0);
+          })();
           return {
-            playerNet: match ? parseInt(match[1]) : 0,
-            rivalNet: match ? parseInt(match[2]) : 0,
+            playerNet: carosPlayerNet,
+            rivalNet: carosRivalNet,
             amount: summary?.total || 0,
             description,
           };
@@ -3355,7 +3369,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     if (bothParticipate(betConfig.oyeses.participantIds, 'oyeses')) {
       groups.push({
         key: 'oyeses',
-        label: 'Oyeses',
+        label: 'Oyes',
         configKey: 'oyeses',
         segments: [{ label: 'Par 3s', key: 'oyeses_detail' }],
         getTotal: () => groupedSummaries['Oyes']?.total || 0,
@@ -4296,9 +4310,27 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         
                         return (
                           <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
+                            {/* Zapato toggle for Oyeses - above detail */}
+                            {!isHistorical && onBetConfigChange && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Zapato</span>
+                                <Switch
+                                  checked={betConfig.oyeses.zapatoEnabled !== false}
+                                  onCheckedChange={(checked) => {
+                                    onBetConfigChange({
+                                      ...betConfig,
+                                      oyeses: {
+                                        ...betConfig.oyeses,
+                                        zapatoEnabled: checked,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                            )}
                             {/* Header row with hole numbers */}
                             <div className="flex items-center gap-2 text-[10px]">
-                              <div className="w-12 shrink-0 font-medium text-muted-foreground">Jugador</div>
+                              <div className="w-8 shrink-0"></div>
                               <div className="flex gap-1 overflow-x-auto">
                                 {playerAHoles.map(h => (
                                   <div key={h.holeNumber} className="w-8 text-center font-medium text-muted-foreground">
@@ -4311,12 +4343,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Player A row */}
                             <div className="flex items-center gap-2 text-xs">
-                              <div 
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
-                                style={{ backgroundColor: player.color }}
-                              >
-                                {player.initials}
-                              </div>
+                              <PlayerAvatar 
+                                initials={player.initials} 
+                                background={player.color} 
+                                size="sm" 
+                                isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
+                              />
                               <div className="flex gap-1 overflow-x-auto">
                                 {playerAHoles.map(h => (
                                   <div 
@@ -4330,7 +4362,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     )}
                                     title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
                                   >
-                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '✗'}
+                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
                                   </div>
                                 ))}
                                 <div className={cn(
@@ -4346,12 +4378,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Player B row */}
                             <div className="flex items-center gap-2 text-xs">
-                              <div 
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
-                                style={{ backgroundColor: rival.color }}
-                              >
-                                {rival.name.substring(0, 3).toUpperCase()}
-                              </div>
+                              <PlayerAvatar 
+                                initials={rival.initials} 
+                                background={rival.color} 
+                                size="sm" 
+                                isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
+                              />
                               <div className="flex gap-1 overflow-x-auto">
                                 {playerBHoles.map(h => (
                                   <div 
@@ -4365,7 +4397,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     )}
                                     title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
                                   >
-                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '✗'}
+                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
                                   </div>
                                 ))}
                                 <div className={cn(
@@ -4378,73 +4410,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 </div>
                               </div>
                             </div>
-                            
-                            {/* Zapato bonus display when 100% winner */}
-                            {hasZapato && (
-                              <div className={cn(
-                                'flex items-center justify-between p-2 rounded-lg border',
-                                isPlayerZapatoWinner 
-                                  ? 'bg-green-500/10 border-green-500/30' 
-                                  : 'bg-destructive/10 border-destructive/30'
-                              )}>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">🥾</span>
-                                  <div>
-                                    <span className="font-bold text-sm">Zapato</span>
-                                    <span className="text-xs text-muted-foreground ml-1">(100% ganados)</span>
-                                  </div>
-                                </div>
-                                <div className={cn(
-                                  'font-bold text-sm',
-                                  isPlayerZapatoWinner ? 'text-green-600' : 'text-destructive'
-                                )}>
-                                  {isPlayerZapatoWinner ? '+' : '-'}${zapatoBonus}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Debug info - shows holes won per player for verification */}
-                            {pairResult && (
-                              <div className="text-[9px] text-muted-foreground bg-muted/20 p-1 rounded mb-1">
-                                Hoyos ganados: {player.initials}={pairResult.winsA}, {rival.initials}={pairResult.winsB} | 
-                                Total jugados: {pairResult.settledHoles} | 
-                                Zapato: {pairResult.hasZapato ? `Sí (+$${pairResult.zapatoBonus})` : 'No'}
-                              </div>
-                            )}
-                            
-                            {/* Legend */}
-                            <div className="flex flex-wrap gap-2 text-[9px] text-muted-foreground pt-1 border-t border-border/30">
-                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/20"></span>Ganado</span>
-                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-destructive/20"></span>Perdido</span>
-                              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-muted"></span>Acumulado</span>
-                              <span className="flex items-center gap-1">✗ = Sin green</span>
-                              {hasZapato && <span className="flex items-center gap-1">🥾 = Bonus 100%</span>}
-                            </div>
-                            {/* Zapato toggle for Oyeses */}
-                            {!isHistorical && onBetConfigChange && (
-                              <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">🥾</span>
-                                  <span className="text-xs font-medium">Zapato Oyes (x2)</span>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant={betConfig.oyeses.zapatoEnabled !== false ? 'default' : 'outline'}
-                                  className="h-7 text-xs"
-                                  onClick={() => {
-                                    onBetConfigChange({
-                                      ...betConfig,
-                                      oyeses: {
-                                        ...betConfig.oyeses,
-                                        zapatoEnabled: betConfig.oyeses.zapatoEnabled !== false ? false : true,
-                                      },
-                                    });
-                                  }}
-                                >
-                                  {betConfig.oyeses.zapatoEnabled !== false ? 'Activado' : 'Desactivado'}
-                                </Button>
-                              </div>
-                            )}
                           </div>
                         );
                       })()
@@ -4565,66 +4530,69 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         
                         return (
                           <div className="px-4 py-3 pl-6 bg-background/50 space-y-2">
-                            {/* Always-editable Skins variant selector for this pair */}
+                            {/* Always-editable Skins variant selector for this pair - same style as Skins */}
                             {!isHistorical && onBetConfigChange && (
                               <div className={cn(
-                                "rounded-lg p-3 space-y-2 border",
+                                "rounded-lg px-3 py-2 border",
                                 skinConflict.hasConflict 
                                   ? "bg-amber-500/10 border-amber-500/30" 
                                   : "bg-muted/30 border-border/50"
                               )}>
-                                <div className="flex items-center gap-2">
-                                  <Settings2 className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-xs font-medium">
-                                    {skinConflict.hasConflict ? 'Conflicto de modalidad Skins' : 'Modalidad Skins (este par)'}
-                                  </span>
-                                </div>
                                 {skinConflict.hasConflict && (
-                                  <p className="text-[11px] text-muted-foreground">
-                                    {formatPlayerName(player.name)} usa <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span> y {formatPlayerName(rival.name)} usa <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'}</span>.
+                                  <p className="text-[10px] text-muted-foreground mb-1">
+                                    {formatPlayerName(player.name)}: <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
                                   </p>
                                 )}
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant={activePairVariant === 'acumulados' ? 'default' : 'outline'}
-                                    className="h-7 text-xs flex-1"
-                                    onClick={() => {
-                                      const pairKey = getPairKey(player.id, rival.id);
-                                      onBetConfigChange({
-                                        ...betConfig,
-                                        rayas: {
-                                          ...betConfig.rayas,
-                                          pairSkinVariantOverrides: {
-                                            ...betConfig.rayas?.pairSkinVariantOverrides,
-                                            [pairKey]: 'acumulados',
+                                <div className="flex items-center gap-3">
+                                  {/* Variant toggles - left side */}
+                                  <div className="flex flex-col gap-0.5 flex-1">
+                                    <button
+                                      className={cn(
+                                        'text-xs text-left px-2 py-1 rounded transition-colors',
+                                        activePairVariant === 'acumulados' 
+                                          ? 'font-semibold text-primary bg-primary/10' 
+                                          : 'text-muted-foreground hover:text-foreground'
+                                      )}
+                                      onClick={() => {
+                                        const pairKey = getPairKey(player.id, rival.id);
+                                        onBetConfigChange({
+                                          ...betConfig,
+                                          rayas: {
+                                            ...betConfig.rayas,
+                                            pairSkinVariantOverrides: {
+                                              ...betConfig.rayas?.pairSkinVariantOverrides,
+                                              [pairKey]: 'acumulados',
+                                            },
                                           },
-                                        },
-                                      });
-                                    }}
-                                  >
-                                    Acumulados
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant={activePairVariant === 'sinAcumulacion' ? 'default' : 'outline'}
-                                    className="h-7 text-xs flex-1"
-                                    onClick={() => {
-                                      const pairKey = getPairKey(player.id, rival.id);
-                                      onBetConfigChange({
-                                        ...betConfig,
-                                        rayas: {
-                                          ...betConfig.rayas,
-                                          pairSkinVariantOverrides: {
-                                            ...betConfig.rayas?.pairSkinVariantOverrides,
-                                            [pairKey]: 'sinAcumulacion',
+                                        });
+                                      }}
+                                    >
+                                      Acumulados
+                                    </button>
+                                    <button
+                                      className={cn(
+                                        'text-xs text-left px-2 py-1 rounded transition-colors',
+                                        activePairVariant === 'sinAcumulacion' 
+                                          ? 'font-semibold text-primary bg-primary/10' 
+                                          : 'text-muted-foreground hover:text-foreground'
+                                      )}
+                                      onClick={() => {
+                                        const pairKey = getPairKey(player.id, rival.id);
+                                        onBetConfigChange({
+                                          ...betConfig,
+                                          rayas: {
+                                            ...betConfig.rayas,
+                                            pairSkinVariantOverrides: {
+                                              ...betConfig.rayas?.pairSkinVariantOverrides,
+                                              [pairKey]: 'sinAcumulacion',
+                                            },
                                           },
-                                        },
-                                      });
-                                    }}
-                                  >
-                                    Sin Acumulación
-                                  </Button>
+                                        });
+                                      }}
+                                    >
+                                      Sin acumular
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -4639,7 +4607,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Front 9 row */}
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1">
-                              <div className="font-medium text-muted-foreground">Front 9</div>
+                              <div className="font-medium text-muted-foreground text-xs">Front 9</div>
                               <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-600' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.front !== 0 ? skinsNet.front : '-'}
                               </div>
@@ -4671,7 +4639,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Back 9 row */}
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2">
-                              <div className="font-medium text-muted-foreground">Back 9</div>
+                              <div className="font-medium text-muted-foreground text-xs">Back 9</div>
                               <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-600' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
