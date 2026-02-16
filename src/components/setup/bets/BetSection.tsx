@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -12,8 +11,8 @@ interface BetSectionProps {
   id: string;
   title: string;
   description: string;
-  enabled: boolean;
-  onToggle: (enabled: boolean) => void;
+  enabled?: boolean;
+  onToggle?: (enabled: boolean) => void;
   isExpanded: boolean;
   onExpandChange: (open: boolean) => void;
   children: React.ReactNode;
@@ -24,7 +23,7 @@ export const BetSection: React.FC<BetSectionProps> = ({
   id, 
   title, 
   description, 
-  enabled, 
+  enabled = true, 
   onToggle, 
   isExpanded,
   onExpandChange,
@@ -35,22 +34,15 @@ export const BetSection: React.FC<BetSectionProps> = ({
     open={isExpanded} 
     onOpenChange={onExpandChange}
   >
-    <div className={cn(
-      'border rounded-lg overflow-hidden transition-colors',
-      enabled ? 'border-border bg-card' : 'border-border/50 bg-muted/30'
-    )}>
+    <div className="border rounded-lg overflow-hidden transition-colors border-border bg-card">
       <div className="flex items-center justify-between p-3">
         <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
           <div className={cn(
             'w-2 h-2 rounded-full',
-            enabled 
-              ? color === 'gold' ? 'bg-golf-gold' : color === 'red' ? 'bg-destructive' : 'bg-golf-green'
-              : 'bg-muted-foreground/30'
+            color === 'gold' ? 'bg-golf-gold' : color === 'red' ? 'bg-destructive' : 'bg-golf-green'
           )} />
           <div className="flex-1">
-            <p className={cn('font-medium text-sm', !enabled && 'text-muted-foreground')}>
-              {title}
-            </p>
+            <p className="font-medium text-sm">{title}</p>
             <p className="text-[10px] text-muted-foreground">{description}</p>
           </div>
           {isExpanded ? (
@@ -59,17 +51,9 @@ export const BetSection: React.FC<BetSectionProps> = ({
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </CollapsibleTrigger>
-        <Switch
-          checked={enabled}
-          onCheckedChange={onToggle}
-          className="ml-2"
-        />
       </div>
       <CollapsibleContent>
-        <div className={cn(
-          'p-3 pt-0 space-y-3',
-          !enabled && 'opacity-50 pointer-events-none'
-        )}>
+        <div className="p-3 pt-0 space-y-3">
           {children}
         </div>
       </CollapsibleContent>
