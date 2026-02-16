@@ -40,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -103,6 +103,7 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
+  const [showBetSetupDialog, setShowBetSetupDialog] = useState(false);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
@@ -1951,6 +1952,18 @@ const Index = () => {
               </Button>
             )}
             
+            {/* Bet Setup Button - show when 2+ players */}
+            {players.length >= 2 && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => setShowBetSetupDialog(true)}
+              >
+                <Receipt className="h-5 w-5" />
+              </Button>
+            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -2230,7 +2243,7 @@ const Index = () => {
               </Button>
             )}
 
-            {players.length >= 2 && <BetSetup config={betConfig} onChange={setBetConfig} players={allPlayersForBets} />}
+            {/* Bet setup moved to header icon/dialog */}
             
             {/* Action Buttons */}
             <div className="space-y-2">
@@ -2597,6 +2610,16 @@ const Index = () => {
         ]}
         multiSelect={true}
       />
+
+      {/* Bet Setup Dialog */}
+      <Dialog open={showBetSetupDialog} onOpenChange={setShowBetSetupDialog}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configuración de Apuestas</DialogTitle>
+          </DialogHeader>
+          <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
+        </DialogContent>
+      </Dialog>
 
       {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
