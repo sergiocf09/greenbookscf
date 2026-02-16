@@ -2473,7 +2473,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}</span>
                   <span className="text-muted-foreground"> · </span>
                   <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}</span>
-                  <span className="text-muted-foreground"> · </span>
+                </div>
+                <div className="text-sm tabular-nums">
                   <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
                 </div>
                  {isDisabled ? (
