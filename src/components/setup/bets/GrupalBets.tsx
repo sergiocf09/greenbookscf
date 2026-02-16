@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
@@ -19,6 +19,7 @@ interface GrupalBetsProps {
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig?: (config: BetConfig) => void;
+  hasMultipleGroups?: boolean;
 }
 
 export const GrupalBets: React.FC<GrupalBetsProps> = ({
@@ -28,12 +29,8 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
   onToggleSection,
   onUpdateBet,
   onUpdateConfig,
+  hasMultipleGroups = false,
 }) => {
-  // Detect if there are multiple groups by checking distinct groupIds
-  const hasMultipleGroups = useMemo(() => {
-    const groupIds = new Set(players.map(p => p.groupId).filter(Boolean));
-    return groupIds.size > 1;
-  }, [players]);
 
   const show = (betKey: string) => grupalBetHasParticipants(config, betKey, players);
 

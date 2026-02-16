@@ -11,12 +11,14 @@ interface BetSetupProps {
   config: BetConfig;
   onChange: (config: BetConfig) => void;
   players: Player[];
+  hasMultipleGroups?: boolean;
 }
 
 export const BetSetup: React.FC<BetSetupProps> = ({
   config,
   onChange,
   players,
+  hasMultipleGroups = false,
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
@@ -116,6 +118,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             onToggleSection={toggleSection}
             onUpdateBet={updateBet}
             onUpdateConfig={safeOnChange}
+            hasMultipleGroups={hasMultipleGroups}
           />
         )}
       </div>
