@@ -1294,7 +1294,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {displayBalance >= 0 ? '+' : ''}${displayBalance}
+                        {displayBalance >= 0 ? '+$' : '-$'}{Math.abs(displayBalance)}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
@@ -1302,7 +1302,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   
                   {/* Expanded view: balance vs each other player + carritos per rival */}
                   {isExpanded && (
-                    <div className="ml-8 mt-1 space-y-1 pb-2">
+                    <div className="ml-5 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
                         // When snapshot balances available, use them for bilateral amounts
                         const snapshotVsBal = snapshotBal?.vsBalances.find(vb => vb.rivalId === other.id);
@@ -1345,12 +1345,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               {/* Show breakdown when there are pair bets */}
                               {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0) && (
                                 <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                                  <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>${vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
+                                  <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
                                   {vsCarritosBalance !== 0 && (
-                                    <span>| Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>${vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
+                                    <span>| Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>{vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
                                   )}
                                   {vsTeamPressuresBalance !== 0 && (
-                                    <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>${vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                    <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
                                   )}
                                 </span>
                               )}
@@ -1359,7 +1359,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {vsTotalBalance >= 0 ? '+' : ''}${vsTotalBalance}
+                              {vsTotalBalance >= 0 ? '+$' : '-$'}{Math.abs(vsTotalBalance)}
                             </span>
                           </div>
                         );
