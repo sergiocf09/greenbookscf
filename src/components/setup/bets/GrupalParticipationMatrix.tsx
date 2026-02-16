@@ -4,26 +4,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { formatPlayerName } from '@/lib/playerInput';
 
-interface ParticipationMatrixProps {
+interface GrupalParticipationMatrixProps {
   config: BetConfig;
   players: Player[];
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
 }
 
-/** Individual bet types that support participantIds (excluding grupal bets) */
-const INDIVIDUAL_BETS = [
-  { key: 'medal' as const, label: 'Medal' },
-  { key: 'pressures' as const, label: 'Presiones' },
-  { key: 'skins' as const, label: 'Skins' },
-  { key: 'caros' as const, label: 'Caros' },
-  { key: 'units' as const, label: 'Unidades' },
-  { key: 'manchas' as const, label: 'Manchas' },
-  { key: 'putts' as const, label: 'Putts' },
+/** Grupal bet types that support participantIds */
+const GRUPAL_BETS = [
+  { key: 'culebras' as const, label: 'Culebras' },
+  { key: 'pinguinos' as const, label: 'Pingüinos' },
+  { key: 'zoologico' as const, label: 'Zoológico' },
 ] as const;
 
-type IndividualBetKey = typeof INDIVIDUAL_BETS[number]['key'];
+type GrupalBetKey = typeof GRUPAL_BETS[number]['key'];
 
-/** Get valid participant IDs for a bet, filtering stale IDs */
 const getActiveIds = (
   participantIds: string[] | undefined,
   players: Player[]
@@ -34,48 +29,43 @@ const getActiveIds = (
   return valid.length === 0 ? allIds : valid;
 };
 
-/** Get participantIds from a bet config entry */
-const getParticipantIds = (config: BetConfig, betKey: IndividualBetKey): string[] | undefined => {
+const getParticipantIds = (config: BetConfig, betKey: GrupalBetKey): string[] | undefined => {
   const betConfig = config[betKey] as any;
   return betConfig?.participantIds;
 };
 
-/** Check if a bet is enabled */
-const isBetEnabled = (config: BetConfig, betKey: IndividualBetKey): boolean => {
+const isBetEnabled = (config: BetConfig, betKey: GrupalBetKey): boolean => {
   const betConfig = config[betKey] as any;
   return betConfig?.enabled ?? false;
 };
 
-/** Determine effective participation considering explicit empty arrays */
 const isEffectivelyParticipating = (
   participantIds: string[] | undefined,
   playerId: string,
   players: Player[]
 ): boolean => {
-  // Explicit empty array = nobody participates
   if (Array.isArray(participantIds) && participantIds.length === 0) return false;
   const active = getActiveIds(participantIds, players);
   return active.includes(playerId);
 };
 
-export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
+export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps> = ({
   config,
   players,
   onUpdateBet,
 }) => {
   const enabledBets = useMemo(
-    () => INDIVIDUAL_BETS.filter(b => isBetEnabled(config, b.key)),
+    () => GRUPAL_BETS.filter(b => isBetEnabled(config, b.key)),
     [config]
   );
 
   if (enabledBets.length === 0 || players.length === 0) return null;
 
-  const handleCellToggle = (betKey: IndividualBetKey, playerId: string) => {
+  const handleCellToggle = (betKey: GrupalBetKey, playerId: string) => {
     const pIds = getParticipantIds(config, betKey);
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
     if (isExplicitlyEmpty) {
-      // Nobody selected → add just this player
       onUpdateBet(betKey, { participantIds: [playerId] } as any);
       return;
     }
@@ -91,7 +81,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
     onUpdateBet(betKey, { participantIds: isAll ? undefined : newIds } as any);
   };
 
-  const handleRowToggle = (betKey: IndividualBetKey) => {
+  const handleRowToggle = (betKey: GrupalBetKey) => {
     const pIds = getParticipantIds(config, betKey);
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
     const currentIds = getActiveIds(pIds, players);
@@ -99,10 +89,8 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
     const allActive = !isExplicitlyEmpty && allIds.every(id => currentIds.includes(id));
 
     if (allActive) {
-      // All → None
       onUpdateBet(betKey, { participantIds: [] } as any);
     } else {
-      // None or Partial → All
       onUpdateBet(betKey, { participantIds: undefined } as any);
     }
   };
@@ -115,14 +103,12 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
       if (colState === 'all') {
-        // Remove from all bets
         const currentIds = isExplicitlyEmpty ? [] : getActiveIds(pIds, players);
         const newIds = currentIds.filter(id => id !== playerId);
         const allIds = players.map(p => p.id);
         const isAll = allIds.every(id => newIds.includes(id));
         onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
       } else {
-        // Add to all bets
         if (isExplicitlyEmpty) {
           onUpdateBet(b.key, { participantIds: [playerId] } as any);
         } else {
@@ -138,7 +124,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
     });
   };
 
-  const getRowState = (betKey: IndividualBetKey): 'all' | 'none' | 'partial' => {
+  const getRowState = (betKey: GrupalBetKey): 'all' | 'none' | 'partial' => {
     const pIds = getParticipantIds(config, betKey);
     if (Array.isArray(pIds) && pIds.length === 0) return 'none';
     const currentIds = getActiveIds(pIds, players);
