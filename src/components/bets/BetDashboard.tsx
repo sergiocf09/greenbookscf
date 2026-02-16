@@ -4096,90 +4096,100 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     {/* Skins: variant selector + segments */}
                     {group.key === 'skins' ? (
                       <div>
-                        {/* Always-editable Skins variant selector for this pair */}
+                        {/* Skins variant + zapato controls - compact layout */}
                         {!isHistorical && onBetConfigChange && (() => {
                           const globalModality = betConfig.skins.modality ?? 'acumulados';
                           const playerVariants = betConfig.skins.playerSkinVariants;
                           const pairOverrides = betConfig.skins.pairSkinVariantOverrides;
                           const pairKey = [player.id, rival.id].sort().join('_');
                           
-                          // Detect conflict
                           const variantA = playerVariants?.[player.id] ?? globalModality;
                           const variantB = playerVariants?.[rival.id] ?? globalModality;
                           const hasExplicitOverride = !!pairOverrides?.[pairKey];
                           const hasConflict = variantA !== variantB && !hasExplicitOverride;
                           const activeVariant = pairOverrides?.[pairKey] ?? (variantA === variantB ? variantA : globalModality);
                           
+                          const setVariant = (variant: string) => {
+                            onBetConfigChange({
+                              ...betConfig,
+                              skins: {
+                                ...betConfig.skins,
+                                pairSkinVariantOverrides: {
+                                  ...betConfig.skins.pairSkinVariantOverrides,
+                                  [pairKey]: variant as 'acumulados' | 'sinAcumular',
+                                },
+                              },
+                            });
+                          };
+                          
                           return (
                             <div className={cn(
-                              "mx-4 mt-3 mb-2 rounded-lg p-3 space-y-2 border",
+                              "mx-4 mt-2 mb-1 rounded-lg px-3 py-2 border",
                               hasConflict 
                                 ? "bg-amber-500/10 border-amber-500/30" 
                                 : "bg-muted/30 border-border/50"
                             )}>
-                              <div className="flex items-center gap-2">
-                                <Settings2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-xs font-medium">
-                                  {hasConflict ? 'Conflicto de modalidad' : 'Modalidad (este par)'}
-                                </span>
-                              </div>
                               {hasConflict && (
-                                <p className="text-[11px] text-muted-foreground">
+                                <p className="text-[10px] text-muted-foreground mb-1">
                                   {formatPlayerName(player.name)}: <span className="font-medium">{variantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{variantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
                                 </p>
                               )}
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant={activeVariant === 'acumulados' ? 'default' : 'outline'}
-                                  className="h-7 text-xs flex-1"
-                                  onClick={() => {
-                                    onBetConfigChange({
-                                      ...betConfig,
-                                      skins: {
-                                        ...betConfig.skins,
-                                        pairSkinVariantOverrides: {
-                                          ...betConfig.skins.pairSkinVariantOverrides,
-                                          [pairKey]: 'acumulados',
+                              <div className="flex items-center gap-3">
+                                {/* Variant toggles - left side */}
+                                <div className="flex flex-col gap-0.5 flex-1">
+                                  <button
+                                    className={cn(
+                                      'text-xs text-left px-2 py-1 rounded transition-colors',
+                                      activeVariant === 'acumulados' 
+                                        ? 'font-semibold text-primary bg-primary/10' 
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    )}
+                                    onClick={() => setVariant('acumulados')}
+                                  >
+                                    Acumulados
+                                  </button>
+                                  <button
+                                    className={cn(
+                                      'text-xs text-left px-2 py-1 rounded transition-colors',
+                                      activeVariant === 'sinAcumular' 
+                                        ? 'font-semibold text-primary bg-primary/10' 
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    )}
+                                    onClick={() => setVariant('sinAcumular')}
+                                  >
+                                    Sin acumular
+                                  </button>
+                                </div>
+                                {/* Zapato toggle - right side, vertically centered */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs text-muted-foreground">Zapato</span>
+                                  <Switch
+                                    checked={betConfig.skins.zapatoEnabled !== false}
+                                    onCheckedChange={(checked) => {
+                                      onBetConfigChange({
+                                        ...betConfig,
+                                        skins: {
+                                          ...betConfig.skins,
+                                          zapatoEnabled: checked,
                                         },
-                                      },
-                                    });
-                                  }}
-                                >
-                                  Acumulados
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={activeVariant === 'sinAcumular' ? 'default' : 'outline'}
-                                  className="h-7 text-xs flex-1"
-                                  onClick={() => {
-                                    onBetConfigChange({
-                                      ...betConfig,
-                                      skins: {
-                                        ...betConfig.skins,
-                                        pairSkinVariantOverrides: {
-                                          ...betConfig.skins.pairSkinVariantOverrides,
-                                          [pairKey]: 'sinAcumular',
-                                        },
-                                      },
-                                    });
-                                  }}
-                                >
-                                  Sin Acumulación
-                                </Button>
+                                      });
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
                           );
                         })()}
-                        {/* Standard segment rows for Skins - with evolution popover */}
+                        {/* Skins segment rows */}
                         {group.segments.map((segment) => {
                           const data = group.getSegmentData(segment.key);
                           const segmentType: 'front' | 'back' = segment.key.includes('front') ? 'front' : 'back';
                           const skinsEvo = getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole);
                           const skinsSegData = skinsEvo?.[segmentType];
+                          const hasZapato = skinsSegData?.hasZapato ?? false;
                           
                           return (
-                            <div key={segment.key} className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
+                            <div key={segment.key} className="flex items-center justify-between px-4 py-1.5 pl-10 bg-background/50">
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -4193,10 +4203,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {skinsSegData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
-                                        <span className="font-medium text-sm">Skins {segment.label}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {(betConfig.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'Sin acumular' : 'Acumulados'}
-                                        </span>
+                                        <span className="font-medium text-sm">{segment.label}</span>
                                       </div>
                                       <div className="overflow-x-auto">
                                         <div className="flex gap-0.5 min-w-max">
@@ -4222,7 +4229,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         <span>{player.initials}: <span className="font-bold text-green-600">{skinsSegData.totalSkinsA}</span></span>
                                         <span className="text-muted-foreground">vs</span>
                                         <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegData.totalSkinsB}</span></span>
-                                        {skinsSegData.hasZapato && <span className="ml-1">🥾</span>}
                                       </div>
                                       <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
                                         <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
@@ -4234,37 +4240,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   )}
                                 </PopoverContent>
                               </Popover>
-                              <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                {data.amount >= 0 ? '+' : ''}${data.amount}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                {hasZapato && <span className="text-sm">🥾</span>}
+                                <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                  {data.amount >= 0 ? '+' : ''}${data.amount}
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
-                        {/* Zapato toggle for Skins */}
-                        {!isHistorical && onBetConfigChange && (
-                          <div className="flex items-center justify-between px-4 py-2 pl-10 bg-background/50 border-t border-border/20">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">🥾</span>
-                              <span className="text-xs font-medium">Zapato (x2)</span>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant={betConfig.skins.zapatoEnabled !== false ? 'default' : 'outline'}
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                onBetConfigChange({
-                                  ...betConfig,
-                                  skins: {
-                                    ...betConfig.skins,
-                                    zapatoEnabled: betConfig.skins.zapatoEnabled !== false ? false : true,
-                                  },
-                                });
-                              }}
-                            >
-                              {betConfig.skins.zapatoEnabled !== false ? 'Activado' : 'Desactivado'}
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     ) : group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
