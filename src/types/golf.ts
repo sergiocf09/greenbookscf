@@ -115,6 +115,12 @@ export interface BetOverride {
   amountOverride?: number;
 }
 
+// Per-group bet override: partial config that overrides the organizer's template for a specific group
+// Each key corresponds to a bet type key in BetConfig, and the value is a partial of that bet's config
+export type GroupBetOverride = {
+  [K in keyof BetConfig]?: Partial<BetConfig[K]>;
+};
+
 // Carritos team bet config
 export interface CarritosTeamBet {
   id: string;
@@ -383,6 +389,9 @@ export interface BetConfig {
   betOverrides?: BetOverride[]; // Individual bet overrides
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
   crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> array of cross-group rival IDs
+  // Per-group overrides: allows each group to customize bet participation/amounts
+  // Key is the groupId, value is a partial bet config that overrides the template
+  groupBetOverrides?: Record<string, GroupBetOverride>;
   // NEW BET TYPES
   putts: PuttsBetConfig;
   sideBets: SideBetsConfig;

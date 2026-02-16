@@ -1,5 +1,6 @@
 // Bet Calculations Engine - All bilateral calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet, ZooAnimalType, ZooEvent, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
+import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
 import { calculateConejaBets } from './conejaCalculations';
@@ -254,9 +255,11 @@ export const calculateMedalBets = (
   
   // Filter players by participation config, respecting multi-group template inheritance
   const playersByGroup = groupPlayersByGroup(players);
-  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
-    resolveParticipantsForGroup(players, config.medal.participantIds, groupPlayers)
-  );
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    return resolveParticipantsForGroup(players, resolved.medal.participantIds, groupPlayers);
+  });
   
   const summaries: BetSummary[] = [];
   
@@ -344,9 +347,11 @@ export const calculatePressureBets = (
   
   // Filter players by participation config, respecting multi-group template inheritance
   const playersByGroup = groupPlayersByGroup(players);
-  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
-    resolveParticipantsForGroup(players, config.pressures.participantIds, groupPlayers)
-  );
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    return resolveParticipantsForGroup(players, resolved.pressures.participantIds, groupPlayers);
+  });
   
   const summaries: BetSummary[] = [];
   
@@ -642,9 +647,11 @@ export const calculateSkinsBets = (
 
   // Filter players by participation config, respecting multi-group template inheritance
   const playersByGroup = groupPlayersByGroup(players);
-  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
-    resolveParticipantsForGroup(players, config.skins.participantIds, groupPlayers)
-  );
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    return resolveParticipantsForGroup(players, resolved.skins.participantIds, groupPlayers);
+  });
 
   const summaries: BetSummary[] = [];
 
@@ -954,9 +961,11 @@ export const calculateCarosBets = (
   
   // Filter players by participation config, respecting multi-group template inheritance
   const playersByGroup = groupPlayersByGroup(players);
-  const participatingPlayers = playersByGroup.flatMap(groupPlayers =>
-    resolveParticipantsForGroup(players, config.caros.participantIds, groupPlayers)
-  );
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    return resolveParticipantsForGroup(players, resolved.caros.participantIds, groupPlayers);
+  });
   
   const summaries: BetSummary[] = [];
   const startHole = config.caros.startHole ?? 15;
@@ -1080,10 +1089,12 @@ export const calculateUnitsBets = (
   playersByGroup.forEach(groupPlayers => {
     if (groupPlayers.length < 2) return;
     
-    // Resolve participants for this specific group (handles template inheritance)
+    // Resolve participants for this specific group (handles template inheritance + group overrides)
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
     const participatingPlayers = resolveParticipantsForGroup(
       players,
-      config.units.participantIds,
+      resolved.units.participantIds,
       groupPlayers
     );
     
@@ -1179,10 +1190,12 @@ export const calculateManchasBets = (
   playersByGroup.forEach(groupPlayers => {
     if (groupPlayers.length < 2) return;
     
-    // Resolve participants for this specific group (handles template inheritance)
+    // Resolve participants for this specific group (handles template inheritance + group overrides)
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
     const participatingPlayers = resolveParticipantsForGroup(
       players,
-      config.manchas.participantIds,
+      resolved.manchas.participantIds,
       groupPlayers
     );
     
@@ -1288,10 +1301,11 @@ export const calculateCulebrasBets = (
   const allSummaries: BetSummary[] = [];
   
   playersByGroup.forEach(groupPlayers => {
-    // Resolve participants for this specific group (handles template inheritance)
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
     const participatingPlayers = resolveParticipantsForGroup(
       players,
-      config.culebras.participantIds,
+      resolved.culebras.participantIds,
       groupPlayers
     );
     
@@ -1390,10 +1404,11 @@ export const calculatePinguinosBets = (
   const allSummaries: BetSummary[] = [];
   
   playersByGroup.forEach(groupPlayers => {
-    // Resolve participants for this specific group (handles template inheritance)
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
     const participatingPlayers = resolveParticipantsForGroup(
       players,
-      config.pinguinos.participantIds,
+      resolved.pinguinos.participantIds,
       groupPlayers
     );
     
@@ -1588,11 +1603,14 @@ export const calculatePuttsBets = (
 ): BetSummary[] => {
   if (!config.putts?.enabled) return [];
   
-  // Filter players by participation config
-  const puttParticipantIds = config.putts.participantIds;
-  const participatingPlayers = puttParticipantIds && puttParticipantIds.length > 0
-    ? players.filter(p => puttParticipantIds.includes(p.id))
-    : players;
+  // Filter players by participation config, respecting group overrides
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    const puttParticipantIds = resolved.putts?.participantIds;
+    return resolveParticipantsForGroup(players, puttParticipantIds, groupPlayers);
+  });
   
   const summaries: BetSummary[] = [];
   const ranges = getSegmentHoleRanges(startingHole);
@@ -2197,8 +2215,11 @@ export const calculateAllBets = (
     
     playersByGroup.forEach(groupPlayers => {
       if (groupPlayers.length < 2) return;
+      const groupId = groupPlayers[0]?.groupId;
+      const resolvedConfig = resolveConfigForGroup(config, groupId);
+      if (!resolvedConfig.coneja?.enabled) return;
       
-      const conejaBets = calculateConejaBets(groupPlayers, scores, course, config, confirmedHoles);
+      const conejaBets = calculateConejaBets(groupPlayers, scores, course, resolvedConfig, confirmedHoles);
       conejaBets.forEach(bet => {
         conejaSummaries.push({
           playerId: bet.winnerId,
@@ -2868,10 +2889,11 @@ export const calculateZoologicoBets = (
   const playersByGroup = groupPlayersByGroup(players);
 
   playersByGroup.forEach(groupPlayers => {
-    // Resolve participants for this specific group (handles template inheritance)
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
     const participatingPlayers = resolveParticipantsForGroup(
       players,
-      config.zoologico.participantIds,
+      resolved.zoologico.participantIds,
       groupPlayers
     );
     

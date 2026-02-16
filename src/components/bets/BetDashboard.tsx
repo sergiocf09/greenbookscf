@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
 import { SnapshotPlayerBalance, SnapshotLedgerEntry, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { 
   calculateAllBets, 
   getPlayerBalance, 
@@ -3014,10 +3015,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   };
   
   // Helper: check if both player and rival participate in a given bet's participantIds
-  // Applies template-inheritance logic: if participantIds contains ONLY players from
-  // another group (i.e. none of the current group's players are listed), treat it as
-  // a template config and include everyone (return true).
-  const bothParticipate = (participantIds: string[] | undefined): boolean => {
+  // Applies template-inheritance logic AND group bet overrides.
+  // Accepts either raw participantIds or a betKey to resolve from group overrides.
+  const bothParticipate = (participantIds: string[] | undefined, betKey?: string): boolean => {
+    // If betKey provided, resolve group override first
+    if (betKey) {
+      const groupId = groupPlayers[0]?.groupId;
+      if (groupId) {
+        const resolved = resolveConfigForGroup(betConfig, groupId);
+        const resolvedBet = resolved[betKey as keyof BetConfig] as any;
+        if (resolvedBet?.enabled === false) return false;
+        participantIds = resolvedBet?.participantIds;
+      }
+    }
+    
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
     
     // Check if either player or rival is in the list
@@ -3028,9 +3039,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Template inheritance: if NO player from the current group is in
     // participantIds, it means the list was set for a different group (template).
-    // In that case, all current-group players participate by default.
     // CRITICAL: Use groupPlayers (scoped to display group), NOT players (all groups).
-    const anyGroupPlayerInList = groupPlayers.some(p => participantIds.includes(p.id));
+    const anyGroupPlayerInList = groupPlayers.some(p => participantIds!.includes(p.id));
     if (!anyGroupPlayerInList) return true;
     
     // Some current-group players are explicitly listed but not both of this pair
@@ -3050,7 +3060,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }[] = [];
     
     // Medal
-    if (betConfig.medal.enabled && bothParticipate(betConfig.medal.participantIds)) {
+    if (bothParticipate(betConfig.medal.participantIds, 'medal')) {
       groups.push({
         key: 'medal',
         label: 'Medal',
@@ -3079,7 +3089,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Putts - Individual bet (no handicap) - Show total putts for each player (after Medal)
-    if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds)) {
+    if (bothParticipate(betConfig.putts?.participantIds, 'putts')) {
       const puttsFront = groupedSummaries['Putts Front']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back']?.total || 0;
       const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
@@ -3140,7 +3150,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Presiones
-    if (betConfig.pressures.enabled && bothParticipate(betConfig.pressures.participantIds)) {
+    if (bothParticipate(betConfig.pressures.participantIds, 'pressures')) {
       groups.push({
         key: 'pressures',
         label: 'Presiones',
@@ -3189,7 +3199,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Skins
-    if (betConfig.skins.enabled && bothParticipate(betConfig.skins.participantIds)) {
+    if (bothParticipate(betConfig.skins.participantIds, 'skins')) {
       groups.push({
         key: 'skins',
         label: 'Skins',
@@ -3219,7 +3229,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Caros
-    if (betConfig.caros.enabled && bothParticipate(betConfig.caros.participantIds)) {
+    if (bothParticipate(betConfig.caros.participantIds, 'caros')) {
       groups.push({
         key: 'caros',
         label: 'Caros',
@@ -3243,7 +3253,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Oyeses (before Units as per spec)
-    if (betConfig.oyeses.enabled && bothParticipate(betConfig.oyeses.participantIds)) {
+    if (bothParticipate(betConfig.oyeses.participantIds, 'oyeses')) {
       groups.push({
         key: 'oyeses',
         label: 'Oyeses',
@@ -3265,7 +3275,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Unidades
-    if (betConfig.units.enabled && bothParticipate(betConfig.units.participantIds)) {
+    if (bothParticipate(betConfig.units.participantIds, 'units')) {
       groups.push({
         key: 'units',
         label: 'Unidades',
@@ -3285,7 +3295,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Manchas
-    if (betConfig.manchas.enabled && bothParticipate(betConfig.manchas.participantIds)) {
+    if (bothParticipate(betConfig.manchas.participantIds, 'manchas')) {
       groups.push({
         key: 'manchas',
         label: 'Manchas',
@@ -3305,7 +3315,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Culebras
-    if (betConfig.culebras?.enabled && bothParticipate(betConfig.culebras?.participantIds)) {
+    if (bothParticipate(betConfig.culebras?.participantIds, 'culebras')) {
       groups.push({
         key: 'culebras',
         label: 'Culebras',
@@ -3317,7 +3327,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Pingüinos
-    if (betConfig.pinguinos?.enabled && bothParticipate(betConfig.pinguinos?.participantIds)) {
+    if (bothParticipate(betConfig.pinguinos?.participantIds, 'pinguinos')) {
       groups.push({
         key: 'pinguinos',
         label: 'Pingüinos',
@@ -3329,7 +3339,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Zoológico - Show enabled animals with amounts for this pair
-    if (betConfig.zoologico?.enabled && bothParticipate(betConfig.zoologico?.participantIds)) {
+    if (bothParticipate(betConfig.zoologico?.participantIds, 'zoologico')) {
       const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
       const valuePerOccurrence = betConfig.zoologico.valuePerOccurrence || 10;
       
