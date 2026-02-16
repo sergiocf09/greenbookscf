@@ -928,15 +928,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const getGroupedSummaries = (rivalId: string) =>
     groupSummariesByType(basePlayer?.id || '', rivalId, betSummaries);
   
-  // Get carritos balance for a specific player
+  // Get carritos balance for a specific player (excluding disabled bets)
   const getCarritosBalanceForPlayer = (playerId: string): number => {
     let total = 0;
-    allCarritosResults.forEach(result => {
+    allCarritosResults.forEach((result, idx) => {
+      const carritosId = result.id || `carritos-primary-${idx}`;
+      if (isTeamBetDisabled(carritosId)) return;
       if (result.teamA.includes(playerId)) {
-        // IMPORTANT: moneyA/moneyB are TEAM totals.
-        // In Carritos settlement, each losing player pays 50% of the total loss to EACH winner,
-        // so each winner's net equals the full team result (not half).
-        // This must match the sum of per-opponent amounts from getCarritosBalanceVsPlayer.
         total += result.moneyA;
       } else if (result.teamB.includes(playerId)) {
         total += result.moneyB;
@@ -948,9 +946,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Get team pressures balance for a specific player (total from all team pressure bets)
   // Historical mode: team pressures are already included in snapshot balances
   const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
-    if (isHistorical) return 0; // Already in snapshot balances
+    if (isHistorical) return 0;
     return betSummaries
-      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas')
+      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas' && !isTeamBetDisabled(s.betId || ''))
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
@@ -996,57 +994,49 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // So vs any single opponent, the amount is totalLost / 2
   const getCarritosBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
     let total = 0;
-    allCarritosResults.forEach(result => {
+    allCarritosResults.forEach((result, idx) => {
+      const carritosId = result.id || `carritos-primary-${idx}`;
+      if (isTeamBetDisabled(carritosId)) return;
       const teamAHasPlayerA = result.teamA.includes(playerAId);
       const teamBHasPlayerA = result.teamB.includes(playerAId);
       const teamAHasPlayerB = result.teamA.includes(playerBId);
       const teamBHasPlayerB = result.teamB.includes(playerBId);
       
-      // If they're on opposite teams, calculate the correct split
       if ((teamAHasPlayerA && teamBHasPlayerB) || (teamBHasPlayerA && teamAHasPlayerB)) {
-        // PlayerA and PlayerB are opponents on different teams
         const playerAMoney = teamAHasPlayerA ? result.moneyA : result.moneyB;
-        // Each player pays/receives 50% of total to/from each opponent
-        // This is because each loser pays 50% to EACH winner
         total += playerAMoney / 2;
       }
-      // If they're on the same team, no money changes between them
     });
     return total;
   };
   
-  // Get team pressures balance between two specific players
-  // Returns the balance from playerA's perspective vs playerB
-  // Uses 50/50 split similar to Carritos
+  // Get team pressures balance between two specific players (excluding disabled bets)
   const getTeamPressuresBalanceVsPlayer = (playerAId: string, playerBId: string): number => {
-    // Find summaries where playerA is involved vs playerB
     return betSummaries
       .filter(s => 
         s.playerId === playerAId && 
         s.vsPlayer === playerBId && 
-        s.betType === 'Presiones Parejas'
+        s.betType === 'Presiones Parejas' &&
+        !isTeamBetDisabled(s.betId || '')
       )
       .reduce((sum, s) => sum + s.amount, 0);
   };
   
-  // Cancel carritos bet
-  const cancelCarritos = (carritosId?: string) => {
+  // Toggle team bet override (no-compute) - does NOT delete the bet
+  const toggleTeamBetDisabled = (betId: string) => {
     if (!onBetConfigChange) return;
-    
-    if (!carritosId) {
-      // Primary carritos - clear teams to hide it
-      onBetConfigChange({
-        ...betConfig,
-        carritos: { ...betConfig.carritos, enabled: false, teamA: ['', ''], teamB: ['', ''] },
-      });
-    } else {
-      // Additional carritos - remove from list
-      const teams = betConfig.carritosTeams || [];
-      onBetConfigChange({
-        ...betConfig,
-        carritosTeams: teams.filter(t => t.id !== carritosId),
-      });
-    }
+    const disabled = betConfig.disabledTeamBetIds || [];
+    const isDisabled = disabled.includes(betId);
+    onBetConfigChange({
+      ...betConfig,
+      disabledTeamBetIds: isDisabled 
+        ? disabled.filter(id => id !== betId) 
+        : [...disabled, betId],
+    });
+  };
+  
+  const isTeamBetDisabled = (betId: string): boolean => {
+    return (betConfig.disabledTeamBetIds || []).includes(betId);
   };
   
   // Get players to display based on selected group
@@ -1608,16 +1598,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       )}
 
       {/* All Carritos Results */}
-      {allCarritosResults.map((result, idx) => (
-        <CarritosResultsCard 
-          key={result.id || idx}
-          results={result} 
-          players={players}
-          basePlayerId={basePlayer?.id}
-          title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
-          onCancel={onBetConfigChange ? () => cancelCarritos(result.id) : undefined}
-        />
-      ))}
+      {allCarritosResults.map((result, idx) => {
+        const carritosId = result.id || `carritos-primary-${idx}`;
+        const disabled = isTeamBetDisabled(carritosId);
+        return (
+          <CarritosResultsCard 
+            key={carritosId}
+            results={result} 
+            players={players}
+            basePlayerId={basePlayer?.id}
+            title={idx === 0 ? 'Carritos' : `Carritos ${idx + 1}`}
+            isDisabled={disabled}
+            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
+          />
+        );
+      })}
 
       {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
       {betConfig.teamPressures?.bets?.filter(b => b.enabled).map((bet, idx) => {
@@ -1834,20 +1829,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Calculate Total 18 (sum of FIRST bet from each nine)
         const total18 = displayFrontBets[0] + displayBackBets[0];
         
-        const cancelTeamPressure = () => {
-          if (!onBetConfigChange) return;
-          const bets = betConfig.teamPressures?.bets || [];
-          onBetConfigChange({
-            ...betConfig,
-            teamPressures: {
-              ...betConfig.teamPressures,
-              bets: bets.map(b => b.id === bet.id ? { ...b, enabled: false } : b),
-            },
-          });
-        };
+        const pressureDisabled = isTeamBetDisabled(bet.id);
         
         return (
-          <Card key={`team-pressure-${idx}`} className="border-accent/50">
+          <Card key={`team-pressure-${idx}`} className={cn('border-accent/50', pressureDisabled && 'opacity-50')}>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1858,9 +1843,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                    onClick={cancelTeamPressure}
-                    title="Cancelar Presiones"
+                    className={cn('h-6 w-6', pressureDisabled ? 'text-destructive' : 'text-muted-foreground hover:text-destructive')}
+                    onClick={() => toggleTeamBetDisabled(bet.id)}
+                    title={pressureDisabled ? 'Reactivar Presiones' : 'No considerar Presiones'}
                   >
                     <XCircle className="h-4 w-4" />
                   </Button>
@@ -2255,9 +2240,11 @@ interface CarritosResultsCardProps {
   basePlayerId?: string;
   title?: string;
   onCancel?: () => void;
+  isDisabled?: boolean;
+  onToggleDisabled?: () => void;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel, isDisabled, onToggleDisabled }) => {
   const isMobile = useIsMobile();
   const [holeDialogOpen, setHoleDialogOpen] = useState(false);
   const [selectedHole, setSelectedHole] = useState<{
@@ -2404,14 +2391,25 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const payment = getPaymentBreakdown();
   
   return (
-    <Card className="border-accent/50">
+    <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             {title}
           </div>
-          {onCancel && (
+          {onToggleDisabled && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('h-6 w-6', isDisabled ? 'text-destructive' : 'text-muted-foreground hover:text-destructive')}
+              onClick={onToggleDisabled}
+              title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          )}
+          {onCancel && !onToggleDisabled && (
             <Button
               variant="ghost"
               size="icon"

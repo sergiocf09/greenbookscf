@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, DollarSign, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -205,14 +216,31 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <div key={team.id} className="mt-4 pt-4 border-t border-border">
             <div className="flex items-center justify-between mb-2">
               <Label className="text-xs font-medium">Carritos {idx + 2}</Label>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6"
-                onClick={() => removeCarritosTeam(team.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar Carritos {idx + 2}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => removeCarritosTeam(team.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
             <CarritosTeamConfig
               teamA={team.teamA}
@@ -270,14 +298,31 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
     )}>
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">Presión {index + 1}</Label>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6"
-          onClick={onRemove}
-        >
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar Presión {index + 1}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción eliminará permanentemente esta apuesta de presiones por parejas. No se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Teams */}
