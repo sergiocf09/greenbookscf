@@ -4194,9 +4194,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
                                     <span className="text-xs text-muted-foreground cursor-pointer hover:underline">{segment.label}</span>
-                                    {data.description && (
-                                      <span className="text-[10px] text-muted-foreground cursor-pointer">{data.description}</span>
-                                    )}
+                                    {/* Colored skins count instead of description text */}
+                                    <span className="flex items-center gap-1 cursor-pointer">
+                                      <span className="text-sm font-bold text-green-600">{data.playerNet}</span>
+                                      <span className="text-[10px] text-muted-foreground">vs</span>
+                                      <span className="text-sm font-bold text-destructive">{data.rivalNet}</span>
+                                    </span>
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-3" side="top">
