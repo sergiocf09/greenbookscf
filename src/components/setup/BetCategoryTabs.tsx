@@ -42,8 +42,8 @@ export const BetCategoryTabs: React.FC<BetCategoryTabsProps> = ({
           className={cn(
             'flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-all',
             activeCategory === cat.id
-              ? 'bg-primary text-primary-foreground border-primary shadow-md'
-              : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
+              ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary shadow-md'
+              : 'bg-card text-muted-foreground border-transparent hover:bg-muted/50'
           )}
         >
           {cat.icon}
