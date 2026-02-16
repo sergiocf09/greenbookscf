@@ -4022,7 +4022,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 {/* Main bet type row */}
                 <div 
                   className={cn(
-                    'flex items-center justify-between p-3 bg-muted/30',
+                    'flex items-center justify-between px-3 py-1.5 bg-muted/30',
                     hasSegments && !isDisabled && 'cursor-pointer hover:bg-muted/50'
                   )}
                   onClick={() => hasSegments && !isDisabled && onToggleExpand(group.key)}
