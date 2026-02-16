@@ -2177,13 +2177,12 @@ export const calculateTeamPressuresBets = (
     
     const totalMoney = frontMoney + backMoney + matchMoney;
     
-    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] configTeamA=[${bet.teamA.join(',')}] configTeamB=[${bet.teamB.join(',')}] frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} perPerson=${totalMoney/2} perBilateral=${totalMoney/4} frontIsTied=${frontIsTied}`);
-    
-    // Split: each team member is responsible for HALF the team total.
-    // perPairAmount = totalMoney / 4 because each member pays (totalMoney/2) split across 2 opponents.
-    // Each person has 2 opponents → total per person = 2 * (totalMoney/4) = totalMoney/2
+    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] totalMoney=${totalMoney}`);
+    // Split 50/50: each loser pays 50% of totalMoney to EACH winner.
+    // perPairAmount = totalMoney / 2 → each person's net = 2 × (totalMoney/2) = totalMoney (100% per person)
+    // This is the same logic as Carritos.
     if (totalMoney !== 0) {
-      const perPairAmount = totalMoney / 4; // Each member pays quarter to each opponent
+      const perPairAmount = totalMoney / 2; // Each loser pays half to each winner
       
       teamA.forEach(aId => {
         teamB.forEach(bId => {
@@ -2326,6 +2325,7 @@ export const calculateAllBets = (
         // CRITICAL: Prevent false-positive collisions between related bet types.
         // 'medal' override must NOT match 'medal general' or 'rayas medal total'.
         // 'rayas' override must NOT match 'rayas medal total' (different bet category).
+        // 'presiones' override must NOT match 'presiones parejas' (team pressures are separate).
         const matchesBetType = (() => {
           if (isCarryLabel) return summaryType === overrideType;
           
@@ -2336,6 +2336,10 @@ export const calculateAllBets = (
           }
           // 'rayas' (bilateral rayas) vs 'rayas medal total' (different category treated by medal override)
           if (overrideType === 'rayas' && summaryType.includes('rayas medal')) {
+            return false;
+          }
+          // 'presiones' (individual bilateral) vs 'presiones parejas' (team pressures - completely separate bet)
+          if (overrideType === 'presiones' && summaryType.includes('presiones parejas')) {
             return false;
           }
           
