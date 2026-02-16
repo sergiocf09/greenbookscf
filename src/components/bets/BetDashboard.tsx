@@ -1673,23 +1673,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             const highA = Math.max(a1.net, a2.net);
             const highB = Math.max(b1.net, b2.net);
             
-            if (scoringType === 'lowBall') {
-              if (lowA < lowB) teamAPoints = 1;
-              else if (lowB < lowA) teamBPoints = 1;
-            } else if (scoringType === 'highBall') {
-              if (highA < highB) teamAPoints = 1;
-              else if (highB < highA) teamBPoints = 1;
-            } else {
-              // combined
-              if (lowA < lowB) teamAPoints++;
-              else if (lowB < lowA) teamBPoints++;
-              if (highA < highB) teamAPoints++;
-              else if (highB < highA) teamBPoints++;
+            let lowBallWinner: 'A' | 'B' | 'tie' | undefined;
+            let highBallWinner: 'A' | 'B' | 'tie' | undefined;
+            let combinedWinner: 'A' | 'B' | 'tie' | undefined;
+            
+            if (scoringType === 'lowBall' || scoringType === 'combined') {
+              if (lowA < lowB) { teamAPoints++; lowBallWinner = 'A'; }
+              else if (lowB < lowA) { teamBPoints++; lowBallWinner = 'B'; }
+              else { lowBallWinner = 'tie'; }
+            }
+            if (scoringType === 'highBall' || scoringType === 'combined') {
+              if (highA < highB) { teamAPoints++; highBallWinner = 'A'; }
+              else if (highB < highA) { teamBPoints++; highBallWinner = 'B'; }
+              else { highBallWinner = 'tie'; }
+            }
+            if (scoringType === 'lowBall' && !lowBallWinner) {
+              // already handled above
+            }
+            if (scoringType === 'highBall' && !highBallWinner) {
+              // already handled above
             }
             
             return {
               holeNumber: holeNum,
               a1, a2, b1, b2,
+              lowBallWinner,
+              highBallWinner,
+              combinedWinner,
               pointsA: teamAPoints,
               pointsB: teamBPoints,
               net: teamAPoints - teamBPoints,
@@ -1774,12 +1784,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const displayTeamBPlayers = isBaseInTeamA ? teamBPlayers : teamAPlayers;
         
         // Invert details if base is in team B
+        const invertW = (w?: 'A' | 'B' | 'tie') => w === 'A' ? 'B' as const : w === 'B' ? 'A' as const : w;
         const displayFrontDetails = isBaseInTeamA 
           ? holeDetails.frontDetails 
-          : holeDetails.frontDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA } : null);
+          : holeDetails.frontDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA, a1: d.b1, a2: d.b2, b1: d.a1, b2: d.a2, lowBallWinner: invertW(d.lowBallWinner), highBallWinner: invertW(d.highBallWinner), combinedWinner: invertW(d.combinedWinner) } : null);
         const displayBackDetails = isBaseInTeamA 
           ? holeDetails.backDetails 
-          : holeDetails.backDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA } : null);
+          : holeDetails.backDetails.map(d => d ? { ...d, net: -d.net, pointsA: d.pointsB, pointsB: d.pointsA, a1: d.b1, a2: d.b2, b1: d.a1, b2: d.a2, lowBallWinner: invertW(d.lowBallWinner), highBallWinner: invertW(d.highBallWinner), combinedWinner: invertW(d.combinedWinner) } : null);
         const displayFrontBalances = isBaseInTeamA 
           ? holeDetails.frontBalances 
           : holeDetails.frontBalances.map(b => -b);
@@ -1982,20 +1993,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             return (
                               <Tooltip key={holeNum}>
                                 <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                                <TooltipContent side="top" className="w-72">
+                                <TooltipContent side="top" className="w-80">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
                                     <div className="grid grid-cols-2 gap-x-3">
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex justify-between"><span>{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a1.net} {detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
-                                        <p className="flex justify-between"><span>{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a2.net} {detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a1.net}</span>{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a2.net}</span>{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
                                       </div>
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex justify-between"><span>{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b1.net} {detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
-                                        <p className="flex justify-between"><span>{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b2.net} {detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b1.net}</span>{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b2.net}</span>{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
                                       </div>
+                                    </div>
+                                    <div className="pt-1 border-t border-border/50">
+                                      {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
+                                        <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                      )}
+                                      {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
+                                        <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                      )}
+                                      <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
                                       Presiones: {pressureDisplay}
@@ -2048,20 +2068,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             return (
                               <Tooltip key={holeNum}>
                                 <TooltipTrigger asChild>{pill}</TooltipTrigger>
-                                <TooltipContent side="top" className="w-72">
+                                <TooltipContent side="top" className="w-80">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
                                     <div className="grid grid-cols-2 gap-x-3">
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex justify-between"><span>{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a1.net} {detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
-                                        <p className="flex justify-between"><span>{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.a2.net} {detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a1.net}</span>{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a2.net}</span>{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
                                       </div>
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex justify-between"><span>{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b1.net} {detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
-                                        <p className="flex justify-between"><span>{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex gap-1">{detail.b2.net} {detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground inline-block mt-1" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b1.net}</span>{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b2.net}</span>{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
                                       </div>
+                                    </div>
+                                    <div className="pt-1 border-t border-border/50">
+                                      {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
+                                        <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                      )}
+                                      {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
+                                        <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                      )}
+                                      <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
                                       Presiones: {pressureDisplay}
