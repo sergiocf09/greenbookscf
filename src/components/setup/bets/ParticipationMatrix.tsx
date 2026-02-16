@@ -180,12 +180,14 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
                       type="button"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleColumnToggle(player.id); }}
                       className={cn(
-                        "flex flex-col items-center gap-0.5 mx-auto transition-opacity",
-                        colState === 'none' && "opacity-35"
+                        "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-opacity border",
+                        colState === 'none' 
+                          ? "opacity-35 border-transparent" 
+                          : "border-border/40"
                       )}
                       title={`${player.name} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
                     >
-                      <span className="text-[9px] font-bold text-foreground">{player.initials}</span>
+                      <span className="text-[10px] font-bold text-foreground">{player.initials}</span>
                     </button>
                   </th>
                 );
