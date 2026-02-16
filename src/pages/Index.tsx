@@ -2603,14 +2603,12 @@ const Index = () => {
 
       {/* Bet Setup Dialog - Full screen on mobile */}
       <Dialog open={showBetSetupDialog} onOpenChange={setShowBetSetupDialog}>
-        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-0 sm:max-w-lg sm:max-h-[90vh] sm:rounded-lg sm:p-6 overflow-hidden">
-          <div className="flex flex-col h-full">
-            <DialogHeader className="px-3 pt-3 pb-2 sm:px-0 sm:pt-0 shrink-0">
-              <DialogTitle>Configuración de Apuestas</DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto px-1 pb-4 sm:px-0">
-              <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
-            </div>
+        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-0 sm:max-w-lg sm:max-h-[90vh] sm:rounded-lg sm:p-6 flex flex-col">
+          <DialogHeader className="px-3 pt-3 pb-2 sm:px-0 sm:pt-0 shrink-0">
+            <DialogTitle>Configuración de Apuestas</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-4 sm:px-0 overscroll-contain">
+            <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
           </div>
         </DialogContent>
       </Dialog>
