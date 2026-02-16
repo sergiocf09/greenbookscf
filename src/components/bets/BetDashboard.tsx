@@ -3017,7 +3017,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // Helper: check if both player and rival participate in a given bet's participantIds
   // Applies template-inheritance logic AND group bet overrides.
   // Accepts either raw participantIds or a betKey to resolve from group overrides.
+  // CROSS-GROUP: When the rival is from a different group, we only check that the
+  // BASE player participates. The rival's group has its own participation config.
+  // The "X" override button handles per-pair exclusion for cross-group bets.
   const bothParticipate = (participantIds: string[] | undefined, betKey?: string): boolean => {
+    // Detect cross-group pairing: rival is not in the base player's group
+    const isCrossGroup = !groupPlayers.some(p => p.id === rival.id);
+    
     // If betKey provided, resolve group override first
     if (betKey) {
       const groupId = groupPlayers[0]?.groupId;
@@ -3031,7 +3037,18 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
     
-    // Check if either player or rival is in the list
+    // CROSS-GROUP: Only check that the base player participates in the bet.
+    // If the base player is playing this bet, it should appear for cross-group rivals.
+    if (isCrossGroup) {
+      const playerIn = participantIds.includes(player.id);
+      if (playerIn) return true;
+      // Template inheritance: if no group player is in the list, treat as template
+      const anyGroupPlayerInList = groupPlayers.some(p => participantIds!.includes(p.id));
+      if (!anyGroupPlayerInList) return true;
+      return false;
+    }
+    
+    // Same-group: check if BOTH player and rival are in the list
     const playerIn = participantIds.includes(player.id);
     const rivalIn = participantIds.includes(rival.id);
     
