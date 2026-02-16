@@ -847,15 +847,16 @@ export const calculateSkinsBets = (
       // SKINS "zapato" (x2) rule (Skins ONLY):
       // Zapato applies ONLY when:
       // 1. One player has won skins (>=1) and the opponent has 0
-      // 2. AND there are NO tied holes in the segment
-      // Tied holes automatically eliminate the Zapato, even if one player has all skins.
+      // 2. AND the LAST hole of the segment (hole 9 for front, hole 18 for back) was WON outright
+      //    (not tied). In acumulados mode, tied holes that accumulate are fine as long as all
+      //    skins were resolved to one player and the segment's final hole was won.
       // Note: This is independent of Oyeses; do not mix bet types.
       const skinsZapatoEnabled = config.skins.zapatoEnabled !== false; // defaults to true
       const hasZapatoFront = skinsZapatoEnabled &&
-        frontTiedHoles === 0 &&
+        !frontHole9Tied &&
         ((frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0));
       const hasZapatoBack = skinsZapatoEnabled &&
-        backTiedHoles === 0 &&
+        !backHole18Tied &&
         ((backSkinsA > 0 && backSkinsB === 0) || (backSkinsB > 0 && backSkinsA === 0));
 
       // DOUBLING LOGIC:
