@@ -2046,20 +2046,38 @@ export const calculateTeamPressuresBets = (
   const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   
+  // Resolve player ID (config can store profileId instead of player.id)
+  const resolvePlayerId = (pid: string): string => {
+    if (scores.has(pid)) return pid;
+    const match = players.find(p => p.profileId === pid);
+    return match?.id ?? pid;
+  };
+
   config.teamPressures.bets.forEach(bet => {
     if (!bet.enabled) return;
     
-    const { teamA, teamB, scoringType, teamHandicaps } = bet;
+    const teamA: [string, string] = [resolvePlayerId(bet.teamA[0]), resolvePlayerId(bet.teamA[1])];
+    const teamB: [string, string] = [resolvePlayerId(bet.teamB[0]), resolvePlayerId(bet.teamB[1])];
+    const { scoringType, teamHandicaps } = bet;
     
     // Opening threshold depends on scoring type
     // If only lowball OR only highball: opens every 2
     // If combined: opens when diff reaches 3
     const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
     
-    // Get handicap for each player
+    // Get handicap for each player (check both resolved id and original config id)
     const getHandicap = (playerId: string): number => {
-      return teamHandicaps?.[playerId] ?? 
-             players.find(p => p.id === playerId)?.handicap ?? 0;
+      if (teamHandicaps) {
+        const direct = teamHandicaps[playerId];
+        if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+        // Also check by profileId in case config stored profileId
+        const byProfile = players.find(p => p.id === playerId)?.profileId;
+        if (byProfile) {
+          const h = teamHandicaps[byProfile];
+          if (typeof h === 'number' && Number.isFinite(h)) return h;
+        }
+      }
+      return players.find(p => p.id === playerId)?.handicap ?? 0;
     };
     
     // Calculate strokes per hole for each player
