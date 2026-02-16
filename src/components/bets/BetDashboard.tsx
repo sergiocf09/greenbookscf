@@ -588,8 +588,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       };
     };
 
-    // Primary carritos
-    if (betConfig.carritos.enabled) {
+    // Primary carritos - show if teams are configured (regardless of BetSection toggle)
+    if (betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
       const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps } = betConfig.carritos;
       results.push(
         calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {
@@ -600,9 +600,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       );
     }
 
-    // Additional carritos teams
+    // Additional carritos teams - show if teams are configured
     betConfig.carritosTeams?.forEach(team => {
-      if (team.enabled) {
+      if (team.teamA[0] && team.teamA[1] && team.teamB[0] && team.teamB[1]) {
         results.push(
           calculateCarritosResult(team.teamA, team.teamB, team.frontAmount, team.backAmount, team.totalAmount, team.scoringType, {
             id: team.id,
@@ -1034,17 +1034,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     if (!onBetConfigChange) return;
     
     if (!carritosId) {
-      // Primary carritos
+      // Primary carritos - clear teams to hide it
       onBetConfigChange({
         ...betConfig,
-        carritos: { ...betConfig.carritos, enabled: false },
+        carritos: { ...betConfig.carritos, enabled: false, teamA: ['', ''], teamB: ['', ''] },
       });
     } else {
-      // Additional carritos
+      // Additional carritos - remove from list
       const teams = betConfig.carritosTeams || [];
       onBetConfigChange({
         ...betConfig,
-        carritosTeams: teams.map(t => t.id === carritosId ? { ...t, enabled: false } : t),
+        carritosTeams: teams.filter(t => t.id !== carritosId),
       });
     }
   };
