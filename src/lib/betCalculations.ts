@@ -1859,9 +1859,9 @@ export const calculateCarritosBets = (
     useTeamHandicaps?: boolean;
   }> = [];
 
-  if (config.carritos?.enabled) {
+  // Primary carritos - show if teams are configured (regardless of BetSection toggle)
+  {
     const c = config.carritos;
-    // Validate teams have actual player IDs
     const hasTeams = c.teamA[0] && c.teamA[1] && c.teamB[0] && c.teamB[1];
     if (hasTeams) {
       configs.push({
@@ -1878,7 +1878,6 @@ export const calculateCarritosBets = (
   }
 
   config.carritosTeams?.forEach(team => {
-    if (!team.enabled) return;
     const hasTeams = team.teamA[0] && team.teamA[1] && team.teamB[0] && team.teamB[1];
     if (hasTeams) {
       configs.push({
