@@ -17,7 +17,7 @@ import {
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey } from '@/lib/rayasCalculations';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
-import { GroupBetsCard, getMedalGeneralBilateralResult } from './GroupBetsCard';
+import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { 
   DollarSign, 
@@ -762,6 +762,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Sum all bets from betSummaries EXCLUDING:
     // - Rayas: calculated dynamically using getRayasDetailForPair
     // - Medal General: calculated dynamically using getMedalGeneralBilateralResult
+    // - Stableford: calculated dynamically using getStablefordBilateralResult (scope-aware)
     // - Carritos: pair bets shown separately in Tabla General
     // - Presiones Parejas: pair bets shown separately in Tabla General
     // - Any bet type disabled via betOverrides for this pair
@@ -795,6 +796,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         s.vsPlayer === rivalId && 
         !s.betType.startsWith('Rayas') &&
         s.betType !== 'Medal General' &&
+        s.betType !== 'Stableford' &&
         s.betType !== 'Presiones Parejas' &&
         !carritosTypes.includes(s.betType)
       )
@@ -881,7 +883,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       }
     }
     
-    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal;
+    // Calculate Stableford using the scope-aware bilateral function
+    let stablefordTotal = 0;
+    const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
+    
+    if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled) {
+      const stablefordResult = getStablefordBilateralResult(
+        allPlayersForCalculations,
+        playerObj,
+        rivalObj,
+        confirmedScores,
+        betConfig,
+        course
+      );
+      if (stablefordResult) {
+        stablefordTotal = stablefordResult.amount;
+      }
+    }
+    
+    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal;
   };
   
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
@@ -3690,7 +3710,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Stableford - Group bet shown in bilateral view (like Medal General)
-    // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
+    // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate respecting scope.
     if (betConfig.stableford?.enabled) {
       if (isHistorical) {
         const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
@@ -3710,70 +3730,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           });
         }
       } else {
-        const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) =>
-          allPlayers.every((p) => (confirmedScores.get(p.id) || []).some((s) => s.holeNumber === h))
-        );
-        if (allPlayersComplete) {
-          const points = betConfig.stableford.points || {
-            albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: -1, quadrupleOrWorse: -2
-          };
-          const playerHandicaps = betConfig.stableford.playerHandicaps || [];
-          const amount = betConfig.stableford.amount || 100;
-          
-          const calcPoints = (p: Player): number => {
-            const pScores = confirmedScores.get(p.id) || [];
-            const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
-            const strokesPerHole = calculateStrokesPerHole(hcp, course);
-            
-            return pScores.reduce((sum, s) => {
-              if (!s.confirmed || !s.strokes) return sum;
-              const holePar = course.holes[s.holeNumber - 1]?.par || 4;
-              const received = strokesPerHole[s.holeNumber - 1] || 0;
-              const netScore = s.strokes - received;
-              const toPar = netScore - holePar;
-              
-              if (toPar <= -3) return sum + points.albatross;
-              if (toPar === -2) return sum + points.eagle;
-              if (toPar === -1) return sum + points.birdie;
-              if (toPar === 0) return sum + points.par;
-              if (toPar === 1) return sum + points.bogey;
-              if (toPar === 2) return sum + points.doubleBogey;
-              if (toPar === 3) return sum + points.tripleBogey;
-              return sum + points.quadrupleOrWorse;
-            }, 0);
-          };
-          
-          const playerPoints = calcPoints(player);
-          const rivalPoints = calcPoints(rival);
-          
-          const allPoints = allPlayers.map(p => ({ playerId: p.id, points: calcPoints(p) }));
-          const maxPoints = Math.max(...allPoints.map(p => p.points));
-          const winnerIds = new Set(allPoints.filter(p => p.points === maxPoints).map(p => p.playerId));
-          const winnersCount = winnerIds.size;
-          const losersCount = allPoints.length - winnersCount;
-          
-          let stablefordAmount = 0;
-          if (losersCount > 0) {
-            const amountFromLoserToWinner = amount / winnersCount;
-            const isPlayerWinner = winnerIds.has(player.id);
-            const isRivalWinner = winnerIds.has(rival.id);
-            
-            stablefordAmount = 
-              isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
-              !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
-          }
-          
+        const stablefordResult = getStablefordBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
+        if (stablefordResult) {
           groups.push({
             key: 'stableford',
             label: 'Stableford',
             configKey: 'stableford',
             segments: [],
-            getTotal: () => stablefordAmount,
+            getTotal: () => stablefordResult.amount,
             getSegmentData: () => ({
-              playerNet: playerPoints,
-              rivalNet: rivalPoints,
-              amount: stablefordAmount,
-              description: `Puntos: ${playerPoints} vs ${rivalPoints}`,
+              playerNet: stablefordResult.playerPoints,
+              rivalNet: stablefordResult.rivalPoints,
+              amount: stablefordResult.amount,
+              description: `Puntos: ${stablefordResult.playerPoints} vs ${stablefordResult.rivalPoints}`,
             }),
           });
         }
