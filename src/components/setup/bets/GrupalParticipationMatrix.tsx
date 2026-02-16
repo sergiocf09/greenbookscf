@@ -69,7 +69,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
     if (isExplicitlyEmpty) {
-      onUpdateBet(betKey, { participantIds: [playerId] } as any);
+      onUpdateBet(betKey, { participantIds: [playerId], enabled: true } as any);
       return;
     }
 
@@ -81,7 +81,11 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
     const allIds = players.map(p => p.id);
     const isAll = allIds.every(id => newIds.includes(id));
-    onUpdateBet(betKey, { participantIds: isAll ? undefined : newIds } as any);
+    const isEmpty = newIds.length === 0;
+    onUpdateBet(betKey, { 
+      participantIds: isAll ? undefined : newIds,
+      enabled: !isEmpty,
+    } as any);
   };
 
   const handleRowToggle = (betKey: GrupalBetKey) => {
@@ -92,9 +96,9 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const allActive = !isExplicitlyEmpty && allIds.every(id => currentIds.includes(id));
 
     if (allActive) {
-      onUpdateBet(betKey, { participantIds: [] } as any);
+      onUpdateBet(betKey, { participantIds: [], enabled: false } as any);
     } else {
-      onUpdateBet(betKey, { participantIds: undefined } as any);
+      onUpdateBet(betKey, { participantIds: undefined, enabled: true } as any);
     }
   };
 
@@ -102,7 +106,6 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const colState = getColumnState(playerId);
     const allIds = players.map(p => p.id);
 
-    // Build entire new config in one pass, then apply once
     let newConfig = { ...config };
     GRUPAL_BETS.forEach(b => {
       const pIds = getParticipantIds(config, b.key);
@@ -112,20 +115,20 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
         const currentIds = isExplicitlyEmpty ? [] : getActiveIds(pIds, players);
         const newIds = currentIds.filter(id => id !== playerId);
         if (newIds.length === 0) {
-          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [] } };
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [], enabled: false } };
         } else {
           const isAll = allIds.every(id => newIds.includes(id));
-          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds } };
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds, enabled: true } };
         }
       } else {
         if (isExplicitlyEmpty) {
-          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [playerId] } };
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [playerId], enabled: true } };
         } else {
           const currentIds = getActiveIds(pIds, players);
           if (!currentIds.includes(playerId)) {
             const newIds = [...currentIds, playerId];
             const isAll = allIds.every(id => newIds.includes(id));
-            newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds } };
+            newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds, enabled: true } };
           }
         }
       }
