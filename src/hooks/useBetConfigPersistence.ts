@@ -60,6 +60,7 @@ interface RoundBetConfig {
         medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
       };
     }>>;
+    participantIds?: string[];
   };
   oyeses?: {
     enabled: boolean;
@@ -69,16 +70,19 @@ interface RoundBetConfig {
       modality: 'acumulados' | 'sangron';
       enabled: boolean;
     }>;
+    participantIds?: string[];
   };
   medalGeneral?: {
     enabled: boolean;
     amount: number;
     playerHandicaps: MedalGeneralPlayerConfig[];
+    participantIds?: string[];
   };
   coneja?: {
     enabled: boolean;
     amount: number;
     handicapMode: 'individual' | 'bilateral';
+    participantIds?: string[];
   };
   carritos?: CarritosBetConfig;
   carritosTeams?: CarritosTeamBet[];
@@ -122,6 +126,7 @@ interface RoundBetConfig {
       playerId: string;
       handicap: number;
     }>;
+    participantIds?: string[];
   };
   teamPressures?: {
     enabled: boolean;
@@ -215,6 +220,7 @@ export const useBetConfigPersistence = ({
           pairSkinVariantOverrides: dbRayas.pairSkinVariantOverrides ?? prev.rayas.pairSkinVariantOverrides,
           segments: dbRayas.segments ?? prev.rayas.segments,
           bilateralOverrides: dbRayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
+          participantIds: 'participantIds' in dbRayas ? dbRayas.participantIds : prev.rayas.participantIds,
         };
       }
       
@@ -223,6 +229,7 @@ export const useBetConfigPersistence = ({
           enabled: dbConfig.oyeses.enabled ?? prev.oyeses.enabled,
           amount: dbConfig.oyeses.amount ?? prev.oyeses.amount,
           playerConfigs: dbConfig.oyeses.playerConfigs ?? prev.oyeses.playerConfigs,
+          participantIds: 'participantIds' in dbConfig.oyeses ? dbConfig.oyeses.participantIds : prev.oyeses.participantIds,
         };
       }
       
@@ -234,6 +241,7 @@ export const useBetConfigPersistence = ({
           enabled: dbConfig.medalGeneral.enabled ?? prev.medalGeneral.enabled,
           amount: dbConfig.medalGeneral.amount ?? prev.medalGeneral.amount,
           playerHandicaps: dbConfig.medalGeneral.playerHandicaps ?? prev.medalGeneral.playerHandicaps,
+          participantIds: 'participantIds' in dbConfig.medalGeneral ? dbConfig.medalGeneral.participantIds : prev.medalGeneral.participantIds,
         };
       }
 
@@ -242,6 +250,7 @@ export const useBetConfigPersistence = ({
           enabled: dbConfig.coneja.enabled ?? prev.coneja.enabled,
           amount: dbConfig.coneja.amount ?? prev.coneja.amount,
           handicapMode: dbConfig.coneja.handicapMode ?? prev.coneja.handicapMode,
+          participantIds: 'participantIds' in dbConfig.coneja ? dbConfig.coneja.participantIds : prev.coneja.participantIds,
         };
       }
 
@@ -281,6 +290,7 @@ export const useBetConfigPersistence = ({
           amount: dbConfig.stableford.amount ?? prev.stableford.amount,
           points: dbConfig.stableford.points ?? prev.stableford.points,
           playerHandicaps: dbConfig.stableford.playerHandicaps ?? prev.stableford.playerHandicaps,
+          participantIds: 'participantIds' in dbConfig.stableford ? dbConfig.stableford.participantIds : prev.stableford.participantIds,
         };
       }
       
@@ -331,21 +341,25 @@ export const useBetConfigPersistence = ({
           pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
+          participantIds: config.rayas.participantIds,
         },
         oyeses: {
           enabled: config.oyeses.enabled,
           amount: config.oyeses.amount,
           playerConfigs: config.oyeses.playerConfigs,
+          participantIds: config.oyeses.participantIds,
         },
         medalGeneral: {
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
           playerHandicaps: config.medalGeneral.playerHandicaps,
+          participantIds: config.medalGeneral.participantIds,
         },
         coneja: {
           enabled: config.coneja.enabled,
           amount: config.coneja.amount,
           handicapMode: config.coneja.handicapMode,
+          participantIds: config.coneja.participantIds,
         },
         carritos: config.carritos,
         carritosTeams: config.carritosTeams || [],
@@ -368,6 +382,7 @@ export const useBetConfigPersistence = ({
           amount: config.stableford.amount,
           points: config.stableford.points,
           playerHandicaps: config.stableford.playerHandicaps,
+          participantIds: config.stableford.participantIds,
         },
         teamPressures: {
           enabled: config.teamPressures.enabled,
