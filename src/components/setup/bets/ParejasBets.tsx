@@ -266,7 +266,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={players.length >= 5 ? addCarritosTeam : addCarritosPrimary}
+              onClick={addCarritosTeam}
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
