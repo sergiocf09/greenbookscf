@@ -1904,7 +1904,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                           B9 {backBetsDisplay}
                         </span>
-                        <span className="text-muted-foreground"> · </span>
+                      </div>
+                      <div className="text-sm tabular-nums">
                         <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                           T {total18 >= 0 ? '+' : ''}{total18}
                         </span>
