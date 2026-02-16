@@ -536,8 +536,8 @@ const MedalResultBlock: React.FC<{
   // Check if winner is from the same group as base player
   const winnerInSameGroup = result.winners.some(w => sameGroupPlayerIds.has(w.playerId));
   const isConfirmed = all18HolesConfirmed;
-  // Green if same group winner + confirmed, amber if partial or cross-group winner
-  const useGreen = isConfirmed && winnerInSameGroup;
+  // Green if same group winner, amber if cross-group winner
+  const useGreen = winnerInSameGroup;
   const useAmber = !useGreen;
 
   return (
