@@ -3354,7 +3354,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Culebras
-    if (bothParticipate(betConfig.culebras?.participantIds, 'culebras')) {
+    if (betConfig.culebras?.enabled && bothParticipate(betConfig.culebras?.participantIds, 'culebras')) {
       groups.push({
         key: 'culebras',
         label: 'Culebras',
@@ -3366,7 +3366,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Pingüinos
-    if (bothParticipate(betConfig.pinguinos?.participantIds, 'pinguinos')) {
+    if (betConfig.pinguinos?.enabled && bothParticipate(betConfig.pinguinos?.participantIds, 'pinguinos')) {
       groups.push({
         key: 'pinguinos',
         label: 'Pingüinos',
@@ -3378,7 +3378,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Zoológico - Show enabled animals with amounts for this pair
-    if (bothParticipate(betConfig.zoologico?.participantIds, 'zoologico')) {
+    if (betConfig.zoologico?.enabled && bothParticipate(betConfig.zoologico?.participantIds, 'zoologico')) {
       const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
       const valuePerOccurrence = betConfig.zoologico.valuePerOccurrence || 10;
       
