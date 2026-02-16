@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, DollarSign, Minus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -77,7 +77,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       ...config,
       teamPressures: {
         ...config.teamPressures,
-        bets: config.teamPressures.bets.map(b => 
+        bets: config.teamPressures.bets.map(b =>
           b.id === id ? { ...b, ...updates } : b
         ),
       },
@@ -129,6 +129,25 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     });
   };
 
+  // For carritos primary, wrap as a virtual "team" for add/remove pattern
+  const addCarritosPrimary = () => {
+    // Enable and set defaults if not already
+    onUpdateBet('carritos', {
+      enabled: true,
+      teamA: ['', ''],
+      teamB: ['', ''],
+      frontAmount: 100,
+      backAmount: 100,
+      totalAmount: 100,
+    } as any);
+  };
+
+  // Check if primary carritos has any players set
+  const hasPrimaryCarritos = config.carritos.enabled && (
+    config.carritos.teamA[0] || config.carritos.teamA[1] ||
+    config.carritos.teamB[0] || config.carritos.teamB[1]
+  );
+
   if (players.length < 4) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -143,7 +162,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.
       </p>
 
-      {/* Team Pressures - NEW */}
+      {/* Team Pressures */}
       <BetSection
         id="teamPressures"
         title="Presiones por Parejas"
@@ -164,7 +183,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         ) : (
           <>
             {config.teamPressures.bets.map((bet, idx) => (
-              <TeamPressureConfig
+              <TeamPressureCard
                 key={bet.id}
                 bet={bet}
                 index={idx}
@@ -174,9 +193,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 onRemove={() => removeTeamPressure(bet.id)}
               />
             ))}
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={addTeamPressure}
               className="w-full mt-3 gap-1"
             >
@@ -197,84 +216,198 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
       >
-        <CarritosTeamConfig
-          teamA={config.carritos.teamA}
-          teamB={config.carritos.teamB}
-          frontAmount={config.carritos.frontAmount}
-          backAmount={config.carritos.backAmount}
-          totalAmount={config.carritos.totalAmount}
-          scoringType={config.carritos.scoringType}
-          teamHandicaps={config.carritos.teamHandicaps || {}}
-          players={players}
-          playerOptions={playerOptions}
-          onUpdate={(updates) => onUpdateBet('carritos', updates)}
-          isPrimary
-        />
-
-        {/* Additional team bets */}
-        {config.carritosTeams?.map((team, idx) => (
-          <div key={team.id} className="mt-4 pt-4 border-t border-border">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs font-medium">Carritos {idx + 2}</Label>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Eliminar Carritos {idx + 2}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => removeCarritosTeam(team.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Eliminar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-            <CarritosTeamConfig
-              teamA={team.teamA}
-              teamB={team.teamB}
-              frontAmount={team.frontAmount}
-              backAmount={team.backAmount}
-              totalAmount={team.totalAmount}
-              scoringType={team.scoringType}
-              teamHandicaps={team.teamHandicaps || {}}
-              players={players}
-              playerOptions={playerOptions}
-              onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
-            />
+        {/* Show add button if no carritos configured yet */}
+        {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>
+            <Button variant="outline" size="sm" onClick={addCarritosPrimary} className="gap-1">
+              <Plus className="h-3.5 w-3.5" />
+              Agregar apuesta de Carritos
+            </Button>
           </div>
-        ))}
+        ) : (
+          <>
+            {/* Primary carritos */}
+            {hasPrimaryCarritos && (
+              <CarritosCard
+                label="Carritos 1"
+                teamA={config.carritos.teamA}
+                teamB={config.carritos.teamB}
+                frontAmount={config.carritos.frontAmount}
+                backAmount={config.carritos.backAmount}
+                totalAmount={config.carritos.totalAmount}
+                scoringType={config.carritos.scoringType}
+                teamHandicaps={config.carritos.teamHandicaps || {}}
+                players={players}
+                playerOptions={playerOptions}
+                onUpdate={(updates) => onUpdateBet('carritos', updates)}
+              />
+            )}
 
-        {players.length >= 5 && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={addCarritosTeam}
-            className="w-full mt-3 gap-1"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Agregar otra apuesta de Carritos
-          </Button>
+            {/* Additional carritos */}
+            {config.carritosTeams?.map((team, idx) => (
+              <CarritosCard
+                key={team.id}
+                label={`Carritos ${hasPrimaryCarritos ? idx + 2 : idx + 1}`}
+                teamA={team.teamA}
+                teamB={team.teamB}
+                frontAmount={team.frontAmount}
+                backAmount={team.backAmount}
+                totalAmount={team.totalAmount}
+                scoringType={team.scoringType}
+                teamHandicaps={team.teamHandicaps || {}}
+                players={players}
+                playerOptions={playerOptions}
+                onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
+                onRemove={() => removeCarritosTeam(team.id)}
+              />
+            ))}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={players.length >= 5 ? addCarritosTeam : addCarritosPrimary}
+              className="w-full mt-3 gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Agregar otra apuesta de Carritos
+            </Button>
+          </>
         )}
       </BetSection>
     </div>
   );
 };
 
-// Team Pressure Configuration Component
-interface TeamPressureConfigProps {
+/* ─── Shared compact team row: player select + handicap inline ─── */
+interface PlayerWithHcpProps {
+  playerId: string;
+  players: Player[];
+  playerOptions: { value: string; label: string }[];
+  handicap: number;
+  onChangePlayer: (id: string) => void;
+  onChangeHandicap: (v: number) => void;
+  align?: 'left' | 'right';
+}
+
+const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
+  playerId,
+  players,
+  playerOptions,
+  handicap,
+  onChangePlayer,
+  onChangeHandicap,
+  align = 'left',
+}) => {
+  const row = align === 'right' ? 'flex-row-reverse' : 'flex-row';
+  return (
+    <div className={cn('flex items-center gap-1', row)}>
+      <Select value={playerId} onValueChange={onChangePlayer}>
+        <SelectTrigger className="h-7 text-[11px] flex-1 min-w-0 px-1.5">
+          <SelectValue placeholder="Jugador" />
+        </SelectTrigger>
+        <SelectContent>
+          {playerOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        type="number"
+        value={handicap}
+        onChange={(e) => onChangeHandicap(parseInt(e.target.value) || 0)}
+        className="h-7 w-10 text-[11px] text-center px-0.5 shrink-0"
+        min={0}
+      />
+    </div>
+  );
+};
+
+/* ─── Compact two-column team layout ─── */
+interface TeamColumnsProps {
+  teamA: [string, string];
+  teamB: [string, string];
+  teamHandicaps: Record<string, number>;
+  players: Player[];
+  playerOptions: { value: string; label: string }[];
+  onUpdateTeamA: (team: [string, string]) => void;
+  onUpdateTeamB: (team: [string, string]) => void;
+  onUpdateHandicaps: (hcps: Record<string, number>) => void;
+}
+
+const TeamColumns: React.FC<TeamColumnsProps> = ({
+  teamA,
+  teamB,
+  teamHandicaps,
+  players,
+  playerOptions,
+  onUpdateTeamA,
+  onUpdateTeamB,
+  onUpdateHandicaps,
+}) => {
+  const getHcp = (pid: string) => {
+    if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
+    const p = players.find(pl => pl.id === pid);
+    return p?.handicap ?? 0;
+  };
+
+  const setHcp = (pid: string, val: number) => {
+    onUpdateHandicaps({ ...teamHandicaps, [pid]: val });
+  };
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {/* Team A - left aligned */}
+      <div className="space-y-1">
+        <Label className="text-[10px] text-muted-foreground font-medium">Equipo A</Label>
+        <PlayerWithHcp
+          playerId={teamA[0]}
+          players={players}
+          playerOptions={playerOptions}
+          handicap={getHcp(teamA[0])}
+          onChangePlayer={(v) => onUpdateTeamA([v, teamA[1]])}
+          onChangeHandicap={(v) => setHcp(teamA[0], v)}
+          align="left"
+        />
+        <PlayerWithHcp
+          playerId={teamA[1]}
+          players={players}
+          playerOptions={playerOptions}
+          handicap={getHcp(teamA[1])}
+          onChangePlayer={(v) => onUpdateTeamA([teamA[0], v])}
+          onChangeHandicap={(v) => setHcp(teamA[1], v)}
+          align="left"
+        />
+      </div>
+
+      {/* Team B - right aligned */}
+      <div className="space-y-1">
+        <Label className="text-[10px] text-muted-foreground font-medium text-right block">Equipo B</Label>
+        <PlayerWithHcp
+          playerId={teamB[0]}
+          players={players}
+          playerOptions={playerOptions}
+          handicap={getHcp(teamB[0])}
+          onChangePlayer={(v) => onUpdateTeamB([v, teamB[1]])}
+          onChangeHandicap={(v) => setHcp(teamB[0], v)}
+          align="right"
+        />
+        <PlayerWithHcp
+          playerId={teamB[1]}
+          players={players}
+          playerOptions={playerOptions}
+          handicap={getHcp(teamB[1])}
+          onChangePlayer={(v) => onUpdateTeamB([teamB[0], v])}
+          onChangeHandicap={(v) => setHcp(teamB[1], v)}
+          align="right"
+        />
+      </div>
+    </div>
+  );
+};
+
+/* ─── Team Pressure Card ─── */
+interface TeamPressureCardProps {
   bet: TeamPressuresBet;
   index: number;
   players: Player[];
@@ -283,7 +416,7 @@ interface TeamPressureConfigProps {
   onRemove: () => void;
 }
 
-const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
+const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   bet,
   index,
   players,
@@ -300,11 +433,7 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
         <Label className="text-xs font-medium">Presión {index + 1}</Label>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6"
-            >
+            <Button variant="ghost" size="icon" className="h-6 w-6">
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           </AlertDialogTrigger>
@@ -312,7 +441,7 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar Presión {index + 1}?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción eliminará permanentemente esta apuesta de presiones por parejas. No se puede deshacer.
+                Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -325,98 +454,26 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
         </AlertDialog>
       </div>
 
-      {/* Teams */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Equipo A</Label>
-        <div className="flex gap-2">
-          <Select value={bet.teamA[0]} onValueChange={(v) => onUpdate({ teamA: [v, bet.teamA[1]] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={bet.teamA[1]} onValueChange={(v) => onUpdate({ teamA: [bet.teamA[0], v] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Equipo B</Label>
-        <div className="flex gap-2">
-          <Select value={bet.teamB[0]} onValueChange={(v) => onUpdate({ teamB: [v, bet.teamB[1]] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={bet.teamB[1]} onValueChange={(v) => onUpdate({ teamB: [bet.teamB[0], v] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Handicaps for this bet */}
-      <div className="p-2 bg-muted/50 rounded-lg space-y-2">
-        <Label className="text-[10px] font-medium">Handicaps para esta apuesta</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {[...bet.teamA, ...bet.teamB].filter(Boolean).map((playerId) => {
-            const player = players.find(p => p.id === playerId);
-            if (!player) return null;
-            return (
-              <div key={playerId} className="flex items-center gap-2">
-                <div 
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold shrink-0"
-                  style={{ backgroundColor: player.color }}
-                >
-                  {player.initials}
-                </div>
-                <Input
-                  type="number"
-                  value={bet.teamHandicaps[playerId] ?? player.handicap}
-                  onChange={(e) => {
-                    onUpdate({ 
-                      teamHandicaps: { ...bet.teamHandicaps, [playerId]: parseInt(e.target.value) || 0 }
-                    });
-                  }}
-                  className="h-6 w-14 text-xs text-center"
-                  min={0}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Note about opening threshold - auto-determined by scoring type */}
-      <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg p-2">
-        {bet.scoringType === 'combined' 
-          ? '💡 Modo Combinado: nuevas apuestas se abren cuando diferencia > 2'
-          : '💡 Modo Individual: nuevas apuestas se abren cuando diferencia = 2'}
-      </div>
+      {/* Compact team columns */}
+      <TeamColumns
+        teamA={bet.teamA}
+        teamB={bet.teamB}
+        teamHandicaps={bet.teamHandicaps}
+        players={players}
+        playerOptions={playerOptions}
+        onUpdateTeamA={(t) => onUpdate({ teamA: t })}
+        onUpdateTeamB={(t) => onUpdate({ teamB: t })}
+        onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
+      />
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">Comparación</Label>
+        <Label className="text-[10px] text-muted-foreground">Comparación</Label>
         <Select
           value={bet.scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-xs">
+          <SelectTrigger className="h-7 w-28 text-[11px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -431,12 +488,20 @@ const TeamPressureConfig: React.FC<TeamPressureConfigProps> = ({
       <AmountInput label="Front 9" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
       <AmountInput label="Back 9" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
       <AmountInput label="Match 18" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+
+      {/* Info note */}
+      <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
+        {bet.scoringType === 'combined'
+          ? '💡 Combinado: nuevas apuestas cuando diferencia > 2'
+          : '💡 Individual: nuevas apuestas cuando diferencia = 2'}
+      </div>
     </div>
   );
 };
 
-// Carritos Team Configuration Component
-interface CarritosTeamConfigProps {
+/* ─── Carritos Card ─── */
+interface CarritosCardProps {
+  label: string;
   teamA: [string, string];
   teamB: [string, string];
   frontAmount: number;
@@ -447,10 +512,11 @@ interface CarritosTeamConfigProps {
   players: Player[];
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
-  isPrimary?: boolean;
+  onRemove?: () => void;
 }
 
-const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
+const CarritosCard: React.FC<CarritosCardProps> = ({
+  label,
   teamA,
   teamB,
   frontAmount,
@@ -461,85 +527,48 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
   players,
   playerOptions,
   onUpdate,
-  isPrimary = false,
+  onRemove,
 }) => {
   return (
-    <div className="space-y-3" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Equipo A</Label>
-        <div className="flex gap-2">
-          <Select value={teamA[0]} onValueChange={(v) => onUpdate({ teamA: [v, teamA[1]] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={teamA[1]} onValueChange={(v) => onUpdate({ teamA: [teamA[0], v] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium">{label}</Label>
+        {onRemove && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Equipo B</Label>
-        <div className="flex gap-2">
-          <Select value={teamB[0]} onValueChange={(v) => onUpdate({ teamB: [v, teamB[1]] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={teamB[1]} onValueChange={(v) => onUpdate({ teamB: [teamB[0], v] })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
-            <SelectContent>
-              {playerOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Handicaps */}
-      <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-        <Label className="text-xs font-medium">Handicaps para Carritos</Label>
-        <div className="grid grid-cols-2 gap-3">
-          {[...teamA, ...teamB].map((playerId, idx) => {
-            const player = players.find(p => p.id === playerId);
-            if (!player) return null;
-            return (
-              <div key={`${playerId}-${idx}`} className="flex items-center gap-2">
-                <div 
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0"
-                  style={{ backgroundColor: player.color }}
-                >
-                  {player.initials}
-                </div>
-                <Input
-                  type="number"
-                  value={teamHandicaps[playerId] ?? player.handicap}
-                  onChange={(e) => {
-                    onUpdate({ 
-                      teamHandicaps: { ...teamHandicaps, [playerId]: parseInt(e.target.value) || 0 }
-                    });
-                  }}
-                  className="h-7 w-16 text-xs text-center"
-                  min={0}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Compact team columns */}
+      <TeamColumns
+        teamA={teamA}
+        teamB={teamB}
+        teamHandicaps={teamHandicaps}
+        players={players}
+        playerOptions={playerOptions}
+        onUpdateTeamA={(t) => onUpdate({ teamA: t })}
+        onUpdateTeamB={(t) => onUpdate({ teamB: t })}
+        onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
+      />
 
       {/* Amounts */}
       <AmountInput label="Front 9" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
@@ -548,12 +577,12 @@ const CarritosTeamConfig: React.FC<CarritosTeamConfigProps> = ({
 
       {/* Scoring Type */}
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">Tipo de puntuación</Label>
+        <Label className="text-[10px] text-muted-foreground">Tipo de puntuación</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-xs">
+          <SelectTrigger className="h-7 w-28 text-[11px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
