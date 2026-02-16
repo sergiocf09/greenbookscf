@@ -1887,9 +1887,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           T {total18 >= 0 ? '+' : ''}{total18}
                         </span>
                       </div>
-                      <div className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                        {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
-                      </div>
+                      {pressureDisabled ? (
+                        <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded inline-block">Cancelada</div>
+                      ) : (
+                        <div className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {baseTeamBalance >= 0 ? '+' : ''}${baseTeamBalance}
+                        </div>
+                      )}
                     </div>
 
                     <CollapsibleTrigger asChild>
@@ -2450,9 +2454,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   <span className="text-muted-foreground"> · </span>
                   <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
                 </div>
-                 <div className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
-                  {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
-                </div>
+                 {isDisabled ? (
+                   <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded inline-block">Cancelada</div>
+                 ) : (
+                   <div className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
+                     {baseTeamMoney >= 0 ? '+' : ''}${baseTeamMoney}
+                   </div>
+                 )}
               </div>
 
               <CollapsibleTrigger asChild>
