@@ -290,17 +290,17 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         )}
 
         {/* Matrix */}
-        <CardContent className="pt-0">
-          <div className="overflow-x-auto -mx-1 px-1">
-            <table className="w-full border-collapse">
+        <CardContent className="pt-0 px-2">
+          <div className="overflow-x-auto -mx-0.5">
+            <table className="border-collapse">
               {/* Column headers */}
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 bg-card p-0 w-[36px] min-w-[36px]" />
+                  <th className="sticky left-0 z-10 bg-card p-0" />
                   {allPlayers.map(col => {
                     const isBase = col.id === basePlayerId || col.profileId === basePlayerId;
                     return (
-                      <th key={col.id} className="p-0.5 text-center min-w-[46px]">
+                      <th key={col.id} className="p-0.5 text-center" style={{ minWidth: 44 }}>
                         <div className="flex flex-col items-center gap-0.5">
                           <PlayerAvatar
                             initials={disambiguated.get(col.id) || col.initials}
@@ -329,7 +329,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                       )}
                     >
                       {/* Row header - name only, no avatar */}
-                      <td className="sticky left-0 z-10 bg-card pl-0.5 pr-0 py-0.5 w-[36px] min-w-[36px]">
+                      <td className="sticky left-0 z-10 bg-card pr-1 py-0.5">
                         <span className={cn(
                           "text-[9px] font-medium whitespace-nowrap leading-tight",
                           isBaseRow ? "text-primary font-semibold" : "text-foreground"
