@@ -165,8 +165,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Team Pressures */}
       <BetSection
         id="teamPressures"
-        title="Presiones por Parejas"
-        description="Match play por equipos, apertura automática"
+         title="Foursomes"
+         description="Match play por equipos, apertura automática"
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => onUpdateBet('teamPressures', { enabled })}
         isExpanded={expandedSections.includes('teamPressures')}
@@ -174,7 +174,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       >
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay presiones por parejas configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
             <Button variant="outline" size="sm" onClick={addTeamPressure} className="gap-1">
               <Plus className="h-3.5 w-3.5" />
               Agregar Foursome
