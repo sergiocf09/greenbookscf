@@ -296,11 +296,11 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
               {/* Column headers */}
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 bg-card p-1 min-w-[70px]" />
+                  <th className="sticky left-0 z-10 bg-card p-0.5 w-[40px] min-w-[40px]" />
                   {allPlayers.map(col => {
                     const isBase = col.id === basePlayerId || col.profileId === basePlayerId;
                     return (
-                      <th key={col.id} className="p-1 text-center min-w-[52px]">
+                      <th key={col.id} className="p-0.5 text-center min-w-[46px]">
                         <div className="flex flex-col items-center gap-0.5">
                           <PlayerAvatar
                             initials={disambiguated.get(col.id) || col.initials}
@@ -308,7 +308,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                             size="sm"
                             isLoggedInUser={isBase}
                           />
-                          <span className="text-[9px] text-muted-foreground leading-tight truncate max-w-[48px]">
+                          <span className="text-[8px] text-muted-foreground leading-tight truncate max-w-[42px]">
                             {col.name.split(' ')[0]}
                           </span>
                         </div>
@@ -328,18 +328,15 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                         isBaseRow && 'bg-primary/5'
                       )}
                     >
-                      {/* Row header */}
-                      <td className="sticky left-0 z-10 bg-card p-1.5">
-                        <div className="flex items-center gap-1.5">
+                      {/* Row header - compact: avatar only */}
+                      <td className="sticky left-0 z-10 bg-card p-0.5 w-[40px] min-w-[40px]">
+                        <div className="flex items-center justify-center">
                           <PlayerAvatar
                             initials={disambiguated.get(row.id) || row.initials}
                             background={row.color}
                             size="sm"
                             isLoggedInUser={isBaseRow}
                           />
-                          <span className="text-[11px] font-medium whitespace-nowrap truncate max-w-[60px]">
-                            {row.name.split(' ')[0]}
-                          </span>
                         </div>
                       </td>
 
@@ -348,8 +345,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                         if (row.id === col.id) {
                           // Diagonal - self
                           return (
-                            <td key={col.id} className="p-1 text-center">
-                              <div className="w-11 h-11 rounded-md bg-muted/30 flex items-center justify-center mx-auto">
+                            <td key={col.id} className="p-0.5 text-center">
+                              <div className="w-10 h-10 rounded-md bg-muted/30 flex items-center justify-center mx-auto">
                                 <span className="text-muted-foreground/40 text-xs">—</span>
                               </div>
                             </td>
@@ -444,13 +441,13 @@ const HandicapCell: React.FC<HandicapCellProps> = ({
       : 'bg-muted/30 border-border/40 text-muted-foreground';
 
   return (
-    <td className="p-1 text-center">
+    <td className="p-0.5 text-center">
       <Popover>
         <PopoverTrigger asChild>
           <button
             type="button"
             className={cn(
-              'w-11 h-11 rounded-md border flex flex-col items-center justify-center mx-auto transition-all relative',
+              'w-10 h-10 rounded-md border flex flex-col items-center justify-center mx-auto transition-all relative',
               cellBg,
               hasPendingChange && 'ring-2 ring-primary/50'
             )}
