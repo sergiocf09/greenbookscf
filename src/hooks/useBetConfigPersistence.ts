@@ -89,6 +89,7 @@ interface RoundBetConfig {
   bilateralHandicaps?: BilateralHandicap[];
   betOverrides?: BetOverride[];
   crossGroupRivals?: Record<string, string[]>;
+  groupBetOverrides?: Record<string, any>;
   
   // New bet types
   putts?: {
@@ -266,6 +267,7 @@ export const useBetConfigPersistence = ({
 
       if (dbConfig.carritosTeams) newConfig.carritosTeams = dbConfig.carritosTeams;
       if (dbConfig.crossGroupRivals) newConfig.crossGroupRivals = dbConfig.crossGroupRivals;
+      if (dbConfig.groupBetOverrides) newConfig.groupBetOverrides = dbConfig.groupBetOverrides;
       
       if (dbConfig.putts) {
         newConfig.putts = {
@@ -366,6 +368,7 @@ export const useBetConfigPersistence = ({
         bilateralHandicaps: config.bilateralHandicaps || [],
         betOverrides: config.betOverrides || [],
         crossGroupRivals: config.crossGroupRivals || {},
+        groupBetOverrides: config.groupBetOverrides || {},
         putts: {
           enabled: config.putts.enabled,
           frontAmount: config.putts.frontAmount,
