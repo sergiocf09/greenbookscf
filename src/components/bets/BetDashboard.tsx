@@ -1619,28 +1619,47 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
       {betConfig.teamPressures?.bets?.filter(b => b.enabled).map((bet, idx) => {
+        // Resolve config IDs (may be profileId) to actual player.id
+        const resolvePId = (pid: string): string => {
+          if (players.find(p => p.id === pid)) return pid;
+          const match = players.find(p => p.profileId === pid);
+          return match?.id ?? pid;
+        };
+        const resolvedTeamA: [string, string] = [resolvePId(bet.teamA[0]), resolvePId(bet.teamA[1])];
+        const resolvedTeamB: [string, string] = [resolvePId(bet.teamB[0]), resolvePId(bet.teamB[1])];
+
         // Calculate team pressures balance from betSummaries for THIS specific bet only
         const teamAPressures = betSummaries.filter(s => 
-          s.betType === 'Presiones Parejas' && s.betId === bet.id && bet.teamA.includes(s.playerId)
+          s.betType === 'Presiones Parejas' && s.betId === bet.id && resolvedTeamA.includes(s.playerId)
         );
         const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Each member's share (team total / 2 members)
         
         const getPlayer = (id: string) => players.find(p => p.id === id);
-        const teamAPlayers = [getPlayer(bet.teamA[0]), getPlayer(bet.teamA[1])].filter(Boolean) as Player[];
-        const teamBPlayers = [getPlayer(bet.teamB[0]), getPlayer(bet.teamB[1])].filter(Boolean) as Player[];
+        const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
+        const teamBPlayers = [getPlayer(resolvedTeamB[0]), getPlayer(resolvedTeamB[1])].filter(Boolean) as Player[];
         
-        const isBaseInTeamA = bet.teamA.includes(basePlayer?.id || '');
+        const isBaseInTeamA = resolvedTeamA.includes(basePlayer?.id || '');
         const baseTeamBalance = isBaseInTeamA ? teamABalance : -teamABalance;
         
         if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
         
         // Calculate hole-by-hole details like Carritos
         const getTeamPressureHoleDetails = () => {
-          const { teamA, teamB, scoringType, teamHandicaps } = bet;
+          const teamA = resolvedTeamA;
+          const teamB = resolvedTeamB;
+          const { scoringType, teamHandicaps } = bet;
           
           const getHandicap = (playerId: string): number => {
-            return teamHandicaps?.[playerId] ?? 
-                   players.find(p => p.id === playerId)?.handicap ?? 0;
+            if (teamHandicaps) {
+              const direct = teamHandicaps[playerId];
+              if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+              const byProfile = players.find(p => p.id === playerId)?.profileId;
+              if (byProfile) {
+                const h = teamHandicaps[byProfile];
+                if (typeof h === 'number' && Number.isFinite(h)) return h;
+              }
+            }
+            return players.find(p => p.id === playerId)?.handicap ?? 0;
           };
           
           const strokesMap = new Map<string, number[]>();
