@@ -158,10 +158,10 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
   };
 
   return (
-    <div className="border rounded-lg bg-card p-3 space-y-2">
-      <p className="text-xs font-medium text-foreground">Configuración Rápida</p>
+    <div className="border rounded-lg bg-card p-2 space-y-2">
+      <p className="text-xs font-medium text-foreground px-1">Configuración Rápida</p>
 
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div className="overflow-x-auto -mx-2 px-0">
         <table className="w-full text-[10px] border-collapse">
           <thead>
             <tr>

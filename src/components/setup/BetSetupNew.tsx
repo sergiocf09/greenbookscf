@@ -76,7 +76,6 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label className="text-sm font-medium">Configuración de Apuestas</Label>
 
       {/* Category Tabs */}
       <BetCategoryTabs
