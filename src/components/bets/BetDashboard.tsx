@@ -28,6 +28,7 @@ import {
   Settings2,
   Users,
   XCircle,
+  CheckCircle,
   Edit2,
   Check,
   X,
@@ -1845,11 +1846,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn('h-6 w-6', pressureDisabled ? 'text-destructive' : 'text-muted-foreground hover:text-destructive')}
+                    className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                     onClick={() => toggleTeamBetDisabled(bet.id)}
                     title={pressureDisabled ? 'Reactivar Presiones' : 'No considerar Presiones'}
                   >
-                    <XCircle className="h-4 w-4" />
+                    {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                   </Button>
                 )}
               </CardTitle>
@@ -2404,11 +2405,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             <Button
               variant="ghost"
               size="icon"
-              className={cn('h-6 w-6', isDisabled ? 'text-destructive' : 'text-muted-foreground hover:text-destructive')}
+              className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
               onClick={onToggleDisabled}
               title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
             >
-              <XCircle className="h-4 w-4" />
+              {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             </Button>
           )}
           {onCancel && !onToggleDisabled && (
