@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BetConfig, Player } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { formatPlayerName } from '@/lib/playerInput';
 
 interface GrupalParticipationMatrixProps {
   config: BetConfig;
@@ -10,11 +9,14 @@ interface GrupalParticipationMatrixProps {
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
 }
 
-/** Grupal bet types that support participantIds */
+/** ALL grupal bet types — always shown in matrix */
 const GRUPAL_BETS = [
   { key: 'culebras' as const, label: 'Culebras' },
   { key: 'pinguinos' as const, label: 'Pingüinos' },
   { key: 'zoologico' as const, label: 'Zoológico' },
+  { key: 'coneja' as const, label: 'Coneja' },
+  { key: 'medalGeneral' as const, label: 'Medal Gral' },
+  { key: 'stableford' as const, label: 'Stableford' },
 ] as const;
 
 type GrupalBetKey = typeof GRUPAL_BETS[number]['key'];
@@ -34,11 +36,6 @@ const getParticipantIds = (config: BetConfig, betKey: GrupalBetKey): string[] | 
   return betConfig?.participantIds;
 };
 
-const isBetEnabled = (config: BetConfig, betKey: GrupalBetKey): boolean => {
-  const betConfig = config[betKey] as any;
-  return betConfig?.enabled ?? false;
-};
-
 const isEffectivelyParticipating = (
   participantIds: string[] | undefined,
   playerId: string,
@@ -49,17 +46,21 @@ const isEffectivelyParticipating = (
   return active.includes(playerId);
 };
 
+/** Check if a grupal bet has at least one participant */
+export const grupalBetHasParticipants = (config: BetConfig, betKey: string, players: Player[]): boolean => {
+  const betConfig = config[betKey as keyof BetConfig] as any;
+  if (!betConfig) return false;
+  const pIds = betConfig.participantIds;
+  if (Array.isArray(pIds) && pIds.length === 0) return false;
+  return true;
+};
+
 export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps> = ({
   config,
   players,
   onUpdateBet,
 }) => {
-  const enabledBets = useMemo(
-    () => GRUPAL_BETS.filter(b => isBetEnabled(config, b.key)),
-    [config]
-  );
-
-  if (enabledBets.length === 0 || players.length === 0) return null;
+  if (players.length === 0) return null;
 
   const handleCellToggle = (betKey: GrupalBetKey, playerId: string) => {
     const pIds = getParticipantIds(config, betKey);
@@ -97,17 +98,21 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
   const handleColumnToggle = (playerId: string) => {
     const colState = getColumnState(playerId);
+    const allIds = players.map(p => p.id);
 
-    enabledBets.forEach(b => {
+    GRUPAL_BETS.forEach(b => {
       const pIds = getParticipantIds(config, b.key);
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
       if (colState === 'all') {
         const currentIds = isExplicitlyEmpty ? [] : getActiveIds(pIds, players);
         const newIds = currentIds.filter(id => id !== playerId);
-        const allIds = players.map(p => p.id);
-        const isAll = allIds.every(id => newIds.includes(id));
-        onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+        if (newIds.length === 0) {
+          onUpdateBet(b.key, { participantIds: [] } as any);
+        } else {
+          const isAll = allIds.every(id => newIds.includes(id));
+          onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+        }
       } else {
         if (isExplicitlyEmpty) {
           onUpdateBet(b.key, { participantIds: [playerId] } as any);
@@ -115,7 +120,6 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
           const currentIds = getActiveIds(pIds, players);
           if (!currentIds.includes(playerId)) {
             const newIds = [...currentIds, playerId];
-            const allIds = players.map(p => p.id);
             const isAll = allIds.every(id => newIds.includes(id));
             onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
           }
@@ -134,7 +138,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
   };
 
   const getColumnState = (playerId: string): 'all' | 'none' | 'partial' => {
-    const states = enabledBets.map(b =>
+    const states = GRUPAL_BETS.map(b =>
       isEffectivelyParticipating(getParticipantIds(config, b.key), playerId, players)
     );
     if (states.every(Boolean)) return 'all';
@@ -162,7 +166,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
                         "flex flex-col items-center gap-0.5 mx-auto transition-opacity",
                         colState === 'none' && "opacity-35"
                       )}
-                      title={`${formatPlayerName(player.name)} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
+                      title={`${player.name} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
                     >
                       <span className="text-[9px] font-bold text-foreground">{player.initials}</span>
                     </button>
@@ -172,7 +176,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
             </tr>
           </thead>
           <tbody>
-            {enabledBets.map(bet => {
+            {GRUPAL_BETS.map(bet => {
               const rowState = getRowState(bet.key);
               return (
                 <tr key={bet.key} className={cn(

@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BetConfig, Player } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { formatPlayerName } from '@/lib/playerInput';
 
 interface ParticipationMatrixProps {
   config: BetConfig;
@@ -10,15 +9,17 @@ interface ParticipationMatrixProps {
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
 }
 
-/** Individual bet types that support participantIds (excluding grupal bets) */
+/** ALL individual bet types — always shown in matrix */
 const INDIVIDUAL_BETS = [
   { key: 'medal' as const, label: 'Medal' },
   { key: 'pressures' as const, label: 'Presiones' },
   { key: 'skins' as const, label: 'Skins' },
   { key: 'caros' as const, label: 'Caros' },
+  { key: 'oyeses' as const, label: 'Oyeses' },
   { key: 'units' as const, label: 'Unidades' },
   { key: 'manchas' as const, label: 'Manchas' },
   { key: 'putts' as const, label: 'Putts' },
+  { key: 'rayas' as const, label: 'Rayas' },
 ] as const;
 
 type IndividualBetKey = typeof INDIVIDUAL_BETS[number]['key'];
@@ -40,22 +41,24 @@ const getParticipantIds = (config: BetConfig, betKey: IndividualBetKey): string[
   return betConfig?.participantIds;
 };
 
-/** Check if a bet is enabled */
-const isBetEnabled = (config: BetConfig, betKey: IndividualBetKey): boolean => {
-  const betConfig = config[betKey] as any;
-  return betConfig?.enabled ?? false;
-};
-
 /** Determine effective participation considering explicit empty arrays */
 const isEffectivelyParticipating = (
   participantIds: string[] | undefined,
   playerId: string,
   players: Player[]
 ): boolean => {
-  // Explicit empty array = nobody participates
   if (Array.isArray(participantIds) && participantIds.length === 0) return false;
   const active = getActiveIds(participantIds, players);
   return active.includes(playerId);
+};
+
+/** Check if a bet has at least one participant */
+export const betHasParticipants = (config: BetConfig, betKey: string, players: Player[]): boolean => {
+  const betConfig = config[betKey as keyof BetConfig] as any;
+  if (!betConfig) return false;
+  const pIds = betConfig.participantIds;
+  if (Array.isArray(pIds) && pIds.length === 0) return false;
+  return true;
 };
 
 export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
@@ -63,19 +66,13 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
   players,
   onUpdateBet,
 }) => {
-  const enabledBets = useMemo(
-    () => INDIVIDUAL_BETS.filter(b => isBetEnabled(config, b.key)),
-    [config]
-  );
-
-  if (enabledBets.length === 0 || players.length === 0) return null;
+  if (players.length === 0) return null;
 
   const handleCellToggle = (betKey: IndividualBetKey, playerId: string) => {
     const pIds = getParticipantIds(config, betKey);
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
     if (isExplicitlyEmpty) {
-      // Nobody selected → add just this player
       onUpdateBet(betKey, { participantIds: [playerId] } as any);
       return;
     }
@@ -99,10 +96,8 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
     const allActive = !isExplicitlyEmpty && allIds.every(id => currentIds.includes(id));
 
     if (allActive) {
-      // All → None
       onUpdateBet(betKey, { participantIds: [] } as any);
     } else {
-      // None or Partial → All
       onUpdateBet(betKey, { participantIds: undefined } as any);
     }
   };
@@ -110,26 +105,30 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
   const handleColumnToggle = (playerId: string) => {
     const colState = getColumnState(playerId);
 
-    enabledBets.forEach(b => {
+    // All-or-nothing: if player is in ALL bets → remove from ALL; otherwise → add to ALL
+    INDIVIDUAL_BETS.forEach(b => {
       const pIds = getParticipantIds(config, b.key);
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
+      const allIds = players.map(p => p.id);
 
       if (colState === 'all') {
-        // Remove from all bets
+        // Remove player from ALL bets
         const currentIds = isExplicitlyEmpty ? [] : getActiveIds(pIds, players);
         const newIds = currentIds.filter(id => id !== playerId);
-        const allIds = players.map(p => p.id);
-        const isAll = allIds.every(id => newIds.includes(id));
-        onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+        if (newIds.length === 0) {
+          onUpdateBet(b.key, { participantIds: [] } as any);
+        } else {
+          const isAll = allIds.every(id => newIds.includes(id));
+          onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+        }
       } else {
-        // Add to all bets
+        // Add player to ALL bets
         if (isExplicitlyEmpty) {
           onUpdateBet(b.key, { participantIds: [playerId] } as any);
         } else {
           const currentIds = getActiveIds(pIds, players);
           if (!currentIds.includes(playerId)) {
             const newIds = [...currentIds, playerId];
-            const allIds = players.map(p => p.id);
             const isAll = allIds.every(id => newIds.includes(id));
             onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
           }
@@ -148,7 +147,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
   };
 
   const getColumnState = (playerId: string): 'all' | 'none' | 'partial' => {
-    const states = enabledBets.map(b =>
+    const states = INDIVIDUAL_BETS.map(b =>
       isEffectivelyParticipating(getParticipantIds(config, b.key), playerId, players)
     );
     if (states.every(Boolean)) return 'all';
@@ -176,7 +175,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
                         "flex flex-col items-center gap-0.5 mx-auto transition-opacity",
                         colState === 'none' && "opacity-35"
                       )}
-                      title={`${formatPlayerName(player.name)} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
+                      title={`${player.name} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
                     >
                       <span className="text-[9px] font-bold text-foreground">{player.initials}</span>
                     </button>
@@ -186,7 +185,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
             </tr>
           </thead>
           <tbody>
-            {enabledBets.map(bet => {
+            {INDIVIDUAL_BETS.map(bet => {
               const rowState = getRowState(bet.key);
               return (
                 <tr key={bet.key} className={cn(
