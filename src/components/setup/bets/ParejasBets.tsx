@@ -470,7 +470,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] text-muted-foreground">Comparación</Label>
+        <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
         <Select
           value={bet.scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined') => onUpdate({ scoringType: v })}
@@ -583,25 +583,9 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
 
-      {/* Amounts - 3 columns */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
-          <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
-          <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
-          <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
-        </div>
-      </div>
-
-      {/* Scoring Type */}
+      {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] text-muted-foreground">Tipo de puntuación</Label>
+        <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
@@ -616,6 +600,22 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             <SelectItem value="all">Todos</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Amounts - 3 columns */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+          <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+          <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
       </div>
     </div>
   );
