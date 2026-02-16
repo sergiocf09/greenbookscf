@@ -3243,7 +3243,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Oyeses (before Units as per spec)
-    if (betConfig.oyeses.enabled) {
+    if (betConfig.oyeses.enabled && bothParticipate(betConfig.oyeses.participantIds)) {
       groups.push({
         key: 'oyeses',
         label: 'Oyeses',
