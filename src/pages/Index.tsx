@@ -2608,7 +2608,7 @@ const Index = () => {
             <DialogTitle>Configuración de Apuestas</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-4 sm:px-0 overscroll-contain">
-            <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
+            <BetSetup config={betConfig} onChange={setBetConfig} players={players} hasMultipleGroups={playerGroups.length > 0} />
           </div>
         </DialogContent>
       </Dialog>
