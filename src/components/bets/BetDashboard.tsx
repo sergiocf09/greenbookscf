@@ -859,26 +859,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
     
     if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled) {
-      // Check if all players have all 18 holes confirmed (same check as detail view)
-      const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
-        return allPlayersForCalculations.every((p) => {
-          const pScores = confirmedScores.get(p.id) || [];
-          return pScores.some((s) => s.holeNumber === h);
-        });
-      });
-      
-      if (allPlayersComplete) {
-        const medalResult = getMedalGeneralBilateralResult(
-          allPlayersForCalculations,
-          playerObj,
-          rivalObj,
-          confirmedScores,
-          betConfig,
-          course
-        );
-        if (medalResult) {
-          medalGeneralTotal = medalResult.amount;
-        }
+      const medalResult = getMedalGeneralBilateralResult(
+        allPlayersForCalculations,
+        playerObj,
+        rivalObj,
+        confirmedScores,
+        betConfig,
+        course
+      );
+      if (medalResult) {
+        medalGeneralTotal = medalResult.amount;
       }
     }
     
@@ -887,25 +877,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
     
     if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled) {
-      const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) => {
-        return allPlayersForCalculations.every((p) => {
-          const pScores = confirmedScores.get(p.id) || [];
-          return pScores.some((s) => s.holeNumber === h);
-        });
-      });
-      
-      if (allPlayersComplete) {
-        const stablefordResult = getStablefordBilateralResult(
-          allPlayersForCalculations,
-          playerObj,
-          rivalObj,
-          confirmedScores,
-          betConfig,
-          course
-        );
-        if (stablefordResult) {
-          stablefordTotal = stablefordResult.amount;
-        }
+      const stablefordResult = getStablefordBilateralResult(
+        allPlayersForCalculations,
+        playerObj,
+        rivalObj,
+        confirmedScores,
+        betConfig,
+        course
+      );
+      if (stablefordResult) {
+        stablefordTotal = stablefordResult.amount;
       }
     }
     
@@ -3655,7 +3636,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           });
         }
       } else {
-        const medalResult = getMedalGeneralBilateralResult(allPlayers, player, rival, confirmedScores, betConfig, course);
+        // Use allPlayers versions to ensure groupId is available for scope filtering
+        const playerWithGroup = allPlayers.find(p => p.id === player.id) || player;
+        const rivalWithGroup = allPlayers.find(p => p.id === rival.id) || rival;
+        const medalResult = getMedalGeneralBilateralResult(allPlayers, playerWithGroup, rivalWithGroup, confirmedScores, betConfig, course);
         if (medalResult) {
           groups.push({
             key: 'medalGeneral',
@@ -3738,20 +3722,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           });
         }
       } else {
-        const allPlayersComplete = Array.from({ length: 18 }, (_, i) => i + 1).every((h) =>
-          allPlayers.every((p) => (confirmedScores.get(p.id) || []).some((s) => s.holeNumber === h))
-        );
-        if (allPlayersComplete) {
+          // Use allPlayers versions to ensure groupId is available for scope filtering
+          const playerWithGroup = allPlayers.find(p => p.id === player.id) || player;
+          const rivalWithGroup = allPlayers.find(p => p.id === rival.id) || rival;
           const stablefordResult = getStablefordBilateralResult(
             allPlayers,
-            player,
-            rival,
+            playerWithGroup,
+            rivalWithGroup,
             confirmedScores,
             betConfig,
             course
           );
           
-          if (stablefordResult && stablefordResult.amount !== 0) {
+          if (stablefordResult) {
             groups.push({
               key: 'stableford',
               label: 'Stableford',
@@ -3766,7 +3749,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               }),
             });
           }
-        }
       }
     }
     
