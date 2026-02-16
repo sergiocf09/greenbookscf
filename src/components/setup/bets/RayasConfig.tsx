@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
+import { AmountInput } from './AmountInput';
 
 interface RayasConfigProps {
   config: BetConfig;
@@ -110,27 +111,18 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
   return (
     <div className="space-y-4">
       {/* Global values - always visible */}
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
-          <Label className="text-[9px] text-muted-foreground">Front</Label>
-          <Input type="number" value={rayas.frontValue} onChange={(e) => onUpdateRayas({ frontValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
-        </div>
-        <div className="flex-1">
-          <Label className="text-[9px] text-muted-foreground">Back</Label>
-          <Input type="number" value={rayas.backValue} onChange={(e) => onUpdateRayas({ backValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
-        </div>
-        <div className="flex-1">
-          <Label className="text-[9px] text-muted-foreground">Medal Total</Label>
-          <Input type="number" value={rayas.medalTotalValue} onChange={(e) => onUpdateRayas({ medalTotalValue: Number(e.target.value) || 0 })} className="h-7 text-sm" />
-        </div>
+      <div className="space-y-1">
+        <AmountInput label="Front 9" value={rayas.frontValue} onChange={(v) => onUpdateRayas({ frontValue: v })} />
+        <AmountInput label="Back 9" value={rayas.backValue} onChange={(v) => onUpdateRayas({ backValue: v })} />
+        <AmountInput label="Medal Total" value={rayas.medalTotalValue} onChange={(v) => onUpdateRayas({ medalTotalValue: v })} />
       </div>
 
       {/* Configuration - collapsed by default */}
       <CollapsibleSubSection label="Configuración" summary={configSummary}>
         <div className="space-y-4">
-          {/* Skin variant (default) */}
+          {/* Skin variant (default) - immediately visible */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-            <Label className="text-xs text-muted-foreground">Variante Skins (global)</Label>
+            <Label className="text-xs text-muted-foreground">Variante Skins</Label>
             <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
               <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ skinVariant: 'acumulados' as RayasSkinVariant }); }}
                 className={cn("px-2 py-1 text-[10px] rounded transition-colors",
@@ -143,39 +135,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
             </div>
           </div>
 
-          {/* Per-player skin variant */}
-          <div className="space-y-2">
-            <Label className="text-[10px] text-muted-foreground">Variante Skins por jugador</Label>
-            <p className="text-[9px] text-muted-foreground">
-              Si dos jugadores tienen variantes distintas, en el dashboard se muestra la opción de elegir cuál prevalece.
-            </p>
-            {players.map(player => {
-              const variant = getPlayerSkinVariant(player.id);
-              const isDefault = !rayas.playerSkinVariants?.[player.id] || rayas.playerSkinVariants[player.id] === (rayas.skinVariant ?? 'acumulados');
-              return (
-                <div key={player.id} className={cn("flex items-center justify-between p-2 rounded-lg transition-colors", isDefault ? "bg-muted/30" : "bg-primary/5 border border-primary/20")}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: player.color }}>
-                      {player.initials}
-                    </div>
-                    <span className="text-xs">{formatPlayerName(player.name)}</span>
-                  </div>
-                  <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'acumulados'); }}
-                      className={cn("px-2 py-1 text-[10px] rounded transition-colors",
-                        variant === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}>Acum</button>
-                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'sinAcumulacion'); }}
-                      className={cn("px-2 py-1 text-[10px] rounded transition-colors",
-                        variant === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}>Sin Acum</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Oyes Mode Selector */}
+          {/* Oyes Mode Selector - immediately visible */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
             <Label className="text-xs text-muted-foreground">Modalidad Oyeses</Label>
             <Select value={(rayas as any).oyesMode ?? 'allVsAll'} onValueChange={(value) => onUpdateRayas({ oyesMode: value as RayasOyesMode })}>
@@ -186,6 +146,42 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Per-player skin variant - nested sub-section */}
+          <CollapsibleSubSection
+            label="Variante por jugador"
+            summary={customSkinVariantCount > 0 ? `${customSkinVariantCount} personalizado${customSkinVariantCount > 1 ? 's' : ''}` : 'Todos usan global'}
+          >
+            <div className="space-y-2">
+              <p className="text-[9px] text-muted-foreground">
+                Si dos jugadores tienen variantes distintas, en el dashboard se muestra la opción de elegir cuál prevalece.
+              </p>
+              {players.map(player => {
+                const variant = getPlayerSkinVariant(player.id);
+                const isDefault = !rayas.playerSkinVariants?.[player.id] || rayas.playerSkinVariants[player.id] === (rayas.skinVariant ?? 'acumulados');
+                return (
+                  <div key={player.id} className={cn("flex items-center justify-between p-2 rounded-lg transition-colors", isDefault ? "bg-muted/30" : "bg-primary/5 border border-primary/20")}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: player.color }}>
+                        {player.initials}
+                      </div>
+                      <span className="text-xs">{formatPlayerName(player.name)}</span>
+                    </div>
+                    <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'acumulados'); }}
+                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                          variant === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}>Acum</button>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'sinAcumulacion'); }}
+                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                          variant === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}>Sin Acum</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CollapsibleSubSection>
           
           {/* Segments configuration */}
           <div className="border-t pt-3">
