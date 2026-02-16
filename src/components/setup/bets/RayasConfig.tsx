@@ -147,41 +147,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
             </Select>
           </div>
 
-          {/* Per-player skin variant - nested sub-section */}
-          <CollapsibleSubSection
-            label="Variante por jugador"
-            summary={customSkinVariantCount > 0 ? `${customSkinVariantCount} personalizado${customSkinVariantCount > 1 ? 's' : ''}` : 'Todos usan global'}
-          >
-            <div className="space-y-2">
-              <p className="text-[9px] text-muted-foreground">
-                Si dos jugadores tienen variantes distintas, en el dashboard se muestra la opción de elegir cuál prevalece.
-              </p>
-              {players.map(player => {
-                const variant = getPlayerSkinVariant(player.id);
-                const isDefault = !rayas.playerSkinVariants?.[player.id] || rayas.playerSkinVariants[player.id] === (rayas.skinVariant ?? 'acumulados');
-                return (
-                  <div key={player.id} className={cn("flex items-center justify-between p-2 rounded-lg transition-colors", isDefault ? "bg-muted/30" : "bg-primary/5 border border-primary/20")}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: player.color }}>
-                        {player.initials}
-                      </div>
-                      <span className="text-xs">{formatPlayerName(player.name)}</span>
-                    </div>
-                    <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'acumulados'); }}
-                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
-                          variant === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        )}>Acum</button>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerSkinVariant(player.id, 'sinAcumulacion'); }}
-                        className={cn("px-2 py-1 text-[10px] rounded transition-colors",
-                          variant === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        )}>Sin Acum</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CollapsibleSubSection>
+          <p className="text-[9px] text-muted-foreground">La variante por par de jugadores se puede ajustar en el Dashboard de Apuestas.</p>
           
           {/* Segments configuration */}
           <div className="border-t pt-3">

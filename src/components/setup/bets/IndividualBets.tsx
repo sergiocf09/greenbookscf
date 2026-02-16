@@ -96,7 +96,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
           <CollapsibleSubSection
             label="Configuración"
-            summary={`${(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'}${config.skins.carryOver ? ' · Arrastre' : ''}`}
+            summary={(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados · Arrastre' : 'Sin Acumular · Arrastre'}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -108,42 +108,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                     className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Sin Acum</button>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
-                <Switch checked={config.skins.carryOver} onCheckedChange={(v) => onUpdateBet('skins', { carryOver: v })} />
-              </div>
-
-              <CollapsibleSubSection
-                label="Modalidad por jugador"
-                summary={(() => {
-                  const variants = config.skins.playerSkinVariants;
-                  if (!variants || Object.keys(variants).length === 0) return 'Todos usan global';
-                  const customCount = Object.values(variants).filter(v => v !== (config.skins.modality ?? 'acumulados')).length;
-                  return customCount > 0 ? `${customCount} personalizado${customCount > 1 ? 's' : ''}` : 'Todos usan global';
-                })()}
-              >
-                <div className="space-y-1.5">
-                  {players.map(player => {
-                    const globalModality = config.skins.modality ?? 'acumulados';
-                    const playerVariant = config.skins.playerSkinVariants?.[player.id] ?? globalModality;
-                    return (
-                      <div key={player.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: player.color }}>{player.initials}</div>
-                          <span className="text-xs">{formatPlayerName(player.name)}</span>
-                        </div>
-                        <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const updated = { ...config.skins.playerSkinVariants }; if ('acumulados' === globalModality) { delete updated[player.id]; } else { updated[player.id] = 'acumulados'; } onUpdateBet('skins', { playerSkinVariants: updated }); }}
-                            className={cn('px-2 py-1 text-[10px] rounded transition-colors', playerVariant === 'acumulados' ? 'bg-golf-gold text-golf-dark font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Acum</button>
-                          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const updated = { ...config.skins.playerSkinVariants }; if ('sinAcumular' === globalModality) { delete updated[player.id]; } else { updated[player.id] = 'sinAcumular'; } onUpdateBet('skins', { playerSkinVariants: updated }); }}
-                            className={cn('px-2 py-1 text-[10px] rounded transition-colors', playerVariant === 'sinAcumular' ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Sin Acum</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CollapsibleSubSection>
+              <p className="text-[9px] text-muted-foreground">La modalidad por par de jugadores se puede ajustar en el Dashboard de Apuestas. Arrastre del 9 al 10 siempre activo.</p>
             </div>
           </CollapsibleSubSection>
         </BetSection>
@@ -201,35 +166,37 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
             <div className="space-y-2">
               <p className="text-[10px] text-muted-foreground mb-2">Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.</p>
-              {players.map(player => {
-                const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
-                const isEnabled = playerConfig?.enabled ?? true;
-                const modality = playerConfig?.modality ?? 'acumulados';
-                const updatePlayerOyes = (updates: Partial<OyesesPlayerConfig>) => {
-                  const existingConfigs = [...config.oyeses.playerConfigs];
-                  const idx = existingConfigs.findIndex(pc => pc.playerId === player.id);
-                  if (idx >= 0) { existingConfigs[idx] = { ...existingConfigs[idx], ...updates }; }
-                  else { existingConfigs.push({ playerId: player.id, modality: 'acumulados', enabled: true, ...updates }); }
-                  onUpdateBet('oyeses', { playerConfigs: existingConfigs });
-                };
-                return (
-                  <div key={player.id} className={cn("flex items-center justify-between p-2 rounded-lg transition-colors", isEnabled ? "bg-muted/50" : "bg-muted/20 opacity-60")}>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={isEnabled} onCheckedChange={(v) => updatePlayerOyes({ enabled: v })} className="scale-75" />
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: player.color }}>{player.initials}</div>
-                      <span className="text-xs">{formatPlayerName(player.name)}</span>
-                    </div>
-                    {isEnabled && (
+              {(() => {
+                const participantIds = (config.oyeses as any).participantIds as string[] | undefined;
+                const filteredPlayers = participantIds && participantIds.length > 0
+                  ? players.filter(p => participantIds.includes(p.id))
+                  : players;
+                return filteredPlayers.map(player => {
+                  const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
+                  const modality = playerConfig?.modality ?? 'acumulados';
+                  const updatePlayerOyes = (updates: Partial<OyesesPlayerConfig>) => {
+                    const existingConfigs = [...config.oyeses.playerConfigs];
+                    const idx = existingConfigs.findIndex(pc => pc.playerId === player.id);
+                    if (idx >= 0) { existingConfigs[idx] = { ...existingConfigs[idx], ...updates }; }
+                    else { existingConfigs.push({ playerId: player.id, modality: 'acumulados', enabled: true, ...updates }); }
+                    onUpdateBet('oyeses', { playerConfigs: existingConfigs });
+                  };
+                  return (
+                    <div key={player.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: player.color }}>{player.initials}</div>
+                        <span className="text-xs">{formatPlayerName(player.name)}</span>
+                      </div>
                       <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                         <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'acumulados' }); }}
                           className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>Acum</button>
                         <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'sangron' }); }}
                           className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'sangron' ? "bg-destructive text-destructive-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>Sang</button>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </CollapsibleSubSection>
         </BetSection>
