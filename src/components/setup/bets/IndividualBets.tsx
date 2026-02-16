@@ -6,7 +6,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { RayasConfig } from './RayasConfig';
-import { ParticipantSelector } from './ParticipantSelector';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
 import { ParticipationMatrix } from './ParticipationMatrix';
@@ -19,14 +18,6 @@ interface IndividualBetsProps {
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   basePlayerId?: string;
 }
-
-/** Helper: count active participants, filtering stale IDs against actual player list */
-const countParticipants = (participantIds: string[] | undefined, players: Player[]): string => {
-  if (!participantIds || participantIds.length === 0) return `Todos (${players.length})`;
-  const validIds = participantIds.filter(id => players.some(p => p.id === id));
-  if (validIds.length === 0 || validIds.length === players.length) return `Todos (${players.length})`;
-  return `${validIds.length} de ${players.length}`;
-};
 
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
   config,
@@ -62,17 +53,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
         <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.medal.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.medal.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('medal', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Pressures */}
@@ -88,17 +68,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
         <AmountInput label="Match 18" value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.pressures.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.pressures.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('pressures', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Skins */}
@@ -220,17 +189,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             </CollapsibleSubSection>
           </div>
         </CollapsibleSubSection>
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.skins.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.skins.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('skins', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Caros */}
@@ -244,17 +202,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         onExpandChange={(open) => onToggleSection('caros', open)}
       >
         <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.caros.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.caros.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('caros', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
 
         <CollapsibleSubSection
           label="Configuración"
@@ -395,17 +342,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         color="gold"
       >
         <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.units.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.units.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('units', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Manchas */}
@@ -420,17 +356,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         color="red"
       >
         <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.manchas.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.manchas.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('manchas', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Putts */}
@@ -446,17 +371,6 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
         <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
         <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
-
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.putts?.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.putts?.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('putts', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
 
         <p className="text-[9px] text-muted-foreground mt-2">
           ⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts totales.

@@ -8,16 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Plus, Minus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ParticipantSelector } from './ParticipantSelector';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
+import { GrupalParticipationMatrix } from './GrupalParticipationMatrix';
 
-const countParticipants = (participantIds: string[] | undefined, players: Player[]): string => {
-  if (!participantIds || participantIds.length === 0) return `Todos (${players.length})`;
-  const validIds = participantIds.filter(id => players.some(p => p.id === id));
-  if (validIds.length === 0 || validIds.length === players.length) return `Todos (${players.length})`;
-  return `${validIds.length} de ${players.length}`;
-};
+
+
 
 interface GrupalBetsProps {
   config: BetConfig;
@@ -39,6 +35,13 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       <p className="text-xs text-muted-foreground mb-2">
         Apuestas donde todos participan en un pool. Definen su hándicap propio (excepto Coneja).
       </p>
+
+      {/* Grupal Participation Matrix */}
+      <GrupalParticipationMatrix
+        config={config}
+        players={players}
+        onUpdateBet={onUpdateBet}
+      />
 
       {/* Coneja */}
       <BetSection
@@ -121,16 +124,6 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       >
         <AmountInput label="Valor por culebra" value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
         
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.culebras.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.culebras.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('culebras', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Pinguinos */}
@@ -146,16 +139,6 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       >
         <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
         
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.pinguinos.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.pinguinos.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('pinguinos', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
       </BetSection>
 
       {/* Zoológico - NEW */}
@@ -175,16 +158,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} 
         />
         
-        <CollapsibleSubSection
-          label="Participantes"
-          summary={countParticipants(config.zoologico?.participantIds, players)}
-        >
-          <ParticipantSelector
-            players={players}
-            participantIds={config.zoologico?.participantIds}
-            onParticipantsChange={(ids) => onUpdateBet('zoologico', { participantIds: ids })}
-          />
-        </CollapsibleSubSection>
+
 
         <CollapsibleSubSection
           label="Configuración"
