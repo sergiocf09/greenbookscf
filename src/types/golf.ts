@@ -142,6 +142,7 @@ export interface OyesesBetConfig {
   amount: number;
   zapatoEnabled?: boolean; // Whether Zapato (x2 when one player wins all oyes) is active. Defaults to true.
   playerConfigs: OyesesPlayerConfig[];
+  participantIds?: string[];
 }
 
 // Oyeses hole result - captures proximity order per player per hole
@@ -206,6 +207,7 @@ export interface RayasBetConfig {
   };
   // Per-player bilateral overrides (keyed by logged-in player's ID)
   bilateralOverrides?: Record<string, RayasBilateralOverride[]>;
+  participantIds?: string[];
 }
 
 // Medal General - Group bet for lowest net total score
@@ -218,6 +220,7 @@ export interface MedalGeneralBetConfig {
   enabled: boolean;
   amount: number; // Amount each loser pays to winner(s)
   playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
+  participantIds?: string[];
 }
 
 // Coneja - Group bet based on patas per hole and sets
@@ -227,6 +230,7 @@ export interface ConejaBetConfig {
   enabled: boolean;
   amount: number; // Amount per coneja (same for all 3 sets)
   handicapMode: ConejaHandicapMode; // 'individual' = use player handicap, 'bilateral' = use bilateral handicaps
+  participantIds?: string[];
 }
 
 // Coneja pata state for a specific hole
@@ -299,6 +303,7 @@ export interface StablefordBetConfig {
   amount: number;
   points: StablefordPointConfig;
   playerHandicaps: StablefordPlayerConfig[];
+  participantIds?: string[];
 }
 
 // Presiones por Parejas - Team pressures
