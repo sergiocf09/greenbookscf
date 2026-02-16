@@ -328,16 +328,14 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                         isBaseRow && 'bg-primary/5'
                       )}
                     >
-                      {/* Row header - compact: avatar only */}
-                      <td className="sticky left-0 z-10 bg-card p-0.5 w-[40px] min-w-[40px]">
-                        <div className="flex items-center justify-center">
-                          <PlayerAvatar
-                            initials={disambiguated.get(row.id) || row.initials}
-                            background={row.color}
-                            size="sm"
-                            isLoggedInUser={isBaseRow}
-                          />
-                        </div>
+                      {/* Row header - name only, no avatar */}
+                      <td className="sticky left-0 z-10 bg-card pl-1 pr-0.5 py-0.5 w-[38px] min-w-[38px]">
+                        <span className={cn(
+                          "text-[9px] font-medium whitespace-nowrap leading-tight",
+                          isBaseRow ? "text-primary font-semibold" : "text-foreground"
+                        )}>
+                          {row.name.split(' ')[0]}
+                        </span>
                       </td>
 
                       {/* Cells */}
