@@ -2177,13 +2177,13 @@ export const calculateTeamPressuresBets = (
     
     const totalMoney = frontMoney + backMoney + matchMoney;
     
-    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] configTeamA=[${bet.teamA.join(',')}] configTeamB=[${bet.teamB.join(',')}] frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} frontIsTied=${frontIsTied}`);
+    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] configTeamA=[${bet.teamA.join(',')}] configTeamB=[${bet.teamB.join(',')}] frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} perPerson=${totalMoney/2} perBilateral=${totalMoney/4} frontIsTied=${frontIsTied}`);
     
-    // Split 50/50: each loser pays 50% to EACH winner
-    // So per cross-pair amount = totalMoney / 2
-    // Each person has 2 opponents → total per person = 2 * (totalMoney/2) = totalMoney
+    // Split: each team member is responsible for HALF the team total.
+    // perPairAmount = totalMoney / 4 because each member pays (totalMoney/2) split across 2 opponents.
+    // Each person has 2 opponents → total per person = 2 * (totalMoney/4) = totalMoney/2
     if (totalMoney !== 0) {
-      const perPairAmount = totalMoney / 2; // Each loser pays half to each winner
+      const perPairAmount = totalMoney / 4; // Each member pays quarter to each opponent
       
       teamA.forEach(aId => {
         teamB.forEach(bId => {
