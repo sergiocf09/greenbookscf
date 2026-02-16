@@ -682,6 +682,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   
   // Get corrected bilateral balance that uses getRayasDetailForPair for Rayas consistency
   // This ensures the Tabla General uses the same Rayas calculation as the BilateralDetail
+  // Helper to check if both players participate in a bet (used outside BilateralDetail)
+  const bothParticipateGlobal = (participantIds: string[] | undefined, playerId: string, rivalId: string): boolean => {
+    if (!participantIds || participantIds.length === 0) return true; // all participate by default
+    const playerIn = participantIds.includes(playerId);
+    const rivalIn = participantIds.includes(rivalId);
+    if (playerIn && rivalIn) return true;
+    // Template inheritance: if no player from the display group is in participantIds, treat as template
+    const displayGroupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+    const anyGroupPlayerInList = displayGroupPlayers.some(p => participantIds.includes(p.id));
+    if (!anyGroupPlayerInList) return true;
+    return false;
+  };
+
   // IMPORTANT: Also respects betOverrides (cancelled bets) for each pair
   // HISTORICAL MODE: When snapshot data is available, read directly from snapshot balances
   const getCorrectedBilateralBalance = (playerId: string, rivalId: string): number => {
@@ -813,7 +826,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
     const isRayasActiveForThisPair = isRayasActiveForPair(effectiveBetConfig, playerId, rivalId);
     
-    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair) {
+    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(effectiveBetConfig.rayas?.participantIds, playerId, rivalId)) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
@@ -858,7 +871,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let medalGeneralTotal = 0;
     const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
     
-    if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled) {
+    if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(betConfig.medalGeneral?.participantIds, playerId, rivalId)) {
       const medalResult = getMedalGeneralBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -876,7 +889,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let stablefordTotal = 0;
     const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
     
-    if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled) {
+    if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(betConfig.stableford?.participantIds, playerId, rivalId)) {
       const stablefordResult = getStablefordBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -3413,7 +3426,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // Rayas (Aggregator bet)
     // HISTORICAL: Read directly from snapshot ledger via groupedSummaries
     // LIVE: Recalculate from scores
-    if (effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {
+    if (effectiveBetConfig.rayas?.enabled && bothParticipate(effectiveBetConfig.rayas?.participantIds, 'rayas') && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {
       if (isHistorical) {
         // Historical mode: use ledger-derived groupedSummaries directly
         const rayasFrontTotal = groupedSummaries['Rayas Front']?.total || 0;
@@ -3548,7 +3561,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Coneja - Group bet shown in bilateral view (before Medal General)
     // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
-    if (effectiveBetConfig.coneja?.enabled && players.length >= 2) {
+    if (effectiveBetConfig.coneja?.enabled && bothParticipate(effectiveBetConfig.coneja?.participantIds, 'coneja') && players.length >= 2) {
       if (isHistorical) {
         const conejaTotal = groupedSummaries['Coneja']?.total || 0;
         if (conejaTotal !== 0) {
@@ -3617,7 +3630,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Medal General (Group bet shown in bilateral view)
     // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
-    if (betConfig.medalGeneral?.enabled) {
+    if (betConfig.medalGeneral?.enabled && bothParticipate(betConfig.medalGeneral?.participantIds, 'medalGeneral')) {
       if (isHistorical) {
         const medalTotal = groupedSummaries['Medal General']?.total || 0;
         if (medalTotal !== 0) {
@@ -3703,7 +3716,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Stableford - Group bet shown in bilateral view (like Medal General)
     // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
-    if (betConfig.stableford?.enabled) {
+    if (betConfig.stableford?.enabled && bothParticipate(betConfig.stableford?.participantIds, 'stableford')) {
       if (isHistorical) {
         const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
         if (stablefordTotal !== 0) {
