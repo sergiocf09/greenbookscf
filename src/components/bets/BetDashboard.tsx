@@ -1864,102 +1864,68 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   <Users className="h-4 w-4" />
                   Foursome {idx + 1}
                 </div>
-                {onBetConfigChange && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
-                    onClick={() => toggleTeamBetDisabled(bet.id)}
-                    title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
-                  >
-                    {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {pressureDisabled ? (
+                    <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+                  ) : (
+                    <span className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                      {baseTeamBalance >= 0 ? '+$' : '-$'}{Math.abs(baseTeamBalance)}
+                    </span>
+                  )}
+                  {onBetConfigChange && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                      onClick={() => toggleTeamBetDisabled(bet.id)}
+                      title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
+                    >
+                      {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Collapsible>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-medium min-w-0">
-                      <span className="truncate">
-                        {displayTeamAPlayers.map((p) => getPlayerAbbr(p)).join('/')}
-                        {'  vs  '}
-                        {displayTeamBPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+                <div className="space-y-1">
+                  {/* Names row */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium truncate">
+                      {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                    </span>
+                    <span className="text-muted-foreground text-xs mx-2">vs</span>
+                    <span className="font-medium truncate text-right">
+                      {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                    </span>
+                  </div>
+                  {/* Results row */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                      <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        F9 {frontBetsDisplay}
+                      </span>
+                      <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        B9 {backBetsDisplay}
+                      </span>
+                      <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        T {total18 >= 0 ? '+' : ''}{total18}
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {bet.scoringType === 'lowBall' ? 'Bola Baja' : 
-                       bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-sm tabular-nums">
-                        <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          F9 {frontBetsDisplay}
-                        </span>
-                        <span className="text-muted-foreground"> · </span>
-                        <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          B9 {backBetsDisplay}
-                        </span>
-                      </div>
-                      <div className="text-sm tabular-nums">
-                        <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          T {total18 >= 0 ? '+' : ''}{total18}
-                        </span>
-                      </div>
-                      {pressureDisabled ? (
-                        <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded inline-block">Cancelada</div>
-                      ) : (
-                        <div className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {baseTeamBalance >= 0 ? '+$' : '-$'}{Math.abs(baseTeamBalance)}
-                        </div>
-                      )}
-                    </div>
-
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                         <ChevronDown className="h-4 w-4" />
                         <span className="sr-only">Ver detalle</span>
                       </Button>
                     </CollapsibleTrigger>
                   </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {bet.scoringType === 'lowBall' ? 'Bola Baja' :
+                     bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}
+                  </p>
                 </div>
 
                 <CollapsibleContent className="mt-3 space-y-3">
-                  {/* Teams display */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1">
-                        {displayTeamAPlayers.map((p) => (
-                          <PlayerAvatar
-                            key={p.id}
-                            initials={getPlayerAbbr(p)}
-                            background={p.color}
-                            size="md"
-                            isLoggedInUser={p.id === basePlayer?.id || p.profileId === basePlayer?.id}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">Tu equipo</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {displayTeamBPlayers.map((p) => (
-                          <PlayerAvatar
-                            key={p.id}
-                            initials={getPlayerAbbr(p)}
-                            background={p.color}
-                            size="sm"
-                            isLoggedInUser={p.id === basePlayer?.id || p.profileId === basePlayer?.id}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
-                    </div>
-                  </div>
                   
                   {/* Hole by hole grid with tooltips */}
                   <div className="bg-muted/30 rounded-lg p-2 space-y-2">
@@ -2014,13 +1980,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <div className="grid grid-cols-2 gap-x-3">
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a1.net}</span>{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a2.net}</span>{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a1.net}</span></span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a2.net}</span></span></p>
                                       </div>
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b1.net}</span>{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b2.net}</span>{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b1.net}</span></span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b2.net}</span></span></p>
                                       </div>
                                     </div>
                                     <div className="pt-1 border-t border-border/50">
@@ -2089,13 +2055,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <div className="grid grid-cols-2 gap-x-3">
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a1.net}</span>{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.a2.net}</span>{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a1.net}</span></span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a2.net}</span></span></p>
                                       </div>
                                       <div>
                                         <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b1.net}</span>{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums"><span>{detail.b2.net}</span>{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b1.net}</span></span></p>
+                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b2.net}</span></span></p>
                                       </div>
                                     </div>
                                     <div className="pt-1 border-t border-border/50">
@@ -2375,8 +2341,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     <p className="flex items-center justify-between gap-2 text-sm">
       <span className="truncate">{name}</span>
       <span className="flex items-center gap-2 tabular-nums">
-        <span>{net}</span>
         {hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" aria-label="Stroke aplicado" />}
+        <span>{net}</span>
       </span>
     </p>
   );
@@ -2387,7 +2353,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   const getWinnerText = (w?: Winner) => {
     if (!w) return '—';
     if (w === 'tie') return 'Empate';
-    return w === 'A' ? 'A' : 'B';
+    return w === 'A' ? 'Tu equipo' : 'Rival';
   };
 
   const scoringLabel = results.scoringType === 'all'
@@ -2428,106 +2394,78 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             <Users className="h-4 w-4" />
             {title}
           </div>
-          {onToggleDisabled && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
-              onClick={onToggleDisabled}
-              title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
-            >
-              {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-            </Button>
-          )}
-          {onCancel && !onToggleDisabled && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-destructive"
-              onClick={onCancel}
-              title="Cancelar Carritos"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {isDisabled ? (
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
+                {baseTeamMoney >= 0 ? '+$' : '-$'}{Math.abs(baseTeamMoney)}
+              </span>
+            )}
+            {onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                onClick={onToggleDisabled}
+                title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
+              >
+                {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              </Button>
+            )}
+            {onCancel && !onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                onClick={onCancel}
+                title="Cancelar Carritos"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         <Collapsible>
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-sm font-medium min-w-0">
-                <span className="truncate">
-                  {displayTeamAPlayers.map((p) => getPlayerAbbr(p)).join('/')}
-                  {'  vs  '}
-                  {displayTeamBPlayers.map((p) => getPlayerAbbr(p)).join('/')}
+          <div className="space-y-1">
+            {/* Names row */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium truncate">
+                {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+              </span>
+              <span className="text-muted-foreground text-xs mx-2">vs</span>
+              <span className="font-medium truncate text-right">
+                {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+              </span>
+            </div>
+            {/* Results row */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>
+                  F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}
+                </span>
+                <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>
+                  B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}
+                </span>
+                <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>
+                  T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}
                 </span>
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {scoringLabel}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-sm tabular-nums">
-                  <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}</span>
-                  <span className="text-muted-foreground"> · </span>
-                  <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}</span>
-                </div>
-                <div className="text-sm tabular-nums">
-                  <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}</span>
-                </div>
-                 {isDisabled ? (
-                   <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded inline-block">Cancelada</div>
-                 ) : (
-                   <div className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
-                     {baseTeamMoney >= 0 ? '+$' : '-$'}{Math.abs(baseTeamMoney)}
-                   </div>
-                 )}
-              </div>
-
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                   <ChevronDown className="h-4 w-4" />
                   <span className="sr-only">Ver detalle</span>
                 </Button>
               </CollapsibleTrigger>
             </div>
+            <p className="text-[10px] text-muted-foreground">
+              {scoringLabel}
+            </p>
           </div>
 
           <CollapsibleContent className="mt-3 space-y-3">
-            {/* Solo vista Pareja A (tu equipo) */}
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="flex items-center gap-1">
-                  {displayTeamAPlayers.map((p) => (
-                    <PlayerAvatar
-                      key={p.id}
-                      initials={getPlayerAbbr(p)}
-                      background={p.color}
-                      size="md"
-                      isLoggedInUser={p.id === basePlayerId || p.profileId === basePlayerId}
-                    />
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Pareja A (tu equipo)</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  {displayTeamBPlayers.map((p) => (
-                    <PlayerAvatar
-                      key={p.id}
-                      initials={getPlayerAbbr(p)}
-                      background={p.color}
-                      size="sm"
-                      isLoggedInUser={p.id === basePlayerId || p.profileId === basePlayerId}
-                    />
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Rival</p>
-              </div>
-            </div>
             
             {/* Puntos por hoyo */}
             <div className="bg-muted/30 rounded-lg p-2 space-y-2">
@@ -2583,7 +2521,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
                               <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
                               <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
@@ -2597,13 +2535,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="pt-1 border-t border-border/50">
                             {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
                               <p className="flex justify-between">
-                                <span>LowBall</span>
+                                <span>Bola Baja</span>
                                 <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
                               </p>
                             )}
                             {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
                               <p className="flex justify-between">
-                                <span>HighBall</span>
+                                <span>Bola Alta</span>
                                 <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
                               </p>
                             )}
@@ -2614,7 +2552,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                               </p>
                             )}
                             <p className="flex justify-between font-medium">
-                              <span>Puntos (A-B)</span>
+                              <span>Puntos</span>
                               <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
                             </p>
                           </div>
@@ -2676,7 +2614,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                           <div className="grid grid-cols-2 gap-x-3">
                             <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Pareja A</p>
+                              <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
                               <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
                               <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
                             </div>
@@ -2690,13 +2628,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           <div className="pt-1 border-t border-border/50">
                             {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
                               <p className="flex justify-between">
-                                <span>LowBall</span>
+                                <span>Bola Baja</span>
                                 <span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span>
                               </p>
                             )}
                             {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
                               <p className="flex justify-between">
-                                <span>HighBall</span>
+                                <span>Bola Alta</span>
                                 <span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span>
                               </p>
                             )}
@@ -2707,7 +2645,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                               </p>
                             )}
                             <p className="flex justify-between font-medium">
-                              <span>Puntos (A-B)</span>
+                              <span>Puntos</span>
                               <span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span>
                             </p>
                           </div>
@@ -2758,7 +2696,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
                   <div className="space-y-2">
                     <div>
-                      <p className="text-[11px] text-muted-foreground mb-1">Pareja A</p>
+                      <p className="text-[11px] text-muted-foreground mb-1">Tu equipo</p>
                       <ScoreLine
                         name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
                         hcp={selectedHole.detail.hcpA1}
@@ -2788,13 +2726,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   <div className="pt-2 border-t border-border/50 text-sm">
                     {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
                       <p className="flex justify-between">
-                        <span>LowBall</span>
+                        <span>Bola Baja</span>
                         <span className="tabular-nums">{getWinnerText(selectedHole.detail.lowBallWinner as Winner | undefined)}</span>
                       </p>
                     )}
                     {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
                       <p className="flex justify-between">
-                        <span>HighBall</span>
+                        <span>Bola Alta</span>
                         <span className="tabular-nums">{getWinnerText(selectedHole.detail.highBallWinner as Winner | undefined)}</span>
                       </p>
                     )}
@@ -2805,7 +2743,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       </p>
                     )}
                     <p className="flex justify-between font-medium pt-1">
-                      <span>Puntos (A-B)</span>
+                      <span>Puntos</span>
                       <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
                     </p>
                   </div>
