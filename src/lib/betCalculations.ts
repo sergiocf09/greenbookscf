@@ -2177,7 +2177,7 @@ export const calculateTeamPressuresBets = (
     
     const totalMoney = frontMoney + backMoney + matchMoney;
     
-    devLog(`[TeamPressures] bet=${bet.id} frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} frontIsTied=${frontIsTied}`);
+    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] configTeamA=[${bet.teamA.join(',')}] configTeamB=[${bet.teamB.join(',')}] frontBets=${JSON.stringify(frontBets)} backBets=${JSON.stringify(backBets)} frontMoney=${frontMoney} backMoney=${backMoney} matchTotal=${matchTotal} matchMoney=${matchMoney} totalMoney=${totalMoney} frontIsTied=${frontIsTied}`);
     
     // Split 50/50: each loser pays 50% to EACH winner
     // So per cross-pair amount = totalMoney / 2
