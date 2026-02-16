@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
@@ -838,6 +838,20 @@ const Index = () => {
     }
   }, [profile, players.length, isRestoring]);
 
+  // Combine players from all groups with groupId for bet scope detection
+  const allPlayersForBets = useMemo(() => {
+    const mainGroupId = roundState?.groupId;
+    const mainWithGroup = players.map(p => ({
+      ...p,
+      groupId: p.groupId || mainGroupId || undefined,
+    }));
+    // Add players from additional groups
+    const mainPlayerIds = new Set(players.map(p => p.id));
+    const additionalPlayers = playerGroups
+      .flatMap(g => g.players.map(p => ({ ...p, groupId: g.id })))
+      .filter(p => !mainPlayerIds.has(p.id));
+    return [...mainWithGroup, ...additionalPlayers];
+  }, [players, playerGroups, roundState?.groupId]);
 
   // Can create and start round with just 1 player (for solo score tracking)
   const canCreateRound = players.length >= 1 && course !== null;
@@ -2216,7 +2230,7 @@ const Index = () => {
               </Button>
             )}
 
-            {players.length >= 2 && <BetSetup config={betConfig} onChange={setBetConfig} players={players} />}
+            {players.length >= 2 && <BetSetup config={betConfig} onChange={setBetConfig} players={allPlayersForBets} />}
             
             {/* Action Buttons */}
             <div className="space-y-2">
