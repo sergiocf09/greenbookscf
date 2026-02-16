@@ -4543,12 +4543,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     {formatPlayerName(player.name)}: <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
                                   </p>
                                 )}
-                                <div className="flex items-center gap-3">
-                                  {/* Variant toggles - left side */}
-                                  <div className="flex flex-col gap-0.5 flex-1">
+                                <div className="flex items-center justify-center gap-3">
                                     <button
                                       className={cn(
-                                        'text-xs text-left px-2 py-1 rounded transition-colors',
+                                        'text-xs px-2 py-1 rounded transition-colors',
                                         activePairVariant === 'acumulados' 
                                           ? 'font-semibold text-primary bg-primary/10' 
                                           : 'text-muted-foreground hover:text-foreground'
@@ -4571,7 +4569,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     </button>
                                     <button
                                       className={cn(
-                                        'text-xs text-left px-2 py-1 rounded transition-colors',
+                                        'text-xs px-2 py-1 rounded transition-colors',
                                         activePairVariant === 'sinAcumulacion' 
                                           ? 'font-semibold text-primary bg-primary/10' 
                                           : 'text-muted-foreground hover:text-foreground'
@@ -4592,7 +4590,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     >
                                       Sin acumular
                                     </button>
-                                  </div>
                                 </div>
                               </div>
                             )}
