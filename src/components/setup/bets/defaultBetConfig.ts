@@ -3,7 +3,7 @@ import { BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 100 },
   pressures: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 50 },
-  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: false, modality: 'acumulados' },
+  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: true, modality: 'acumulados' },
   caros: { enabled: true, amount: 200, startHole: 15, endHole: 18 },
   oyeses: { enabled: false, amount: 25, playerConfigs: [] },
   units: { enabled: true, valuePerPoint: 25 },
