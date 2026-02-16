@@ -37,26 +37,26 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   return (
     <div className={label ? "flex items-center justify-between" : "flex items-center justify-center"}>
       {label && <Label className="text-xs text-muted-foreground">{label}</Label>}
-      <div className="flex items-center gap-0.5">
-        <div className="flex items-center gap-0.5">
-          <DollarSign className="h-3 w-3 text-muted-foreground shrink-0" />
+      <div className="flex items-center gap-px">
+        <div className="flex items-center">
+          <DollarSign className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           <Input
             type="number"
             value={value}
             onChange={(e) => onChange(parseInt(e.target.value) || 0)}
             onFocus={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="h-6 w-12 text-xs text-center px-0.5"
+            className="h-5 w-10 text-[11px] text-center px-0"
             min={allowNegative ? undefined : min}
             step={step}
           />
         </div>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-4 w-4 shrink-0"
+            className="h-3 w-3 shrink-0 p-0"
             onClick={handleIncrement}
             onMouseDown={(e) => e.stopPropagation()}
           >
@@ -64,9 +64,9 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-4 w-4 shrink-0"
+            className="h-3 w-3 shrink-0 p-0"
             onClick={handleDecrement}
             onMouseDown={(e) => e.stopPropagation()}
             disabled={!allowNegative && value <= min}
