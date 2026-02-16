@@ -1655,3 +1655,120 @@ export const getMedalGeneralBilateralResult = (
     rivalNet,
   };
 };
+
+// Helper to compute Stableford bilateral for a specific player pool
+const computeStablefordBilateralForPool = (
+  pool: Player[],
+  player: Player,
+  rival: Player,
+  scores: Map<string, PlayerScore[]>,
+  betConfig: BetConfig,
+  course: GolfCourse
+): { isWinner: boolean; isTied: boolean; amount: number; playerPoints: number; rivalPoints: number } | null => {
+  const playerHandicaps = betConfig.stableford?.playerHandicaps || [];
+  const amount = betConfig.stableford?.amount || 100;
+  const points = betConfig.stableford?.points || DEFAULT_STABLEFORD_POINTS;
+
+  const calcPoints = (p: Player): number => {
+    const pScores = scores.get(p.id) || [];
+    const confirmed = pScores.filter(s => s.confirmed && s.strokes > 0);
+    if (confirmed.length === 0) return 0;
+
+    const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
+    const strokesPerHole = calculateStrokesPerHole(hcp, course);
+
+    return confirmed.reduce((sum, s) => {
+      const holePar = course.holes[s.holeNumber - 1]?.par || 4;
+      const received = strokesPerHole[s.holeNumber - 1] || 0;
+      const netScore = s.strokes - received;
+      const toPar = netScore - holePar;
+
+      if (toPar <= -3) return sum + points.albatross;
+      if (toPar === -2) return sum + points.eagle;
+      if (toPar === -1) return sum + points.birdie;
+      if (toPar === 0) return sum + points.par;
+      if (toPar === 1) return sum + points.bogey;
+      if (toPar === 2) return sum + points.doubleBogey;
+      if (toPar === 3) return sum + points.tripleBogey;
+      return sum + points.quadrupleOrWorse;
+    }, 0);
+  };
+
+  const allPoints = pool.map(p => ({ playerId: p.id, points: calcPoints(p) }));
+  const playerEntry = allPoints.find(n => n.playerId === player.id);
+  const rivalEntry = allPoints.find(n => n.playerId === rival.id);
+  if (!playerEntry || !rivalEntry) return null;
+
+  const maxPts = Math.max(...allPoints.map(p => p.points));
+  const winnerIds = new Set(allPoints.filter(p => p.points === maxPts).map(p => p.playerId));
+  const winnersCount = winnerIds.size;
+  const losersCount = allPoints.length - winnersCount;
+
+  if (losersCount === 0) return null;
+
+  const isPlayerWinner = winnerIds.has(player.id);
+  const isRivalWinner = winnerIds.has(rival.id);
+  const amountFromLoserToWinner = amount / winnersCount;
+
+  const bilateralAmount =
+    isPlayerWinner && !isRivalWinner
+      ? amountFromLoserToWinner
+      : !isPlayerWinner && isRivalWinner
+        ? -amountFromLoserToWinner
+        : 0;
+
+  return {
+    isWinner: playerEntry.points > rivalEntry.points,
+    isTied: playerEntry.points === rivalEntry.points,
+    amount: bilateralAmount,
+    playerPoints: playerEntry.points,
+    rivalPoints: rivalEntry.points,
+  };
+};
+
+// Utility function to calculate Stableford result for bilateral view
+// Respects scope setting: group, global, or both (summing both pools)
+export const getStablefordBilateralResult = (
+  allPlayers: Player[],
+  player: Player,
+  rival: Player,
+  scores: Map<string, PlayerScore[]>,
+  betConfig: BetConfig,
+  course: GolfCourse
+): { isWinner: boolean; isTied: boolean; amount: number; playerPoints: number; rivalPoints: number } | null => {
+  if (!betConfig.stableford?.enabled) return null;
+
+  const scope = betConfig.stableford?.scope ?? 'global';
+  const hasMultipleGroups = new Set(allPlayers.map(p => p.groupId).filter(Boolean)).size > 1;
+
+  if (!hasMultipleGroups || scope === 'global') {
+    return computeStablefordBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+  }
+
+  const playerGroupId = player.groupId;
+  const groupPool = playerGroupId
+    ? allPlayers.filter(p => p.groupId === playerGroupId)
+    : allPlayers;
+
+  if (scope === 'group') {
+    return computeStablefordBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+  }
+
+  // scope === 'both': sum group + global results
+  const groupResult = computeStablefordBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+  const globalResult = computeStablefordBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+
+  if (!groupResult && !globalResult) return null;
+
+  const totalAmount = (groupResult?.amount ?? 0) + (globalResult?.amount ?? 0);
+  const playerPoints = globalResult?.playerPoints ?? groupResult?.playerPoints ?? 0;
+  const rivalPoints = globalResult?.rivalPoints ?? groupResult?.rivalPoints ?? 0;
+
+  return {
+    isWinner: playerPoints > rivalPoints,
+    isTied: playerPoints === rivalPoints,
+    amount: totalAmount,
+    playerPoints,
+    rivalPoints,
+  };
+};
