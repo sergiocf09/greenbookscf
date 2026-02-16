@@ -516,6 +516,205 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   );
 };
 
+// Medal General result block - reusable for group/global scopes
+const MedalResultBlock: React.FC<{
+  result: MedalGeneralResult;
+  all18HolesConfirmed: boolean;
+  basePlayerId?: string;
+  label?: string;
+  sameGroupPlayerIds: Set<string>;
+}> = ({ result, all18HolesConfirmed, basePlayerId, label, sameGroupPlayerIds }) => {
+  if (!result.hasValidScores || result.winners.length === 0) {
+    return (
+      <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+        {label && <span className="font-medium mr-1">{label}:</span>}
+        Sin scores confirmados suficientes
+      </div>
+    );
+  }
+
+  // Check if winner is from the same group as base player
+  const winnerInSameGroup = result.winners.some(w => sameGroupPlayerIds.has(w.playerId));
+  const isConfirmed = all18HolesConfirmed;
+  // Green if same group winner + confirmed, amber if partial or cross-group winner
+  const useGreen = isConfirmed && winnerInSameGroup;
+  const useAmber = !useGreen;
+
+  return (
+    <div className={cn(
+      'rounded-lg p-3',
+      useGreen ? 'bg-green-500/10 border border-green-500/30' : 'bg-amber-500/10 border border-amber-500/30'
+    )}>
+      {label && (
+        <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-1 block">{label}</span>
+      )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={cn('text-sm', useGreen ? 'text-green-500' : 'text-amber-500')}>
+            {isConfirmed ? '🏆' : '📊'}
+          </span>
+          <div className="flex items-center gap-1">
+            {result.winners.map((winner, idx) => (
+              <React.Fragment key={winner.playerId}>
+                {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                <span className="font-medium text-sm">{formatPlayerName(winner.name).split(' ')[0]}</span>
+                <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
+          {isConfirmed ? '+' : '~'}${result.winners[0]?.amountWon || 0}
+        </span>
+      </div>
+      {result.winners.length > 1 && (
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Empate - pot dividido entre {result.winners.length} jugadores
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Stableford result block - reusable for group/global scopes
+const StablefordResultBlock: React.FC<{
+  results: StablefordPlayerResult[];
+  amount: number;
+  basePlayerId?: string;
+  label?: string;
+  sameGroupPlayerIds: Set<string>;
+}> = ({ results, amount, basePlayerId, label, sameGroupPlayerIds }) => {
+  if (results.length === 0) return null;
+  const isWinner = results[0].pointsTotal > (results[1]?.pointsTotal ?? 0);
+  const winnerInSameGroup = isWinner && sameGroupPlayerIds.has(results[0].playerId);
+
+  return (
+    <div className="space-y-1">
+      {label && (
+        <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+      )}
+      <Popover>
+        <PopoverTrigger asChild>
+          <div className="grid grid-cols-4 gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
+            {results.slice(0, 8).map((result, idx) => {
+              const isTop = idx === 0 && isWinner;
+              return (
+                <div
+                  key={result.playerId}
+                  className={cn(
+                    "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg",
+                    isTop ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
+                  )}
+                >
+                  <div className="relative">
+                    <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                    {isTop && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
+                  </div>
+                  <span className={cn("text-sm font-bold", isTop ? "text-green-600" : "")}>
+                    {result.pointsTotal}
+                  </span>
+                  <span className="text-[8px] text-muted-foreground">
+                    F{result.pointsFront} B{result.pointsBack}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
+          <div className="space-y-2">
+            <div className="font-semibold text-sm flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-500" />
+              Stableford - Detalle por Hoyo {label ? `(${label})` : ''}
+            </div>
+            {/* Front 9 */}
+            <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
+              <div></div>
+              {[1,2,3,4,5,6,7,8,9].map(h => <div key={h} className="text-center">{h}</div>)}
+              <div className="text-center font-semibold">F9</div>
+            </div>
+            {results.map(r => (
+              <div key={r.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
+                <PlayerAvatar initials={r.player.initials} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
+                {[1,2,3,4,5,6,7,8,9].map(h => {
+                  const hp = r.holePoints.find(p => p.holeNumber === h);
+                  return (
+                    <div key={h} className={cn(
+                      "text-center text-[10px] font-bold rounded py-0.5 relative",
+                      !hp ? "text-muted-foreground" :
+                      hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                      hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                      hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                      hp.points === 0 ? "bg-muted/50" :
+                      "bg-red-500/20 text-destructive"
+                    )}>
+                      {hp?.points ?? '-'}
+                      {hp && hp.strokesReceived > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
+                    </div>
+                  );
+                })}
+                <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsFront}</div>
+              </div>
+            ))}
+            {/* Back 9 */}
+            <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
+              <div></div>
+              {[10,11,12,13,14,15,16,17,18].map(h => <div key={h} className="text-center">{h}</div>)}
+              <div className="text-center font-semibold">B9</div>
+            </div>
+            {results.map(r => (
+              <div key={`${r.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
+                <PlayerAvatar initials={r.player.initials} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
+                {[10,11,12,13,14,15,16,17,18].map(h => {
+                  const hp = r.holePoints.find(p => p.holeNumber === h);
+                  return (
+                    <div key={h} className={cn(
+                      "text-center text-[10px] font-bold rounded py-0.5 relative",
+                      !hp ? "text-muted-foreground" :
+                      hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
+                      hp.points >= 2 ? "bg-green-500/30 text-green-700" :
+                      hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
+                      hp.points === 0 ? "bg-muted/50" :
+                      "bg-red-500/20 text-destructive"
+                    )}>
+                      {hp?.points ?? '-'}
+                      {hp && hp.strokesReceived > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
+                    </div>
+                  );
+                })}
+                <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsBack}</div>
+              </div>
+            ))}
+            <div className="border-t border-border/50 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
+              Toca afuera para cerrar
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+      {/* Winner display */}
+      {isWinner && (
+        <div className={cn(
+          "rounded-lg p-2",
+          winnerInSameGroup ? "bg-green-500/10 border border-green-500/30" : "bg-amber-500/10 border border-amber-500/30"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={cn("text-xs", winnerInSameGroup ? "text-green-500" : "text-amber-500")}>🏆</span>
+              <PlayerAvatar initials={results[0].player.initials} background={results[0].player.color} size="sm" isLoggedInUser={results[0].playerId === basePlayerId} />
+              <span className="font-medium text-sm">{formatPlayerName(results[0].player.name).split(' ')[0]}</span>
+              <span className="text-[10px] text-muted-foreground">{results[0].pointsTotal} pts</span>
+            </div>
+            <span className={cn("font-bold", winnerInSameGroup ? "text-green-600" : "text-amber-600")}>
+              +${amount * (results.length - 1)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   players,
   scores,
@@ -582,32 +781,23 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { setResults, holeDisplays, winners, amount };
   }, [sameGroupPlayers, scores, course, betConfig, confirmedHoles]);
 
-  // Calculate Medal General - show partial results during round
-  const medalGeneralResult = useMemo((): MedalGeneralResult | null => {
-    if (!betConfig.medalGeneral?.enabled || players.length < 2) {
-      return null;
-    }
+  // Helper to calculate Medal General for a given player pool
+  const calculateMedalForPool = (pool: Player[]): MedalGeneralResult | null => {
+    if (!betConfig.medalGeneral?.enabled || pool.length < 2) return null;
 
     const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
     const amount = betConfig.medalGeneral.amount || 100;
 
-    // Calculate net totals for each player
-    const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number }> = [];
+    const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number; groupId?: string }> = [];
 
-    players.forEach(player => {
+    pool.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
-
       if (confirmedScores.length === 0) return;
 
-      // Get Medal General handicap for this player
       const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
       const handicap = playerHcp?.handicap ?? player.handicap;
-
-      // Calculate strokes received per hole
       const strokesPerHole = calculateStrokesPerHole(handicap, course);
-
-      // Calculate net total
       const netTotal = confirmedScores.reduce((sum, s) => {
         const received = strokesPerHole[s.holeNumber - 1] || 0;
         return sum + (s.strokes - received);
@@ -619,37 +809,47 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         initials: player.initials,
         color: player.color,
         netScore: netTotal,
+        groupId: player.groupId,
       });
     });
 
-    if (playerNetScores.length < 2) {
-      return null;
-    }
+    if (playerNetScores.length < 2) return null;
 
-    // Find minimum net total (winners)
     const minNet = Math.min(...playerNetScores.map(p => p.netScore));
     const winners = playerNetScores.filter(p => p.netScore === minNet);
     const losersCount = playerNetScores.length - winners.length;
+    if (losersCount === 0) return null;
 
-    // If everyone tied, there is no payout.
-    if (losersCount === 0) {
-      return null;
-    }
-
-    // Calculate winnings: losers pay amount each, split among winners
     const totalPot = losersCount * amount;
     const amountPerWinner = winners.length > 0 ? totalPot / winners.length : 0;
 
     return {
       enabled: true,
       amount,
-      winners: winners.map(w => ({
-        ...w,
-        amountWon: amountPerWinner,
-      })),
+      winners: winners.map(w => ({ ...w, amountWon: amountPerWinner })),
       hasValidScores: true,
     };
-  }, [players, scores, betConfig.medalGeneral, course, all18HolesConfirmed]);
+  };
+
+  // Medal General results based on scope
+  const medalScope = betConfig.medalGeneral?.scope ?? 'global';
+  const hasMultipleGroups = useMemo(() => {
+    const groupIds = new Set(players.map(p => p.groupId).filter(Boolean));
+    return groupIds.size > 1;
+  }, [players]);
+
+  const medalGeneralGroupResult = useMemo((): MedalGeneralResult | null => {
+    if (!hasMultipleGroups || medalScope === 'global') return null;
+    return calculateMedalForPool(sameGroupPlayers);
+  }, [sameGroupPlayers, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+
+  const medalGeneralGlobalResult = useMemo((): MedalGeneralResult | null => {
+    if (hasMultipleGroups && medalScope === 'group') return null;
+    return calculateMedalForPool(players);
+  }, [players, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+
+  // For backward compat: single result for non-multi-group or single scope
+  const medalGeneralResult = medalGeneralGroupResult || medalGeneralGlobalResult;
 
 
 
@@ -883,10 +1083,21 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
   }, [sameGroupPlayers, scores, betConfig.pinguinos, course]);
 
-  // Calculate Stableford points for each player
-  const stablefordResults = useMemo(() => {
+  // Calculate Stableford points based on scope
+  const stablefordScope = betConfig.stableford?.scope ?? 'global';
+
+  const stablefordGroupResults = useMemo(() => {
+    if (!hasMultipleGroups || stablefordScope === 'global') return [];
+    return calculateStablefordPoints(sameGroupPlayers, scores, course, betConfig);
+  }, [sameGroupPlayers, scores, course, betConfig, hasMultipleGroups, stablefordScope]);
+
+  const stablefordGlobalResults = useMemo(() => {
+    if (hasMultipleGroups && stablefordScope === 'group') return [];
     return calculateStablefordPoints(players, scores, course, betConfig);
-  }, [players, scores, course, betConfig]);
+  }, [players, scores, course, betConfig, hasMultipleGroups, stablefordScope]);
+
+  // For backward compat
+  const stablefordResults = stablefordGroupResults.length > 0 ? stablefordGroupResults : stablefordGlobalResults;
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
@@ -944,7 +1155,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   };
   
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled;
 
   if (!hasAnyBet) {
     return null;
@@ -1244,8 +1455,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
 
-        {/* Medal General - Show winners (or partial leader) */}
-        {medalGeneralResult && (
+        {/* Medal General - Scope-aware rendering */}
+        {(medalGeneralGroupResult || medalGeneralGlobalResult) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t border-border/50" />}
             <div className="space-y-2">
@@ -1253,54 +1464,42 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-yellow-500" />
                   <span className="font-medium text-sm">Medal General</span>
-                </div>
-                <span className="text-xs text-muted-foreground">${medalGeneralResult.amount} c/u</span>
-              </div>
-              
-              {medalGeneralResult.hasValidScores && medalGeneralResult.winners.length > 0 ? (
-                <div className={cn(
-                  'rounded-lg p-3',
-                  all18HolesConfirmed 
-                    ? 'bg-green-500/10 border border-green-500/30' 
-                    : 'bg-amber-500/10 border border-amber-500/30'
-                )}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={cn('text-sm', all18HolesConfirmed ? 'text-green-500' : 'text-amber-500')}>
-                        {all18HolesConfirmed ? '🏆' : '📊'}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {medalGeneralResult.winners.map((winner, idx) => (
-                          <React.Fragment key={winner.playerId}>
-                            {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                            <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                            <span className="font-medium text-sm">{formatPlayerName(winner.name).split(' ')[0]}</span>
-                            <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    </div>
-                    <span className={cn('font-bold text-sm', all18HolesConfirmed ? 'text-green-600' : 'text-amber-600')}>
-                      {all18HolesConfirmed ? '+' : '~'}${medalGeneralResult.winners[0]?.amountWon || 0}
+                  {hasMultipleGroups && medalScope !== 'global' && (
+                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      {medalScope === 'group' ? 'Grupo' : 'Ambas'}
                     </span>
-                  </div>
-                  {medalGeneralResult.winners.length > 1 && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Empate - pot dividido entre {medalGeneralResult.winners.length} jugadores
-                    </p>
                   )}
                 </div>
-              ) : (
-                <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                  Sin scores confirmados suficientes
-                </div>
+                <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount || 100} c/u</span>
+              </div>
+              
+              {/* Group result */}
+              {medalGeneralGroupResult && (
+                <MedalResultBlock
+                  result={medalGeneralGroupResult}
+                  all18HolesConfirmed={all18HolesConfirmed}
+                  basePlayerId={basePlayerId}
+                  label={medalScope === 'both' ? 'Grupo' : undefined}
+                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                />
+              )}
+              
+              {/* Global result */}
+              {medalGeneralGlobalResult && (
+                <MedalResultBlock
+                  result={medalGeneralGlobalResult}
+                  all18HolesConfirmed={all18HolesConfirmed}
+                  basePlayerId={basePlayerId}
+                  label={medalScope === 'both' ? 'General' : undefined}
+                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                />
               )}
             </div>
           </>
         )}
         
-        {/* Stableford - Points system with toolkit */}
-        {betConfig.stableford?.enabled && stablefordResults.length > 0 && (
+        {/* Stableford - Scope-aware rendering */}
+        {betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
             <div className="border-t border-border/50" />
             <div className="space-y-2">
@@ -1308,150 +1507,35 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-500" />
                   <span className="font-medium text-sm">Stableford</span>
+                  {hasMultipleGroups && stablefordScope !== 'global' && (
+                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      {stablefordScope === 'group' ? 'Grupo' : 'Ambas'}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100} c/u</span>
               </div>
               
-              {/* Default view: Player totals with points (click for toolkit) */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="grid grid-cols-4 gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
-                    {stablefordResults.map((result, idx) => {
-                      const isWinner = idx === 0 && result.pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0);
-                      return (
-                        <div 
-                          key={result.playerId}
-                          className={cn(
-                            "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg",
-                            isWinner ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
-                          )}
-                        >
-                          <div className="relative">
-                            <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                            {isWinner && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
-                          </div>
-                          <span className={cn(
-                            "text-sm font-bold",
-                            isWinner ? "text-green-600" : ""
-                          )}>
-                            {result.pointsTotal}
-                          </span>
-                          <span className="text-[8px] text-muted-foreground">
-                            F{result.pointsFront} B{result.pointsBack}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm flex items-center gap-2">
-                      <Star className="h-4 w-4 text-amber-500" />
-                      Stableford - Detalle por Hoyo
-                    </div>
-                    
-                    {/* Front 9 */}
-                    <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
-                      <div></div>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
-                        <div key={h} className="text-center">{h}</div>
-                      ))}
-                      <div className="text-center font-semibold">F9</div>
-                    </div>
-                    {stablefordResults.map(result => (
-                      <div key={result.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
-                        <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => {
-                          const hp = result.holePoints.find(p => p.holeNumber === h);
-                          return (
-                            <div 
-                              key={h} 
-                              className={cn(
-                                "text-center text-[10px] font-bold rounded py-0.5 relative",
-                                !hp ? "text-muted-foreground" :
-                                hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                                hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                                hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                                hp.points === 0 ? "bg-muted/50" :
-                                "bg-red-500/20 text-destructive"
-                              )}
-                            >
-                              {hp?.points ?? '-'}
-                              {hp && hp.strokesReceived > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />
-                              )}
-                            </div>
-                          );
-                        })}
-                        <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
-                          {result.pointsFront}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Back 9 */}
-                    <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
-                      <div></div>
-                      {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
-                        <div key={h} className="text-center">{h}</div>
-                      ))}
-                      <div className="text-center font-semibold">B9</div>
-                    </div>
-                    {stablefordResults.map(result => (
-                      <div key={`${result.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
-                        <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                        {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => {
-                          const hp = result.holePoints.find(p => p.holeNumber === h);
-                          return (
-                            <div 
-                              key={h} 
-                              className={cn(
-                                "text-center text-[10px] font-bold rounded py-0.5 relative",
-                                !hp ? "text-muted-foreground" :
-                                hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                                hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                                hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                                hp.points === 0 ? "bg-muted/50" :
-                                "bg-red-500/20 text-destructive"
-                              )}
-                            >
-                              {hp?.points ?? '-'}
-                              {hp && hp.strokesReceived > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />
-                              )}
-                            </div>
-                          );
-                        })}
-                        <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">
-                          {result.pointsBack}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Total row in toolkit */}
-                    <div className="border-t border-border/50 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
-                      Toca afuera para cerrar
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Group result */}
+              {stablefordGroupResults.length > 0 && (
+                <StablefordResultBlock
+                  results={stablefordGroupResults}
+                  amount={betConfig.stableford.amount || 100}
+                  basePlayerId={basePlayerId}
+                  label={stablefordScope === 'both' ? 'Grupo' : undefined}
+                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                />
+              )}
               
-              {/* Winner display */}
-              {stablefordResults.length > 0 && stablefordResults[0].pointsTotal > (stablefordResults[1]?.pointsTotal ?? 0) && (
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-500 text-xs">🏆</span>
-                      <PlayerAvatar initials={stablefordResults[0].player.initials} background={stablefordResults[0].player.color} size="sm" isLoggedInUser={stablefordResults[0].playerId === basePlayerId} />
-                      <span className="font-medium text-sm">{formatPlayerName(stablefordResults[0].player.name).split(' ')[0]}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {stablefordResults[0].pointsTotal} pts
-                      </span>
-                    </div>
-                    <span className="text-green-600 font-bold">+${(betConfig.stableford?.amount || 100) * (players.length - 1)}</span>
-                  </div>
-                </div>
+              {/* Global result */}
+              {stablefordGlobalResults.length > 0 && (
+                <StablefordResultBlock
+                  results={stablefordGlobalResults}
+                  amount={betConfig.stableford.amount || 100}
+                  basePlayerId={basePlayerId}
+                  label={stablefordScope === 'both' ? 'General' : undefined}
+                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                />
               )}
             </div>
           </>
@@ -1461,26 +1545,21 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   );
 };
 
-// Utility function to calculate Medal General result for bilateral view
-export const getMedalGeneralBilateralResult = (
-  allPlayers: Player[],
+// Helper to compute medal general bilateral for a specific player pool
+const computeMedalBilateralForPool = (
+  pool: Player[],
   player: Player,
   rival: Player,
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
   course: GolfCourse
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
-  if (!betConfig.medalGeneral?.enabled) {
-    return null;
-  }
+  const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
+  const amount = betConfig.medalGeneral?.amount || 100;
 
-  const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
-  const amount = betConfig.medalGeneral.amount || 100;
-
-  // Calculate net totals for all players (to properly handle ties and split payouts)
   const netTotals: Array<{ playerId: string; netTotal: number }> = [];
 
-  allPlayers.forEach((p) => {
+  pool.forEach((p) => {
     const pScores = scores.get(p.id) || [];
     const confirmed = pScores.filter((s) => s.confirmed && s.strokes > 0);
     if (confirmed.length === 0) return;
@@ -1495,59 +1574,24 @@ export const getMedalGeneralBilateralResult = (
     netTotals.push({ playerId: p.id, netTotal });
   });
 
-  if (netTotals.length < 2) {
-    return null;
-  }
+  if (netTotals.length < 2) return null;
+
+  // Both player and rival must be in the pool
+  const playerEntry = netTotals.find(n => n.playerId === player.id);
+  const rivalEntry = netTotals.find(n => n.playerId === rival.id);
+  if (!playerEntry || !rivalEntry) return null;
 
   const minNetTotal = Math.min(...netTotals.map((p) => p.netTotal));
   const winnerIds = new Set(netTotals.filter((p) => p.netTotal === minNetTotal).map((p) => p.playerId));
   const winnersCount = winnerIds.size;
   const losersCount = netTotals.length - winnersCount;
 
-  // Everyone tied => no payout.
-  if (losersCount === 0) {
-    return null;
-  }
+  if (losersCount === 0) return null;
 
-  // Get player scores
-  const playerScores = scores.get(player.id) || [];
-  const rivalScores = scores.get(rival.id) || [];
-  
-  const confirmedPlayerScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
-  const confirmedRivalScores = rivalScores.filter(s => s.confirmed && s.strokes > 0);
-
-  if (confirmedPlayerScores.length === 0 || confirmedRivalScores.length === 0) {
-    return null;
-  }
-
-  // Get handicaps
-  const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id)?.handicap ?? player.handicap;
-  const rivalHcp = playerHandicaps.find(ph => ph.playerId === rival.id)?.handicap ?? rival.handicap;
-
-  // Calculate strokes per hole
-  const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
-  const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
-
-  // Calculate net totals
-  const playerNet = confirmedPlayerScores.reduce((sum, s) => {
-    const received = playerStrokesPerHole[s.holeNumber - 1] || 0;
-    return sum + (s.strokes - received);
-  }, 0);
-
-  const rivalNet = confirmedRivalScores.reduce((sum, s) => {
-    const received = rivalStrokesPerHole[s.holeNumber - 1] || 0;
-    return sum + (s.strokes - received);
-  }, 0);
-
-  const isWinner = playerNet < rivalNet;
-  const isTied = playerNet === rivalNet;
-
-  // Medal General payout is group-based:
-  // each non-winner pays `amount`, split evenly among winners.
   const isPlayerWinner = winnerIds.has(player.id);
   const isRivalWinner = winnerIds.has(rival.id);
-
   const amountFromLoserToWinner = amount / winnersCount;
+
   const bilateralAmount =
     isPlayerWinner && !isRivalWinner
       ? amountFromLoserToWinner
@@ -1556,10 +1600,57 @@ export const getMedalGeneralBilateralResult = (
         : 0;
 
   return {
-    // Keep these for UI messaging, but amount is now the true group-based bilateral impact.
-    isWinner,
-    isTied,
+    isWinner: playerEntry.netTotal < rivalEntry.netTotal,
+    isTied: playerEntry.netTotal === rivalEntry.netTotal,
     amount: bilateralAmount,
+    playerNet: playerEntry.netTotal,
+    rivalNet: rivalEntry.netTotal,
+  };
+};
+
+// Utility function to calculate Medal General result for bilateral view
+// Respects scope setting: group, global, or both (summing both pools)
+export const getMedalGeneralBilateralResult = (
+  allPlayers: Player[],
+  player: Player,
+  rival: Player,
+  scores: Map<string, PlayerScore[]>,
+  betConfig: BetConfig,
+  course: GolfCourse
+): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
+  if (!betConfig.medalGeneral?.enabled) return null;
+
+  const scope = betConfig.medalGeneral?.scope ?? 'global';
+  const hasMultipleGroups = new Set(allPlayers.map(p => p.groupId).filter(Boolean)).size > 1;
+
+  if (!hasMultipleGroups || scope === 'global') {
+    return computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+  }
+
+  // For 'group' or 'both': calculate within group
+  const playerGroupId = player.groupId;
+  const groupPool = playerGroupId
+    ? allPlayers.filter(p => p.groupId === playerGroupId)
+    : allPlayers;
+
+  if (scope === 'group') {
+    return computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+  }
+
+  // scope === 'both': sum group + global results
+  const groupResult = computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+  const globalResult = computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+
+  if (!groupResult && !globalResult) return null;
+
+  const totalAmount = (groupResult?.amount ?? 0) + (globalResult?.amount ?? 0);
+  const playerNet = globalResult?.playerNet ?? groupResult?.playerNet ?? 0;
+  const rivalNet = globalResult?.rivalNet ?? groupResult?.rivalNet ?? 0;
+
+  return {
+    isWinner: playerNet < rivalNet,
+    isTied: playerNet === rivalNet,
+    amount: totalAmount,
     playerNet,
     rivalNet,
   };
