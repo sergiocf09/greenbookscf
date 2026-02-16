@@ -1,5 +1,5 @@
-import React from 'react';
-import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
+import React, { useMemo } from 'react';
+import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
 import { GrupalParticipationMatrix, grupalBetHasParticipants } from './GrupalParticipationMatrix';
+import { BetScopeSelector } from './BetScopeSelector';
 
 interface GrupalBetsProps {
   config: BetConfig;
@@ -28,6 +29,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
   onUpdateBet,
   onUpdateConfig,
 }) => {
+  // Detect if there are multiple groups by checking distinct groupIds
+  const hasMultipleGroups = useMemo(() => {
+    const groupIds = new Set(players.map(p => p.groupId).filter(Boolean));
+    return groupIds.size > 1;
+  }, [players]);
+
   const show = (betKey: string) => grupalBetHasParticipants(config, betKey, players);
 
   return (
@@ -159,6 +166,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onExpandChange={(open) => onToggleSection('medalGeneral', open)} color="gold"
         >
           <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
+          {hasMultipleGroups && (
+            <BetScopeSelector
+              scope={config.medalGeneral?.scope ?? 'global'}
+              onChange={(scope) => onUpdateBet('medalGeneral', { scope })}
+            />
+          )}
           <CollapsibleSubSection label="Configuración" summary="Handicaps por jugador">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Handicaps para Medal General</Label>
@@ -209,11 +222,17 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onExpandChange={(open) => onToggleSection('stableford', open)} color="gold"
         >
           <AmountInput label="Cantidad por jugador" value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
+          {hasMultipleGroups && (
+            <BetScopeSelector
+              scope={config.stableford?.scope ?? 'global'}
+              onChange={(scope) => onUpdateBet('stableford', { scope })}
+            />
+          )}
           <CollapsibleSubSection label="Configuración" summary="Puntos y Handicaps">
             <div className="space-y-3">
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
                 <Label className="text-xs font-medium">Puntos por resultado</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
                   <PointInput label="Albatros" value={config.stableford?.points?.albatross ?? 5} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, albatross: v } })} />
                   <PointInput label="Águila" value={config.stableford?.points?.eagle ?? 4} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, eagle: v } })} />
                   <PointInput label="Birdie" value={config.stableford?.points?.birdie ?? 3} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, birdie: v } })} />

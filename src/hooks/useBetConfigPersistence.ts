@@ -77,6 +77,7 @@ interface RoundBetConfig {
     amount: number;
     playerHandicaps: MedalGeneralPlayerConfig[];
     participantIds?: string[];
+    scope?: 'group' | 'global' | 'both';
   };
   coneja?: {
     enabled: boolean;
@@ -128,6 +129,7 @@ interface RoundBetConfig {
       handicap: number;
     }>;
     participantIds?: string[];
+    scope?: 'group' | 'global' | 'both';
   };
   teamPressures?: {
     enabled: boolean;
@@ -243,6 +245,7 @@ export const useBetConfigPersistence = ({
           amount: dbConfig.medalGeneral.amount ?? prev.medalGeneral.amount,
           playerHandicaps: dbConfig.medalGeneral.playerHandicaps ?? prev.medalGeneral.playerHandicaps,
           participantIds: 'participantIds' in dbConfig.medalGeneral ? dbConfig.medalGeneral.participantIds : prev.medalGeneral.participantIds,
+          scope: dbConfig.medalGeneral.scope ?? prev.medalGeneral.scope,
         };
       }
 
@@ -293,6 +296,7 @@ export const useBetConfigPersistence = ({
           points: dbConfig.stableford.points ?? prev.stableford.points,
           playerHandicaps: dbConfig.stableford.playerHandicaps ?? prev.stableford.playerHandicaps,
           participantIds: 'participantIds' in dbConfig.stableford ? dbConfig.stableford.participantIds : prev.stableford.participantIds,
+          scope: dbConfig.stableford.scope ?? prev.stableford.scope,
         };
       }
       
@@ -356,6 +360,7 @@ export const useBetConfigPersistence = ({
           amount: config.medalGeneral.amount,
           playerHandicaps: config.medalGeneral.playerHandicaps,
           participantIds: config.medalGeneral.participantIds,
+          scope: config.medalGeneral.scope,
         },
         coneja: {
           enabled: config.coneja.enabled,
@@ -386,6 +391,7 @@ export const useBetConfigPersistence = ({
           points: config.stableford.points,
           playerHandicaps: config.stableford.playerHandicaps,
           participantIds: config.stableford.participantIds,
+          scope: config.stableford.scope,
         },
         teamPressures: {
           enabled: config.teamPressures.enabled,

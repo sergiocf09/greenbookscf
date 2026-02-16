@@ -222,11 +222,16 @@ export interface MedalGeneralPlayerConfig {
   handicap: number; // Specific handicap for this group bet
 }
 
+// Scope for group bets in multi-group rounds
+// 'group' = only within each group, 'global' = single pool across all groups, 'both' = one pool per group + one global pool
+export type GroupBetScope = 'group' | 'global' | 'both';
+
 export interface MedalGeneralBetConfig {
   enabled: boolean;
   amount: number; // Amount each loser pays to winner(s)
   playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
   participantIds?: string[];
+  scope?: GroupBetScope; // Multi-group scope (default: 'global')
 }
 
 // Coneja - Group bet based on patas per hole and sets
@@ -310,6 +315,7 @@ export interface StablefordBetConfig {
   points: StablefordPointConfig;
   playerHandicaps: StablefordPlayerConfig[];
   participantIds?: string[];
+  scope?: GroupBetScope; // Multi-group scope (default: 'global')
 }
 
 // Presiones por Parejas - Team pressures
