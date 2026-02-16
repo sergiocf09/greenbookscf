@@ -1860,7 +1860,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               <CardTitle className="text-sm flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Presiones Parejas {idx > 0 ? idx + 1 : ''}
+                  Foursome {idx + 1}
                 </div>
                 {onBetConfigChange && (
                   <Button
@@ -1868,7 +1868,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     size="icon"
                     className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                     onClick={() => toggleTeamBetDisabled(bet.id)}
-                    title={pressureDisabled ? 'Reactivar Presiones' : 'No considerar Presiones'}
+                    title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
                   >
                     {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                   </Button>
@@ -2972,8 +2972,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Putts';
         case 'stableford':
           return 'Stableford';
-        case 'teamPressures':
-          return 'Presiones Parejas';
+         case 'teamPressures':
+           return 'Foursome';
         default:
           return overrideLabel;
       }
@@ -3851,7 +3851,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           case 'putts': return 'Putts';
           case 'sideBets': return 'Side Bet';
           case 'stableford': return 'Stableford';
-          case 'teamPressures': return 'Presiones Parejas';
+          case 'teamPressures': return 'Foursome';
           default: return label;
         }
       };
