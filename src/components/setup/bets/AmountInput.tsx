@@ -51,27 +51,29 @@ export const AmountInput: React.FC<AmountInputProps> = ({
             step={step}
           />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-5 w-5 shrink-0"
-          onClick={handleDecrement}
-          onMouseDown={(e) => e.stopPropagation()}
-          disabled={!allowNegative && value <= min}
-        >
-          <Minus className="h-2.5 w-2.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-5 w-5 shrink-0"
-          onClick={handleIncrement}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <Plus className="h-2.5 w-2.5" />
-        </Button>
+        <div className="flex flex-col gap-0.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-4 w-4 shrink-0"
+            onClick={handleIncrement}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <Plus className="h-2 w-2" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-4 w-4 shrink-0"
+            onClick={handleDecrement}
+            onMouseDown={(e) => e.stopPropagation()}
+            disabled={!allowNegative && value <= min}
+          >
+            <Minus className="h-2 w-2" />
+          </Button>
+        </div>
       </div>
     </div>
   );
