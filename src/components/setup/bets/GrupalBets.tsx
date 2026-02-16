@@ -17,6 +17,7 @@ interface GrupalBetsProps {
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  onUpdateConfig?: (config: BetConfig) => void;
 }
 
 export const GrupalBets: React.FC<GrupalBetsProps> = ({
@@ -25,6 +26,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
   expandedSections,
   onToggleSection,
   onUpdateBet,
+  onUpdateConfig,
 }) => {
   const show = (betKey: string) => grupalBetHasParticipants(config, betKey, players);
 
@@ -39,6 +41,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         config={config}
         players={players}
         onUpdateBet={onUpdateBet}
+        onUpdateConfig={onUpdateConfig}
       />
 
       {/* Coneja */}

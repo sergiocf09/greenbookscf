@@ -7,6 +7,7 @@ interface GrupalParticipationMatrixProps {
   config: BetConfig;
   players: Player[];
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  onUpdateConfig?: (config: BetConfig) => void;
 }
 
 /** ALL grupal bet types — always shown in matrix */
@@ -59,6 +60,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
   config,
   players,
   onUpdateBet,
+  onUpdateConfig,
 }) => {
   if (players.length === 0) return null;
 
@@ -100,6 +102,8 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const colState = getColumnState(playerId);
     const allIds = players.map(p => p.id);
 
+    // Build entire new config in one pass, then apply once
+    let newConfig = { ...config };
     GRUPAL_BETS.forEach(b => {
       const pIds = getParticipantIds(config, b.key);
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
@@ -108,24 +112,28 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
         const currentIds = isExplicitlyEmpty ? [] : getActiveIds(pIds, players);
         const newIds = currentIds.filter(id => id !== playerId);
         if (newIds.length === 0) {
-          onUpdateBet(b.key, { participantIds: [] } as any);
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [] } };
         } else {
           const isAll = allIds.every(id => newIds.includes(id));
-          onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds } };
         }
       } else {
         if (isExplicitlyEmpty) {
-          onUpdateBet(b.key, { participantIds: [playerId] } as any);
+          newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: [playerId] } };
         } else {
           const currentIds = getActiveIds(pIds, players);
           if (!currentIds.includes(playerId)) {
             const newIds = [...currentIds, playerId];
             const isAll = allIds.every(id => newIds.includes(id));
-            onUpdateBet(b.key, { participantIds: isAll ? undefined : newIds } as any);
+            newConfig = { ...newConfig, [b.key]: { ...newConfig[b.key], participantIds: isAll ? undefined : newIds } };
           }
         }
       }
     });
+
+    if (onUpdateConfig) {
+      onUpdateConfig(newConfig);
+    }
   };
 
   const getRowState = (betKey: GrupalBetKey): 'all' | 'none' | 'partial' => {

@@ -16,6 +16,7 @@ interface IndividualBetsProps {
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  onUpdateConfig?: (config: BetConfig) => void;
   basePlayerId?: string;
 }
 
@@ -25,6 +26,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   expandedSections,
   onToggleSection,
   onUpdateBet,
+  onUpdateConfig,
   basePlayerId,
 }) => {
   /** Only show bet detail if at least 1 player participates */
@@ -41,6 +43,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         config={config}
         players={players}
         onUpdateBet={onUpdateBet}
+        onUpdateConfig={onUpdateConfig}
       />
 
       {/* Medal */}
