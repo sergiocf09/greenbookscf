@@ -37,7 +37,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   return (
     <div className={label ? "flex items-center justify-between" : "flex items-center justify-center"}>
       {label && <Label className="text-xs text-muted-foreground">{label}</Label>}
-      <div className="flex items-center gap-px">
+      <div className="flex items-center gap-1.5">
         <div className="flex items-center">
           <DollarSign className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           <Input
@@ -46,32 +46,32 @@ export const AmountInput: React.FC<AmountInputProps> = ({
             onChange={(e) => onChange(parseInt(e.target.value) || 0)}
             onFocus={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="h-5 w-10 text-[11px] text-center px-0"
+            className="h-6 w-11 text-[11px] text-center px-0"
             min={allowNegative ? undefined : min}
             step={step}
           />
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="h-3 w-3 shrink-0 p-0"
+            className="h-5 w-5 shrink-0 rounded-sm"
             onClick={handleIncrement}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <Plus className="h-2 w-2" />
+            <Plus className="h-2.5 w-2.5" />
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="h-3 w-3 shrink-0 p-0"
+            className="h-5 w-5 shrink-0 rounded-sm"
             onClick={handleDecrement}
             onMouseDown={(e) => e.stopPropagation()}
             disabled={!allowNegative && value <= min}
           >
-            <Minus className="h-2 w-2" />
+            <Minus className="h-2.5 w-2.5" />
           </Button>
         </div>
       </div>
