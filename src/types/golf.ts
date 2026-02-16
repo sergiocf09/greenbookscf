@@ -393,6 +393,7 @@ export interface BetConfig {
   coneja: ConejaBetConfig; // Group bet - patas system per set of 6 holes
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
+  disabledTeamBetIds?: string[]; // Team bet IDs (carritos/pressures) disabled from dashboard (override, not delete)
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
   crossGroupRivals?: Record<string, string[]>; // Per-player map: basePlayerId -> array of cross-group rival IDs
   // Per-group overrides: allows each group to customize bet participation/amounts
