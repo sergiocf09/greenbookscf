@@ -1655,3 +1655,90 @@ export const getMedalGeneralBilateralResult = (
     rivalNet,
   };
 };
+
+// Utility function to calculate Stableford result for bilateral view
+// Respects scope setting: group, global, or both (summing both pools)
+export const getStablefordBilateralResult = (
+  allPlayers: Player[],
+  player: Player,
+  rival: Player,
+  scores: Map<string, PlayerScore[]>,
+  betConfig: BetConfig,
+  course: GolfCourse
+): { amount: number } | null => {
+  if (!betConfig.stableford?.enabled) return null;
+
+  const scope = betConfig.stableford?.scope ?? 'global';
+  const hasMultipleGroups = new Set(allPlayers.map(p => p.groupId).filter(Boolean)).size > 1;
+
+  const computeForPool = (pool: Player[]): { amount: number } | null => {
+    const points = betConfig.stableford!.points || DEFAULT_STABLEFORD_POINTS;
+    const playerHandicaps = betConfig.stableford!.playerHandicaps || [];
+    const amount = betConfig.stableford!.amount || 100;
+
+    const calcPoints = (p: Player): number => {
+      const pScores = scores.get(p.id) || [];
+      const confirmed = pScores.filter(s => s.confirmed && s.strokes > 0);
+      const hcp = playerHandicaps.find(ph => ph.playerId === p.id)?.handicap ?? p.handicap;
+      const strokesPerHole = calculateStrokesPerHole(hcp, course);
+
+      return confirmed.reduce((sum, s) => {
+        const holePar = course.holes[s.holeNumber - 1]?.par || 4;
+        const received = strokesPerHole[s.holeNumber - 1] || 0;
+        const netScore = s.strokes - received;
+        const toPar = netScore - holePar;
+
+        if (toPar <= -3) return sum + points.albatross;
+        if (toPar === -2) return sum + points.eagle;
+        if (toPar === -1) return sum + points.birdie;
+        if (toPar === 0) return sum + points.par;
+        if (toPar === 1) return sum + points.bogey;
+        if (toPar === 2) return sum + points.doubleBogey;
+        if (toPar === 3) return sum + points.tripleBogey;
+        return sum + points.quadrupleOrWorse;
+      }, 0);
+    };
+
+    // Both must be in pool
+    if (!pool.some(p => p.id === player.id) || !pool.some(p => p.id === rival.id)) return null;
+
+    const allPoints = pool.map(p => ({ playerId: p.id, points: calcPoints(p) }));
+    const maxPoints = Math.max(...allPoints.map(p => p.points));
+    const winnerIds = new Set(allPoints.filter(p => p.points === maxPoints).map(p => p.playerId));
+    const winnersCount = winnerIds.size;
+    const losersCount = allPoints.length - winnersCount;
+
+    if (losersCount === 0) return null;
+
+    const amountFromLoserToWinner = amount / winnersCount;
+    const isPlayerWinner = winnerIds.has(player.id);
+    const isRivalWinner = winnerIds.has(rival.id);
+
+    const bilateralAmount =
+      isPlayerWinner && !isRivalWinner ? amountFromLoserToWinner :
+      !isPlayerWinner && isRivalWinner ? -amountFromLoserToWinner : 0;
+
+    return { amount: bilateralAmount };
+  };
+
+  if (!hasMultipleGroups || scope === 'global') {
+    return computeForPool(allPlayers);
+  }
+
+  const playerGroupId = player.groupId;
+  const groupPool = playerGroupId
+    ? allPlayers.filter(p => p.groupId === playerGroupId)
+    : allPlayers;
+
+  if (scope === 'group') {
+    return computeForPool(groupPool);
+  }
+
+  // scope === 'both': sum group + global
+  const groupResult = computeForPool(groupPool);
+  const globalResult = computeForPool(allPlayers);
+
+  if (!groupResult && !globalResult) return null;
+
+  return { amount: (groupResult?.amount ?? 0) + (globalResult?.amount ?? 0) };
+};
