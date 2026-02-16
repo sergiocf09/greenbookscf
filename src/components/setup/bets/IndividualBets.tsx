@@ -96,7 +96,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
           <CollapsibleSubSection
             label="Configuración"
-            summary={(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados · Arrastre' : 'Sin Acumular · Arrastre'}
+            summary={`${(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'}${config.skins.carryOver ? ' · Arrastre' : ''}`}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -108,7 +108,12 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                     className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Sin Acum</button>
                 </div>
               </div>
-              <p className="text-[9px] text-muted-foreground">La modalidad por par de jugadores se puede ajustar en el Dashboard de Apuestas. Arrastre del 9 al 10 siempre activo.</p>
+
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
+                <Switch checked={config.skins.carryOver} onCheckedChange={(v) => onUpdateBet('skins', { carryOver: v })} />
+              </div>
+              <p className="text-[9px] text-muted-foreground">La modalidad por par de jugadores se puede ajustar en el Dashboard de Apuestas.</p>
             </div>
           </CollapsibleSubSection>
         </BetSection>
