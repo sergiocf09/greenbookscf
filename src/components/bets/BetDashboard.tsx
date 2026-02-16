@@ -589,8 +589,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       };
     };
 
-    // Primary carritos - show if teams are configured (regardless of BetSection toggle)
-    if (betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
+    // Primary carritos - show only if no carritosTeams exist (legacy pattern)
+    // When carritosTeams array has entries, all carritos are managed there
+    const hasCarritosTeams = (betConfig.carritosTeams?.length ?? 0) > 0;
+    if (!hasCarritosTeams && betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
       const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps } = betConfig.carritos;
       results.push(
         calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {

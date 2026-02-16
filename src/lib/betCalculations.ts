@@ -1859,8 +1859,9 @@ export const calculateCarritosBets = (
     useTeamHandicaps?: boolean;
   }> = [];
 
-  // Primary carritos - show if teams are configured (regardless of BetSection toggle)
-  {
+  // Primary carritos - only use if no carritosTeams exist (legacy pattern)
+  const hasCarritosTeams = (config.carritosTeams?.length ?? 0) > 0;
+  if (!hasCarritosTeams) {
     const c = config.carritos;
     const hasTeams = c.teamA[0] && c.teamA[1] && c.teamB[0] && c.teamB[1];
     if (hasTeams) {
