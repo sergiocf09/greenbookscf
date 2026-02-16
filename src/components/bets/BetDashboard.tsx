@@ -1977,17 +1977,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <TooltipContent side="top" className="w-80">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
-                                    <div className="grid grid-cols-2 gap-x-3">
-                                      <div>
-                                        <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a1.net}</span></span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a2.net}</span></span></p>
-                                      </div>
-                                      <div>
-                                        <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b1.net}</span></span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b2.net}</span></span></p>
-                                      </div>
+                                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                                      <span>Tu equipo</span>
+                                      <span>Rival</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="flex items-center gap-1 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a1.net}</span></span>
+                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b1.net}</span></span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="flex items-center gap-1 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a2.net}</span></span>
+                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b2.net}</span></span>
                                     </div>
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
@@ -2052,17 +2052,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <TooltipContent side="top" className="w-80">
                                   <div className="text-xs space-y-1">
                                     <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
-                                    <div className="grid grid-cols-2 gap-x-3">
-                                      <div>
-                                        <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a1.net}</span></span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.a2.net}</span></span></p>
-                                      </div>
-                                      <div>
-                                        <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b1.net}</span></span></p>
-                                        <p className="flex items-center justify-between gap-2 text-sm"><span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span><span className="flex items-center gap-2 tabular-nums">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}<span>{detail.b2.net}</span></span></p>
-                                      </div>
+                                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                                      <span>Tu equipo</span>
+                                      <span>Rival</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="flex items-center gap-1 tabular-nums">{detail.a1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a1.net}</span></span>
+                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b1.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b1.net}</span></span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="flex items-center gap-1 tabular-nums">{detail.a2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.a2.net}</span></span>
+                                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.b2.hcp > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0]}</span> <span className="font-medium">{detail.b2.net}</span></span>
                                     </div>
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
@@ -2519,17 +2519,17 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       ) : (
                         <div className="text-xs space-y-1">
                           <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
-                          <div className="grid grid-cols-2 gap-x-3">
-                            <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
-                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB1} net={detail.netB1} />
-                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB2} net={detail.netB2} />
-                            </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Tu equipo</span>
+                            <span>Rival</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA1}</span></span>
+                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB1}</span></span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA2}</span></span>
+                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB2}</span></span>
                           </div>
 
                           <div className="pt-1 border-t border-border/50">
@@ -2612,17 +2612,17 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       ) : (
                         <div className="text-xs space-y-1">
                           <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
-                          <div className="grid grid-cols-2 gap-x-3">
-                            <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Tu equipo</p>
-                              <ScoreLine name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA1} net={detail.netA1} />
-                              <ScoreLine name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpA2} net={detail.netA2} />
-                            </div>
-                            <div>
-                              <p className="text-[10px] text-muted-foreground mb-0.5">Rival</p>
-                              <ScoreLine name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB1} net={detail.netB1} />
-                              <ScoreLine name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'} hcp={detail.hcpB2} net={detail.netB2} />
-                            </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Tu equipo</span>
+                            <span>Rival</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA1}</span></span>
+                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB1}</span></span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="flex items-center gap-1 tabular-nums">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netA2}</span></span>
+                            <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{detail.netB2}</span></span>
                           </div>
 
                           <div className="pt-1 border-t border-border/50">
@@ -2694,32 +2694,18 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         pts
                       </div>
 
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-[11px] text-muted-foreground mb-1">Tu equipo</p>
-                      <ScoreLine
-                        name={displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
-                        hcp={selectedHole.detail.hcpA1}
-                        net={selectedHole.detail.netA1}
-                      />
-                      <ScoreLine
-                        name={displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
-                        hcp={selectedHole.detail.hcpA2}
-                        net={selectedHole.detail.netA2}
-                      />
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                      <span>Tu equipo</span>
+                      <span>Rival</span>
                     </div>
-                    <div>
-                      <p className="text-[11px] text-muted-foreground mb-1">Rival</p>
-                      <ScoreLine
-                        name={displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}
-                        hcp={selectedHole.detail.hcpB1}
-                        net={selectedHole.detail.netB1}
-                      />
-                      <ScoreLine
-                        name={displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}
-                        hcp={selectedHole.detail.hcpB2}
-                        net={selectedHole.detail.netB2}
-                      />
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="flex items-center gap-1 tabular-nums">{selectedHole.detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netA1}</span></span>
+                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{selectedHole.detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netB1}</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="flex items-center gap-1 tabular-nums">{selectedHole.detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netA2}</span></span>
+                      <span className="flex items-center gap-1 tabular-nums flex-row-reverse">{selectedHole.detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground shrink-0" />}<span className="truncate">{displayTeamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span> <span className="font-medium">{selectedHole.detail.netB2}</span></span>
                     </div>
                   </div>
 
