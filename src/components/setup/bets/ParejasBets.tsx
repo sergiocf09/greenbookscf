@@ -55,6 +55,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       ...config,
       teamPressures: {
         ...config.teamPressures,
+        enabled: true,
         bets: [...config.teamPressures.bets, newBet],
       },
     });

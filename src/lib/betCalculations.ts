@@ -2040,7 +2040,7 @@ export const calculateTeamPressuresBets = (
   course: GolfCourse,
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
-  if (!config.teamPressures?.enabled || !config.teamPressures.bets?.length) return [];
+  if (!config.teamPressures?.bets?.length) return [];
   
   const summaries: BetSummary[] = [];
   const ranges = getSegmentHoleRanges(startingHole);
