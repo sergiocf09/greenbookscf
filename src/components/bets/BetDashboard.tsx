@@ -4705,11 +4705,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               </span>
                             </div>
                             
-                            {/* Variant indicator */}
-                            <div className="text-[9px] text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                              {activePairVariant === 'acumulados' ? 'Acumulados' : 'Sin Acumulación'} | 
-                              Front ${frontValue}, Back ${backValue}, Medal ${medalValue}
-                            </div>
                           </div>
                         );
                       })()
