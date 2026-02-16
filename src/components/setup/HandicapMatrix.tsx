@@ -1,30 +1,27 @@
 /**
- * HandicapMatrix - Definición de Hándicaps entre Jugadores
+ * HandicapMatrix - Compact Matrix for Bilateral Handicaps
  * 
- * Pantalla única y central para definir cuántos golpes da o recibe
- * cada jugador respecto a cada otro jugador de la ronda.
+ * Shows a grid where rows and columns are players.
+ * Reading direction: ROW player's perspective.
+ * Cell (row=A, col=B) shows how A sees B:
+ *   +N = A gives N strokes (red, disadvantage)
+ *   -N = A receives N strokes (green, advantage)
+ *    0 = Scratch
  * 
- * Esta es la ÚNICA fuente de verdad para hándicaps bilaterales.
- * 
- * Features:
- * - Shows current strokes between players
- * - Shows sliding suggestions from previous rounds (if available)
- * - Allows manual override of strokes
+ * Tap a cell to open a popover with +/- stepper and sliding suggestion.
  */
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Player, PlayerGroup } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Loader2, Users, ArrowRight, ArrowLeft, Minus, Plus, Save, RefreshCw, Sparkles } from 'lucide-react';
+import { Loader2, Users, Minus, Plus, Sparkles, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog, devError } from '@/lib/logger';
-import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface SlidingSuggestion {
   playerAProfileId: string;
@@ -38,7 +35,6 @@ interface HandicapMatrixProps {
   playerGroups: PlayerGroup[];
   basePlayerId: string;
   roundPlayerIds: Map<string, string>;
-  // Functions from useRoundHandicaps
   getStrokesForLocalPair: (localIdA: string, localIdB: string) => number;
   setStrokesForLocalPair: (localIdA: string, localIdB: string, strokes: number) => Promise<boolean>;
   isLoading?: boolean;
@@ -53,20 +49,15 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   setStrokesForLocalPair,
   isLoading = false,
 }) => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(basePlayerId);
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
 
-  // Determine which group the base player belongs to
   const totalGroups = 1 + playerGroups.length;
-  
-  // Auto-detect the group that contains the logged-in player
+
   const defaultGroupIndex = useMemo(() => {
-    // Check if base player is in main group (index 0)
     const inMain = players.some(p => p.id === basePlayerId || p.profileId === basePlayerId);
     if (inMain) return 0;
-    // Check additional groups
     for (let i = 0; i < playerGroups.length; i++) {
       if (playerGroups[i].players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) {
         return i + 1;
@@ -74,10 +65,9 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
     return 0;
   }, [players, playerGroups, basePlayerId]);
-  
+
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(defaultGroupIndex);
 
-  // Get players per group
   const getGroupPlayers = (groupIndex: number): Player[] => {
     if (groupIndex === 0) return players;
     return playerGroups[groupIndex - 1]?.players || [];
@@ -88,7 +78,6 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     return playerGroups[groupIndex - 1]?.name || `Grupo ${groupIndex + 1}`;
   };
 
-  // Players for the currently selected group, sorted with logged-in player first
   const allPlayers = useMemo(() => {
     const groupPlayers = getGroupPlayers(selectedGroupIndex);
     return [...groupPlayers].sort((a, b) => {
@@ -100,202 +89,127 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     });
   }, [players, playerGroups, basePlayerId, selectedGroupIndex]);
 
-  // Disambiguate initials across all players
-  const disambiguatedInitials = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
+  const disambiguated = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
 
-  // Load sliding suggestions for logged-in player pairs
+  // Load sliding suggestions
   useEffect(() => {
     const loadSlidingSuggestions = async () => {
-      // Get all logged-in players' profile IDs
-      const profileIds = allPlayers
-        .filter(p => p.profileId)
-        .map(p => p.profileId!);
-      
+      const profileIds = allPlayers.filter(p => p.profileId).map(p => p.profileId!);
       if (profileIds.length < 2) return;
 
       try {
-        // Query sliding_current for all pairs where both players are in our list
-        // Search both columns to cover all pair combinations
         const orConditions = [
           ...profileIds.map(id => `player_a_profile_id.eq.${id}`),
           ...profileIds.map(id => `player_b_profile_id.eq.${id}`)
         ].join(',');
-        
+
         const { data, error } = await supabase
           .from('sliding_current')
           .select('*')
           .or(orConditions);
 
-        if (error) {
-          devError('Error loading sliding suggestions:', error);
-          return;
-        }
+        if (error) { devError('Error loading sliding suggestions:', error); return; }
 
-        // Filter to only include pairs where BOTH players are in our list
         const profileIdSet = new Set(profileIds);
         const filtered = (data || []).filter(entry =>
-          profileIdSet.has(entry.player_a_profile_id) &&
-          profileIdSet.has(entry.player_b_profile_id)
+          profileIdSet.has(entry.player_a_profile_id) && profileIdSet.has(entry.player_b_profile_id)
         );
 
-        // Build suggestions map keyed by "profileA::profileB" (normalized)
         const suggestionsMap = new Map<string, SlidingSuggestion>();
         for (const entry of filtered) {
-          const key = `${entry.player_a_profile_id}::${entry.player_b_profile_id}`;
-          suggestionsMap.set(key, {
+          suggestionsMap.set(`${entry.player_a_profile_id}::${entry.player_b_profile_id}`, {
             playerAProfileId: entry.player_a_profile_id,
             playerBProfileId: entry.player_b_profile_id,
             suggestedStrokes: entry.strokes_a_gives_b_current,
             lastRoundId: entry.last_round_id,
           });
         }
-
         setSlidingSuggestions(suggestionsMap);
         devLog('Loaded sliding suggestions for', suggestionsMap.size, 'pairs');
-      } catch (err) {
-        devError('Exception loading sliding suggestions:', err);
-      }
+      } catch (err) { devError('Exception loading sliding suggestions:', err); }
     };
-
     loadSlidingSuggestions();
   }, [allPlayers]);
 
-  // Get sliding suggestion for a specific rival (relative to selected player)
-  const getSlidingSuggestion = useCallback(
-    (rivalId: string): { strokes: number; hasSliding: boolean } => {
-      const selectedPlayerProfile = allPlayers.find(p => p.id === selectedPlayerId)?.profileId;
-      const rivalProfile = allPlayers.find(p => p.id === rivalId)?.profileId;
+  /**
+   * Get sliding suggestion for rowPlayer→colPlayer direction.
+   * Returns strokes from row player's perspective.
+   */
+  const getSlidingForPair = useCallback((rowPlayerId: string, colPlayerId: string): { strokes: number; hasSliding: boolean } => {
+    const rowProfile = allPlayers.find(p => p.id === rowPlayerId)?.profileId;
+    const colProfile = allPlayers.find(p => p.id === colPlayerId)?.profileId;
+    if (!rowProfile || !colProfile) return { strokes: 0, hasSliding: false };
 
-      if (!selectedPlayerProfile || !rivalProfile) {
-        return { strokes: 0, hasSliding: false };
-      }
+    const [normA, normB] = rowProfile < colProfile ? [rowProfile, colProfile] : [colProfile, rowProfile];
+    const key = `${normA}::${normB}`;
+    const suggestion = slidingSuggestions.get(key);
+    if (!suggestion) return { strokes: 0, hasSliding: false };
 
-      // Normalize the pair (smaller ID first)
-      const [normA, normB] = selectedPlayerProfile < rivalProfile
-        ? [selectedPlayerProfile, rivalProfile]
-        : [rivalProfile, selectedPlayerProfile];
-      
-      const key = `${normA}::${normB}`;
-      const suggestion = slidingSuggestions.get(key);
+    // strokes_a_gives_b means normA gives to normB
+    // If row is normA, direct; if row is normB, negate
+    const strokes = rowProfile === normA ? suggestion.suggestedStrokes : -suggestion.suggestedStrokes;
+    return { strokes, hasSliding: true };
+  }, [allPlayers, slidingSuggestions]);
 
-      if (!suggestion) {
-        return { strokes: 0, hasSliding: false };
-      }
+  /**
+   * Get effective strokes for row→col (checking pending changes first).
+   * Positive = row gives, Negative = row receives.
+   */
+  const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
+    const key = `${rowId}::${colId}`;
+    if (pendingChanges.has(key)) return pendingChanges.get(key)!;
+    return getStrokesForLocalPair(rowId, colId);
+  }, [pendingChanges, getStrokesForLocalPair]);
 
-      // If selected player is normA, strokes are direct
-      // If selected player is normB, we need to negate
-      const strokes = selectedPlayerProfile === normA 
-        ? suggestion.suggestedStrokes 
-        : -suggestion.suggestedStrokes;
+  /** Set pending change for a cell (and its mirror) */
+  const setCellStrokes = useCallback((rowId: string, colId: string, value: number) => {
+    const clamped = Math.max(-36, Math.min(36, value));
+    setPendingChanges(prev => {
+      const next = new Map(prev);
+      next.set(`${rowId}::${colId}`, clamped);
+      next.set(`${colId}::${rowId}`, -clamped);
+      return next;
+    });
+  }, []);
 
-      return { strokes, hasSliding: true };
-    },
-    [selectedPlayerId, allPlayers, slidingSuggestions]
-  );
-
-  const selectedPlayer = allPlayers.find((p) => p.id === selectedPlayerId);
-  const rivals = allPlayers.filter((p) => p.id !== selectedPlayerId);
-
-  // Update pending changes locally
-  const updatePendingStrokes = useCallback(
-    (rivalId: string, strokes: number) => {
-      const key = `${selectedPlayerId}::${rivalId}`;
-      setPendingChanges((prev) => new Map(prev).set(key, strokes));
-    },
-    [selectedPlayerId]
-  );
-
-  // Apply sliding suggestion to a rival
-  const applySlidingSuggestion = useCallback(
-    (rivalId: string) => {
-      const { strokes, hasSliding } = getSlidingSuggestion(rivalId);
-      if (hasSliding) {
-        updatePendingStrokes(rivalId, strokes);
-        toast.success('Sugerencia de Sliding aplicada');
-      }
-    },
-    [getSlidingSuggestion, updatePendingStrokes]
-  );
-
-  // Get the current strokes for a rival (from pending or saved)
-  const getStrokesForRival = useCallback(
-    (rivalId: string): number => {
-      const key = `${selectedPlayerId}::${rivalId}`;
-      if (pendingChanges.has(key)) {
-        return pendingChanges.get(key)!;
-      }
-      return getStrokesForLocalPair(selectedPlayerId, rivalId);
-    },
-    [selectedPlayerId, pendingChanges, getStrokesForLocalPair]
-  );
-
-  // Increment/decrement strokes
-  const adjustStrokes = useCallback(
-    (rivalId: string, delta: number) => {
-      const current = getStrokesForRival(rivalId);
-      const newValue = Math.max(-36, Math.min(36, current + delta));
-      updatePendingStrokes(rivalId, newValue);
-    },
-    [getStrokesForRival, updatePendingStrokes]
-  );
-
-  // Check if roundPlayerIds is ready
   const hasRoundPlayerIds = roundPlayerIds.size > 0;
+  const hasPendingChanges = pendingChanges.size > 0;
 
-  // Save all pending changes
+  /** Save all pending changes */
   const saveAllChanges = useCallback(async () => {
-    if (pendingChanges.size === 0) {
-      toast.info('No hay cambios pendientes');
-      return;
-    }
-
+    if (pendingChanges.size === 0) return;
     if (!hasRoundPlayerIds) {
-      toast.error('Los datos de jugadores aún no están listos. Espera un momento y vuelve a intentar.');
-      console.error('roundPlayerIds is empty, cannot save handicaps');
+      toast.error('Jugadores aún no sincronizados. Espera un momento.');
       return;
     }
-
     setSaving(true);
+    const saved = new Set<string>();
     let successCount = 0;
     let errorCount = 0;
-    const failedPlayers: string[] = [];
 
     for (const [key, strokes] of pendingChanges.entries()) {
-      // Key format is "playerAId::playerBId" (using :: as separator to avoid UUID conflicts)
-      const separatorIndex = key.indexOf('::');
-      if (separatorIndex === -1) {
-        console.error('Invalid pending change key format:', key);
-        errorCount++;
-        continue;
-      }
-      const playerAId = key.substring(0, separatorIndex);
-      const playerBId = key.substring(separatorIndex + 2);
-      const success = await setStrokesForLocalPair(playerAId, playerBId, strokes);
-      if (success) {
-        successCount++;
-      } else {
-        errorCount++;
-        // Find player names for better error message
-        const playerA = allPlayers.find(p => p.id === playerAId);
-        const playerB = allPlayers.find(p => p.id === playerBId);
-        if (playerA && playerB) {
-          failedPlayers.push(`${playerA.name} - ${playerB.name}`);
-        }
-      }
+      // Avoid saving mirror duplicates
+      const [a, b] = key.split('::');
+      const canonical = a < b ? `${a}::${b}` : `${b}::${a}`;
+      if (saved.has(canonical)) continue;
+      saved.add(canonical);
+
+      const canonicalStrokes = a < b ? strokes : -strokes;
+      const success = await setStrokesForLocalPair(
+        a < b ? a : b,
+        a < b ? b : a,
+        canonicalStrokes
+      );
+      if (success) successCount++; else errorCount++;
     }
 
     setSaving(false);
     setPendingChanges(new Map());
+    if (errorCount === 0) toast.success(`${successCount} hándicap(s) guardado(s)`);
+    else toast.error(`Error guardando ${errorCount} par(es)`);
+  }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
-    if (errorCount === 0) {
-      toast.success(`${successCount} hándicap(s) guardado(s)`);
-    } else {
-      toast.error(`Error guardando: ${failedPlayers.join(', ')}`);
-    }
-  }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds, allPlayers]);
-
-  // Check if there are pending changes
-  const hasPendingChanges = pendingChanges.size > 0;
+  // --- Render ---
 
   if (isLoading) {
     return (
@@ -306,7 +220,6 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     );
   }
 
-  // Show loading state if roundPlayerIds map is not ready yet
   if (!hasRoundPlayerIds && allPlayers.length >= 2) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -329,20 +242,28 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header with description */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Definición de Hándicaps
-          </CardTitle>
-          <CardDescription>
-            Define cuántos golpes da o recibe cada jugador respecto a los demás.
-            Esta configuración es la fuente única de verdad para todas las apuestas.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Hándicaps Bilaterales
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
+              </CardDescription>
+            </div>
+            {hasPendingChanges && (
+              <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Guardar
+              </Button>
+            )}
+          </div>
         </CardHeader>
 
-        {/* Group tabs - only show when there are multiple groups */}
+        {/* Group tabs */}
         {totalGroups > 1 && (
           <CardContent className="pt-0 pb-3">
             <div className="flex flex-wrap gap-2">
@@ -350,17 +271,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 <button
                   key={i}
                   onClick={() => {
-                    if (hasPendingChanges) {
-                      toast.warning('Guarda los cambios antes de cambiar de grupo');
-                      return;
-                    }
+                    if (hasPendingChanges) { toast.warning('Guarda los cambios primero'); return; }
                     setSelectedGroupIndex(i);
-                    // Reset selected player to first in new group
-                    const newGroupPlayers = getGroupPlayers(i);
-                    if (newGroupPlayers.length > 0) {
-                      const baseInGroup = newGroupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
-                      setSelectedPlayerId(baseInGroup?.id || newGroupPlayers[0].id);
-                    }
                   }}
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
@@ -376,216 +288,308 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             </div>
           </CardContent>
         )}
-      </Card>
 
-      {/* Player selector */}
-      <Card>
-        <CardHeader className="pb-2">
-          <Label className="text-xs text-muted-foreground">Selecciona un jugador base</Label>
-        </CardHeader>
+        {/* Matrix */}
         <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-2">
-            {allPlayers.map((player) => (
-              <button
-                key={player.id}
-                onClick={() => {
-                  if (hasPendingChanges) {
-                    toast.warning('Guarda los cambios antes de cambiar de jugador');
-                    return;
-                  }
-                  setSelectedPlayerId(player.id);
-                }}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg border transition-all',
-                  selectedPlayerId === player.id
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50'
-                )}
-              >
-                <PlayerAvatar
-                  initials={disambiguatedInitials.get(player.id) || player.initials}
-                  background={player.color}
-                  size="sm"
-                  isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
-                />
-                <span className="text-sm font-medium">{formatPlayerName(player.name)}</span>
-              </button>
-            ))}
+          <div className="overflow-x-auto -mx-1 px-1">
+            <table className="w-full border-collapse">
+              {/* Column headers */}
+              <thead>
+                <tr>
+                  <th className="sticky left-0 z-10 bg-card p-1 min-w-[70px]" />
+                  {allPlayers.map(col => {
+                    const isBase = col.id === basePlayerId || col.profileId === basePlayerId;
+                    return (
+                      <th key={col.id} className="p-1 text-center min-w-[52px]">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <PlayerAvatar
+                            initials={disambiguated.get(col.id) || col.initials}
+                            background={col.color}
+                            size="sm"
+                            isLoggedInUser={isBase}
+                          />
+                          <span className="text-[9px] text-muted-foreground leading-tight truncate max-w-[48px]">
+                            {col.name.split(' ')[0]}
+                          </span>
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {allPlayers.map(row => {
+                  const isBaseRow = row.id === basePlayerId || row.profileId === basePlayerId;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        'border-t border-border/30',
+                        isBaseRow && 'bg-primary/5'
+                      )}
+                    >
+                      {/* Row header */}
+                      <td className="sticky left-0 z-10 bg-card p-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <PlayerAvatar
+                            initials={disambiguated.get(row.id) || row.initials}
+                            background={row.color}
+                            size="sm"
+                            isLoggedInUser={isBaseRow}
+                          />
+                          <span className="text-[11px] font-medium whitespace-nowrap truncate max-w-[60px]">
+                            {row.name.split(' ')[0]}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Cells */}
+                      {allPlayers.map(col => {
+                        if (row.id === col.id) {
+                          // Diagonal - self
+                          return (
+                            <td key={col.id} className="p-1 text-center">
+                              <div className="w-11 h-11 rounded-md bg-muted/30 flex items-center justify-center mx-auto">
+                                <span className="text-muted-foreground/40 text-xs">—</span>
+                              </div>
+                            </td>
+                          );
+                        }
+
+                        return (
+                          <HandicapCell
+                            key={col.id}
+                            rowPlayer={row}
+                            colPlayer={col}
+                            strokes={getStrokesForCell(row.id, col.id)}
+                            sliding={getSlidingForPair(row.id, col.id)}
+                            hasPendingChange={pendingChanges.has(`${row.id}::${col.id}`)}
+                            onChangeStrokes={(v) => setCellStrokes(row.id, col.id, v)}
+                            onApplySliding={() => {
+                              const s = getSlidingForPair(row.id, col.id);
+                              if (s.hasSliding) {
+                                setCellStrokes(row.id, col.id, s.strokes);
+                                toast.success('Sliding aplicado');
+                              }
+                            }}
+                            disambiguated={disambiguated}
+                          />
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-muted-foreground mt-4 pt-3 border-t border-border/30">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
+              <span>Da golpes</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-green-500/20 border border-green-500/40" />
+              <span>Recibe golpes</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-muted/40 border border-border" />
+              <span>Scratch</span>
+            </div>
+            {slidingSuggestions.size > 0 && (
+              <div className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-amber-600" />
+                <span>Sliding sugerido</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+};
 
-      {/* Handicap assignments for selected player */}
-      {selectedPlayer && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                  <PlayerAvatar
-                    initials={disambiguatedInitials.get(selectedPlayer.id) || selectedPlayer.initials}
-                  background={selectedPlayer.color}
-                  size="md"
-                  isLoggedInUser={selectedPlayer.id === basePlayerId || selectedPlayer.profileId === basePlayerId}
-                />
-                <div>
-                  <CardTitle className="text-base">{formatPlayerName(selectedPlayer.name)}</CardTitle>
-                  <p className="text-xs text-muted-foreground">HCP Base: {selectedPlayer.handicap}</p>
-                </div>
-              </div>
+// ─── Cell Component ───────────────────────────────────────────
 
-              {hasPendingChanges && (
-                <Button
-                  onClick={saveAllChanges}
-                  disabled={saving}
-                  className="gap-2"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  Guardar
-                </Button>
-              )}
-            </div>
-          </CardHeader>
+interface HandicapCellProps {
+  rowPlayer: Player;
+  colPlayer: Player;
+  strokes: number;
+  sliding: { strokes: number; hasSliding: boolean };
+  hasPendingChange: boolean;
+  onChangeStrokes: (v: number) => void;
+  onApplySliding: () => void;
+  disambiguated: Map<string, string>;
+}
 
-          <CardContent className="space-y-3">
-            {rivals.map((rival) => {
-              const strokes = getStrokesForRival(rival.id);
-              const key = `${selectedPlayerId}::${rival.id}`;
-              const hasChange = pendingChanges.has(key);
-              const isGiving = strokes > 0;
-              const isReceiving = strokes < 0;
-              
-              // Get sliding suggestion for this rival
-              const sliding = getSlidingSuggestion(rival.id);
-              const hasSliding = sliding.hasSliding;
-              const slidingDiffers = hasSliding && sliding.strokes !== strokes;
+const HandicapCell: React.FC<HandicapCellProps> = ({
+  rowPlayer,
+  colPlayer,
+  strokes,
+  sliding,
+  hasPendingChange,
+  onChangeStrokes,
+  onApplySliding,
+  disambiguated,
+}) => {
+  const isGiving = strokes > 0;
+  const isReceiving = strokes < 0;
+  const slidingDiffers = sliding.hasSliding && sliding.strokes !== strokes;
 
-              return (
-                <div
-                  key={rival.id}
-                  className={cn(
-                    'flex flex-col gap-2 p-3 rounded-lg border',
-                    hasChange ? 'border-primary bg-primary/5' : 'border-border'
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Rival info */}
-                    <div className="flex items-center gap-2 min-w-[100px]">
-                      <PlayerAvatar
-                        initials={disambiguatedInitials.get(rival.id) || rival.initials}
-                        background={rival.color}
-                        size="sm"
-                        isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
-                      />
-                      <span className="text-sm font-medium truncate">{formatPlayerName(rival.name)}</span>
-                    </div>
+  const cellBg = isGiving
+    ? 'bg-destructive/15 border-destructive/40 text-destructive'
+    : isReceiving
+      ? 'bg-green-500/15 border-green-500/40 text-green-700'
+      : 'bg-muted/30 border-border/40 text-muted-foreground';
 
-                    {/* Strokes control */}
-                    <div className="flex-1 flex items-center justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => adjustStrokes(rival.id, -1)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
+  return (
+    <td className="p-1 text-center">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'w-11 h-11 rounded-md border flex flex-col items-center justify-center mx-auto transition-all relative',
+              cellBg,
+              hasPendingChange && 'ring-2 ring-primary/50'
+            )}
+          >
+            <span className="text-sm font-bold leading-none">
+              {strokes === 0 ? '0' : strokes > 0 ? `+${strokes}` : `${strokes}`}
+            </span>
+            <span className="text-[8px] leading-none mt-0.5 opacity-70">
+              {isGiving ? 'da' : isReceiving ? 'rec' : ''}
+            </span>
+            {slidingDiffers && (
+              <Sparkles className="h-2.5 w-2.5 text-amber-500 absolute -top-0.5 -right-0.5" />
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-3" align="center" side="top">
+          <CellEditor
+            rowPlayer={rowPlayer}
+            colPlayer={colPlayer}
+            strokes={strokes}
+            sliding={sliding}
+            onChangeStrokes={onChangeStrokes}
+            onApplySliding={onApplySliding}
+            disambiguated={disambiguated}
+          />
+        </PopoverContent>
+      </Popover>
+    </td>
+  );
+};
 
-                      <div className="flex items-center gap-1 min-w-[90px] justify-center">
-                        {isGiving && (
-                          <>
-                            <ArrowRight className="h-4 w-4 text-destructive" />
-                            <span className="text-destructive font-bold">Da {Math.abs(strokes)}</span>
-                          </>
-                        )}
-                        {isReceiving && (
-                          <>
-                            <ArrowLeft className="h-4 w-4 text-green-600" />
-                            <span className="text-green-600 font-bold">Recibe {Math.abs(strokes)}</span>
-                          </>
-                        )}
-                        {strokes === 0 && (
-                          <span className="text-muted-foreground">Scratch</span>
-                        )}
-                      </div>
+// ─── Cell Editor (Popover content) ────────────────────────────
 
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => adjustStrokes(rival.id, 1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+interface CellEditorProps {
+  rowPlayer: Player;
+  colPlayer: Player;
+  strokes: number;
+  sliding: { strokes: number; hasSliding: boolean };
+  onChangeStrokes: (v: number) => void;
+  onApplySliding: () => void;
+  disambiguated: Map<string, string>;
+}
 
-                    {/* Quick input */}
-                    <Input
-                      type="number"
-                      value={strokes}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 0;
-                        updatePendingStrokes(rival.id, Math.max(-36, Math.min(36, val)));
-                      }}
-                      className="w-14 h-8 text-center text-sm"
-                      min={-36}
-                      max={36}
-                    />
+const CellEditor: React.FC<CellEditorProps> = ({
+  rowPlayer,
+  colPlayer,
+  strokes,
+  sliding,
+  onChangeStrokes,
+  onApplySliding,
+  disambiguated,
+}) => {
+  const isGiving = strokes > 0;
+  const isReceiving = strokes < 0;
+  const slidingDiffers = sliding.hasSliding && sliding.strokes !== strokes;
+  const rowFirstName = rowPlayer.name.split(' ')[0];
+  const colFirstName = colPlayer.name.split(' ')[0];
 
-                    {hasChange && (
-                      <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                        <RefreshCw className="h-2.5 w-2.5 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Sliding suggestion row */}
-                  {hasSliding && slidingDiffers && (
-                    <div className="flex items-center justify-between pl-10 pr-2">
-                      <Badge 
-                        variant="outline" 
-                        className="gap-1 text-xs bg-amber-50 text-amber-700 border-amber-300"
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        Sliding sugerido: {sliding.strokes > 0 ? `Da ${sliding.strokes}` : sliding.strokes < 0 ? `Recibe ${Math.abs(sliding.strokes)}` : 'Scratch'}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-100"
-                        onClick={() => applySlidingSuggestion(rival.id)}
-                      >
-                        Aplicar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
+  return (
+    <div className="space-y-3">
+      {/* Header: who vs who */}
+      <div className="flex items-center gap-2 justify-center">
+        <PlayerAvatar
+          initials={disambiguated.get(rowPlayer.id) || rowPlayer.initials}
+          background={rowPlayer.color}
+          size="sm"
+        />
+        <span className="text-xs font-medium">vs</span>
+        <PlayerAvatar
+          initials={disambiguated.get(colPlayer.id) || colPlayer.initials}
+          background={colPlayer.color}
+          size="sm"
+        />
+      </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <ArrowRight className="h-3 w-3 text-destructive" />
-          <span>Da golpes (desventaja)</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <ArrowLeft className="h-3 w-3 text-green-600" />
-          <span>Recibe golpes (ventaja)</span>
-        </div>
-        {slidingSuggestions.size > 0 && (
-          <div className="flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-amber-600" />
-            <span>Sugerencia de Sliding</span>
-          </div>
+      <p className="text-center text-xs text-muted-foreground">
+        {isGiving && (
+          <><span className="font-semibold text-foreground">{rowFirstName}</span>{' '}
+          <span className="text-destructive font-medium">da {Math.abs(strokes)}</span> a {colFirstName}</>
         )}
+        {isReceiving && (
+          <><span className="font-semibold text-foreground">{rowFirstName}</span>{' '}
+          <span className="text-green-700 font-medium">recibe {Math.abs(strokes)}</span> de {colFirstName}</>
+        )}
+        {strokes === 0 && 'Scratch — sin ventaja'}
+      </p>
+
+      {/* Stepper */}
+      <div className="flex items-center justify-center gap-3">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => onChangeStrokes(strokes - 1)}
+          disabled={strokes <= -36}
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+
+        <div className="w-16 text-center">
+          <span className={cn(
+            'text-2xl font-bold',
+            isGiving ? 'text-destructive' : isReceiving ? 'text-green-700' : 'text-muted-foreground'
+          )}>
+            {strokes === 0 ? '0' : strokes > 0 ? `+${strokes}` : `${strokes}`}
+          </span>
+        </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => onChangeStrokes(strokes + 1)}
+          disabled={strokes >= 36}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* Sliding suggestion */}
+      {slidingDiffers && (
+        <div className="flex items-center justify-between p-2 rounded-md bg-amber-50 border border-amber-200">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+            <span className="text-[11px] text-amber-800">
+              Sliding: {sliding.strokes > 0 ? `Da ${sliding.strokes}` : sliding.strokes < 0 ? `Rec ${Math.abs(sliding.strokes)}` : 'Scratch'}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-[11px] text-amber-700 hover:text-amber-800 hover:bg-amber-100 px-2"
+            onClick={onApplySliding}
+          >
+            Aplicar
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
