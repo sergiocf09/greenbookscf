@@ -1952,17 +1952,6 @@ const Index = () => {
               </Button>
             )}
             
-            {/* Bet Setup Button - show when 2+ players */}
-            {players.length >= 2 && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-                onClick={() => setShowBetSetupDialog(true)}
-              >
-                <Receipt className="h-5 w-5" />
-              </Button>
-            )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -2061,8 +2050,9 @@ const Index = () => {
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
             <Tabs value={view} onValueChange={(v) => setView(v as AppView)}>
-              <TabsList className="w-full grid grid-cols-5 h-12">
+              <TabsList className="w-full grid grid-cols-6 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs" onClick={(e) => { e.preventDefault(); setShowBetSetupDialog(true); }}><Receipt className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs"><Sliders className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scoring" className="text-xs"><Users className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><LayoutGrid className="h-4 w-4" /></TabsTrigger>
@@ -2611,13 +2601,17 @@ const Index = () => {
         multiSelect={true}
       />
 
-      {/* Bet Setup Dialog */}
+      {/* Bet Setup Dialog - Full screen on mobile */}
       <Dialog open={showBetSetupDialog} onOpenChange={setShowBetSetupDialog}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Configuración de Apuestas</DialogTitle>
-          </DialogHeader>
-          <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
+        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-0 sm:max-w-lg sm:max-h-[90vh] sm:rounded-lg sm:p-6 overflow-hidden">
+          <div className="flex flex-col h-full">
+            <DialogHeader className="px-3 pt-3 pb-2 sm:px-0 sm:pt-0 shrink-0">
+              <DialogTitle>Configuración de Apuestas</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-1 pb-4 sm:px-0">
+              <BetSetup config={betConfig} onChange={setBetConfig} players={players} />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
