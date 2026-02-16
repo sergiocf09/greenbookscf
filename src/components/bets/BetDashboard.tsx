@@ -1620,9 +1620,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
       {betConfig.teamPressures?.bets?.filter(b => b.enabled).map((bet, idx) => {
         // Resolve config IDs (may be profileId) to actual player.id
+        // IMPORTANT: Search allPlayersForCalculations (all groups) not just `players` (current group)
         const resolvePId = (pid: string): string => {
-          if (players.find(p => p.id === pid)) return pid;
-          const match = players.find(p => p.profileId === pid);
+          if (allPlayersForCalculations.find(p => p.id === pid)) return pid;
+          const match = allPlayersForCalculations.find(p => p.profileId === pid);
           return match?.id ?? pid;
         };
         const resolvedTeamA: [string, string] = [resolvePId(bet.teamA[0]), resolvePId(bet.teamA[1])];
@@ -1634,7 +1635,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
         const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Each member's share (team total / 2 members)
         
-        const getPlayer = (id: string) => players.find(p => p.id === id);
+        const getPlayer = (id: string) => allPlayersForCalculations.find(p => p.id === id);
         const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
         const teamBPlayers = [getPlayer(resolvedTeamB[0]), getPlayer(resolvedTeamB[1])].filter(Boolean) as Player[];
         
