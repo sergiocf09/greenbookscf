@@ -928,6 +928,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const getGroupedSummaries = (rivalId: string) =>
     groupSummariesByType(basePlayer?.id || '', rivalId, betSummaries);
   
+  const isTeamBetDisabled = (betId: string): boolean => {
+    return (betConfig.disabledTeamBetIds || []).includes(betId);
+  };
+
   // Get carritos balance for a specific player (excluding disabled bets)
   const getCarritosBalanceForPlayer = (playerId: string): number => {
     let total = 0;
@@ -1035,9 +1039,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
   };
   
-  const isTeamBetDisabled = (betId: string): boolean => {
-    return (betConfig.disabledTeamBetIds || []).includes(betId);
-  };
+  // isTeamBetDisabled moved above getCarritosBalanceForPlayer
   
   // Get players to display based on selected group
   const hasMultipleGroups = playerGroups.length > 0;
