@@ -9,6 +9,7 @@ import { RayasConfig } from './RayasConfig';
 import { ParticipantSelector } from './ParticipantSelector';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
+import { ParticipationMatrix } from './ParticipationMatrix';
 
 interface IndividualBetsProps {
   config: BetConfig;
@@ -40,6 +41,13 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       <p className="text-xs text-muted-foreground mb-2">
         Apuestas jugador vs jugador. Usan la Matriz de Hándicaps Bilaterales.
       </p>
+
+      {/* Participation Matrix */}
+      <ParticipationMatrix
+        config={config}
+        players={players}
+        onUpdateBet={onUpdateBet}
+      />
 
       {/* Medal */}
       <BetSection
