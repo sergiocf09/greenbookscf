@@ -34,7 +34,7 @@ export const BetCategoryTabs: React.FC<BetCategoryTabsProps> = ({
   onCategoryChange,
 }) => {
   return (
-    <div className="flex gap-2 w-full">
+    <div className="flex gap-2 w-full bg-muted/70 p-2 rounded-xl">
       {categories.map((cat) => (
         <button
           key={cat.id}
