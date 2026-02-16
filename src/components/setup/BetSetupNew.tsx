@@ -93,6 +93,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             expandedSections={expandedSections}
             onToggleSection={toggleSection}
             onUpdateBet={updateBet}
+            onUpdateConfig={safeOnChange}
             basePlayerId={profile?.id}
           />
         )}
@@ -115,6 +116,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             expandedSections={expandedSections}
             onToggleSection={toggleSection}
             onUpdateBet={updateBet}
+            onUpdateConfig={safeOnChange}
           />
         )}
       </div>
