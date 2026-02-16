@@ -356,10 +356,14 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2 items-start">
-      {/* Team A - left aligned */}
-      <div className="space-y-1">
+    <div className="space-y-1">
+      {/* Header row */}
+      <div className="grid grid-cols-2 gap-2">
         <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
+        <Label className="text-[10px] text-muted-foreground font-medium text-right leading-none">Equipo B</Label>
+      </div>
+      {/* Player row 1 */}
+      <div className="grid grid-cols-2 gap-2">
         <PlayerWithHcp
           playerId={teamA[0]}
           players={players}
@@ -370,20 +374,6 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
           align="left"
         />
         <PlayerWithHcp
-          playerId={teamA[1]}
-          players={players}
-          playerOptions={playerOptions}
-          handicap={getHcp(teamA[1])}
-          onChangePlayer={(v) => onUpdateTeamA([teamA[0], v])}
-          onChangeHandicap={(v) => setHcp(teamA[1], v)}
-          align="left"
-        />
-      </div>
-
-      {/* Team B - right aligned */}
-      <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground font-medium text-right block leading-none">Equipo B</Label>
-        <PlayerWithHcp
           playerId={teamB[0]}
           players={players}
           playerOptions={playerOptions}
@@ -391,6 +381,18 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
           onChangePlayer={(v) => onUpdateTeamB([v, teamB[1]])}
           onChangeHandicap={(v) => setHcp(teamB[0], v)}
           align="right"
+        />
+      </div>
+      {/* Player row 2 */}
+      <div className="grid grid-cols-2 gap-2">
+        <PlayerWithHcp
+          playerId={teamA[1]}
+          players={players}
+          playerOptions={playerOptions}
+          handicap={getHcp(teamA[1])}
+          onChangePlayer={(v) => onUpdateTeamA([teamA[0], v])}
+          onChangeHandicap={(v) => setHcp(teamA[1], v)}
+          align="left"
         />
         <PlayerWithHcp
           playerId={teamB[1]}
