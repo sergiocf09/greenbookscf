@@ -952,13 +952,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Historical mode: team pressures are already included in snapshot balances
   const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
     if (isHistorical) return 0;
-    const matching = betSummaries
-      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas' && !isTeamBetDisabled(s.betId || ''));
-    const total = matching.reduce((sum, s) => sum + s.amount, 0);
-    if (matching.length > 0) {
-      console.log(`[TPBalance] player=${playerId} entries=${matching.length} total=${total}`);
-    }
-    return total;
+    return betSummaries
+      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas' && !isTeamBetDisabled(s.betId || ''))
+      .reduce((sum, s) => sum + s.amount, 0);
   };
 
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
