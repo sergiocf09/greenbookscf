@@ -177,7 +177,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             <p className="text-xs text-muted-foreground mb-2">No hay presiones por parejas configuradas</p>
             <Button variant="outline" size="sm" onClick={addTeamPressure} className="gap-1">
               <Plus className="h-3.5 w-3.5" />
-              Agregar Presión por Parejas
+              Agregar Foursome
             </Button>
           </div>
         ) : (
@@ -200,7 +200,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
-              Agregar otra Presión por Parejas
+              Agregar otro Foursome
             </Button>
           </>
         )}
@@ -356,10 +356,10 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2 items-start">
       {/* Team A - left aligned */}
       <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground font-medium">Equipo A</Label>
+        <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
         <PlayerWithHcp
           playerId={teamA[0]}
           players={players}
@@ -382,7 +382,7 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
       {/* Team B - right aligned */}
       <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground font-medium text-right block">Equipo B</Label>
+        <Label className="text-[10px] text-muted-foreground font-medium text-right block leading-none">Equipo B</Label>
         <PlayerWithHcp
           playerId={teamB[0]}
           players={players}
@@ -430,7 +430,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30'
     )}>
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium">Presión {index + 1}</Label>
+        <Label className="text-xs font-medium">Foursome {index + 1}</Label>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -439,7 +439,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Eliminar Presión {index + 1}?</AlertDialogTitle>
+              <AlertDialogTitle>¿Eliminar Foursome {index + 1}?</AlertDialogTitle>
               <AlertDialogDescription>
                 Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.
               </AlertDialogDescription>
@@ -484,10 +484,21 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         </Select>
       </div>
 
-      {/* Amounts */}
-      <AmountInput label="Front 9" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
-      <AmountInput label="Back 9" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
-      <AmountInput label="Match 18" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+      {/* Amounts - 3 columns */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+          <AmountInput label="" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+          <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
+      </div>
 
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
@@ -570,10 +581,21 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
 
-      {/* Amounts */}
-      <AmountInput label="Front 9" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
-      <AmountInput label="Back 9" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
-      <AmountInput label="Total 18" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+      {/* Amounts - 3 columns */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+          <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+          <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
+      </div>
 
       {/* Scoring Type */}
       <div className="flex items-center justify-between">

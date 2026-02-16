@@ -35,14 +35,14 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   };
   
   return (
-    <div className="flex items-center justify-between">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div className="flex items-center gap-1">
+    <div className={label ? "flex items-center justify-between" : "flex items-center justify-center"}>
+      {label && <Label className="text-xs text-muted-foreground">{label}</Label>}
+      <div className="flex items-center gap-0.5">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="h-7 w-7"
+          className="h-6 w-6"
           onClick={handleDecrement}
           onMouseDown={(e) => e.stopPropagation()}
           disabled={!allowNegative && value <= min}
@@ -57,7 +57,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
             onChange={(e) => onChange(parseInt(e.target.value) || 0)}
             onFocus={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="h-7 w-16 text-sm text-center px-1"
+            className="h-6 w-14 text-xs text-center px-0.5"
             min={allowNegative ? undefined : min}
             step={step}
           />
@@ -66,7 +66,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           type="button"
           variant="outline"
           size="icon"
-          className="h-7 w-7"
+          className="h-6 w-6"
           onClick={handleIncrement}
           onMouseDown={(e) => e.stopPropagation()}
         >
