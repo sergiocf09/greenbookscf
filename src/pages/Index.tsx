@@ -69,7 +69,7 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 
-type AppView = 'setup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
+type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -103,7 +103,7 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
-  const [showBetSetupDialog, setShowBetSetupDialog] = useState(false);
+  // showBetSetupDialog removed – betsetup is now a real tab view
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
@@ -2052,7 +2052,7 @@ const Index = () => {
             <Tabs value={view} onValueChange={(v) => setView(v as AppView)}>
               <TabsList className="w-full grid grid-cols-6 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs" onClick={(e) => { e.preventDefault(); setShowBetSetupDialog(true); }}><Receipt className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs"><Receipt className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs"><Sliders className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scoring" className="text-xs"><Users className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><LayoutGrid className="h-4 w-4" /></TabsTrigger>
@@ -2281,6 +2281,10 @@ const Index = () => {
               )}
             </div>
           </>
+        )}
+
+        {view === 'betsetup' && (
+          <BetSetup config={betConfig} onChange={setBetConfig} players={players} hasMultipleGroups={playerGroups.length > 0} />
         )}
 
         {view === 'handicaps' && (
@@ -2601,17 +2605,7 @@ const Index = () => {
         multiSelect={true}
       />
 
-      {/* Bet Setup Dialog - Full screen on mobile */}
-      <Dialog open={showBetSetupDialog} onOpenChange={setShowBetSetupDialog}>
-        <DialogContent className="w-screen h-[100dvh] max-w-none max-h-none rounded-none p-0 sm:max-w-lg sm:max-h-[90vh] sm:rounded-lg sm:p-6 flex flex-col">
-          <DialogHeader className="px-3 pt-3 pb-2 sm:px-0 sm:pt-0 shrink-0">
-            <DialogTitle>Configuración de Apuestas</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-4 sm:px-0 overscroll-contain">
-            <BetSetup config={betConfig} onChange={setBetConfig} players={players} hasMultipleGroups={playerGroups.length > 0} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Bet Setup removed from here – now rendered inline as a tab view in main content */}
 
       {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
