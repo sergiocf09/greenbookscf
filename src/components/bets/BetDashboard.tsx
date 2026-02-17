@@ -798,22 +798,88 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return { label: betType, aliases: [] };
     };
 
-    // Historical mode: use ledger-derived betSummaries with override filtering
-    // This ensures cancelled bets (betOverrides) are excluded from totals
-    // IMPORTANT: Exclude Carritos and Presiones Parejas (team bets) just like live mode,
-    // because they are accounted for separately in the Tabla General.
+    // Historical mode: use ledger-derived betSummaries with override filtering.
+    // CRITICAL: Group entries by their base category and check overrides at the GROUP level,
+    // exactly matching how computedTotalBalance (bilateral header) checks overrides.
+    // This ensures avatars, Tabla General, and bilateral header all show identical values.
     if (isHistorical) {
-      return betSummaries
+      const pairEntries = betSummaries
         .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
         .filter(s => 
           !carritosTypes.includes(s.betType) && 
           s.betType !== 'Presiones Parejas'
-        )
-        .filter(s => {
-          const { label, aliases } = betTypeToOverrideKey(s.betType);
-          return !isBetDisabledForPair(label, aliases);
-        })
-        .reduce((sum, s) => sum + s.amount, 0);
+        );
+      
+      // Map each ledger betType to its category key (same grouping as betTypeGroups)
+      const getCategoryKey = (betType: string): string => {
+        if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
+        if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
+        if (betType.startsWith('Skins')) return 'skins';
+        if (betType.startsWith('Rayas')) return 'rayas';
+        if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
+        if (betType.includes('Pingüino') || betType === 'Pingüinos') return 'pinguinos';
+        if (betType.startsWith('Zoológico')) return 'zoologico';
+        if (betType === 'Caros') return 'caros';
+        if (betType === 'Oyes') return 'oyeses';
+        if (betType === 'Unidades') return 'units';
+        if (betType === 'Manchas') return 'manchas';
+        if (betType === 'Culebras') return 'culebras';
+        if (betType === 'Coneja') return 'coneja';
+        if (betType === 'Medal General') return 'medalGeneral';
+        if (betType === 'Side Bet') return 'sideBets';
+        if (betType === 'Stableford') return 'stableford';
+        return betType;
+      };
+
+      // Map category key to the override betType label (same as computedTotalBalance normalizeLabel)
+      const categoryToLabel = (key: string): string => {
+        switch (key) {
+          case 'medal': return 'Medal';
+          case 'pressures': return 'Presiones';
+          case 'skins': return 'Skins';
+          case 'caros': return 'Caros';
+          case 'oyeses': return 'Oyes';
+          case 'units': return 'Unidades';
+          case 'manchas': return 'Manchas';
+          case 'culebras': return 'Culebras';
+          case 'pinguinos': return 'Pingüinos';
+          case 'rayas': return 'Rayas';
+          case 'medalGeneral': return 'Medal General';
+          case 'coneja': return 'Coneja';
+          case 'putts': return 'Putts';
+          case 'sideBets': return 'Side Bet';
+          case 'stableford': return 'Stableford';
+          case 'zoologico': return 'Zoológico';
+          default: return key;
+        }
+      };
+
+      // Group entries by category and sum amounts
+      const grouped = new Map<string, number>();
+      for (const entry of pairEntries) {
+        const cat = getCategoryKey(entry.betType);
+        grouped.set(cat, (grouped.get(cat) || 0) + entry.amount);
+      }
+
+      // Simple override check matching computedTotalBalance exactly
+      const matchesPlayerSimple = (overrideId: string, pId: string): boolean => {
+        const p = allPlayersForCalculations.find(x => x.id === pId);
+        return overrideId === pId || (!!p?.profileId && overrideId === p.profileId);
+      };
+
+      let total = 0;
+      for (const [catKey, amount] of grouped) {
+        const label = categoryToLabel(catKey);
+        const override = betConfig.betOverrides?.find(
+          (o) =>
+            (o.betType === label || o.betType === catKey) &&
+            ((matchesPlayerSimple(o.playerAId, playerId) && matchesPlayerSimple(o.playerBId, rivalId)) ||
+              (matchesPlayerSimple(o.playerAId, rivalId) && matchesPlayerSimple(o.playerBId, playerId)))
+        );
+        if (override?.enabled === false) continue;
+        total += amount;
+      }
+      return total;
     }
 
     const nonRayasNonMedalGeneralBalance = betSummaries
