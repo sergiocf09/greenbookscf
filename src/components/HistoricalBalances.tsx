@@ -1,12 +1,11 @@
 /**
  * Historical Balances Component
  * 
- * Displays the accumulated historical balance of bets for the logged-in user:
- * - Total net amount (won or lost)
- * - Ranking of rivals (from most won to most lost)
- * - Detail per rival with rounds shared (from immutable snapshots)
+ * Displays the accumulated historical balance of bets for the logged-in user.
  * 
- * Uses player_vs_player table for rankings and round_snapshots for detailed round info.
+ * CRITICAL: Calculates ALL balances directly from round_snapshots ledger entries,
+ * applying betOverrides (cancelled bets) to match the General Table logic exactly.
+ * Does NOT rely on pre-calculated vsBalances or player_vs_player table.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -35,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
-import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
+import { isValidSnapshot, RoundSnapshot, SnapshotLedgerEntry } from '@/lib/roundSnapshot';
 
 interface RivalBalance {
   id: string;
@@ -44,7 +43,7 @@ interface RivalBalance {
   rivalColor: string;
   isGuest: boolean;
   profileId?: string | null;
-  netAmount: number; // Positive = user won, Negative = user lost
+  netAmount: number;
   roundsPlayed: number;
   lastPlayedAt: string | null;
 }
@@ -56,13 +55,119 @@ interface SharedRound {
   netAmount: number;
   userGross?: number;
   rivalGross?: number;
-  slidingStrokes?: number; // Positive = user gave strokes, Negative = user received strokes
+  slidingStrokes?: number;
 }
 
 interface HistoricalBalancesProps {
   onViewRound?: (roundId: string) => void;
   onClose?: () => void;
 }
+
+// ────────────────────────────────────────────────────
+// Override filtering logic (mirrors BetDashboard exactly)
+// ────────────────────────────────────────────────────
+
+const getCategoryKey = (betType: string): string => {
+  if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
+  if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
+  if (betType.startsWith('Skins')) return 'skins';
+  if (betType.startsWith('Rayas')) return 'rayas';
+  if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
+  if (betType.includes('Pingüino') || betType === 'Pingüinos') return 'pinguinos';
+  if (betType.startsWith('Zoológico')) return 'zoologico';
+  if (betType === 'Caros') return 'caros';
+  if (betType === 'Oyes') return 'oyeses';
+  if (betType === 'Unidades') return 'units';
+  if (betType === 'Manchas') return 'manchas';
+  if (betType === 'Culebras') return 'culebras';
+  if (betType === 'Coneja') return 'coneja';
+  if (betType === 'Medal General') return 'medalGeneral';
+  if (betType === 'Side Bet') return 'sideBets';
+  if (betType === 'Stableford') return 'stableford';
+  return betType;
+};
+
+const categoryToLabel = (key: string): string => {
+  switch (key) {
+    case 'medal': return 'Medal';
+    case 'pressures': return 'Presiones';
+    case 'skins': return 'Skins';
+    case 'caros': return 'Caros';
+    case 'oyeses': return 'Oyes';
+    case 'units': return 'Unidades';
+    case 'manchas': return 'Manchas';
+    case 'culebras': return 'Culebras';
+    case 'pinguinos': return 'Pingüinos';
+    case 'rayas': return 'Rayas';
+    case 'medalGeneral': return 'Medal General';
+    case 'coneja': return 'Coneja';
+    case 'putts': return 'Putts';
+    case 'sideBets': return 'Side Bet';
+    case 'stableford': return 'Stableford';
+    case 'zoologico': return 'Zoológico';
+    default: return key;
+  }
+};
+
+/**
+ * Calculate the net amount for a player vs rival from a snapshot's ledger,
+ * applying betOverrides to exclude cancelled bets.
+ * This mirrors getCorrectedBilateralBalance in BetDashboard (historical mode).
+ */
+const calculateNetFromLedger = (
+  ledger: SnapshotLedgerEntry[],
+  betOverrides: any[] | undefined,
+  playerId: string,
+  rivalId: string,
+  allPlayers: any[]
+): number => {
+  const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+
+  // Build bet summaries (winner positive, loser negative) for this pair only
+  const pairEntries: { betType: string; amount: number }[] = [];
+  for (const entry of ledger) {
+    if (entry.amount <= 0) continue;
+    if (carritosTypes.includes(entry.betType)) continue;
+    if (entry.betType === 'Presiones Parejas') continue;
+
+    if (entry.toPlayerId === playerId && entry.fromPlayerId === rivalId) {
+      pairEntries.push({ betType: entry.betType, amount: entry.amount });
+    } else if (entry.fromPlayerId === playerId && entry.toPlayerId === rivalId) {
+      pairEntries.push({ betType: entry.betType, amount: -entry.amount });
+    }
+  }
+
+  // Group by category
+  const grouped = new Map<string, number>();
+  for (const e of pairEntries) {
+    const cat = getCategoryKey(e.betType);
+    grouped.set(cat, (grouped.get(cat) || 0) + e.amount);
+  }
+
+  // Helper to match player IDs (id or profileId)
+  const matchesPlayer = (overrideId: string, pId: string): boolean => {
+    if (overrideId === pId) return true;
+    const p = allPlayers.find((x: any) => x.id === pId);
+    if (p?.profileId && overrideId === p.profileId) return true;
+    const pByProfile = allPlayers.find((x: any) => x.profileId === pId);
+    if (pByProfile && overrideId === pByProfile.id) return true;
+    return false;
+  };
+
+  let total = 0;
+  for (const [catKey, amount] of grouped) {
+    const label = categoryToLabel(catKey);
+    const override = (betOverrides || []).find(
+      (o: any) =>
+        (o.betType === label || o.betType === catKey) &&
+        ((matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
+          (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId)))
+    );
+    if (override?.enabled === false) continue;
+    total += amount;
+  }
+  return total;
+};
 
 export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBalancesProps>(({ 
   onViewRound,
@@ -80,119 +185,141 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [showGuests, setShowGuests] = useState(false);
 
-  // Fetch all PvP records for the current user
+  // Cache all snapshots to reuse in detail view
+  const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
+
+  // Fetch ALL snapshots and compute balances from ledger + overrides
   useEffect(() => {
     const fetchBalances = async () => {
       if (!profile) return;
       
       try {
-        // Get all player_vs_player records where this user is involved
-        const { data, error } = await supabase
-          .from('player_vs_player')
-          .select('*')
-          .or(`player_a_id.eq.${profile.id},player_b_id.eq.${profile.id}`);
+        // Get all round_snapshots the user can see
+        const { data: snapshotsData, error } = await supabase
+          .from('round_snapshots')
+          .select('round_id, snapshot_json');
 
         if (error) throw error;
+
+        const snapshots: RoundSnapshot[] = [];
+        // rivalKey -> { netAmount, roundsPlayed, lastDate, rivalInfo }
+        const rivalMap = new Map<string, {
+          netAmount: number;
+          roundsPlayed: number;
+          lastDate: string | null;
+          rivalName: string;
+          rivalProfileId: string | null;
+          isGuest: boolean;
+        }>();
+
+        let completedCount = 0;
+
+        for (const row of snapshotsData || []) {
+          const snap = row.snapshot_json as unknown;
+          if (!isValidSnapshot(snap)) continue;
+
+          snapshots.push(snap);
+
+          // Find this user in the snapshot
+          const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+          if (!userPlayer) continue;
+
+          completedCount++;
+
+          const betOverrides = snap.betConfig?.betOverrides;
+
+          // Calculate net vs each other player using ledger + overrides
+          for (const rival of snap.players) {
+            if (rival.id === userPlayer.id) continue;
+
+            const net = calculateNetFromLedger(
+              snap.ledger,
+              betOverrides,
+              userPlayer.id,
+              rival.id,
+              snap.players
+            );
+
+            // Build a stable key for this rival across rounds
+            const rivalKey = rival.profileId
+              ? `profile:${rival.profileId}`
+              : `guest:${rival.name}`;
+
+            const existing = rivalMap.get(rivalKey);
+            if (existing) {
+              existing.netAmount += net;
+              existing.roundsPlayed += 1;
+              if (!existing.lastDate || snap.date > existing.lastDate) {
+                existing.lastDate = snap.date;
+              }
+            } else {
+              rivalMap.set(rivalKey, {
+                netAmount: net,
+                roundsPlayed: 1,
+                lastDate: snap.date,
+                rivalName: rival.name,
+                rivalProfileId: rival.profileId || null,
+                isGuest: rival.isGuest,
+              });
+            }
+          }
+        }
+
+        setAllSnapshots(snapshots);
+
+        // Resolve profile display info for registered rivals
+        const profileIds = [...rivalMap.entries()]
+          .filter(([_, v]) => v.rivalProfileId)
+          .map(([_, v]) => v.rivalProfileId!);
+
+        let profilesMap = new Map<string, { display_name: string; initials: string; avatar_color: string }>();
+        if (profileIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, display_name, initials, avatar_color')
+            .in('id', profileIds);
+          for (const p of profilesData || []) {
+            profilesMap.set(p.id, p);
+          }
+        }
 
         const balances: RivalBalance[] = [];
         let totalNetAmount = 0;
 
-        for (const record of data || []) {
-          const isPlayerA = record.player_a_id === profile.id;
-          
-          // Determine rival info
-          let rivalName: string;
+        for (const [key, data] of rivalMap) {
+          let rivalName = data.rivalName;
           let rivalInitials: string;
           let rivalColor: string;
-          let isGuest: boolean;
-          let rivalProfileId: string | null = null;
 
-          if (isPlayerA) {
-            // Rival is player B
-            isGuest = record.player_b_is_guest;
-            rivalProfileId = record.player_b_id;
-            
-            if (isGuest) {
-              rivalName = record.player_b_name || 'Invitado';
-              rivalInitials = rivalName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-              rivalColor = '#6B7280'; // Gray for guests
-            } else if (rivalProfileId) {
-              // Fetch profile info
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('display_name, initials, avatar_color')
-                .eq('id', rivalProfileId)
-                .maybeSingle();
-              
-              rivalName = profileData?.display_name || 'Jugador';
-              rivalInitials = profileData?.initials || 'XX';
-              rivalColor = profileData?.avatar_color || '#3B82F6';
-            } else {
-              rivalName = 'Desconocido';
-              rivalInitials = '??';
-              rivalColor = '#6B7280';
-            }
+          if (data.rivalProfileId && profilesMap.has(data.rivalProfileId)) {
+            const pInfo = profilesMap.get(data.rivalProfileId)!;
+            rivalName = pInfo.display_name;
+            rivalInitials = pInfo.initials;
+            rivalColor = pInfo.avatar_color;
+          } else if (data.isGuest) {
+            rivalInitials = rivalName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+            rivalColor = '#6B7280';
           } else {
-            // Rival is player A
-            isGuest = record.player_a_is_guest;
-            rivalProfileId = record.player_a_id;
-            
-            if (isGuest) {
-              rivalName = record.player_a_name || 'Invitado';
-              rivalInitials = rivalName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-              rivalColor = '#6B7280';
-            } else if (rivalProfileId) {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('display_name, initials, avatar_color')
-                .eq('id', rivalProfileId)
-                .maybeSingle();
-              
-              rivalName = profileData?.display_name || 'Jugador';
-              rivalInitials = profileData?.initials || 'XX';
-              rivalColor = profileData?.avatar_color || '#3B82F6';
-            } else {
-              rivalName = 'Desconocido';
-              rivalInitials = '??';
-              rivalColor = '#6B7280';
-            }
+            rivalInitials = rivalName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+            rivalColor = '#3B82F6';
           }
 
-          // Calculate net amount for this user
-          const netAmount = isPlayerA 
-            ? (record.total_won_by_a - record.total_won_by_b)
-            : (record.total_won_by_b - record.total_won_by_a);
-
-          totalNetAmount += netAmount;
+          totalNetAmount += data.netAmount;
 
           balances.push({
-            id: record.id,
+            id: key,
             rivalName,
             rivalInitials,
             rivalColor,
-            isGuest,
-            profileId: rivalProfileId,
-            netAmount,
-            roundsPlayed: record.rounds_played,
-            lastPlayedAt: record.last_played_at,
+            isGuest: data.isGuest,
+            profileId: data.rivalProfileId,
+            netAmount: data.netAmount,
+            roundsPlayed: data.roundsPlayed,
+            lastPlayedAt: data.lastDate,
           });
         }
 
-        // Sort by net amount (most won first, then most lost)
         balances.sort((a, b) => b.netAmount - a.netAmount);
-
-        // Count actual completed rounds (with snapshots) where this user participated
-        const [userRoundsResult, snapshotRoundsResult] = await Promise.all([
-          supabase.from('round_players').select('round_id').eq('profile_id', profile.id),
-          supabase.from('round_snapshots').select('round_id'),
-        ]);
-        
-        const userRoundSet = new Set((userRoundsResult.data || []).map(r => r.round_id));
-        const snapshotSet = new Set((snapshotRoundsResult.data || []).map(s => s.round_id));
-        let completedCount = 0;
-        for (const rid of userRoundSet) {
-          if (snapshotSet.has(rid)) completedCount++;
-        }
 
         setRivals(balances);
         setTotalNet(totalNetAmount);
@@ -207,7 +334,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     fetchBalances();
   }, [profile]);
 
-  // Fetch shared rounds with a specific rival - reading from snapshots for accurate data
+  // Fetch shared rounds with a specific rival - computed from cached snapshots
   const fetchRivalDetail = async (rival: RivalBalance) => {
     if (!profile) return;
     
@@ -215,98 +342,58 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     setSelectedRival(rival);
     
     try {
-      // Get round IDs from both ledger transactions AND snapshots
-      // (some pre-migration rounds only have guest balances in snapshots, no ledger entries)
-      const [ledgerResult, snapshotsListResult] = await Promise.all([
-        supabase
-          .from('ledger_transactions')
-          .select('round_id')
-          .or(`from_profile_id.eq.${profile.id},to_profile_id.eq.${profile.id}`),
-        supabase
-          .from('round_snapshots')
-          .select('round_id')
-      ]);
+      // Also fetch round_handicaps for sliding display
+      const roundIds = allSnapshots.map(s => s.roundId);
+      const { data: handicapsData } = roundIds.length > 0
+        ? await supabase
+            .from('round_handicaps')
+            .select(`
+              round_id, 
+              strokes_given_by_a,
+              player_a:round_players!round_handicaps_player_a_id_fkey(profile_id),
+              player_b:round_players!round_handicaps_player_b_id_fkey(profile_id)
+            `)
+            .in('round_id', roundIds)
+        : { data: [] };
 
-      if (ledgerResult.error) throw ledgerResult.error;
-
-      // Combine round IDs from both sources
-      const ledgerRoundIds = (ledgerResult.data || []).map(t => t.round_id);
-      const snapshotRoundIds = (snapshotsListResult.data || []).map(s => s.round_id);
-      const roundIds = [...new Set([...ledgerRoundIds, ...snapshotRoundIds])];
-      
-      if (roundIds.length === 0) {
-        setSharedRounds([]);
-        setLoadingDetail(false);
-        return;
-      }
-
-      // Fetch snapshots and round_handicaps in parallel
-      const [snapshotsResult, handicapsResult] = await Promise.all([
-        supabase
-          .from('round_snapshots')
-          .select('round_id, snapshot_json')
-          .in('round_id', roundIds),
-        supabase
-          .from('round_handicaps')
-          .select(`
-            round_id, 
-            strokes_given_by_a,
-            player_a:round_players!round_handicaps_player_a_id_fkey(profile_id),
-            player_b:round_players!round_handicaps_player_b_id_fkey(profile_id)
-          `)
-          .in('round_id', roundIds)
-      ]);
-
-      if (snapshotsResult.error) throw snapshotsResult.error;
-
-      // Build a map of round_id -> handicaps with profile_ids for quick lookup
       const handicapsByRound = new Map<string, { profileAId: string | null; profileBId: string | null; strokes: number }[]>();
-      for (const h of handicapsResult.data || []) {
-        if (!handicapsByRound.has(h.round_id)) {
-          handicapsByRound.set(h.round_id, []);
-        }
-        const profileA = (h.player_a as any)?.profile_id || null;
-        const profileB = (h.player_b as any)?.profile_id || null;
+      for (const h of handicapsData || []) {
+        if (!handicapsByRound.has(h.round_id)) handicapsByRound.set(h.round_id, []);
         handicapsByRound.get(h.round_id)!.push({
-          profileAId: profileA,
-          profileBId: profileB,
+          profileAId: (h.player_a as any)?.profile_id || null,
+          profileBId: (h.player_b as any)?.profile_id || null,
           strokes: h.strokes_given_by_a,
         });
       }
 
       const sharedRoundsList: SharedRound[] = [];
 
-      for (const snapshotRow of snapshotsResult.data || []) {
-        const snap = snapshotRow.snapshot_json as unknown;
-        if (!isValidSnapshot(snap)) continue;
+      for (const snap of allSnapshots) {
+        const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+        if (!userPlayer) continue;
 
-        // Find user and rival in this snapshot
-        const userId = profile.id;
-        const rivalId = rival.profileId;
-        
-        // For guests, match by name
-        const userPlayer = snap.players.find((p: any) => p.profileId === userId);
         const rivalPlayer = rival.isGuest
           ? snap.players.find((p: any) => p.isGuest && p.name === rival.rivalName)
-          : snap.players.find((p: any) => p.profileId === rivalId);
+          : snap.players.find((p: any) => p.profileId === rival.profileId);
 
-        if (!userPlayer || !rivalPlayer) continue;
+        if (!rivalPlayer) continue;
 
-        // Get balance from snapshot
-        const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
-        const vsRivalBalance = userBalance?.vsBalances.find(
-          (vb: any) => vb.rivalId === rivalPlayer.id
+        // Calculate net from ledger with overrides
+        const netAmount = calculateNetFromLedger(
+          snap.ledger,
+          snap.betConfig?.betOverrides,
+          userPlayer.id,
+          rivalPlayer.id,
+          snap.players
         );
 
-        if (!vsRivalBalance) continue;
-
-        // Calculate gross scores
+        // Gross scores
         const userScores = snap.scores[userPlayer.id] || [];
         const rivalScores = snap.scores[rivalPlayer.id] || [];
         const userGross = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
         const rivalGross = rivalScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
 
-        // Get sliding from bilateral handicaps in snapshot first
+        // Sliding strokes
         let slidingStrokes: number | undefined = undefined;
         
         if (snap.bilateralHandicaps) {
@@ -322,41 +409,39 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           }
         }
 
-        // Fallback to vsBalance sliding
-        if (slidingStrokes === undefined && vsRivalBalance.slidingStrokes !== undefined) {
-          slidingStrokes = vsRivalBalance.slidingStrokes;
+        if (slidingStrokes === undefined) {
+          const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
+          const vsRivalBalance = userBalance?.vsBalances.find((vb: any) => vb.rivalId === rivalPlayer.id);
+          if (vsRivalBalance?.slidingStrokes !== undefined) {
+            slidingStrokes = vsRivalBalance.slidingStrokes;
+          }
         }
 
-        // Fallback to round_handicaps table if not in snapshot
-        // Use profileId for matching since that's what we fetched
         if (slidingStrokes === undefined) {
           const roundHandicaps = handicapsByRound.get(snap.roundId) || [];
-          const userProfileId = userPlayer.profileId;
-          const rivalProfileId = rivalPlayer.profileId;
-          
           const handicapRecord = roundHandicaps.find(
-            h => (h.profileAId === userProfileId && h.profileBId === rivalProfileId) ||
-                 (h.profileAId === rivalProfileId && h.profileBId === userProfileId)
+            h => (h.profileAId === userPlayer.profileId && h.profileBId === rivalPlayer.profileId) ||
+                 (h.profileAId === rivalPlayer.profileId && h.profileBId === userPlayer.profileId)
           );
           if (handicapRecord) {
-            slidingStrokes = handicapRecord.profileAId === userProfileId
+            slidingStrokes = handicapRecord.profileAId === userPlayer.profileId
               ? handicapRecord.strokes
               : -handicapRecord.strokes;
           }
         }
 
+        // Only include if there's any interaction (net != 0 or they were both in the round)
         sharedRoundsList.push({
           roundId: snap.roundId,
           date: snap.date,
           courseName: snap.courseName,
-          netAmount: vsRivalBalance.netAmount,
+          netAmount,
           userGross,
           rivalGross,
           slidingStrokes,
         });
       }
 
-      // Sort by date descending
       sharedRoundsList.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
       
       setSharedRounds(sharedRoundsList);
