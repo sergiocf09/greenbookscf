@@ -161,39 +161,24 @@ export const isRayasActiveForPair = (
   // A player "participates" if they have at least one override with enabled=true
   // OR if they have no overrides at all (default = participate)
   
-  const playerAParticipates = (() => {
-    const overrides = config.rayas?.bilateralOverrides?.[playerAId];
-    if (!overrides || overrides.length === 0) {
-      // No overrides = check if ANY other player has this one as rival and enabled
-      // If not found anywhere, this player doesn't participate when others have explicit configs
-      for (const [otherId, otherOverrides] of Object.entries(config.rayas?.bilateralOverrides || {})) {
-        if (otherId === playerAId) continue;
-        const hasAsRival = otherOverrides?.find(o => o.rivalId === playerAId && o.enabled !== false);
-        if (hasAsRival) return true;
-      }
-      return false;
-    }
-    // Has overrides - participates if at least one is enabled
-    return overrides.some(o => o.enabled !== false);
-  })();
+  // A player "participates" if:
+  // 1. They have overrides with at least one enabled, OR
+  // 2. They have NO overrides at all (default = participate)
+  // 3. They are referenced as a rival by someone else
+  // Only explicitly disabled (all overrides disabled) means exclusion.
   
-  const playerBParticipates = (() => {
-    const overrides = config.rayas?.bilateralOverrides?.[playerBId];
+  const playerParticipates = (playerId: string): boolean => {
+    const overrides = config.rayas?.bilateralOverrides?.[playerId];
     if (!overrides || overrides.length === 0) {
-      // No overrides = check if ANY other player has this one as rival and enabled
-      for (const [otherId, otherOverrides] of Object.entries(config.rayas?.bilateralOverrides || {})) {
-        if (otherId === playerBId) continue;
-        const hasAsRival = otherOverrides?.find(o => o.rivalId === playerBId && o.enabled !== false);
-        if (hasAsRival) return true;
-      }
-      return false;
+      // No overrides for this player = participates by default
+      return true;
     }
     // Has overrides - participates if at least one is enabled
     return overrides.some(o => o.enabled !== false);
-  })();
+  };
   
   // Rayas is active for this pair if EITHER player participates
-  return playerAParticipates || playerBParticipates;
+  return playerParticipates(playerAId) || playerParticipates(playerBId);
 };
 
 /**
