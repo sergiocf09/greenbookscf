@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -14,6 +15,8 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +34,25 @@ const Auth = () => {
     } else {
       toast.success('¡Bienvenido!');
       navigate(returnTo || '/');
+    }
+    setIsLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast.error('Ingresa tu correo electrónico');
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast.error('Error al enviar correo', { description: error.message });
+    } else {
+      toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
+      setForgotMode(false);
     }
     setIsLoading(false);
   };
@@ -53,6 +75,40 @@ const Auth = () => {
     }
     setIsLoading(false);
   };
+
+  if (forgotMode) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-primary/20 shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-primary">Recuperar Contraseña</CardTitle>
+            <CardDescription>Te enviaremos un enlace para restablecer tu contraseña</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Correo electrónico</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar Enlace'}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotMode(false)}>
+                Volver a Iniciar Sesión
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -95,6 +151,13 @@ const Auth = () => {
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Iniciar Sesión'}
                 </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setForgotMode(true)}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
               </form>
             </TabsContent>
             
