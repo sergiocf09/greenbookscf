@@ -96,7 +96,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         const balances: RivalBalance[] = [];
         let totalNetAmount = 0;
-        const roundIds = new Set<string>();
 
         for (const record of data || []) {
           const isPlayerA = record.player_a_id === profile.id;
@@ -165,10 +164,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             : (record.total_won_by_b - record.total_won_by_a);
 
           totalNetAmount += netAmount;
-          
-          if (record.last_round_id) {
-            roundIds.add(record.last_round_id);
-          }
 
           balances.push({
             id: record.id,
@@ -185,10 +180,23 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         // Sort by net amount (most won first, then most lost)
         balances.sort((a, b) => b.netAmount - a.netAmount);
+
+        // Count actual completed rounds (with snapshots) where this user participated
+        const [userRoundsResult, snapshotRoundsResult] = await Promise.all([
+          supabase.from('round_players').select('round_id').eq('profile_id', profile.id),
+          supabase.from('round_snapshots').select('round_id'),
+        ]);
         
+        const userRoundSet = new Set((userRoundsResult.data || []).map(r => r.round_id));
+        const snapshotSet = new Set((snapshotRoundsResult.data || []).map(s => s.round_id));
+        let completedCount = 0;
+        for (const rid of userRoundSet) {
+          if (snapshotSet.has(rid)) completedCount++;
+        }
+
         setRivals(balances);
         setTotalNet(totalNetAmount);
-        setTotalRounds(roundIds.size);
+        setTotalRounds(completedCount);
       } catch (err) {
         devError('Error fetching historical balances:', err);
       } finally {
