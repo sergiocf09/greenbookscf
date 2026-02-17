@@ -800,9 +800,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
     // Historical mode: use ledger-derived betSummaries with override filtering
     // This ensures cancelled bets (betOverrides) are excluded from totals
+    // IMPORTANT: Exclude Carritos and Presiones Parejas (team bets) just like live mode,
+    // because they are accounted for separately in the Tabla General.
     if (isHistorical) {
       return betSummaries
         .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
+        .filter(s => 
+          !carritosTypes.includes(s.betType) && 
+          s.betType !== 'Presiones Parejas'
+        )
         .filter(s => {
           const { label, aliases } = betTypeToOverrideKey(s.betType);
           return !isBetDisabledForPair(label, aliases);
