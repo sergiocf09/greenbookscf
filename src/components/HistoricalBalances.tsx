@@ -84,6 +84,8 @@ const getCategoryKey = (betType: string): string => {
   if (betType === 'Medal General') return 'medalGeneral';
   if (betType === 'Side Bet') return 'sideBets';
   if (betType === 'Stableford') return 'stableford';
+  if (betType.startsWith('Carritos')) return 'carritos';
+  if (betType === 'Presiones Parejas') return 'teamPressures';
   return betType;
 };
 
@@ -105,6 +107,8 @@ const categoryToLabel = (key: string): string => {
     case 'sideBets': return 'Side Bet';
     case 'stableford': return 'Stableford';
     case 'zoologico': return 'Zoológico';
+    case 'carritos': return 'Carritos';
+    case 'teamPressures': return 'Foursome';
     default: return key;
   }
 };
@@ -121,14 +125,10 @@ const calculateNetFromLedger = (
   rivalId: string,
   allPlayers: any[]
 ): number => {
-  const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
-
   // Build bet summaries (winner positive, loser negative) for this pair only
   const pairEntries: { betType: string; amount: number }[] = [];
   for (const entry of ledger) {
     if (entry.amount <= 0) continue;
-    if (carritosTypes.includes(entry.betType)) continue;
-    if (entry.betType === 'Presiones Parejas') continue;
 
     if (entry.toPlayerId === playerId && entry.fromPlayerId === rivalId) {
       pairEntries.push({ betType: entry.betType, amount: entry.amount });
