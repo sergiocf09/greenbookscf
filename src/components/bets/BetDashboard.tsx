@@ -3385,21 +3385,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const rayasFrontTotal = groupedSummaries['Rayas Front']?.total || 0;
         const rayasBackTotal = groupedSummaries['Rayas Back']?.total || 0;
         const rayasMedalTotal = groupedSummaries['Rayas Medal Total']?.total || 0;
-        const rayasTotalFromLedger = rayasFrontTotal + rayasBackTotal + rayasMedalTotal;
+        const rayasOyesTotal = groupedSummaries['Rayas Oyes']?.total || 0;
+        const rayasTotalFromLedger = rayasFrontTotal + rayasBackTotal + rayasMedalTotal + rayasOyesTotal;
         
-        if (rayasTotalFromLedger !== 0 || rayasFrontTotal !== 0 || rayasBackTotal !== 0 || rayasMedalTotal !== 0) {
+        // Build segments dynamically based on what's in the ledger
+        const segments: { label: string; key: string }[] = [
+          { label: 'Front 9', key: 'rayas_front' },
+          { label: 'Back 9', key: 'rayas_back' },
+          { label: 'Medal Total', key: 'rayas_medal' },
+        ];
+        if (rayasOyesTotal !== 0) {
+          segments.push({ label: 'Oyes', key: 'rayas_oyes' });
+        }
+        
+        if (rayasTotalFromLedger !== 0 || rayasFrontTotal !== 0 || rayasBackTotal !== 0 || rayasMedalTotal !== 0 || rayasOyesTotal !== 0) {
           groups.push({
             key: 'rayas',
             label: 'Rayas',
             configKey: 'rayas',
-            segments: [
-              { label: 'Front 9', key: 'rayas_front' },
-              { label: 'Back 9', key: 'rayas_back' },
-              { label: 'Medal Total', key: 'rayas_medal' },
-            ],
+            segments,
             getTotal: () => rayasTotalFromLedger,
             getSegmentData: (segmentKey) => {
-              const summaryKey = segmentKey === 'rayas_front' ? 'Rayas Front' : segmentKey === 'rayas_back' ? 'Rayas Back' : 'Rayas Medal Total';
+              const summaryKeyMap: Record<string, string> = {
+                'rayas_front': 'Rayas Front',
+                'rayas_back': 'Rayas Back',
+                'rayas_medal': 'Rayas Medal Total',
+                'rayas_oyes': 'Rayas Oyes',
+              };
+              const summaryKey = summaryKeyMap[segmentKey] || 'Rayas Front';
               const summary = groupedSummaries[summaryKey];
               return {
                 playerNet: 0,
