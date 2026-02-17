@@ -701,11 +701,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // IMPORTANT: Also respects betOverrides (cancelled bets) for each pair
   // HISTORICAL MODE: When snapshot data is available, read directly from snapshot balances
   const getCorrectedBilateralBalance = (playerId: string, rivalId: string): number => {
-    // Historical: single source of truth from snapshot
-    if (snapshotBalances) {
-      const bal = snapshotBalances.find(b => b.playerId === playerId);
-      return bal?.vsBalances.find(vb => vb.rivalId === rivalId)?.netAmount ?? 0;
-    }
 
     // Get balance from betSummaries for non-Rayas bets
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
@@ -803,8 +798,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return { label: betType, aliases: [] };
     };
 
+    // Historical mode: use ledger-derived betSummaries with override filtering
+    // This ensures cancelled bets (betOverrides) are excluded from totals
+    if (isHistorical) {
+      return betSummaries
+        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
+        .filter(s => {
+          const { label, aliases } = betTypeToOverrideKey(s.betType);
+          return !isBetDisabledForPair(label, aliases);
+        })
+        .reduce((sum, s) => sum + s.amount, 0);
+    }
 
-    
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -917,13 +922,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   };
   
   // Get balance for base player vs each rival
-  // When snapshot balances are available (historical view), use them as the single source of truth
+  // Get balance for base player vs each rival - uses override-aware calculation
   const getRivalBalance = (rivalId: string): number => {
-    if (snapshotBalances && basePlayer) {
-      const baseBal = snapshotBalances.find(b => b.playerId === basePlayer.id);
-      const vsBal = baseBal?.vsBalances.find(vb => vb.rivalId === rivalId);
-      return vsBal?.netAmount ?? 0;
-    }
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
   
@@ -1222,16 +1222,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardContent className="pt-0">
           <div className="space-y-2">
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
-              // When snapshot balances are available, use them directly (immutable source of truth)
-              const snapshotBal = snapshotBalances?.find(b => b.playerId === player.id);
-              
-              // Base total: ONLY bets vs players inside the selected group - use corrected balance
-              // Individual balance EXCLUDES Carritos and Team Pressures (pair bets)
+              // Base total: use override-aware corrected balance (works for both live and historical)
               const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-              const individualBalance = snapshotBal ? 0 : getCorrectedPlayerBalance(player.id, groupRivalIds);
-              const carritosBalance = snapshotBal ? 0 : getCarritosBalanceForPlayer(player.id);
-              const teamPressuresBalance = snapshotBal ? 0 : getTeamPressuresBalanceForPlayer(player.id);
-              const totalBalance = snapshotBal ? snapshotBal.totalNet : (individualBalance + carritosBalance + teamPressuresBalance);
+              const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
+              const carritosBalance = isHistorical ? 0 : getCarritosBalanceForPlayer(player.id);
+              const teamPressuresBalance = isHistorical ? 0 : getTeamPressuresBalanceForPlayer(player.id);
+              const totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
               
@@ -1250,10 +1246,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
               
               // Calculate total for "all" mode including cross-group bets using corrected balance
-              const crossGroupBalance = snapshotBal ? 0 : crossGroupOthers.reduce((sum, rival) => {
+              const crossGroupBalance = isHistorical ? 0 : crossGroupOthers.reduce((sum, rival) => {
                 return sum + getCorrectedBilateralBalance(player.id, rival.id);
               }, 0);
-              const displayBalance = snapshotBal ? snapshotBal.totalNet : (tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance);
+              const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
               return (
                 <div key={player.id}>
@@ -1304,15 +1300,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-5 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
-                        // When snapshot balances available, use them for bilateral amounts
-                        const snapshotVsBal = snapshotBal?.vsBalances.find(vb => vb.rivalId === other.id);
-                        
-                        // Use corrected balance that calculates Rayas correctly
-                        // This is the individual balance EXCLUDING Carritos and Team Pressures
-                        const vsIndividualBalance = snapshotVsBal ? snapshotVsBal.netAmount : getCorrectedBilateralBalance(player.id, other.id);
-                        const vsCarritosBalance = snapshotVsBal ? 0 : getCarritosBalanceVsPlayer(player.id, other.id);
-                        const vsTeamPressuresBalance = snapshotVsBal ? 0 : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = snapshotVsBal ? snapshotVsBal.netAmount : (vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance);
+                        // Use corrected balance that respects betOverrides
+                        const vsIndividualBalance = getCorrectedBilateralBalance(player.id, other.id);
+                        const vsCarritosBalance = isHistorical ? 0 : getCarritosBalanceVsPlayer(player.id, other.id);
+                        const vsTeamPressuresBalance = isHistorical ? 0 : getTeamPressuresBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -1373,11 +1365,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${snapshotBalances 
-              ? snapshotBalances.reduce((sum, b) => sum + b.totalNet, 0)
-              : tablaGeneralPlayers.reduce((sum, p) => {
+            Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + (isHistorical ? 0 : getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id));
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
@@ -3732,7 +3722,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // Compute the total balance from the bet type groups for consistency
   // When snapshotVsBalance is provided (historical view), use it as the immutable source of truth
   const computedTotalBalance = useMemo(() => {
-    if (typeof snapshotVsBalance === 'number') return snapshotVsBalance;
+    // Don't use snapshotVsBalance directly - it doesn't account for betOverrides (cancelled bets)
+    // Always compute from betTypeGroups which respect overrides
     
     return betTypeGroups.reduce((sum, group) => {
       const normalizeLabel = (label: string) => {
