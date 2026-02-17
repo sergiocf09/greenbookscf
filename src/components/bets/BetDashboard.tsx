@@ -2793,6 +2793,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Medal General';
         case 'coneja':
           return 'Coneja';
+        case 'sideBets':
+          return 'Side Bet';
+        case 'putts':
+          return 'Putts';
+        case 'stableford':
+          return 'Stableford';
+        case 'teamPressures':
+          return 'Foursome';
         default:
           return label;
       }
