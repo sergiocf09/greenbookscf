@@ -401,7 +401,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div>
               <p className="font-semibold">{selectedRival.rivalName}</p>
               <p className="text-xs text-muted-foreground">
-                {selectedRival.roundsPlayed} ronda{selectedRival.roundsPlayed !== 1 ? 's' : ''} compartida{selectedRival.roundsPlayed !== 1 ? 's' : ''}
+                {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
