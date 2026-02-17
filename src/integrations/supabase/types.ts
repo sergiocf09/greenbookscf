@@ -1039,6 +1039,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _calc_pair_net_with_overrides: {
+        Args: {
+          p_ledger: Json
+          p_overrides: Json
+          p_player_a_id: string
+          p_player_b_id: string
+          p_players: Json
+        }
+        Returns: number
+      }
       begin_round_close_attempt: {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
