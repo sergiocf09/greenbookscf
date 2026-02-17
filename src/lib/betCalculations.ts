@@ -1713,6 +1713,18 @@ export const calculateSideBets = (
   
   const summaries: BetSummary[] = [];
   
+  // Build a mapping from profileId → round_player_id so we can normalize
+  // Side bets may store profileId for registered users but round_player_id for guests
+  const resolveToLocalId = (rawId: string): string => {
+    // If rawId matches a player.id directly, use it
+    if (players.some(p => p.id === rawId)) return rawId;
+    // Otherwise check if it matches a profileId and map to the local id
+    const byProfile = players.find(p => p.profileId === rawId);
+    if (byProfile) return byProfile.id;
+    // Fallback: return as-is (orphan ID)
+    return rawId;
+  };
+  
   // Filter out invalid side bets (must have winners, losers, positive amount, and not deleted)
   const validBets = config.sideBets.bets.filter(bet => 
     bet.winners?.length > 0 && 
@@ -1724,8 +1736,10 @@ export const calculateSideBets = (
   // Side Bets: Each winner gets bet.amount from EACH loser
   // Example: $100 bet, 2 winners, 2 losers = each winner gets $200 total ($100 from each loser)
   validBets.forEach(bet => {
-    bet.winners.forEach(winnerId => {
-      bet.losers.forEach(loserId => {
+    bet.winners.forEach(rawWinnerId => {
+      const winnerId = resolveToLocalId(rawWinnerId);
+      bet.losers.forEach(rawLoserId => {
+        const loserId = resolveToLocalId(rawLoserId);
         // Each winner gets the full bet amount from each loser
         summaries.push({
           playerId: winnerId,

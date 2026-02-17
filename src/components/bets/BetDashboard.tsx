@@ -3624,11 +3624,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     if (betConfig.sideBets?.enabled && betConfig.sideBets.bets?.length > 0) {
       const sideBetTotal = groupedSummaries['Side Bet']?.total || 0;
       
-      // Check if any side bets involve this pair
+      // Check if any side bets involve this pair (normalize profileId → local id)
+      const matchesId = (rawId: string, p: Player) =>
+        rawId === p.id || (p.profileId && rawId === p.profileId);
       const relevantBets = betConfig.sideBets.bets.filter(bet => {
         if (bet.deleted) return false;
-        const hasPlayer = bet.winners.includes(player.id) || bet.losers.includes(player.id);
-        const hasRival = bet.winners.includes(rival.id) || bet.losers.includes(rival.id);
+        const hasPlayer = bet.winners.some(id => matchesId(id, player)) || bet.losers.some(id => matchesId(id, player));
+        const hasRival = bet.winners.some(id => matchesId(id, rival)) || bet.losers.some(id => matchesId(id, rival));
         return hasPlayer && hasRival;
       });
       
@@ -3647,8 +3649,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             const bet = betConfig.sideBets?.bets?.find(b => b.id === betId);
             if (!bet) return { playerNet: 0, rivalNet: 0, amount: 0 };
             
-            const isWinner = bet.winners.includes(player.id);
-            const amount = isWinner ? (bet.amount / bet.winners.length) : -(bet.amount / bet.winners.length);
+            const isWinner = bet.winners.some(id => matchesId(id, player));
+            const amount = isWinner ? bet.amount : -bet.amount;
             
             return {
               playerNet: isWinner ? 1 : 0,
