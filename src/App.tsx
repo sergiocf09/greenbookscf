@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import JoinRound from "./pages/JoinRound";
 import JoinByCode from "./pages/JoinByCode";
 import NotFound from "./pages/NotFound";
@@ -54,6 +55,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+    <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/join/:roundId" element={<JoinRound />} />
     <Route path="/join" element={<JoinByCode />} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
