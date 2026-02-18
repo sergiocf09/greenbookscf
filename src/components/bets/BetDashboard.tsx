@@ -214,10 +214,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     [isHistorical, snapshotLedger, liveBetSummaries]
   );
   
-  // Notify parent when bet summaries change
-  useEffect(() => {
-    onBetSummariesChange?.(betSummaries);
-  }, [betSummaries, onBetSummariesChange]);
+  // NOTE: onBetSummariesChange is called in a single useEffect defined after
+  // allCarritosResults (computed below), so that Carritos BetSummaries can be
+  // included in the emission. Do not add a separate useEffect for betSummaries here.
   
   // Calculate ALL Carritos results (primary + additional teams)
   // NEW SCORING: Per hole - lowball wins 1pt, highball wins 1pt, combined wins 1pt (0-3 pts per hole)
@@ -618,6 +617,93 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
     return results;
   }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
+
+  // Emit combined bet summaries (bilateral + Carritos) to parent so closeScorecard
+  // can include ALL bet results in the snapshot ledger. This is the single source of
+  // truth that feeds the historical view.
+  //
+  // Carritos settlement: each player on the losing team pays half the total loss
+  // to EACH opponent individually. So vs any one opponent: moneyA / 2.
+  // We generate 4 BetSummary entries per Carritos result (one per directional pair
+  // between teams), which is exactly what generateRoundSnapshot expects.
+  useEffect(() => {
+    if (isHistorical) return; // Historical view reads from snapshot – do not re-emit
+
+    const carritosSummaries: BetSummary[] = [];
+    allCarritosResults.forEach((result, idx) => {
+      const carritosId = result.id || `carritos-${idx}`;
+      if ((betConfig.disabledTeamBetIds || []).includes(carritosId)) return;
+
+      const [a1, a2] = result.teamA;
+      const [b1, b2] = result.teamB;
+      const moneyA = result.moneyA; // Team A net (positive = won)
+      const moneyB = result.moneyB; // Team B net (positive = won)
+
+      // Determine Front / Back / Total amounts from betConfig
+      const teamCfg = result.id
+        ? betConfig.carritosTeams?.find(t => t.id === result.id)
+        : betConfig.carritos;
+      const frontAmt = teamCfg?.frontAmount ?? 0;
+      const backAmt = teamCfg?.backAmount ?? 0;
+      const totalAmt = teamCfg?.totalAmount ?? 0;
+
+      // Per-segment amounts from Carritos calculation
+      const frontMoneyA = (() => {
+        if (result.pointsAFront > result.pointsBFront) return frontAmt;
+        if (result.pointsBFront > result.pointsAFront) return -frontAmt;
+        return 0;
+      })();
+      const backMoneyA = (() => {
+        if (result.pointsABack > result.pointsBBack) return backAmt;
+        if (result.pointsBBack > result.pointsABack) return -backAmt;
+        return 0;
+      })();
+      const totalMoneyA = moneyA - frontMoneyA - backMoneyA;
+
+      const segments: Array<{ label: string; segment: 'front' | 'back' | 'total'; netA: number }> = [
+        { label: 'Carritos Front', segment: 'front', netA: frontMoneyA },
+        { label: 'Carritos Back', segment: 'back', netA: backMoneyA },
+        { label: 'Carritos Total', segment: 'total', netA: totalMoneyA },
+      ];
+
+      segments.forEach(({ label, segment, netA }) => {
+        if (netA === 0) return;
+
+        // Settlement: each member of the losing team pays half the team loss to EACH winning-team member.
+        // netA > 0 means Team A won; Team B members owe Team A members.
+        const [winners, losers, netPerTeam] =
+          netA > 0
+            ? [[a1, a2], [b1, b2], netA]
+            : [[b1, b2], [a1, a2], -netA];
+
+        // Each loser pays (netPerTeam / 2) to EACH winner
+        const perPair = netPerTeam / 2;
+
+        winners.forEach(winnerId => {
+          losers.forEach(loserId => {
+            carritosSummaries.push({
+              playerId: winnerId,
+              vsPlayer: loserId,
+              betType: label,
+              amount: perPair,
+              segment,
+              betId: carritosId,
+            });
+            carritosSummaries.push({
+              playerId: loserId,
+              vsPlayer: winnerId,
+              betType: label,
+              amount: -perPair,
+              segment,
+              betId: carritosId,
+            });
+          });
+        });
+      });
+    });
+
+    onBetSummariesChange?.([...betSummaries, ...carritosSummaries]);
+  }, [betSummaries, allCarritosResults, betConfig.disabledTeamBetIds, betConfig.carritos, betConfig.carritosTeams, isHistorical, onBetSummariesChange]);
   
   // Default base player = logged-in user (via basePlayerId prop), across ALL groups.
   // Critical: must not validate only against `players` (Group 1) or selection breaks for Groups 2/3.
