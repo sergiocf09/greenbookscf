@@ -778,7 +778,6 @@ export const useRoundManagement = ({
     if (!roundState.id || !profile || !course) return false;
 
     // Local lock (prevents double-tap / re-entrancy)
-    // Only block if closeInFlightRef is true (not just isClosing, which may be stale after remount)
     if (closeInFlightRef.current) {
       const report = newCloseAttemptReport({
         roundId: roundState.id,
@@ -842,6 +841,33 @@ export const useRoundManagement = ({
       pushStageOk(report, 'validateInputs');
 
       // Backend idempotency lock
+      // First: detect and auto-clear zombie backend locks (started > 5 min ago, never finished)
+      try {
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { data: zombieLocks } = await supabase
+          .from('round_close_attempts')
+          .select('id')
+          .eq('round_id', roundState.id)
+          .eq('status', 'started')
+          .lt('started_at', fiveMinAgo)
+          .is('ended_at', null);
+        if (zombieLocks && zombieLocks.length > 0) {
+          devWarn('Auto-clearing zombie backend locks:', zombieLocks.map(z => z.id));
+          // Mark them failed via the RPC (which only the organizer can do)
+          for (const zombie of zombieLocks) {
+            await supabase.rpc('finish_round_close_attempt', {
+              p_attempt_id: zombie.id,
+              p_status: 'failed',
+              p_error_stage: 'validateInputs',
+              p_error_message: 'Auto-cleared zombie lock (>5 min without ending)',
+              p_report: null,
+            });
+          }
+        }
+      } catch (zombieErr) {
+        devWarn('Could not clear zombie locks (non-fatal):', zombieErr);
+      }
+
       let attemptId: string | undefined;
       try {
         const { data: attemptData, error: attemptErr } = await supabase.rpc('begin_round_close_attempt', {
@@ -856,6 +882,9 @@ export const useRoundManagement = ({
           setLastCloseReport({ ...report });
           setRoundState((prev) => ({ ...prev, status: 'completed' }));
           toast.success('Ronda ya estaba cerrada');
+          // Reset local lock so future calls work
+          closeInFlightRef.current = false;
+          setIsClosing(false);
           return true;
         }
 
@@ -863,6 +892,9 @@ export const useRoundManagement = ({
           pushStageFail(report, 'beginAttempt', 'Ya hay un cierre en proceso (lock backend)');
           setLastCloseReport({ ...report });
           toast('Cierre en proceso (backend)');
+          // Reset local lock — backend is handling it, don't block future retries
+          closeInFlightRef.current = false;
+          setIsClosing(false);
           return false;
         }
 

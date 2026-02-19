@@ -95,6 +95,13 @@ export interface SnapshotBilateralHandicap {
   strokesGivenByA: number; // Positive = A gives to B, Negative = A receives from B
 }
 
+// Metadata contract to prevent recalculation in historical views
+export interface SnapshotMeta {
+  noRecalcContract: true;    // Historical UI must render only from snapshot; never recalculate
+  schemaVersion: number;     // 1 = original, future versions bump this
+  createdBy?: string | null; // organizer profileId
+}
+
 // Complete round snapshot structure
 export interface RoundSnapshot {
   version: number;
@@ -104,6 +111,9 @@ export interface RoundSnapshot {
   date: string;
   teeColor: string;
   startingHole: 1 | 10;
+
+  // No-recalc contract: set to true at close time, validated by historical views
+  meta?: SnapshotMeta;
   
   // Players
   players: SnapshotPlayer[];
@@ -351,6 +361,11 @@ export function generateRoundSnapshot(
     date,
     teeColor,
     startingHole,
+    meta: {
+      noRecalcContract: true,
+      schemaVersion: 1,
+      createdBy: undefined,
+    },
     players: snapshotPlayers,
     scores: snapshotScores,
     betConfig,

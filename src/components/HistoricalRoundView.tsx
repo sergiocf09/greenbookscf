@@ -11,7 +11,7 @@ import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerS
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer } from '@/lib/roundSnapshot';
-import { devError, devLog } from '@/lib/logger';
+import { devError, devLog, devWarn } from '@/lib/logger';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -66,6 +66,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         if (!snapshotError && snapshotData?.snapshot_json) {
           const snap = snapshotData.snapshot_json as unknown;
           if (isValidSnapshot(snap)) {
+            // noRecalcContract guardrail: log a warning if missing (shouldn't happen for new snapshots)
+            if (!(snap as any).meta?.noRecalcContract) {
+              devWarn('[noRecalcContract] Snapshot is missing meta.noRecalcContract — this is a legacy snapshot. No recalculation will occur.', roundId);
+            } else {
+              devLog('[noRecalcContract] ✅ Snapshot verified — historical view will render directly from snapshot.', roundId);
+            }
             devLog('Using immutable snapshot for round:', roundId);
             setSnapshot(snap);
             setHasSnapshot(true);
