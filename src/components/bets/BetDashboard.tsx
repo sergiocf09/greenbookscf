@@ -888,8 +888,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Overrides are already baked into the ledger at close time — do NOT re-apply them.
     // Simply sum all ledger-derived betSummaries for this pair.
     if (isHistorical) {
+      // IMPORTANT: Exclude Carritos and Presiones Parejas from bilateral avatar/header.
+      // Those are shown in their own team cards. The BilateralDetail header (computedTotalBalance)
+      // also excludes them (they don't appear in betTypeGroups), so this keeps avatars consistent.
+      const historicalCarritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
       return betSummaries
-        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
+        .filter(s =>
+          s.playerId === playerId &&
+          s.vsPlayer === rivalId &&
+          !historicalCarritosTypes.includes(s.betType) &&
+          s.betType !== 'Presiones Parejas' &&
+          s.betType !== 'Presiones Pareja'
+        )
         .reduce((sum, s) => sum + s.amount, 0);
     }
 
@@ -1056,6 +1066,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
+  // Historical mode: sum Carritos + Presiones Parejas from the ledger for a player (all rivals combined).
+  // Used in Tabla General to show the real total including team bets alongside the individual subtotal.
+  const getHistoricalTeamBetsBalanceForPlayer = (playerId: string): number => {
+    if (!isHistorical) return 0;
+    const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+    return betSummaries
+      .filter(s =>
+        s.playerId === playerId &&
+        (carritosTypes.includes(s.betType) || s.betType === 'Presiones Parejas' || s.betType === 'Presiones Pareja')
+      )
+      .reduce((sum, s) => sum + s.amount, 0);
+  };
+
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   // Includes individual bets + Carritos + Team Pressures (all bet types)
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
@@ -1063,11 +1086,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       // Use corrected balance for sorting
       const rivalIdsA = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
       const rivalIdsB = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-      // HISTORICAL: getCorrectedPlayerBalance already sums the full ledger (all bet types).
-      //   Adding Carritos/Presiones separately would cause double-counting.
-      // LIVE: add them separately since they're calculated outside betSummaries.
-      const extraA = isHistorical ? 0 : getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
-      const extraB = isHistorical ? 0 : getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+      // HISTORICAL: getCorrectedPlayerBalance now returns I-only. Add team bets from ledger.
+      // LIVE: add Carritos/Presiones separately since they're calculated outside betSummaries.
+      const extraA = isHistorical ? getHistoricalTeamBetsBalanceForPlayer(a.id) : getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+      const extraB = isHistorical ? getHistoricalTeamBetsBalanceForPlayer(b.id) : getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
       const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + extraA;
       const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + extraB;
       return balanceB - balanceA;
@@ -1326,13 +1348,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
               // Base total: use override-aware corrected balance (works for both live and historical)
               const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-              // HISTORICAL: getCorrectedPlayerBalance already sums the full ledger (Individual + Carritos + Presiones)
-              // because getCorrectedBilateralBalance in historical mode sums ALL betSummaries for the pair.
+              // HISTORICAL: getCorrectedPlayerBalance now returns I-only (Carritos/Presiones excluded).
+              //   Add team bets back via getHistoricalTeamBetsBalanceForPlayer for the correct total.
               // LIVE: add Carritos and TeamPressures separately since they're not in betSummaries.
               const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
               const carritosBalance = isHistorical ? 0 : getCarritosBalanceForPlayer(player.id);
               const teamPressuresBalance = isHistorical ? 0 : getTeamPressuresBalanceForPlayer(player.id);
-              const totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
+              const historicalTeamTotal = getHistoricalTeamBetsBalanceForPlayer(player.id);
+              const totalBalance = individualBalance + carritosBalance + teamPressuresBalance + historicalTeamTotal;
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
               
@@ -1481,7 +1504,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
             Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + (isHistorical ? 0 : getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id));
+                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + (isHistorical ? getHistoricalTeamBetsBalanceForPlayer(p.id) : getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id));
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
