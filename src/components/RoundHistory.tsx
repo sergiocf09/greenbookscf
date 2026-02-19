@@ -119,42 +119,36 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       if (error) throw error;
 
-      // Get hole scores for each round player
-      const roundItems: RoundHistoryItem[] = [];
-      
-      for (const rp of roundPlayers || []) {
-        const round = rp.rounds as any;
-        const course = round.golf_courses as any;
+      // Fetch all supplementary data in PARALLEL (not sequentially)
+      const roundItems: RoundHistoryItem[] = await Promise.all(
+        (roundPlayers || []).map(async (rp) => {
+          const round = rp.rounds as any;
+          const course = round.golf_courses as any;
 
-        // Get total strokes
-        const { data: scores } = await supabase
-          .from('hole_scores')
-          .select('strokes')
-          .eq('round_player_id', rp.id);
+          // Fetch strokes + player count in parallel
+          const [scoresResult, countResult] = await Promise.all([
+            supabase.from('hole_scores').select('strokes').eq('round_player_id', rp.id),
+            supabase.from('round_players').select('id', { count: 'exact', head: true }).eq('round_id', rp.round_id),
+          ]);
 
-        const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          const totalStrokes = scoresResult.data?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
 
-        // Get player count
-        const { count } = await supabase
-          .from('round_players')
-          .select('id', { count: 'exact', head: true })
-          .eq('round_id', rp.round_id);
-
-        roundItems.push({
-          id: round.id,
-          roundPlayerId: rp.id,
-          date: round.date,
-          status: round.status,
-          courseName: course?.name || 'Campo desconocido',
-          courseLocation: course?.location || '',
-          courseId: round.course_id,
-          teeColor: round.tee_color,
-          totalStrokes,
-          handicapUsed: Number(rp.handicap_for_round) || 0,
-          playersCount: count || 1,
-          isOrganizer: rp.is_organizer,
-        });
-      }
+          return {
+            id: round.id,
+            roundPlayerId: rp.id,
+            date: round.date,
+            status: round.status,
+            courseName: course?.name || 'Campo desconocido',
+            courseLocation: course?.location || '',
+            courseId: round.course_id,
+            teeColor: round.tee_color,
+            totalStrokes,
+            handicapUsed: Number(rp.handicap_for_round) || 0,
+            playersCount: countResult.count || 1,
+            isOrganizer: rp.is_organizer,
+          };
+        })
+      );
 
       setRounds(roundItems);
     } catch (err) {
@@ -235,47 +229,39 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       if (rpError) throw rpError;
 
-      // Get all hole scores for all players including oyes_proximity
-      const playerScores: PlayerScoreData[] = [];
-      
-      for (const rp of roundPlayers || []) {
-        const profileData = rp.profiles as any;
-        const isGuest = !rp.profile_id;
-        
-        const { data: scores } = await supabase
-          .from('hole_scores')
-          .select('hole_number, strokes, putts, oyes_proximity')
-          .eq('round_player_id', rp.id)
-          .order('hole_number');
+      // Fetch all players' hole scores in PARALLEL (not sequentially)
+      const playerScores: PlayerScoreData[] = await Promise.all(
+        (roundPlayers || []).map(async (rp) => {
+          const profileData = rp.profiles as any;
+          const isGuest = !rp.profile_id;
+          
+          const { data: scores } = await supabase
+            .from('hole_scores')
+            .select('hole_number, strokes, putts, oyes_proximity')
+            .eq('round_player_id', rp.id)
+            .order('hole_number');
 
-        const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          const playerName = isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador');
+          const initials = isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX');
+          const color = isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6');
 
-        // Use guest fields when profile_id is null, otherwise use profile data
-        const playerName = isGuest 
-          ? (rp.guest_name || 'Invitado') 
-          : (profileData?.display_name || 'Jugador');
-        const initials = isGuest 
-          ? (rp.guest_initials || 'IN') 
-          : (profileData?.initials || 'XX');
-        const color = isGuest 
-          ? (rp.guest_color || '#3B82F6') 
-          : (profileData?.avatar_color || '#3B82F6');
-
-        playerScores.push({
-          playerId: isGuest ? rp.id : rp.profile_id,
-          playerName,
-          initials,
-          color,
-          handicap: Number(rp.handicap_for_round) || 0,
-          scores: (scores || []).map(s => ({
-            holeNumber: s.hole_number,
-            strokes: s.strokes || 0,
-            putts: s.putts || 0,
-            oyesProximity: s.oyes_proximity,
-          })),
-          totalStrokes,
-        });
-      }
+          return {
+            playerId: isGuest ? rp.id : rp.profile_id,
+            playerName,
+            initials,
+            color,
+            handicap: Number(rp.handicap_for_round) || 0,
+            scores: (scores || []).map(s => ({
+              holeNumber: s.hole_number,
+              strokes: s.strokes || 0,
+              putts: s.putts || 0,
+              oyesProximity: s.oyes_proximity,
+            })),
+            totalStrokes,
+          };
+        })
+      );
 
       onViewRound({
         roundId: round.id,
