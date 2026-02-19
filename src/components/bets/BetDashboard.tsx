@@ -1454,8 +1454,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-5 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
-                        // Historical: read breakdown directly from ledger (overrides already baked in)
-                        // Live: use recalculated values
+                        // Historical: the TOTAL must come from snapshotBalances.vsBalances.netAmount
+                        // (the immutable value calculated at close time).
+                        // The breakdown (Ind/Car/Pres) is informational from the ledger.
+                        // Live: use recalculated values.
                         const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
                         const vsIndividualBalance = isHistorical
                           ? (historicalBreakdown?.individual ?? 0)
@@ -1466,7 +1468,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
+                        // CRITICAL: For historical rounds, use the snapshot vsBalance as the
+                        // authoritative total — NOT the sum of the ledger breakdown above.
+                        // This guarantees the expanded row total matches the avatar and header.
+                        const snapshotPairTotal = isHistorical ? getSnapshotBilateralBalance(player.id, other.id) : null;
+                        const vsTotalBalance = snapshotPairTotal !== null
+                          ? snapshotPairTotal
+                          : vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -3896,11 +3904,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     return groups;
   }, [betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
-  // Compute the total balance from the bet type groups for consistency
-  // When snapshotVsBalance is provided (historical view), use it as the immutable source of truth
+  // Compute the total balance for the bilateral detail header.
+  // HISTORICAL MODE: snapshotVsBalance is the immutable source of truth from the snapshot
+  // (all overrides were already baked in at close time). Use it directly.
+  // LIVE MODE: compute from betTypeGroups which respect live betOverrides.
   const computedTotalBalance = useMemo(() => {
-    // Don't use snapshotVsBalance directly - it doesn't account for betOverrides (cancelled bets)
-    // Always compute from betTypeGroups which respect overrides
+    // In historical mode, the snapshotVsBalance already includes individual bets only
+    // (Carritos and Presiones Parejas are excluded from getRivalBalance in historical mode,
+    // matching what BilateralDetail shows — it also excludes team bets from betTypeGroups).
+    if (isHistorical && snapshotVsBalance !== undefined) {
+      return snapshotVsBalance;
+    }
     
     return betTypeGroups.reduce((sum, group) => {
       const normalizeLabel = (label: string) => {
@@ -3939,7 +3953,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       
       return sum + group.getTotal();
     }, 0);
-  }, [snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
+  }, [isHistorical, snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
   
   // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
