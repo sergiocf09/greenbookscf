@@ -1063,8 +1063,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       // Use corrected balance for sorting
       const rivalIdsA = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
       const rivalIdsB = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-      const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
-      const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+      // HISTORICAL: getCorrectedPlayerBalance already sums the full ledger (all bet types).
+      //   Adding Carritos/Presiones separately would cause double-counting.
+      // LIVE: add them separately since they're calculated outside betSummaries.
+      const extraA = isHistorical ? 0 : getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+      const extraB = isHistorical ? 0 : getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+      const balanceA = getCorrectedPlayerBalance(a.id, rivalIdsA) + extraA;
+      const balanceB = getCorrectedPlayerBalance(b.id, rivalIdsB) + extraB;
       return balanceB - balanceA;
     });
   };
@@ -1321,6 +1326,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
               // Base total: use override-aware corrected balance (works for both live and historical)
               const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
+              // HISTORICAL: getCorrectedPlayerBalance already sums the full ledger (Individual + Carritos + Presiones)
+              // because getCorrectedBilateralBalance in historical mode sums ALL betSummaries for the pair.
+              // LIVE: add Carritos and TeamPressures separately since they're not in betSummaries.
               const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
               const carritosBalance = isHistorical ? 0 : getCarritosBalanceForPlayer(player.id);
               const teamPressuresBalance = isHistorical ? 0 : getTeamPressuresBalanceForPlayer(player.id);
