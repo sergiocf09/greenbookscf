@@ -3202,7 +3202,93 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
       configKey: string;
     }[] = [];
-    
+
+    // HISTORICAL MODE: Build groups directly from the snapshot ledger (groupedSummaries).
+    // This guarantees that the sum of all group totals equals the header (snapshotVsBalance),
+    // since both are derived from the same source: the immutable snapshot ledger excluding
+    // Carritos and Presiones Parejas (which are shown in their own team cards).
+    if (isHistorical) {
+      const EXCLUDED_TYPES = new Set([
+        'Carritos Front', 'Carritos Back', 'Carritos Total',
+        'Presiones Parejas', 'Presiones Pareja',
+      ]);
+
+      // Friendly display labels for known bet types
+      const LABEL_MAP: Record<string, string> = {
+        'Medal Front 9': 'Medal Front 9',
+        'Medal Back 9': 'Medal Back 9',
+        'Medal Total': 'Medal Total',
+        'Presiones Front': 'Presiones Front',
+        'Presiones Back': 'Presiones Back',
+        'Presiones Back (Carry x2+Match)': 'Presiones Back (Carry x2+Match)',
+        'Presiones Match 18': 'Presiones Match 18',
+        'Skins Front': 'Skins Front',
+        'Skins Back': 'Skins Back',
+        'Caros': 'Caros',
+        'Oyes': 'Oyes',
+        'Unidades': 'Unidades',
+        'Manchas': 'Manchas',
+        'Culebras': 'Culebras',
+        'Pingüinos': 'Pingüinos',
+        'Rayas Front': 'Rayas Front',
+        'Rayas Back': 'Rayas Back',
+        'Rayas Medal Total': 'Rayas Medal Total',
+        'Rayas Oyes': 'Rayas Oyes',
+        'Coneja': 'Coneja',
+        'Medal General': 'Medal General',
+        'Side Bet': 'Side Bet',
+        'Stableford': 'Stableford',
+      };
+
+      // Group keys with non-zero totals from ledger, excluding team bets
+      const ledgerBetTypes = Object.keys(groupedSummaries).filter(
+        bt => !EXCLUDED_TYPES.has(bt)
+      );
+
+      // Sort by a canonical order so display is predictable
+      const ORDER = [
+        'Medal Front 9', 'Medal Back 9', 'Medal Total',
+        'Presiones Front', 'Presiones Back', 'Presiones Back (Carry x2+Match)', 'Presiones Match 18',
+        'Skins Front', 'Skins Back',
+        'Caros', 'Oyes', 'Unidades', 'Manchas', 'Culebras', 'Pingüinos',
+        'Rayas Front', 'Rayas Back', 'Rayas Medal Total', 'Rayas Oyes',
+        'Coneja', 'Medal General', 'Side Bet', 'Stableford',
+      ];
+      ledgerBetTypes.sort((a, b) => {
+        const ia = ORDER.indexOf(a);
+        const ib = ORDER.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+
+      for (const betType of ledgerBetTypes) {
+        const summary = groupedSummaries[betType];
+        const total = summary?.total || 0;
+        // Only show types that have a non-zero total (nothing to display otherwise)
+        if (total === 0) continue;
+        const label = LABEL_MAP[betType] || betType;
+        groups.push({
+          key: `hist_${betType}`,
+          label,
+          configKey: betType,
+          segments: [], // No expandable segments in historical mode — totals are final
+          getTotal: () => total,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: total,
+            description: summary?.details?.[0]?.description,
+          }),
+        });
+      }
+
+      return groups;
+    }
+
+    // LIVE MODE: Build groups from betConfig and live engine calculations.
+
     // Medal
     if (bothParticipate(betConfig.medal.participantIds, 'medal')) {
       groups.push({
@@ -3902,7 +3988,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
-  }, [betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
+  }, [isHistorical, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance for the bilateral detail header.
   // HISTORICAL MODE: snapshotVsBalance is the immutable source of truth from the snapshot
