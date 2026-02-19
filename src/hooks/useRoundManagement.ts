@@ -778,7 +778,8 @@ export const useRoundManagement = ({
     if (!roundState.id || !profile || !course) return false;
 
     // Local lock (prevents double-tap / re-entrancy)
-    if (closeInFlightRef.current || isClosing) {
+    // Only block if closeInFlightRef is true (not just isClosing, which may be stale after remount)
+    if (closeInFlightRef.current) {
       const report = newCloseAttemptReport({
         roundId: roundState.id,
         currentRoundStatus: roundState.status,
