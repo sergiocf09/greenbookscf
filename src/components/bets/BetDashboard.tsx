@@ -884,86 +884,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return { label: betType, aliases: [] };
     };
 
-    // Historical mode: use ledger-derived betSummaries (ALL bet types included).
-    // CRITICAL: In historical mode the snapshot ledger is the single source of truth.
-    // We do NOT filter out Carritos or Presiones Parejas here — those are already encoded
-    // in the ledger as bilateral entries (each member of a team pair pays the other directly).
-    // Filtering them would create a mismatch between the Tabla General and the Auditoría tab.
+    // HISTORICAL MODE: The snapshot ledger is the single source of truth.
+    // Overrides are already baked into the ledger at close time — do NOT re-apply them.
+    // Simply sum all ledger-derived betSummaries for this pair.
     if (isHistorical) {
-      // Include ALL bet types from the ledger for this pair
-      const pairEntries = betSummaries
-        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId);
-      
-      // Map each ledger betType to its category key (same grouping as betTypeGroups)
-      const getCategoryKey = (betType: string): string => {
-        if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
-        if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
-        if (betType.startsWith('Skins')) return 'skins';
-        if (betType.startsWith('Rayas')) return 'rayas';
-        if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
-        if (betType.includes('Pingüino') || betType === 'Pingüinos') return 'pinguinos';
-        if (betType.startsWith('Zoológico')) return 'zoologico';
-        if (betType === 'Caros') return 'caros';
-        if (betType === 'Oyes') return 'oyeses';
-        if (betType === 'Unidades') return 'units';
-        if (betType === 'Manchas') return 'manchas';
-        if (betType === 'Culebras') return 'culebras';
-        if (betType === 'Coneja') return 'coneja';
-        if (betType === 'Medal General') return 'medalGeneral';
-        if (betType === 'Side Bet') return 'sideBets';
-        if (betType === 'Stableford') return 'stableford';
-        return betType;
-      };
-
-      // Map category key to the override betType label (same as computedTotalBalance normalizeLabel)
-      const categoryToLabel = (key: string): string => {
-        switch (key) {
-          case 'medal': return 'Medal';
-          case 'pressures': return 'Presiones';
-          case 'skins': return 'Skins';
-          case 'caros': return 'Caros';
-          case 'oyeses': return 'Oyes';
-          case 'units': return 'Unidades';
-          case 'manchas': return 'Manchas';
-          case 'culebras': return 'Culebras';
-          case 'pinguinos': return 'Pingüinos';
-          case 'rayas': return 'Rayas';
-          case 'medalGeneral': return 'Medal General';
-          case 'coneja': return 'Coneja';
-          case 'putts': return 'Putts';
-          case 'sideBets': return 'Side Bet';
-          case 'stableford': return 'Stableford';
-          case 'zoologico': return 'Zoológico';
-          default: return key;
-        }
-      };
-
-      // Group entries by category and sum amounts
-      const grouped = new Map<string, number>();
-      for (const entry of pairEntries) {
-        const cat = getCategoryKey(entry.betType);
-        grouped.set(cat, (grouped.get(cat) || 0) + entry.amount);
-      }
-
-      // Simple override check matching computedTotalBalance exactly
-      const matchesPlayerSimple = (overrideId: string, pId: string): boolean => {
-        const p = allPlayersForCalculations.find(x => x.id === pId);
-        return overrideId === pId || (!!p?.profileId && overrideId === p.profileId);
-      };
-
-      let total = 0;
-      for (const [catKey, amount] of grouped) {
-        const label = categoryToLabel(catKey);
-        const override = betConfig.betOverrides?.find(
-          (o) =>
-            (o.betType === label || o.betType === catKey) &&
-            ((matchesPlayerSimple(o.playerAId, playerId) && matchesPlayerSimple(o.playerBId, rivalId)) ||
-              (matchesPlayerSimple(o.playerAId, rivalId) && matchesPlayerSimple(o.playerBId, playerId)))
-        );
-        if (override?.enabled === false) continue;
-        total += amount;
-      }
-      return total;
+      return betSummaries
+        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
+        .reduce((sum, s) => sum + s.amount, 0);
     }
 
     const nonRayasNonMedalGeneralBalance = betSummaries
@@ -1075,6 +1002,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return rivalIds.reduce((sum, rivalId) => {
       return sum + getCorrectedBilateralBalance(playerId, rivalId);
     }, 0);
+  };
+
+  // Historical mode: break down the pair balance by category from the snapshot ledger.
+  // Individual = all non-team bets; Carritos = carritos bets; Presiones = team pressures.
+  // Overrides are already baked into the ledger — no re-filtering needed.
+  const getHistoricalPairBreakdown = (playerAId: string, playerBId: string): { individual: number; carritos: number; presiones: number } | null => {
+    if (!isHistorical) return null;
+    const pairSummaries = betSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId);
+    const isCarritosBet = (bt: string) => bt === 'Carritos Front' || bt === 'Carritos Back' || bt === 'Carritos Total';
+    const isPresionesPareja = (bt: string) => bt === 'Presiones Parejas' || bt === 'Presiones Pareja';
+    const carritos = pairSummaries.filter(s => isCarritosBet(s.betType)).reduce((s, e) => s + e.amount, 0);
+    const presiones = pairSummaries.filter(s => isPresionesPareja(s.betType)).reduce((s, e) => s + e.amount, 0);
+    const individual = pairSummaries.filter(s => !isCarritosBet(s.betType) && !isPresionesPareja(s.betType)).reduce((s, e) => s + e.amount, 0);
+    return { individual, carritos, presiones };
   };
   
   // Get balance for base player vs each rival
@@ -1457,10 +1398,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {isExpanded && (
                     <div className="ml-5 mt-1 space-y-1 pb-2">
                       {otherPlayers.map(other => {
-                        // Use corrected balance that respects betOverrides
-                        const vsIndividualBalance = getCorrectedBilateralBalance(player.id, other.id);
-                        const vsCarritosBalance = isHistorical ? 0 : getCarritosBalanceVsPlayer(player.id, other.id);
-                        const vsTeamPressuresBalance = isHistorical ? 0 : getTeamPressuresBalanceVsPlayer(player.id, other.id);
+                        // Historical: read breakdown directly from ledger (overrides already baked in)
+                        // Live: use recalculated values
+                        const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
+                        const vsIndividualBalance = isHistorical
+                          ? (historicalBreakdown?.individual ?? 0)
+                          : getCorrectedBilateralBalance(player.id, other.id);
+                        const vsCarritosBalance = isHistorical
+                          ? (historicalBreakdown?.carritos ?? 0)
+                          : getCarritosBalanceVsPlayer(player.id, other.id);
+                        const vsTeamPressuresBalance = isHistorical
+                          ? (historicalBreakdown?.presiones ?? 0)
+                          : getTeamPressuresBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
