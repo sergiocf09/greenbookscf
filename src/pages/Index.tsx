@@ -664,14 +664,31 @@ const Index = () => {
         }
       }
 
-      // Remap ALL player IDs in betConfig so team bets, side bets, and pressures
-      // reference the new round_player_ids (not just guests)
+      // Remap ALL player IDs in betConfig using a single-pass replacement to avoid
+      // double-substitution bugs (e.g. if a new ID happens to contain an old ID as substring).
+      // Strategy: replace all oldIds with a stable placeholder first, then swap placeholders for newIds.
       let remappedBetConfig = data.betConfig;
       if (playerIdMap.size > 0) {
         let configJson = JSON.stringify(data.betConfig);
-        for (const [oldId, newId] of playerIdMap) {
-          configJson = configJson.split(oldId).join(newId);
+        
+        // Build stable placeholder map: oldId → __REMAP_<index>__
+        const placeholders = new Map<string, string>();
+        let idx = 0;
+        for (const [oldId] of playerIdMap) {
+          placeholders.set(oldId, `__REMAP_${idx++}__`);
         }
+        
+        // Step 1: Replace all old IDs with placeholders (no risk of collision)
+        for (const [oldId, placeholder] of placeholders) {
+          configJson = configJson.split(oldId).join(placeholder);
+        }
+        
+        // Step 2: Replace placeholders with new IDs
+        for (const [oldId, placeholder] of placeholders) {
+          const newId = playerIdMap.get(oldId)!;
+          configJson = configJson.split(placeholder).join(newId);
+        }
+        
         remappedBetConfig = JSON.parse(configJson);
       }
 
