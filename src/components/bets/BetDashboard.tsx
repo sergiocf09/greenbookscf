@@ -884,17 +884,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return { label: betType, aliases: [] };
     };
 
-    // Historical mode: use ledger-derived betSummaries with override filtering.
-    // CRITICAL: Group entries by their base category and check overrides at the GROUP level,
-    // exactly matching how computedTotalBalance (bilateral header) checks overrides.
-    // This ensures avatars, Tabla General, and bilateral header all show identical values.
+    // Historical mode: use ledger-derived betSummaries (ALL bet types included).
+    // CRITICAL: In historical mode the snapshot ledger is the single source of truth.
+    // We do NOT filter out Carritos or Presiones Parejas here — those are already encoded
+    // in the ledger as bilateral entries (each member of a team pair pays the other directly).
+    // Filtering them would create a mismatch between the Tabla General and the Auditoría tab.
     if (isHistorical) {
+      // Include ALL bet types from the ledger for this pair
       const pairEntries = betSummaries
-        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId)
-        .filter(s => 
-          !carritosTypes.includes(s.betType) && 
-          s.betType !== 'Presiones Parejas'
-        );
+        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId);
       
       // Map each ledger betType to its category key (same grouping as betTypeGroups)
       const getCategoryKey = (betType: string): string => {
@@ -1404,7 +1402,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 playerGroups.findIndex(g => g.players.some(p => p.id === player.id)) + 1;
               
               // Calculate total for "all" mode including cross-group bets using corrected balance
-              const crossGroupBalance = isHistorical ? 0 : crossGroupOthers.reduce((sum, rival) => {
+              // In historical mode, getCorrectedBilateralBalance already covers all bet types
+              const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
                 return sum + getCorrectedBilateralBalance(player.id, rival.id);
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;

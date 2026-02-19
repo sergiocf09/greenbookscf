@@ -323,14 +323,28 @@ export const LedgerAuditView: React.FC<LedgerAuditViewProps> = ({
           {sortedPlayers.map(player => (
             <PlayerSummaryRow key={player.id} player={player} ledger={ledger} myPlayerId={myPlayerId} />
           ))}
-          {/* Verification */}
-          <div className="text-center text-xs text-muted-foreground pt-1">
-            ∑ netos = ${ledger.reduce((s, e) => {
-              // Net sum should always be 0 (zero-sum game)
-              const net = e.toPlayerId ? e.amount : -e.amount;
-              return s;
-            }, 0)} · suma de netos debe ser $0
-          </div>
+          {/* Verification: net sum across all players should be $0 (zero-sum) */}
+          {(() => {
+            const netByPlayer = new Map<string, number>();
+            for (const e of ledger) {
+              if (e.amount <= 0) continue;
+              netByPlayer.set(e.toPlayerId, (netByPlayer.get(e.toPlayerId) || 0) + e.amount);
+              netByPlayer.set(e.fromPlayerId, (netByPlayer.get(e.fromPlayerId) || 0) - e.amount);
+            }
+            const grandNet = Array.from(netByPlayer.values()).reduce((s, v) => s + v, 0);
+            const isZeroSum = Math.abs(grandNet) < 0.01;
+            return (
+              <div className={cn(
+                'flex items-center justify-center gap-1.5 text-xs pt-1',
+                isZeroSum ? 'text-green-600' : 'text-destructive'
+              )}>
+                {isZeroSum
+                  ? <><span className="font-medium">✓ Suma de netos = $0</span><span className="text-muted-foreground">(partida zero-sum)</span></>
+                  : <><span className="font-medium">⚠ Suma de netos = ${grandNet}</span><span className="text-muted-foreground">(esperado $0)</span></>
+                }
+              </div>
+            );
+          })()}
         </div>
       )}
 
