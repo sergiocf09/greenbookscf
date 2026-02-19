@@ -3216,6 +3216,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const pairKey = `${player.id}::${rival.id}`;
       const breakdown = snapshotPairBreakdowns?.[pairKey];
 
+      // Helper: sum net scores from confirmedScores (already loaded from snapshot, no recalc)
+      const getNetSum = (playerId: string, startHole: number, endHole: number): number => {
+        const pScores = confirmedScores.get(playerId) || [];
+        return pScores
+          .filter(s => s.holeNumber >= startHole && s.holeNumber <= endHole)
+          .reduce((sum, s) => sum + (typeof s.netScore === 'number' && Number.isFinite(s.netScore) ? s.netScore : (s.strokes || 0)), 0);
+      };
+      const getPlayerNet = (startHole: number, endHole: number) => getNetSum(player.id, startHole, endHole);
+      const getRivalNet  = (startHole: number, endHole: number) => getNetSum(rival.id, startHole, endHole);
+
       const getAmt = (betType: string): number => {
         if (breakdown) return breakdown[betType] ?? 0;
         // Legacy fallback (old snapshots without pairBreakdowns)
@@ -3249,7 +3259,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           getSegmentData: (k) => {
             const bt = k === `hist_seg_Medal Front 9` ? 'Medal Front 9' : k === `hist_seg_Medal Back 9` ? 'Medal Back 9' : 'Medal Total';
             const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
+            // Read net scores from snapshot scores (no recalculation)
+            const [pNet, rNet] = bt === 'Medal Front 9'
+              ? [getPlayerNet(1, 9), getRivalNet(1, 9)]
+              : bt === 'Medal Back 9'
+              ? [getPlayerNet(10, 18), getRivalNet(10, 18)]
+              : [getPlayerNet(1, 18), getRivalNet(1, 18)];
+            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt), description: desc };
           },
         });
       }
@@ -3276,7 +3292,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                      : k.includes('Match') ? 'Presiones Match 18'
                      : backBt;
             const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
+            // For Presiones, show net scores per segment from snapshot (no recalc)
+            const [pNet, rNet] = bt === 'Presiones Front'
+              ? [getPlayerNet(1, 9), getRivalNet(1, 9)]
+              : bt === 'Presiones Match 18'
+              ? [getPlayerNet(1, 18), getRivalNet(1, 18)]
+              : [getPlayerNet(10, 18), getRivalNet(10, 18)];
+            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt), description: desc };
           },
         });
       }
@@ -3294,7 +3316,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           ],
           getTotal: () => skinsSum,
           getSegmentData: (k) => {
-            const bt = k.includes('Front') ? 'Skins Front' : 'Skins Back';
+            const isFront = k.includes('Front');
+            const bt = isFront ? 'Skins Front' : 'Skins Back';
+            // Skins show skin counts (wins), not net strokes — keep as 0 (rendered differently)
             return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
           },
         });
@@ -5034,12 +5058,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // Content to wrap in Popover
                         // Zoológico segments only show the animal label (no "X vs X" comparison)
                         const isZoologico = group.key === 'zoologico';
+                        // In historical mode, only Medal and Presiones have meaningful "X vs Y" net scores.
+                        // All other historical bets (Skins, Rayas, Putts, etc.) hide the score comparison.
+                        const isHistMedal    = group.key === 'hist_medal';
+                        const isHistPresion  = group.key === 'hist_presiones';
+                        const showScoreComparison = !isZoologico && (!isHistorical || isHistMedal || isHistPresion);
                         
                         const segmentContent = (
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">{segment.label}</span>
-                            {/* Score comparison - skip for Zoológico */}
-                            {!isZoologico && (
+                            {/* Score comparison - skip for Zoológico and non-applicable historical bets */}
+                            {showScoreComparison && (
                               <div className="flex items-center gap-1.5 text-sm">
                                 {isPressures ? (
                                   <span className={cn(
@@ -5071,6 +5100,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             )}
                           </div>
                         );
+
 
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
