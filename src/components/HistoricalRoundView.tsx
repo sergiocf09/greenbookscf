@@ -383,6 +383,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             }
             snapshotBalances={hasSnapshot && snapshot ? snapshot.balances : undefined}
             snapshotLedger={hasSnapshot && snapshot ? snapshot.ledger : undefined}
+            snapshotPairBreakdowns={hasSnapshot && snapshot ? snapshot.pairBreakdowns : undefined}
           />
         </TabsContent>
 

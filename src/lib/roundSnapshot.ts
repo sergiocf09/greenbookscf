@@ -53,6 +53,17 @@ export interface SnapshotLedgerEntry {
   description?: string;
 }
 
+// Per-pair, per-betType breakdown (from loser's perspective the amount is negative,
+// from winner's perspective it's positive). Keyed as "playerAId::playerBId".
+// This is the immutable breakdown used by the historical BilateralDetail view
+// to guarantee that the sum of bet rows == the header (snapshotBalances.vsBalances.netAmount).
+// NOTE: Only individual bets are included here (Carritos/Presiones Parejas are excluded,
+// matching the bilateral avatar/header which also excludes team bets).
+export type SnapshotPairBreakdowns = Record<
+  string, // pairKey = "playerId::rivalId"
+  Record<string, number> // betType → netAmount (positive = player won, negative = player lost)
+>;
+
 // Player balance summary
 export interface SnapshotPlayerBalance {
   playerId: string;
@@ -95,6 +106,11 @@ export interface RoundSnapshot {
   
   // Complete ledger of all bet transactions
   ledger: SnapshotLedgerEntry[];
+  
+  // Per-pair, per-betType breakdown (immutable, computed at close time).
+  // Used by the historical BilateralDetail to show individual bet rows whose sum == header.
+  // Keyed as "playerId::rivalId" (both directions stored).
+  pairBreakdowns?: SnapshotPairBreakdowns;
   
   // Player balances summary
   balances: SnapshotPlayerBalance[];
@@ -281,6 +297,35 @@ export function generateRoundSnapshot(
   // Calculate course par
   const coursePar = course.holes.reduce((sum, h) => sum + h.par, 0);
 
+  // ── Build pairBreakdowns ─────────────────────────────────────────────────
+  // For each directed pair (A→B and B→A), record the net amount per betType.
+  // Carritos and Presiones Parejas are EXCLUDED so that the sum of breakdown rows
+  // equals snapshotBalances.vsBalances.netAmount (the bilateral avatar/header total).
+  const TEAM_BET_TYPES = new Set([
+    'Carritos Front', 'Carritos Back', 'Carritos Total',
+    'Presiones Parejas', 'Presiones Pareja',
+  ]);
+
+  const pairBreakdowns: SnapshotPairBreakdowns = {};
+
+  for (const entry of ledger) {
+    if (TEAM_BET_TYPES.has(entry.betType)) continue; // Exclude team bets
+    if (entry.amount <= 0) continue;
+
+    // Winner (toPlayer) perspective: positive
+    const winnerKey = `${entry.toPlayerId}::${entry.fromPlayerId}`;
+    if (!pairBreakdowns[winnerKey]) pairBreakdowns[winnerKey] = {};
+    pairBreakdowns[winnerKey][entry.betType] =
+      (pairBreakdowns[winnerKey][entry.betType] || 0) + entry.amount;
+
+    // Loser (fromPlayer) perspective: negative
+    const loserKey = `${entry.fromPlayerId}::${entry.toPlayerId}`;
+    if (!pairBreakdowns[loserKey]) pairBreakdowns[loserKey] = {};
+    pairBreakdowns[loserKey][entry.betType] =
+      (pairBreakdowns[loserKey][entry.betType] || 0) - entry.amount;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   return {
     version: 1,
     roundId,
@@ -293,6 +338,7 @@ export function generateRoundSnapshot(
     scores: snapshotScores,
     betConfig,
     ledger,
+    pairBreakdowns,
     balances,
     bilateralHandicaps: snapshotHandicaps.length > 0 ? snapshotHandicaps : undefined,
     coursePar,
