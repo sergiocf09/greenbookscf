@@ -3201,162 +3201,201 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const groups: {
       key: string;
       label: string;
-      // overrideLabel is the persisted key used by betOverrides. Optional because some rows are informational.
       segments: { label: string; key: string; overrideLabel?: string }[];
       getTotal: () => number;
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
       configKey: string;
     }[] = [];
 
-    // HISTORICAL MODE: Build groups from the immutable snapshot.
-    // Priority: snapshotPairBreakdowns (pre-computed at close, exact source of truth)
-    //           → fallback to groupedSummaries from ledger (for old snapshots without pairBreakdowns)
-    // This guarantees sum(rows) == snapshotVsBalance == avatar balance.
+    // ── HISTORICAL MODE ────────────────────────────────────────────────────────
+    // Reads exclusively from the immutable snapshot. NO recalculation.
+    // Restores the exact same look & feel as a live round:
+    //   - 1 collapsible row per bet family (Medal, Presiones, Skins, Rayas, Putts…)
+    //   - Sub-segments (Front / Back / Total) shown inside when expanded
+    // Source priority: snapshotPairBreakdowns (new) → groupedSummaries from ledger (fallback)
     if (isHistorical) {
-      // Try snapshotPairBreakdowns first (available for rounds closed after this fix)
+      // Helper: get amount for a betType from either source
       const pairKey = `${player.id}::${rival.id}`;
       const breakdown = snapshotPairBreakdowns?.[pairKey];
 
-      if (breakdown) {
-        // ── New path: use immutable pairBreakdowns ──────────────────────────
-        const LABEL_MAP: Record<string, string> = {
-          'Medal Front 9': 'Medal Front 9',
-          'Medal Back 9': 'Medal Back 9',
-          'Medal Total': 'Medal Total',
-          'Presiones Front': 'Presiones Front',
-          'Presiones Back': 'Presiones Back',
-          'Presiones Back (Carry x2+Match)': 'Presiones Back (Carry x2+Match)',
-          'Presiones Match 18': 'Presiones Match 18',
-          'Skins Front': 'Skins Front',
-          'Skins Back': 'Skins Back',
-          'Caros': 'Caros',
-          'Oyes': 'Oyes',
-          'Unidades': 'Unidades',
-          'Manchas': 'Manchas',
-          'Culebras': 'Culebras',
-          'Pingüinos': 'Pingüinos',
-          'Rayas Front': 'Rayas Front',
-          'Rayas Back': 'Rayas Back',
-          'Rayas Medal Total': 'Rayas Medal Total',
-          'Rayas Oyes': 'Rayas Oyes',
-          'Coneja': 'Coneja',
-          'Medal General': 'Medal General',
-          'Side Bet': 'Side Bet',
-          'Stableford': 'Stableford',
-          'Putts Front': 'Putts Front',
-          'Putts Back': 'Putts Back',
-          'Putts Total': 'Putts Total',
-        };
-        const ORDER = [
-          'Medal Front 9', 'Medal Back 9', 'Medal Total',
-          'Presiones Front', 'Presiones Back', 'Presiones Back (Carry x2+Match)', 'Presiones Match 18',
-          'Skins Front', 'Skins Back',
-          'Caros', 'Oyes', 'Unidades', 'Manchas', 'Culebras', 'Pingüinos',
-          'Rayas Front', 'Rayas Back', 'Rayas Medal Total', 'Rayas Oyes',
-          'Coneja', 'Medal General', 'Side Bet', 'Stableford',
-          'Putts Front', 'Putts Back', 'Putts Total',
-        ];
-
-        const betTypes = Object.keys(breakdown).filter(bt => breakdown[bt] !== 0);
-        betTypes.sort((a, b) => {
-          const ia = ORDER.indexOf(a);
-          const ib = ORDER.indexOf(b);
-          if (ia === -1 && ib === -1) return a.localeCompare(b);
-          if (ia === -1) return 1;
-          if (ib === -1) return -1;
-          return ia - ib;
-        });
-
-        for (const betType of betTypes) {
-          const amount = breakdown[betType];
-          const label = LABEL_MAP[betType] || betType;
-          groups.push({
-            key: `hist_${betType}`,
-            label,
-            configKey: betType,
-            segments: [],
-            getTotal: () => amount,
-            getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount }),
-          });
-        }
-        return groups;
-      }
-
-      // ── Legacy fallback: old snapshots without pairBreakdowns ─────────────
-      // Use groupedSummaries from the ledger (same behavior as before this fix).
-      const EXCLUDED_TYPES = new Set([
-        'Carritos Front', 'Carritos Back', 'Carritos Total',
-        'Presiones Parejas', 'Presiones Pareja',
-      ]);
-
-      // Friendly display labels for known bet types
-      const LABEL_MAP: Record<string, string> = {
-        'Medal Front 9': 'Medal Front 9',
-        'Medal Back 9': 'Medal Back 9',
-        'Medal Total': 'Medal Total',
-        'Presiones Front': 'Presiones Front',
-        'Presiones Back': 'Presiones Back',
-        'Presiones Back (Carry x2+Match)': 'Presiones Back (Carry x2+Match)',
-        'Presiones Match 18': 'Presiones Match 18',
-        'Skins Front': 'Skins Front',
-        'Skins Back': 'Skins Back',
-        'Caros': 'Caros',
-        'Oyes': 'Oyes',
-        'Unidades': 'Unidades',
-        'Manchas': 'Manchas',
-        'Culebras': 'Culebras',
-        'Pingüinos': 'Pingüinos',
-        'Rayas Front': 'Rayas Front',
-        'Rayas Back': 'Rayas Back',
-        'Rayas Medal Total': 'Rayas Medal Total',
-        'Rayas Oyes': 'Rayas Oyes',
-        'Coneja': 'Coneja',
-        'Medal General': 'Medal General',
-        'Side Bet': 'Side Bet',
-        'Stableford': 'Stableford',
+      const getAmt = (betType: string): number => {
+        if (breakdown) return breakdown[betType] ?? 0;
+        // Legacy fallback (old snapshots without pairBreakdowns)
+        const EXCLUDED = new Set(['Carritos Front', 'Carritos Back', 'Carritos Total', 'Presiones Parejas', 'Presiones Pareja']);
+        if (EXCLUDED.has(betType)) return 0;
+        return groupedSummaries[betType]?.total ?? 0;
       };
 
-      // Group keys with non-zero totals from ledger, excluding team bets
-      const ledgerBetTypes = Object.keys(groupedSummaries).filter(
-        bt => !EXCLUDED_TYPES.has(bt)
-      );
-
-      // Sort by a canonical order so display is predictable
-      const ORDER = [
-        'Medal Front 9', 'Medal Back 9', 'Medal Total',
-        'Presiones Front', 'Presiones Back', 'Presiones Back (Carry x2+Match)', 'Presiones Match 18',
-        'Skins Front', 'Skins Back',
-        'Caros', 'Oyes', 'Unidades', 'Manchas', 'Culebras', 'Pingüinos',
-        'Rayas Front', 'Rayas Back', 'Rayas Medal Total', 'Rayas Oyes',
-        'Coneja', 'Medal General', 'Side Bet', 'Stableford',
-      ];
-      ledgerBetTypes.sort((a, b) => {
-        const ia = ORDER.indexOf(a);
-        const ib = ORDER.indexOf(b);
-        if (ia === -1 && ib === -1) return a.localeCompare(b);
-        if (ia === -1) return 1;
-        if (ib === -1) return -1;
-        return ia - ib;
+      // Helper to build a simple segment descriptor
+      const seg = (label: string, betType: string) => ({
+        label,
+        key: `hist_seg_${betType}`,
+        overrideLabel: betType,
       });
 
-      for (const betType of ledgerBetTypes) {
-        const summary = groupedSummaries[betType];
-        const total = summary?.total || 0;
-        // Only show types that have a non-zero total (nothing to display otherwise)
-        if (total === 0) continue;
-        const label = LABEL_MAP[betType] || betType;
+      // ── Medal ──────────────────────────────────────────────────────────────
+      const medalFront = getAmt('Medal Front 9');
+      const medalBack  = getAmt('Medal Back 9');
+      const medalTotal = getAmt('Medal Total');
+      const medalSum   = medalFront + medalBack + medalTotal;
+      if (medalSum !== 0) {
+        const segs = [
+          ...(medalFront !== 0 ? [seg('Front 9', 'Medal Front 9')]  : []),
+          ...(medalBack  !== 0 ? [seg('Back 9',  'Medal Back 9')]   : []),
+          ...(medalTotal !== 0 ? [seg('Total 18','Medal Total')]     : []),
+        ];
         groups.push({
-          key: `hist_${betType}`,
-          label,
-          configKey: betType,
-          segments: [], // No expandable segments in historical mode — totals are final
-          getTotal: () => total,
-          getSegmentData: () => ({
-            playerNet: 0,
-            rivalNet: 0,
-            amount: total,
-            description: summary?.details?.[0]?.description,
-          }),
+          key: 'hist_medal', label: 'Medal', configKey: 'medal',
+          segments: segs,
+          getTotal: () => medalSum,
+          getSegmentData: (k) => {
+            const bt = k === `hist_seg_Medal Front 9` ? 'Medal Front 9' : k === `hist_seg_Medal Back 9` ? 'Medal Back 9' : 'Medal Total';
+            const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
+          },
+        });
+      }
+
+      // ── Presiones ──────────────────────────────────────────────────────────
+      const presFront = getAmt('Presiones Front');
+      const presBack  = getAmt('Presiones Back') + getAmt('Presiones Back (Carry x2+Match)');
+      const presMatch = getAmt('Presiones Match 18');
+      const presSum   = presFront + presBack + presMatch;
+      if (presSum !== 0) {
+        const backLabel = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Back 9 (Carry x2+Match)' : 'Back 9';
+        const backBt    = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
+        const presSegs = [
+          ...(presFront !== 0 ? [seg('Front 9', 'Presiones Front')]  : []),
+          ...(presBack  !== 0 ? [seg(backLabel, backBt)]             : []),
+          ...(presMatch !== 0 ? [seg('Total 18','Presiones Match 18')]: []),
+        ];
+        groups.push({
+          key: 'hist_presiones', label: 'Presiones', configKey: 'pressures',
+          segments: presSegs,
+          getTotal: () => presSum,
+          getSegmentData: (k) => {
+            const bt = k.includes('Front') ? 'Presiones Front'
+                     : k.includes('Match') ? 'Presiones Match 18'
+                     : backBt;
+            const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
+          },
+        });
+      }
+
+      // ── Skins ──────────────────────────────────────────────────────────────
+      const skinsFront = getAmt('Skins Front');
+      const skinsBack  = getAmt('Skins Back');
+      const skinsSum   = skinsFront + skinsBack;
+      if (skinsSum !== 0) {
+        groups.push({
+          key: 'hist_skins', label: 'Skins', configKey: 'skins',
+          segments: [
+            ...(skinsFront !== 0 ? [seg('Front 9', 'Skins Front')] : []),
+            ...(skinsBack  !== 0 ? [seg('Back 9',  'Skins Back')]  : []),
+          ],
+          getTotal: () => skinsSum,
+          getSegmentData: (k) => {
+            const bt = k.includes('Front') ? 'Skins Front' : 'Skins Back';
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
+          },
+        });
+      }
+
+      // ── Rayas ──────────────────────────────────────────────────────────────
+      const rayasFront = getAmt('Rayas Front');
+      const rayasBack  = getAmt('Rayas Back');
+      const rayasMedal = getAmt('Rayas Medal Total');
+      const rayasOyes  = getAmt('Rayas Oyes');
+      const rayasSum   = rayasFront + rayasBack + rayasMedal + rayasOyes;
+      if (rayasSum !== 0) {
+        groups.push({
+          key: 'hist_rayas', label: 'Rayas', configKey: 'rayas',
+          segments: [
+            ...(rayasFront !== 0 ? [seg('Front 9',     'Rayas Front')]       : []),
+            ...(rayasBack  !== 0 ? [seg('Back 9',      'Rayas Back')]        : []),
+            ...(rayasMedal !== 0 ? [seg('Medal Total', 'Rayas Medal Total')] : []),
+            ...(rayasOyes  !== 0 ? [seg('Oyes',        'Rayas Oyes')]        : []),
+          ],
+          getTotal: () => rayasSum,
+          getSegmentData: (k) => {
+            const bt = k.includes('Medal Total') ? 'Rayas Medal Total'
+                     : k.includes('Oyes')        ? 'Rayas Oyes'
+                     : k.includes('Front')       ? 'Rayas Front'
+                     : 'Rayas Back';
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
+          },
+        });
+      }
+
+      // ── Putts ──────────────────────────────────────────────────────────────
+      const puttsFront = getAmt('Putts Front');
+      const puttsBack  = getAmt('Putts Back');
+      const puttsTotal = getAmt('Putts Total');
+      const puttsSum   = puttsFront + puttsBack + puttsTotal;
+      if (puttsSum !== 0) {
+        groups.push({
+          key: 'hist_putts', label: 'Putts', configKey: 'putts',
+          segments: [
+            ...(puttsFront !== 0 ? [seg('Front 9', 'Putts Front')] : []),
+            ...(puttsBack  !== 0 ? [seg('Back 9',  'Putts Back')]  : []),
+            ...(puttsTotal !== 0 ? [seg('Total',   'Putts Total')] : []),
+          ],
+          getTotal: () => puttsSum,
+          getSegmentData: (k) => {
+            const bt = k.includes('Front') ? 'Putts Front' : k.includes('Back') ? 'Putts Back' : 'Putts Total';
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
+          },
+        });
+      }
+
+      // ── Atomic bets (1 row, no sub-segments) ──────────────────────────────
+      const atomicBets: Array<{ bt: string; label: string; configKey: string }> = [
+        { bt: 'Caros',        label: 'Caros',        configKey: 'caros' },
+        { bt: 'Oyes',         label: 'Oyes',          configKey: 'oyeses' },
+        { bt: 'Unidades',     label: 'Unidades',      configKey: 'units' },
+        { bt: 'Manchas',      label: 'Manchas',       configKey: 'manchas' },
+        { bt: 'Culebras',     label: 'Culebras',      configKey: 'culebras' },
+        { bt: 'Pingüinos',    label: 'Pingüinos',     configKey: 'pinguinos' },
+        { bt: 'Coneja',       label: 'Coneja',        configKey: 'coneja' },
+        { bt: 'Medal General',label: 'Medal General', configKey: 'medalGeneral' },
+        { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
+        { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
+      ];
+      for (const { bt, label, configKey } of atomicBets) {
+        const amount = getAmt(bt);
+        if (amount !== 0) {
+          const descFromLedger = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
+          groups.push({
+            key: `hist_${bt}`, label, configKey,
+            segments: [],
+            getTotal: () => amount,
+            getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount, description: descFromLedger }),
+          });
+        }
+      }
+
+      // ── Unknown / future bet types not in the map above ────────────────────
+      const knownBetTypes = new Set([
+        'Medal Front 9','Medal Back 9','Medal Total',
+        'Presiones Front','Presiones Back','Presiones Back (Carry x2+Match)','Presiones Match 18',
+        'Skins Front','Skins Back',
+        'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
+        'Putts Front','Putts Back','Putts Total',
+        'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
+        'Coneja','Medal General','Stableford','Side Bet',
+        'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
+      ]);
+      const sourceKeys = breakdown ? Object.keys(breakdown) : Object.keys(groupedSummaries);
+      for (const bt of sourceKeys) {
+        if (knownBetTypes.has(bt)) continue;
+        const amount = getAmt(bt);
+        if (amount === 0) continue;
+        groups.push({
+          key: `hist_unknown_${bt}`, label: bt, configKey: bt,
+          segments: [],
+          getTotal: () => amount,
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount }),
         });
       }
 
