@@ -64,6 +64,16 @@ export type SnapshotPairBreakdowns = Record<
   Record<string, number> // betType → netAmount (positive = player won, negative = player lost)
 >;
 
+// Display-ready result text per pair+segment, saved at close time to avoid recalculation.
+// Key format: "playerAId::playerBId::betType::segment"
+// e.g. "uuid1::uuid2::Presiones Front::front" → { resultText: "+3 +1 0", hasCarry: false }
+// e.g. "uuid1::uuid2::Medal Front 9::front" → { resultText: "43 vs 42" }
+export interface SnapshotSegmentResult {
+  resultText: string;
+  hasCarry?: boolean;
+}
+export type SnapshotPairSegmentResults = Record<string, SnapshotSegmentResult>;
+
 // Player balance summary
 export interface SnapshotPlayerBalance {
   playerId: string;
@@ -111,6 +121,11 @@ export interface RoundSnapshot {
   // Used by the historical BilateralDetail to show individual bet rows whose sum == header.
   // Keyed as "playerId::rivalId" (both directions stored).
   pairBreakdowns?: SnapshotPairBreakdowns;
+
+  // Display-ready result text per pair+segment (e.g. "+3 +1 0" for Presiones, "43 vs 42" for Medal).
+  // Key: "playerAId::playerBId::betType::segment"
+  // Saved at close time so the historical view never needs to recalculate.
+  pairSegmentResults?: SnapshotPairSegmentResults;
   
   // Player balances summary
   balances: SnapshotPlayerBalance[];
@@ -138,7 +153,9 @@ export function generateRoundSnapshot(
   teeColor: string,
   startingHole: 1 | 10,
   date: string,
-  bilateralHandicaps?: Map<string, number> // key format: "playerAId::playerBId"
+  bilateralHandicaps?: Map<string, number>, // key format: "playerAId::playerBId"
+  // Display-ready result text per pair+segment, pre-computed at close time (no recalc in historic)
+  pairSegmentResults?: SnapshotPairSegmentResults
 ): RoundSnapshot {
   // Build players snapshot
   const snapshotPlayers: SnapshotPlayer[] = players.map(p => ({
@@ -339,6 +356,7 @@ export function generateRoundSnapshot(
     betConfig,
     ledger,
     pairBreakdowns,
+    pairSegmentResults: pairSegmentResults ?? undefined,
     balances,
     bilateralHandicaps: snapshotHandicaps.length > 0 ? snapshotHandicaps : undefined,
     coursePar,

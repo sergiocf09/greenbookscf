@@ -12,7 +12,7 @@ import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
-import { BetSummary, calculateAllBets } from '@/lib/betCalculations';
+import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -1093,6 +1093,77 @@ export const useRoundManagement = ({
       // This snapshot is immutable and will be used for all future historical views
       let snapshot: any = null;
       try {
+        // ── Build pairSegmentResults: display-ready result text for each pair+segment ─
+        // This is computed once at close time so the historic view never recalculates.
+        // Currently covers: Presiones (finalDisplay/hasCarry) and Medal (net score strings).
+        const pairSegmentResults: import('@/lib/roundSnapshot').SnapshotPairSegmentResults = {};
+
+        if (betConfigWithHandicaps.pressures?.enabled) {
+          const bilateralHandicapsArr = betConfigWithHandicaps.bilateralHandicaps ?? [];
+          for (let i = 0; i < sanitizedPlayers.length; i++) {
+            for (let j = 0; j < sanitizedPlayers.length; j++) {
+              if (i === j) continue;
+              const pA = sanitizedPlayers[i];
+              const pB = sanitizedPlayers[j];
+              try {
+                const evo = getPressureEvolution(
+                  pA, pB,
+                  confirmedScoresForClose,
+                  course,
+                  betConfigWithHandicaps,
+                  bilateralHandicapsArr,
+                  roundState.startingHole
+                );
+                const frontKey = `${pA.id}::${pB.id}::Presiones Front::front`;
+                const backKey  = `${pA.id}::${pB.id}::Presiones Back::back`;
+                pairSegmentResults[frontKey] = { resultText: evo.front.finalDisplay, hasCarry: evo.front.hasCarry };
+                pairSegmentResults[backKey]  = { resultText: evo.back.finalDisplay,  hasCarry: evo.back.hasCarry };
+              } catch (e) {
+                // Non-fatal: if pressure evolution fails for a pair, skip it
+              }
+            }
+          }
+        }
+
+        // Medal: save net score strings for each pair+segment
+        // Format: "43 vs 42"
+        const getNetForSegment = (playerId: string, start: number, end: number): number => {
+          const pScores = confirmedScoresForClose.get(playerId) || [];
+          return pScores
+            .filter(s => s.holeNumber >= start && s.holeNumber <= end)
+            .reduce((sum, s) => sum + (typeof s.netScore === 'number' ? s.netScore : (s.strokes || 0)), 0);
+        };
+
+        if (betConfigWithHandicaps.medal?.enabled !== false) {
+          for (let i = 0; i < sanitizedPlayers.length; i++) {
+            for (let j = 0; j < sanitizedPlayers.length; j++) {
+              if (i === j) continue;
+              const pA = sanitizedPlayers[i];
+              const pB = sanitizedPlayers[j];
+              const frontNetA = getNetForSegment(pA.id, 1, 9);
+              const frontNetB = getNetForSegment(pB.id, 1, 9);
+              const backNetA  = getNetForSegment(pA.id, 10, 18);
+              const backNetB  = getNetForSegment(pB.id, 10, 18);
+              const totalNetA = getNetForSegment(pA.id, 1, 18);
+              const totalNetB = getNetForSegment(pB.id, 1, 18);
+              pairSegmentResults[`${pA.id}::${pB.id}::Medal Front 9::front`]  = { resultText: `${frontNetA} vs ${frontNetB}` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Medal Back 9::back`]    = { resultText: `${backNetA} vs ${backNetB}` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Medal Total::total`]    = { resultText: `${totalNetA} vs ${totalNetB}` };
+              // Putts
+              const puttsFn = (pid: string, s: number, e: number) =>
+                (confirmedScoresForClose.get(pid) || [])
+                  .filter(sc => sc.holeNumber >= s && sc.holeNumber <= e && typeof sc.putts === 'number')
+                  .reduce((sum, sc) => sum + (sc.putts || 0), 0);
+              const pPuttsFront = puttsFn(pA.id, 1, 9);  const rPuttsFront = puttsFn(pB.id, 1, 9);
+              const pPuttsBack  = puttsFn(pA.id, 10, 18); const rPuttsBack  = puttsFn(pB.id, 10, 18);
+              pairSegmentResults[`${pA.id}::${pB.id}::Putts Front::front`] = { resultText: `${pPuttsFront} vs ${rPuttsFront} putts` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Putts Back::back`]   = { resultText: `${pPuttsBack} vs ${rPuttsBack} putts` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Putts Total::total`] = { resultText: `${pPuttsFront + pPuttsBack} vs ${rPuttsFront + rPuttsBack} putts` };
+            }
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // BUG FIX #3: Use confirmedScoresForClose (only confirmed holes) instead of
         // the full `scores` map which may include unconfirmed/partial hole entries.
         // This ensures the snapshot scorecard matches exactly what the bet engine used.
@@ -1106,7 +1177,8 @@ export const useRoundManagement = ({
           roundState.teeColor,
           roundState.startingHole,
           roundState.date.toISOString().split('T')[0],
-          bilateralHandicapsMap
+          bilateralHandicapsMap,
+          Object.keys(pairSegmentResults).length > 0 ? pairSegmentResults : undefined
         );
         pushStageOk(report, 'createSnapshot');
       } catch (e) {

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
-import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
+import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, SnapshotPairSegmentResults, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { 
@@ -81,6 +81,7 @@ interface BetDashboardProps {
   snapshotBalances?: SnapshotPlayerBalance[];
   snapshotLedger?: SnapshotLedgerEntry[];
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
+  snapshotPairSegmentResults?: SnapshotPairSegmentResults;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -99,6 +100,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   snapshotBalances,
   snapshotLedger,
   snapshotPairBreakdowns,
+  snapshotPairSegmentResults,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -1761,6 +1763,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           getStrokesForLocalPair={getStrokesForLocalPair}
           snapshotVsBalance={snapshotBalances ? getRivalBalance(selectedRival) : undefined}
           snapshotPairBreakdowns={snapshotPairBreakdowns}
+          snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
         />
       )}
@@ -2894,6 +2897,7 @@ interface BilateralDetailProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
   snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
+  snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
   isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
 }
 
@@ -2921,6 +2925,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   getStrokesForLocalPair,
   snapshotVsBalance,
   snapshotPairBreakdowns,
+  snapshotPairSegmentResults,
   isHistorical = false,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
@@ -3210,13 +3215,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // Restores the exact same look & feel as a live round:
     //   - 1 collapsible row per bet family (Medal, Presiones, Skins, Rayas, Putts…)
     //   - Sub-segments (Front / Back / Total) shown inside when expanded
-    // Source priority: snapshotPairBreakdowns (new) → groupedSummaries from ledger (fallback)
+    // Source priority: snapshotPairSegmentResults (display-ready) → snapshotPairBreakdowns → groupedSummaries
     if (isHistorical) {
       // Helper: get amount for a betType from either source
       const pairKey = `${player.id}::${rival.id}`;
       const breakdown = snapshotPairBreakdowns?.[pairKey];
 
-      // Helper: sum net scores from confirmedScores (already loaded from snapshot, no recalc)
+      // Helper: get pre-saved result text from snapshot (no recalculation)
+      // Key format: "playerAId::playerBId::betType::segment"
+      const getSegResult = (betType: string, segment: string) => {
+        if (!snapshotPairSegmentResults) return undefined;
+        return snapshotPairSegmentResults[`${player.id}::${rival.id}::${betType}::${segment}`];
+      };
+
+      // Legacy helper: sum net scores from confirmedScores (no recalc, fallback when pairSegmentResults absent)
       const getNetSum = (playerId: string, startHole: number, endHole: number): number => {
         const pScores = confirmedScores.get(playerId) || [];
         return pScores
@@ -3258,14 +3270,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           getTotal: () => medalSum,
           getSegmentData: (k) => {
             const bt = k === `hist_seg_Medal Front 9` ? 'Medal Front 9' : k === `hist_seg_Medal Back 9` ? 'Medal Back 9' : 'Medal Total';
-            const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
-            // Read net scores from snapshot scores (no recalculation)
+            const seg2seg: Record<string, string> = { 'Medal Front 9': 'front', 'Medal Back 9': 'back', 'Medal Total': 'total' };
+            // Try pre-saved resultText first (new snapshots), then fall back to computing from scores
+            const saved = getSegResult(bt, seg2seg[bt] || 'total');
+            if (saved) {
+              // Parse "43 vs 42" into playerNet / rivalNet for color coding
+              const parts = saved.resultText.split(' vs ');
+              const pNet = parts[0] ? Number(parts[0]) : 0;
+              const rNet = parts[1] ? Number(parts[1]) : 0;
+              return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt) };
+            }
+            // Legacy fallback
             const [pNet, rNet] = bt === 'Medal Front 9'
               ? [getPlayerNet(1, 9), getRivalNet(1, 9)]
               : bt === 'Medal Back 9'
               ? [getPlayerNet(10, 18), getRivalNet(10, 18)]
               : [getPlayerNet(1, 18), getRivalNet(1, 18)];
-            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt), description: desc };
+            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt) };
           },
         });
       }
@@ -3291,11 +3312,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             const bt = k.includes('Front') ? 'Presiones Front'
                      : k.includes('Match') ? 'Presiones Match 18'
                      : backBt;
-            // ALWAYS read description from the snapshot ledger (groupedSummaries),
-            // regardless of whether breakdown exists. This gives the match-play result
-            // string (e.g. "+4 +2 0", "Even (Carry)") stored at close time.
+            const segName = bt === 'Presiones Front' ? 'front' : bt === 'Presiones Match 18' ? 'total' : 'back';
+            // Priority 1: pre-saved resultText from new snapshots (exact finalDisplay + hasCarry)
+            const saved = getSegResult('Presiones Front', 'front'); // use front key for both
+            const savedSeg = getSegResult(bt === 'Presiones Front' ? 'Presiones Front' : bt === 'Presiones Match 18' ? 'Presiones Match 18' : 'Presiones Back', segName);
+            if (savedSeg) {
+              const display = savedSeg.hasCarry ? `${savedSeg.resultText} (Carry)` : savedSeg.resultText;
+              return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: display };
+            }
+            // Legacy: read description from snapshot ledger
             const desc = groupedSummaries[bt]?.details?.[0]?.description;
-            // playerNet/rivalNet are unused for Presiones (description drives the display)
             return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
           },
         });
@@ -3364,7 +3390,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           getTotal: () => puttsSum,
           getSegmentData: (k) => {
             const bt = k.includes('Front') ? 'Putts Front' : k.includes('Back') ? 'Putts Back' : 'Putts Total';
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
+            const segName = bt === 'Putts Front' ? 'front' : bt === 'Putts Back' ? 'back' : 'total';
+            const saved = getSegResult(bt, segName);
+            const desc = saved ? saved.resultText : undefined;
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
           },
         });
       }
@@ -4123,7 +4152,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
-  }, [isHistorical, snapshotPairBreakdowns, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
+  }, [isHistorical, snapshotPairBreakdowns, snapshotPairSegmentResults, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance for the bilateral detail header.
   // HISTORICAL MODE: Sum betTypeGroups directly — this is the single source of truth.
