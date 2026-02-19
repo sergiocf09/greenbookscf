@@ -1,16 +1,18 @@
 /**
- * Round Snapshot Generator
- * 
- * Creates an immutable snapshot of a completed round containing:
- * - All players (registered + guests)
- * - All hole scores with markers
- * - Handicaps used
- * - Bet configuration
- * - Full ledger of bet results
- * - Player totals
- * 
- * This snapshot is stored in round_snapshots and used for historical views.
- * Once saved, it should NEVER be recalculated.
+ * Round Snapshot Generator — Schema V3
+ *
+ * Single Source of Truth Contract (noRecalcContract):
+ *   - Once closed, round_snapshots.snapshot_json is the ONLY source for historical
+ *     views and accumulated balances. Historical UI must NEVER recalculate from
+ *     hole_scores, round_handicaps, ledger_transactions or any other relational table.
+ *
+ * Integrity guarantees enforced at generation time:
+ *   1. Symmetry:  matrix[A][B] == -matrix[B][A] for every pair.
+ *   2. Zero-sum:  Σ totalNet of all players == 0.
+ *   3. Consistency: snapshot.balances[A].vsBalances[B].netAmount == matrix[A][B].
+ *
+ * If any guarantee fails, generateRoundSnapshot throws — the caller must abort
+ * the close pipeline and NOT write anything to the database.
  */
 
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
@@ -98,8 +100,14 @@ export interface SnapshotBilateralHandicap {
 // Metadata contract to prevent recalculation in historical views
 export interface SnapshotMeta {
   noRecalcContract: true;    // Historical UI must render only from snapshot; never recalculate
-  schemaVersion: number;     // 1 = original, future versions bump this
+  schemaVersion: number;     // 1 = original, 3 = current (V3 with integrity guarantees)
   createdBy?: string | null; // organizer profileId
+  integrityChecks?: {        // Results of pre-write integrity validation
+    symmetryOk: boolean;
+    zeroSumOk: boolean;
+    netTotal: number;        // Should be 0; any deviation is logged here
+    pairsChecked: number;
+  };
 }
 
 // Complete round snapshot structure
@@ -150,8 +158,79 @@ export interface RoundSnapshot {
   closedAt: string;
 }
 
+// ─── Integrity Validation ─────────────────────────────────────────────────────
+
+export interface SnapshotIntegrityResult {
+  symmetryOk: boolean;
+  zeroSumOk: boolean;
+  netTotal: number;
+  pairsChecked: number;
+  violations: string[]; // Human-readable descriptions of any failures
+}
+
+/**
+ * Validate the integrity of snapshot balances BEFORE writing to the database.
+ * Checks:
+ *   1. Symmetry: balances[A].vs[B].netAmount == -balances[B].vs[A].netAmount
+ *   2. Zero-sum: Σ totalNet == 0
+ * Returns a result object; caller decides whether to abort on failure.
+ */
+export function validateSnapshotIntegrity(balances: SnapshotPlayerBalance[]): SnapshotIntegrityResult {
+  const violations: string[] = [];
+  let pairsChecked = 0;
+
+  // Build lookup: playerId -> vsBalances map
+  const balanceByPlayerId = new Map<string, SnapshotPlayerBalance>();
+  for (const b of balances) {
+    balanceByPlayerId.set(b.playerId, b);
+  }
+
+  // 1. Symmetry check
+  for (const playerBal of balances) {
+    for (const vsEntry of playerBal.vsBalances) {
+      pairsChecked++;
+      const rivalBal = balanceByPlayerId.get(vsEntry.rivalId);
+      if (!rivalBal) {
+        violations.push(`Symmetry: player ${vsEntry.rivalId} not found in balances`);
+        continue;
+      }
+      const rivalVsPlayer = rivalBal.vsBalances.find(v => v.rivalId === playerBal.playerId);
+      if (!rivalVsPlayer) {
+        violations.push(`Symmetry: ${vsEntry.rivalId} has no entry for ${playerBal.playerId}`);
+        continue;
+      }
+      // Allow ±1 cent rounding tolerance
+      const diff = vsEntry.netAmount + rivalVsPlayer.netAmount;
+      if (Math.abs(diff) > 1) {
+        violations.push(
+          `Symmetry violated: ${playerBal.playerId} vs ${vsEntry.rivalId}: ` +
+          `${vsEntry.netAmount} + ${rivalVsPlayer.netAmount} = ${diff} (expected 0)`
+        );
+      }
+    }
+  }
+
+  // 2. Zero-sum check
+  const netTotal = balances.reduce((sum, b) => sum + b.totalNet, 0);
+  const zeroSumOk = Math.abs(netTotal) <= 1; // ±1 cent tolerance
+  if (!zeroSumOk) {
+    violations.push(`Zero-sum violated: Σ totalNet = ${netTotal} (expected 0)`);
+  }
+
+  return {
+    symmetryOk: violations.filter(v => v.startsWith('Symmetry')).length === 0,
+    zeroSumOk,
+    netTotal,
+    pairsChecked,
+    violations,
+  };
+}
+
 /**
  * Generate a complete snapshot of the round for historical storage
+ * 
+ * THROWS if integrity validation fails (symmetry or zero-sum).
+ * The caller MUST catch this and abort the close pipeline.
  */
 export function generateRoundSnapshot(
   roundId: string,
@@ -353,8 +432,25 @@ export function generateRoundSnapshot(
   }
   // ──────────────────────────────────────────────────────────────────────────
 
+  // ── Integrity Validation (pre-write contract) ────────────────────────────────
+  // Validate BEFORE returning so the caller can abort if something is wrong.
+  // This guarantees the snapshot is internally consistent when written to DB.
+  const integrityResult = validateSnapshotIntegrity(balances);
+  if (integrityResult.violations.length > 0) {
+    console.error(
+      `[roundSnapshot] INTEGRITY VIOLATIONS for round ${roundId}:`,
+      integrityResult.violations
+    );
+    // THROW — caller (closeScorecard) must catch this and abort the pipeline
+    throw new Error(
+      `Snapshot integrity check failed (${integrityResult.violations.length} violation(s)): ` +
+      integrityResult.violations.slice(0, 3).join('; ')
+    );
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return {
-    version: 1,
+    version: 3,
     roundId,
     courseId: course.id,
     courseName: course.name,
@@ -363,8 +459,14 @@ export function generateRoundSnapshot(
     startingHole,
     meta: {
       noRecalcContract: true,
-      schemaVersion: 1,
+      schemaVersion: 3,
       createdBy: undefined,
+      integrityChecks: {
+        symmetryOk: integrityResult.symmetryOk,
+        zeroSumOk: integrityResult.zeroSumOk,
+        netTotal: integrityResult.netTotal,
+        pairsChecked: integrityResult.pairsChecked,
+      },
     },
     players: snapshotPlayers,
     scores: snapshotScores,

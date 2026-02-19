@@ -52,27 +52,35 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [markers, setMarkers] = useState<Map<string, Map<number, MarkerState>>>(new Map());
 
-  // Fetch snapshot or fallback to legacy data
+  // Fetch snapshot — this is the ONLY source of truth for historical views.
+  // No recalculation occurs here; we only render what the snapshot contains.
   useEffect(() => {
     const fetchRoundData = async () => {
       try {
-        // First, try to get the snapshot
+        // PRIMARY PATH: load immutable snapshot
         const { data: snapshotData, error: snapshotError } = await supabase
           .from('round_snapshots')
           .select('snapshot_json')
-          .eq('round_id', roundId)
+          .eq('round_id', roundId)   // ← strict round_id filter, no cross-contamination
           .maybeSingle();
 
         if (!snapshotError && snapshotData?.snapshot_json) {
           const snap = snapshotData.snapshot_json as unknown;
           if (isValidSnapshot(snap)) {
-            // noRecalcContract guardrail: log a warning if missing (shouldn't happen for new snapshots)
+            // Enforce noRecalcContract — warn if missing (legacy snapshots)
             if (!(snap as any).meta?.noRecalcContract) {
-              devWarn('[noRecalcContract] Snapshot is missing meta.noRecalcContract — this is a legacy snapshot. No recalculation will occur.', roundId);
+              devWarn(
+                '[noRecalcContract] Legacy snapshot (no noRecalcContract). ' +
+                'Rendering from snapshot data only — no recalculation.',
+                roundId
+              );
             } else {
-              devLog('[noRecalcContract] ✅ Snapshot verified — historical view will render directly from snapshot.', roundId);
+              devLog(
+                '[noRecalcContract] ✅ Snapshot V3 verified — rendering directly from snapshot.',
+                roundId,
+                'schema:', (snap as any).meta?.schemaVersion
+              );
             }
-            devLog('Using immutable snapshot for round:', roundId);
             setSnapshot(snap);
             setHasSnapshot(true);
             setLoading(false);
@@ -80,20 +88,20 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           }
         }
 
-        // No valid snapshot - fall back to legacy behavior
-        devLog('No snapshot found, using legacy data for round:', roundId);
-        
-        // Fetch bet config from round
+        // LEGACY FALLBACK: Round predates the snapshot system.
+        // We can only show the scorecard (no bet totals). No recalculation of bets.
+        devWarn('[noRecalcContract] No snapshot found for round:', roundId, '— showing legacy scorecard only.');
+
+        // For legacy rounds, load only the betConfig for display (no bet recalculation)
         const { data: roundData, error: roundError } = await supabase
           .from('rounds')
           .select('bet_config')
-          .eq('id', roundId)
+          .eq('id', roundId)   // ← strict round_id filter
           .single();
 
         if (roundError) throw roundError;
-        
+
         if (roundData?.bet_config) {
-          // Merge with defaults to ensure all properties exist
           const loadedConfig = roundData.bet_config as any;
           setBetConfig({
             ...defaultBetConfig,
@@ -118,49 +126,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           });
         }
 
-        // Fetch markers for each player's hole scores (legacy)
-        const { data: roundPlayers } = await supabase
-          .from('round_players')
-          .select('id, profile_id')
-          .eq('round_id', roundId);
+        // NOTE: We intentionally do NOT query hole_scores/hole_markers for legacy rounds
+        // because that would constitute a recalculation — violating noRecalcContract.
+        // Legacy rounds display only the scorecard data passed via props (fallbackPlayers).
 
-        if (roundPlayers) {
-          const markersMap = new Map<string, Map<number, MarkerState>>();
-          
-          for (const rp of roundPlayers) {
-            const { data: holeScores } = await supabase
-              .from('hole_scores')
-              .select('hole_number')
-              .eq('round_player_id', rp.id);
-
-            const playerMarkers = new Map<number, MarkerState>();
-            
-            if (holeScores) {
-              for (const hs of holeScores) {
-                const { data: holeMarkers } = await supabase
-                  .from('hole_markers')
-                  .select('marker_type')
-                  .eq('hole_score_id', rp.id);
-                
-                const markerState: MarkerState = { ...defaultMarkerState };
-                if (holeMarkers) {
-                  for (const m of holeMarkers) {
-                    if (m.marker_type in markerState) {
-                      (markerState as any)[m.marker_type] = true;
-                    }
-                  }
-                }
-                playerMarkers.set(hs.hole_number, markerState);
-              }
-            }
-            
-            markersMap.set(rp.profile_id, playerMarkers);
-          }
-          
-          setMarkers(markersMap);
-        }
       } catch (err) {
-        devError('Error fetching round data:', err);
+        devError('[HistoricalRoundView] Error fetching snapshot:', err);
       } finally {
         setLoading(false);
       }
