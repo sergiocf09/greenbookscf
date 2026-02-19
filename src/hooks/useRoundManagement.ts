@@ -1122,8 +1122,10 @@ export const useRoundManagement = ({
         return false;
       }
 
-      // Generate and save the round snapshot for historical view
-      // This snapshot is immutable and will be used for all future historical views
+      // Generate and save the round snapshot for historical view.
+      // generateRoundSnapshot THROWS if integrity checks fail (symmetry / zero-sum).
+      // We catch that separately so the user gets a clear error message and the
+      // pipeline is NOT marked as "closed" (partial state is avoided).
       let snapshot: any = null;
       try {
         // ── Build pairSegmentResults: display-ready result text for each pair+segment ─
@@ -1153,9 +1155,6 @@ export const useRoundManagement = ({
                 pairSegmentResults[frontKey] = { resultText: evo.front.finalDisplay, hasCarry: evo.front.hasCarry };
                 pairSegmentResults[backKey]  = { resultText: evo.back.finalDisplay,  hasCarry: evo.back.hasCarry };
 
-                // Match Total (18 hoyos): si hubo carry en el front, se muestra "Carry".
-                // Si no, es la suma de la primera línea del front + primera línea del back.
-                // "finalDisplay" format: "+2", "-1", "Even" etc.
                 const frontLineVal = evo.front.hasCarry ? null : (() => {
                   const m = evo.front.finalDisplay.match(/^([+-]?\d+)/);
                   return m ? parseInt(m[1], 10) : null;
@@ -1174,15 +1173,14 @@ export const useRoundManagement = ({
                   matchTotalText = '—';
                 }
                 pairSegmentResults[totalKey] = { resultText: matchTotalText, hasCarry: evo.front.hasCarry };
-              } catch (e) {
+              } catch (_e) {
                 // Non-fatal: if pressure evolution fails for a pair, skip it
               }
             }
           }
         }
 
-        // Medal: save net score strings for each pair+segment
-        // Format: "43 vs 42"
+        // Medal: save net score strings for each pair+segment ("43 vs 42")
         const getNetForSegment = (playerId: string, start: number, end: number): number => {
           const pScores = confirmedScoresForClose.get(playerId) || [];
           return pScores
@@ -1223,6 +1221,7 @@ export const useRoundManagement = ({
         // BUG FIX #3: Use confirmedScoresForClose (only confirmed holes) instead of
         // the full `scores` map which may include unconfirmed/partial hole entries.
         // This ensures the snapshot scorecard matches exactly what the bet engine used.
+        // NOTE: generateRoundSnapshot now THROWS if integrity checks fail.
         snapshot = generateRoundSnapshot(
           roundState.id,
           course,
@@ -1238,8 +1237,15 @@ export const useRoundManagement = ({
         );
         pushStageOk(report, 'createSnapshot');
       } catch (e) {
+        // Integrity failure or snapshot generation error — ABORT, do NOT write DB
         await fail('createSnapshot', e, report.attemptId);
-        toast.error('Error al generar snapshot');
+        const errMsg = (e as any)?.message ?? 'Error al generar snapshot';
+        const isIntegrityFailure = errMsg.includes('integrity check failed');
+        toast.error(
+          isIntegrityFailure
+            ? `Error de integridad en el snapshot: ${errMsg.split(':')[1]?.trim() ?? errMsg}`
+            : 'Error al generar snapshot'
+        );
         return false;
       }
 
