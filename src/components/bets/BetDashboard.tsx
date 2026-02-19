@@ -1047,14 +1047,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
-  // Get balance for base player vs each rival
-  // HISTORICAL: Use snapshotBalances (immutable, correct at close time) to avoid ledger duplicate issues.
+  // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
+  // HISTORICAL: Use getCorrectedBilateralBalance which filters the ledger per-pair and excludes team bets.
+  //   This ensures avatar balance == bilateral header == sum(detail rows) with NO discrepancy.
+  //   Note: snapshotBalances.vsBalances.netAmount is intentionally NOT used here because in older
+  //   snapshots (without pairBreakdowns) it may include team bets, causing inconsistency.
   // LIVE: Use override-aware calculation.
   const getRivalBalance = (rivalId: string): number => {
-    if (isHistorical && snapshotBalances) {
-      const snap = getSnapshotBilateralBalance(basePlayer?.id || '', rivalId);
-      if (snap !== null) return snap;
-    }
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
   
@@ -1470,13 +1469,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        // CRITICAL: For historical rounds, use the snapshot vsBalance as the
-                        // authoritative total — NOT the sum of the ledger breakdown above.
-                        // This guarantees the expanded row total matches the avatar and header.
-                        const snapshotPairTotal = isHistorical ? getSnapshotBilateralBalance(player.id, other.id) : null;
-                        const vsTotalBalance = snapshotPairTotal !== null
-                          ? snapshotPairTotal
-                          : vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
+                        // CRITICAL: For historical rounds, the total shown in the Tabla General expanded row
+                        // is: Individual (from ledger, excl. team bets) + Carritos + Presiones.
+                        // This matches the avatar (getCorrectedBilateralBalance = individual only) + team bets breakdown.
+                        // We do NOT use getSnapshotBilateralBalance here because in old snapshots it may
+                        // include team bets already inside the vsBalance, causing double-counting.
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -4106,15 +4104,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   }, [isHistorical, snapshotPairBreakdowns, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance for the bilateral detail header.
-  // HISTORICAL MODE: snapshotVsBalance is the immutable source of truth from the snapshot
-  // (all overrides were already baked in at close time). Use it directly.
+  // HISTORICAL MODE: Sum betTypeGroups directly — this is the single source of truth.
+  // betTypeGroups already reads exclusively from the snapshot (pairBreakdowns or ledger
+  // filtered by pair), and already excludes team bets (Carritos, Presiones Parejas).
+  // This guarantees the header == sum(rows) with NO discrepancy.
   // LIVE MODE: compute from betTypeGroups which respect live betOverrides.
   const computedTotalBalance = useMemo(() => {
-    // In historical mode, the snapshotVsBalance already includes individual bets only
-    // (Carritos and Presiones Parejas are excluded from getRivalBalance in historical mode,
-    // matching what BilateralDetail shows — it also excludes team bets from betTypeGroups).
-    if (isHistorical && snapshotVsBalance !== undefined) {
-      return snapshotVsBalance;
+    // Both historical and live modes derive the header from betTypeGroups to guarantee
+    // that header == sum(detail rows). snapshotVsBalance is intentionally ignored here
+    // because it may include Carritos/Presiones Parejas (team bets) in older snapshots
+    // that don't have the pairBreakdowns field.
+    if (isHistorical) {
+      // Sum all betTypeGroups directly (they already exclude team bets)
+      return betTypeGroups.reduce((sum, group) => sum + group.getTotal(), 0);
     }
     
     return betTypeGroups.reduce((sum, group) => {
