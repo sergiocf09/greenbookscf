@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
-import { SnapshotPlayerBalance, SnapshotLedgerEntry, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
+import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { 
@@ -80,6 +80,7 @@ interface BetDashboardProps {
   getBilateralHandicapsForEngine?: () => BilateralHandicap[];
   snapshotBalances?: SnapshotPlayerBalance[];
   snapshotLedger?: SnapshotLedgerEntry[];
+  snapshotPairBreakdowns?: SnapshotPairBreakdowns;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -97,6 +98,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   getBilateralHandicapsForEngine,
   snapshotBalances,
   snapshotLedger,
+  snapshotPairBreakdowns,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -1760,6 +1762,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           startingHole={startingHole}
           getStrokesForLocalPair={getStrokesForLocalPair}
           snapshotVsBalance={snapshotBalances ? getRivalBalance(selectedRival) : undefined}
+          snapshotPairBreakdowns={snapshotPairBreakdowns}
           isHistorical={isHistorical}
         />
       )}
@@ -2892,6 +2895,7 @@ interface BilateralDetailProps {
   startingHole?: 1 | 10;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
+  snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
   isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
 }
 
@@ -2918,6 +2922,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   startingHole = 1,
   getStrokesForLocalPair,
   snapshotVsBalance,
+  snapshotPairBreakdowns,
   isHistorical = false,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
@@ -3203,11 +3208,82 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       configKey: string;
     }[] = [];
 
-    // HISTORICAL MODE: Build groups directly from the snapshot ledger (groupedSummaries).
-    // This guarantees that the sum of all group totals equals the header (snapshotVsBalance),
-    // since both are derived from the same source: the immutable snapshot ledger excluding
-    // Carritos and Presiones Parejas (which are shown in their own team cards).
+    // HISTORICAL MODE: Build groups from the immutable snapshot.
+    // Priority: snapshotPairBreakdowns (pre-computed at close, exact source of truth)
+    //           → fallback to groupedSummaries from ledger (for old snapshots without pairBreakdowns)
+    // This guarantees sum(rows) == snapshotVsBalance == avatar balance.
     if (isHistorical) {
+      // Try snapshotPairBreakdowns first (available for rounds closed after this fix)
+      const pairKey = `${player.id}::${rival.id}`;
+      const breakdown = snapshotPairBreakdowns?.[pairKey];
+
+      if (breakdown) {
+        // ── New path: use immutable pairBreakdowns ──────────────────────────
+        const LABEL_MAP: Record<string, string> = {
+          'Medal Front 9': 'Medal Front 9',
+          'Medal Back 9': 'Medal Back 9',
+          'Medal Total': 'Medal Total',
+          'Presiones Front': 'Presiones Front',
+          'Presiones Back': 'Presiones Back',
+          'Presiones Back (Carry x2+Match)': 'Presiones Back (Carry x2+Match)',
+          'Presiones Match 18': 'Presiones Match 18',
+          'Skins Front': 'Skins Front',
+          'Skins Back': 'Skins Back',
+          'Caros': 'Caros',
+          'Oyes': 'Oyes',
+          'Unidades': 'Unidades',
+          'Manchas': 'Manchas',
+          'Culebras': 'Culebras',
+          'Pingüinos': 'Pingüinos',
+          'Rayas Front': 'Rayas Front',
+          'Rayas Back': 'Rayas Back',
+          'Rayas Medal Total': 'Rayas Medal Total',
+          'Rayas Oyes': 'Rayas Oyes',
+          'Coneja': 'Coneja',
+          'Medal General': 'Medal General',
+          'Side Bet': 'Side Bet',
+          'Stableford': 'Stableford',
+          'Putts Front': 'Putts Front',
+          'Putts Back': 'Putts Back',
+          'Putts Total': 'Putts Total',
+        };
+        const ORDER = [
+          'Medal Front 9', 'Medal Back 9', 'Medal Total',
+          'Presiones Front', 'Presiones Back', 'Presiones Back (Carry x2+Match)', 'Presiones Match 18',
+          'Skins Front', 'Skins Back',
+          'Caros', 'Oyes', 'Unidades', 'Manchas', 'Culebras', 'Pingüinos',
+          'Rayas Front', 'Rayas Back', 'Rayas Medal Total', 'Rayas Oyes',
+          'Coneja', 'Medal General', 'Side Bet', 'Stableford',
+          'Putts Front', 'Putts Back', 'Putts Total',
+        ];
+
+        const betTypes = Object.keys(breakdown).filter(bt => breakdown[bt] !== 0);
+        betTypes.sort((a, b) => {
+          const ia = ORDER.indexOf(a);
+          const ib = ORDER.indexOf(b);
+          if (ia === -1 && ib === -1) return a.localeCompare(b);
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        });
+
+        for (const betType of betTypes) {
+          const amount = breakdown[betType];
+          const label = LABEL_MAP[betType] || betType;
+          groups.push({
+            key: `hist_${betType}`,
+            label,
+            configKey: betType,
+            segments: [],
+            getTotal: () => amount,
+            getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount }),
+          });
+        }
+        return groups;
+      }
+
+      // ── Legacy fallback: old snapshots without pairBreakdowns ─────────────
+      // Use groupedSummaries from the ledger (same behavior as before this fix).
       const EXCLUDED_TYPES = new Set([
         'Carritos Front', 'Carritos Back', 'Carritos Total',
         'Presiones Parejas', 'Presiones Pareja',
@@ -3988,7 +4064,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
-  }, [isHistorical, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
+  }, [isHistorical, snapshotPairBreakdowns, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance for the bilateral detail header.
   // HISTORICAL MODE: snapshotVsBalance is the immutable source of truth from the snapshot
