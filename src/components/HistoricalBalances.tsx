@@ -194,10 +194,15 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       if (!profile) return;
       
       try {
-        // Get all round_snapshots the user can see
+        // SINGLE SOURCE OF TRUTH GUARDRAIL:
+        // Only load snapshots whose round still exists with status='completed'.
+        // This ensures balances reflect exactly the same set of rounds shown in RoundHistory.
+        // If a round is deleted (delete_round_with_financials removes both round + snapshot),
+        // it will never appear here. This join acts as a safety net for any inconsistency.
         const { data: snapshotsData, error } = await supabase
           .from('round_snapshots')
-          .select('round_id, snapshot_json');
+          .select('round_id, snapshot_json, rounds!inner(status)')
+          .eq('rounds.status', 'completed');
 
         if (error) throw error;
 
