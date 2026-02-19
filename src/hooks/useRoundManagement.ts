@@ -1093,11 +1093,14 @@ export const useRoundManagement = ({
       // This snapshot is immutable and will be used for all future historical views
       let snapshot: any = null;
       try {
+        // BUG FIX #3: Use confirmedScoresForClose (only confirmed holes) instead of
+        // the full `scores` map which may include unconfirmed/partial hole entries.
+        // This ensures the snapshot scorecard matches exactly what the bet engine used.
         snapshot = generateRoundSnapshot(
           roundState.id,
           course,
           sanitizedPlayers,
-          scores,
+          confirmedScoresForClose,
           betConfigWithHandicaps,
           allBetResults,
           roundState.teeColor,
