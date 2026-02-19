@@ -3308,14 +3308,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           key: 'hist_presiones', label: 'Presiones', configKey: 'pressures',
           segments: presSegs,
           getTotal: () => presSum,
-          getSegmentData: (k) => {
+        getSegmentData: (k) => {
             const bt = k.includes('Front') ? 'Presiones Front'
                      : k.includes('Match') ? 'Presiones Match 18'
                      : backBt;
             const segName = bt === 'Presiones Front' ? 'front' : bt === 'Presiones Match 18' ? 'total' : 'back';
             // Priority 1: pre-saved resultText from new snapshots (exact finalDisplay + hasCarry)
-            const saved = getSegResult('Presiones Front', 'front'); // use front key for both
-            const savedSeg = getSegResult(bt === 'Presiones Front' ? 'Presiones Front' : bt === 'Presiones Match 18' ? 'Presiones Match 18' : 'Presiones Back', segName);
+            // Use the correct betType key ("Presiones Back" not backBt alias) to look up in snapshot
+            const lookupBt = bt === 'Presiones Back (Carry x2+Match)' ? 'Presiones Back' : bt;
+            const savedSeg = getSegResult(lookupBt, segName);
             if (savedSeg) {
               const display = savedSeg.hasCarry ? `${savedSeg.resultText} (Carry)` : savedSeg.resultText;
               return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: display };
