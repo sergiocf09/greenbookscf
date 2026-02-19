@@ -160,18 +160,22 @@ export function generateRoundSnapshot(
   for (const summary of betSummaries) {
     if (summary.amount <= 0) continue; // Only process winning side
     
-    // Include description AND amount to differentiate multiple entries of the same bet type
-    // between the same pair (e.g., Coneja Set 1 vs Set 2 with different winners,
-    // or multiple Side Bets between the same pair with different amounts)
-    const pairKey = [summary.playerId, summary.vsPlayer, summary.betType, summary.segment, summary.holeNumber || 0, summary.description || '', summary.amount]
-      .sort()
-      .join(':');
+    // BUG FIX #1: Do NOT use .sort() — it reorders all elements lexicographically,
+    // causing distinct transactions (e.g. A→B $100 vs B→A $100, or two side bets
+    // with the same amount between the same pair) to collide into the same key.
+    // Since we only process amount > 0 (winner's perspective), directionality is
+    // inherently preserved: playerId=winner, vsPlayer=loser.
+    // Use '::' separator to avoid partial-match collisions between substrings.
+    const pairKey = `${summary.playerId}::${summary.vsPlayer}::${summary.betType}::${summary.segment}::${summary.holeNumber ?? 0}::${summary.description ?? ''}::${summary.amount}`;
     
     if (processedPairs.has(pairKey)) continue;
     processedPairs.add(pairKey);
 
-    const winner = players.find(p => p.id === summary.playerId);
-    const loser = players.find(p => p.id === summary.vsPlayer);
+    // BUG FIX #2: Side bets may store profileId as the player identifier instead of
+    // the local round-player id. Search by both p.id AND p.profileId so guests and
+    // registered players are always found and never produce "Unknown" names.
+    const winner = players.find(p => p.id === summary.playerId || (p.profileId && p.profileId === summary.playerId));
+    const loser = players.find(p => p.id === summary.vsPlayer || (p.profileId && p.profileId === summary.vsPlayer));
     
     if (winner && loser) {
       ledger.push({
