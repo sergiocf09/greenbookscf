@@ -12,7 +12,7 @@ import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
-import { BetSummary } from '@/lib/betCalculations';
+import { BetSummary, calculateAllBets } from '@/lib/betCalculations';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -768,10 +768,11 @@ export const useRoundManagement = ({
   }, [roundState.id, course, players, setScores]);
 
   // Close the scorecard (complete the round)
-  // allBetResults should be the full BetSummary[] array from calculateAllBets
-  // getStrokesForPair is optional function to get bilateral strokes for sliding calculation
+  // allBetResults from the UI is used as a fallback but we ALWAYS recalculate synchronously
+  // to guarantee the snapshot includes ALL bets (individual + Carritos + Presiones Parejas)
+  // regardless of which UI tabs were rendered at close time.
   const closeScorecard = useCallback(async (
-    allBetResults: BetSummary[],
+    allBetResultsFromUI: BetSummary[],
     getStrokesForPair?: (playerAId: string, playerBId: string) => number
   ) => {
     if (!roundState.id || !profile || !course) return false;
@@ -940,6 +941,94 @@ export const useRoundManagement = ({
         return false;
       }
 
+      // Fetch bilateral handicaps from round_handicaps table for the snapshot
+      // These are stored with round_player_ids, we need to convert to local player IDs
+      let bilateralHandicapsMap: Map<string, number> | undefined;
+      try {
+        const { data: rhData, error: rhError } = await supabase
+          .from('round_handicaps')
+          .select('player_a_id, player_b_id, strokes_given_by_a')
+          .eq('round_id', roundState.id);
+
+        if (rhError) throw rhError;
+
+        if (rhData && rhData.length > 0) {
+          bilateralHandicapsMap = new Map();
+          
+          // Create reverse lookup from round_player_id to local player id
+          const rpIdToLocalId = new Map<string, string>();
+          for (const [localId, rpId] of roundPlayerIds) {
+            rpIdToLocalId.set(rpId, localId);
+          }
+
+          for (const rh of rhData) {
+            const localA = rpIdToLocalId.get(rh.player_a_id);
+            const localB = rpIdToLocalId.get(rh.player_b_id);
+            if (localA && localB) {
+              const key = `${localA}::${localB}`;
+              bilateralHandicapsMap.set(key, rh.strokes_given_by_a);
+            }
+          }
+        }
+      } catch (e) {
+        devError('Error fetching bilateral handicaps for snapshot (non-fatal):', e);
+        // Non-fatal - continue without bilateral handicaps in snapshot
+      }
+
+      // VALIDATION: Check if bilateral handicaps are expected but missing
+      const loggedInPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
+      const expectedPairs = (loggedInPlayers.length * (loggedInPlayers.length - 1)) / 2;
+      const actualPairs = bilateralHandicapsMap?.size || 0;
+      
+      if (betConfig.pressures?.enabled && loggedInPlayers.length >= 2 && actualPairs === 0) {
+        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} logged-in players but no bilateral handicaps found.`);
+      } else if (betConfig.pressures?.enabled && actualPairs < expectedPairs) {
+        devWarn(`⚠️ VALIDATION: Expected ${expectedPairs} bilateral handicap pairs, found ${actualPairs}.`);
+      }
+
+      // ─── SYNCHRONOUS BET CALCULATION ────────────────────────────────────────
+      // CRITICAL: Always recalculate ALL bet results synchronously here.
+      // This guarantees the snapshot ledger is complete (Individual + Carritos +
+      // Presiones Parejas) regardless of which UI tabs were rendered at close time.
+      // betOverrides in betConfig are applied by calculateAllBets automatically.
+      const confirmedScoresForClose = new Map<string, import('@/types/golf').PlayerScore[]>();
+      scores.forEach((playerScores, playerId) => {
+        confirmedScoresForClose.set(
+          playerId,
+          playerScores.filter(
+            (s) => s.confirmed && typeof s.strokes === 'number' && Number.isFinite(s.strokes)
+          )
+        );
+      });
+
+      // Inject bilateral handicaps into betConfig so calculateAllBets uses them
+      const betConfigWithHandicaps = bilateralHandicapsMap
+        ? (() => {
+            const bilateralHandicapsForEngine: import('@/types/golf').BilateralHandicap[] = [];
+            for (const [key, strokes] of bilateralHandicapsMap!) {
+              const [aId, bId] = key.split('::');
+              if (aId && bId) {
+                bilateralHandicapsForEngine.push(
+                  strokes >= 0
+                    ? { playerAId: aId, playerBId: bId, playerAHandicap: 0, playerBHandicap: strokes }
+                    : { playerAId: aId, playerBId: bId, playerAHandicap: Math.abs(strokes), playerBHandicap: 0 }
+                );
+              }
+            }
+            return { ...betConfig, bilateralHandicaps: bilateralHandicapsForEngine };
+          })()
+        : betConfig;
+
+      const allBetResults = calculateAllBets(
+        sanitizedPlayers,
+        confirmedScoresForClose,
+        betConfigWithHandicaps,
+        course,
+        roundState.startingHole,
+        new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+      );
+      // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
+
       // Save ledger transactions for bet results (only for registered players)
       const ledgerRecords: any[] = [];
       allBetResults.forEach(result => {
@@ -1000,53 +1089,6 @@ export const useRoundManagement = ({
         return false;
       }
 
-      // Fetch bilateral handicaps from round_handicaps table for the snapshot
-      // These are stored with round_player_ids, we need to convert to local player IDs
-      let bilateralHandicapsMap: Map<string, number> | undefined;
-      try {
-        const { data: rhData, error: rhError } = await supabase
-          .from('round_handicaps')
-          .select('player_a_id, player_b_id, strokes_given_by_a')
-          .eq('round_id', roundState.id);
-
-        if (rhError) throw rhError;
-
-        if (rhData && rhData.length > 0) {
-          bilateralHandicapsMap = new Map();
-          
-          // Create reverse lookup from round_player_id to local player id
-          const rpIdToLocalId = new Map<string, string>();
-          for (const [localId, rpId] of roundPlayerIds) {
-            rpIdToLocalId.set(rpId, localId);
-          }
-
-          for (const rh of rhData) {
-            const localA = rpIdToLocalId.get(rh.player_a_id);
-            const localB = rpIdToLocalId.get(rh.player_b_id);
-            if (localA && localB) {
-              const key = `${localA}::${localB}`;
-              bilateralHandicapsMap.set(key, rh.strokes_given_by_a);
-            }
-          }
-        }
-      } catch (e) {
-        devError('Error fetching bilateral handicaps for snapshot (non-fatal):', e);
-        // Non-fatal - continue without bilateral handicaps in snapshot
-      }
-
-      // VALIDATION: Check if bilateral handicaps are expected but missing
-      // This helps diagnose issues where sliding won't be calculated correctly
-      const loggedInPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
-      const expectedPairs = (loggedInPlayers.length * (loggedInPlayers.length - 1)) / 2;
-      const actualPairs = bilateralHandicapsMap?.size || 0;
-      
-      if (betConfig.pressures?.enabled && loggedInPlayers.length >= 2 && actualPairs === 0) {
-        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} logged-in players but no bilateral handicaps found. Sliding calculations will be incomplete.`);
-        devWarn(`Expected ~${expectedPairs} pairs, found ${actualPairs}. Check round_handicaps table for round ${roundState.id}`);
-      } else if (betConfig.pressures?.enabled && actualPairs < expectedPairs) {
-        devWarn(`⚠️ VALIDATION: Expected ${expectedPairs} bilateral handicap pairs, found ${actualPairs}. Some sliding may be missing.`);
-      }
-
       // Generate and save the round snapshot for historical view
       // This snapshot is immutable and will be used for all future historical views
       let snapshot: any = null;
@@ -1056,7 +1098,7 @@ export const useRoundManagement = ({
           course,
           sanitizedPlayers,
           scores,
-          betConfig,
+          betConfigWithHandicaps,
           allBetResults,
           roundState.teeColor,
           roundState.startingHole,
