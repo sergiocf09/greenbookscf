@@ -3291,14 +3291,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             const bt = k.includes('Front') ? 'Presiones Front'
                      : k.includes('Match') ? 'Presiones Match 18'
                      : backBt;
-            const desc = breakdown ? undefined : groupedSummaries[bt]?.details?.[0]?.description;
-            // For Presiones, show net scores per segment from snapshot (no recalc)
-            const [pNet, rNet] = bt === 'Presiones Front'
-              ? [getPlayerNet(1, 9), getRivalNet(1, 9)]
-              : bt === 'Presiones Match 18'
-              ? [getPlayerNet(1, 18), getRivalNet(1, 18)]
-              : [getPlayerNet(10, 18), getRivalNet(10, 18)];
-            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt), description: desc };
+            // ALWAYS read description from the snapshot ledger (groupedSummaries),
+            // regardless of whether breakdown exists. This gives the match-play result
+            // string (e.g. "+4 +2 0", "Even (Carry)") stored at close time.
+            const desc = groupedSummaries[bt]?.details?.[0]?.description;
+            // playerNet/rivalNet are unused for Presiones (description drives the display)
+            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
           },
         });
       }
@@ -5039,9 +5037,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
 
-                        // IMPORTANT: For Presiones, always display the *actual* pressure lines.
-                        // Sometimes summary.description can be empty; fallback to evolution finalDisplay.
-                        const pressureFallback = isPressures ? (pressureSegmentData?.finalDisplay ?? '') : '';
+                        // IMPORTANT: For Presiones in LIVE mode, fallback to evolution finalDisplay
+                        // when description is missing. In HISTORICAL mode, NEVER recalculate —
+                        // the description from the snapshot is the only source of truth.
+                        const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
 
                         // Add Carry label ONLY for Front 9 when main line finished tied.
                         // BUT avoid duplicating if description already contains "Carry"
