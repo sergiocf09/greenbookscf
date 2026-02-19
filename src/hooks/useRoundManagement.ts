@@ -1114,10 +1114,33 @@ export const useRoundManagement = ({
                   bilateralHandicapsArr,
                   roundState.startingHole
                 );
-                const frontKey = `${pA.id}::${pB.id}::Presiones Front::front`;
-                const backKey  = `${pA.id}::${pB.id}::Presiones Back::back`;
+                const frontKey  = `${pA.id}::${pB.id}::Presiones Front::front`;
+                const backKey   = `${pA.id}::${pB.id}::Presiones Back::back`;
+                const totalKey  = `${pA.id}::${pB.id}::Presiones Total::total`;
                 pairSegmentResults[frontKey] = { resultText: evo.front.finalDisplay, hasCarry: evo.front.hasCarry };
                 pairSegmentResults[backKey]  = { resultText: evo.back.finalDisplay,  hasCarry: evo.back.hasCarry };
+
+                // Match Total (18 hoyos): si hubo carry en el front, se muestra "Carry".
+                // Si no, es la suma de la primera línea del front + primera línea del back.
+                // "finalDisplay" format: "+2", "-1", "Even" etc.
+                const frontLineVal = evo.front.hasCarry ? null : (() => {
+                  const m = evo.front.finalDisplay.match(/^([+-]?\d+)/);
+                  return m ? parseInt(m[1], 10) : null;
+                })();
+                const backLineVal = (() => {
+                  const m = evo.back.finalDisplay.match(/^([+-]?\d+)/);
+                  return m ? parseInt(m[1], 10) : null;
+                })();
+                let matchTotalText: string;
+                if (evo.front.hasCarry) {
+                  matchTotalText = 'Carry';
+                } else if (frontLineVal !== null && backLineVal !== null) {
+                  const total = frontLineVal + backLineVal;
+                  matchTotalText = total > 0 ? `+${total}` : total < 0 ? `${total}` : 'Even';
+                } else {
+                  matchTotalText = '—';
+                }
+                pairSegmentResults[totalKey] = { resultText: matchTotalText, hasCarry: evo.front.hasCarry };
               } catch (e) {
                 // Non-fatal: if pressure evolution fails for a pair, skip it
               }

@@ -3267,38 +3267,44 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         });
       }
 
-      // ── Presiones — ÚNICA apuesta con desplegable ──────────────────────────
+      // ── Presiones — sin desplegable, solo muestra el resultado del Match Total (18 hoyos) ──
       const presFront = getAmt('Presiones Front');
       const presBack  = getAmt('Presiones Back') + getAmt('Presiones Back (Carry x2+Match)');
       const presMatch = getAmt('Presiones Match 18');
       const presSum   = presFront + presBack + presMatch;
       if (presSum !== 0) {
-        const backLabel = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Back 9 (Carry)' : 'Back 9';
-        const backBt    = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
-        const presSegs = [
-          ...(presFront !== 0 ? [seg('Front 9',  'Presiones Front')]   : []),
-          ...(presBack  !== 0 ? [seg(backLabel,   backBt)]             : []),
-          ...(presMatch !== 0 ? [seg('Total 18', 'Presiones Match 18')]: []),
-        ];
+        // Leer el resultado del match total desde el snapshot (guardado al cerrar)
+        // Key: "playerAId::playerBId::Presiones Total::total"
+        const matchTotalSaved = getSegResult('Presiones Total', 'total');
+
+        // Fallback para snapshots legacy: derivar desde front/back descriptions
+        let matchTotalText: string | undefined;
+        if (matchTotalSaved) {
+          matchTotalText = matchTotalSaved.resultText;
+        } else {
+          // Legacy: intentar leer de front/back guardados
+          const frontSeg = getSegResult('Presiones Front', 'front');
+          if (frontSeg?.hasCarry) {
+            matchTotalText = 'Carry';
+          } else if (frontSeg) {
+            const backSeg = getSegResult('Presiones Back', 'back');
+            if (frontSeg && backSeg) {
+              const fv = frontSeg.resultText.match(/^([+-]?\d+)/);
+              const bv = backSeg.resultText.match(/^([+-]?\d+)/);
+              if (fv && bv) {
+                const total = parseInt(fv[1], 10) + parseInt(bv[1], 10);
+                matchTotalText = total > 0 ? `+${total}` : total < 0 ? `${total}` : 'Even';
+              }
+            }
+          }
+        }
+
         groups.push({
           key: 'hist_presiones', label: 'Presiones', configKey: 'pressures',
-          segments: presSegs, // Único desplegable habilitado en histórico
+          segments: [], // Sin desplegable — resultado del match se muestra inline
           getTotal: () => presSum,
-          getSegmentData: (k) => {
-            const bt = k.includes('Front') ? 'Presiones Front'
-                     : k.includes('Match') ? 'Presiones Match 18'
-                     : backBt;
-            const segName = bt === 'Presiones Front' ? 'front' : bt === 'Presiones Match 18' ? 'total' : 'back';
-            const lookupBt = bt === 'Presiones Back (Carry x2+Match)' ? 'Presiones Back' : bt;
-            const savedSeg = getSegResult(lookupBt, segName);
-            if (savedSeg) {
-              const display = savedSeg.hasCarry ? `${savedSeg.resultText} (Carry)` : savedSeg.resultText;
-              return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: display };
-            }
-            // Legacy: leer descripción del ledger del snapshot
-            const desc = groupedSummaries[bt]?.details?.[0]?.description;
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
-          },
+          // matchTotalText lo pasamos como description para que el render lo muestre
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: presSum, description: matchTotalText }),
         });
       }
 
@@ -4335,9 +4341,31 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                       )
                     )}
-                    <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
-                      {group.label}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
+                        {group.label}
+                      </span>
+                      {/* Presiones histórico: mostrar resultado del Match (18 hoyos) inline */}
+                      {isHistorical && group.key === 'hist_presiones' && !isDisabled && (() => {
+                        const matchText = group.getSegmentData?.('')?.description;
+                        if (!matchText) return null;
+                        const isCarry = matchText === 'Carry';
+                        return (
+                          <span className={cn(
+                            'text-xs font-medium',
+                            isCarry
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : matchText.startsWith('+')
+                                ? 'text-green-600'
+                                : matchText.startsWith('-')
+                                  ? 'text-destructive'
+                                  : 'text-muted-foreground'
+                          )}>
+                            Match {matchText}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     {isDisabled && (
                       <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
                         Cancelada
