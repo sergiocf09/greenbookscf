@@ -3253,103 +3253,69 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         overrideLabel: betType,
       });
 
-      // ── Medal ──────────────────────────────────────────────────────────────
+      // ── Medal — total único, sin desplegable ───────────────────────────────
       const medalFront = getAmt('Medal Front 9');
       const medalBack  = getAmt('Medal Back 9');
       const medalTotal = getAmt('Medal Total');
       const medalSum   = medalFront + medalBack + medalTotal;
       if (medalSum !== 0) {
-        const segs = [
-          ...(medalFront !== 0 ? [seg('Front 9', 'Medal Front 9')]  : []),
-          ...(medalBack  !== 0 ? [seg('Back 9',  'Medal Back 9')]   : []),
-          ...(medalTotal !== 0 ? [seg('Total 18','Medal Total')]     : []),
-        ];
         groups.push({
           key: 'hist_medal', label: 'Medal', configKey: 'medal',
-          segments: segs,
+          segments: [], // Sin desplegable en histórico — solo total
           getTotal: () => medalSum,
-          getSegmentData: (k) => {
-            const bt = k === `hist_seg_Medal Front 9` ? 'Medal Front 9' : k === `hist_seg_Medal Back 9` ? 'Medal Back 9' : 'Medal Total';
-            const seg2seg: Record<string, string> = { 'Medal Front 9': 'front', 'Medal Back 9': 'back', 'Medal Total': 'total' };
-            // Try pre-saved resultText first (new snapshots), then fall back to computing from scores
-            const saved = getSegResult(bt, seg2seg[bt] || 'total');
-            if (saved) {
-              // Parse "43 vs 42" into playerNet / rivalNet for color coding
-              const parts = saved.resultText.split(' vs ');
-              const pNet = parts[0] ? Number(parts[0]) : 0;
-              const rNet = parts[1] ? Number(parts[1]) : 0;
-              return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt) };
-            }
-            // Legacy fallback
-            const [pNet, rNet] = bt === 'Medal Front 9'
-              ? [getPlayerNet(1, 9), getRivalNet(1, 9)]
-              : bt === 'Medal Back 9'
-              ? [getPlayerNet(10, 18), getRivalNet(10, 18)]
-              : [getPlayerNet(1, 18), getRivalNet(1, 18)];
-            return { playerNet: pNet, rivalNet: rNet, amount: getAmt(bt) };
-          },
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: medalSum }),
         });
       }
 
-      // ── Presiones ──────────────────────────────────────────────────────────
+      // ── Presiones — ÚNICA apuesta con desplegable ──────────────────────────
       const presFront = getAmt('Presiones Front');
       const presBack  = getAmt('Presiones Back') + getAmt('Presiones Back (Carry x2+Match)');
       const presMatch = getAmt('Presiones Match 18');
       const presSum   = presFront + presBack + presMatch;
       if (presSum !== 0) {
-        const backLabel = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Back 9 (Carry x2+Match)' : 'Back 9';
+        const backLabel = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Back 9 (Carry)' : 'Back 9';
         const backBt    = getAmt('Presiones Back (Carry x2+Match)') !== 0 ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
         const presSegs = [
-          ...(presFront !== 0 ? [seg('Front 9', 'Presiones Front')]  : []),
-          ...(presBack  !== 0 ? [seg(backLabel, backBt)]             : []),
-          ...(presMatch !== 0 ? [seg('Total 18','Presiones Match 18')]: []),
+          ...(presFront !== 0 ? [seg('Front 9',  'Presiones Front')]   : []),
+          ...(presBack  !== 0 ? [seg(backLabel,   backBt)]             : []),
+          ...(presMatch !== 0 ? [seg('Total 18', 'Presiones Match 18')]: []),
         ];
         groups.push({
           key: 'hist_presiones', label: 'Presiones', configKey: 'pressures',
-          segments: presSegs,
+          segments: presSegs, // Único desplegable habilitado en histórico
           getTotal: () => presSum,
-        getSegmentData: (k) => {
+          getSegmentData: (k) => {
             const bt = k.includes('Front') ? 'Presiones Front'
                      : k.includes('Match') ? 'Presiones Match 18'
                      : backBt;
             const segName = bt === 'Presiones Front' ? 'front' : bt === 'Presiones Match 18' ? 'total' : 'back';
-            // Priority 1: pre-saved resultText from new snapshots (exact finalDisplay + hasCarry)
-            // Use the correct betType key ("Presiones Back" not backBt alias) to look up in snapshot
             const lookupBt = bt === 'Presiones Back (Carry x2+Match)' ? 'Presiones Back' : bt;
             const savedSeg = getSegResult(lookupBt, segName);
             if (savedSeg) {
               const display = savedSeg.hasCarry ? `${savedSeg.resultText} (Carry)` : savedSeg.resultText;
               return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: display };
             }
-            // Legacy: read description from snapshot ledger
+            // Legacy: leer descripción del ledger del snapshot
             const desc = groupedSummaries[bt]?.details?.[0]?.description;
             return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
           },
         });
       }
 
-      // ── Skins ──────────────────────────────────────────────────────────────
+      // ── Skins — total único, sin desplegable ───────────────────────────────
       const skinsFront = getAmt('Skins Front');
       const skinsBack  = getAmt('Skins Back');
       const skinsSum   = skinsFront + skinsBack;
       if (skinsSum !== 0) {
         groups.push({
           key: 'hist_skins', label: 'Skins', configKey: 'skins',
-          segments: [
-            ...(skinsFront !== 0 ? [seg('Front 9', 'Skins Front')] : []),
-            ...(skinsBack  !== 0 ? [seg('Back 9',  'Skins Back')]  : []),
-          ],
+          segments: [],
           getTotal: () => skinsSum,
-          getSegmentData: (k) => {
-            const isFront = k.includes('Front');
-            const bt = isFront ? 'Skins Front' : 'Skins Back';
-            // Skins show skin counts (wins), not net strokes — keep as 0 (rendered differently)
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
-          },
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: skinsSum }),
         });
       }
 
-      // ── Rayas ──────────────────────────────────────────────────────────────
+      // ── Rayas — total único, sin desplegable ───────────────────────────────
       const rayasFront = getAmt('Rayas Front');
       const rayasBack  = getAmt('Rayas Back');
       const rayasMedal = getAmt('Rayas Medal Total');
@@ -3358,24 +3324,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       if (rayasSum !== 0) {
         groups.push({
           key: 'hist_rayas', label: 'Rayas', configKey: 'rayas',
-          segments: [
-            ...(rayasFront !== 0 ? [seg('Front 9',     'Rayas Front')]       : []),
-            ...(rayasBack  !== 0 ? [seg('Back 9',      'Rayas Back')]        : []),
-            ...(rayasMedal !== 0 ? [seg('Medal Total', 'Rayas Medal Total')] : []),
-            ...(rayasOyes  !== 0 ? [seg('Oyes',        'Rayas Oyes')]        : []),
-          ],
+          segments: [],
           getTotal: () => rayasSum,
-          getSegmentData: (k) => {
-            const bt = k.includes('Medal Total') ? 'Rayas Medal Total'
-                     : k.includes('Oyes')        ? 'Rayas Oyes'
-                     : k.includes('Front')       ? 'Rayas Front'
-                     : 'Rayas Back';
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt) };
-          },
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: rayasSum }),
         });
       }
 
-      // ── Putts ──────────────────────────────────────────────────────────────
+      // ── Putts — total único, sin desplegable ───────────────────────────────
       const puttsFront = getAmt('Putts Front');
       const puttsBack  = getAmt('Putts Back');
       const puttsTotal = getAmt('Putts Total');
@@ -3383,19 +3338,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       if (puttsSum !== 0) {
         groups.push({
           key: 'hist_putts', label: 'Putts', configKey: 'putts',
-          segments: [
-            ...(puttsFront !== 0 ? [seg('Front 9', 'Putts Front')] : []),
-            ...(puttsBack  !== 0 ? [seg('Back 9',  'Putts Back')]  : []),
-            ...(puttsTotal !== 0 ? [seg('Total',   'Putts Total')] : []),
-          ],
+          segments: [],
           getTotal: () => puttsSum,
-          getSegmentData: (k) => {
-            const bt = k.includes('Front') ? 'Putts Front' : k.includes('Back') ? 'Putts Back' : 'Putts Total';
-            const segName = bt === 'Putts Front' ? 'front' : bt === 'Putts Back' ? 'back' : 'total';
-            const saved = getSegResult(bt, segName);
-            const desc = saved ? saved.resultText : undefined;
-            return { playerNet: 0, rivalNet: 0, amount: getAmt(bt), description: desc };
-          },
+          getSegmentData: () => ({ playerNet: 0, rivalNet: 0, amount: puttsSum }),
         });
       }
 
@@ -5056,26 +5001,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             ? 'total' 
                             : 'back';
 
-                        // Get evolution data for tooltips
-                        const pressureEvolution = isPressures 
+                        // Get evolution data for tooltips — NEVER call live engines in historical mode
+                        const pressureEvolution = isPressures && !isHistorical
                           ? getPressureEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
-                        const skinsEvolution = isSkins 
+                        const skinsEvolution = isSkins && !isHistorical
                           ? getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
 
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
 
-                        // IMPORTANT: For Presiones in LIVE mode, fallback to evolution finalDisplay
-                        // when description is missing. In HISTORICAL mode, NEVER recalculate —
-                        // the description from the snapshot is the only source of truth.
+                        // In HISTORICAL mode, NEVER recalculate — description from snapshot is the only source.
                         const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
 
-                        // Add Carry label ONLY for Front 9 when main line finished tied.
-                        // BUT avoid duplicating if description already contains "Carry"
+                        // Add Carry label ONLY for Front 9 when main line finished tied (live mode only).
                         const descAlreadyHasCarry = pressureDesc.toLowerCase().includes('carry');
-                        const carrySuffix = isPressures && segmentType === 'front' && pressureSegmentData?.hasCarry && !descAlreadyHasCarry
+                        const carrySuffix = isPressures && !isHistorical && segmentType === 'front' && pressureSegmentData?.hasCarry && !descAlreadyHasCarry
                           ? ' (Carry)'
                           : '';
 
@@ -5084,14 +5026,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           ? '—'
                           : `${pressureDisplayRaw}${carrySuffix}`;
 
-                        // Content to wrap in Popover
-                        // Zoológico segments only show the animal label (no "X vs X" comparison)
+                        // Zoológico segments only show the animal label (no "X vs X" comparison).
+                        // En histórico: Presiones muestra su description. El resto no tiene segments (segments=[]).
                         const isZoologico = group.key === 'zoologico';
-                        // In historical mode, only Medal and Presiones have meaningful "X vs Y" net scores.
-                        // All other historical bets (Skins, Rayas, Putts, etc.) hide the score comparison.
-                        const isHistMedal    = group.key === 'hist_medal';
                         const isHistPresion  = group.key === 'hist_presiones';
-                        const showScoreComparison = !isZoologico && (!isHistorical || isHistMedal || isHistPresion);
+                        // En histórico solo Presiones tiene segments visibles y muestra description
+                        const showScoreComparison = !isZoologico && (!isHistorical || isHistPresion);
                         
                         const segmentContent = (
                           <div className="flex items-center gap-3">
@@ -5133,9 +5073,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
-                            {/* Pressures and Skins get Popover for hole-by-hole evolution */}
-                            {/* EXCEPT for Total 18 in Pressures - it's a simple inference */}
-                            {((isPressures && segmentType !== 'total') || isSkins) ? (
+                            {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
+                            {((isPressures && segmentType !== 'total') || isSkins) && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
