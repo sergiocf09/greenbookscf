@@ -778,18 +778,47 @@ const Index = () => {
       // Update local state immediately for snappy UI
       setPlayerGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, players: newPlayers } : g)));
 
+      const currentGroup = playerGroups.find((g) => g.id === groupId);
+      const existingPlayers = currentGroup?.players ?? [];
+      const existingIds = new Set<string>(existingPlayers.map((p) => p.id));
+
+      // Persist handicap/teeColor changes for EXISTING players (same logic as handlePlayersChange for Grupo 1)
+      if (roundState.id) {
+        for (const newPlayer of newPlayers) {
+          const currentPlayer = existingPlayers.find((p) => p.id === newPlayer.id);
+          if (currentPlayer) {
+            const roundPlayerId = roundPlayerIds.get(newPlayer.id);
+            if (roundPlayerId) {
+              const updates: { handicap_for_round?: number; tee_color?: string } = {};
+
+              if (currentPlayer.handicap !== newPlayer.handicap) {
+                updates.handicap_for_round = newPlayer.handicap;
+              }
+              if (currentPlayer.teeColor !== newPlayer.teeColor && newPlayer.teeColor) {
+                updates.tee_color = newPlayer.teeColor;
+              }
+
+              if (Object.keys(updates).length > 0) {
+                supabase
+                  .from('round_players')
+                  .update(updates)
+                  .eq('id', roundPlayerId)
+                  .then(({ error }) => {
+                    if (error) devError('Error persisting group player changes:', error);
+                  });
+              }
+            }
+          }
+        }
+      }
+
       // Persist any *new* players so they survive refresh
-      const existingIds = new Set<string>();
-      playerGroups.find((g) => g.id === groupId)?.players.forEach((p) => existingIds.add(p.id));
-
       const added = newPlayers.filter((p) => !existingIds.has(p.id));
-      if (!added.length) return;
-
       for (const p of added) {
         await addPlayerToRound(p, groupId);
       }
     },
-    [addPlayerToRound, playerGroups, setPlayerGroups]
+    [addPlayerToRound, playerGroups, setPlayerGroups, roundState.id, roundPlayerIds]
   );
 
   const handleRestorePendingRound = useCallback((roundId: string) => {
