@@ -7,7 +7,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Star, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords } from '@/lib/playerInput';
 import { 
@@ -1516,21 +1516,28 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
             {/* Toggle buttons row */}
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-6">
               {manchasSummary && (
                 <button
                   onClick={() => setShowManchasPanel(v => !v)}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-xl px-5 py-2 transition-colors border',
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
                     showManchasPanel
-                      ? 'bg-destructive/10 border-destructive/40 text-destructive'
-                      : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70'
+                      ? 'bg-destructive/10 border-destructive/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
                   )}
                 >
-                  <span className="text-2xl">⚠️</span>
-                  <span className="text-[10px] font-medium">Manchas</span>
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showManchasPanel || manchasSummary.totalManchas > 0
+                      ? 'bg-destructive text-destructive-foreground'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                  )}>
+                    <X className="h-5 w-5" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
                   {manchasSummary.totalManchas > 0 && (
-                    <span className="text-[10px] font-bold text-destructive">{manchasSummary.totalManchas}</span>
+                    <span className="text-[10px] font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
                   )}
                 </button>
               )}
@@ -1538,16 +1545,23 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <button
                   onClick={() => setShowUnidadesPanel(v => !v)}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-xl px-5 py-2 transition-colors border',
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
                     showUnidadesPanel
-                      ? 'bg-primary/10 border-primary/40 text-primary'
-                      : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70'
+                      ? 'bg-green-500/10 border-green-500/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
                   )}
                 >
-                  <span className="text-2xl">⭐</span>
-                  <span className="text-[10px] font-medium">Unidades</span>
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showUnidadesPanel || unidadesSummary.totalUnidades > 0
+                      ? 'bg-green-500 text-white'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  )}>
+                    <Check className="h-5 w-5" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
                   {unidadesSummary.totalUnidades > 0 && (
-                    <span className="text-[10px] font-bold text-primary">{unidadesSummary.totalUnidades}</span>
+                    <span className="text-[10px] font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
                   )}
                 </button>
               )}
