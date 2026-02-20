@@ -2250,8 +2250,16 @@ export const calculateAllBets = (
       const groupId = groupPlayers[0]?.groupId;
       const resolvedConfig = resolveConfigForGroup(config, groupId);
       if (!resolvedConfig.coneja?.enabled) return;
-      
-      const conejaBets = calculateConejaBets(groupPlayers, scores, course, resolvedConfig, confirmedHoles);
+
+      // Filter by participantIds, same pattern as Culebras/Pinguinos
+      const participatingPlayers = resolveParticipantsForGroup(
+        players,
+        resolvedConfig.coneja.participantIds,
+        groupPlayers
+      );
+      if (participatingPlayers.length < 2) return;
+
+      const conejaBets = calculateConejaBets(participatingPlayers, scores, course, resolvedConfig, confirmedHoles);
       conejaBets.forEach(bet => {
         conejaSummaries.push({
           playerId: bet.winnerId,

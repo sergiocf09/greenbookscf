@@ -757,9 +757,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Calculate Coneja results (scoped to same group)
   const conejaResult = useMemo(() => {
     if (!betConfig.coneja?.enabled || sameGroupPlayers.length < 2) return null;
-    
-    const setResults = calculateConejaSetResults(sameGroupPlayers, scores, course, betConfig, confirmedHoles);
-    const holeDisplays = getConejaHoleDisplays(sameGroupPlayers, scores, course, betConfig, confirmedHoles);
+
+    // Filter by participantIds to respect participation setup
+    const conejaParticipantIds = betConfig.coneja.participantIds;
+    const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
+      ? sameGroupPlayers.filter(p => conejaParticipantIds.includes(p.id))
+      : sameGroupPlayers;
+    const effectiveConejaPlayers = conejaPlayers.length >= 2 ? conejaPlayers : sameGroupPlayers;
+
+    const setResults = calculateConejaSetResults(effectiveConejaPlayers, scores, course, betConfig, confirmedHoles);
+    const holeDisplays = getConejaHoleDisplays(effectiveConejaPlayers, scores, course, betConfig, confirmedHoles);
     const amount = betConfig.coneja.amount || 50;
     
     // Get winners for display

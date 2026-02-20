@@ -3917,7 +3917,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // Calculate Coneja results for this pair
         // CRITICAL: Use groupPlayers (not allPlayers) to match the engine's per-group Coneja scoping.
         // The engine calculates Coneja per group via groupPlayersByGroup, so the detail view must too.
-        const conejaBets = calculateConejaBets(groupPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
+        // Also filter by participantIds to respect participation setup.
+        const conejaParticipantIds = effectiveBetConfig.coneja?.participantIds;
+        const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
+          ? groupPlayers.filter(p => conejaParticipantIds.includes(p.id))
+          : groupPlayers;
+        const conejaBets = calculateConejaBets(conejaPlayers.length >= 2 ? conejaPlayers : groupPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
         
         const playerWinsFromRival = conejaBets
           .filter(b => b.winnerId === player.id && b.loserId === rival.id)
