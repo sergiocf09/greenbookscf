@@ -1099,6 +1099,45 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // For backward compat
   const stablefordResults = stablefordGroupResults.length > 0 ? stablefordGroupResults : stablefordGlobalResults;
 
+  // Calculate Manchas summary per player (informational only)
+  const manchasSummary = useMemo(() => {
+    if (!betConfig.manchas?.enabled || sameGroupPlayers.length < 2) return null;
+    const MANCHA_MARKERS = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana', 'cuatriput'];
+    const MANCHA_LABELS: Record<string, { label: string; emoji: string }> = {
+      ladies:       { label: 'Ladies',       emoji: '👠' },
+      swingBlanco:  { label: 'Swing Blanco', emoji: '💨' },
+      retruje:      { label: 'Retruje',      emoji: '↩️' },
+      trampa:       { label: 'Trampa',       emoji: '⚠️' },
+      dobleAgua:    { label: 'Doble Agua',   emoji: '🌊' },
+      dobleOB:      { label: 'Doble OB',     emoji: '🚫' },
+      par3GirMas3:  { label: 'Par3 GIR+3',  emoji: '⛳' },
+      dobleDigito:  { label: 'Doble Dígito',emoji: '💀' },
+      moreliana:    { label: 'Moreliana',    emoji: '🎭' },
+      cuatriput:    { label: 'Cuatriput',    emoji: '😱' },
+    };
+    const participatingPlayers = resolveGroupParticipants(betConfig.manchas.participantIds);
+    if (participatingPlayers.length < 2) return null;
+
+    const playerData = participatingPlayers.map(player => {
+      const playerScores = scores.get(player.id) || [];
+      const manchas: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
+      playerScores.forEach(score => {
+        if (!score.markers) return;
+        MANCHA_MARKERS.forEach(key => {
+          const camelKey = key === 'dobleAgua' ? 'dobleAgua' : key === 'dobleOB' ? 'dobleOB' : key;
+          if ((score.markers as any)[camelKey]) {
+            manchas.push({ marker: camelKey, ...MANCHA_LABELS[key] || { label: key, emoji: '❗' }, holeNumber: score.holeNumber });
+          }
+        });
+      });
+      return { player, manchas, total: manchas.length };
+    });
+
+    const totalManchas = playerData.reduce((s, p) => s + p.total, 0);
+    if (totalManchas === 0) return null;
+    return { playerData, totalManchas };
+  }, [sameGroupPlayers, scores, betConfig.manchas]);
+
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
     if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
@@ -1438,10 +1477,58 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </React.Fragment>
         ))}
 
+        {/* Manchas Summary - Informational only, after Zoológico */}
+        {manchasSummary && (
+          <>
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎭</span>
+                  <span className="font-medium text-sm">Manchas</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {manchasSummary.totalManchas} total
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground italic">Informativo</span>
+              </div>
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(manchasSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
+                {manchasSummary.playerData.map(({ player, manchas, total }) => (
+                  <Popover key={player.id}>
+                    <PopoverTrigger asChild>
+                      <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                        <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {total}
+                        </span>
+                      </button>
+                    </PopoverTrigger>
+                    {total > 0 && (
+                      <PopoverContent className="w-auto p-3" side="top">
+                        <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                        <div className="space-y-1">
+                          {manchas.map((m, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{m.emoji}</span>
+                              <span>H{m.holeNumber}</span>
+                              <span>{m.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    )}
+                  </Popover>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Coneja - Patas system (before Medal General) */}
         {conejaResult && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t border-border/50" />}
             <ConejaSection
               conejaResult={conejaResult}
               players={sameGroupPlayers}
