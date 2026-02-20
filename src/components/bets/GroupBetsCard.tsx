@@ -2124,7 +2124,7 @@ export const getStablefordBilateralResult = (
   const computeForPool = (pool: Player[]): { amount: number } | null => {
     const points = betConfig.stableford!.points || DEFAULT_STABLEFORD_POINTS;
     const playerHandicaps = betConfig.stableford!.playerHandicaps || [];
-    const amount = betConfig.stableford!.amount || 100;
+    const amount = betConfig.stableford!.amount ?? 100;
 
     const calcPoints = (p: Player): number => {
       const pScores = scores.get(p.id) || [];
