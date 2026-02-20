@@ -1774,7 +1774,7 @@ export const calculateStablefordBets = (
   if (!config.stableford?.enabled || players.length < 2) return [];
   
   const summaries: BetSummary[] = [];
-  const amount = config.stableford.amount || 100;
+  const amount = config.stableford.amount ?? 100;
   const points = config.stableford.points;
   const playerHandicaps = config.stableford.playerHandicaps || [];
   
