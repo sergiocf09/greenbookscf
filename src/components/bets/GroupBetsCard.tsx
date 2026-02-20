@@ -1134,7 +1134,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
 
     const totalManchas = playerData.reduce((s, p) => s + p.total, 0);
-    if (totalManchas === 0) return null;
     return { playerData, totalManchas };
   }, [sameGroupPlayers, scores, betConfig.manchas]);
 
@@ -1168,7 +1167,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
 
     const totalUnidades = playerData.reduce((s, p) => s + p.total, 0);
-    if (totalUnidades === 0) return null;
     return { playerData, totalUnidades };
   }, [sameGroupPlayers, scores, betConfig.units]);
 
