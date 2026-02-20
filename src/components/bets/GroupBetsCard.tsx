@@ -1693,10 +1693,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       {active.map(({ player, manchas, total }) => (
                         <Popover key={player.id}>
                           <PopoverTrigger asChild>
-                            <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                              <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                              <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                              <span className="text-lg font-bold leading-none text-destructive">{total}</span>
+                            <button className="flex flex-col items-center bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg px-1 py-2 cursor-pointer w-full">
+                              <span className="text-[10px] text-muted-foreground text-center leading-tight line-clamp-2 h-[2.4em] flex items-center justify-center w-full px-0.5">
+                                {formatPlayerNameTwoWords(player.name)}
+                              </span>
+                              <span className="text-xl font-bold leading-none text-destructive mt-1">{total}</span>
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-3" side="top">
@@ -1730,10 +1731,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       {active.map(({ player, unidades, total }) => (
                         <Popover key={player.id}>
                           <PopoverTrigger asChild>
-                            <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                              <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                              <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                              <span className="text-lg font-bold leading-none text-primary">{total}</span>
+                            <button className="flex flex-col items-center bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg px-1 py-2 cursor-pointer w-full">
+                              <span className="text-[10px] text-muted-foreground text-center leading-tight line-clamp-2 h-[2.4em] flex items-center justify-center w-full px-0.5">
+                                {formatPlayerNameTwoWords(player.name)}
+                              </span>
+                              <span className="text-xl font-bold leading-none text-primary mt-1">{total}</span>
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-3" side="top">
