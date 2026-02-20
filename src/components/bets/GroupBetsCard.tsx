@@ -7,7 +7,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords } from '@/lib/playerInput';
 import { 
@@ -1170,6 +1170,52 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { playerData, totalUnidades };
   }, [sameGroupPlayers, scores, betConfig.units]);
 
+
+  // Calculate Oyeses summary per par-3 hole (informational only)
+  const oyesesSummary = useMemo(() => {
+    if (!betConfig.oyeses?.enabled) return null;
+    const playerConfigs = betConfig.oyeses.playerConfigs || [];
+    const activeConfigs = playerConfigs.filter(c => c.enabled);
+    if (activeConfigs.length < 2) return null;
+
+    const hasAcumulados = activeConfigs.some(c => c.modality === 'acumulados');
+    const hasSangron = activeConfigs.some(c => c.modality === 'sangron');
+    const acumuladosPlayerIds = activeConfigs.filter(c => c.modality === 'acumulados').map(c => c.playerId);
+    const sangronPlayerIds = activeConfigs.filter(c => c.modality === 'sangron').map(c => c.playerId);
+
+    // Get par 3 holes from course
+    const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+
+    const holeSummaries = par3Holes.map(holeNumber => {
+      const acumuladosRankings = hasAcumulados ? acumuladosPlayerIds
+        .map(playerId => {
+          const s = scores.get(playerId)?.find(sc => sc.holeNumber === holeNumber);
+          return { playerId, rank: s?.oyesProximity ?? null };
+        })
+        .sort((a, b) => {
+          if (a.rank === null) return 1;
+          if (b.rank === null) return -1;
+          return a.rank - b.rank;
+        }) : null;
+
+      const sangronRankings = hasSangron ? sangronPlayerIds
+        .map(playerId => {
+          const s = scores.get(playerId)?.find(sc => sc.holeNumber === holeNumber);
+          return { playerId, rank: s?.oyesProximitySangron ?? null };
+        })
+        .sort((a, b) => {
+          if (a.rank === null) return 1;
+          if (b.rank === null) return -1;
+          return a.rank - b.rank;
+        }) : null;
+
+      const hasData = (acumuladosRankings?.some(r => r.rank !== null) || sangronRankings?.some(r => r.rank !== null));
+      return { holeNumber, acumuladosRankings, sangronRankings, hasData };
+    }).filter(h => h.hasData);
+
+    return { holeSummaries, hasAcumulados, hasSangron };
+  }, [betConfig.oyeses, scores, course, sameGroupPlayers]);
+
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
     if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
@@ -1190,6 +1236,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showZooDetail, setShowZooDetail] = useState<ZooAnimalType | null>(null);
   const [showManchasPanel, setShowManchasPanel] = useState(false);
   const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
+  const [showOyesesPanel, setShowOyesesPanel] = useState(false);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -1512,7 +1559,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         ))}
 
         {/* Manchas & Unidades toggle buttons - Informational */}
-        {(manchasSummary || unidadesSummary) && (
+        {(manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
             {/* Toggle buttons row */}
@@ -1562,6 +1609,30 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
                   {unidadesSummary.totalUnidades > 0 && (
                     <span className="text-[10px] font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
+                  )}
+                </button>
+              )}
+              {oyesesSummary && (
+                <button
+                  onClick={() => setShowOyesesPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
+                    showOyesesPanel
+                      ? 'bg-blue-500/10 border-blue-500/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
+                  )}
+                >
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showOyesesPanel || oyesesSummary.holeSummaries.length > 0
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  )}>
+                    <Target className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
+                  {oyesesSummary.holeSummaries.length > 0 && (
+                    <span className="text-[10px] font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length} P3</span>
                   )}
                 </button>
               )}
@@ -1634,6 +1705,67 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     </Popover>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Oyeses panel */}
+            {showOyesesPanel && oyesesSummary && (
+              <div className="space-y-2">
+                {oyesesSummary.holeSummaries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
+                ) : (
+                  oyesesSummary.holeSummaries.map(hole => {
+                    const RANK_STYLES = ['🥇', '🥈', '🥉'];
+                    const getPlayer = (id: string) => sameGroupPlayers.find(p => p.id === id);
+                    return (
+                      <div key={hole.holeNumber} className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+                        <span className="text-[11px] font-semibold text-muted-foreground">Hoyo {hole.holeNumber} — Par 3</span>
+                        {/* Acumulado rankings */}
+                        {hole.acumuladosRankings && (
+                          <div className="space-y-0.5">
+                            {oyesesSummary.hasSangron && (
+                              <span className="text-[9px] font-medium text-blue-500 uppercase tracking-wide">Acumulado</span>
+                            )}
+                            <div className="flex flex-wrap gap-1.5">
+                              {hole.acumuladosRankings.map(({ playerId, rank }) => {
+                                const p = getPlayer(playerId);
+                                if (!p) return null;
+                                return (
+                                  <div key={playerId} className="flex items-center gap-1 bg-background rounded px-1.5 py-0.5">
+                                    <span className="text-[11px]">{rank !== null && rank <= 3 ? RANK_STYLES[rank - 1] : rank !== null ? `${rank}°` : '—'}</span>
+                                    <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                                    <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {/* Sangrón rankings */}
+                        {hole.sangronRankings && (
+                          <div className="space-y-0.5">
+                            {oyesesSummary.hasAcumulados && (
+                              <span className="text-[9px] font-medium text-amber-500 uppercase tracking-wide">Sangrón</span>
+                            )}
+                            <div className="flex flex-wrap gap-1.5">
+                              {hole.sangronRankings.map(({ playerId, rank }) => {
+                                const p = getPlayer(playerId);
+                                if (!p) return null;
+                                return (
+                                  <div key={playerId} className="flex items-center gap-1 bg-background rounded px-1.5 py-0.5">
+                                    <span className="text-[11px]">{rank !== null && rank <= 3 ? RANK_STYLES[rank - 1] : rank !== null ? `${rank}°` : '—'}</span>
+                                    <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                                    <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
           </>
