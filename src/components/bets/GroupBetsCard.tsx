@@ -1174,14 +1174,25 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Calculate Oyeses summary per par-3 hole (informational only)
   const oyesesSummary = useMemo(() => {
     if (!betConfig.oyeses?.enabled) return null;
-    const playerConfigs = betConfig.oyeses.playerConfigs || [];
-    const activeConfigs = playerConfigs.filter(c => c.enabled);
-    if (activeConfigs.length < 2) return null;
 
-    const hasAcumulados = activeConfigs.some(c => c.modality === 'acumulados');
-    const hasSangron = activeConfigs.some(c => c.modality === 'sangron');
-    const acumuladosPlayerIds = activeConfigs.filter(c => c.modality === 'acumulados').map(c => c.playerId);
-    const sangronPlayerIds = activeConfigs.filter(c => c.modality === 'sangron').map(c => c.playerId);
+    // Use the same fallback logic as oyesesCalculations.ts:
+    // If a player has no explicit config entry, default to enabled with inherited modality.
+    const playerConfigs = betConfig.oyeses.playerConfigs || [];
+    const fallbackModality = playerConfigs[0]?.modality ?? 'acumulados';
+
+    const getEffectiveConfig = (playerId: string) => {
+      const found = playerConfigs.find(c => c.playerId === playerId);
+      if (found) return { enabled: found.enabled, modality: found.modality };
+      return { enabled: true, modality: fallbackModality };
+    };
+
+    const activePlayers = sameGroupPlayers.filter(p => getEffectiveConfig(p.id).enabled);
+    if (activePlayers.length < 2) return null;
+
+    const hasAcumulados = activePlayers.some(p => getEffectiveConfig(p.id).modality === 'acumulados');
+    const hasSangron = activePlayers.some(p => getEffectiveConfig(p.id).modality === 'sangron');
+    const acumuladosPlayerIds = activePlayers.filter(p => getEffectiveConfig(p.id).modality === 'acumulados').map(p => p.id);
+    const sangronPlayerIds = activePlayers.filter(p => getEffectiveConfig(p.id).modality === 'sangron').map(p => p.id);
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
@@ -1209,7 +1220,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           return a.rank - b.rank;
         }) : null;
 
-      const hasData = (acumuladosRankings?.some(r => r.rank !== null) || sangronRankings?.some(r => r.rank !== null));
+      // A hole is "played" (show it) if:
+      // - At least one player has a rank (entered proximity), OR
+      // - In acumulados mode, ANY player has a score entry for this hole (carry hole counts too)
+      const hasAcumuladoEntry = acumuladosRankings
+        ? acumuladosPlayerIds.some(pid => scores.get(pid)?.some(sc => sc.holeNumber === holeNumber))
+        : false;
+      const hasData = (acumuladosRankings?.some(r => r.rank !== null) || sangronRankings?.some(r => r.rank !== null) || hasAcumuladoEntry);
       return { holeNumber, acumuladosRankings, sangronRankings, hasData };
     }).filter(h => h.hasData);
 
@@ -1717,6 +1734,22 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   oyesesSummary.holeSummaries.map(hole => {
                     const RANK_STYLES = ['🥇', '🥈', '🥉'];
                     const getPlayer = (id: string) => sameGroupPlayers.find(p => p.id === id);
+
+                    const renderRankBadge = (rank: number | null, isAcumulados: boolean) => {
+                      if (rank !== null) {
+                        return <span className="text-[11px]">{rank <= 3 ? RANK_STYLES[rank - 1] : `${rank}°`}</span>;
+                      }
+                      // null = didn't reach green (acumulados) or not entered (sangrón)
+                      if (isAcumulados) {
+                        return (
+                          <span className="flex items-center justify-center w-4 h-4 rounded-full bg-destructive/15">
+                            <X className="h-2.5 w-2.5 text-destructive" strokeWidth={3} />
+                          </span>
+                        );
+                      }
+                      return <span className="text-[11px] text-muted-foreground">—</span>;
+                    };
+
                     return (
                       <div key={hole.holeNumber} className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
                         <span className="text-[11px] font-semibold text-muted-foreground">Hoyo {hole.holeNumber} — Par 3</span>
@@ -1731,8 +1764,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                 const p = getPlayer(playerId);
                                 if (!p) return null;
                                 return (
-                                  <div key={playerId} className="flex items-center gap-1 bg-background rounded px-1.5 py-0.5">
-                                    <span className="text-[11px]">{rank !== null && rank <= 3 ? RANK_STYLES[rank - 1] : rank !== null ? `${rank}°` : '—'}</span>
+                                  <div key={playerId} className="flex items-center gap-1.5 bg-background rounded px-1.5 py-0.5">
+                                    {renderRankBadge(rank, true)}
                                     <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                                     <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
                                   </div>
@@ -1752,8 +1785,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                 const p = getPlayer(playerId);
                                 if (!p) return null;
                                 return (
-                                  <div key={playerId} className="flex items-center gap-1 bg-background rounded px-1.5 py-0.5">
-                                    <span className="text-[11px]">{rank !== null && rank <= 3 ? RANK_STYLES[rank - 1] : rank !== null ? `${rank}°` : '—'}</span>
+                                  <div key={playerId} className="flex items-center gap-1.5 bg-background rounded px-1.5 py-0.5">
+                                    {renderRankBadge(rank, false)}
                                     <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                                     <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
                                   </div>
