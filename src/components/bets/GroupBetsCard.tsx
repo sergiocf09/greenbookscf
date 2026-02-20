@@ -1579,29 +1579,29 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {(manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
-            {/* Toggle buttons row */}
+            {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
             <div className="flex justify-center gap-6">
-              {manchasSummary && (
+              {oyesesSummary && (
                 <button
-                  onClick={() => setShowManchasPanel(v => !v)}
+                  onClick={() => setShowOyesesPanel(v => !v)}
                   className={cn(
                     'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
-                    showManchasPanel
-                      ? 'bg-destructive/10 border-destructive/40'
+                    showOyesesPanel
+                      ? 'bg-blue-500/10 border-blue-500/40'
                       : 'bg-muted/40 border-transparent hover:bg-muted/70'
                   )}
                 >
                   <div className={cn(
                     'w-9 h-9 rounded-full flex items-center justify-center transition-all',
-                    showManchasPanel || manchasSummary.totalManchas > 0
-                      ? 'bg-destructive text-destructive-foreground'
-                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                    showOyesesPanel || oyesesSummary.holeSummaries.length > 0
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   )}>
-                    <X className="h-5 w-5" strokeWidth={2.5} />
+                    <Target className="h-5 w-5" strokeWidth={2} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
-                  {manchasSummary.totalManchas > 0 && (
-                    <span className="text-[10px] font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
+                  {oyesesSummary.holeSummaries.length > 0 && (
+                    <span className="text-[10px] font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length} P3</span>
                   )}
                 </button>
               )}
@@ -1629,27 +1629,27 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}
                 </button>
               )}
-              {oyesesSummary && (
+              {manchasSummary && (
                 <button
-                  onClick={() => setShowOyesesPanel(v => !v)}
+                  onClick={() => setShowManchasPanel(v => !v)}
                   className={cn(
                     'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
-                    showOyesesPanel
-                      ? 'bg-blue-500/10 border-blue-500/40'
+                    showManchasPanel
+                      ? 'bg-destructive/10 border-destructive/40'
                       : 'bg-muted/40 border-transparent hover:bg-muted/70'
                   )}
                 >
                   <div className={cn(
                     'w-9 h-9 rounded-full flex items-center justify-center transition-all',
-                    showOyesesPanel || oyesesSummary.holeSummaries.length > 0
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    showManchasPanel || manchasSummary.totalManchas > 0
+                      ? 'bg-destructive text-destructive-foreground'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
                   )}>
-                    <Target className="h-5 w-5" strokeWidth={2} />
+                    <X className="h-5 w-5" strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
-                  {oyesesSummary.holeSummaries.length > 0 && (
-                    <span className="text-[10px] font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length} P3</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
+                  {manchasSummary.totalManchas > 0 && (
+                    <span className="text-[10px] font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
                   )}
                 </button>
               )}
@@ -1725,79 +1725,95 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               </div>
             )}
 
-            {/* Oyeses panel */}
+            {/* Oyeses panel — columnas por hoyo */}
             {showOyesesPanel && oyesesSummary && (
               <div className="space-y-2">
                 {oyesesSummary.holeSummaries.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
                 ) : (
-                  oyesesSummary.holeSummaries.map(hole => {
-                    const RANK_STYLES = ['🥇', '🥈', '🥉'];
-                    const getPlayer = (id: string) => sameGroupPlayers.find(p => p.id === id);
-
-                    const renderRankBadge = (rank: number | null, isAcumulados: boolean) => {
-                      if (rank !== null) {
-                        return <span className="text-[11px]">{rank <= 3 ? RANK_STYLES[rank - 1] : `${rank}°`}</span>;
-                      }
-                      // null = didn't reach green (acumulados) or not entered (sangrón)
-                      if (isAcumulados) {
-                        return (
-                          <span className="flex items-center justify-center w-4 h-4 rounded-full bg-destructive/15">
-                            <X className="h-2.5 w-2.5 text-destructive" strokeWidth={3} />
-                          </span>
-                        );
-                      }
-                      return <span className="text-[11px] text-muted-foreground">—</span>;
-                    };
-
-                    return (
-                      <div key={hole.holeNumber} className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
-                        <span className="text-[11px] font-semibold text-muted-foreground">Hoyo {hole.holeNumber} — Par 3</span>
-                        {/* Acumulado rankings */}
-                        {hole.acumuladosRankings && (
-                          <div className="space-y-0.5">
-                            {oyesesSummary.hasSangron && (
-                              <span className="text-[9px] font-medium text-blue-500 uppercase tracking-wide">Acumulado</span>
-                            )}
-                            <div className="flex flex-wrap gap-1.5">
-                              {hole.acumuladosRankings.map(({ playerId, rank }) => {
-                                const p = getPlayer(playerId);
-                                if (!p) return null;
-                                return (
-                                  <div key={playerId} className="flex items-center gap-1.5 bg-background rounded px-1.5 py-0.5">
-                                    {renderRankBadge(rank, true)}
-                                    <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                                    <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                  <>
+                    {/* Acumulados columns */}
+                    {oyesesSummary.hasAcumulados && (() => {
+                      const acumHoles = oyesesSummary.holeSummaries.filter(h => h.acumuladosRankings);
+                      if (acumHoles.length === 0) return null;
+                      return (
+                        <div className="space-y-1">
+                          {oyesesSummary.hasSangron && (
+                            <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-wide">Acumulado</span>
+                          )}
+                          <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {acumHoles.map(hole => {
+                              // Only show players who reached green (rank !== null)
+                              const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
+                              return (
+                                <div key={hole.holeNumber} className="flex flex-col items-center gap-1 min-w-[44px] bg-muted/40 rounded-lg px-1.5 py-2">
+                                  <span className="text-[10px] font-bold text-blue-500">H{hole.holeNumber}</span>
+                                  <div className="w-full h-px bg-border/50" />
+                                  {ranked.length === 0 ? (
+                                    <span className="text-[9px] text-muted-foreground">—</span>
+                                  ) : (
+                                    ranked.map(({ playerId, rank }) => {
+                                      const p = sameGroupPlayers.find(pl => pl.id === playerId);
+                                      if (!p) return null;
+                                      const MEDALS = ['🥇', '🥈', '🥉'];
+                                      return (
+                                        <div key={playerId} className="flex flex-col items-center gap-0.5">
+                                          <span className="text-[11px] leading-none">{rank !== null && rank <= 3 ? MEDALS[rank - 1] : `${rank}°`}</span>
+                                          <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
-                        {/* Sangrón rankings */}
-                        {hole.sangronRankings && (
-                          <div className="space-y-0.5">
-                            {oyesesSummary.hasAcumulados && (
-                              <span className="text-[9px] font-medium text-amber-500 uppercase tracking-wide">Sangrón</span>
-                            )}
-                            <div className="flex flex-wrap gap-1.5">
-                              {hole.sangronRankings.map(({ playerId, rank }) => {
-                                const p = getPlayer(playerId);
-                                if (!p) return null;
-                                return (
-                                  <div key={playerId} className="flex items-center gap-1.5 bg-background rounded px-1.5 py-0.5">
-                                    {renderRankBadge(rank, false)}
-                                    <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                                    <span className="text-[10px] font-medium">{p.name.split(' ')[0]}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Sangrón columns */}
+                    {oyesesSummary.hasSangron && (() => {
+                      const sangronHoles = oyesesSummary.holeSummaries.filter(h => h.sangronRankings);
+                      if (sangronHoles.length === 0) return null;
+                      return (
+                        <div className="space-y-1">
+                          {oyesesSummary.hasAcumulados && (
+                            <span className="text-[9px] font-semibold text-amber-500 uppercase tracking-wide">Sangrón</span>
+                          )}
+                          <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {sangronHoles.map(hole => {
+                              // In Sangrón, show all players (those with rank, sorted; nulls last)
+                              const allRanked = [...(hole.sangronRankings || [])].sort((a, b) => {
+                                if (a.rank === null) return 1;
+                                if (b.rank === null) return -1;
+                                return a.rank - b.rank;
+                              });
+                              return (
+                                <div key={hole.holeNumber} className="flex flex-col items-center gap-1 min-w-[44px] bg-muted/40 rounded-lg px-1.5 py-2">
+                                  <span className="text-[10px] font-bold text-amber-500">H{hole.holeNumber}</span>
+                                  <div className="w-full h-px bg-border/50" />
+                                  {allRanked.map(({ playerId, rank }) => {
+                                    const p = sameGroupPlayers.find(pl => pl.id === playerId);
+                                    if (!p) return null;
+                                    const MEDALS = ['🥇', '🥈', '🥉'];
+                                    return (
+                                      <div key={playerId} className="flex flex-col items-center gap-0.5">
+                                        <span className="text-[11px] leading-none">
+                                          {rank !== null ? (rank <= 3 ? MEDALS[rank - 1] : `${rank}°`) : '—'}
+                                        </span>
+                                        <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
             )}
