@@ -264,12 +264,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
         // Build a minimal bet config that inherits all active bet types but removes
         // group-scoped bets that shouldn't apply cross-group (Culebras, Pinguinos, Manchas, Zoologico, Coneja)
+        // CRITICAL: Clear participantIds for all bilateral bets so the engine doesn't filter out
+        // cross-group players. The original participantIds only contains Group 1 IDs, which would
+        // cause Group 2 players to be excluded from calculations, resulting in $0 for all bets.
         const crossGroupConfig: BetConfig = {
           ...effectiveBetConfig,
           bilateralHandicaps: [
             ...(effectiveBetConfig.bilateralHandicaps || []),
             crossGroupBilateral,
           ],
+          // Clear participantIds so both cross-group players are always included
+          medal: { ...effectiveBetConfig.medal, participantIds: [] },
+          pressures: { ...effectiveBetConfig.pressures, participantIds: [] },
+          skins: { ...effectiveBetConfig.skins, participantIds: [] },
+          caros: { ...effectiveBetConfig.caros, participantIds: [] },
+          units: { ...effectiveBetConfig.units, participantIds: [] },
           // Disable group-scoped bets for cross-group pairs
           manchas: { ...effectiveBetConfig.manchas, enabled: false },
           culebras: { ...effectiveBetConfig.culebras, enabled: false },
