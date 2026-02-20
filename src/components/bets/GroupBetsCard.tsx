@@ -1188,6 +1188,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
   const [showPinguinosDetail, setShowPinguinosDetail] = useState(false);
   const [showZooDetail, setShowZooDetail] = useState<ZooAnimalType | null>(null);
+  const [showManchasPanel, setShowManchasPanel] = useState(false);
+  const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -1509,99 +1511,117 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </React.Fragment>
         ))}
 
-        {/* Manchas Summary - Informational only, after Zoológico */}
-        {manchasSummary && (
+        {/* Manchas & Unidades toggle buttons - Informational */}
+        {(manchasSummary || unidadesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🎭</span>
-                  <span className="font-medium text-sm">Manchas</span>
-                  <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {manchasSummary.totalManchas} total
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground italic">Informativo</span>
-              </div>
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(manchasSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
-                {manchasSummary.playerData.map(({ player, manchas, total }) => (
-                  <Popover key={player.id}>
-                    <PopoverTrigger asChild>
-                      <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                        <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {total}
-                        </span>
-                      </button>
-                    </PopoverTrigger>
-                    {total > 0 && (
-                      <PopoverContent className="w-auto p-3" side="top">
-                        <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                        <div className="space-y-1">
-                          {manchas.map((m, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{m.emoji}</span>
-                              <span>H{m.holeNumber}</span>
-                              <span>{m.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    )}
-                  </Popover>
-                ))}
-              </div>
+            {/* Toggle buttons row */}
+            <div className="flex justify-center gap-4">
+              {manchasSummary && (
+                <button
+                  onClick={() => setShowManchasPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-xl px-5 py-2 transition-colors border',
+                    showManchasPanel
+                      ? 'bg-destructive/10 border-destructive/40 text-destructive'
+                      : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70'
+                  )}
+                >
+                  <span className="text-2xl">⚠️</span>
+                  <span className="text-[10px] font-medium">Manchas</span>
+                  {manchasSummary.totalManchas > 0 && (
+                    <span className="text-[10px] font-bold text-destructive">{manchasSummary.totalManchas}</span>
+                  )}
+                </button>
+              )}
+              {unidadesSummary && (
+                <button
+                  onClick={() => setShowUnidadesPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-xl px-5 py-2 transition-colors border',
+                    showUnidadesPanel
+                      ? 'bg-primary/10 border-primary/40 text-primary'
+                      : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70'
+                  )}
+                >
+                  <span className="text-2xl">⭐</span>
+                  <span className="text-[10px] font-medium">Unidades</span>
+                  {unidadesSummary.totalUnidades > 0 && (
+                    <span className="text-[10px] font-bold text-primary">{unidadesSummary.totalUnidades}</span>
+                  )}
+                </button>
+              )}
             </div>
-          </>
-        )}
 
-        {/* Unidades Summary - Informational only, after Manchas */}
-        {unidadesSummary && (
-          <>
-            <div className="border-t border-border/50" />
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⭐</span>
-                  <span className="font-medium text-sm">Unidades</span>
-                  <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {unidadesSummary.totalUnidades} total
-                  </span>
+            {/* Manchas panel */}
+            {showManchasPanel && manchasSummary && (
+              <div className="space-y-1.5">
+                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(manchasSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
+                  {manchasSummary.playerData.map(({ player, manchas, total }) => (
+                    <Popover key={player.id}>
+                      <PopoverTrigger asChild>
+                        <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                          <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                          <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                          <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {total}
+                          </span>
+                        </button>
+                      </PopoverTrigger>
+                      {total > 0 && (
+                        <PopoverContent className="w-auto p-3" side="top">
+                          <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                          <div className="space-y-1">
+                            {manchas.map((m, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{m.emoji}</span>
+                                <span>H{m.holeNumber}</span>
+                                <span>{m.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      )}
+                    </Popover>
+                  ))}
                 </div>
-                <span className="text-[10px] text-muted-foreground italic">Informativo</span>
               </div>
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(unidadesSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
-                {unidadesSummary.playerData.map(({ player, unidades, total }) => (
-                  <Popover key={player.id}>
-                    <PopoverTrigger asChild>
-                      <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                        <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground')}>
-                          {total}
-                        </span>
-                      </button>
-                    </PopoverTrigger>
-                    {total > 0 && (
-                      <PopoverContent className="w-auto p-3" side="top">
-                        <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                        <div className="space-y-1">
-                          {unidades.map((u, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{u.emoji}</span>
-                              <span>H{u.holeNumber}</span>
-                              <span>{u.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    )}
-                  </Popover>
-                ))}
+            )}
+
+            {/* Unidades panel */}
+            {showUnidadesPanel && unidadesSummary && (
+              <div className="space-y-1.5">
+                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(unidadesSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
+                  {unidadesSummary.playerData.map(({ player, unidades, total }) => (
+                    <Popover key={player.id}>
+                      <PopoverTrigger asChild>
+                        <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                          <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                          <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                          <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                            {total}
+                          </span>
+                        </button>
+                      </PopoverTrigger>
+                      {total > 0 && (
+                        <PopoverContent className="w-auto p-3" side="top">
+                          <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                          <div className="space-y-1">
+                            {unidades.map((u, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{u.emoji}</span>
+                                <span>H{u.holeNumber}</span>
+                                <span>{u.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      )}
+                    </Popover>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
 
