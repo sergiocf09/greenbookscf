@@ -1138,6 +1138,40 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { playerData, totalManchas };
   }, [sameGroupPlayers, scores, betConfig.manchas]);
 
+  // Calculate Unidades summary per player (informational only)
+  const unidadesSummary = useMemo(() => {
+    if (!betConfig.units?.enabled || sameGroupPlayers.length < 2) return null;
+    const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
+    const UNIT_LABELS: Record<string, { label: string; emoji: string }> = {
+      birdie:    { label: 'Birdie',      emoji: '🐦' },
+      eagle:     { label: 'Águila',      emoji: '🦅' },
+      albatross: { label: 'Albatros',    emoji: '🦢' },
+      holeOut:   { label: 'Hole Out',    emoji: '🎯' },
+      aquaPar:   { label: 'Aqua Par',    emoji: '💧' },
+      sandyPar:  { label: 'Sandy Par',   emoji: '🏖️' },
+    };
+    const participatingPlayers = resolveGroupParticipants(betConfig.units.participantIds);
+    if (participatingPlayers.length < 2) return null;
+
+    const playerData = participatingPlayers.map(player => {
+      const playerScores = scores.get(player.id) || [];
+      const unidades: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
+      playerScores.forEach(score => {
+        if (!score.confirmed || !score.strokes || !score.markers) return;
+        UNIT_MARKERS.forEach(key => {
+          if ((score.markers as any)[key]) {
+            unidades.push({ marker: key, ...UNIT_LABELS[key] || { label: key, emoji: '⭐' }, holeNumber: score.holeNumber });
+          }
+        });
+      });
+      return { player, unidades, total: unidades.length };
+    });
+
+    const totalUnidades = playerData.reduce((s, p) => s + p.total, 0);
+    if (totalUnidades === 0) return null;
+    return { playerData, totalUnidades };
+  }, [sameGroupPlayers, scores, betConfig.units]);
+
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
     if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
@@ -1513,6 +1547,54 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               <span>{m.emoji}</span>
                               <span>H{m.holeNumber}</span>
                               <span>{m.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    )}
+                  </Popover>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Unidades Summary - Informational only, after Manchas */}
+        {unidadesSummary && (
+          <>
+            <div className="border-t border-border/50" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⭐</span>
+                  <span className="font-medium text-sm">Unidades</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {unidadesSummary.totalUnidades} total
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground italic">Informativo</span>
+              </div>
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(unidadesSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
+                {unidadesSummary.playerData.map(({ player, unidades, total }) => (
+                  <Popover key={player.id}>
+                    <PopoverTrigger asChild>
+                      <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                        <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                          {total}
+                        </span>
+                      </button>
+                    </PopoverTrigger>
+                    {total > 0 && (
+                      <PopoverContent className="w-auto p-3" side="top">
+                        <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                        <div className="space-y-1">
+                          {unidades.map((u, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{u.emoji}</span>
+                              <span>H{u.holeNumber}</span>
+                              <span>{u.label}</span>
                             </div>
                           ))}
                         </div>
