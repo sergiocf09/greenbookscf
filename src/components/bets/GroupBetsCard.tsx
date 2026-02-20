@@ -1760,7 +1760,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             {Array.from({ length: maxRows }, (_, rowIdx) => (
                               <React.Fragment key={rowIdx}>
                                 {/* Position number */}
-                                <div className="text-[9px] text-muted-foreground text-center flex items-center justify-center py-0.5 font-medium">
+                                <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
                                   {rowIdx + 1}
                                 </div>
                                 {acumHoles.map(hole => {
@@ -1816,7 +1816,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             {/* Data rows — show all players sorted */}
                             {Array.from({ length: numPlayers }, (_, rowIdx) => (
                               <React.Fragment key={rowIdx}>
-                                <div className="text-[9px] text-muted-foreground text-center flex items-center justify-center py-0.5 font-medium">
+                                <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
                                   {rowIdx + 1}
                                 </div>
                                 {sangronHoles.map(hole => {
