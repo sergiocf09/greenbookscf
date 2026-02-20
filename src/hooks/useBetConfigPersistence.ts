@@ -160,8 +160,10 @@ export const useBetConfigPersistence = ({
   const [isLoaded, setIsLoaded] = useState(false);
   // Track the last known updated_at to prevent stale writes
   const lastKnownUpdatedAtRef = useRef<string | null>(null);
-  // Track if a save is in flight to avoid applying own Realtime echo
+  // Track if a save is in flight (legacy, kept for safety)
   const savingRef = useRef(false);
+  // Track when we are applying a remote config change to suppress our own re-save
+  const isApplyingRemoteRef = useRef(false);
 
   // Load bet config from database
   const loadBetConfig = useCallback(async () => {
@@ -434,9 +436,15 @@ export const useBetConfigPersistence = ({
         return;
       }
 
-      // Update our known timestamp
+      // Register our own save timestamp so we can suppress its Realtime echo
       if (updated?.updated_at) {
         lastKnownUpdatedAtRef.current = updated.updated_at;
+        ownSaveTimestampsRef.current.add(updated.updated_at);
+        // Clean up old entries to avoid unbounded growth
+        if (ownSaveTimestampsRef.current.size > 20) {
+          const arr = Array.from(ownSaveTimestampsRef.current);
+          ownSaveTimestampsRef.current = new Set(arr.slice(-10));
+        }
       }
 
       devLog('Bet config saved to database');
@@ -457,12 +465,20 @@ export const useBetConfigPersistence = ({
     }, 500);
   }, [saveBetConfig]);
 
-  // Auto-save when bet config changes (after initial load)
+  // Auto-save when bet config changes (after initial load).
+  // Skip if the change came from a remote Realtime update to prevent echo loops.
   useEffect(() => {
+    if (isApplyingRemoteRef.current) {
+      isApplyingRemoteRef.current = false;
+      return;
+    }
     if (isLoadedRef.current && roundId) {
       debouncedSave(betConfig);
     }
   }, [betConfig, roundId, debouncedSave]);
+
+  // Track our own save timestamps to suppress our own Realtime echo
+  const ownSaveTimestampsRef = useRef<Set<string>>(new Set());
 
   // Realtime subscription for bet_config changes from other players
   useEffect(() => {
@@ -479,20 +495,27 @@ export const useBetConfigPersistence = ({
           filter: `id=eq.${roundId}`,
         },
         (payload) => {
-          // Skip if this was our own save
-          if (savingRef.current) return;
-          
           const newRecord = payload.new as any;
           if (!newRecord?.bet_config) return;
-          
-          devLog('Realtime: bet_config updated by another player');
-          
-          // Update our known timestamp
-          if (newRecord.updated_at) {
-            lastKnownUpdatedAtRef.current = newRecord.updated_at;
+
+          const incomingUpdatedAt = newRecord.updated_at as string | undefined;
+
+          // Skip if this is our own save echo (identified by updated_at)
+          if (incomingUpdatedAt && ownSaveTimestampsRef.current.has(incomingUpdatedAt)) {
+            devLog('Realtime: skipping own save echo at', incomingUpdatedAt);
+            ownSaveTimestampsRef.current.delete(incomingUpdatedAt);
+            return;
           }
-          
-          // Apply the remote config
+
+          devLog('Realtime: bet_config updated by another player');
+
+          // Update our known timestamp
+          if (incomingUpdatedAt) {
+            lastKnownUpdatedAtRef.current = incomingUpdatedAt;
+          }
+
+          // Apply the remote config — suppress auto-save re-trigger
+          isApplyingRemoteRef.current = true;
           const dbConfig = newRecord.bet_config as RoundBetConfig;
           applyDbConfigToState(dbConfig);
         }
