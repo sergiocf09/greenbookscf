@@ -1601,7 +1601,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   </div>
                   <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
                   {oyesesSummary.holeSummaries.length > 0 && (
-                    <span className="text-[10px] font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length} P3</span>
+                    <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length} P3</span>
                   )}
                 </button>
               )}
@@ -1625,7 +1625,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   </div>
                   <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
                   {unidadesSummary.totalUnidades > 0 && (
-                    <span className="text-[10px] font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
+                    <span className="text-lg font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
                   )}
                 </button>
               )}
@@ -1649,7 +1649,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   </div>
                   <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
                   {manchasSummary.totalManchas > 0 && (
-                    <span className="text-[10px] font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
+                    <span className="text-lg font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
                   )}
                 </button>
               )}
