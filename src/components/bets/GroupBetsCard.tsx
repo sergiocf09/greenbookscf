@@ -1658,70 +1658,74 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {/* Manchas panel */}
             {showManchasPanel && manchasSummary && (
               <div className="space-y-1.5">
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(manchasSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
-                  {manchasSummary.playerData.map(({ player, manchas, total }) => (
-                    <Popover key={player.id}>
-                      <PopoverTrigger asChild>
-                        <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                          <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                          <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                          <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                            {total}
-                          </span>
-                        </button>
-                      </PopoverTrigger>
-                      {total > 0 && (
-                        <PopoverContent className="w-auto p-3" side="top">
-                          <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                          <div className="space-y-1">
-                            {manchas.map((m, i) => (
-                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{m.emoji}</span>
-                                <span>H{m.holeNumber}</span>
-                                <span>{m.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      )}
-                    </Popover>
-                  ))}
-                </div>
+                {(() => {
+                  const active = manchasSummary.playerData.filter(({ total }) => total > 0);
+                  if (active.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
+                  return (
+                    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, minmax(0,1fr))` }}>
+                      {active.map(({ player, manchas, total }) => (
+                        <Popover key={player.id}>
+                          <PopoverTrigger asChild>
+                            <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                              <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                              <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                              <span className="text-lg font-bold leading-none text-destructive">{total}</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-3" side="top">
+                            <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                            <div className="space-y-1">
+                              {manchas.map((m, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{m.emoji}</span>
+                                  <span>H{m.holeNumber}</span>
+                                  <span>{m.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
             {/* Unidades panel */}
             {showUnidadesPanel && unidadesSummary && (
               <div className="space-y-1.5">
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(unidadesSummary.playerData.length, 4)}, minmax(0,1fr))` }}>
-                  {unidadesSummary.playerData.map(({ player, unidades, total }) => (
-                    <Popover key={player.id}>
-                      <PopoverTrigger asChild>
-                        <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
-                          <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                          <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
-                          <span className={cn('text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground')}>
-                            {total}
-                          </span>
-                        </button>
-                      </PopoverTrigger>
-                      {total > 0 && (
-                        <PopoverContent className="w-auto p-3" side="top">
-                          <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                          <div className="space-y-1">
-                            {unidades.map((u, i) => (
-                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{u.emoji}</span>
-                                <span>H{u.holeNumber}</span>
-                                <span>{u.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      )}
-                    </Popover>
-                  ))}
-                </div>
+                {(() => {
+                  const active = unidadesSummary.playerData.filter(({ total }) => total > 0);
+                  if (active.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
+                  return (
+                    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, minmax(0,1fr))` }}>
+                      {active.map(({ player, unidades, total }) => (
+                        <Popover key={player.id}>
+                          <PopoverTrigger asChild>
+                            <button className="flex flex-col items-center gap-1 bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg p-2 cursor-pointer">
+                              <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                              <span className="text-[10px] text-muted-foreground leading-none">{formatPlayerNameTwoWords(player.name)}</span>
+                              <span className="text-lg font-bold leading-none text-primary">{total}</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-3" side="top">
+                            <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
+                            <div className="space-y-1">
+                              {unidades.map((u, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{u.emoji}</span>
+                                  <span>H{u.holeNumber}</span>
+                                  <span>{u.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
