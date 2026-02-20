@@ -1725,90 +1725,125 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               </div>
             )}
 
-            {/* Oyeses panel — columnas por hoyo */}
+            {/* Oyeses panel — tabla con columna de posiciones y columnas por hoyo */}
             {showOyesesPanel && oyesesSummary && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {oyesesSummary.holeSummaries.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
                 ) : (
                   <>
-                    {/* Acumulados columns */}
+                    {/* Acumulados table */}
                     {oyesesSummary.hasAcumulados && (() => {
                       const acumHoles = oyesesSummary.holeSummaries.filter(h => h.acumuladosRankings);
                       if (acumHoles.length === 0) return null;
+                      const maxRows = Math.max(...acumHoles.map(h =>
+                        (h.acumuladosRankings || []).filter(r => r.rank !== null).length
+                      ));
+                      if (maxRows === 0) return null;
                       return (
                         <div className="space-y-1">
                           {oyesesSummary.hasSangron && (
                             <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-wide">Acumulado</span>
                           )}
-                          <div className="flex gap-1.5 overflow-x-auto pb-1">
-                            {acumHoles.map(hole => {
-                              // Only show players who reached green (rank !== null)
-                              const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
-                              return (
-                                <div key={hole.holeNumber} className="flex flex-col items-center gap-1 min-w-[44px] bg-muted/40 rounded-lg px-1.5 py-2">
-                                  <span className="text-[10px] font-bold text-blue-500">H{hole.holeNumber}</span>
-                                  <div className="w-full h-px bg-border/50" />
-                                  {ranked.length === 0 ? (
-                                    <span className="text-[9px] text-muted-foreground">—</span>
-                                  ) : (
-                                    ranked.map(({ playerId, rank }) => {
-                                      const p = sameGroupPlayers.find(pl => pl.id === playerId);
-                                      if (!p) return null;
-                                      const MEDALS = ['🥇', '🥈', '🥉'];
-                                      return (
-                                        <div key={playerId} className="flex flex-col items-center gap-0.5">
-                                          <span className="text-[11px] leading-none">{rank !== null && rank <= 3 ? MEDALS[rank - 1] : `${rank}°`}</span>
-                                          <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                                        </div>
-                                      );
-                                    })
-                                  )}
+                          {/* Table: left col = position numbers, then one col per hole */}
+                          <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${acumHoles.length}, 1fr)` }}>
+                            {/* Header row */}
+                            <div className="text-[9px] text-muted-foreground text-center pb-1" />
+                            {acumHoles.map(hole => (
+                              <div key={hole.holeNumber} className="text-[10px] font-bold text-blue-500 text-center pb-1">
+                                H{hole.holeNumber}
+                              </div>
+                            ))}
+                            {/* Divider */}
+                            <div className="col-span-full h-px bg-border/50 mb-1" />
+                            {/* Data rows */}
+                            {Array.from({ length: maxRows }, (_, rowIdx) => (
+                              <React.Fragment key={rowIdx}>
+                                {/* Position number */}
+                                <div className="text-[9px] text-muted-foreground text-center flex items-center justify-center py-0.5 font-medium">
+                                  {rowIdx + 1}
                                 </div>
-                              );
-                            })}
+                                {acumHoles.map(hole => {
+                                  const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
+                                  const entry = ranked[rowIdx];
+                                  const p = entry ? sameGroupPlayers.find(pl => pl.id === entry.playerId) : null;
+                                  return (
+                                    <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                      {p ? (
+                                        <span className={cn(
+                                          'text-[9px] font-medium leading-tight block truncate',
+                                          rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
+                                        )}>
+                                          {p.name.split(' ')[0]}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] text-muted-foreground/40">—</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </React.Fragment>
+                            ))}
                           </div>
                         </div>
                       );
                     })()}
 
-                    {/* Sangrón columns */}
+                    {/* Sangrón table */}
                     {oyesesSummary.hasSangron && (() => {
                       const sangronHoles = oyesesSummary.holeSummaries.filter(h => h.sangronRankings);
                       if (sangronHoles.length === 0) return null;
+                      const sangronPlayers = sameGroupPlayers.filter(p => {
+                        const cfg = (betConfig.oyeses?.playerConfigs || []).find(c => c.playerId === p.id);
+                        return cfg ? cfg.enabled && cfg.modality === 'sangron' : false;
+                      });
+                      const numPlayers = sangronPlayers.length || sameGroupPlayers.length;
                       return (
                         <div className="space-y-1">
                           {oyesesSummary.hasAcumulados && (
                             <span className="text-[9px] font-semibold text-amber-500 uppercase tracking-wide">Sangrón</span>
                           )}
-                          <div className="flex gap-1.5 overflow-x-auto pb-1">
-                            {sangronHoles.map(hole => {
-                              // In Sangrón, show all players (those with rank, sorted; nulls last)
-                              const allRanked = [...(hole.sangronRankings || [])].sort((a, b) => {
-                                if (a.rank === null) return 1;
-                                if (b.rank === null) return -1;
-                                return a.rank - b.rank;
-                              });
-                              return (
-                                <div key={hole.holeNumber} className="flex flex-col items-center gap-1 min-w-[44px] bg-muted/40 rounded-lg px-1.5 py-2">
-                                  <span className="text-[10px] font-bold text-amber-500">H{hole.holeNumber}</span>
-                                  <div className="w-full h-px bg-border/50" />
-                                  {allRanked.map(({ playerId, rank }) => {
-                                    const p = sameGroupPlayers.find(pl => pl.id === playerId);
-                                    if (!p) return null;
-                                    const MEDALS = ['🥇', '🥈', '🥉'];
-                                    return (
-                                      <div key={playerId} className="flex flex-col items-center gap-0.5">
-                                        <span className="text-[11px] leading-none">
-                                          {rank !== null ? (rank <= 3 ? MEDALS[rank - 1] : `${rank}°`) : '—'}
-                                        </span>
-                                        <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                                      </div>
-                                    );
-                                  })}
+                          <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${sangronHoles.length}, 1fr)` }}>
+                            {/* Header row */}
+                            <div className="text-[9px] text-muted-foreground text-center pb-1" />
+                            {sangronHoles.map(hole => (
+                              <div key={hole.holeNumber} className="text-[10px] font-bold text-amber-500 text-center pb-1">
+                                H{hole.holeNumber}
+                              </div>
+                            ))}
+                            {/* Divider */}
+                            <div className="col-span-full h-px bg-border/50 mb-1" />
+                            {/* Data rows — show all players sorted */}
+                            {Array.from({ length: numPlayers }, (_, rowIdx) => (
+                              <React.Fragment key={rowIdx}>
+                                <div className="text-[9px] text-muted-foreground text-center flex items-center justify-center py-0.5 font-medium">
+                                  {rowIdx + 1}
                                 </div>
-                              );
-                            })}
+                                {sangronHoles.map(hole => {
+                                  const sorted = [...(hole.sangronRankings || [])].sort((a, b) => {
+                                    if (a.rank === null) return 1;
+                                    if (b.rank === null) return -1;
+                                    return a.rank - b.rank;
+                                  });
+                                  const entry = sorted[rowIdx];
+                                  const p = entry ? sameGroupPlayers.find(pl => pl.id === entry.playerId) : null;
+                                  return (
+                                    <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                      {p ? (
+                                        <span className={cn(
+                                          'text-[9px] font-medium leading-tight block truncate',
+                                          rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
+                                        )}>
+                                          {p.name.split(' ')[0]}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] text-muted-foreground/40">—</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </React.Fragment>
+                            ))}
                           </div>
                         </div>
                       );
