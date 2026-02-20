@@ -262,17 +262,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const syntheticPlayerA: Player = { ...playerA, groupId: tempGroupId };
         const syntheticPlayerB: Player = { ...playerB, groupId: tempGroupId };
 
-        // Build a minimal bet config that inherits all active bet types but removes
-        // group-scoped bets that shouldn't apply cross-group (Culebras, Pinguinos, Manchas, Zoologico, Coneja)
-        // CRITICAL: Clear participantIds for all bilateral bets so the engine doesn't filter out
-        // cross-group players. The original participantIds only contains Group 1 IDs, which would
-        // cause Group 2 players to be excluded from calculations, resulting in $0 for all bets.
+        // Build a minimal bet config for this cross-group pair:
+        // - Only this pair's bilateral handicap (isolated, no G1 matrix noise)
+        // - No betOverrides from other intra-group pairs (they would wrongly alter amounts)
+        // - participantIds cleared so the engine always includes both cross-group players
+        // - Group-scoped bets disabled (Culebras, Pinguinos, Manchas, Zoologico, Coneja)
         const crossGroupConfig: BetConfig = {
           ...effectiveBetConfig,
-          bilateralHandicaps: [
-            ...(effectiveBetConfig.bilateralHandicaps || []),
-            crossGroupBilateral,
-          ],
+          // CRITICAL: Only use THIS pair's bilateral handicap — exclude all intra-group
+          // handicaps so the engine doesn't accidentally find another handicap record
+          // for one of these players and compute wrong net scores.
+          bilateralHandicaps: [crossGroupBilateral],
+          // CRITICAL: Clear all betOverrides — intra-group overrides from G1 must NOT
+          // be applied to cross-group calculations. They have different playerAId/playerBId
+          // but the betType matching can still produce wrong amount multiplications.
+          betOverrides: [],
           // Clear participantIds so both cross-group players are always included
           medal: { ...effectiveBetConfig.medal, participantIds: [] },
           pressures: { ...effectiveBetConfig.pressures, participantIds: [] },
