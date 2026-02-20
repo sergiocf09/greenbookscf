@@ -129,17 +129,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     });
   };
 
-  // For carritos primary, wrap as a virtual "team" for add/remove pattern
+  // For carritos primary - just delegate to addCarritosTeam
   const addCarritosPrimary = () => {
-    // Enable and set defaults if not already
-    onUpdateBet('carritos', {
-      enabled: true,
-      teamA: ['', ''],
-      teamB: ['', ''],
-      frontAmount: 100,
-      backAmount: 100,
-      totalAmount: 100,
-    } as any);
+    addCarritosTeam();
   };
 
   // Check if primary carritos has any players set
