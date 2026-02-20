@@ -2449,6 +2449,7 @@ const Index = () => {
               startingHole={startingHole}
               playerGroups={playerGroups}
               getStrokesForLocalPair={getStrokesForLocalPair}
+              setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
             />
             
