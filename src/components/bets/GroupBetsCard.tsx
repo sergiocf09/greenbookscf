@@ -1122,20 +1122,34 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       const playerScores = scores.get(player.id) || [];
       const manchas: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
       playerScores.forEach(score => {
-        if (!score.markers) return;
-        MANCHA_MARKERS.forEach(key => {
-          const camelKey = key === 'dobleAgua' ? 'dobleAgua' : key === 'dobleOB' ? 'dobleOB' : key;
-          if ((score.markers as any)[camelKey]) {
-            manchas.push({ marker: camelKey, ...MANCHA_LABELS[key] || { label: key, emoji: '❗' }, holeNumber: score.holeNumber });
-          }
-        });
+        if (!score.confirmed || !score.strokes) return;
+        // Manual markers
+        if (score.markers) {
+          MANCHA_MARKERS.forEach(key => {
+            const camelKey = key;
+            if (camelKey === 'dobleDigito' || camelKey === 'cuatriput') return; // handled below
+            if ((score.markers as any)[camelKey]) {
+              manchas.push({ marker: camelKey, ...MANCHA_LABELS[key] || { label: key, emoji: '❗' }, holeNumber: score.holeNumber });
+            }
+          });
+        }
+        // Auto-detected: Doble Dígito (10+ strokes)
+        const hasDobleDigito = score.strokes >= 10 || !!(score.markers as any)?.dobleDigito;
+        if (hasDobleDigito) {
+          manchas.push({ marker: 'dobleDigito', ...MANCHA_LABELS.dobleDigito, holeNumber: score.holeNumber });
+        }
+        // Auto-detected: Cuatriput (4+ putts)
+        const hasCuatriput = (score.putts != null && score.putts >= 4) || !!(score.markers as any)?.cuatriput;
+        if (hasCuatriput) {
+          manchas.push({ marker: 'cuatriput', ...MANCHA_LABELS.cuatriput, holeNumber: score.holeNumber });
+        }
       });
       return { player, manchas, total: manchas.length };
     });
 
     const totalManchas = playerData.reduce((s, p) => s + p.total, 0);
     return { playerData, totalManchas };
-  }, [sameGroupPlayers, scores, betConfig.manchas]);
+  }, [sameGroupPlayers, scores, betConfig.manchas, course.holes]);
 
   // Calculate Unidades summary per player (informational only)
   const unidadesSummary = useMemo(() => {
@@ -1156,19 +1170,32 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       const playerScores = scores.get(player.id) || [];
       const unidades: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
       playerScores.forEach(score => {
-        if (!score.confirmed || !score.strokes || !score.markers) return;
-        UNIT_MARKERS.forEach(key => {
-          if ((score.markers as any)[key]) {
-            unidades.push({ marker: key, ...UNIT_LABELS[key] || { label: key, emoji: '⭐' }, holeNumber: score.holeNumber });
-          }
-        });
+        if (!score.confirmed || !score.strokes) return;
+        const holePar = course.holes[score.holeNumber - 1]?.par || 4;
+        const toPar = score.strokes - holePar;
+        // Auto-detected score-based units
+        if (toPar <= -3) {
+          unidades.push({ marker: 'albatross', ...UNIT_LABELS.albatross, holeNumber: score.holeNumber });
+        } else if (toPar === -2) {
+          unidades.push({ marker: 'eagle', ...UNIT_LABELS.eagle, holeNumber: score.holeNumber });
+        } else if (toPar === -1) {
+          unidades.push({ marker: 'birdie', ...UNIT_LABELS.birdie, holeNumber: score.holeNumber });
+        }
+        // Manual markers (holeOut, aquaPar, sandyPar)
+        if (score.markers) {
+          ['holeOut', 'aquaPar', 'sandyPar'].forEach(key => {
+            if ((score.markers as any)[key]) {
+              unidades.push({ marker: key, ...UNIT_LABELS[key] || { label: key, emoji: '⭐' }, holeNumber: score.holeNumber });
+            }
+          });
+        }
       });
       return { player, unidades, total: unidades.length };
     });
 
     const totalUnidades = playerData.reduce((s, p) => s + p.total, 0);
     return { playerData, totalUnidades };
-  }, [sameGroupPlayers, scores, betConfig.units]);
+  }, [sameGroupPlayers, scores, betConfig.units, course.holes]);
 
 
   // Calculate Oyeses summary per par-3 hole (informational only)
