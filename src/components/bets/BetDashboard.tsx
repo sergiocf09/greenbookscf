@@ -216,9 +216,99 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     [allPlayersForCalculations, confirmedScores, effectiveBetConfig, course, startingHole, confirmedHoles, isHistorical]
   );
 
+  // Calculate cross-group bet summaries for all active cross-group pairs.
+  // These pairs span different groups so the main engine (which iterates per-group) never
+  // computes them. We synthesize a temporary 2-player same-group context for each pair,
+  // using the bilateral strokes stored in round_handicaps via getStrokesForLocalPair.
+  const crossGroupBetSummaries = useMemo((): BetSummary[] => {
+    if (isHistorical || !getStrokesForLocalPair) return [];
+
+    const summaries: BetSummary[] = [];
+    const processedPairs = new Set<string>(); // Avoid double-processing (A-B and B-A)
+
+    // Iterate all cross-group rival pairs from the config map
+    Object.entries(crossGroupRivalsMap).forEach(([baseId, rivalIds]) => {
+      (rivalIds as string[]).forEach((rivalId) => {
+        // Canonical pair key (sorted) to avoid duplication
+        const pairKey = [baseId, rivalId].sort().join('|');
+        if (processedPairs.has(pairKey)) return;
+        processedPairs.add(pairKey);
+
+        const playerA = allPlayersForCalculations.find(p => p.id === baseId);
+        const playerB = allPlayersForCalculations.find(p => p.id === rivalId);
+        if (!playerA || !playerB) return;
+
+        // Skip if they are in the same group (already handled by main engine)
+        if (playerA.groupId && playerB.groupId && playerA.groupId === playerB.groupId) return;
+
+        // Build bilateral handicap for this pair from round_handicaps
+        // getStrokesForLocalPair(A, B) = strokes A gives to B (positive = A gives, negative = B gives)
+        const strokesAGivesB = getStrokesForLocalPair(playerA.id, playerB.id);
+
+        // Derive absolute handicaps for the engine: the player who RECEIVES has handicap = |strokes|
+        const handicapA = strokesAGivesB < 0 ? Math.abs(strokesAGivesB) : 0;
+        const handicapB = strokesAGivesB > 0 ? strokesAGivesB : 0;
+
+        const crossGroupBilateral: BilateralHandicap = {
+          playerAId: playerA.id,
+          playerBId: playerB.id,
+          playerAHandicap: handicapA,
+          playerBHandicap: handicapB,
+        };
+
+        // Synthesize a 2-player same-group context so the engine processes this pair
+        // Give them a temporary shared groupId to bypass intra-group filtering
+        const tempGroupId = `__xg_${pairKey}`;
+        const syntheticPlayerA: Player = { ...playerA, groupId: tempGroupId };
+        const syntheticPlayerB: Player = { ...playerB, groupId: tempGroupId };
+
+        // Build a minimal bet config that inherits all active bet types but removes
+        // group-scoped bets that shouldn't apply cross-group (Culebras, Pinguinos, Manchas, Zoologico, Coneja)
+        const crossGroupConfig: BetConfig = {
+          ...effectiveBetConfig,
+          bilateralHandicaps: [
+            ...(effectiveBetConfig.bilateralHandicaps || []),
+            crossGroupBilateral,
+          ],
+          // Disable group-scoped bets for cross-group pairs
+          manchas: { ...effectiveBetConfig.manchas, enabled: false },
+          culebras: { ...effectiveBetConfig.culebras, enabled: false },
+          pinguinos: { ...effectiveBetConfig.pinguinos, enabled: false },
+          zoologico: { ...effectiveBetConfig.zoologico, enabled: false },
+          coneja: { ...effectiveBetConfig.coneja, enabled: false },
+          // Disable Oyes and Rayas for cross-group (too complex for now)
+          oyeses: { ...effectiveBetConfig.oyeses, enabled: false },
+          rayas: { ...effectiveBetConfig.rayas, enabled: false },
+        };
+
+        const pairSummaries = calculateAllBets(
+          [syntheticPlayerA, syntheticPlayerB],
+          confirmedScores,
+          crossGroupConfig,
+          course,
+          startingHole,
+          confirmedHoles
+        );
+
+        // Map synthetic IDs back to real IDs (they're the same, groupId is the only change)
+        pairSummaries.forEach(s => {
+          summaries.push({
+            ...s,
+            playerId: s.playerId === syntheticPlayerA.id ? playerA.id : playerB.id,
+            vsPlayer: s.vsPlayer === syntheticPlayerA.id ? playerA.id : playerB.id,
+          });
+        });
+      });
+    });
+
+    return summaries;
+  }, [isHistorical, crossGroupRivalsMap, allPlayersForCalculations, getStrokesForLocalPair, effectiveBetConfig, confirmedScores, course, startingHole, confirmedHoles]);
+
   const betSummaries = useMemo(
-    () => isHistorical ? snapshotLedgerToBetSummaries(snapshotLedger!) : liveBetSummaries,
-    [isHistorical, snapshotLedger, liveBetSummaries]
+    () => isHistorical
+      ? snapshotLedgerToBetSummaries(snapshotLedger!)
+      : [...liveBetSummaries, ...crossGroupBetSummaries],
+    [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries]
   );
   
   // NOTE: onBetSummariesChange is called in a single useEffect defined after
