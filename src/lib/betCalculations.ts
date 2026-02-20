@@ -273,6 +273,11 @@ export const calculateMedalBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+
+      // Skip cross-group pairs — they are handled exclusively by crossGroupBetSummaries in BetDashboard.
+      // Without this guard, the main engine AND the cross-group engine both compute the same pair,
+      // causing double-counting (e.g., Medal Back $100 + $100 = $200).
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -392,6 +397,9 @@ export const calculatePressureBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+
+      // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -679,6 +687,10 @@ export const calculateSkinsBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+
+      // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
+
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
 
       // Get adjusted scores for this pair based on bilateral handicap overrides
