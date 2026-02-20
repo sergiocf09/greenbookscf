@@ -168,7 +168,10 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
          title="Foursomes"
          description="Match play por equipos, apertura automática"
         enabled={config.teamPressures.enabled}
-        onToggle={(enabled) => onUpdateBet('teamPressures', { enabled })}
+        onToggle={(enabled) => {
+          onUpdateBet('teamPressures', { enabled });
+          if (enabled) onToggleSection('teamPressures', true);
+        }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
       >
@@ -212,7 +215,11 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         title="Carritos (Medal Parejas)"
         description="Medal por equipos de 2"
         enabled={config.carritos.enabled}
-        onToggle={(enabled) => onUpdateBet('carritos', { enabled })}
+        onToggle={(enabled) => {
+          onUpdateBet('carritos', { enabled });
+          // Auto-open section when enabling so user sees configuration
+          if (enabled) onToggleSection('carritos', true);
+        }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
       >
