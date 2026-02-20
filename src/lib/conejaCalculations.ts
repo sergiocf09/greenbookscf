@@ -31,38 +31,37 @@ const getNetScoreForPlayerVsRival = (
   
   if (!playerHoleScore || !rivalHoleScore) return null;
   
-  if (config.coneja?.handicapMode === 'bilateral') {
-    // Use bilateral handicaps if available
-    const bilateral = getBilateralHandicapForPair(
-      player.id,
-      rival.id,
-      config.bilateralHandicaps,
-      player.profileId,
-      rival.profileId
-    );
+  // Always try bilateral handicaps first (respects sliding matrix changes).
+  // Falls back to individual USGA handicap only if no bilateral entry exists for this pair.
+  const bilateral = getBilateralHandicapForPair(
+    player.id,
+    rival.id,
+    config.bilateralHandicaps,
+    player.profileId,
+    rival.profileId
+  );
+  
+  if (bilateral) {
+    const matchesPlayerA = (id: string) => 
+      id === player.id || (player.profileId && id === player.profileId);
+    const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
     
-    if (bilateral) {
-      const matchesPlayerA = (id: string) => 
-        id === player.id || (player.profileId && id === player.profileId);
-      const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
-      
-      const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
-      const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
-      
-      const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
-      const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
-      
-      const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
-      const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
-      
-      return {
-        playerNet: playerHoleScore.strokes - playerReceived,
-        rivalNet: rivalHoleScore.strokes - rivalReceived,
-      };
-    }
+    const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
+    const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
+    
+    const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
+    const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
+    
+    const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+    const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+    
+    return {
+      playerNet: playerHoleScore.strokes - playerReceived,
+      rivalNet: rivalHoleScore.strokes - rivalReceived,
+    };
   }
   
-  // Fallback to individual handicaps
+  // Fallback to individual handicaps when no bilateral entry exists for this pair
   const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
   const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
   
@@ -690,40 +689,39 @@ const getNetScoreForPlayerVsRivalWithDetails = (
   
   if (!playerHoleScore || !rivalHoleScore) return null;
   
-  if (config.coneja?.handicapMode === 'bilateral') {
-    // Use bilateral handicaps if available
-    const bilateral = getBilateralHandicapForPair(
-      player.id,
-      rival.id,
-      config.bilateralHandicaps,
-      player.profileId,
-      rival.profileId
-    );
+  // Always try bilateral handicaps first (respects sliding matrix changes).
+  // Falls back to individual USGA handicap only if no bilateral entry exists for this pair.
+  const bilateral = getBilateralHandicapForPair(
+    player.id,
+    rival.id,
+    config.bilateralHandicaps,
+    player.profileId,
+    rival.profileId
+  );
+  
+  if (bilateral) {
+    const matchesPlayerA = (id: string) => 
+      id === player.id || (player.profileId && id === player.profileId);
+    const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
     
-    if (bilateral) {
-      const matchesPlayerA = (id: string) => 
-        id === player.id || (player.profileId && id === player.profileId);
-      const isPlayerFirst = matchesPlayerA(bilateral.playerAId);
-      
-      const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
-      const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
-      
-      const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
-      const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
-      
-      const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
-      const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
-      
-      return {
-        playerNet: playerHoleScore.strokes - playerReceived,
-        rivalNet: rivalHoleScore.strokes - rivalReceived,
-        playerReceived: playerReceived > 0,
-        rivalReceived: rivalReceived > 0,
-      };
-    }
+    const playerHcp = isPlayerFirst ? bilateral.playerAHandicap : bilateral.playerBHandicap;
+    const rivalHcp = isPlayerFirst ? bilateral.playerBHandicap : bilateral.playerAHandicap;
+    
+    const playerStrokesPerHole = calculateStrokesPerHole(playerHcp, course);
+    const rivalStrokesPerHole = calculateStrokesPerHole(rivalHcp, course);
+    
+    const playerReceived = playerStrokesPerHole[holeNumber - 1] || 0;
+    const rivalReceived = rivalStrokesPerHole[holeNumber - 1] || 0;
+    
+    return {
+      playerNet: playerHoleScore.strokes - playerReceived,
+      rivalNet: rivalHoleScore.strokes - rivalReceived,
+      playerReceived: playerReceived > 0,
+      rivalReceived: rivalReceived > 0,
+    };
   }
   
-  // Fallback to individual handicaps
+  // Fallback to individual handicaps when no bilateral entry exists for this pair
   const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
   const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
   
@@ -751,8 +749,11 @@ export const getConejaHoleDetail = (
   const hole = course.holes[holeNumber - 1];
   if (!hole) return null;
   
-  // For 'individual' mode, calculate using player's own handicap
-  if (config.coneja?.handicapMode !== 'bilateral') {
+  // Check if bilateral handicaps are available for display
+  const hasBilateral = config.bilateralHandicaps && config.bilateralHandicaps.length > 0;
+  
+  // For 'individual' mode with no bilateral handicaps, use USGA individual handicap
+  if (config.coneja?.handicapMode !== 'bilateral' && !hasBilateral) {
     const playerDetails: ConejaHoleDetailPlayer[] = [];
     
     players.forEach(player => {
@@ -795,9 +796,7 @@ export const getConejaHoleDetail = (
     };
   }
   
-  // For 'bilateral' mode, show net scores based on bilateral handicaps
-  // This is more complex - we need to show each player's strokes received vs the group
-  // For simplicity in display, we'll show the max strokes received by any pairing
+  // For 'bilateral' mode or when bilateral handicaps exist, show net scores based on bilateral handicaps
   const playerDetails: ConejaHoleDetailPlayer[] = [];
   
   players.forEach(player => {
