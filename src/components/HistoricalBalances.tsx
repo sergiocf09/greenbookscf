@@ -25,9 +25,11 @@ import {
   ArrowLeft,
   Calendar,
   Minus,
-  Target,
   UserCheck,
   UserX,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -184,6 +186,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [sharedRounds, setSharedRounds] = useState<SharedRound[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [showGuests, setShowGuests] = useState(false);
+  const [sortField, setSortField] = useState<'amount' | 'name'>('amount');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
@@ -625,22 +629,71 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       {/* Rivals ranking */}
       <div className="space-y-1">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
-          {rivals.some(r => r.isGuest) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowGuests(!showGuests)}
-              className="h-7 text-xs gap-1 text-muted-foreground"
+          <div className="flex items-center gap-1">
+            <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
+            <button
+              onClick={() => {
+                if (sortField === 'name') {
+                  setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                } else {
+                  setSortField('name');
+                  setSortDir('asc');
+                }
+              }}
+              className="p-0.5 rounded hover:bg-muted/50 transition-colors"
+              title="Ordenar por nombre"
             >
-              {showGuests ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-              {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
-            </Button>
-          )}
+              {sortField === 'name' ? (
+                sortDir === 'asc' ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />
+              ) : (
+                <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+              )}
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            {rivals.some(r => r.isGuest) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowGuests(!showGuests)}
+                className="h-7 text-xs gap-1 text-muted-foreground"
+              >
+                {showGuests ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+              </Button>
+            )}
+            <button
+              onClick={() => {
+                if (sortField === 'amount') {
+                  setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                } else {
+                  setSortField('amount');
+                  setSortDir('desc');
+                }
+              }}
+              className="p-0.5 rounded hover:bg-muted/50 transition-colors"
+              title="Ordenar por importe"
+            >
+              {sortField === 'amount' ? (
+                sortDir === 'desc' ? <ArrowDown className="h-3 w-3 text-primary" /> : <ArrowUp className="h-3 w-3 text-primary" />
+              ) : (
+                <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+              )}
+            </button>
+          </div>
         </div>
         <ScrollArea className="h-[280px]">
            <div className="space-y-1.5 pr-1">
-            {rivals.filter(r => showGuests || !r.isGuest).map((rival, index) => (
+            {rivals.filter(r => showGuests || !r.isGuest)
+              .sort((a, b) => {
+                if (sortField === 'name') {
+                  const cmp = a.rivalName.localeCompare(b.rivalName);
+                  return sortDir === 'asc' ? cmp : -cmp;
+                }
+                // amount: desc = highest first
+                return sortDir === 'desc' ? b.netAmount - a.netAmount : a.netAmount - b.netAmount;
+              })
+              .map((rival, index) => (
               <button
                 key={rival.id}
                 onClick={() => fetchRivalDetail(rival)}
