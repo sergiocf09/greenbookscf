@@ -554,15 +554,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         {round.netAmount >= 0 ? '+' : ''}${round.netAmount}
                       </span>
                     </div>
-                    {/* Line 2: Yo: XX vs YY · sliding +N (centered) */}
-                    <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
+                    {/* Line 2: SLDG +N below date, Yo: XX vs YY left-aligned under club */}
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="flex-shrink-0 w-[62px] text-left">
+                        {slidingDisplay ? (
+                          <span className="font-semibold text-foreground/70">SLDG {slidingDisplay}</span>
+                        ) : (
+                          <span>&nbsp;</span>
+                        )}
+                      </span>
+                      <span className="flex-shrink-0">&nbsp;</span>
                       {hasScores ? (
                         <span>Yo: {round.userGross} vs {round.rivalGross}</span>
                       ) : (
                         <span className="italic">Sin datos</span>
-                      )}
-                      {slidingDisplay && (
-                        <span className="font-semibold text-foreground/70">sliding {slidingDisplay}</span>
                       )}
                     </div>
                   </button>
