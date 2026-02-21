@@ -558,7 +558,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="flex-shrink-0 w-[62px] text-left">
                         {slidingDisplay ? (
-                          <span className="font-semibold text-foreground/70">SLDG {slidingDisplay}</span>
+                          <span className="text-foreground/70"><span className="text-[9px]">SLDG</span> <span className="font-semibold">{slidingDisplay}</span></span>
                         ) : (
                           <span>&nbsp;</span>
                         )}
