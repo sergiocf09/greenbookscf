@@ -41,7 +41,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, CircleDollarSign } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw } from 'lucide-react';
+import MoneyBagIcon from '@/components/icons/MoneyBagIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -2102,7 +2103,7 @@ const Index = () => {
                 <TabsTrigger value="betsetup" className="text-xs"><Dices className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs"><RefreshCw className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="bets" className="text-xs"><CircleDollarSign className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="bets" className="text-xs"><MoneyBagIcon className="h-4 w-4" /></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
