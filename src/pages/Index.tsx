@@ -41,7 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dice5, RefreshCw, Banknote } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, CircleDollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -2099,10 +2099,10 @@ const Index = () => {
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => setView(v as AppView)}>
               <TabsList className="w-full grid grid-cols-5 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs"><Dice5 className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs"><Dices className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs"><RefreshCw className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="bets" className="text-xs"><Banknote className="h-4 w-4" /></TabsTrigger>
+                <TabsTrigger value="bets" className="text-xs"><CircleDollarSign className="h-4 w-4" /></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
