@@ -451,7 +451,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     <>
       <div className="space-y-3">
         <ScrollArea className="h-[400px]">
-          <div className="space-y-2 pr-4">
+          <div className="space-y-2 pr-2">
             {rounds.map((round) => (
               <div
                 key={round.id}
