@@ -2613,7 +2613,7 @@ const Index = () => {
 
       {/* Historical Balances Dialog */}
       <Dialog open={showBalancesDialog} onOpenChange={setShowBalancesDialog}>
-        <DialogContent className="max-w-md px-3 sm:px-6">
+        <DialogContent className="max-w-md px-2 sm:px-6">
           <DialogHeader>
             <DialogTitle>Balances Históricos</DialogTitle>
           </DialogHeader>

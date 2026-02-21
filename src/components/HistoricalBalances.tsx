@@ -624,21 +624,21 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-hidden">
       {/* Summary card */}
-      <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl">
-        <div className="flex items-center justify-between mb-3 gap-2">
+      <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between mb-2 gap-2">
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <Trophy className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">Balance Total</span>
           </div>
           <div className={cn(
-            'text-lg font-bold flex items-center gap-1',
+            'text-xl font-bold flex items-center gap-1',
             totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {totalNet > 0 && <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" />}
-            {totalNet < 0 && <TrendingDown className="h-3.5 w-3.5 flex-shrink-0" />}
-            <span className="whitespace-nowrap">{totalNet > 0 ? '+' : ''}${totalNet}</span>
+            {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
+            {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
+            <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
           </div>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -708,12 +708,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           )}
         </div>
         <ScrollArea className="h-[280px]">
-           <div className="space-y-2 pr-2">
+           <div className="space-y-1.5 pr-1">
             {rivals.filter(r => showGuests || !r.isGuest).map((rival, index) => (
               <button
                 key={rival.id}
                 onClick={() => fetchRivalDetail(rival)}
-                className="w-full px-3 py-1.5 bg-card border border-border rounded-lg flex items-center gap-2 hover:bg-muted/50 transition-colors whitespace-nowrap overflow-hidden"
+                className="w-full px-2 py-1.5 bg-card border border-border rounded-lg flex items-center gap-1.5 hover:bg-muted/50 transition-colors overflow-hidden"
               >
                 <span className="text-xs text-muted-foreground w-4 text-right flex-shrink-0">
                   {index + 1}
@@ -723,19 +723,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   background={rival.rivalColor}
                   size="xs"
                 />
-                <span className="text-sm font-medium truncate min-w-0">
+                <span className="text-xs font-medium truncate min-w-0">
                   {rival.rivalName}
                   {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
                 </span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
+                <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
                 <span className={cn(
-                  'font-semibold text-sm ml-auto flex-shrink-0 mr-1',
+                  'font-bold text-sm ml-auto flex-shrink-0',
                   rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                   rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                 )}>
-                  {rival.netAmount >= 0 ? '+' : ''}${rival.netAmount}
+                  {rival.netAmount >= 0 ? '+' : '-'}${Math.abs(rival.netAmount)}
                 </span>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               </button>
             ))}
           </div>
