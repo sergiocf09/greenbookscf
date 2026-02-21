@@ -2,11 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LayoutGrid, Trophy, AlertCircle, Shield } from 'lucide-react';
+import { Loader2, LayoutGrid, Trophy, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
-import { LedgerAuditView } from './bets/LedgerAuditView';
 import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState } from '@/types/golf';
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
@@ -43,7 +42,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   course,
 }) => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'scorecard' | 'bets' | 'audit'>('scorecard');
+  const [activeTab, setActiveTab] = useState<'scorecard' | 'bets'>('scorecard');
   const [loading, setLoading] = useState(true);
   const [hasSnapshot, setHasSnapshot] = useState(false);
   const [snapshot, setSnapshot] = useState<RoundSnapshot | null>(null);
@@ -318,8 +317,8 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets' | 'audit')}>
-        <TabsList className={`grid w-full ${hasSnapshot ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets')}>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="scorecard" className="text-sm">
             <LayoutGrid className="h-4 w-4 mr-1.5" />
             Scorecard
@@ -328,12 +327,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             <Trophy className="h-4 w-4 mr-1.5" />
             Apuestas
           </TabsTrigger>
-          {hasSnapshot && (
-            <TabsTrigger value="audit" className="text-sm">
-              <Shield className="h-4 w-4 mr-1.5" />
-              Auditoría
-            </TabsTrigger>
-          )}
         </TabsList>
 
         <TabsContent value="scorecard" className="mt-4">
@@ -365,18 +358,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           />
         </TabsContent>
 
-        {hasSnapshot && snapshot && (
-          <TabsContent value="audit" className="mt-4">
-            <LedgerAuditView
-              ledger={snapshot.ledger}
-              players={snapshot.players}
-              myPlayerId={
-                snapshot.players.find(p => p.profileId === profile?.id)?.id
-              }
-              isOrganizer={true}
-            />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );

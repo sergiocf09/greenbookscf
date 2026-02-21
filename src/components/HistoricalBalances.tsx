@@ -28,9 +28,6 @@ import {
   Target,
   UserCheck,
   UserX,
-  ShieldCheck,
-  ShieldAlert,
-  ShieldQuestion,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -191,13 +188,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
 
-  // Integrity check state
-  const [integrityResult, setIntegrityResult] = useState<{
-    balanceRounds: number;
-    historyRounds: number | null;
-    match: boolean | null;
-    checking: boolean;
-  }>({ balanceRounds: 0, historyRounds: null, match: null, checking: false });
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
   useEffect(() => {
@@ -350,33 +340,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     fetchBalances();
   }, [profile]);
 
-  // Run integrity check: compare balance round count vs round_history count
-  const runIntegrityCheck = async () => {
-    if (!profile) return;
-    setIntegrityResult(prev => ({ ...prev, checking: true }));
-    try {
-      // Count completed rounds in round_players for this user (same query as RoundHistory)
-      const { count, error } = await supabase
-        .from('round_players')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', profile.id)
-        .not('rounds', 'is', null);
-
-      // Use a join-based count matching the same filter as RoundHistory
-      const { data: rpData } = await supabase
-        .from('round_players')
-        .select('round_id, rounds!inner(status)')
-        .eq('profile_id', profile.id)
-        .eq('rounds.status', 'completed');
-
-      const historyCount = rpData?.length ?? 0;
-      const match = historyCount === totalRounds;
-      setIntegrityResult({ balanceRounds: totalRounds, historyRounds: historyCount, match, checking: false });
-    } catch (err) {
-      devError('Integrity check error:', err);
-      setIntegrityResult(prev => ({ ...prev, checking: false }));
-    }
-  };
 
   // Fetch shared rounds with a specific rival - computed from cached snapshots
   const fetchRivalDetail = async (rival: RivalBalance) => {
@@ -652,43 +615,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           </div>
         </div>
 
-        {/* Integrity check */}
-        <div className="mt-3 pt-3 border-t border-primary/20">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-              onClick={runIntegrityCheck}
-              disabled={integrityResult.checking}
-            >
-              {integrityResult.checking ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <ShieldCheck className="h-3 w-3" />
-              )}
-              Verificar integridad
-            </Button>
-            {integrityResult.historyRounds !== null && !integrityResult.checking && (
-              <div className={cn(
-                'flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md',
-                integrityResult.match
-                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                  : 'bg-destructive/10 text-destructive'
-              )}>
-                {integrityResult.match ? (
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                ) : (
-                  <ShieldAlert className="h-3.5 w-3.5" />
-                )}
-                {integrityResult.match
-                  ? `✓ Consistente (${integrityResult.balanceRounds} rondas)`
-                  : `⚠ Balances: ${integrityResult.balanceRounds} · Historial: ${integrityResult.historyRounds}`
-                }
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Rivals ranking */}
