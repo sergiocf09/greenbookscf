@@ -77,40 +77,32 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-muted/50">
-              <th className="text-left px-1.5 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[70px]">
+              <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
                 Hoyo
               </th>
               {frontNine.map(hole => (
                 <th 
                   key={hole.number}
-                  className="px-0.5 py-1.5 font-medium min-w-[24px] text-center"
+                  className="px-0 py-1.5 font-medium min-w-[22px] text-center"
                 >
                   {hole.number}
                 </th>
               ))}
-              <th className="px-1.5 py-1.5 font-semibold text-center bg-muted min-w-[32px]">OUT</th>
+              <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">OUT</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-1.5 py-1 sticky left-0 bg-muted/30">Par</td>
+              <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
               {frontNine.map(hole => (
-                <td key={hole.number} className="text-center px-0.5 py-1">{hole.par}</td>
+                <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
               ))}
-              <td className="text-center px-1.5 py-1 font-medium bg-muted/50">{frontPar}</td>
+              <td className="text-center px-1 py-1 font-medium bg-muted/50">{frontPar}</td>
             </tr>
           </thead>
           <tbody>
             {players.map(player => (
               <tr key={player.playerId} className="border-t border-border/50">
-                <td className="px-1.5 py-1.5 sticky left-0 bg-card">
-                  <div className="flex items-center gap-1">
-                    <div 
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                      style={{ backgroundColor: player.color }}
-                    >
-                      {player.initials}
-                    </div>
-                    <span className="font-medium truncate max-w-[45px]">{player.playerName.split(' ')[0]}</span>
-                  </div>
+                <td className="px-1 py-1 sticky left-0 bg-card">
+                  <span className="font-medium truncate max-w-[56px] block text-[11px]">{player.playerName.split(' ')[0]}</span>
                 </td>
                 {frontNine.map(hole => {
                   const strokes = getPlayerScoreForHole(player, hole.number);
@@ -118,7 +110,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                     <td 
                       key={hole.number}
                       className={cn(
-                        'text-center px-0.5 py-1.5',
+                        'text-center px-0 py-1.5',
                         getScoreColor(strokes, hole.par),
                         getScoreBg(strokes, hole.par)
                       )}
@@ -127,7 +119,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                     </td>
                   );
                 })}
-                <td className="text-center px-1.5 py-1.5 font-semibold bg-muted/30">
+                <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
                   {getPlayerTotal(player, 1, 9) || '-'}
                 </td>
               </tr>
@@ -144,27 +136,27 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-muted/50">
-              <th className="text-left px-1.5 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[70px]">
+              <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
                 Hoyo
               </th>
               {backNine.map(hole => (
                 <th 
                   key={hole.number}
-                  className="px-0.5 py-1.5 font-medium min-w-[24px] text-center"
+                  className="px-0 py-1.5 font-medium min-w-[22px] text-center"
                 >
                   {hole.number}
                 </th>
               ))}
-              <th className="px-1.5 py-1.5 font-semibold text-center bg-muted min-w-[32px]">IN</th>
-              <th className="px-1.5 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[36px]">TOT</th>
+              <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">IN</th>
+              <th className="px-1 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[30px]">TOT</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-1.5 py-1 sticky left-0 bg-muted/30">Par</td>
+              <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
               {backNine.map(hole => (
-                <td key={hole.number} className="text-center px-0.5 py-1">{hole.par}</td>
+                <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
               ))}
-              <td className="text-center px-1.5 py-1 font-medium bg-muted/50">{backPar}</td>
-              <td className="text-center px-1.5 py-1 font-medium bg-primary/10">{frontPar + backPar}</td>
+              <td className="text-center px-1 py-1 font-medium bg-muted/50">{backPar}</td>
+              <td className="text-center px-1 py-1 font-medium bg-primary/10">{frontPar + backPar}</td>
             </tr>
           </thead>
           <tbody>
@@ -173,16 +165,8 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
               const backTotal = getPlayerTotal(player, 10, 18);
               return (
                 <tr key={player.playerId} className="border-t border-border/50">
-                  <td className="px-1.5 py-1.5 sticky left-0 bg-card">
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                        style={{ backgroundColor: player.color }}
-                      >
-                        {player.initials}
-                      </div>
-                      <span className="font-medium truncate max-w-[45px]">{player.playerName.split(' ')[0]}</span>
-                    </div>
+                  <td className="px-1 py-1 sticky left-0 bg-card">
+                    <span className="font-medium truncate max-w-[56px] block text-[11px]">{player.playerName.split(' ')[0]}</span>
                   </td>
                   {backNine.map(hole => {
                     const strokes = getPlayerScoreForHole(player, hole.number);
@@ -190,19 +174,19 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                       <td 
                         key={hole.number}
                         className={cn(
-                          'text-center px-0.5 py-1.5',
-                          getScoreColor(strokes, hole.par),
-                          getScoreBg(strokes, hole.par)
-                        )}
-                      >
-                        {strokes > 0 ? strokes : '-'}
-                      </td>
-                    );
-                  })}
-                  <td className="text-center px-1.5 py-1.5 font-semibold bg-muted/30">
+                        'text-center px-0 py-1.5',
+                        getScoreColor(strokes, hole.par),
+                        getScoreBg(strokes, hole.par)
+                      )}
+                    >
+                      {strokes > 0 ? strokes : '-'}
+                    </td>
+                  );
+                })}
+                  <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
                     {backTotal || '-'}
                   </td>
-                  <td className="text-center px-1.5 py-1.5 font-bold bg-primary/10 text-primary">
+                  <td className="text-center px-1 py-1.5 font-bold bg-primary/10 text-primary">
                     {(frontTotal + backTotal) || '-'}
                   </td>
                 </tr>
