@@ -127,10 +127,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
               onClick={() => setCurrentHole(hole)}
               className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
                 ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
-                  confirmed ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
+                  confirmed ? 'bg-green-500/20 text-green-700 dark:text-green-400 ring-2 ring-green-500' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
                 ${hole === 9 ? 'mr-2' : ''}`}
             >
-              {confirmed && currentHole !== hole ? <CheckCircle2 className="h-4 w-4 mx-auto" /> : hole}
+              {hole}
             </button>
           );
         })}
