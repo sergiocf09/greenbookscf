@@ -17,9 +17,10 @@ const CoinDollarIcon: React.FC<CoinDollarIconProps> = ({ className = "h-4 w-4" }
   >
     {/* Coin circle */}
     <circle cx="12" cy="12" r="10" />
-    {/* Dollar sign */}
-    <path d="M12 6v12" />
-    <path d="M9 9.5c0-1.1 1.3-2 3-2s3 .9 3 2-1.3 2-3 2-3 .9-3 2 1.3 2 3 2 3-.9 3-2" />
+    {/* Dollar sign - S curve */}
+    <path d="M12 6v1" />
+    <path d="M12 17v1" />
+    <path d="M15 9c0-1.1-1.3-2-3-2s-3 .9-3 2 1.3 2 3 2 3 .9 3 2c0 1.1-1.3 2-3 2s-3-.9-3-2" />
   </svg>
 );
 
