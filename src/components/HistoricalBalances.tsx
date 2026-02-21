@@ -613,15 +613,26 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
-            {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
-          </div>
+          {rivals.some(r => r.isGuest) && (
+            <button
+              onClick={() => setShowGuests(!showGuests)}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+            >
+              {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+              {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+            </button>
+          )}
         </div>
 
       </div>
@@ -651,17 +662,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             </button>
           </div>
           <div className="flex items-center gap-1">
-            {rivals.some(r => r.isGuest) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowGuests(!showGuests)}
-                className="h-7 text-xs gap-1 text-muted-foreground"
-              >
-                {showGuests ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
-              </Button>
-            )}
             <button
               onClick={() => {
                 if (sortField === 'amount') {
