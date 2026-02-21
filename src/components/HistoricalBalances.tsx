@@ -628,26 +628,26 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       {/* Summary card */}
       <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium">Balance Total</span>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <Trophy className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium">Balance Total</span>
           </div>
           <div className={cn(
-            'text-xl font-bold flex items-center gap-1 flex-shrink-0',
+            'text-lg font-bold flex items-center gap-1 flex-shrink-0',
             totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {totalNet > 0 && <TrendingUp className="h-4 w-4" />}
-            {totalNet < 0 && <TrendingDown className="h-4 w-4" />}
+            {totalNet > 0 && <TrendingUp className="h-3.5 w-3.5" />}
+            {totalNet < 0 && <TrendingDown className="h-3.5 w-3.5" />}
             {totalNet > 0 ? '+' : ''}${totalNet}
           </div>
         </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
+            <Users className="h-3.5 w-3.5" />
             {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
           </div>
           <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-3.5 w-3.5" />
             {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
           </div>
         </div>

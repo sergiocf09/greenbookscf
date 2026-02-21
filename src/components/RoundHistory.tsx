@@ -461,17 +461,17 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   onClick={() => setExpandedRound(expandedRound === round.id ? null : round.id)}
                   className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted/50 transition-colors whitespace-nowrap overflow-hidden"
                 >
-                  <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', getTeeColorClass(round.teeColor))} />
+                  <div className={cn('w-2 h-2 rounded-full flex-shrink-0', getTeeColorClass(round.teeColor))} />
                   <span className="text-xs text-muted-foreground flex-shrink-0">
                     {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
                   </span>
                   <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
-                  <span className="text-sm truncate min-w-0">{round.courseName}</span>
-                  <span className="font-bold text-sm ml-auto flex-shrink-0">{round.totalStrokes}</span>
+                  <span className="text-xs truncate min-w-0">{round.courseName}</span>
+                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">{round.totalStrokes}</span>
                   {expandedRound === round.id ? (
-                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   )}
                 </button>
 
@@ -491,20 +491,16 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={(e) => handleViewRound(e, round)}
-                          disabled={loadingScorecard === round.id}
-                        >
-                          {loadingScorecard === round.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Eye className="h-4 w-4 mr-1" />
-                          )}
-                          Ver Tarjeta
-                        </Button>
+                        {round.isOrganizer && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                            onClick={(e) => handleDeleteClick(e, round)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         {onCloneRound && (
                           <Button
                             variant="outline"
@@ -521,33 +517,38 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             Duplicar
                           </Button>
                         )}
-                        {round.isOrganizer && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={(e) => handleDeleteClick(e, round)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {/* Full clone button - only for organizers */}
-                      {round.isOrganizer && onCloneFullRound && (
                         <Button
-                          variant="secondary"
+                          variant="outline"
                           size="sm"
-                          className="w-full"
-                          onClick={(e) => handleCloneFullRound(e, round)}
-                          disabled={loadingClone === `full-${round.id}` || loadingClone === round.id}
+                          className="flex-1"
+                          onClick={(e) => handleViewRound(e, round)}
+                          disabled={loadingScorecard === round.id}
                         >
-                          {loadingClone === `full-${round.id}` ? (
+                          {loadingScorecard === round.id ? (
                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                           ) : (
-                            <Copy className="h-4 w-4 mr-1" />
+                            <Eye className="h-4 w-4 mr-1" />
                           )}
-                          Duplicar Íntegra (con scores)
+                          Ver Tarjeta
                         </Button>
+                      </div>
+                      {/* Full clone button - only for organizers, centered */}
+                      {round.isOrganizer && onCloneFullRound && (
+                        <div className="flex justify-center">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => handleCloneFullRound(e, round)}
+                            disabled={loadingClone === `full-${round.id}` || loadingClone === round.id}
+                          >
+                            {loadingClone === `full-${round.id}` ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Copy className="h-4 w-4 mr-1" />
+                            )}
+                            Duplicar con scores
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
