@@ -15,6 +15,7 @@ import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
+import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
@@ -2095,12 +2096,11 @@ const Index = () => {
       {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
-            <Tabs value={view} onValueChange={(v) => setView(v as AppView)}>
-              <TabsList className="w-full grid grid-cols-6 h-12">
+            <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => setView(v as AppView)}>
+              <TabsList className="w-full grid grid-cols-5 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="betsetup" className="text-xs"><Receipt className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs"><Sliders className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="scoring" className="text-xs"><Users className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs"><LayoutGrid className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="bets" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
               </TabsList>
@@ -2521,6 +2521,16 @@ const Index = () => {
           </>
         )}
       </main>
+
+      {/* Floating Action Button for Score Capture */}
+      {isRoundStarted && roundState.status !== 'completed' && (
+        <ScoringFAB
+          currentHole={currentHole}
+          onClick={() => setView('scoring')}
+          isOnScoringView={view === 'scoring'}
+          isOnBetsView={view === 'bets'}
+        />
+      )}
 
       {/* History Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
