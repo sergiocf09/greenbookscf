@@ -2524,7 +2524,7 @@ const Index = () => {
 
       {/* History Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md px-3 sm:px-6">
           <DialogHeader>
             <DialogTitle>Historial de Rondas</DialogTitle>
           </DialogHeader>
@@ -2613,7 +2613,7 @@ const Index = () => {
 
       {/* Historical Balances Dialog */}
       <Dialog open={showBalancesDialog} onOpenChange={setShowBalancesDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md px-3 sm:px-6">
           <DialogHeader>
             <DialogTitle>Balances Históricos</DialogTitle>
           </DialogHeader>

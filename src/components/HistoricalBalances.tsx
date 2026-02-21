@@ -559,7 +559,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               <p className="text-xs mt-1">Las rondas sin snapshot no mostrarán detalles</p>
             </div>
           ) : (
-            <div className="space-y-2 pr-4">
+            <div className="space-y-2 pr-2">
               {sharedRounds.map((round) => {
                 const hasScores = round.userGross !== undefined && round.rivalGross !== undefined;
                 const slidingDisplay = round.slidingStrokes !== undefined 
@@ -633,11 +633,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <span className="text-sm font-medium">Balance Total</span>
           </div>
           <div className={cn(
-            'text-2xl font-bold flex items-center gap-1',
+            'text-xl font-bold flex items-center gap-1 flex-shrink-0',
             totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {totalNet > 0 && <TrendingUp className="h-5 w-5" />}
-            {totalNet < 0 && <TrendingDown className="h-5 w-5" />}
+            {totalNet > 0 && <TrendingUp className="h-4 w-4" />}
+            {totalNet < 0 && <TrendingDown className="h-4 w-4" />}
             {totalNet > 0 ? '+' : ''}${totalNet}
           </div>
         </div>
@@ -708,7 +708,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           )}
         </div>
         <ScrollArea className="h-[280px]">
-          <div className="space-y-2 pr-4">
+           <div className="space-y-2 pr-2">
             {rivals.filter(r => showGuests || !r.isGuest).map((rival, index) => (
               <button
                 key={rival.id}
