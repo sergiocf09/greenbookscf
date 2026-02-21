@@ -564,9 +564,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 const hasScores = round.userGross !== undefined && round.rivalGross !== undefined;
                 const slidingDisplay = round.slidingStrokes !== undefined 
                   ? (round.slidingStrokes > 0 
-                      ? `+${round.slidingStrokes} (doy)` 
+                      ? `+${round.slidingStrokes}` 
                       : round.slidingStrokes < 0 
-                        ? `${round.slidingStrokes} (recibo)` 
+                        ? `${round.slidingStrokes}` 
                         : '0')
                   : null;
 
@@ -574,52 +574,34 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   <button
                     key={round.roundId}
                     onClick={() => onViewRound?.(round.roundId)}
-                    className="w-full p-3 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left space-y-0.5"
                   >
-                    {/* Header row: date and course */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-medium text-sm">{round.courseName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    </div>
-
-                    {/* Detail row: Scores, Sliding, Money */}
-                    <div className="flex items-center justify-between text-xs border-t border-border/50 pt-2 mt-1">
-                      {/* Scores */}
-                      <div className="flex items-center gap-3">
-                        {hasScores ? (
-                          <>
-                            <div className="flex items-center gap-1">
-                              <Target className="h-3 w-3 text-primary" />
-                              <span className="font-medium">Yo: {round.userGross}</span>
-                            </div>
-                            <span className="text-muted-foreground">vs</span>
-                            <span className="font-medium">{round.rivalGross}</span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground italic">Sin datos</span>
-                        )}
-                      </div>
-
-                      {/* Sliding */}
-                      {slidingDisplay && (
-                        <span className="text-muted-foreground px-2 py-0.5 bg-muted rounded text-[10px]">
-                          {slidingDisplay}
-                        </span>
-                      )}
-
-                      {/* Money */}
+                    {/* Line 1: Date · Club · $Result */}
+                    <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
+                      <span className="text-sm truncate min-w-0">{round.courseName}</span>
                       <span className={cn(
-                        'font-bold text-sm',
+                        'font-bold text-sm ml-auto flex-shrink-0',
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
                         {round.netAmount >= 0 ? '+' : ''}${round.netAmount}
                       </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    {/* Line 2: Yo: XX vs YY · sliding */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {hasScores ? (
+                        <span>Yo: {round.userGross} vs {round.rivalGross}</span>
+                      ) : (
+                        <span className="italic">Sin datos</span>
+                      )}
+                      {slidingDisplay && (
+                        <span className="font-semibold text-foreground/70">· {slidingDisplay}</span>
+                      )}
                     </div>
                   </button>
                 );
@@ -732,35 +714,29 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               <button
                 key={rival.id}
                 onClick={() => fetchRivalDetail(rival)}
-                className="w-full p-3 bg-card border border-border rounded-lg flex items-center justify-between hover:bg-muted/50 transition-colors"
+                className="w-full px-3 py-1.5 bg-card border border-border rounded-lg flex items-center gap-2 hover:bg-muted/50 transition-colors whitespace-nowrap overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-5 text-right">
-                    {index + 1}
-                  </span>
-                  <PlayerAvatar 
-                    initials={rival.rivalInitials} 
-                    background={rival.rivalColor}
-                    size="sm"
-                  />
-                  <div className="text-left">
-                    <p className="font-medium text-sm">{rival.rivalName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {rival.roundsPlayed} ronda{rival.roundsPlayed !== 1 ? 's' : ''}
-                      {rival.isGuest && ' • Invitado'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    'font-semibold',
-                    rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
-                    rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                  )}>
-                    {rival.netAmount >= 0 ? '+' : ''}${rival.netAmount}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+                <span className="text-xs text-muted-foreground w-4 text-right flex-shrink-0">
+                  {index + 1}
+                </span>
+                <PlayerAvatar 
+                  initials={rival.rivalInitials} 
+                  background={rival.rivalColor}
+                  size="xs"
+                />
+                <span className="text-sm font-medium truncate min-w-0">
+                  {rival.rivalName}
+                  {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
+                </span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
+                <span className={cn(
+                  'font-semibold text-sm ml-auto flex-shrink-0',
+                  rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
+                  rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {rival.netAmount >= 0 ? '+' : ''}${rival.netAmount}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
               </button>
             ))}
           </div>

@@ -459,46 +459,33 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               >
                 <button
                   onClick={() => setExpandedRound(expandedRound === round.id ? null : round.id)}
-                  className="w-full p-3 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
+                  className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-muted/50 transition-colors whitespace-nowrap overflow-hidden"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={cn('w-3 h-3 rounded-full', getTeeColorClass(round.teeColor))} />
-                    <div>
-                      <p className="font-medium text-sm">{round.courseName}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="font-bold text-lg">{round.totalStrokes}</p>
-                      <p className="text-[10px] text-muted-foreground">golpes</p>
-                    </div>
-                    {expandedRound === round.id ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
+                  <div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', getTeeColorClass(round.teeColor))} />
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                    {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
+                  </span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
+                  <span className="text-sm truncate min-w-0">{round.courseName}</span>
+                  <span className="font-bold text-sm ml-auto flex-shrink-0">{round.totalStrokes}</span>
+                  {expandedRound === round.id ? (
+                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  )}
                 </button>
 
                 {expandedRound === round.id && (
-                  <div className="px-3 pb-3 pt-0 border-t border-border/50 space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm pt-2">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5" />
+                  <div className="px-3 pb-2 pt-1 border-t border-border/50 space-y-2">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
                         {round.courseLocation}
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
                         {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Handicap usado:</span>
-                      <span className="font-medium">{round.handicapUsed}</span>
+                      </span>
                     </div>
                     
                     {/* Action buttons */}
