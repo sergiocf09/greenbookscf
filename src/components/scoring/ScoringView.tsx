@@ -118,7 +118,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Hole Navigation */}
-      <div className="flex gap-1 overflow-x-auto pb-2">
+      <div className="flex gap-1 overflow-x-auto pb-2 pt-1">
         {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
           const confirmed = isHoleConfirmedForDisplayGroup(hole);
           return (
