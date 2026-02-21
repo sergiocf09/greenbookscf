@@ -73,7 +73,7 @@ const HoleRow: React.FC<HoleRowProps> = ({
         <span className={cn(
           "w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold",
           isHighlighted && !isConfirmed && "ring-2 ring-green-500 bg-background",
-          isConfirmed && "bg-green-500 text-white"
+          isConfirmed && "bg-green-500/20 text-green-700 dark:text-green-400 ring-2 ring-green-500"
         )}>
           {holeNumber}
         </span>
