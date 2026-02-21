@@ -661,7 +661,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               )}
             </button>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center mr-6">
             <button
               onClick={() => {
                 if (sortField === 'amount') {
