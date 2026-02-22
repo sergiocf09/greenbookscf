@@ -257,6 +257,10 @@ export const useRoundManagement = ({
   // Restore active round on mount
   useEffect(() => {
     if (!profile || hasRestoredRef.current) return;
+    // Set the guard synchronously BEFORE the async work begins.
+    // This prevents duplicate concurrent restores when dependencies change
+    // while the first restore is still in flight.
+    hasRestoredRef.current = true;
     
     const restoreActiveRound = async () => {
       try {
@@ -638,9 +642,10 @@ export const useRoundManagement = ({
         return;
       } catch (err) {
         devError('Error restoring round:', err);
+        // Allow retry on failure
+        hasRestoredRef.current = false;
       } finally {
         setIsRestoring(false);
-        hasRestoredRef.current = true;
       }
     };
 
