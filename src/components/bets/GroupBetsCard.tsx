@@ -1209,33 +1209,34 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const oyesesSummary = useMemo(() => {
     if (!betConfig.oyeses?.enabled) return null;
 
-    // Use the same fallback logic as oyesesCalculations.ts:
-    // If a player has no explicit config entry, default to enabled with inherited modality.
-    const playerConfigs = betConfig.oyeses.playerConfigs || [];
-    const fallbackModality = playerConfigs[0]?.modality ?? 'acumulados';
-
-    const getEffectiveConfig = (playerId: string) => {
-      const found = playerConfigs.find(c => c.playerId === playerId);
-      if (found) return { enabled: found.enabled, modality: found.modality };
-      return { enabled: true, modality: fallbackModality };
-    };
-
-    const activePlayers = sameGroupPlayers.filter(p => getEffectiveConfig(p.id).enabled);
+    // Use resolveGroupParticipants for proper participant resolution (handles profileId/id mismatch)
+    const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
     if (activePlayers.length < 2) return null;
 
-    const hasAcumulados = activePlayers.some(p => getEffectiveConfig(p.id).modality === 'acumulados');
-    const hasSangron = activePlayers.some(p => getEffectiveConfig(p.id).modality === 'sangron');
-    const acumuladosPlayerIds = activePlayers.filter(p => getEffectiveConfig(p.id).modality === 'acumulados').map(p => p.id);
-    const sangronPlayerIds = activePlayers.filter(p => getEffectiveConfig(p.id).modality === 'sangron').map(p => p.id);
+    const playerConfigs = betConfig.oyeses.playerConfigs || [];
+    // CRITICAL: Filter configs to only active participants to prevent a sangron config
+    // from a non-participant from poisoning the fallback. Default is ALWAYS 'acumulados'.
+    const activePlayerIds = new Set(activePlayers.map(p => p.id));
+    const activeConfigs = playerConfigs.filter(c => activePlayerIds.has(c.playerId));
+
+    const getEffectiveModality = (playerId: string): 'acumulados' | 'sangron' => {
+      const found = activeConfigs.find(c => c.playerId === playerId);
+      if (found?.enabled && found.modality === 'sangron') return 'sangron';
+      return 'acumulados'; // Default fallback is always acumulados
+    };
+
+    const hasAcumulados = activePlayers.some(p => getEffectiveModality(p.id) === 'acumulados');
+    const hasSangron = activePlayers.some(p => getEffectiveModality(p.id) === 'sangron');
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
 
     const holeSummaries = par3Holes.map(holeNumber => {
-      const acumuladosRankings = hasAcumulados ? acumuladosPlayerIds
-        .map(playerId => {
-          const s = scores.get(playerId)?.find(sc => sc.holeNumber === holeNumber);
-          return { playerId, rank: s?.oyesProximity ?? null };
+      // Acumulados rankings: ALL active players, sorted by oyes_proximity
+      const acumuladosRankings = hasAcumulados ? activePlayers
+        .map(player => {
+          const s = scores.get(player.id)?.find(sc => sc.holeNumber === holeNumber);
+          return { playerId: player.id, rank: s?.oyesProximity ?? null };
         })
         .sort((a, b) => {
           if (a.rank === null) return 1;
@@ -1243,10 +1244,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           return a.rank - b.rank;
         }) : null;
 
-      const sangronRankings = hasSangron ? sangronPlayerIds
-        .map(playerId => {
-          const s = scores.get(playerId)?.find(sc => sc.holeNumber === holeNumber);
-          return { playerId, rank: s?.oyesProximitySangron ?? null };
+      // Sangrón rankings: ALL active players, sorted by oyes_proximity_sangron
+      // with fallback to oyes_proximity (per memory: rayas-oyeses-sangron-fallback)
+      const sangronRankings = hasSangron ? activePlayers
+        .map(player => {
+          const s = scores.get(player.id)?.find(sc => sc.holeNumber === holeNumber);
+          return { playerId: player.id, rank: s?.oyesProximitySangron ?? s?.oyesProximity ?? null };
         })
         .sort((a, b) => {
           if (a.rank === null) return 1;
@@ -1255,7 +1258,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         }) : null;
 
       const hasAcumuladoEntry = acumuladosRankings
-        ? acumuladosPlayerIds.some(pid => scores.get(pid)?.some(sc => sc.holeNumber === holeNumber))
+        ? activePlayers.some(p => scores.get(p.id)?.some(sc => sc.holeNumber === holeNumber))
         : false;
       const hasData = (acumuladosRankings?.some(r => r.rank !== null) || sangronRankings?.some(r => r.rank !== null) || hasAcumuladoEntry);
       return { holeNumber, acumuladosRankings, sangronRankings, hasData };
@@ -1264,7 +1267,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     // Count holes that have actual data for the counter
     const holesWithData = holeSummaries.filter(h => h.hasData).length;
 
-    return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData };
+    return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData, activePlayers };
   }, [betConfig.oyeses, scores, course, sameGroupPlayers]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
@@ -1776,9 +1779,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     {oyesesSummary.hasAcumulados && (() => {
                       const acumHoles = oyesesSummary.holeSummaries.filter(h => h.acumuladosRankings);
                       if (acumHoles.length === 0) return null;
-                      const maxRows = Math.max(...acumHoles.map(h =>
-                        (h.acumuladosRankings || []).filter(r => r.rank !== null).length
-                      ));
+                      const maxRows = Math.max(...acumHoles.map(h => {
+                        const ranked = (h.acumuladosRankings || []).filter(r => r.rank !== null).length;
+                        const unrankedConfirmed = (h.acumuladosRankings || []).filter(r => 
+                          r.rank === null && scores.get(r.playerId)?.some(sc => sc.holeNumber === h.holeNumber && sc.confirmed)
+                        ).length;
+                        return ranked + unrankedConfirmed;
+                      }));
                       if (maxRows === 0) return null;
                       return (
                         <div className="space-y-1">
@@ -1806,7 +1813,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                 {acumHoles.map(hole => {
                                   const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
                                   const entry = ranked[rowIdx];
-                                  const p = entry ? sameGroupPlayers.find(pl => pl.id === entry.playerId) : null;
+                                  const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
+                                  // Check if this row is beyond ranked entries but within active players
+                                  // who have a score on this hole (= No GIR, show X)
+                                  const showNoGir = !entry && rowIdx < (oyesesSummary.activePlayers?.length || 0) && (() => {
+                                    const allEntries = hole.acumuladosRankings || [];
+                                    const unranked = allEntries.filter(r => r.rank === null);
+                                    const unrankedIdx = rowIdx - ranked.length;
+                                    if (unrankedIdx >= 0 && unrankedIdx < unranked.length) {
+                                      const pid = unranked[unrankedIdx].playerId;
+                                      return scores.get(pid)?.some(sc => sc.holeNumber === hole.holeNumber && sc.confirmed);
+                                    }
+                                    return false;
+                                  })();
                                   return (
                                     <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
                                       {p ? (
@@ -1816,6 +1835,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                         )}>
                                           {p.name.split(' ')[0]}
                                         </span>
+                                      ) : showNoGir ? (
+                                        <span className="text-[9px] font-bold text-destructive">✕</span>
                                       ) : (
                                         <span className="text-[9px] text-muted-foreground/40">—</span>
                                       )}
@@ -1833,11 +1854,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     {oyesesSummary.hasSangron && (() => {
                       const sangronHoles = oyesesSummary.holeSummaries.filter(h => h.sangronRankings);
                       if (sangronHoles.length === 0) return null;
-                      const sangronPlayers = sameGroupPlayers.filter(p => {
-                        const cfg = (betConfig.oyeses?.playerConfigs || []).find(c => c.playerId === p.id);
-                        return cfg ? cfg.enabled && cfg.modality === 'sangron' : false;
-                      });
-                      const numPlayers = sangronPlayers.length || sameGroupPlayers.length;
+                      // Use all active players for row count (sangrón requires all positions)
+                      const numPlayers = oyesesSummary.activePlayers?.length || sameGroupPlayers.length;
                       return (
                         <div className="space-y-1">
                           {oyesesSummary.hasAcumulados && (
@@ -1866,10 +1884,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                     return a.rank - b.rank;
                                   });
                                   const entry = sorted[rowIdx];
-                                  const p = entry ? sameGroupPlayers.find(pl => pl.id === entry.playerId) : null;
+                                  const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
                                   return (
                                     <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
-                                      {p ? (
+                                      {p && entry?.rank !== null ? (
                                         <span className={cn(
                                           'text-[9px] font-medium leading-tight block truncate',
                                           rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
