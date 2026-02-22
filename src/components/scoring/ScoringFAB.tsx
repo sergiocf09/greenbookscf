@@ -7,6 +7,7 @@ interface ScoringFABProps {
   onClick: () => void;
   isOnScoringView?: boolean;
   isOnBetsView?: boolean;
+  isOnBetSetupView?: boolean;
 }
 
 export const ScoringFAB: React.FC<ScoringFABProps> = ({
@@ -14,6 +15,7 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
   onClick,
   isOnScoringView = false,
   isOnBetsView = false,
+  isOnBetSetupView = false,
 }) => {
   // Hide on scoring view since user is already there
   if (isOnScoringView) return null;
@@ -24,17 +26,18 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
       className={cn(
         "fixed z-50 flex items-center justify-center rounded-full shadow-lg transition-all duration-300",
         "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95",
-        "bottom-6 right-6",
-        // Slightly smaller & lower opacity on bets view to avoid blocking content
+        "bottom-6",
         "h-14 w-14",
         isOnBetsView && "opacity-90",
         // Safe area padding for iOS
         "safe-bottom"
       )}
       style={{
-        // Extra safe area for iOS notch
         bottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px) + 0.75rem)',
-        right: 'max(1.5rem, env(safe-area-inset-right, 0px) + 0.75rem)',
+        // Shift left on bet setup to avoid blocking collapsible arrows
+        right: isOnBetSetupView
+          ? 'max(4rem, env(safe-area-inset-right, 0px) + 3.25rem)'
+          : 'max(1.5rem, env(safe-area-inset-right, 0px) + 0.75rem)',
       }}
       aria-label={`Capturar scores - Hoyo ${currentHole}`}
     >

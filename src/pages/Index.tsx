@@ -2533,6 +2533,7 @@ const Index = () => {
           onClick={() => setView('scoring')}
           isOnScoringView={view === 'scoring'}
           isOnBetsView={view === 'bets'}
+          isOnBetSetupView={view === 'betsetup'}
         />
       )}
 
