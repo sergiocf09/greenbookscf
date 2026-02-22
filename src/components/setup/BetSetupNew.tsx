@@ -5,7 +5,10 @@ import { BetCategoryTabs } from './BetCategoryTabs';
 import { IndividualBets } from './bets/IndividualBets';
 import { ParejasBets } from './bets/ParejasBets';
 import { GrupalBets } from './bets/GrupalBets';
+import { BetTemplatesDialog } from './bets/BetTemplatesDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { BookMarked } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface BetSetupProps {
   config: BetConfig;
@@ -23,6 +26,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
   const pendingScrollRestoreRef = useRef<number | null>(null);
@@ -76,6 +80,10 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     });
   };
 
+  const handleApplyTemplate = useCallback((config: BetConfig) => {
+    safeOnChange(config);
+  }, [safeOnChange]);
+
   return (
     <div className="space-y-4">
 
@@ -84,6 +92,23 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
+
+      {/* Templates Strip */}
+      <div className="flex items-center gap-3 bg-muted/40 p-3 rounded-xl border border-border/30">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-foreground leading-tight">Guarda esta configuración como plantilla</p>
+          <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Cárgala después para iniciar rondas recurrentes</p>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shrink-0 gap-1.5 font-medium"
+          onClick={() => setShowTemplatesDialog(true)}
+        >
+          <BookMarked className="h-4 w-4" />
+          Plantillas
+        </Button>
+      </div>
 
       {/* Category Content */}
       <div className="min-h-[200px]">
@@ -122,6 +147,15 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           />
         )}
       </div>
+
+      {/* Templates Dialog */}
+      <BetTemplatesDialog
+        open={showTemplatesDialog}
+        onOpenChange={setShowTemplatesDialog}
+        betConfig={config}
+        players={players}
+        onApplyTemplate={handleApplyTemplate}
+      />
     </div>
   );
 };
