@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      bet_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_favorite: boolean
+          last_used_at: string | null
+          name: string
+          owner_profile_id: string
+          template_json: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          last_used_at?: string | null
+          name: string
+          owner_profile_id: string
+          template_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          last_used_at?: string | null
+          name?: string
+          owner_profile_id?: string
+          template_json?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bet_templates_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bilateral_bets: {
         Row: {
           amount: number
