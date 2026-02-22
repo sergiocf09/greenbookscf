@@ -14,7 +14,7 @@
  */
 
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
-import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair } from './betCalculations';
+import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair } from './betCalculations';
 import { calculateStrokesPerHole } from './handicapUtils';
 
 /**
@@ -1186,6 +1186,7 @@ const calculateOyesRayasForAll = (
         
         if (processedPairs.has(pairKey)) continue;
         if (!isRayasActiveForPair(config, playerA.id, playerB.id)) continue;
+        if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
         
         const modality = getOyesModalityForPair(config, playerA.id, playerB.id);
         
@@ -1232,6 +1233,8 @@ export const calculateRayasBets = (
       if (!isRayasActiveForPair(config, playerA.id, playerB.id)) {
         continue;
       }
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
       
       const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
       
