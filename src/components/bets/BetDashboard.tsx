@@ -1721,7 +1721,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   )}
                   aria-pressed={isActive}
                 >
-                  <PlayerAvatar initials={p.initials} background={p.color} size="md" className="w-9 h-9 text-sm" isLoggedInUser={p.id === basePlayerId} />
+                  <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="md" className="w-9 h-9 text-sm" isLoggedInUser={p.id === basePlayerId} />
                 </button>
               );
             })}
@@ -2589,7 +2589,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   } | null>(null);
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
-  const getPlayerAbbr = (player: Player) => player.initials;
+  const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
+  const getPlayerAbbr = (player: Player) => disambiguatedAbbrsCarritos.get(player.id) || player.initials;
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
 
@@ -5887,7 +5888,8 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
       : rival.handicap
   );
   
-  const getPlayerAbbr = (p: Player) => p.name.substring(0, 3).toUpperCase();
+  const disambiguatedAbbrsHcp = useMemo(() => disambiguateInitials([player, rival]), [player, rival]);
+  const getPlayerAbbr = (p: Player) => disambiguatedAbbrsHcp.get(p.id) || p.initials;
   const difference = Math.abs(playerAHcp - playerBHcp);
   const playerReceives = playerAHcp > playerBHcp;
   

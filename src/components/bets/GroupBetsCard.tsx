@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords } from '@/lib/playerInput';
+import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords, disambiguateInitials } from '@/lib/playerInput';
 import { 
   calculateConejaSetResults, 
   getConejaHoleDisplays, 
@@ -741,6 +741,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     if (!baseGroupId) return players; // No group info = single group, use all
     return players.filter(p => p.groupId === baseGroupId);
   }, [players, basePlayerId]);
+
+  // Disambiguated initials for this group
+  const disambiguatedAbbrs = useMemo(() => disambiguateInitials(sameGroupPlayers), [sameGroupPlayers]);
+  const getPlayerAbbr = (player: Player) => disambiguatedAbbrs.get(player.id) || player.initials;
 
   // Helper: resolve participants for this group, handling template inheritance.
   // When participantIds was set for Group 1 only, Group 2 players won't be in the list.
@@ -1873,7 +1877,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                             'text-[9px] font-medium leading-tight block truncate',
                                             rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
                                           )}>
-                                            {p.name.split(' ')[0]}
+                                            {getPlayerAbbr(p)}
                                           </span>
                                         ) : showNoGir ? (
                                           <span className="text-[9px] font-bold text-destructive">✕</span>
@@ -1927,7 +1931,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                             'text-[9px] font-medium leading-tight block truncate',
                                             rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
                                           )}>
-                                            {p.name.split(' ')[0]}
+                                            {getPlayerAbbr(p)}
                                           </span>
                                         ) : (
                                           <span className="text-[9px] text-muted-foreground/40">—</span>
