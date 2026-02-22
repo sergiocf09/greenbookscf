@@ -42,9 +42,15 @@ const getEffectiveOyesesPlayerConfig = (
   // If explicitly present, respect it.
   if (playerConfig) return { enabled: playerConfig.enabled, modality: playerConfig.modality };
 
-  // If missing, inherit a default modality from existing configs (if any), otherwise acumulados.
+  // If missing, inherit a default modality from participating players' configs (if any),
+  // otherwise acumulados. We skip configs of excluded players to avoid inheriting
+  // a sangron modality from a non-participant.
+  const participantIds = config.oyeses.participantIds ?? [];
+  const participantConfigs = participantIds.length > 0
+    ? config.oyeses.playerConfigs.filter(pc => participantIds.includes(pc.playerId))
+    : config.oyeses.playerConfigs;
   const fallbackModality: OyesModality =
-    config.oyeses.playerConfigs[0]?.modality ?? 'acumulados';
+    participantConfigs[0]?.modality ?? 'acumulados';
 
   return { enabled: true, modality: fallbackModality };
 };
