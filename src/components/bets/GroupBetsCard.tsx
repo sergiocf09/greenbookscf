@@ -745,12 +745,24 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Helper: resolve participants for this group, handling template inheritance.
   // When participantIds was set for Group 1 only, Group 2 players won't be in the list.
   // In that case, treat it as "all group players participate".
+  // Also: guests added after bet config won't be in participantIds (which uses profile_ids).
+  // Include them automatically so they aren't silently excluded.
   const resolveGroupParticipants = (participantIds: string[] | undefined): typeof sameGroupPlayers => {
     if (!participantIds || participantIds.length === 0) return sameGroupPlayers;
-    const groupPlayersInList = sameGroupPlayers.filter(p => participantIds.includes(p.id));
+    const groupPlayersInList = sameGroupPlayers.filter(p =>
+      participantIds.includes(p.id) || participantIds.includes(p.profileId ?? '')
+    );
     // If NONE of this group's players are in the list, it means participantIds
     // was set for another group (template) - include all group players
     if (groupPlayersInList.length === 0) return sameGroupPlayers;
+    // Also include any guest players (no profileId) that aren't in the list
+    // since they were added after bet configuration
+    const guestsNotInList = sameGroupPlayers.filter(p =>
+      !p.profileId && !participantIds.includes(p.id)
+    );
+    if (guestsNotInList.length > 0) {
+      return [...groupPlayersInList, ...guestsNotInList];
+    }
     return groupPlayersInList;
   };
 
