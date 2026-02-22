@@ -42,10 +42,15 @@ const getEffectiveOyesesPlayerConfig = (
   // If explicitly present, respect it.
   if (playerConfig) return { enabled: playerConfig.enabled, modality: playerConfig.modality };
 
+  // If participantIds is set and this player is NOT in it, they don't participate.
+  const participantIds = config.oyeses.participantIds ?? [];
+  if (participantIds.length > 0 && !participantIds.includes(playerId)) {
+    return { enabled: false, modality: 'acumulados' };
+  }
+
   // If missing, inherit a default modality from participating players' configs (if any),
   // otherwise acumulados. We skip configs of excluded players to avoid inheriting
   // a sangron modality from a non-participant.
-  const participantIds = config.oyeses.participantIds ?? [];
   const participantConfigs = participantIds.length > 0
     ? config.oyeses.playerConfigs.filter(pc => participantIds.includes(pc.playerId))
     : config.oyeses.playerConfigs;
