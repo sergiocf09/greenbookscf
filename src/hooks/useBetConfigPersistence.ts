@@ -192,6 +192,8 @@ export const useBetConfigPersistence = ({
 
       if (round?.bet_config) {
         const dbConfig = round.bet_config as RoundBetConfig;
+        // Suppress auto-save: loading from DB should NOT trigger a save-back
+        isApplyingRemoteRef.current = true;
         applyDbConfigToState(dbConfig);
         devLog('Bet config loaded from database:', dbConfig);
       }
@@ -478,7 +480,7 @@ export const useBetConfigPersistence = ({
   }, [saveBetConfig]);
 
   // Auto-save when bet config changes (after initial load).
-  // Skip if the change came from a remote Realtime update to prevent echo loops.
+  // Skip if the change came from a remote Realtime update or a DB load to prevent echo loops.
   useEffect(() => {
     if (isApplyingRemoteRef.current) {
       isApplyingRemoteRef.current = false;
@@ -487,6 +489,7 @@ export const useBetConfigPersistence = ({
     if (isLoadedRef.current && roundId) {
       debouncedSave(betConfig);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betConfig, roundId, debouncedSave]);
 
   // Track our own save timestamps to suppress our own Realtime echo
