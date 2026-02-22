@@ -217,7 +217,10 @@ const Index = () => {
     // Otherwise we would disable freshly-enabled Carritos during normal setup (teams start empty).
     if (!wasRestoringRef.current) return;
 
-    const validPlayerIds = new Set(players.map((p) => p.id));
+    const validPlayerIds = new Set([
+      ...players.map((p) => p.id),
+      ...playerGroups.flatMap((g) => g.players.map((p) => p.id)),
+    ]);
     const isTeamComplete = (team: [string, string]) =>
       Boolean(team?.[0]) && Boolean(team?.[1]) && validPlayerIds.has(team[0]) && validPlayerIds.has(team[1]);
 
@@ -273,7 +276,7 @@ const Index = () => {
     // Persist immediately so a later restore doesn't resurrect the ghost bet.
     setBetConfig(next);
     void saveBetConfig(next);
-  }, [roundState.id, isRestoring, isBetConfigLoaded, players, betConfig, saveBetConfig, setBetConfig]);
+  }, [roundState.id, isRestoring, isBetConfigLoaded, players, playerGroups, betConfig, saveBetConfig, setBetConfig]);
 
   // Auto-restore the most recent pending round without showing the dialog
   useEffect(() => {

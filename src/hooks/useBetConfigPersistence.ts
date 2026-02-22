@@ -100,6 +100,8 @@ interface RoundBetConfig {
     backAmount: number;
     totalAmount: number;
     participantIds?: string[];
+    oneVsAll?: boolean;
+    anchorPlayerId?: string;
   };
   sideBets?: {
     enabled: boolean;
@@ -283,6 +285,8 @@ export const useBetConfigPersistence = ({
           backAmount: dbConfig.putts.backAmount ?? prev.putts.backAmount,
           totalAmount: dbConfig.putts.totalAmount ?? prev.putts.totalAmount,
           participantIds: dbConfig.putts.participantIds ?? prev.putts.participantIds,
+          oneVsAll: dbConfig.putts.oneVsAll ?? prev.putts.oneVsAll,
+          anchorPlayerId: dbConfig.putts.anchorPlayerId ?? prev.putts.anchorPlayerId,
         };
       }
       
@@ -385,6 +389,8 @@ export const useBetConfigPersistence = ({
           backAmount: config.putts.backAmount,
           totalAmount: config.putts.totalAmount,
           participantIds: config.putts.participantIds,
+          oneVsAll: config.putts.oneVsAll,
+          anchorPlayerId: config.putts.anchorPlayerId,
         },
         sideBets: {
           enabled: config.sideBets.enabled,

@@ -88,6 +88,14 @@ const remapParticipants = (
     }
   }
 
+  // Clear oneVsAll anchor players (player-specific, won't map correctly)
+  for (const key of betsWithParticipants) {
+    if (result[key] && 'oneVsAll' in result[key]) {
+      result[key].oneVsAll = false;
+      result[key].anchorPlayerId = undefined;
+    }
+  }
+
   // Clear player-specific overrides that won't map correctly
   result.bilateralHandicaps = [];
   result.betOverrides = [];
