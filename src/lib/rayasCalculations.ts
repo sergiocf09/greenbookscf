@@ -779,10 +779,10 @@ const processOyesSangronForPair = (
     const scoreA = scoresA.find(s => s.holeNumber === holeNum);
     const scoreB = scoresB.find(s => s.holeNumber === holeNum);
     
-    // Sangrón uses ONLY oyesProximitySangron field - NO fallback to Acumulados
-    // This ensures data independence between the two modalities
-    const proximityA = scoreA?.oyesProximitySangron ?? null;
-    const proximityB = scoreB?.oyesProximitySangron ?? null;
+    // Sangrón prefers oyesProximitySangron but falls back to oyesProximity (Acumulados)
+    // This ensures that players who only have Acumulados data still count in Sangrón pairs
+    const proximityA = scoreA?.oyesProximitySangron ?? scoreA?.oyesProximity ?? null;
+    const proximityB = scoreB?.oyesProximitySangron ?? scoreB?.oyesProximity ?? null;
     
     let winnerId: string | null = null;
     let loserId: string | null = null;
