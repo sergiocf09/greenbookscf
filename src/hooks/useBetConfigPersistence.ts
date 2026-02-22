@@ -61,6 +61,8 @@ interface RoundBetConfig {
       };
     }>>;
     participantIds?: string[];
+    oneVsAll?: boolean;
+    anchorPlayerId?: string;
   };
   oyeses?: {
     enabled: boolean;
@@ -229,6 +231,8 @@ export const useBetConfigPersistence = ({
           segments: dbRayas.segments ?? prev.rayas.segments,
           bilateralOverrides: dbRayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
           participantIds: 'participantIds' in dbRayas ? dbRayas.participantIds : prev.rayas.participantIds,
+          oneVsAll: dbRayas.oneVsAll ?? prev.rayas.oneVsAll,
+          anchorPlayerId: dbRayas.anchorPlayerId ?? prev.rayas.anchorPlayerId,
         };
       }
       
@@ -356,6 +360,8 @@ export const useBetConfigPersistence = ({
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
           participantIds: config.rayas.participantIds,
+          oneVsAll: config.rayas.oneVsAll,
+          anchorPlayerId: config.rayas.anchorPlayerId,
         },
         oyeses: {
           enabled: config.oyeses.enabled,
