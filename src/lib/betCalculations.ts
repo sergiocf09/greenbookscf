@@ -65,6 +65,39 @@ const resolveParticipantsForGroup = (
   return groupPlayersInList;
 };
 
+/**
+ * Determine if a specific pair should be calculated based on oneVsAll mode.
+ * In oneVsAll mode, only pairs involving the anchor player are calculated.
+ * Returns true if the pair should be calculated.
+ */
+export const shouldCalculatePair = (
+  betConfig: { oneVsAll?: boolean; anchorPlayerId?: string },
+  playerAId: string,
+  playerBId: string
+): boolean => {
+  if (!betConfig.oneVsAll || !betConfig.anchorPlayerId) return true;
+  return playerAId === betConfig.anchorPlayerId || playerBId === betConfig.anchorPlayerId;
+};
+
+/**
+ * Resolve participating players considering oneVsAll mode.
+ * When oneVsAll is active, ALL group players participate (the anchor plays vs everyone),
+ * but pair filtering is done by shouldCalculatePair in the double loop.
+ */
+const resolveParticipantsWithOneVsAll = (
+  betConfig: { oneVsAll?: boolean; anchorPlayerId?: string; participantIds?: string[] },
+  allPlayers: Player[],
+  resolvedParticipantIds: string[] | undefined,
+  groupPlayers: Player[]
+): Player[] => {
+  if (betConfig.oneVsAll && betConfig.anchorPlayerId) {
+    // Verify anchor is in this group
+    const anchorInGroup = groupPlayers.some(p => p.id === betConfig.anchorPlayerId);
+    if (anchorInGroup) return groupPlayers;
+  }
+  return resolveParticipantsForGroup(allPlayers, resolvedParticipantIds, groupPlayers);
+};
+
 export interface BetSummary {
   playerId: string;
   vsPlayer: string;
@@ -258,7 +291,7 @@ export const calculateMedalBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsForGroup(players, resolved.medal.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.medal, players, resolved.medal.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];
@@ -278,6 +311,8 @@ export const calculateMedalBets = (
       // Without this guard, the main engine AND the cross-group engine both compute the same pair,
       // causing double-counting (e.g., Medal Back $100 + $100 = $200).
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.medal, playerA.id, playerB.id)) continue;
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -355,7 +390,7 @@ export const calculatePressureBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsForGroup(players, resolved.pressures.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.pressures, players, resolved.pressures.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];
@@ -400,6 +435,8 @@ export const calculatePressureBets = (
 
       // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.pressures, playerA.id, playerB.id)) continue;
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -658,7 +695,7 @@ export const calculateSkinsBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsForGroup(players, resolved.skins.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.skins, players, resolved.skins.participantIds, groupPlayers);
   });
 
   const summaries: BetSummary[] = [];
@@ -690,6 +727,8 @@ export const calculateSkinsBets = (
 
       // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.skins, playerA.id, playerB.id)) continue;
 
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
 
@@ -977,7 +1016,7 @@ export const calculateCarosBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsForGroup(players, resolved.caros.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.caros, players, resolved.caros.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];
@@ -989,6 +1028,8 @@ export const calculateCarosBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.caros, playerA.id, playerB.id)) continue;
       
       // Get adjusted scores for this pair based on bilateral handicap overrides
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
@@ -1105,7 +1146,8 @@ export const calculateUnitsBets = (
     // Resolve participants for this specific group (handles template inheritance + group overrides)
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    const participatingPlayers = resolveParticipantsForGroup(
+    const participatingPlayers = resolveParticipantsWithOneVsAll(
+      config.units,
       players,
       resolved.units.participantIds,
       groupPlayers
@@ -1117,6 +1159,8 @@ export const calculateUnitsBets = (
       for (let j = i + 1; j < participatingPlayers.length; j++) {
         const playerA = participatingPlayers[i];
         const playerB = participatingPlayers[j];
+        // Skip non-anchor pairs in oneVsAll mode
+        if (!shouldCalculatePair(config.units, playerA.id, playerB.id)) continue;
         
         const unitsA = countUnits(playerA.id);
         const unitsB = countUnits(playerB.id);
@@ -1206,7 +1250,8 @@ export const calculateManchasBets = (
     // Resolve participants for this specific group (handles template inheritance + group overrides)
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    const participatingPlayers = resolveParticipantsForGroup(
+    const participatingPlayers = resolveParticipantsWithOneVsAll(
+      config.manchas,
       players,
       resolved.manchas.participantIds,
       groupPlayers
@@ -1219,6 +1264,8 @@ export const calculateManchasBets = (
       for (let j = i + 1; j < participatingPlayers.length; j++) {
         const playerA = participatingPlayers[i];
         const playerB = participatingPlayers[j];
+        // Skip non-anchor pairs in oneVsAll mode
+        if (!shouldCalculatePair(config.manchas, playerA.id, playerB.id)) continue;
         
         const manchasA = countManchas(playerA.id);
         const manchasB = countManchas(playerB.id);
@@ -1622,7 +1669,7 @@ export const calculatePuttsBets = (
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
     const puttParticipantIds = resolved.putts?.participantIds;
-    return resolveParticipantsForGroup(players, puttParticipantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.putts, players, puttParticipantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];
@@ -1639,6 +1686,8 @@ export const calculatePuttsBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+      // Skip non-anchor pairs in oneVsAll mode
+      if (!shouldCalculatePair(config.putts, playerA.id, playerB.id)) continue;
       
       segments.forEach(({ key, holes, amount, label }) => {
         if (amount <= 0) return;

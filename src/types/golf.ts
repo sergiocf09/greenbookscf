@@ -214,6 +214,8 @@ export interface RayasBetConfig {
   // Per-player bilateral overrides (keyed by logged-in player's ID)
   bilateralOverrides?: Record<string, RayasBilateralOverride[]>;
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 // Medal General - Group bet for lowest net total score
@@ -273,6 +275,8 @@ export interface PuttsBetConfig {
   backAmount: number;
   totalAmount: number;
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 // Side Bets - Quick capture, no handicap, direct money
@@ -413,6 +417,8 @@ export interface MedalBetConfig {
   backAmount: number;
   totalAmount: number;
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface PressureBetConfig {
@@ -421,6 +427,8 @@ export interface PressureBetConfig {
   backAmount: number;
   totalAmount: number; // Match 18 bet amount
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface SkinsBetConfig {
@@ -433,6 +441,8 @@ export interface SkinsBetConfig {
   participantIds?: string[];
   playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-player skin variant override
   pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumular'>; // Per-pair override (key = sorted "idA_idB")
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface CarosBetConfig {
@@ -441,18 +451,24 @@ export interface CarosBetConfig {
   startHole?: number; // Default 15
   endHole?: number; // Default 18
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface UnitsBetConfig {
   enabled: boolean;
   valuePerPoint: number;
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface ManchasBetConfig {
   enabled: boolean;
   valuePerPoint: number;
   participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
 }
 
 export interface CumulativeBetConfig {
