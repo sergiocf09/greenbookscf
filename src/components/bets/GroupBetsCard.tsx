@@ -1291,6 +1291,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showManchasPanel, setShowManchasPanel] = useState(false);
   const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
   const [showOyesesPanel, setShowOyesesPanel] = useState(false);
+  const [oyesesPanelTab, setOyesesPanelTab] = useState<'acumulado' | 'sangron'>('acumulado');
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -1775,136 +1776,160 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
                 ) : (
                   <>
-                    {/* Acumulados table */}
-                    {oyesesSummary.hasAcumulados && (() => {
-                      const acumHoles = oyesesSummary.holeSummaries.filter(h => h.acumuladosRankings);
-                      if (acumHoles.length === 0) return null;
-                      const maxRows = Math.max(...acumHoles.map(h => {
-                        const ranked = (h.acumuladosRankings || []).filter(r => r.rank !== null).length;
-                        const unrankedConfirmed = (h.acumuladosRankings || []).filter(r => 
-                          r.rank === null && scores.get(r.playerId)?.some(sc => sc.holeNumber === h.holeNumber && sc.confirmed)
-                        ).length;
-                        return ranked + unrankedConfirmed;
-                      }));
-                      if (maxRows === 0) return null;
-                      return (
-                        <div className="space-y-1">
-                          {oyesesSummary.hasSangron && (
-                            <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-wide">Acumulado</span>
+                    {/* Tab toggle when both modalities coexist */}
+                    {oyesesSummary.hasAcumulados && oyesesSummary.hasSangron && (
+                      <div className="flex gap-1 p-0.5 bg-muted/60 rounded-lg">
+                        <button
+                          onClick={() => setOyesesPanelTab('acumulado')}
+                          className={cn(
+                            'flex-1 py-1 px-2 text-[10px] font-medium rounded-md transition-all text-center',
+                            oyesesPanelTab === 'acumulado'
+                              ? 'bg-background shadow text-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
                           )}
-                          {/* Table: left col = position numbers, then one col per hole */}
-                          <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${acumHoles.length}, 1fr)` }}>
-                            {/* Header row */}
-                            <div className="text-[9px] text-muted-foreground text-center pb-1" />
-                            {acumHoles.map(hole => (
-                              <div key={hole.holeNumber} className="text-[10px] font-bold text-blue-500 text-center pb-1">
-                                H{hole.holeNumber}
-                              </div>
-                            ))}
-                            {/* Divider */}
-                            <div className="col-span-full h-px bg-border/50 mb-1" />
-                            {/* Data rows */}
-                            {Array.from({ length: maxRows }, (_, rowIdx) => (
-                              <React.Fragment key={rowIdx}>
-                                {/* Position number */}
-                                <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
-                                  {rowIdx + 1}
-                                </div>
-                                {acumHoles.map(hole => {
-                                  const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
-                                  const entry = ranked[rowIdx];
-                                  const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
-                                  // Check if this row is beyond ranked entries but within active players
-                                  // who have a score on this hole (= No GIR, show X)
-                                  const showNoGir = !entry && rowIdx < (oyesesSummary.activePlayers?.length || 0) && (() => {
-                                    const allEntries = hole.acumuladosRankings || [];
-                                    const unranked = allEntries.filter(r => r.rank === null);
-                                    const unrankedIdx = rowIdx - ranked.length;
-                                    if (unrankedIdx >= 0 && unrankedIdx < unranked.length) {
-                                      const pid = unranked[unrankedIdx].playerId;
-                                      return scores.get(pid)?.some(sc => sc.holeNumber === hole.holeNumber && sc.confirmed);
-                                    }
-                                    return false;
-                                  })();
-                                  return (
-                                    <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
-                                      {p ? (
-                                        <span className={cn(
-                                          'text-[9px] font-medium leading-tight block truncate',
-                                          rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
-                                        )}>
-                                          {p.name.split(' ')[0]}
-                                        </span>
-                                      ) : showNoGir ? (
-                                        <span className="text-[9px] font-bold text-destructive">✕</span>
-                                      ) : (
-                                        <span className="text-[9px] text-muted-foreground/40">—</span>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </React.Fragment>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                        >
+                          Acumulado
+                        </button>
+                        <button
+                          onClick={() => setOyesesPanelTab('sangron')}
+                          className={cn(
+                            'flex-1 py-1 px-2 text-[10px] font-medium rounded-md transition-all text-center',
+                            oyesesPanelTab === 'sangron'
+                              ? 'bg-background shadow text-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          ⚡ Sangrón
+                        </button>
+                      </div>
+                    )}
 
-                    {/* Sangrón table */}
-                    {oyesesSummary.hasSangron && (() => {
-                      const sangronHoles = oyesesSummary.holeSummaries.filter(h => h.sangronRankings);
-                      if (sangronHoles.length === 0) return null;
-                      // Use all active players for row count (sangrón requires all positions)
-                      const numPlayers = oyesesSummary.activePlayers?.length || sameGroupPlayers.length;
-                      return (
-                        <div className="space-y-1">
-                          {oyesesSummary.hasAcumulados && (
-                            <span className="text-[9px] font-semibold text-amber-500 uppercase tracking-wide">Sangrón</span>
-                          )}
-                          <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${sangronHoles.length}, 1fr)` }}>
-                            {/* Header row */}
-                            <div className="text-[9px] text-muted-foreground text-center pb-1" />
-                            {sangronHoles.map(hole => (
-                              <div key={hole.holeNumber} className="text-[10px] font-bold text-amber-500 text-center pb-1">
-                                H{hole.holeNumber}
-                              </div>
-                            ))}
-                            {/* Divider */}
-                            <div className="col-span-full h-px bg-border/50 mb-1" />
-                            {/* Data rows — show all players sorted */}
-                            {Array.from({ length: numPlayers }, (_, rowIdx) => (
-                              <React.Fragment key={rowIdx}>
-                                <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
-                                  {rowIdx + 1}
+                    {/* Determine which tab to show */}
+                    {(() => {
+                      // If only one modality, show that one; if both, use tab selection
+                      const showAcumulado = oyesesSummary.hasAcumulados && (!oyesesSummary.hasSangron || oyesesPanelTab === 'acumulado');
+                      const showSangron = oyesesSummary.hasSangron && (!oyesesSummary.hasAcumulados || oyesesPanelTab === 'sangron');
+
+                      if (showAcumulado) {
+                        const acumHoles = oyesesSummary.holeSummaries.filter(h => h.acumuladosRankings);
+                        if (acumHoles.length === 0) return null;
+                        const maxRows = Math.max(...acumHoles.map(h => {
+                          const ranked = (h.acumuladosRankings || []).filter(r => r.rank !== null).length;
+                          const unrankedConfirmed = (h.acumuladosRankings || []).filter(r =>
+                            r.rank === null && scores.get(r.playerId)?.some(sc => sc.holeNumber === h.holeNumber && sc.confirmed)
+                          ).length;
+                          return ranked + unrankedConfirmed;
+                        }));
+                        if (maxRows === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Acumulado aún</p>;
+                        return (
+                          <div className="space-y-1">
+                            {!oyesesSummary.hasSangron && (
+                              <span className="text-[9px] text-muted-foreground">Modalidad Acumulado</span>
+                            )}
+                            <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${acumHoles.length}, 1fr)` }}>
+                              <div className="text-[9px] text-muted-foreground text-center pb-1" />
+                              {acumHoles.map(hole => (
+                                <div key={hole.holeNumber} className="text-[10px] font-bold text-blue-500 text-center pb-1">
+                                  H{hole.holeNumber}
                                 </div>
-                                {sangronHoles.map(hole => {
-                                  const sorted = [...(hole.sangronRankings || [])].sort((a, b) => {
-                                    if (a.rank === null) return 1;
-                                    if (b.rank === null) return -1;
-                                    return a.rank - b.rank;
-                                  });
-                                  const entry = sorted[rowIdx];
-                                  const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
-                                  return (
-                                    <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
-                                      {p && entry?.rank !== null ? (
-                                        <span className={cn(
-                                          'text-[9px] font-medium leading-tight block truncate',
-                                          rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
-                                        )}>
-                                          {p.name.split(' ')[0]}
-                                        </span>
-                                      ) : (
-                                        <span className="text-[9px] text-muted-foreground/40">—</span>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </React.Fragment>
-                            ))}
+                              ))}
+                              <div className="col-span-full h-px bg-border/50 mb-1" />
+                              {Array.from({ length: maxRows }, (_, rowIdx) => (
+                                <React.Fragment key={rowIdx}>
+                                  <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
+                                    {rowIdx + 1}
+                                  </div>
+                                  {acumHoles.map(hole => {
+                                    const ranked = (hole.acumuladosRankings || []).filter(r => r.rank !== null);
+                                    const entry = ranked[rowIdx];
+                                    const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
+                                    const showNoGir = !entry && (() => {
+                                      const allEntries = hole.acumuladosRankings || [];
+                                      const unranked = allEntries.filter(r => r.rank === null);
+                                      const unrankedIdx = rowIdx - ranked.length;
+                                      if (unrankedIdx >= 0 && unrankedIdx < unranked.length) {
+                                        const pid = unranked[unrankedIdx].playerId;
+                                        return scores.get(pid)?.some(sc => sc.holeNumber === hole.holeNumber && sc.confirmed);
+                                      }
+                                      return false;
+                                    })();
+                                    return (
+                                      <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                        {p ? (
+                                          <span className={cn(
+                                            'text-[9px] font-medium leading-tight block truncate',
+                                            rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
+                                          )}>
+                                            {p.name.split(' ')[0]}
+                                          </span>
+                                        ) : showNoGir ? (
+                                          <span className="text-[9px] font-bold text-destructive">✕</span>
+                                        ) : (
+                                          <span className="text-[9px] text-muted-foreground/40">—</span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      }
+
+                      if (showSangron) {
+                        const sangronHoles = oyesesSummary.holeSummaries.filter(h => h.sangronRankings);
+                        if (sangronHoles.length === 0) return null;
+                        const numPlayers = oyesesSummary.activePlayers?.length || sameGroupPlayers.length;
+                        return (
+                          <div className="space-y-1">
+                            {!oyesesSummary.hasAcumulados && (
+                              <span className="text-[9px] text-muted-foreground">Modalidad Sangrón</span>
+                            )}
+                            <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${sangronHoles.length}, 1fr)` }}>
+                              <div className="text-[9px] text-muted-foreground text-center pb-1" />
+                              {sangronHoles.map(hole => (
+                                <div key={hole.holeNumber} className="text-[10px] font-bold text-amber-500 text-center pb-1">
+                                  H{hole.holeNumber}
+                                </div>
+                              ))}
+                              <div className="col-span-full h-px bg-border/50 mb-1" />
+                              {Array.from({ length: numPlayers }, (_, rowIdx) => (
+                                <React.Fragment key={rowIdx}>
+                                  <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
+                                    {rowIdx + 1}
+                                  </div>
+                                  {sangronHoles.map(hole => {
+                                    const sorted = [...(hole.sangronRankings || [])].sort((a, b) => {
+                                      if (a.rank === null) return 1;
+                                      if (b.rank === null) return -1;
+                                      return a.rank - b.rank;
+                                    });
+                                    const entry = sorted[rowIdx];
+                                    const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
+                                    return (
+                                      <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                        {p && entry?.rank !== null ? (
+                                          <span className={cn(
+                                            'text-[9px] font-medium leading-tight block truncate',
+                                            rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
+                                          )}>
+                                            {p.name.split(' ')[0]}
+                                          </span>
+                                        ) : (
+                                          <span className="text-[9px] text-muted-foreground/40">—</span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
                     })()}
                   </>
                 )}
