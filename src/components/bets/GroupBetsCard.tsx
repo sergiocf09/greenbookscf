@@ -1254,17 +1254,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           return a.rank - b.rank;
         }) : null;
 
-      // A hole is "played" (show it) if:
-      // - At least one player has a rank (entered proximity), OR
-      // - In acumulados mode, ANY player has a score entry for this hole (carry hole counts too)
       const hasAcumuladoEntry = acumuladosRankings
         ? acumuladosPlayerIds.some(pid => scores.get(pid)?.some(sc => sc.holeNumber === holeNumber))
         : false;
       const hasData = (acumuladosRankings?.some(r => r.rank !== null) || sangronRankings?.some(r => r.rank !== null) || hasAcumuladoEntry);
       return { holeNumber, acumuladosRankings, sangronRankings, hasData };
-    }).filter(h => h.hasData);
+    });
 
-    return { holeSummaries, hasAcumulados, hasSangron };
+    // Count holes that have actual data for the counter
+    const holesWithData = holeSummaries.filter(h => h.hasData).length;
+
+    return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData };
   }, [betConfig.oyeses, scores, course, sameGroupPlayers]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
@@ -1627,15 +1627,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 >
                   <div className={cn(
                     'w-9 h-9 rounded-full flex items-center justify-center transition-all',
-                    showOyesesPanel || oyesesSummary.holeSummaries.length > 0
+                    showOyesesPanel || oyesesSummary.holesWithData > 0
                       ? 'bg-blue-500 text-white'
                       : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   )}>
                     <Target className="h-5 w-5" strokeWidth={2} />
                   </div>
                   <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
-                  {oyesesSummary.holeSummaries.length > 0 && (
-                    <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holeSummaries.length}</span>
+                  {oyesesSummary.totalPar3 > 0 && (
+                    <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holesWithData}/{oyesesSummary.totalPar3}</span>
                   )}
                 </button>
               )}
@@ -1768,7 +1768,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {/* Oyeses panel — tabla con columna de posiciones y columnas por hoyo */}
             {showOyesesPanel && oyesesSummary && (
               <div className="space-y-3">
-                {oyesesSummary.holeSummaries.length === 0 ? (
+                {oyesesSummary.holesWithData === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
                 ) : (
                   <>
