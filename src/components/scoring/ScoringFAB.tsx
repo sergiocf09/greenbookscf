@@ -26,9 +26,8 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
         "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95",
         "bottom-6 right-6",
         // Slightly smaller & lower opacity on bets view to avoid blocking content
-        isOnBetsView
-          ? "h-14 w-14 opacity-90"
-          : "h-16 w-16",
+        "h-14 w-14",
+        isOnBetsView && "opacity-90",
         // Safe area padding for iOS
         "safe-bottom"
       )}
@@ -41,11 +40,8 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
     >
       {/* Notebook + Pencil icon composition */}
       <div className="relative">
-        <BookOpen className={cn(isOnBetsView ? "h-6 w-6" : "h-7 w-7")} />
-        <Pencil className={cn(
-          "absolute -bottom-1 -right-1.5",
-          isOnBetsView ? "h-3 w-3" : "h-3.5 w-3.5"
-        )} />
+        <BookOpen className="h-6 w-6" />
+        <Pencil className="absolute -bottom-1 -right-1.5 h-3 w-3" />
       </div>
 
       {/* Hole number badge */}
@@ -54,9 +50,7 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
           "absolute flex items-center justify-center rounded-full",
           "bg-accent text-accent-foreground font-bold shadow-md",
           "border-2 border-primary-foreground/30",
-          isOnBetsView
-            ? "-top-1 -left-1 h-6 w-6 text-[10px]"
-            : "-top-1.5 -left-1.5 h-7 w-7 text-xs"
+          "-top-1 -left-1 h-6 w-6 text-[10px]"
         )}
       >
         {currentHole}
