@@ -1853,7 +1853,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               <div className="col-span-full h-px bg-border/50 mb-1" />
                               {Array.from({ length: maxRows }, (_, rowIdx) => (
                                 <React.Fragment key={rowIdx}>
-                                  <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
+                                  <div className="text-[10px] text-muted-foreground text-center flex items-center justify-center min-h-[22px] font-medium">
                                     {rowIdx + 1}
                                   </div>
                                   {acumHoles.map(hole => {
@@ -1871,18 +1871,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                       return false;
                                     })();
                                     return (
-                                      <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                      <div key={hole.holeNumber} className="text-center flex items-center justify-center min-h-[22px] px-0.5">
                                         {p ? (
                                           <span className={cn(
-                                            'text-[9px] font-medium leading-tight block truncate',
+                                            'text-[11px] font-semibold leading-tight block truncate',
                                             rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
                                           )}>
                                             {getPlayerAbbr(p)}
                                           </span>
                                         ) : showNoGir ? (
-                                          <span className="text-[9px] font-bold text-destructive">✕</span>
+                                          <span className="text-[11px] font-bold text-destructive">✕</span>
                                         ) : (
-                                          <span className="text-[9px] text-muted-foreground/40">—</span>
+                                          <span className="text-[11px] text-muted-foreground/40">—</span>
                                         )}
                                       </div>
                                     );
@@ -1913,7 +1913,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               <div className="col-span-full h-px bg-border/50 mb-1" />
                               {Array.from({ length: numPlayers }, (_, rowIdx) => (
                                 <React.Fragment key={rowIdx}>
-                                  <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
+                                  <div className="text-[10px] text-muted-foreground text-center flex items-center justify-center min-h-[22px] font-medium">
                                     {rowIdx + 1}
                                   </div>
                                   {sangronHoles.map(hole => {
@@ -1925,16 +1925,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                                     const entry = sorted[rowIdx];
                                     const p = entry ? (oyesesSummary.activePlayers || sameGroupPlayers).find(pl => pl.id === entry.playerId) : null;
                                     return (
-                                      <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                      <div key={hole.holeNumber} className="text-center flex items-center justify-center min-h-[22px] px-0.5">
                                         {p && entry?.rank !== null ? (
                                           <span className={cn(
-                                            'text-[9px] font-medium leading-tight block truncate',
+                                            'text-[11px] font-semibold leading-tight block truncate',
                                             rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
                                           )}>
                                             {getPlayerAbbr(p)}
                                           </span>
                                         ) : (
-                                          <span className="text-[9px] text-muted-foreground/40">—</span>
+                                          <span className="text-[11px] text-muted-foreground/40">—</span>
                                         )}
                                       </div>
                                     );
