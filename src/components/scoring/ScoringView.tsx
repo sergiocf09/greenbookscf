@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
@@ -32,6 +32,46 @@ interface ScoringViewProps {
   onUpdateZooEvent?: (event: ZooEvent) => void;
   onDeleteZooEvent?: (eventId: string) => void;
 }
+
+/** Hole nav bar that auto-scrolls to center the active hole */
+const HoleNavigationBar: React.FC<{
+  currentHole: number;
+  setCurrentHole: (hole: number) => void;
+  isHoleConfirmedForDisplayGroup: (hole: number) => boolean;
+}> = ({ currentHole, setCurrentHole, isHoleConfirmedForDisplayGroup }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    const btn = buttonRefs.current.get(currentHole);
+    if (btn && containerRef.current) {
+      const container = containerRef.current;
+      const scrollLeft = btn.offsetLeft - container.clientWidth / 2 + btn.offsetWidth / 2;
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    }
+  }, [currentHole]);
+
+  return (
+    <div ref={containerRef} className="flex gap-1 overflow-x-auto pb-2 pt-1">
+      {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
+        const confirmed = isHoleConfirmedForDisplayGroup(hole);
+        return (
+          <button
+            key={hole}
+            ref={(el) => { if (el) buttonRefs.current.set(hole, el); }}
+            onClick={() => setCurrentHole(hole)}
+            className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
+              ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
+                confirmed ? 'bg-green-500/20 text-green-700 dark:text-green-400 ring-2 ring-green-500' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
+              ${hole === 9 ? 'mr-2' : ''}`}
+          >
+            {hole}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 export const ScoringView: React.FC<ScoringViewProps> = ({
   players,
@@ -118,23 +158,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Hole Navigation */}
-      <div className="flex gap-1 overflow-x-auto pb-2 pt-1">
-        {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
-          const confirmed = isHoleConfirmedForDisplayGroup(hole);
-          return (
-            <button
-              key={hole}
-              onClick={() => setCurrentHole(hole)}
-              className={`min-w-[2rem] h-8 rounded-full text-sm font-medium transition-all relative
-                ${currentHole === hole ? 'bg-primary text-primary-foreground scale-110' : 
-                  confirmed ? 'bg-green-500/20 text-green-700 dark:text-green-400 ring-2 ring-green-500' : 'bg-muted text-muted-foreground hover:bg-muted/80'}
-                ${hole === 9 ? 'mr-2' : ''}`}
-            >
-              {hole}
-            </button>
-          );
-        })}
-      </div>
+      <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
 
       {/* Player Score Inputs */}
       {displayPlayers.map(player => {
