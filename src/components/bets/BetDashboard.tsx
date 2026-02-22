@@ -889,12 +889,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return playerId === betConfig_.anchorPlayerId || rivalId === betConfig_.anchorPlayerId;
     }
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
-    const playerIn = participantIds.includes(playerId);
-    const rivalIn = participantIds.includes(rivalId);
-    if (playerIn && rivalIn) return true;
+    // Check both id and profileId for each player (guests may only have round_player_id)
+    const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
+    const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
+    const playerIn = participantIds.includes(playerId) || (playerObj?.profileId && participantIds.includes(playerObj.profileId));
+    const rivalIn = participantIds.includes(rivalId) || (rivalObj?.profileId && participantIds.includes(rivalObj.profileId));
+    // Auto-include guests (no profileId) that were added after bet config
+    const playerIsGuest = playerObj && !playerObj.profileId;
+    const rivalIsGuest = rivalObj && !rivalObj.profileId;
+    if ((playerIn || playerIsGuest) && (rivalIn || rivalIsGuest)) return true;
     // Template inheritance: if no player from the display group is in participantIds, treat as template
     const displayGroupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
-    const anyGroupPlayerInList = displayGroupPlayers.some(p => participantIds.includes(p.id));
+    const anyGroupPlayerInList = displayGroupPlayers.some(p => participantIds.includes(p.id) || (p.profileId && participantIds.includes(p.profileId)));
     if (!anyGroupPlayerInList) return true;
     return false;
   };
@@ -3479,27 +3485,32 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
     
+    // Helper: check if a player is in participantIds (by id or profileId)
+    const isInList = (p: Player): boolean =>
+      participantIds!.includes(p.id) || (!!p.profileId && participantIds!.includes(p.profileId));
+    // Auto-include guests (no profileId) that were added after bet config
+    const isGuest = (p: Player): boolean => !p.profileId;
+    
     // CROSS-GROUP: Only check that the base player participates in the bet.
     // If the base player is playing this bet, it should appear for cross-group rivals.
     if (isCrossGroup) {
-      const playerIn = participantIds.includes(player.id);
-      if (playerIn) return true;
+      if (isInList(player) || isGuest(player)) return true;
       // Template inheritance: if no group player is in the list, treat as template
-      const anyGroupPlayerInList = groupPlayers.some(p => participantIds!.includes(p.id));
+      const anyGroupPlayerInList = groupPlayers.some(p => isInList(p));
       if (!anyGroupPlayerInList) return true;
       return false;
     }
     
-    // Same-group: check if BOTH player and rival are in the list
-    const playerIn = participantIds.includes(player.id);
-    const rivalIn = participantIds.includes(rival.id);
+    // Same-group: check if BOTH player and rival are in the list (or are guests)
+    const playerIn = isInList(player) || isGuest(player);
+    const rivalIn = isInList(rival) || isGuest(rival);
     
     if (playerIn && rivalIn) return true;
     
     // Template inheritance: if NO player from the current group is in
     // participantIds, it means the list was set for a different group (template).
     // CRITICAL: Use groupPlayers (scoped to display group), NOT players (all groups).
-    const anyGroupPlayerInList = groupPlayers.some(p => participantIds!.includes(p.id));
+    const anyGroupPlayerInList = groupPlayers.some(p => isInList(p));
     if (!anyGroupPlayerInList) return true;
     
     // Some current-group players are explicitly listed but not both of this pair
