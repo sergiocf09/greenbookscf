@@ -1018,6 +1018,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         .reduce((sum, s) => sum + s.amount, 0);
     }
 
+    // Map engine betType labels to the betConfig key for participation checking
+    const betTypeToConfigKey = (betType: string): string | null => {
+      if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
+      if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
+      if (betType.startsWith('Skins')) return 'skins';
+      if (betType === 'Caros') return 'caros';
+      if (betType === 'Oyes') return 'oyeses';
+      if (betType === 'Unidades') return 'units';
+      if (betType === 'Manchas') return 'manchas';
+      if (betType === 'Culebras') return 'culebras';
+      if (betType.includes('Pingüino')) return 'pinguinos';
+      if (betType === 'Coneja') return 'coneja';
+      if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
+      return null;
+    };
+
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -1032,6 +1048,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Check if this bet type is disabled via override for this pair
         const { label, aliases } = betTypeToOverrideKey(s.betType);
         return !isBetDisabledForPair(label, aliases);
+      })
+      .filter(s => {
+        // Check if both players participate in this bet type
+        const configKey = betTypeToConfigKey(s.betType);
+        if (!configKey) return true; // unknown type, include by default
+        const betCfg = effectiveBetConfig[configKey as keyof BetConfig] as any;
+        if (!betCfg?.participantIds || betCfg.participantIds.length === 0) return true;
+        return bothParticipateGlobal(betCfg.participantIds, playerId, rivalId, betCfg);
       })
       .reduce((sum, s) => sum + s.amount, 0);
     
