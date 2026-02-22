@@ -4877,7 +4877,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     ) : group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
                     ) : group.key === 'oyeses' ? (
-                      // Oyeses detail - show proximity order per player per hole
+                      // Oyeses detail - show ALL players who marked proximity per par-3 hole
                       (() => {
                         // Use confirmedScores for display to match calculation
                         const oyesesData = getOyesesDisplayData(
@@ -4889,7 +4889,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
-                        // Get zapato (100% bonus) data - also use confirmedScores
+                        // Get zapato (100% bonus) data
                         const pairResult = getOyesesPairResult(
                           player.id,
                           rival.id,
@@ -4907,13 +4907,32 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         }
                         
                         const oyesTotal = groupedSummaries['Oyes']?.total || 0;
-                        const hasZapato = pairResult?.hasZapato || false;
-                        const zapatoBonus = pairResult?.zapatoBonus || 0;
-                        const zapatoWinnerId = pairResult?.zapatoWinnerId;
-                        const isPlayerZapatoWinner = zapatoWinnerId === player.id;
                         
-                        // Base amount is total minus zapato bonus (which is half of total when zapato is active)
-                        const baseAmount = hasZapato ? Math.abs(oyesTotal) / 2 : Math.abs(oyesTotal);
+                        // Build ranking table showing ALL players who marked proximity (acumulados)
+                        const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+                        // Filter to holes that have data (at least one player scored on them)
+                        const holesWithData = par3Holes.filter(holeNum => {
+                          return allPlayers.some(p => {
+                            const s = confirmedScores.get(p.id)?.find(sc => sc.holeNumber === holeNum);
+                            return s?.oyesProximity !== null && s?.oyesProximity !== undefined;
+                          });
+                        });
+                        
+                        // For each hole, get all players sorted by proximity
+                        const holeRankings = holesWithData.map(holeNum => {
+                          const rankings = allPlayers
+                            .map(p => {
+                              const s = confirmedScores.get(p.id)?.find(sc => sc.holeNumber === holeNum);
+                              return { player: p, rank: s?.oyesProximity ?? null };
+                            })
+                            .filter(r => r.rank !== null)
+                            .sort((a, b) => a.rank! - b.rank!);
+                          return { holeNumber: holeNum, rankings };
+                        });
+                        
+                        const maxRows = holeRankings.length > 0
+                          ? Math.max(...holeRankings.map(h => h.rankings.length))
+                          : 0;
                         
                         return (
                           <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
@@ -4935,88 +4954,74 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 />
                               </div>
                             )}
-                            {/* Header row with hole numbers */}
-                            <div className="flex items-center gap-2 text-[10px]">
-                              <div className="w-8 shrink-0"></div>
-                              <div className="flex gap-1 overflow-x-auto">
-                                {playerAHoles.map(h => (
-                                  <div key={h.holeNumber} className="w-8 text-center font-medium text-muted-foreground">
-                                    H{h.holeNumber}
-                                  </div>
-                                ))}
-                                <div className="w-12 text-center font-bold text-muted-foreground">Total</div>
+                            
+                            {/* Ranking table showing all players who got on the green */}
+                            {holeRankings.length > 0 && maxRows > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-wide">Ranking Acumulados</span>
+                                <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${holeRankings.length}, 1fr)` }}>
+                                  {/* Header row */}
+                                  <div className="text-[9px] text-muted-foreground text-center pb-1" />
+                                  {holeRankings.map(hole => (
+                                    <div key={hole.holeNumber} className="text-[10px] font-bold text-blue-500 text-center pb-1">
+                                      H{hole.holeNumber}
+                                    </div>
+                                  ))}
+                                  {/* Divider */}
+                                  <div className="col-span-full h-px bg-border/50 mb-1" />
+                                  {/* Data rows */}
+                                  {Array.from({ length: maxRows }, (_, rowIdx) => (
+                                    <React.Fragment key={rowIdx}>
+                                      <div className="text-[9px] text-muted-foreground text-center flex items-start justify-center py-0.5 font-medium">
+                                        {rowIdx + 1}
+                                      </div>
+                                      {holeRankings.map(hole => {
+                                        const entry = hole.rankings[rowIdx];
+                                        const p = entry?.player;
+                                        const isBilateralPlayer = p && (p.id === player.id || p.id === rival.id);
+                                        return (
+                                          <div key={hole.holeNumber} className="text-center py-0.5 px-0.5">
+                                            {p ? (
+                                              <span className={cn(
+                                                'text-[9px] font-medium leading-tight block truncate',
+                                                isBilateralPlayer ? 'text-foreground font-bold' : 
+                                                rowIdx === 0 ? 'text-foreground' : 'text-muted-foreground'
+                                              )}>
+                                                {p.name.split(' ')[0]}
+                                              </span>
+                                            ) : (
+                                              <span className="text-[9px] text-muted-foreground/40">—</span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Bilateral pair result summary */}
+                            <div className="flex items-center justify-between text-xs pt-1 border-t border-border/30">
+                              <div className="flex items-center gap-2">
+                                <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId} />
+                                <span className="font-medium">vs</span>
+                                <PlayerAvatar initials={rival.initials} background={rival.color} size="sm" isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId} />
+                              </div>
+                              <div className={cn(
+                                'text-sm font-bold',
+                                oyesTotal > 0 ? 'text-green-600' : oyesTotal < 0 ? 'text-destructive' : 'text-muted-foreground'
+                              )}>
+                                {oyesTotal >= 0 ? '+' : '-'}${Math.abs(oyesTotal)}
                               </div>
                             </div>
                             
-                            {/* Player A row */}
-                            <div className="flex items-center gap-2 text-xs">
-                              <PlayerAvatar 
-                                initials={player.initials} 
-                                background={player.color} 
-                                size="sm" 
-                                isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
-                              />
-                              <div className="flex gap-1 overflow-x-auto">
-                                {playerAHoles.map(h => (
-                                  <div 
-                                    key={h.holeNumber} 
-                                    className={cn(
-                                      'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                      h.isWin ? 'bg-green-500/20 text-green-600' :
-                                      h.isLoss ? 'bg-destructive/20 text-destructive' :
-                                      h.isAccumulated ? 'bg-muted text-muted-foreground' :
-                                      'bg-muted/30 text-muted-foreground'
-                                    )}
-                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
-                                  >
-                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
-                                  </div>
-                                ))}
-                                <div className={cn(
-                                  'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                  oyesTotal > 0 ? 'bg-green-500/20 text-green-600' :
-                                  oyesTotal < 0 ? 'bg-destructive/20 text-destructive' :
-                                  'bg-muted/30 text-muted-foreground'
-                                )}>
-                                  ${Math.abs(oyesTotal)}
-                                </div>
+                            {/* Zapato indicator */}
+                            {pairResult?.hasZapato && (
+                              <div className="text-center text-xs font-bold text-amber-600">
+                                🥾 Zapato (100%)
                               </div>
-                            </div>
-                            
-                            {/* Player B row */}
-                            <div className="flex items-center gap-2 text-xs">
-                              <PlayerAvatar 
-                                initials={rival.initials} 
-                                background={rival.color} 
-                                size="sm" 
-                                isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
-                              />
-                              <div className="flex gap-1 overflow-x-auto">
-                                {playerBHoles.map(h => (
-                                  <div 
-                                    key={h.holeNumber} 
-                                    className={cn(
-                                      'w-8 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                      h.isWin ? 'bg-green-500/20 text-green-600' :
-                                      h.isLoss ? 'bg-destructive/20 text-destructive' :
-                                      h.isAccumulated ? 'bg-muted text-muted-foreground' :
-                                      'bg-muted/30 text-muted-foreground'
-                                    )}
-                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
-                                  >
-                                    {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
-                                  </div>
-                                ))}
-                                <div className={cn(
-                                  'w-12 h-7 flex items-center justify-center rounded text-xs font-bold',
-                                  oyesTotal < 0 ? 'bg-green-500/20 text-green-600' :
-                                  oyesTotal > 0 ? 'bg-destructive/20 text-destructive' :
-                                  'bg-muted/30 text-muted-foreground'
-                                )}>
-                                  ${Math.abs(oyesTotal)}
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         );
                       })()
