@@ -882,7 +882,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Get corrected bilateral balance that uses getRayasDetailForPair for Rayas consistency
   // This ensures the Tabla General uses the same Rayas calculation as the BilateralDetail
   // Helper to check if both players participate in a bet (used outside BilateralDetail)
-  const bothParticipateGlobal = (participantIds: string[] | undefined, playerId: string, rivalId: string): boolean => {
+  // Also supports oneVsAll mode: if oneVsAll is active, only the anchor needs to be one of the pair.
+  const bothParticipateGlobal = (participantIds: string[] | undefined, playerId: string, rivalId: string, betConfig_?: { oneVsAll?: boolean; anchorPlayerId?: string }): boolean => {
+    // oneVsAll mode: pair is valid if either player is the anchor
+    if (betConfig_?.oneVsAll && betConfig_?.anchorPlayerId) {
+      return playerId === betConfig_.anchorPlayerId || rivalId === betConfig_.anchorPlayerId;
+    }
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
     const playerIn = participantIds.includes(playerId);
     const rivalIn = participantIds.includes(rivalId);
@@ -1037,7 +1042,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
     const isRayasActiveForThisPair = isRayasActiveForPair(effectiveBetConfig, playerId, rivalId);
     
-    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(effectiveBetConfig.rayas?.participantIds, playerId, rivalId)) {
+    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(effectiveBetConfig.rayas?.participantIds, playerId, rivalId, effectiveBetConfig.rayas)) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
@@ -3447,11 +3452,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // CROSS-GROUP: When the rival is from a different group, we only check that the
   // BASE player participates. The rival's group has its own participation config.
   // The "X" override button handles per-pair exclusion for cross-group bets.
+  // Also supports oneVsAll mode: if oneVsAll is active, pair is valid if either is the anchor.
   const bothParticipate = (participantIds: string[] | undefined, betKey?: string): boolean => {
     // Detect cross-group pairing: rival is not in the base player's group
     const isCrossGroup = !groupPlayers.some(p => p.id === rival.id);
     
     // If betKey provided, resolve group override first
+    let resolvedBetConfig: any = undefined;
     if (betKey) {
       const groupId = groupPlayers[0]?.groupId;
       if (groupId) {
@@ -3459,7 +3466,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const resolvedBet = resolved[betKey as keyof BetConfig] as any;
         if (resolvedBet?.enabled === false) return false;
         participantIds = resolvedBet?.participantIds;
+        resolvedBetConfig = resolvedBet;
+      } else {
+        resolvedBetConfig = betConfig[betKey as keyof BetConfig] as any;
       }
+    }
+    
+    // oneVsAll mode: pair is valid if either player or rival is the anchor
+    if (resolvedBetConfig?.oneVsAll && resolvedBetConfig?.anchorPlayerId) {
+      return player.id === resolvedBetConfig.anchorPlayerId || rival.id === resolvedBetConfig.anchorPlayerId;
     }
     
     if (!participantIds || participantIds.length === 0) return true; // all participate by default
