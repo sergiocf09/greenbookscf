@@ -1160,11 +1160,16 @@ export const useRoundManagement = ({
       const maxDelta = Math.max(...balanceComparison.map(b => Math.abs(b.delta)), 0);
       if (maxDelta > 1) {
         devWarn(`⚠️ PRE-VALIDATION: UI vs Engine discrepancy detected (max delta: $${maxDelta})`);
-        balanceComparison
+        const discrepancies = balanceComparison
           .filter(b => Math.abs(b.delta) > 1)
-          .forEach(b => {
-            devWarn(`  → ${b.playerName}: UI=$${b.uiNet}, Engine=$${b.engineNet}, Δ=$${b.delta}`);
-          });
+          .map(b => `${b.playerName}: UI=$${b.uiNet}, Engine=$${b.engineNet}, Δ=$${b.delta}`);
+        discrepancies.forEach(d => devWarn(`  → ${d}`));
+
+        // BLOCKING GUARDRAIL: Abort closure if discrepancy exceeds $1
+        const errorMsg = `Discrepancia UI vs Motor detectada (máx Δ$${maxDelta}):\n${discrepancies.join('\n')}\n\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.`;
+        await fail('preValidation', new Error(errorMsg), report.attemptId);
+        toast.error(`Cierre bloqueado: discrepancia de $${maxDelta} entre UI y motor de cálculo. Revisa participantes.`, { duration: 8000 });
+        return false;
       }
       pushStageOk(report, 'preValidation');
       // ─── END POINT 2 ───────────────────────────────────────────────────────
