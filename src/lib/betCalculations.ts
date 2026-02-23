@@ -426,6 +426,14 @@ export const calculatePressureBets = (
 
   // Resolve per-pair amount overrides (stored in betConfig.betOverrides) for the labels
   // emitted by this calculator.
+  // Resolve override player IDs (overrides may store profileId instead of round_player_id)
+  const resolveOverrideId = (pid: string): string => {
+    const direct = participatingPlayers.find((p) => p.id === pid);
+    if (direct) return direct.id;
+    const byProfile = participatingPlayers.find((p) => p.profileId === pid);
+    return byProfile?.id ?? pid;
+  };
+
   const getPairOverrideAmount = (
     playerAId: string,
     playerBId: string,
@@ -435,9 +443,11 @@ export const calculatePressureBets = (
     if (!overrides || overrides.length === 0) return undefined;
 
     const match = overrides.find((o) => {
+      const aId = resolveOverrideId(o.playerAId);
+      const bId = resolveOverrideId(o.playerBId);
       const matchesPair =
-        (o.playerAId === playerAId && o.playerBId === playerBId) ||
-        (o.playerAId === playerBId && o.playerBId === playerAId);
+        (aId === playerAId && bId === playerBId) ||
+        (aId === playerBId && bId === playerAId);
       if (!matchesPair) return false;
       if (o.enabled === false) return false;
       return (o.betType ?? '').toLowerCase() === label.toLowerCase();
