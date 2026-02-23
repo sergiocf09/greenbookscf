@@ -32,7 +32,7 @@ export const groupPlayersByGroup = (players: Player[]): Player[][] => {
  * treat it as "template not customized for this group" and include all group players.
  * If at least one group player IS in participantIds, respect the explicit selection.
  */
-const resolveParticipantsForGroup = (
+export const resolveParticipantsForGroup = (
   allPlayers: Player[],
   participantIds: string[] | undefined,
   groupPlayers: Player[]
