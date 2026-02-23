@@ -3471,8 +3471,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // DobleDigito - auto-detected when strokes >= 10 (not persisted to DB)
         if (score.strokes >= 10 || score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
         // Cuatriput - 4+ putts - negative for the player who commits it
+        // Moreliana (exactly 4 putts) is a subset of cuatriput — show as cuatriput label
         if (score.putts >= 4 || score.markers.cuatriput) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: score.putts === 4 ? 'Moreliana' : 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
       }
     });
