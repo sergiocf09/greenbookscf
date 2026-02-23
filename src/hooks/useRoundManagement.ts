@@ -1111,7 +1111,8 @@ export const useRoundManagement = ({
             betType: override.betType || 'unknown',
             action: override.enabled ? 'enabled' : 'disabled',
             valid: isValid,
-          });
+            amountOverride: (override as any).amountOverride,
+          } as any);
         }
       }
       report.overrideSummaries = overrideSummaries;

@@ -2460,7 +2460,15 @@ export const calculateAllBets = (
           return { ...summary, amount: 0 };
         }
         // If there's an amount override, recompute using units × override × multiplier when available.
-        if (override.amountOverride !== undefined && summary.amount !== 0) {
+        // CRITICAL: Skip amountOverride post-processing for Rayas bet types because
+        // getEffectiveSegmentConfig() already applies betOverrides internally during
+        // the rayas calculation. Applying it again here would double-count the override,
+        // causing engine vs UI discrepancy (e.g., replacing total=rayas*value with flat value).
+        const isRayasType = summary.betType === 'Rayas Front' || 
+                            summary.betType === 'Rayas Back' || 
+                            summary.betType === 'Rayas Medal Total' ||
+                            summary.betType === 'Rayas Oyes';
+        if (override.amountOverride !== undefined && summary.amount !== 0 && !isRayasType) {
           if (typeof summary.units === 'number') {
             const mult = typeof summary.multiplier === 'number' ? summary.multiplier : 1;
             return {
