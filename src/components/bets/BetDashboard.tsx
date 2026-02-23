@@ -228,7 +228,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
     // Iterate all cross-group rival pairs from the config map
     Object.entries(crossGroupRivalsMap).forEach(([baseId, rivalIds]) => {
-      (rivalIds as string[]).forEach((rivalId) => {
+      const ids = Array.isArray(rivalIds) ? rivalIds : [];
+      (ids as string[]).forEach((rivalId) => {
         // Canonical pair key (sorted) to avoid duplication
         const pairKey = [baseId, rivalId].sort().join('|');
         if (processedPairs.has(pairKey)) return;
