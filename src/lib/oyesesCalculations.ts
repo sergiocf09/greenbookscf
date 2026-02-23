@@ -37,16 +37,18 @@ const getEffectiveOyesesPlayerConfig = (
   playerId: string,
   config: BetConfig
 ): { enabled: boolean; modality: OyesModality } => {
-  const playerConfig = config.oyeses.playerConfigs.find((pc) => pc.playerId === playerId);
-
-  // If explicitly present, respect it.
-  if (playerConfig) return { enabled: playerConfig.enabled, modality: playerConfig.modality };
-
-  // If participantIds is set and this player is NOT in it, they don't participate.
+  // IMPORTANT: Check participantIds FIRST — it is the authoritative source of truth
+  // from the Participation Matrix. A stale playerConfigs entry (e.g. from a guest added
+  // mid-round) must NOT override an explicit matrix exclusion.
   const participantIds = config.oyeses.participantIds ?? [];
   if (participantIds.length > 0 && !participantIds.includes(playerId)) {
     return { enabled: false, modality: 'acumulados' };
   }
+
+  // Player is in the participation list (or list is empty = everyone).
+  // Now check for per-player config to get modality.
+  const playerConfig = config.oyeses.playerConfigs.find((pc) => pc.playerId === playerId);
+  if (playerConfig) return { enabled: playerConfig.enabled, modality: playerConfig.modality };
 
   // If missing, inherit a default modality from participating players' configs (if any),
   // otherwise acumulados. We skip configs of excluded players to avoid inheriting

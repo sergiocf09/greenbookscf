@@ -1064,13 +1064,17 @@ export const useRoundManagement = ({
         return [...ids, ...missingIds];
       };
 
+      // NOTE: Oyeses is EXCLUDED from normalization because it has its own per-player
+      // config mechanism (playerConfigs) and participantIds is the authoritative source
+      // of truth from the Participation Matrix. Adding a guest here would override an
+      // explicit exclusion from the matrix.
       const normalizedBetConfig = {
         ...betConfig,
         medal: { ...betConfig.medal, participantIds: normalizeParticipantIds(betConfig.medal.participantIds) },
         pressures: { ...betConfig.pressures, participantIds: normalizeParticipantIds(betConfig.pressures.participantIds) },
         skins: { ...betConfig.skins, participantIds: normalizeParticipantIds(betConfig.skins.participantIds) },
         units: { ...betConfig.units, participantIds: normalizeParticipantIds(betConfig.units.participantIds) },
-        oyeses: { ...betConfig.oyeses, participantIds: normalizeParticipantIds(betConfig.oyeses.participantIds) },
+        // oyeses: intentionally NOT normalized — respects matrix exclusion
         putts: { ...betConfig.putts, participantIds: normalizeParticipantIds(betConfig.putts.participantIds) },
         caros: { ...betConfig.caros, participantIds: normalizeParticipantIds(betConfig.caros.participantIds) },
         manchas: { ...betConfig.manchas, participantIds: normalizeParticipantIds(betConfig.manchas.participantIds) },
