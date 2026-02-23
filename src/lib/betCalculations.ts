@@ -2480,11 +2480,12 @@ export const calculateAllBets = (
                             summary.betType === 'Rayas Oyes';
         if (override.amountOverride !== undefined && summary.amount !== 0 && !isRayasType) {
           if (typeof summary.units === 'number') {
+            const sign = summary.amount > 0 ? 1 : -1;
             const mult = typeof summary.multiplier === 'number' ? summary.multiplier : 1;
             return {
               ...summary,
               baseUnitAmount: override.amountOverride,
-              amount: summary.units * override.amountOverride * mult,
+              amount: sign * summary.units * override.amountOverride * mult,
             };
           }
 
