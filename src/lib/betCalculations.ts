@@ -2441,7 +2441,9 @@ export const calculateAllBets = (
             return false;
           }
           // 'rayas' (bilateral rayas) vs 'rayas medal total' (different category treated by medal override)
-          if (overrideType === 'rayas' && summaryType.includes('rayas medal')) {
+          // EXCEPTION: When the override is a full disable (enabled === false), a "Rayas" override
+          // SHOULD match ALL rayas subtypes (Front, Back, Medal Total, Oyes) to cancel them all.
+          if (overrideType === 'rayas' && summaryType.includes('rayas medal') && override.enabled !== false) {
             return false;
           }
           // 'presiones' (individual bilateral) vs 'presiones parejas' (team pressures - completely separate bet)
