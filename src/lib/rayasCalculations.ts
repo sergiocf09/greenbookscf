@@ -14,7 +14,8 @@
  */
 
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
-import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair } from './betCalculations';
+import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsForGroup } from './betCalculations';
+import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateStrokesPerHole } from './handicapUtils';
 
 /**
@@ -1217,17 +1218,25 @@ export const calculateRayasBets = (
 ): BetSummary[] => {
   if (!config.rayas?.enabled) return [];
   
+  // Filter players by participantIds (same pattern as Medal, Pressures, etc.)
+  const playersByGroup = groupPlayersByGroup(players);
+  const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
+    const groupId = groupPlayers[0]?.groupId;
+    const resolved = resolveConfigForGroup(config, groupId);
+    return resolveParticipantsForGroup(players, resolved.rayas?.participantIds, groupPlayers);
+  });
+  
   const summaries: BetSummary[] = [];
   
-  // Calculate Oyes rayas (absolute closest)
-  const { summaries: oyesSummaries } = calculateOyesRayasForAll(players, scores, config, course);
+  // Calculate Oyes rayas (absolute closest) — only among participating players
+  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course);
   summaries.push(...oyesSummaries);
   
   // Calculate bilateral rayas (skins, units, medal)
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      const playerA = players[i];
-      const playerB = players[j];
+  for (let i = 0; i < participatingPlayers.length; i++) {
+    for (let j = i + 1; j < participatingPlayers.length; j++) {
+      const playerA = participatingPlayers[i];
+      const playerB = participatingPlayers[j];
       
       // Check if rayas is active for this pair (respects bilateral overrides)
       if (!isRayasActiveForPair(config, playerA.id, playerB.id)) {
