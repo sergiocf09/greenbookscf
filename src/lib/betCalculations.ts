@@ -106,12 +106,15 @@ export const resolveParticipantsWithOneVsAll = (
   const baseParticipants = resolveParticipantsForGroup(allPlayers, resolvedParticipantIds, groupPlayers);
   
   if (betConfig.oneVsAll && betConfig.anchorPlayerId) {
-    // Verify anchor is in the resolved participants (not just in the group)
+    // Verify anchor is in the group (participantIds may only contain the anchor in oneVsAll)
+    const anchorInGroup = groupPlayers.some(p => p.id === betConfig.anchorPlayerId);
     const anchorInParticipants = baseParticipants.some(p => p.id === betConfig.anchorPlayerId);
-    if (anchorInParticipants) {
-      // In oneVsAll, the anchor plays vs all OTHER resolved participants.
-      // Return all resolved participants (pair filtering is done by shouldCalculatePair).
-      return baseParticipants;
+    if (anchorInGroup || anchorInParticipants) {
+      // In oneVsAll, the anchor plays vs ALL group players.
+      // Return ALL group players — pair filtering is done by shouldCalculatePair.
+      // We cannot use baseParticipants here because participantIds typically only
+      // contains the anchor ID, which would exclude all opponents.
+      return groupPlayers;
     }
     // Anchor was excluded from participation → no one participates in this bet
     return [];
