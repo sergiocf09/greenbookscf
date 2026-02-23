@@ -2634,6 +2634,66 @@ const Index = () => {
           </DialogHeader>
           <HistoricalBalances 
             onClose={() => setShowBalancesDialog(false)}
+            onViewRound={async (roundId: string) => {
+              try {
+                // Load round players and scores to navigate to historical view
+                const { data: roundData } = await supabase
+                  .from('rounds')
+                  .select('course_id, tee_color, date')
+                  .eq('id', roundId)
+                  .single();
+
+                if (!roundData) return;
+
+                const { data: roundPlayers } = await supabase
+                  .from('round_players')
+                  .select(`
+                    id, profile_id, handicap_for_round,
+                    guest_name, guest_initials, guest_color,
+                    profiles(display_name, initials, avatar_color)
+                  `)
+                  .eq('round_id', roundId);
+
+                const playerScores = await Promise.all(
+                  (roundPlayers || []).map(async (rp: any) => {
+                    const profileData = rp.profiles as any;
+                    const isGuest = !rp.profile_id;
+                    const { data: scores } = await supabase
+                      .from('hole_scores')
+                      .select('hole_number, strokes, putts, oyes_proximity')
+                      .eq('round_player_id', rp.id)
+                      .order('hole_number');
+
+                    return {
+                      playerId: isGuest ? rp.id : rp.profile_id,
+                      playerName: isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador'),
+                      initials: isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX'),
+                      color: isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6'),
+                      handicap: Number(rp.handicap_for_round) || 0,
+                      scores: (scores || []).map((s: any) => ({
+                        holeNumber: s.hole_number,
+                        strokes: s.strokes || 0,
+                        putts: s.putts || 0,
+                        oyesProximity: s.oyes_proximity,
+                      })),
+                      totalStrokes: scores?.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0) || 0,
+                    };
+                  })
+                );
+
+                setHistoricalScorecardData({
+                  roundId,
+                  courseId: roundData.course_id,
+                  players: playerScores,
+                  teeColor: roundData.tee_color,
+                  date: roundData.date,
+                });
+                setShowBalancesDialog(false);
+                setShowScorecardDialog(true);
+              } catch (err) {
+                console.error('Error loading round:', err);
+              }
+            }}
           />
         </DialogContent>
       </Dialog>

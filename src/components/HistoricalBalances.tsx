@@ -8,7 +8,7 @@
  * Does NOT rely on pre-calculated vsBalances or player_vs_player table.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
@@ -63,6 +64,14 @@ interface SharedRound {
 interface HistoricalBalancesProps {
   onViewRound?: (roundId: string) => void;
   onClose?: () => void;
+}
+
+interface MyRoundRow {
+  roundId: string;
+  date: string;
+  courseName: string;
+  score: number;
+  netAmount: number;
 }
 
 // ────────────────────────────────────────────────────
@@ -181,6 +190,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [totalNet, setTotalNet] = useState(0);
   const [totalRounds, setTotalRounds] = useState(0);
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds'>('rivals');
+
   // Detail view state
   const [selectedRival, setSelectedRival] = useState<RivalBalance | null>(null);
   const [sharedRounds, setSharedRounds] = useState<SharedRound[]>([]);
@@ -463,6 +475,33 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }
   };
 
+  // ── "Mis Rondas" data: one row per round with date, course, score, net ──
+  const myRounds = useMemo<MyRoundRow[]>(() => {
+    if (!profile) return [];
+    const rows: MyRoundRow[] = [];
+    for (const snap of allSnapshots) {
+      const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+      if (!userPlayer) continue;
+
+      const userScores = snap.scores[userPlayer.id] || [];
+      const score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+
+      // Read the net from the snapshot balances (NO recalculation)
+      const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
+      const netAmount = userBalance?.totalNet ?? 0;
+
+      rows.push({
+        roundId: snap.roundId,
+        date: snap.date,
+        courseName: snap.courseName,
+        score,
+        netAmount,
+      });
+    }
+    rows.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
+    return rows;
+  }, [allSnapshots, profile]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -585,7 +624,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   }
 
   // Main summary view
-  if (rivals.length === 0) {
+  if (rivals.length === 0 && myRounds.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -596,135 +635,183 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   }
 
   return (
-    <div className="space-y-4 overflow-hidden">
-      {/* Summary card */}
-      <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between mb-2 gap-2">
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Trophy className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium">Balance Total</span>
-          </div>
-          <div className={cn(
-            'text-xl font-bold flex items-center gap-1',
-            totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
-          )}>
-            {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
-            {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-            <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+    <div className="space-y-3 overflow-hidden">
+      {/* Tabs: Vs Rivales / Mis Rondas */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rivals' | 'rounds')} className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="rivals" className="flex-1 text-xs">Vs Rivales</TabsTrigger>
+          <TabsTrigger value="rounds" className="flex-1 text-xs">Mis Rondas</TabsTrigger>
+        </TabsList>
+
+        {/* ── Vs Rivales Tab ── */}
+        <TabsContent value="rivals" className="mt-3 space-y-4">
+          {/* Summary card */}
+          <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">Balance Total</span>
+              </div>
+              <div className={cn(
+                'text-xl font-bold flex items-center gap-1',
+                totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
+              )}>
+                {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
+                {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
+                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
+                </div>
+              </div>
+              {rivals.some(r => r.isGuest) && (
+                <button
+                  onClick={() => setShowGuests(!showGuests)}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                >
+                  {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                  {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+                </button>
+              )}
             </div>
           </div>
-          {rivals.some(r => r.isGuest) && (
-            <button
-              onClick={() => setShowGuests(!showGuests)}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-            >
-              {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-              {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
-            </button>
+
+          {/* Rivals ranking */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-1">
+                <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
+                <button
+                  onClick={() => {
+                    if (sortField === 'name') {
+                      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortField('name');
+                      setSortDir('asc');
+                    }
+                  }}
+                  className="p-0.5 rounded hover:bg-muted/50 transition-colors"
+                  title="Ordenar por nombre"
+                >
+                  {sortField === 'name' ? (
+                    sortDir === 'asc' ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center mr-6">
+                <button
+                  onClick={() => {
+                    if (sortField === 'amount') {
+                      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortField('amount');
+                      setSortDir('desc');
+                    }
+                  }}
+                  className="p-0.5 rounded hover:bg-muted/50 transition-colors"
+                  title="Ordenar por importe"
+                >
+                  {sortField === 'amount' ? (
+                    sortDir === 'desc' ? <ArrowDown className="h-3 w-3 text-primary" /> : <ArrowUp className="h-3 w-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+            <ScrollArea className="h-[280px]">
+              <div className="space-y-1.5 pr-1">
+                {rivals.filter(r => showGuests || !r.isGuest)
+                  .sort((a, b) => {
+                    if (sortField === 'name') {
+                      const cmp = a.rivalName.localeCompare(b.rivalName);
+                      return sortDir === 'asc' ? cmp : -cmp;
+                    }
+                    return sortDir === 'desc' ? b.netAmount - a.netAmount : a.netAmount - b.netAmount;
+                  })
+                  .map((rival, index) => (
+                  <button
+                    key={rival.id}
+                    onClick={() => fetchRivalDetail(rival)}
+                    className="w-full px-2 py-1.5 bg-card border border-border rounded-lg flex items-center gap-1.5 hover:bg-muted/50 transition-colors overflow-hidden"
+                  >
+                    <span className="text-xs text-muted-foreground w-4 text-right flex-shrink-0">
+                      {index + 1}
+                    </span>
+                    <PlayerAvatar 
+                      initials={rival.rivalInitials} 
+                      background={rival.rivalColor}
+                      size="xs"
+                    />
+                    <span className="text-xs font-medium truncate min-w-0">
+                      {rival.rivalName}
+                      {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
+                    <span className={cn(
+                      'font-bold text-sm ml-auto flex-shrink-0',
+                      rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
+                      rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                    )}>
+                      {rival.netAmount >= 0 ? '+' : '-'}${Math.abs(rival.netAmount)}
+                    </span>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
+
+        {/* ── Mis Rondas Tab ── */}
+        <TabsContent value="rounds" className="mt-3">
+          {myRounds.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No hay rondas completadas</p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-1 pr-1">
+                {myRounds.map((round) => (
+                  <button
+                    key={round.roundId}
+                    onClick={() => onViewRound?.(round.roundId)}
+                    className="w-full px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
+                      <span className="text-xs truncate min-w-0">{round.courseName}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
+                      <span className="font-bold text-sm flex-shrink-0">{round.score}</span>
+                      <span className={cn(
+                        'font-bold text-sm ml-auto flex-shrink-0',
+                        round.netAmount > 0 ? 'text-green-600 dark:text-green-500' :
+                        round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {round.netAmount > 0 ? '+' : round.netAmount < 0 ? '-' : ''}${Math.abs(round.netAmount)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           )}
-        </div>
-
-      </div>
-
-      {/* Rivals ranking */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-1">
-            <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
-            <button
-              onClick={() => {
-                if (sortField === 'name') {
-                  setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-                } else {
-                  setSortField('name');
-                  setSortDir('asc');
-                }
-              }}
-              className="p-0.5 rounded hover:bg-muted/50 transition-colors"
-              title="Ordenar por nombre"
-            >
-              {sortField === 'name' ? (
-                sortDir === 'asc' ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />
-              ) : (
-                <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
-              )}
-            </button>
-          </div>
-          <div className="flex items-center mr-6">
-            <button
-              onClick={() => {
-                if (sortField === 'amount') {
-                  setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-                } else {
-                  setSortField('amount');
-                  setSortDir('desc');
-                }
-              }}
-              className="p-0.5 rounded hover:bg-muted/50 transition-colors"
-              title="Ordenar por importe"
-            >
-              {sortField === 'amount' ? (
-                sortDir === 'desc' ? <ArrowDown className="h-3 w-3 text-primary" /> : <ArrowUp className="h-3 w-3 text-primary" />
-              ) : (
-                <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
-              )}
-            </button>
-          </div>
-        </div>
-        <ScrollArea className="h-[280px]">
-           <div className="space-y-1.5 pr-1">
-            {rivals.filter(r => showGuests || !r.isGuest)
-              .sort((a, b) => {
-                if (sortField === 'name') {
-                  const cmp = a.rivalName.localeCompare(b.rivalName);
-                  return sortDir === 'asc' ? cmp : -cmp;
-                }
-                // amount: desc = highest first
-                return sortDir === 'desc' ? b.netAmount - a.netAmount : a.netAmount - b.netAmount;
-              })
-              .map((rival, index) => (
-              <button
-                key={rival.id}
-                onClick={() => fetchRivalDetail(rival)}
-                className="w-full px-2 py-1.5 bg-card border border-border rounded-lg flex items-center gap-1.5 hover:bg-muted/50 transition-colors overflow-hidden"
-              >
-                <span className="text-xs text-muted-foreground w-4 text-right flex-shrink-0">
-                  {index + 1}
-                </span>
-                <PlayerAvatar 
-                  initials={rival.rivalInitials} 
-                  background={rival.rivalColor}
-                  size="xs"
-                />
-                <span className="text-xs font-medium truncate min-w-0">
-                  {rival.rivalName}
-                  {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
-                </span>
-                <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
-                <span className={cn(
-                  'font-bold text-sm ml-auto flex-shrink-0',
-                  rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
-                  rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                )}>
-                  {rival.netAmount >= 0 ? '+' : '-'}${Math.abs(rival.netAmount)}
-                </span>
-                <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 });
