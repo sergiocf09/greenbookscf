@@ -96,7 +96,7 @@ export const shouldCalculatePair = (
  * When oneVsAll is active, ALL group players participate (the anchor plays vs everyone),
  * but pair filtering is done by shouldCalculatePair in the double loop.
  */
-const resolveParticipantsWithOneVsAll = (
+export const resolveParticipantsWithOneVsAll = (
   betConfig: { oneVsAll?: boolean; anchorPlayerId?: string; participantIds?: string[] },
   allPlayers: Player[],
   resolvedParticipantIds: string[] | undefined,

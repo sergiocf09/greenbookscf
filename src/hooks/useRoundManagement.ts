@@ -1217,6 +1217,41 @@ export const useRoundManagement = ({
         toast.error(`Cierre bloqueado: discrepancia de $${maxDelta} entre UI y motor de cálculo. Revisa participantes.`, { duration: 8000 });
         return false;
       }
+
+      // ── Structural guardrail: verify enabled bets produced results ──────────
+      // If a bet is enabled+has participants but the engine produced zero summaries,
+      // something is wrong (e.g. oneVsAll misconfiguration, guest ID mismatch).
+      const engineBetTypes = new Set(allBetResults.map(r => r.betType));
+      const structuralWarnings: string[] = [];
+
+      const checkBetPresence = (enabled: boolean | undefined, participantIds: string[] | undefined, label: string, expectedTypes: string[]) => {
+        if (!enabled) return;
+        // Only warn if there are participants (or participantIds is undefined = everyone)
+        const hasParticipants = participantIds === undefined || participantIds.length > 0;
+        if (!hasParticipants) return;
+        const found = expectedTypes.some(t => engineBetTypes.has(t));
+        if (!found) {
+          structuralWarnings.push(`${label} está habilitada con participantes pero no generó resultados en el motor`);
+        }
+      };
+
+      checkBetPresence(betConfigWithHandicaps.medal?.enabled, betConfigWithHandicaps.medal?.participantIds, 'Medal', ['Medal Front 9', 'Medal Back 9', 'Medal Total']);
+      checkBetPresence(betConfigWithHandicaps.pressures?.enabled, betConfigWithHandicaps.pressures?.participantIds, 'Presiones', ['Presiones Front', 'Presiones Back', 'Presiones Match 18']);
+      checkBetPresence(betConfigWithHandicaps.skins?.enabled, betConfigWithHandicaps.skins?.participantIds, 'Skins', ['Skins Front', 'Skins Back']);
+      checkBetPresence(betConfigWithHandicaps.rayas?.enabled, betConfigWithHandicaps.rayas?.participantIds, 'Rayas', ['Rayas Front', 'Rayas Back', 'Rayas Oyes Front', 'Rayas Oyes Back', 'Rayas Medal']);
+
+      if (structuralWarnings.length > 0) {
+        structuralWarnings.forEach(w => devWarn(`⚠️ STRUCTURAL: ${w}`));
+        devWarn('Engine bet types found:', Array.from(engineBetTypes));
+        devWarn('BetConfig rayas:', JSON.stringify({
+          enabled: betConfigWithHandicaps.rayas?.enabled,
+          oneVsAll: betConfigWithHandicaps.rayas?.oneVsAll,
+          anchorPlayerId: betConfigWithHandicaps.rayas?.anchorPlayerId,
+          participantIds: betConfigWithHandicaps.rayas?.participantIds,
+        }));
+      }
+      // ── End structural guardrail ───────────────────────────────────────────
+
       pushStageOk(report, 'preValidation');
       // ─── END POINT 2 ───────────────────────────────────────────────────────
 

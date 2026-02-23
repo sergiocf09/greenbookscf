@@ -14,7 +14,7 @@
  */
 
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
-import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsForGroup } from './betCalculations';
+import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsWithOneVsAll } from './betCalculations';
 import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateStrokesPerHole } from './handicapUtils';
 
@@ -1218,12 +1218,15 @@ export const calculateRayasBets = (
 ): BetSummary[] => {
   if (!config.rayas?.enabled) return [];
   
-  // Filter players by participantIds (same pattern as Medal, Pressures, etc.)
+  // Filter players by participantIds, respecting oneVsAll mode
+  // CRITICAL: Use resolveParticipantsWithOneVsAll (not resolveParticipantsForGroup)
+  // so that in oneVsAll mode (where participantIds contains only the anchor),
+  // ALL group players are returned and pair filtering is done by shouldCalculatePair.
   const playersByGroup = groupPlayersByGroup(players);
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsForGroup(players, resolved.rayas?.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(config.rayas, players, resolved.rayas?.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];
