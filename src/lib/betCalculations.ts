@@ -37,31 +37,43 @@ const resolveParticipantsForGroup = (
   participantIds: string[] | undefined,
   groupPlayers: Player[]
 ): Player[] => {
-  // No participantIds = everyone participates
-  if (!participantIds || participantIds.length === 0) return groupPlayers;
+  // UNDEFINED participantIds = config never set → everyone participates (legacy/default)
+  if (participantIds === undefined) return groupPlayers;
+
+  // EMPTY array = organizer explicitly excluded everyone → nobody participates
+  if (participantIds.length === 0) return [];
   
   // Check how many of this group's players are in participantIds
   const groupPlayersInList = groupPlayers.filter(p => participantIds.includes(p.id));
   
   if (groupPlayersInList.length === 0) {
-    // Distinguish "template from another group" vs "stale/orphaned IDs":
-    // If participantIds references players from OTHER groups, it's a template → include all.
-    // If participantIds references NO valid player at all, IDs are stale → include all (safe default).
-    // If participantIds references ONLY players from other groups, it's a template → include all.
+    // Distinguish "template from another group" (multi-group inheritance) vs "all excluded":
+    // If participantIds references players from OTHER groups that exist in allPlayers,
+    // this is a template that was set up for Group 1 and hasn't been customized for this group.
+    // In that case, include all group players (template inheritance).
+    // If NO participantIds reference ANY valid player, IDs are stale — exclude all (safe).
     const allPlayerIds = new Set(allPlayers.map(p => p.id));
-    const anyValidReference = participantIds.some(id => allPlayerIds.has(id));
+    const referencesOtherGroupPlayers = participantIds.some(id => {
+      if (!allPlayerIds.has(id)) return false;
+      // Check if this ID belongs to a player in a DIFFERENT group
+      const player = allPlayers.find(p => p.id === id);
+      if (!player || !player.groupId) return false;
+      const thisGroupId = groupPlayers[0]?.groupId;
+      return thisGroupId && player.groupId !== thisGroupId;
+    });
     
-    if (anyValidReference) {
+    if (referencesOtherGroupPlayers) {
       // Template inheritance: IDs belong to other groups — include all group players
       return groupPlayers;
     }
     
-    // All IDs are stale/orphaned — safe default: include all group players
-    // (This prevents the engine from silently including everyone when the UI shows nobody)
-    return groupPlayers;
+    // participantIds is set, has entries, but none match this group and none reference
+    // other valid groups. This means either all IDs are stale OR the organizer explicitly
+    // excluded this group's players. Either way: nobody participates.
+    return [];
   }
   
-  // Otherwise, respect the explicit selection for this group
+  // Explicit selection exists for this group — respect it exactly
   return groupPlayersInList;
 };
 
@@ -90,12 +102,21 @@ const resolveParticipantsWithOneVsAll = (
   resolvedParticipantIds: string[] | undefined,
   groupPlayers: Player[]
 ): Player[] => {
+  // First resolve base participation — this respects exclusions
+  const baseParticipants = resolveParticipantsForGroup(allPlayers, resolvedParticipantIds, groupPlayers);
+  
   if (betConfig.oneVsAll && betConfig.anchorPlayerId) {
-    // Verify anchor is in this group
-    const anchorInGroup = groupPlayers.some(p => p.id === betConfig.anchorPlayerId);
-    if (anchorInGroup) return groupPlayers;
+    // Verify anchor is in the resolved participants (not just in the group)
+    const anchorInParticipants = baseParticipants.some(p => p.id === betConfig.anchorPlayerId);
+    if (anchorInParticipants) {
+      // In oneVsAll, the anchor plays vs all OTHER resolved participants.
+      // Return all resolved participants (pair filtering is done by shouldCalculatePair).
+      return baseParticipants;
+    }
+    // Anchor was excluded from participation → no one participates in this bet
+    return [];
   }
-  return resolveParticipantsForGroup(allPlayers, resolvedParticipantIds, groupPlayers);
+  return baseParticipants;
 };
 
 export interface BetSummary {
