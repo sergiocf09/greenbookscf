@@ -1039,6 +1039,49 @@ export const useRoundManagement = ({
         );
       });
 
+      // ─── NORMALIZE participantIds ─────────────────────────────────────────
+      // BUG FIX: When a guest is added mid-round, their ID is never inserted into
+      // the participantIds arrays of existing bet types (Medal, Presiones, Skins, etc.).
+      // The live UI works because BetDashboard has display-level workarounds, but the
+      // engine (calculateAllBets) strictly respects participantIds — so the guest gets
+      // excluded from bilateral calculations at close time, producing an incorrect snapshot.
+      //
+      // Fix: For each bet type with a non-empty participantIds, if the list already
+      // contains ALL non-guest players in the round (meaning "everyone was included"),
+      // automatically add any missing player IDs (guests) so the engine includes them.
+      const allPlayerIds = new Set(sanitizedPlayers.map(p => p.id));
+      const nonGuestIds = new Set(sanitizedPlayers.filter(p => p.profileId).map(p => p.id));
+
+      const normalizeParticipantIds = (ids: string[] | undefined): string[] | undefined => {
+        if (!ids || ids.length === 0) return ids; // no list = everyone, keep as-is
+        // Check if every non-guest player is already in the list
+        const allNonGuestsIncluded = Array.from(nonGuestIds).every(id => ids.includes(id));
+        if (!allNonGuestsIncluded) return ids; // explicit partial selection, respect it
+        // All non-guests are included → add any missing players (guests)
+        const missingIds = Array.from(allPlayerIds).filter(id => !ids.includes(id));
+        if (missingIds.length === 0) return ids;
+        devLog(`[closeScorecard] Normalizing participantIds: adding ${missingIds.length} missing player(s) (guests)`);
+        return [...ids, ...missingIds];
+      };
+
+      const normalizedBetConfig = {
+        ...betConfig,
+        medal: { ...betConfig.medal, participantIds: normalizeParticipantIds(betConfig.medal.participantIds) },
+        pressures: { ...betConfig.pressures, participantIds: normalizeParticipantIds(betConfig.pressures.participantIds) },
+        skins: { ...betConfig.skins, participantIds: normalizeParticipantIds(betConfig.skins.participantIds) },
+        units: { ...betConfig.units, participantIds: normalizeParticipantIds(betConfig.units.participantIds) },
+        oyeses: { ...betConfig.oyeses, participantIds: normalizeParticipantIds(betConfig.oyeses.participantIds) },
+        putts: { ...betConfig.putts, participantIds: normalizeParticipantIds(betConfig.putts.participantIds) },
+        caros: { ...betConfig.caros, participantIds: normalizeParticipantIds(betConfig.caros.participantIds) },
+        manchas: { ...betConfig.manchas, participantIds: normalizeParticipantIds(betConfig.manchas.participantIds) },
+        culebras: { ...betConfig.culebras, participantIds: normalizeParticipantIds(betConfig.culebras.participantIds) },
+        pinguinos: { ...betConfig.pinguinos, participantIds: normalizeParticipantIds(betConfig.pinguinos.participantIds) },
+        coneja: { ...betConfig.coneja, participantIds: normalizeParticipantIds(betConfig.coneja.participantIds) },
+        rayas: { ...betConfig.rayas, participantIds: normalizeParticipantIds(betConfig.rayas.participantIds) },
+        stableford: { ...betConfig.stableford, participantIds: normalizeParticipantIds(betConfig.stableford.participantIds) },
+      };
+      // ─── END NORMALIZE participantIds ───────────────────────────────────────
+
       // Inject bilateral handicaps into betConfig so calculateAllBets uses them
       const betConfigWithHandicaps = bilateralHandicapsMap
         ? (() => {
@@ -1053,9 +1096,9 @@ export const useRoundManagement = ({
                 );
               }
             }
-            return { ...betConfig, bilateralHandicaps: bilateralHandicapsForEngine };
+            return { ...normalizedBetConfig, bilateralHandicaps: bilateralHandicapsForEngine };
           })()
-        : betConfig;
+        : normalizedBetConfig;
 
       const allBetResults = calculateAllBets(
         sanitizedPlayers,
