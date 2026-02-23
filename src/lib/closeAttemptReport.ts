@@ -3,6 +3,9 @@ export type CloseStage =
   | 'beginAttempt'
   | 'saveBetConfig'
   | 'writeScores'
+  | 'canonicalNormalization'
+  | 'preValidation'
+  | 'overrideValidation'
   | 'finalizeRoundBets'
   | 'createSnapshot'
   | 'saveSnapshot'
@@ -15,8 +18,34 @@ export type CloseStageResult =
   | { stage: CloseStage; ok: true; at: string }
   | { stage: CloseStage; ok: false; at: string; message: string; code?: string | number };
 
+// ── Enriched logging types (Point 5) ──────────────────────────────────────────
+
+export interface ClosePlayerSummary {
+  id: string;
+  name: string;
+  isGuest: boolean;
+  handicap: number;
+  profileId?: string;
+}
+
+export interface CloseBalanceSummary {
+  playerId: string;
+  playerName: string;
+  engineNet: number;   // Net from recalculated engine
+  uiNet: number;       // Net from UI-provided results
+  delta: number;        // engineNet - uiNet
+}
+
+export interface CloseOverrideSummary {
+  playerAId: string;
+  playerBId: string;
+  betType: string;
+  action: string;       // 'cancel' | 'restore' | etc.
+  valid: boolean;       // Both IDs exist in round
+}
+
 export interface CloseAttemptReport {
-  reportVersion: 1;
+  reportVersion: 2;
   attemptId?: string;
   roundId: string;
   currentRoundStatus: string;
@@ -27,6 +56,13 @@ export interface CloseAttemptReport {
   loggedPlayers: number;
   guestPlayers: number;
   invalidProfileIds: Array<{ playerId: string; name: string; profileId: string }>;
+
+  // Enriched data (Point 5)
+  playerSummaries?: ClosePlayerSummary[];
+  balanceComparison?: CloseBalanceSummary[];
+  overrideSummaries?: CloseOverrideSummary[];
+  orphanedOverrides?: number;
+  normalizedBets?: string[];  // List of bet types where guests were auto-added
 
   stages: CloseStageResult[];
   failedStage?: CloseStage;
@@ -46,7 +82,7 @@ export const newCloseAttemptReport = (params: {
   invalidProfileIds: Array<{ playerId: string; name: string; profileId: string }>;
 }): CloseAttemptReport => {
   return {
-    reportVersion: 1,
+    reportVersion: 2,
     roundId: params.roundId,
     currentRoundStatus: params.currentRoundStatus,
     userId: params.userId ?? null,
