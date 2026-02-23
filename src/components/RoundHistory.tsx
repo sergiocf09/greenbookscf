@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -91,6 +91,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   const [deleting, setDeleting] = useState(false);
   const [loadingScorecard, setLoadingScorecard] = useState<string | null>(null);
   const [loadingClone, setLoadingClone] = useState<string | null>(null);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [roundToReopen, setRoundToReopen] = useState<RoundHistoryItem | null>(null);
+  const [reopening, setReopening] = useState(false);
 
   const fetchRounds = async () => {
     if (!profile) return;
@@ -429,6 +432,35 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     }
   };
 
+  const handleReopenClick = (e: React.MouseEvent, round: RoundHistoryItem) => {
+    e.stopPropagation();
+    setRoundToReopen(round);
+    setReopenDialogOpen(true);
+  };
+
+  const handleReopenConfirm = async () => {
+    if (!roundToReopen) return;
+
+    setReopening(true);
+    try {
+      const { error } = await supabase.rpc('reset_round_for_reclose', { p_round_id: roundToReopen.id });
+      if (error) throw error;
+
+      toast.success('Ronda re-abierta correctamente');
+      
+      // Auto-load the round after reopening
+      sessionStorage.setItem('restore_round_id', roundToReopen.id);
+      window.location.reload();
+    } catch (err: any) {
+      devError('Error reopening round:', err);
+      toast.error(`Error al reabrir ronda: ${err.message}`);
+    } finally {
+      setReopening(false);
+      setReopenDialogOpen(false);
+      setRoundToReopen(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -499,6 +531,17 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             onClick={(e) => handleDeleteClick(e, round)}
                           >
                             <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {round.isOrganizer && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 flex-shrink-0"
+                            onClick={(e) => handleReopenClick(e, round)}
+                            disabled={reopening}
+                          >
+                            <RefreshCw className={cn("h-4 w-4", reopening && "animate-spin")} />
                           </Button>
                         )}
                         {onCloneRound && (
@@ -583,6 +626,35 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                 </>
               ) : (
                 'Eliminar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reopen confirmation dialog */}
+      <AlertDialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Re-abrir esta ronda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto eliminará el snapshot, ledger e historial de sliding actuales. Podrás volver a cerrarla con los scores u overrides corregidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reopening}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReopenConfirm}
+              disabled={reopening}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {reopening ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Re-abriendo...
+                </>
+              ) : (
+                'Confirmar re-apertura'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
