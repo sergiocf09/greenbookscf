@@ -774,29 +774,55 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </TabsContent>
 
         {/* ── Mis Rondas Tab ── */}
-        <TabsContent value="rounds" className="mt-3">
+        <TabsContent value="rounds" className="mt-3 space-y-3">
+          {/* Summary card (mirrors Vs Rivales) */}
+          <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">Balance Total</span>
+              </div>
+              <div className={cn(
+                'text-xl font-bold flex items-center gap-1',
+                totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
+              )}>
+                {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
+                {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
+                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" />
+                {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+              </div>
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                {myRounds.length} ronda{myRounds.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+
           {myRounds.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p>No hay rondas completadas</p>
             </div>
           ) : (
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[340px]">
               <div className="space-y-1 pr-1">
                 {myRounds.map((round) => (
                   <button
                     key={round.roundId}
                     onClick={() => onViewRound?.(round.roundId)}
-                    className="w-full px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    className="w-full px-2 py-1.5 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
                   >
                     <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {format(parseLocalDate(round.date), "d MMM yyyy", { locale: es })}
+                      <span className="text-xs text-muted-foreground flex-shrink-0 w-[58px]">
+                        {format(parseLocalDate(round.date), "dd MMM yy", { locale: es })}
                       </span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
+                      <span className="font-bold text-sm flex-shrink-0 w-[24px] text-center">{round.score}</span>
                       <span className="text-xs truncate min-w-0">{round.courseName}</span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
-                      <span className="font-bold text-sm flex-shrink-0">{round.score}</span>
                       <span className={cn(
                         'font-bold text-sm ml-auto flex-shrink-0',
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' :
