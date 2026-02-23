@@ -317,10 +317,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return summaries;
   }, [isHistorical, crossGroupRivalsMap, allPlayersForCalculations, getStrokesForLocalPair, effectiveBetConfig, confirmedScores, course, startingHole, confirmedHoles]);
 
+  // CRITICAL: Filter out Carritos from liveBetSummaries because they are computed
+  // separately by the BetDashboard (allCarritosResults → carritosSummaries) with
+  // refined logic (respects disabledTeamBetIds). Without this filter, carritos would
+  // be double-counted in onBetSummariesChange emission, causing engine vs UI
+  // discrepancy at closure time (e.g., $100 delta per affected player).
+  const carritosEngineTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
   const betSummaries = useMemo(
     () => isHistorical
       ? snapshotLedgerToBetSummaries(snapshotLedger!)
-      : [...liveBetSummaries, ...crossGroupBetSummaries],
+      : [
+          ...liveBetSummaries.filter(s => !carritosEngineTypes.includes(s.betType)),
+          ...crossGroupBetSummaries,
+        ],
     [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries]
   );
   
