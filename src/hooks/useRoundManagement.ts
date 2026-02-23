@@ -17,6 +17,9 @@ import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
   type CloseAttemptReport,
+  type ClosePlayerSummary,
+  type CloseBalanceSummary,
+  type CloseOverrideSummary,
   newCloseAttemptReport,
   pushStageFail,
   pushStageOk,
@@ -1052,7 +1055,8 @@ export const useRoundManagement = ({
       const allPlayerIds = new Set(sanitizedPlayers.map(p => p.id));
       const nonGuestIds = new Set(sanitizedPlayers.filter(p => p.profileId).map(p => p.id));
 
-      const normalizeParticipantIds = (ids: string[] | undefined): string[] | undefined => {
+      const normalizedBetTypes: string[] = [];
+      const normalizeParticipantIds = (ids: string[] | undefined, betName: string): string[] | undefined => {
         if (!ids || ids.length === 0) return ids; // no list = everyone, keep as-is
         // Check if every non-guest player is already in the list
         const allNonGuestsIncluded = Array.from(nonGuestIds).every(id => ids.includes(id));
@@ -1060,7 +1064,8 @@ export const useRoundManagement = ({
         // All non-guests are included → add any missing players (guests)
         const missingIds = Array.from(allPlayerIds).filter(id => !ids.includes(id));
         if (missingIds.length === 0) return ids;
-        devLog(`[closeScorecard] Normalizing participantIds: adding ${missingIds.length} missing player(s) (guests)`);
+        normalizedBetTypes.push(betName);
+        devLog(`[closeScorecard] Normalizing ${betName} participantIds: adding ${missingIds.length} missing player(s)`);
         return [...ids, ...missingIds];
       };
 
@@ -1070,20 +1075,22 @@ export const useRoundManagement = ({
       // explicit exclusion from the matrix.
       const normalizedBetConfig = {
         ...betConfig,
-        medal: { ...betConfig.medal, participantIds: normalizeParticipantIds(betConfig.medal.participantIds) },
-        pressures: { ...betConfig.pressures, participantIds: normalizeParticipantIds(betConfig.pressures.participantIds) },
-        skins: { ...betConfig.skins, participantIds: normalizeParticipantIds(betConfig.skins.participantIds) },
-        units: { ...betConfig.units, participantIds: normalizeParticipantIds(betConfig.units.participantIds) },
+        medal: { ...betConfig.medal, participantIds: normalizeParticipantIds(betConfig.medal.participantIds, 'medal') },
+        pressures: { ...betConfig.pressures, participantIds: normalizeParticipantIds(betConfig.pressures.participantIds, 'pressures') },
+        skins: { ...betConfig.skins, participantIds: normalizeParticipantIds(betConfig.skins.participantIds, 'skins') },
+        units: { ...betConfig.units, participantIds: normalizeParticipantIds(betConfig.units.participantIds, 'units') },
         // oyeses: intentionally NOT normalized — respects matrix exclusion
-        putts: { ...betConfig.putts, participantIds: normalizeParticipantIds(betConfig.putts.participantIds) },
-        caros: { ...betConfig.caros, participantIds: normalizeParticipantIds(betConfig.caros.participantIds) },
-        manchas: { ...betConfig.manchas, participantIds: normalizeParticipantIds(betConfig.manchas.participantIds) },
-        culebras: { ...betConfig.culebras, participantIds: normalizeParticipantIds(betConfig.culebras.participantIds) },
-        pinguinos: { ...betConfig.pinguinos, participantIds: normalizeParticipantIds(betConfig.pinguinos.participantIds) },
-        coneja: { ...betConfig.coneja, participantIds: normalizeParticipantIds(betConfig.coneja.participantIds) },
-        rayas: { ...betConfig.rayas, participantIds: normalizeParticipantIds(betConfig.rayas.participantIds) },
-        stableford: { ...betConfig.stableford, participantIds: normalizeParticipantIds(betConfig.stableford.participantIds) },
+        putts: { ...betConfig.putts, participantIds: normalizeParticipantIds(betConfig.putts.participantIds, 'putts') },
+        caros: { ...betConfig.caros, participantIds: normalizeParticipantIds(betConfig.caros.participantIds, 'caros') },
+        manchas: { ...betConfig.manchas, participantIds: normalizeParticipantIds(betConfig.manchas.participantIds, 'manchas') },
+        culebras: { ...betConfig.culebras, participantIds: normalizeParticipantIds(betConfig.culebras.participantIds, 'culebras') },
+        pinguinos: { ...betConfig.pinguinos, participantIds: normalizeParticipantIds(betConfig.pinguinos.participantIds, 'pinguinos') },
+        coneja: { ...betConfig.coneja, participantIds: normalizeParticipantIds(betConfig.coneja.participantIds, 'coneja') },
+        rayas: { ...betConfig.rayas, participantIds: normalizeParticipantIds(betConfig.rayas.participantIds, 'rayas') },
+        stableford: { ...betConfig.stableford, participantIds: normalizeParticipantIds(betConfig.stableford.participantIds, 'stableford') },
       };
+      report.normalizedBets = normalizedBetTypes.length > 0 ? normalizedBetTypes : undefined;
+      pushStageOk(report, 'canonicalNormalization');
       // ─── END NORMALIZE participantIds ───────────────────────────────────────
 
       // Inject bilateral handicaps into betConfig so calculateAllBets uses them
@@ -1113,6 +1120,93 @@ export const useRoundManagement = ({
         new Set(Array.from({ length: 18 }, (_, i) => i + 1))
       );
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
+
+      // ─── POINT 5: Enriched Logging — Player Summaries ───────────────────────
+      report.playerSummaries = sanitizedPlayers.map((p): ClosePlayerSummary => ({
+        id: p.id,
+        name: p.name,
+        isGuest: !p.profileId || !isUuid(p.profileId),
+        handicap: p.handicap,
+        profileId: p.profileId,
+      }));
+
+      // ─── POINT 4: Override ID Validation ────────────────────────────────────
+      const validPlayerIds = new Set(sanitizedPlayers.map(p => p.id));
+      const overrideSummaries: CloseOverrideSummary[] = [];
+      let orphanedOverrides = 0;
+
+      if (betConfigWithHandicaps.betOverrides && betConfigWithHandicaps.betOverrides.length > 0) {
+        for (const override of betConfigWithHandicaps.betOverrides) {
+          const aValid = validPlayerIds.has(override.playerAId);
+          const bValid = validPlayerIds.has(override.playerBId);
+          const isValid = aValid && bValid;
+          if (!isValid) {
+            orphanedOverrides++;
+            devWarn(`⚠️ Orphaned betOverride: playerA=${override.playerAId} (${aValid ? 'ok' : 'MISSING'}), playerB=${override.playerBId} (${bValid ? 'ok' : 'MISSING'}), betType=${override.betType}`);
+          }
+          overrideSummaries.push({
+            playerAId: override.playerAId,
+            playerBId: override.playerBId,
+            betType: override.betType || 'unknown',
+            action: override.enabled ? 'enabled' : 'disabled',
+            valid: isValid,
+          });
+        }
+      }
+      report.overrideSummaries = overrideSummaries;
+      report.orphanedOverrides = orphanedOverrides;
+      pushStageOk(report, 'overrideValidation');
+
+      if (orphanedOverrides > 0) {
+        devWarn(`⚠️ ${orphanedOverrides} orphaned betOverride(s) detected. They will be ignored by the engine but are logged for auditing.`);
+      }
+      // ─── END POINT 4 ───────────────────────────────────────────────────────
+
+      // ─── POINT 2: Pre-Persistence Validation ───────────────────────────────
+      // Compare UI-provided bet results against engine-recalculated results.
+      // If discrepancy > $1, log a warning (but don't block — the engine is authoritative).
+      const engineBalanceByPlayer = new Map<string, number>();
+      for (const result of allBetResults) {
+        if (result.amount > 0) {
+          // Winner
+          engineBalanceByPlayer.set(result.playerId, (engineBalanceByPlayer.get(result.playerId) || 0) + result.amount);
+          // Loser
+          engineBalanceByPlayer.set(result.vsPlayer, (engineBalanceByPlayer.get(result.vsPlayer) || 0) - result.amount);
+        }
+      }
+
+      const uiBalanceByPlayer = new Map<string, number>();
+      for (const result of allBetResultsFromUI) {
+        if (result.amount > 0) {
+          uiBalanceByPlayer.set(result.playerId, (uiBalanceByPlayer.get(result.playerId) || 0) + result.amount);
+          uiBalanceByPlayer.set(result.vsPlayer, (uiBalanceByPlayer.get(result.vsPlayer) || 0) - result.amount);
+        }
+      }
+
+      const balanceComparison: CloseBalanceSummary[] = sanitizedPlayers.map((p) => {
+        const engineNet = Math.round((engineBalanceByPlayer.get(p.id) || 0) * 100) / 100;
+        const uiNet = Math.round((uiBalanceByPlayer.get(p.id) || 0) * 100) / 100;
+        return {
+          playerId: p.id,
+          playerName: p.name,
+          engineNet,
+          uiNet,
+          delta: Math.round((engineNet - uiNet) * 100) / 100,
+        };
+      });
+      report.balanceComparison = balanceComparison;
+
+      const maxDelta = Math.max(...balanceComparison.map(b => Math.abs(b.delta)), 0);
+      if (maxDelta > 1) {
+        devWarn(`⚠️ PRE-VALIDATION: UI vs Engine discrepancy detected (max delta: $${maxDelta})`);
+        balanceComparison
+          .filter(b => Math.abs(b.delta) > 1)
+          .forEach(b => {
+            devWarn(`  → ${b.playerName}: UI=$${b.uiNet}, Engine=$${b.engineNet}, Δ=$${b.delta}`);
+          });
+      }
+      pushStageOk(report, 'preValidation');
+      // ─── END POINT 2 ───────────────────────────────────────────────────────
 
       // Save ledger transactions for bet results (only for registered players)
       const ledgerRecords: any[] = [];
@@ -1527,6 +1621,33 @@ export const useRoundManagement = ({
           newMap.set(player.id, data.id);
           return newMap;
         });
+
+        // POINT 1: Canonical normalization — add registered player to participantIds
+        if (setBetConfig) {
+          setBetConfig((prev) => {
+            const addIfEnabled = (ids: string[] | undefined, enabled: boolean): string[] | undefined => {
+              if (!enabled) return ids;
+              if (!ids || ids.length === 0) return ids; // empty = everyone, don't restrict
+              if (ids.includes(player.id)) return ids;
+              return [...ids, player.id];
+            };
+            return {
+              ...prev,
+              medal: { ...prev.medal, participantIds: addIfEnabled(prev.medal.participantIds, prev.medal.enabled !== false) },
+              pressures: { ...prev.pressures, participantIds: addIfEnabled(prev.pressures.participantIds, prev.pressures.enabled === true) },
+              skins: { ...prev.skins, participantIds: addIfEnabled(prev.skins.participantIds, prev.skins.enabled === true) },
+              caros: { ...prev.caros, participantIds: addIfEnabled(prev.caros.participantIds, prev.caros.enabled === true) },
+              units: { ...prev.units, participantIds: addIfEnabled(prev.units.participantIds, prev.units.enabled === true) },
+              manchas: { ...prev.manchas, participantIds: addIfEnabled(prev.manchas.participantIds, prev.manchas.enabled === true) },
+              culebras: { ...prev.culebras, participantIds: addIfEnabled(prev.culebras.participantIds, prev.culebras.enabled === true) },
+              pinguinos: { ...prev.pinguinos, participantIds: addIfEnabled(prev.pinguinos.participantIds, prev.pinguinos.enabled === true) },
+              putts: { ...prev.putts, participantIds: addIfEnabled(prev.putts.participantIds, prev.putts.enabled === true) },
+              rayas: { ...prev.rayas, participantIds: addIfEnabled(prev.rayas.participantIds, prev.rayas.enabled === true) },
+              coneja: { ...prev.coneja, participantIds: addIfEnabled(prev.coneja.participantIds, prev.coneja.enabled === true) },
+              // Oyeses: intentionally NOT adding — respects matrix exclusion
+            };
+          });
+        }
       } else {
         // Guest player: persist on round_players so scores survive refresh
         const isHexColor = typeof player.color === 'string' && player.color.startsWith('#');
@@ -1598,11 +1719,9 @@ export const useRoundManagement = ({
           return next;
         });
 
-        // 4) Update betConfig references (best-effort, only if hook controls it)
+        // 4) Update betConfig references AND canonically add new player to participantIds (Point 1)
         if (setBetConfig) {
           setBetConfig((prev) => {
-            // `prev` may be partially shaped if it was restored from a legacy/partial bet_config.
-            // Ensure nested objects exist before mapping.
             const safePrev: BetConfig = {
               ...defaultBetConfig,
               ...(prev as any),
@@ -1619,23 +1738,48 @@ export const useRoundManagement = ({
               return ids.map(replaceId);
             };
 
+            // POINT 1: Canonical normalization — add newId to participantIds of enabled bets
+            // (except Oyeses, which uses its own matrix). This ensures the engine always
+            // has the player in the participation list, matching what the UI displays.
+            const addToParticipants = (ids: string[] | undefined, betEnabled: boolean): string[] | undefined => {
+              const migrated = migrateParticipantIds(ids);
+              if (!betEnabled) return migrated;
+              // If list is empty/undefined, everyone participates — don't create a restrictive list
+              if (!migrated || migrated.length === 0) return migrated;
+              // If newId already present (after migration), skip
+              if (migrated.includes(newId)) return migrated;
+              // Add the new player
+              return [...migrated, newId];
+            };
+
             return {
               ...safePrev,
-              medal: { ...safePrev.medal, participantIds: migrateParticipantIds(safePrev.medal.participantIds) },
-              pressures: { ...safePrev.pressures, participantIds: migrateParticipantIds(safePrev.pressures.participantIds) },
-              skins: { ...safePrev.skins, participantIds: migrateParticipantIds(safePrev.skins.participantIds) },
-              caros: { ...safePrev.caros, participantIds: migrateParticipantIds(safePrev.caros.participantIds) },
-              units: { ...safePrev.units, participantIds: migrateParticipantIds(safePrev.units.participantIds) },
-              manchas: { ...safePrev.manchas, participantIds: migrateParticipantIds(safePrev.manchas.participantIds) },
-              culebras: { ...safePrev.culebras, participantIds: migrateParticipantIds(safePrev.culebras.participantIds) },
-              pinguinos: { ...safePrev.pinguinos, participantIds: migrateParticipantIds(safePrev.pinguinos.participantIds) },
-              putts: { ...safePrev.putts, participantIds: migrateParticipantIds(safePrev.putts.participantIds) },
-              zoologico: safePrev.zoologico ? { ...safePrev.zoologico, participantIds: migrateParticipantIds(safePrev.zoologico.participantIds) } : safePrev.zoologico,
+              medal: { ...safePrev.medal, participantIds: addToParticipants(safePrev.medal.participantIds, safePrev.medal.enabled !== false) },
+              pressures: { ...safePrev.pressures, participantIds: addToParticipants(safePrev.pressures.participantIds, safePrev.pressures.enabled === true) },
+              skins: { ...safePrev.skins, participantIds: addToParticipants(safePrev.skins.participantIds, safePrev.skins.enabled === true) },
+              caros: { ...safePrev.caros, participantIds: addToParticipants(safePrev.caros.participantIds, safePrev.caros.enabled === true) },
+              units: { ...safePrev.units, participantIds: addToParticipants(safePrev.units.participantIds, safePrev.units.enabled === true) },
+              manchas: { ...safePrev.manchas, participantIds: addToParticipants(safePrev.manchas.participantIds, safePrev.manchas.enabled === true) },
+              culebras: { ...safePrev.culebras, participantIds: addToParticipants(safePrev.culebras.participantIds, safePrev.culebras.enabled === true) },
+              pinguinos: { ...safePrev.pinguinos, participantIds: addToParticipants(safePrev.pinguinos.participantIds, safePrev.pinguinos.enabled === true) },
+              putts: { ...safePrev.putts, participantIds: addToParticipants(safePrev.putts.participantIds, safePrev.putts.enabled === true) },
+              rayas: { ...safePrev.rayas, participantIds: addToParticipants(safePrev.rayas.participantIds, safePrev.rayas.enabled === true) },
+              coneja: { ...safePrev.coneja, participantIds: addToParticipants(safePrev.coneja.participantIds, safePrev.coneja.enabled === true) },
+              zoologico: safePrev.zoologico ? { ...safePrev.zoologico, participantIds: addToParticipants(safePrev.zoologico.participantIds, safePrev.zoologico.enabled === true) } : safePrev.zoologico,
               stableford: {
                 ...safePrev.stableford,
+                participantIds: addToParticipants(safePrev.stableford.participantIds, safePrev.stableford.enabled === true),
                 playerHandicaps: (safePrev.stableford.playerHandicaps ?? []).map((ph) => ({
                   ...ph,
                   playerId: replaceId(ph.playerId),
+                })),
+              },
+              // Oyeses: intentionally NOT adding to participantIds — respects matrix exclusion
+              oyeses: {
+                ...safePrev.oyeses,
+                playerConfigs: (safePrev.oyeses.playerConfigs ?? []).map((pc) => ({
+                  ...pc,
+                  playerId: replaceId(pc.playerId),
                 })),
               },
               carritos: {
@@ -1654,13 +1798,6 @@ export const useRoundManagement = ({
                   ? Object.fromEntries(Object.entries(t.teamHandicaps).map(([pid, h]) => [replaceId(pid), h]))
                   : t.teamHandicaps,
               })),
-              oyeses: {
-                ...safePrev.oyeses,
-                playerConfigs: (safePrev.oyeses.playerConfigs ?? []).map((pc) => ({
-                  ...pc,
-                  playerId: replaceId(pc.playerId),
-                })),
-              },
               medalGeneral: {
                 ...safePrev.medalGeneral,
                 playerHandicaps: (safePrev.medalGeneral.playerHandicaps ?? []).map((ph) => ({
