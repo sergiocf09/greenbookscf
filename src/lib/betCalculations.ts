@@ -1233,7 +1233,11 @@ export const calculateManchasBets = (
   const summaries: BetSummary[] = [];
   
   // Manual manchas that are persisted to database
-  const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana'] as const;
+  // NOTE: moreliana (exactly 4 putts) is intentionally EXCLUDED here because 4+ putts
+  // are already handled by the cuatriput section (additive, pays to each opponent).
+  // Including moreliana here would double-count: once in diff-based regular manchas,
+  // once in additive cuatriput.
+  const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3'] as const;
   
   // Count regular manchas (not cuatriput)
   // Also auto-detect dobleDigito (10+ strokes) since it's not persisted to DB
@@ -1302,6 +1306,8 @@ export const calculateManchasBets = (
             amount: amount,
             segment: 'total',
             description: `${manchasA} vs ${manchasB} manchas`,
+            units: Math.abs(diff),
+            baseUnitAmount: config.manchas.valuePerPoint,
           });
           summaries.push({
             playerId: playerB.id,
@@ -1310,6 +1316,8 @@ export const calculateManchasBets = (
             amount: -amount,
             segment: 'total',
             description: `${manchasB} vs ${manchasA} manchas`,
+            units: Math.abs(diff),
+            baseUnitAmount: config.manchas.valuePerPoint,
           });
         }
         
