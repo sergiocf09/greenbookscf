@@ -2485,7 +2485,7 @@ export const calculateAllBets = (
             return {
               ...summary,
               baseUnitAmount: override.amountOverride,
-              amount: sign * summary.units * override.amountOverride * mult,
+              amount: sign * Math.abs(summary.units) * override.amountOverride * mult,
             };
           }
 
