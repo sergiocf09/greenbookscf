@@ -928,12 +928,65 @@ export const useRoundManagement = ({
         return { ...p, profileId: undefined };
       });
 
+      // ─── CANONICAL NORMALIZATION ───────────────────────────────────────────
+      // Canonicalize betOverrides player IDs before persisting and calculating:
+      // - Accept local player.id
+      // - Accept profileId
+      // - Accept round_player_id (legacy / stale entries)
+      // Then dedupe by pair+betType (last one wins) so Array.find() order does not
+      // accidentally pick stale entries.
+      const roundPlayerIdToLocalPlayerId = new Map<string, string>();
+      for (const [localPlayerId, roundPlayerId] of roundPlayerIds.entries()) {
+        roundPlayerIdToLocalPlayerId.set(roundPlayerId, localPlayerId);
+      }
+
+      const resolveOverridePlayerIdForClose = (rawId: string): string | undefined => {
+        if (!rawId) return undefined;
+        const direct = sanitizedPlayers.find((p) => p.id === rawId);
+        if (direct) return direct.id;
+        const byProfile = sanitizedPlayers.find((p) => p.profileId === rawId);
+        if (byProfile) return byProfile.id;
+        return roundPlayerIdToLocalPlayerId.get(rawId);
+      };
+
+      const normalizedBetConfig: BetConfig = (() => {
+        const sourceOverrides = Array.isArray(betConfig.betOverrides) ? betConfig.betOverrides : [];
+        const dedupedByPairAndType = new Map<string, (typeof sourceOverrides)[number]>();
+
+        for (const override of sourceOverrides) {
+          const resolvedA = resolveOverridePlayerIdForClose(override.playerAId);
+          const resolvedB = resolveOverridePlayerIdForClose(override.playerBId);
+          if (!resolvedA || !resolvedB || resolvedA === resolvedB) continue;
+
+          const [leftId, rightId] = resolvedA < resolvedB
+            ? [resolvedA, resolvedB]
+            : [resolvedB, resolvedA];
+          const betTypeKey = String(override.betType ?? '').toLowerCase();
+          const dedupeKey = `${leftId}::${rightId}::${betTypeKey}`;
+
+          dedupedByPairAndType.set(dedupeKey, {
+            ...override,
+            playerAId: resolvedA,
+            playerBId: resolvedB,
+          });
+        }
+
+        return {
+          ...betConfig,
+          betOverrides: Array.from(dedupedByPairAndType.values()),
+        };
+      })();
+
+      report.normalizedBets = undefined;
+      pushStageOk(report, 'canonicalNormalization');
+      // ─── END CANONICAL NORMALIZATION ────────────────────────────────────────
+
       // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
       // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
       try {
         const { error: betConfigError } = await supabase
           .from('rounds')
-          .update({ bet_config: betConfig as any })
+          .update({ bet_config: normalizedBetConfig as any })
           .eq('id', roundState.id);
         if (betConfigError) throw betConfigError;
         pushStageOk(report, 'saveBetConfig');
@@ -1042,17 +1095,9 @@ export const useRoundManagement = ({
         );
       });
 
-      // ─── NORMALIZE participantIds ─────────────────────────────────────────
-      // ─── CANONICAL NORMALIZATION ───────────────────────────────────────────
-      // The betConfig.participantIds as configured by the organizer is the
-      // single source of truth. We do NOT auto-add guests or any player
-      // to bets — the organizer's explicit configuration is respected.
-      // Previous versions auto-added guests to bets they were intentionally
-      // excluded from, causing snapshot divergence (engine > UI by $2,725+).
-      const normalizedBetConfig = { ...betConfig };
-      report.normalizedBets = undefined;
-      pushStageOk(report, 'canonicalNormalization');
-      // ─── END CANONICAL NORMALIZATION ────────────────────────────────────────
+      // Bet config was already canonically normalized before persistence.
+      // We reuse that exact source of truth for snapshot generation.
+
 
       // Inject bilateral handicaps into betConfig so calculateAllBets uses them
       const betConfigWithHandicaps = bilateralHandicapsMap
