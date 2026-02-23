@@ -147,6 +147,7 @@ const Index = () => {
     copyShareLink,
     getShareableLink,
     lastCloseReport,
+    resetRoundForReclose,
   } = useRoundManagement({
     players,
     setPlayers,
@@ -2513,6 +2514,30 @@ const Index = () => {
                   <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
                   Tarjeta cerrada y guardada
                 </div>
+                {profile?.id === roundState.organizerProfileId && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Re-abrir para re-cerrar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Re-abrir ronda?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esto eliminará el snapshot, ledger y historial de sliding actuales. Podrás cerrar la ronda nuevamente con los datos corregidos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => resetRoundForReclose()}>
+                          Confirmar re-apertura
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
                 <Button 
                   onClick={startNewRound}
                   className="w-full"

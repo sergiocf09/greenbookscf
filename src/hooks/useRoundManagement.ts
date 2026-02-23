@@ -1872,6 +1872,23 @@ export const useRoundManagement = ({
     }
   }, [getShareableLink]);
 
+  const resetRoundForReclose = useCallback(async () => {
+    if (!roundState.id) return false;
+    try {
+      const { error } = await supabase.rpc('reset_round_for_reclose', {
+        p_round_id: roundState.id,
+      } as any);
+      if (error) throw error;
+      setRoundState(prev => ({ ...prev, status: 'in_progress' }));
+      toast.success('Ronda reabierta. Puedes cerrarla de nuevo.');
+      return true;
+    } catch (err: any) {
+      devError('[resetRoundForReclose]', err);
+      toast.error(`Error al reabrir ronda: ${err.message}`);
+      return false;
+    }
+  }, [roundState.id]);
+
   return {
     roundState,
     setRoundState,
@@ -1892,6 +1909,7 @@ export const useRoundManagement = ({
     addGuestPlayer,
     setRoundDate,
     copyShareLink,
+    resetRoundForReclose,
   };
 };
 
