@@ -1043,55 +1043,16 @@ export const useRoundManagement = ({
       });
 
       // ─── NORMALIZE participantIds ─────────────────────────────────────────
-      // BUG FIX: When a guest is added mid-round, their ID is never inserted into
-      // the participantIds arrays of existing bet types (Medal, Presiones, Skins, etc.).
-      // The live UI works because BetDashboard has display-level workarounds, but the
-      // engine (calculateAllBets) strictly respects participantIds — so the guest gets
-      // excluded from bilateral calculations at close time, producing an incorrect snapshot.
-      //
-      // Fix: For each bet type with a non-empty participantIds, if the list already
-      // contains ALL non-guest players in the round (meaning "everyone was included"),
-      // automatically add any missing player IDs (guests) so the engine includes them.
-      const allPlayerIds = new Set(sanitizedPlayers.map(p => p.id));
-      const nonGuestIds = new Set(sanitizedPlayers.filter(p => p.profileId).map(p => p.id));
-
-      const normalizedBetTypes: string[] = [];
-      const normalizeParticipantIds = (ids: string[] | undefined, betName: string): string[] | undefined => {
-        if (!ids || ids.length === 0) return ids; // no list = everyone, keep as-is
-        // Check if every non-guest player is already in the list
-        const allNonGuestsIncluded = Array.from(nonGuestIds).every(id => ids.includes(id));
-        if (!allNonGuestsIncluded) return ids; // explicit partial selection, respect it
-        // All non-guests are included → add any missing players (guests)
-        const missingIds = Array.from(allPlayerIds).filter(id => !ids.includes(id));
-        if (missingIds.length === 0) return ids;
-        normalizedBetTypes.push(betName);
-        devLog(`[closeScorecard] Normalizing ${betName} participantIds: adding ${missingIds.length} missing player(s)`);
-        return [...ids, ...missingIds];
-      };
-
-      // NOTE: Oyeses is EXCLUDED from normalization because it has its own per-player
-      // config mechanism (playerConfigs) and participantIds is the authoritative source
-      // of truth from the Participation Matrix. Adding a guest here would override an
-      // explicit exclusion from the matrix.
-      const normalizedBetConfig = {
-        ...betConfig,
-        medal: { ...betConfig.medal, participantIds: normalizeParticipantIds(betConfig.medal.participantIds, 'medal') },
-        pressures: { ...betConfig.pressures, participantIds: normalizeParticipantIds(betConfig.pressures.participantIds, 'pressures') },
-        skins: { ...betConfig.skins, participantIds: normalizeParticipantIds(betConfig.skins.participantIds, 'skins') },
-        units: { ...betConfig.units, participantIds: normalizeParticipantIds(betConfig.units.participantIds, 'units') },
-        // oyeses: intentionally NOT normalized — respects matrix exclusion
-        putts: { ...betConfig.putts, participantIds: normalizeParticipantIds(betConfig.putts.participantIds, 'putts') },
-        caros: { ...betConfig.caros, participantIds: normalizeParticipantIds(betConfig.caros.participantIds, 'caros') },
-        manchas: { ...betConfig.manchas, participantIds: normalizeParticipantIds(betConfig.manchas.participantIds, 'manchas') },
-        culebras: { ...betConfig.culebras, participantIds: normalizeParticipantIds(betConfig.culebras.participantIds, 'culebras') },
-        pinguinos: { ...betConfig.pinguinos, participantIds: normalizeParticipantIds(betConfig.pinguinos.participantIds, 'pinguinos') },
-        coneja: { ...betConfig.coneja, participantIds: normalizeParticipantIds(betConfig.coneja.participantIds, 'coneja') },
-        rayas: { ...betConfig.rayas, participantIds: normalizeParticipantIds(betConfig.rayas.participantIds, 'rayas') },
-        stableford: { ...betConfig.stableford, participantIds: normalizeParticipantIds(betConfig.stableford.participantIds, 'stableford') },
-      };
-      report.normalizedBets = normalizedBetTypes.length > 0 ? normalizedBetTypes : undefined;
+      // ─── CANONICAL NORMALIZATION ───────────────────────────────────────────
+      // The betConfig.participantIds as configured by the organizer is the
+      // single source of truth. We do NOT auto-add guests or any player
+      // to bets — the organizer's explicit configuration is respected.
+      // Previous versions auto-added guests to bets they were intentionally
+      // excluded from, causing snapshot divergence (engine > UI by $2,725+).
+      const normalizedBetConfig = { ...betConfig };
+      report.normalizedBets = undefined;
       pushStageOk(report, 'canonicalNormalization');
-      // ─── END NORMALIZE participantIds ───────────────────────────────────────
+      // ─── END CANONICAL NORMALIZATION ────────────────────────────────────────
 
       // Inject bilateral handicaps into betConfig so calculateAllBets uses them
       const betConfigWithHandicaps = bilateralHandicapsMap
@@ -1622,32 +1583,9 @@ export const useRoundManagement = ({
           return newMap;
         });
 
-        // POINT 1: Canonical normalization — add registered player to participantIds
-        if (setBetConfig) {
-          setBetConfig((prev) => {
-            const addIfEnabled = (ids: string[] | undefined, enabled: boolean): string[] | undefined => {
-              if (!enabled) return ids;
-              if (!ids || ids.length === 0) return ids; // empty = everyone, don't restrict
-              if (ids.includes(player.id)) return ids;
-              return [...ids, player.id];
-            };
-            return {
-              ...prev,
-              medal: { ...prev.medal, participantIds: addIfEnabled(prev.medal.participantIds, prev.medal.enabled !== false) },
-              pressures: { ...prev.pressures, participantIds: addIfEnabled(prev.pressures.participantIds, prev.pressures.enabled === true) },
-              skins: { ...prev.skins, participantIds: addIfEnabled(prev.skins.participantIds, prev.skins.enabled === true) },
-              caros: { ...prev.caros, participantIds: addIfEnabled(prev.caros.participantIds, prev.caros.enabled === true) },
-              units: { ...prev.units, participantIds: addIfEnabled(prev.units.participantIds, prev.units.enabled === true) },
-              manchas: { ...prev.manchas, participantIds: addIfEnabled(prev.manchas.participantIds, prev.manchas.enabled === true) },
-              culebras: { ...prev.culebras, participantIds: addIfEnabled(prev.culebras.participantIds, prev.culebras.enabled === true) },
-              pinguinos: { ...prev.pinguinos, participantIds: addIfEnabled(prev.pinguinos.participantIds, prev.pinguinos.enabled === true) },
-              putts: { ...prev.putts, participantIds: addIfEnabled(prev.putts.participantIds, prev.putts.enabled === true) },
-              rayas: { ...prev.rayas, participantIds: addIfEnabled(prev.rayas.participantIds, prev.rayas.enabled === true) },
-              coneja: { ...prev.coneja, participantIds: addIfEnabled(prev.coneja.participantIds, prev.coneja.enabled === true) },
-              // Oyeses: intentionally NOT adding — respects matrix exclusion
-            };
-          });
-        }
+        // participantIds are managed exclusively by the organizer through the UI.
+        // We do NOT auto-add players to bets — this caused guests to be included
+        // in bets they were intentionally excluded from.
       } else {
         // Guest player: persist on round_players so scores survive refresh
         const isHexColor = typeof player.color === 'string' && player.color.startsWith('#');
@@ -1738,37 +1676,26 @@ export const useRoundManagement = ({
               return ids.map(replaceId);
             };
 
-            // POINT 1: Canonical normalization — add newId to participantIds of enabled bets
-            // (except Oyeses, which uses its own matrix). This ensures the engine always
-            // has the player in the participation list, matching what the UI displays.
-            const addToParticipants = (ids: string[] | undefined, betEnabled: boolean): string[] | undefined => {
-              const migrated = migrateParticipantIds(ids);
-              if (!betEnabled) return migrated;
-              // If list is empty/undefined, everyone participates — don't create a restrictive list
-              if (!migrated || migrated.length === 0) return migrated;
-              // If newId already present (after migration), skip
-              if (migrated.includes(newId)) return migrated;
-              // Add the new player
-              return [...migrated, newId];
-            };
+            // Only migrate oldId→newId in participantIds, do NOT auto-add to bets.
+            // The organizer manages participation explicitly through the UI.
 
             return {
               ...safePrev,
-              medal: { ...safePrev.medal, participantIds: addToParticipants(safePrev.medal.participantIds, safePrev.medal.enabled !== false) },
-              pressures: { ...safePrev.pressures, participantIds: addToParticipants(safePrev.pressures.participantIds, safePrev.pressures.enabled === true) },
-              skins: { ...safePrev.skins, participantIds: addToParticipants(safePrev.skins.participantIds, safePrev.skins.enabled === true) },
-              caros: { ...safePrev.caros, participantIds: addToParticipants(safePrev.caros.participantIds, safePrev.caros.enabled === true) },
-              units: { ...safePrev.units, participantIds: addToParticipants(safePrev.units.participantIds, safePrev.units.enabled === true) },
-              manchas: { ...safePrev.manchas, participantIds: addToParticipants(safePrev.manchas.participantIds, safePrev.manchas.enabled === true) },
-              culebras: { ...safePrev.culebras, participantIds: addToParticipants(safePrev.culebras.participantIds, safePrev.culebras.enabled === true) },
-              pinguinos: { ...safePrev.pinguinos, participantIds: addToParticipants(safePrev.pinguinos.participantIds, safePrev.pinguinos.enabled === true) },
-              putts: { ...safePrev.putts, participantIds: addToParticipants(safePrev.putts.participantIds, safePrev.putts.enabled === true) },
-              rayas: { ...safePrev.rayas, participantIds: addToParticipants(safePrev.rayas.participantIds, safePrev.rayas.enabled === true) },
-              coneja: { ...safePrev.coneja, participantIds: addToParticipants(safePrev.coneja.participantIds, safePrev.coneja.enabled === true) },
-              zoologico: safePrev.zoologico ? { ...safePrev.zoologico, participantIds: addToParticipants(safePrev.zoologico.participantIds, safePrev.zoologico.enabled === true) } : safePrev.zoologico,
+              medal: { ...safePrev.medal, participantIds: migrateParticipantIds(safePrev.medal.participantIds) },
+              pressures: { ...safePrev.pressures, participantIds: migrateParticipantIds(safePrev.pressures.participantIds) },
+              skins: { ...safePrev.skins, participantIds: migrateParticipantIds(safePrev.skins.participantIds) },
+              caros: { ...safePrev.caros, participantIds: migrateParticipantIds(safePrev.caros.participantIds) },
+              units: { ...safePrev.units, participantIds: migrateParticipantIds(safePrev.units.participantIds) },
+              manchas: { ...safePrev.manchas, participantIds: migrateParticipantIds(safePrev.manchas.participantIds) },
+              culebras: { ...safePrev.culebras, participantIds: migrateParticipantIds(safePrev.culebras.participantIds) },
+              pinguinos: { ...safePrev.pinguinos, participantIds: migrateParticipantIds(safePrev.pinguinos.participantIds) },
+              putts: { ...safePrev.putts, participantIds: migrateParticipantIds(safePrev.putts.participantIds) },
+              rayas: { ...safePrev.rayas, participantIds: migrateParticipantIds(safePrev.rayas.participantIds) },
+              coneja: { ...safePrev.coneja, participantIds: migrateParticipantIds(safePrev.coneja.participantIds) },
+              zoologico: safePrev.zoologico ? { ...safePrev.zoologico, participantIds: migrateParticipantIds(safePrev.zoologico.participantIds) } : safePrev.zoologico,
               stableford: {
                 ...safePrev.stableford,
-                participantIds: addToParticipants(safePrev.stableford.participantIds, safePrev.stableford.enabled === true),
+                participantIds: migrateParticipantIds(safePrev.stableford.participantIds),
                 playerHandicaps: (safePrev.stableford.playerHandicaps ?? []).map((ph) => ({
                   ...ph,
                   playerId: replaceId(ph.playerId),
