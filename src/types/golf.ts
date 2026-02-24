@@ -322,6 +322,20 @@ export interface StablefordBetConfig {
   scope?: GroupBetScope; // Multi-group scope (default: 'global')
 }
 
+// Team Pressure Units sub-modality config
+export interface TeamPressureUnitsConfig {
+  enabled: boolean;
+  valuePerUnit: number;
+  enabledMarkers: (keyof MarkerState)[]; // Which markers count as units
+}
+
+// Team Pressure Oyeses sub-modality config
+export interface TeamPressureOyesesConfig {
+  enabled: boolean;
+  modality: 'acumulados' | 'sangron';
+  valuePerOyes: number;
+}
+
 // Presiones por Parejas - Team pressures
 export interface TeamPressuresBet {
   id: string;
@@ -334,6 +348,9 @@ export interface TeamPressuresBet {
   teamHandicaps: Record<string, number>; // Per-player handicaps for this bet
   scoringType: 'lowBall' | 'highBall' | 'combined';
   enabled: boolean;
+  // Optional sub-modalities
+  unitsConfig?: TeamPressureUnitsConfig;
+  oyesesConfig?: TeamPressureOyesesConfig;
 }
 
 export interface TeamPressuresBetConfig {

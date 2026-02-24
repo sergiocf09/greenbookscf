@@ -2246,6 +2246,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       </Button>
                     </CollapsibleTrigger>
                   </div>
+                  {/* Sub-modality breakdown (Unidades / Oyeses) */}
+                  {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled) && (() => {
+                    // Parse breakdown from description in betSummaries
+                    const mySummary = betSummaries.find(s => 
+                      s.betType === 'Presiones Parejas' && s.betId === bet.id && 
+                      (isBaseInTeamA ? resolvedTeamA.includes(s.playerId) : resolvedTeamB.includes(s.playerId)) &&
+                      (isBaseInTeamA ? resolvedTeamB.includes(s.vsPlayer) : resolvedTeamA.includes(s.vsPlayer))
+                    );
+                    const desc = mySummary?.description || '';
+                    const parts = desc.split(' | ');
+                    return (
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                        {parts.map((part, i) => (
+                          <span key={i} className={cn(
+                            part.includes('+$') ? 'text-green-600' : part.includes('-$') ? 'text-destructive' : ''
+                          )}>{part}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <p className="text-[10px] text-muted-foreground">
                     {bet.scoringType === 'lowBall' ? 'Bola Baja' :
                      bet.scoringType === 'highBall' ? 'Bola Alta' : 'Combinado'}

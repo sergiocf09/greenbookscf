@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -498,6 +501,107 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
           <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
+      </div>
+
+      {/* Modalidades Adicionales */}
+      <div className="space-y-2 pt-2 border-t border-border/30">
+        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Modalidades Adicionales</Label>
+        
+        {/* Units Toggle & Config */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Unidades</Label>
+            <Switch
+              checked={bet.unitsConfig?.enabled ?? false}
+              onCheckedChange={(enabled) => onUpdate({
+                unitsConfig: {
+                  ...(bet.unitsConfig ?? { enabled: false, valuePerUnit: 25, enabledMarkers: ['birdie', 'eagle', 'albatross', 'sandyPar', 'aquaPar', 'holeOut'] }),
+                  enabled,
+                },
+              })}
+            />
+          </div>
+          {bet.unitsConfig?.enabled && (
+            <div className="space-y-2 pl-2 border-l-2 border-primary/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground">Valor por Unidad</Label>
+                <AmountInput label="" value={bet.unitsConfig.valuePerUnit} onChange={(v) => onUpdate({
+                  unitsConfig: { ...bet.unitsConfig!, valuePerUnit: v },
+                })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Qué cuenta como unidad</Label>
+                <div className="grid grid-cols-2 gap-1">
+                  {(['birdie', 'eagle', 'albatross', 'sandyPar', 'aquaPar', 'holeOut'] as (keyof MarkerState)[]).map(marker => {
+                    const info = markerInfo[marker];
+                    const isChecked = bet.unitsConfig?.enabledMarkers?.includes(marker) ?? false;
+                    return (
+                      <label key={marker} className="flex items-center gap-1.5 text-[11px] cursor-pointer">
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            const current = bet.unitsConfig?.enabledMarkers ?? [];
+                            const next = checked ? [...current, marker] : current.filter(m => m !== marker);
+                            onUpdate({
+                              unitsConfig: { ...bet.unitsConfig!, enabledMarkers: next as (keyof MarkerState)[] },
+                            });
+                          }}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span>{info.emoji} {info.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Oyeses Toggle & Config */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Oyeses</Label>
+            <Switch
+              checked={bet.oyesesConfig?.enabled ?? false}
+              onCheckedChange={(enabled) => onUpdate({
+                oyesesConfig: {
+                  ...(bet.oyesesConfig ?? { enabled: false, modality: 'acumulados', valuePerOyes: 25 }),
+                  enabled,
+                },
+              })}
+            />
+          </div>
+          {bet.oyesesConfig?.enabled && (
+            <div className="space-y-2 pl-2 border-l-2 border-primary/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground">Valor por Oyes</Label>
+                <AmountInput label="" value={bet.oyesesConfig.valuePerOyes} onChange={(v) => onUpdate({
+                  oyesesConfig: { ...bet.oyesesConfig!, valuePerOyes: v },
+                })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">Modalidad</Label>
+                <RadioGroup
+                  value={bet.oyesesConfig.modality}
+                  onValueChange={(v) => onUpdate({
+                    oyesesConfig: { ...bet.oyesesConfig!, modality: v as 'acumulados' | 'sangron' },
+                  })}
+                  className="flex gap-3"
+                >
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
+                    <RadioGroupItem value="acumulados" className="h-3.5 w-3.5" />
+                    Acumulado
+                  </label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
+                    <RadioGroupItem value="sangron" className="h-3.5 w-3.5" />
+                    Sangrón
+                  </label>
+                </RadioGroup>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
