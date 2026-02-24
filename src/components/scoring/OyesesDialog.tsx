@@ -33,8 +33,11 @@ const isOyesesEnabled = (config: BetConfig): boolean => {
   // Check Rayas Oyes segment
   if (config.rayas?.enabled) {
     const oyesSegment = config.rayas.segments?.oyes;
-    return oyesSegment?.enabled ?? true; // Default to enabled if not specified
+    if (oyesSegment?.enabled ?? true) return true;
   }
+  
+  // Check Team Pressures Oyeses sub-modality
+  if (config.teamPressures?.bets?.some(b => b.enabled && b.oyesesConfig?.enabled)) return true;
   
   return false;
 };

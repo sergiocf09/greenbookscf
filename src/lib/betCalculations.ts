@@ -2299,13 +2299,14 @@ export const calculateTeamPressuresBets = (
     // ── TEAM UNITS (optional sub-modality) ──
     let unitsMoney = 0;
     if (bet.unitsConfig?.enabled && bet.unitsConfig.enabledMarkers?.length > 0) {
+      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers);
       const countUnitsForTeam = (teamIds: string[]): number => {
         let total = 0;
         teamIds.forEach(pid => {
           const playerScores = scores.get(pid) || [];
           playerScores.forEach(s => {
-            if (!s.confirmed) return;
-            bet.unitsConfig!.enabledMarkers.forEach(marker => {
+            if (!s.confirmed || !s.strokes || s.strokes <= 0) return;
+            enabledMarkersSet.forEach(marker => {
               if (s.markers?.[marker as keyof MarkerState]) total++;
             });
           });

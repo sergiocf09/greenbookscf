@@ -2246,7 +2246,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       </Button>
                     </CollapsibleTrigger>
                   </div>
-                  {/* Sub-modality breakdown (Unidades / Oyeses) */}
+                  {/* Sub-modality breakdown (Unidades / Oyeses) with detail popovers */}
                   {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled) && (() => {
                     // Parse breakdown from description in betSummaries
                     const mySummary = betSummaries.find(s => 
@@ -2256,13 +2256,190 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     );
                     const desc = mySummary?.description || '';
                     const parts = desc.split(' | ');
+
+                    // ── Build Units detail ──
+                    const unitsDetail = (() => {
+                      if (!bet.unitsConfig?.enabled || !bet.unitsConfig.enabledMarkers?.length) return null;
+                      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers);
+                      type UnitHit = { holeNumber: number; playerId: string; marker: string };
+                      const hitsA: UnitHit[] = [];
+                      const hitsB: UnitHit[] = [];
+                      const countForTeam = (teamIds: string[], hits: UnitHit[]) => {
+                        teamIds.forEach(pid => {
+                          const playerScores = confirmedScores.get(pid) || [];
+                          playerScores.forEach(s => {
+                            if (!s.strokes || s.strokes <= 0) return;
+                            enabledMarkersSet.forEach(marker => {
+                              if (s.markers?.[marker as keyof MarkerState]) {
+                                hits.push({ holeNumber: s.holeNumber, playerId: pid, marker });
+                              }
+                            });
+                          });
+                        });
+                      };
+                      countForTeam(resolvedTeamA, hitsA);
+                      countForTeam(resolvedTeamB, hitsB);
+                      hitsA.sort((a, b) => a.holeNumber - b.holeNumber);
+                      hitsB.sort((a, b) => a.holeNumber - b.holeNumber);
+                      const diff = hitsA.length - hitsB.length;
+                      const money = diff * (bet.unitsConfig.valuePerUnit || 0);
+                      return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, money };
+                    })();
+
+                    // ── Build Oyeses detail ──
+                    const oyesesDetail = (() => {
+                      if (!bet.oyesesConfig?.enabled) return null;
+                      const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+                      const modality = bet.oyesesConfig.modality || 'acumulados';
+                      const valuePerOyes = bet.oyesesConfig.valuePerOyes || 25;
+                      type OyesWin = { holeNumber: number; winnerId: string; worth: number };
+                      const wins: OyesWin[] = [];
+                      let winsA = 0, winsB = 0, accumulated = 0;
+                      par3Holes.forEach(holeNum => {
+                        const proximityField = modality === 'sangron' ? 'oyesProximitySangron' : 'oyesProximity';
+                        type ProxEntry = { playerId: string; proximity: number };
+                        const entries: ProxEntry[] = [];
+                        [...resolvedTeamA, ...resolvedTeamB].forEach(pid => {
+                          const score = confirmedScores.get(pid)?.find(s => s.holeNumber === holeNum);
+                          if (!score) return;
+                          let prox = (score as any)[proximityField] ?? null;
+                          if (prox === null && modality === 'sangron') prox = score.oyesProximity ?? null;
+                          if (typeof prox === 'number' && prox > 0) entries.push({ playerId: pid, proximity: prox });
+                        });
+                        if (entries.length === 0) { if (modality === 'acumulados') accumulated++; return; }
+                        entries.sort((a, b) => a.proximity - b.proximity);
+                        const winner = entries[0];
+                        const isTeamA = resolvedTeamA.includes(winner.playerId);
+                        if (modality === 'sangron') {
+                          wins.push({ holeNumber: holeNum, winnerId: winner.playerId, worth: 1 });
+                          if (isTeamA) winsA++; else winsB++;
+                        } else {
+                          const totalWorth = 1 + accumulated;
+                          wins.push({ holeNumber: holeNum, winnerId: winner.playerId, worth: totalWorth });
+                          if (isTeamA) winsA += totalWorth; else winsB += totalWorth;
+                          accumulated = 0;
+                        }
+                      });
+                      const diff = winsA - winsB;
+                      return { wins, winsA, winsB, diff, money: diff * valuePerOyes, valuePerOyes, modality, par3Holes };
+                    })();
+
+                    const getPlayerInitial = (pid: string) => {
+                      const p = allPlayersForCalculations.find(pl => pl.id === pid);
+                      return p ? (disambiguatedAbbrs.get(p.id) || p.initials) : '?';
+                    };
+                    const getMarkerLabel = (marker: string) => {
+                      const info = markerInfo[marker as keyof typeof markerInfo];
+                      return info ? info.label : marker;
+                    };
+
                     return (
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-                        {parts.map((part, i) => (
-                          <span key={i} className={cn(
-                            part.includes('+$') ? 'text-green-600' : part.includes('-$') ? 'text-destructive' : ''
-                          )}>{part}</span>
-                        ))}
+                        {parts.map((part, i) => {
+                          const isUnitsLine = part.includes('Unidades');
+                          const isOyesesLine = part.includes('Oyeses');
+                          const colorClass = part.includes('+$') ? 'text-green-600' : part.includes('-$') ? 'text-destructive' : '';
+
+                          if (isUnitsLine && unitsDetail) {
+                            return (
+                              <Popover key={i}>
+                                <PopoverTrigger asChild>
+                                  <span className={cn(colorClass, 'underline decoration-dotted cursor-pointer')}>{part}</span>
+                                </PopoverTrigger>
+                                <PopoverContent side="top" className="w-72 p-3">
+                                  <div className="text-xs space-y-2">
+                                    <p className="font-semibold text-sm">Unidades — Detalle</p>
+                                    {/* Team A */}
+                                    <div>
+                                      <p className="font-medium text-primary mb-1">Pareja A</p>
+                                      {unitsDetail.hitsA.length === 0 && <p className="text-muted-foreground italic">Sin unidades</p>}
+                                      {unitsDetail.hitsA.map((h, hi) => (
+                                        <p key={hi} className="flex justify-between">
+                                          <span>Hoyo {h.holeNumber} — {getPlayerInitial(h.playerId)}</span>
+                                          <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
+                                        </p>
+                                      ))}
+                                      <p className="font-medium mt-1">Total: {unitsDetail.totalA}</p>
+                                    </div>
+                                    {/* Team B */}
+                                    <div>
+                                      <p className="font-medium text-primary mb-1">Pareja B</p>
+                                      {unitsDetail.hitsB.length === 0 && <p className="text-muted-foreground italic">Sin unidades</p>}
+                                      {unitsDetail.hitsB.map((h, hi) => (
+                                        <p key={hi} className="flex justify-between">
+                                          <span>Hoyo {h.holeNumber} — {getPlayerInitial(h.playerId)}</span>
+                                          <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
+                                        </p>
+                                      ))}
+                                      <p className="font-medium mt-1">Total: {unitsDetail.totalB}</p>
+                                    </div>
+                                    {/* Summary */}
+                                    <div className="border-t border-border pt-1 space-y-0.5">
+                                      <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{unitsDetail.diff}</span></p>
+                                      <p className="flex justify-between"><span>Valor unidad</span><span className="tabular-nums">${bet.unitsConfig?.valuePerUnit}</span></p>
+                                      <p className="flex justify-between font-semibold">
+                                        <span>Resultado</span>
+                                        <span className={cn('tabular-nums', unitsDetail.money > 0 ? 'text-green-600' : unitsDetail.money < 0 ? 'text-destructive' : '')}>
+                                          {isBaseInTeamA ? (unitsDetail.money >= 0 ? '+' : '') : (unitsDetail.money <= 0 ? '+' : '-')}${Math.abs(unitsDetail.money)}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          }
+
+                          if (isOyesesLine && oyesesDetail) {
+                            return (
+                              <Popover key={i}>
+                                <PopoverTrigger asChild>
+                                  <span className={cn(colorClass, 'underline decoration-dotted cursor-pointer')}>{part}</span>
+                                </PopoverTrigger>
+                                <PopoverContent side="top" className="w-72 p-3">
+                                  <div className="text-xs space-y-2">
+                                    <p className="font-semibold text-sm">Oyezes — Detalle</p>
+                                    <p className="text-[10px] text-muted-foreground">{oyesesDetail.modality === 'sangron' ? 'Sangrón' : 'Acumulado'}</p>
+                                    {/* Per-hole winners */}
+                                    <div className="space-y-0.5">
+                                      {oyesesDetail.par3Holes.map(holeNum => {
+                                        const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
+                                        return (
+                                          <p key={holeNum} className="flex justify-between">
+                                            <span>Hoyo {holeNum}</span>
+                                            {win ? (
+                                              <span className="font-medium">
+                                                {getPlayerInitial(win.winnerId)}
+                                                {win.worth > 1 && <span className="text-muted-foreground ml-1">(×{win.worth})</span>}
+                                              </span>
+                                            ) : (
+                                              <span className="text-muted-foreground italic">—</span>
+                                            )}
+                                          </p>
+                                        );
+                                      })}
+                                    </div>
+                                    {/* Summary */}
+                                    <div className="border-t border-border pt-1 space-y-0.5">
+                                      <p className="flex justify-between"><span>Pareja A</span><span className="tabular-nums">{oyesesDetail.winsA}</span></p>
+                                      <p className="flex justify-between"><span>Pareja B</span><span className="tabular-nums">{oyesesDetail.winsB}</span></p>
+                                      <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{oyesesDetail.diff}</span></p>
+                                      <p className="flex justify-between"><span>Valor hoyez</span><span className="tabular-nums">${oyesesDetail.valuePerOyes}</span></p>
+                                      <p className="flex justify-between font-semibold">
+                                        <span>Resultado</span>
+                                        <span className={cn('tabular-nums', oyesesDetail.money > 0 ? 'text-green-600' : oyesesDetail.money < 0 ? 'text-destructive' : '')}>
+                                          {isBaseInTeamA ? (oyesesDetail.money >= 0 ? '+' : '') : (oyesesDetail.money <= 0 ? '+' : '-')}${Math.abs(oyesesDetail.money)}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          }
+
+                          return <span key={i} className={cn(colorClass)}>{part}</span>;
+                        })}
                       </div>
                     );
                   })()}
