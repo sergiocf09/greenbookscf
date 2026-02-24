@@ -443,6 +443,7 @@ export interface PressureBetConfig {
   frontAmount: number;
   backAmount: number;
   totalAmount: number; // Match 18 bet amount
+  onlyMatch?: boolean; // When true, no secondary pressures open (only main bet per nine)
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
