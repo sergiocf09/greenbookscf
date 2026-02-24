@@ -6,6 +6,7 @@ import { calculateRayasBets } from './rayasCalculations';
 import { calculateConejaBets } from './conejaCalculations';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 import { devLog } from './logger';
+import { detectScoreBasedMarkers } from './scoreDetection';
 
 // Helper: group players by their groupId for per-group bet scoping
 // Players without groupId are all placed in a single "ungrouped" bucket
@@ -2306,8 +2307,12 @@ export const calculateTeamPressuresBets = (
           const playerScores = scores.get(pid) || [];
           playerScores.forEach(s => {
             if (!s.confirmed || !s.strokes || s.strokes <= 0) return;
+            // Merge auto-detected markers (birdie/eagle/albatross/etc) with stored markers
+            const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
+            const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
+            const merged = { ...s.markers, ...autoDetected };
             enabledMarkersSet.forEach(marker => {
-              if (s.markers?.[marker as keyof MarkerState]) total++;
+              if (merged[marker as keyof MarkerState]) total++;
             });
           });
         });
