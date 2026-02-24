@@ -1,14 +1,14 @@
 import { BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 
 export const defaultBetConfig: BetConfig = {
-  medal: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 100 },
-  pressures: { enabled: true, frontAmount: 50, backAmount: 100, totalAmount: 50 },
-  skins: { enabled: true, frontValue: 25, backValue: 50, carryOver: true, modality: 'acumulados' },
-  caros: { enabled: true, amount: 200, startHole: 15, endHole: 18 },
+  medal: { enabled: false, frontAmount: 50, backAmount: 100, totalAmount: 100 },
+  pressures: { enabled: false, frontAmount: 50, backAmount: 100, totalAmount: 50 },
+  skins: { enabled: false, frontValue: 25, backValue: 50, carryOver: true, modality: 'acumulados' },
+  caros: { enabled: false, amount: 200, startHole: 15, endHole: 18 },
   oyeses: { enabled: false, amount: 25, playerConfigs: [] },
-  units: { enabled: true, valuePerPoint: 25 },
-  manchas: { enabled: true, valuePerPoint: 25 },
-  culebras: { enabled: true, valuePerOccurrence: 25 },
+  units: { enabled: false, valuePerPoint: 25 },
+  manchas: { enabled: false, valuePerPoint: 25 },
+  culebras: { enabled: false, valuePerOccurrence: 25 },
   pinguinos: { enabled: false, valuePerOccurrence: 25 },
   rayas: { enabled: false, frontValue: 25, backValue: 50, medalTotalValue: 25, skinVariant: 'acumulados', oyesMode: 'allVsAll' },
   carritos: { 
@@ -28,7 +28,7 @@ export const defaultBetConfig: BetConfig = {
   betOverrides: [],
   // NEW BET TYPES
   putts: { enabled: false, frontAmount: 50, backAmount: 50, totalAmount: 100 },
-  sideBets: { enabled: true, bets: [] },
+  sideBets: { enabled: false, bets: [] },
   stableford: { 
     enabled: false, 
     amount: 100, 
