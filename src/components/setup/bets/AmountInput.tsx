@@ -42,22 +42,22 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           type="button"
           variant="outline"
           size="icon"
-          className="h-6 w-6 shrink-0 rounded-sm"
+          className="h-5 w-5 shrink-0 rounded-sm"
           onClick={handleDecrement}
           onMouseDown={(e) => e.stopPropagation()}
           disabled={!allowNegative && value <= min}
         >
-          <Minus className="h-3 w-3" />
+          <Minus className="h-2.5 w-2.5" />
         </Button>
         <div className="flex items-center">
-          <DollarSign className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+          <DollarSign className="h-2 w-2 text-muted-foreground shrink-0" />
           <Input
             type="number"
             value={value}
             onChange={(e) => onChange(parseInt(e.target.value) || 0)}
             onFocus={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="h-6 w-11 text-[11px] text-center px-0"
+            className="h-6 w-9 text-[10px] text-center px-0"
             min={allowNegative ? undefined : min}
             step={step}
           />
@@ -66,11 +66,11 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           type="button"
           variant="outline"
           size="icon"
-          className="h-6 w-6 shrink-0 rounded-sm"
+          className="h-5 w-5 shrink-0 rounded-sm"
           onClick={handleIncrement}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-2.5 w-2.5" />
         </Button>
       </div>
     </div>
