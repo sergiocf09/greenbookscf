@@ -1347,7 +1347,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   };
   
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary;
 
   if (!hasAnyBet) {
     return null;
