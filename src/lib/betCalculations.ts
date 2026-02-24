@@ -1,5 +1,5 @@
 // Bet Calculations Engine - All bilateral calculations
-import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet, ZooAnimalType, ZooEvent, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet, ZooAnimalType, ZooEvent, ZOO_ANIMALS, ZoologicoBetConfig, MarkerState, markerInfo } from '@/types/golf';
 import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateOyesesBets } from './oyesesCalculations';
 import { calculateRayasBets } from './rayasCalculations';
@@ -2294,14 +2294,111 @@ export const calculateTeamPressuresBets = (
     const matchTotal = frontBets[0] + backBets[0];
     const matchMoney = frontIsTied ? 0 : (matchTotal > 0 ? 1 : matchTotal < 0 ? -1 : 0) * bet.totalAmount;
     
-    const totalMoney = frontMoney + backMoney + matchMoney;
+    let pressureMoney = frontMoney + backMoney + matchMoney;
     
-    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] totalMoney=${totalMoney}`);
+    // ── TEAM UNITS (optional sub-modality) ──
+    let unitsMoney = 0;
+    if (bet.unitsConfig?.enabled && bet.unitsConfig.enabledMarkers?.length > 0) {
+      const countUnitsForTeam = (teamIds: string[]): number => {
+        let total = 0;
+        teamIds.forEach(pid => {
+          const playerScores = scores.get(pid) || [];
+          playerScores.forEach(s => {
+            if (!s.confirmed) return;
+            bet.unitsConfig!.enabledMarkers.forEach(marker => {
+              if (s.markers?.[marker as keyof MarkerState]) total++;
+            });
+          });
+        });
+        return total;
+      };
+      const unitsA = countUnitsForTeam(teamA);
+      const unitsB = countUnitsForTeam(teamB);
+      const unitsDiff = unitsA - unitsB;
+      unitsMoney = unitsDiff * bet.unitsConfig.valuePerUnit;
+      devLog(`[TeamPressures:Units] bet=${bet.id} unitsA=${unitsA} unitsB=${unitsB} diff=${unitsDiff} money=${unitsMoney}`);
+    }
+    
+    // ── TEAM OYESES (optional sub-modality) ──
+    let oyesesMoney = 0;
+    if (bet.oyesesConfig?.enabled) {
+      const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+      const modality = bet.oyesesConfig.modality || 'acumulados';
+      const valuePerOyes = bet.oyesesConfig.valuePerOyes || 25;
+      
+      // For each par 3, find the closest player (first in proximity ranking)
+      // The team that player belongs to wins the oyes
+      let oyesWinsA = 0;
+      let oyesWinsB = 0;
+      let accumulated = 0; // For acumulados mode
+      
+      par3Holes.forEach(holeNum => {
+        // Collect proximity data for all 4 players on this hole
+        const proximityField = modality === 'sangron' ? 'oyesProximitySangron' : 'oyesProximity';
+        const fallbackField = 'oyesProximity';
+        
+        type ProxEntry = { playerId: string; proximity: number };
+        const entries: ProxEntry[] = [];
+        [...teamA, ...teamB].forEach(pid => {
+          const score = scores.get(pid)?.find(s => s.holeNumber === holeNum && s.confirmed);
+          if (!score) return;
+          let prox = (score as any)[proximityField] ?? null;
+          // Fallback for sangron: use acumulado data if sangron is null
+          if (prox === null && modality === 'sangron') {
+            prox = (score as any)[fallbackField] ?? null;
+          }
+          if (typeof prox === 'number' && prox > 0) {
+            entries.push({ playerId: pid, proximity: prox });
+          }
+        });
+        
+        if (entries.length === 0) {
+          if (modality === 'acumulados') accumulated++;
+          return;
+        }
+        
+        // Sort by proximity (1 = closest)
+        entries.sort((a, b) => a.proximity - b.proximity);
+        const winner = entries[0];
+        const isTeamA = teamA.includes(winner.playerId);
+        
+        if (modality === 'sangron') {
+          // Each oyes is immediate
+          if (isTeamA) oyesWinsA++;
+          else oyesWinsB++;
+        } else {
+          // Acumulados: winner takes current + accumulated
+          const totalWorth = 1 + accumulated;
+          if (isTeamA) oyesWinsA += totalWorth;
+          else oyesWinsB += totalWorth;
+          accumulated = 0;
+        }
+      });
+      
+      const oyesDiff = oyesWinsA - oyesWinsB;
+      oyesesMoney = oyesDiff * valuePerOyes;
+      devLog(`[TeamPressures:Oyeses] bet=${bet.id} winsA=${oyesWinsA} winsB=${oyesWinsB} diff=${oyesDiff} money=${oyesesMoney}`);
+    }
+    
+    // ── TOTAL CONFRONTATION ──
+    const totalMoney = pressureMoney + unitsMoney + oyesesMoney;
+    
+    devLog(`[TeamPressures] bet=${bet.id} teamA=[${teamA.join(',')}] teamB=[${teamB.join(',')}] presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} totalMoney=${totalMoney}`);
     // Split 50/50: each loser pays 50% of totalMoney to EACH winner.
     // perPairAmount = totalMoney / 2 → each person's net = 2 × (totalMoney/2) = totalMoney (100% per person)
     // This is the same logic as Carritos.
     if (totalMoney !== 0) {
       const perPairAmount = totalMoney / 2; // Each loser pays half to each winner
+      
+      // Build description with breakdown
+      const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : ''}$${pressureMoney}`];
+      if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : ''}$${unitsMoney}`);
+      if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : ''}$${oyesesMoney}`);
+      const descA = descParts.join(' | ');
+      const descB = descParts.map(p => {
+        // Invert signs for team B perspective
+        return p.replace(/[+-]\$/g, (m) => m === '+$' ? '-$' : '+$');
+      }).join(' | ');
       
       teamA.forEach(aId => {
         teamB.forEach(bId => {
@@ -2311,7 +2408,7 @@ export const calculateTeamPressuresBets = (
             betType: 'Presiones Parejas',
             amount: perPairAmount,
             segment: 'total',
-            description: `Front: ${frontBets.join(',')} Back: ${backBets.join(',')}`,
+            description: descA,
             betId: bet.id,
           });
           summaries.push({
@@ -2320,7 +2417,7 @@ export const calculateTeamPressuresBets = (
             betType: 'Presiones Parejas',
             amount: -perPairAmount,
             segment: 'total',
-            description: `Front: ${frontBets.map(b => -b).join(',')} Back: ${backBets.map(b => -b).join(',')}`,
+            description: descB,
             betId: bet.id,
           });
         });
