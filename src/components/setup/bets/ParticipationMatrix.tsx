@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BetConfig, Player } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { disambiguateInitials } from '@/lib/playerInput';
 
 interface ParticipationMatrixProps {
   config: BetConfig;
@@ -97,8 +98,9 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
   onUpdateBet,
   onUpdateConfig,
 }) => {
-  if (players.length === 0) return null;
+  const disambiguatedMap = useMemo(() => disambiguateInitials(players), [players]);
 
+  if (players.length === 0) return null;
   /** Sync oneVsAll flag based on current participantIds state */
   const syncOneVsAll = (betKey: IndividualBetKey, newParticipantIds: string[] | undefined, enabled: boolean) => {
     const isEligible = ONE_VS_ALL_ELIGIBLE.includes(betKey);
@@ -273,7 +275,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
                       )}
                       title={`${player.name} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
                     >
-                      <span className="text-[10px] font-bold text-foreground">{player.initials}</span>
+                      <span className="text-[10px] font-bold text-foreground">{disambiguatedMap.get(player.id) || player.initials}</span>
                     </button>
                   </th>
                 );
