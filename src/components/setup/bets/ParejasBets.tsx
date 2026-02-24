@@ -533,7 +533,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
               <div className="space-y-1">
                 <Label className="text-[10px] text-muted-foreground">Qué cuenta como unidad</Label>
               <div className="grid grid-cols-2 gap-1">
-                  {(['birdie', 'eagle', 'albatross', 'sandyPar', 'holeOut', 'aquaPar'] as (keyof MarkerState)[]).map(marker => {
+                  {(['birdie', 'sandyPar', 'eagle', 'holeOut', 'albatross', 'aquaPar'] as (keyof MarkerState)[]).map(marker => {
                     const info = markerInfo[marker];
                     const isChecked = bet.unitsConfig?.enabledMarkers?.includes(marker) ?? false;
                     return (
