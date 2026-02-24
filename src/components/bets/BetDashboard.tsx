@@ -18,6 +18,7 @@ import {
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey } from '@/lib/rayasCalculations';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
+import { detectScoreBasedMarkers } from '@/lib/scoreDetection';
 import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { 
@@ -2269,8 +2270,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           const playerScores = confirmedScores.get(pid) || [];
                           playerScores.forEach(s => {
                             if (!s.strokes || s.strokes <= 0) return;
+                            // Merge auto-detected markers (birdie/eagle/albatross) with stored markers
+                            const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
+                            const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
+                            const merged = { ...s.markers, ...autoDetected };
                             enabledMarkersSet.forEach(marker => {
-                              if (s.markers?.[marker as keyof MarkerState]) {
+                              if (merged[marker as keyof MarkerState]) {
                                 hits.push({ holeNumber: s.holeNumber, playerId: pid, marker });
                               }
                             });
@@ -2346,32 +2351,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <PopoverTrigger asChild>
                                   <span className={cn(colorClass, 'underline decoration-dotted cursor-pointer')}>{part}</span>
                                 </PopoverTrigger>
-                                <PopoverContent side="top" className="w-72 p-3">
+                                <PopoverContent side="top" className="w-80 p-3">
                                   <div className="text-xs space-y-2">
                                     <p className="font-semibold text-sm">Unidades — Detalle</p>
-                                    {/* Team A */}
-                                    <div>
-                                      <p className="font-medium text-primary mb-1">Pareja A</p>
-                                      {unitsDetail.hitsA.length === 0 && <p className="text-muted-foreground italic">Sin unidades</p>}
-                                      {unitsDetail.hitsA.map((h, hi) => (
-                                        <p key={hi} className="flex justify-between">
-                                          <span>Hoyo {h.holeNumber} — {getPlayerInitial(h.playerId)}</span>
-                                          <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
-                                        </p>
-                                      ))}
-                                      <p className="font-medium mt-1">Total: {unitsDetail.totalA}</p>
-                                    </div>
-                                    {/* Team B */}
-                                    <div>
-                                      <p className="font-medium text-primary mb-1">Pareja B</p>
-                                      {unitsDetail.hitsB.length === 0 && <p className="text-muted-foreground italic">Sin unidades</p>}
-                                      {unitsDetail.hitsB.map((h, hi) => (
-                                        <p key={hi} className="flex justify-between">
-                                          <span>Hoyo {h.holeNumber} — {getPlayerInitial(h.playerId)}</span>
-                                          <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
-                                        </p>
-                                      ))}
-                                      <p className="font-medium mt-1">Total: {unitsDetail.totalB}</p>
+                                    {/* Side-by-side: A left (green), B right (red) */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {/* Team A */}
+                                      <div>
+                                        <p className="font-medium text-green-600 mb-1">Pareja A ({unitsDetail.totalA})</p>
+                                        {unitsDetail.hitsA.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
+                                        {unitsDetail.hitsA.map((h, hi) => (
+                                          <p key={hi} className="text-green-600 flex justify-between text-[10px]">
+                                            <span>H{h.holeNumber} {getPlayerInitial(h.playerId)}</span>
+                                            <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
+                                          </p>
+                                        ))}
+                                      </div>
+                                      {/* Team B */}
+                                      <div>
+                                        <p className="font-medium text-destructive mb-1">Pareja B ({unitsDetail.totalB})</p>
+                                        {unitsDetail.hitsB.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
+                                        {unitsDetail.hitsB.map((h, hi) => (
+                                          <p key={hi} className="text-destructive flex justify-between text-[10px]">
+                                            <span>H{h.holeNumber} {getPlayerInitial(h.playerId)}</span>
+                                            <span className="text-muted-foreground">{getMarkerLabel(h.marker)}</span>
+                                          </p>
+                                        ))}
+                                      </div>
                                     </div>
                                     {/* Summary */}
                                     <div className="border-t border-border pt-1 space-y-0.5">
@@ -2396,33 +2402,57 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <PopoverTrigger asChild>
                                   <span className={cn(colorClass, 'underline decoration-dotted cursor-pointer')}>{part}</span>
                                 </PopoverTrigger>
-                                <PopoverContent side="top" className="w-72 p-3">
+                                <PopoverContent side="top" className="w-80 p-3">
                                   <div className="text-xs space-y-2">
-                                    <p className="font-semibold text-sm">Oyezes — Detalle</p>
+                                    <p className="font-semibold text-sm">Oyeses — Detalle</p>
                                     <p className="text-[10px] text-muted-foreground">{oyesesDetail.modality === 'sangron' ? 'Sangrón' : 'Acumulado'}</p>
-                                    {/* Per-hole winners */}
-                                    <div className="space-y-0.5">
-                                      {oyesesDetail.par3Holes.map(holeNum => {
-                                        const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
-                                        return (
-                                          <p key={holeNum} className="flex justify-between">
-                                            <span>Hoyo {holeNum}</span>
-                                            {win ? (
-                                              <span className="font-medium">
-                                                {getPlayerInitial(win.winnerId)}
-                                                {win.worth > 1 && <span className="text-muted-foreground ml-1">(×{win.worth})</span>}
-                                              </span>
-                                            ) : (
-                                              <span className="text-muted-foreground italic">—</span>
-                                            )}
-                                          </p>
-                                        );
-                                      })}
+                                    {/* Side-by-side: A left (green), B right (red) */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {/* Team A column */}
+                                      <div>
+                                        <p className="font-medium text-green-600 mb-1">Pareja A ({oyesesDetail.winsA})</p>
+                                        {oyesesDetail.par3Holes.map(holeNum => {
+                                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
+                                          const isTeamAWin = win && resolvedTeamA.includes(win.winnerId);
+                                          return (
+                                            <p key={holeNum} className="text-[10px] flex justify-between">
+                                              <span className="text-muted-foreground">H{holeNum}</span>
+                                              {isTeamAWin ? (
+                                                <span className="font-medium text-green-600">
+                                                  {getPlayerInitial(win.winnerId)}
+                                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
+                                                </span>
+                                              ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                              )}
+                                            </p>
+                                          );
+                                        })}
+                                      </div>
+                                      {/* Team B column */}
+                                      <div>
+                                        <p className="font-medium text-destructive mb-1">Pareja B ({oyesesDetail.winsB})</p>
+                                        {oyesesDetail.par3Holes.map(holeNum => {
+                                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
+                                          const isTeamBWin = win && resolvedTeamB.includes(win.winnerId);
+                                          return (
+                                            <p key={holeNum} className="text-[10px] flex justify-between">
+                                              <span className="text-muted-foreground">H{holeNum}</span>
+                                              {isTeamBWin ? (
+                                                <span className="font-medium text-destructive">
+                                                  {getPlayerInitial(win.winnerId)}
+                                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
+                                                </span>
+                                              ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                              )}
+                                            </p>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                     {/* Summary */}
                                     <div className="border-t border-border pt-1 space-y-0.5">
-                                      <p className="flex justify-between"><span>Pareja A</span><span className="tabular-nums">{oyesesDetail.winsA}</span></p>
-                                      <p className="flex justify-between"><span>Pareja B</span><span className="tabular-nums">{oyesesDetail.winsB}</span></p>
                                       <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{oyesesDetail.diff}</span></p>
                                       <p className="flex justify-between"><span>Valor hoyez</span><span className="tabular-nums">${oyesesDetail.valuePerOyes}</span></p>
                                       <p className="flex justify-between font-semibold">
