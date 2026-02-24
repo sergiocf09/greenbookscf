@@ -52,6 +52,8 @@ const isEffectivelyParticipating = (
 export const grupalBetHasParticipants = (config: BetConfig, betKey: string, players: Player[]): boolean => {
   const betConfig = config[betKey as keyof BetConfig] as any;
   if (!betConfig) return false;
+  // If bet is disabled and no explicit participantIds, treat as no participants
+  if (!betConfig.enabled && betConfig.participantIds === undefined) return false;
   const pIds = betConfig.participantIds;
   if (Array.isArray(pIds) && pIds.length === 0) return false;
   return true;

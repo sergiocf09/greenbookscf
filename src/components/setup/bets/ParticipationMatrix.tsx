@@ -82,6 +82,8 @@ const isEffectivelyParticipating = (
 export const betHasParticipants = (config: BetConfig, betKey: string, players: Player[]): boolean => {
   const betConfig = config[betKey as keyof BetConfig] as any;
   if (!betConfig) return false;
+  // If bet is disabled and no explicit participantIds, treat as no participants
+  if (!betConfig.enabled && betConfig.participantIds === undefined) return false;
   // oneVsAll mode always has participants
   if (betConfig.oneVsAll && betConfig.anchorPlayerId) return true;
   const pIds = betConfig.participantIds;
