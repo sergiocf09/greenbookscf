@@ -2769,6 +2769,7 @@ export const getPressureEvolution = (
   bilateralHandicaps?: BilateralHandicap[],
   startingHole: 1 | 10 = 1
 ): { front: PressureEvolution; back: PressureEvolution } => {
+  const onlyMatch = config.pressures.onlyMatch === true;
   const ranges = getSegmentHoleRanges(startingHole);
   const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
@@ -2799,7 +2800,7 @@ export const getPressureEvolution = (
       bets = bets.map(bal => bal + holeResult);
       
       const isLastHole = holeIndex === holes.length - 1;
-      if (!isLastHole) {
+      if (!onlyMatch && !isLastHole) {
         const lastBetBalance = bets[bets.length - 1];
         if (Math.abs(lastBetBalance) >= 2) {
           bets.push(0);
