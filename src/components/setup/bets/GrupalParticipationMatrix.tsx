@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BetConfig, Player } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { disambiguateInitials } from '@/lib/playerInput';
 
 interface GrupalParticipationMatrixProps {
   config: BetConfig;
@@ -65,6 +66,8 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
   onUpdateBet,
   onUpdateConfig,
 }) => {
+  const disambiguatedMap = useMemo(() => disambiguateInitials(players), [players]);
+
   if (players.length === 0) return null;
 
   const handleCellToggle = (betKey: GrupalBetKey, playerId: string) => {
@@ -184,7 +187,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
                       )}
                       title={`${player.name} — ${colState === 'all' ? 'Excluir de todas' : 'Incluir en todas'}`}
                     >
-                      <span className="text-[10px] font-bold text-foreground">{player.initials}</span>
+                      <span className="text-[10px] font-bold text-foreground">{disambiguatedMap.get(player.id) || player.initials}</span>
                     </button>
                   </th>
                 );
