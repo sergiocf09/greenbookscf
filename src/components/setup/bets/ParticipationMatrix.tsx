@@ -45,6 +45,7 @@ const getActiveIds = (
 /** Get participantIds from a bet config entry */
 const getParticipantIds = (config: BetConfig, betKey: IndividualBetKey): string[] | undefined => {
   const betConfig = config[betKey] as any;
+  if (!betConfig?.enabled && betConfig?.participantIds === undefined) return [];
   return betConfig?.participantIds;
 };
 
