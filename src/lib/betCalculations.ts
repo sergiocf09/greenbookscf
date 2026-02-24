@@ -481,6 +481,9 @@ export const calculatePressureBets = (
       // - Only the LAST opened bet can trigger a new bet
       // - When the last bet reaches ±2, a NEW bet opens at 0 on the NEXT hole
       // - Once a new bet opens, the previous bets continue accumulating but cannot trigger more bets
+      // onlyMatch mode: never open secondary pressures
+      const onlyMatch = config.pressures.onlyMatch === true;
+
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0]; // Start with first bet at 0
         let lastBetCanTrigger = true; // Only the last bet can trigger new bets
@@ -500,8 +503,9 @@ export const calculatePressureBets = (
           
           // Check if the LAST bet (most recent) reached ±2 after this hole
           // Only the last bet can trigger a new bet opening
+          // In onlyMatch mode, NEVER open secondary pressures
           const isLastHole = holeIndex === holes.length - 1;
-          if (!isLastHole && lastBetCanTrigger) {
+          if (!onlyMatch && !isLastHole && lastBetCanTrigger) {
             const lastBetBalance = bets[bets.length - 1];
             if (Math.abs(lastBetBalance) >= 2) {
               // Open a new bet at 0 - this starts fresh from next hole

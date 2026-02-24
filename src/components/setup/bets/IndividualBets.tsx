@@ -68,7 +68,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="pressures"
           title="Presiones"
-          description="Match play, se abre cuando vas 2 abajo"
+          description={config.pressures.onlyMatch ? undefined : 'Se abre con diferencia de 2'}
           enabled={config.pressures.enabled}
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
           isExpanded={expandedSections.includes('pressures')}
@@ -77,6 +77,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
           <AmountInput label="Match 18" value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
+
+          <div className="flex items-center justify-between pt-1">
+            <Label className="text-xs text-muted-foreground">Sólo match</Label>
+            <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v })} />
+          </div>
+          {config.pressures.onlyMatch && (
+            <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+          )}
         </BetSection>
       )}
 
