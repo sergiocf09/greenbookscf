@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState, HoleInfo, MarkerState, PlayerGroup } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
-import { calculateHandicapIndexFromDifferentials } from '@/lib/usgaHandicap';
+// calculateHandicapIndexFromDifferentials used via dynamic import in close logic
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
@@ -146,84 +146,57 @@ export const useRoundManagement = ({
       if (!profile || !targetRoundPlayerId) return;
 
       try {
-        // Get last 20 completed rounds for this user
-        const { data: roundPlayers, error } = await supabase
-          .from('round_players')
-          .select(
-            `
-            id,
-            rounds!inner(
-              id,
-              date,
-              status
-            )
-          `
-          )
-          .eq('profile_id', profile.id)
-          .eq('rounds.status', 'completed')
-          .order('rounds(date)', { ascending: false })
-          .limit(20);
+        // Read persisted current_handicap from profile (already calculated by previous close)
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('current_handicap')
+          .eq('id', profile.id)
+          .single();
 
-        if (error) throw error;
+        if (profileError) throw profileError;
 
-        const differentials: number[] = [];
+        const handicapIndex = Number(profileData?.current_handicap);
+        if (!Number.isFinite(handicapIndex) || handicapIndex <= 0 || handicapIndex > 54) return;
 
-        // Ratings (placeholder until we store real course/slope ratings)
-        const courseRating = 72.0;
-        const slopeRating = 125;
+        // Calculate Course Handicap if course is available
+        let finalHandicap = handicapIndex;
+        if (course) {
+          const roundTeeColor = (course as any).teeColor || 'white';
+          const { data: teeData } = await supabase
+            .from('course_tees')
+            .select('course_rating, slope_rating')
+            .eq('course_id', course.id)
+            .eq('tee_color', roundTeeColor)
+            .maybeSingle();
 
-        for (const rp of roundPlayers || []) {
-          const { data: scores, error: scoresError } = await supabase
-            .from('hole_scores')
-            .select('strokes, confirmed')
-            .eq('round_player_id', rp.id);
-
-          if (scoresError) continue;
-
-          // Guardrail: ignore malformed/partial historical rounds.
-          // We only consider rounds with 18 confirmed holes and non-null strokes.
-          const validStrokes = (scores || [])
-            .filter((s: any) => s?.confirmed === true)
-            .map((s: any) => (typeof s?.strokes === 'number' ? s.strokes : null))
-            .filter((v: number | null): v is number => v !== null);
-
-          if (validStrokes.length < 18) continue;
-
-          const grossScore = validStrokes.reduce((sum: number, v: number) => sum + v, 0);
-          if (!Number.isFinite(grossScore) || grossScore <= 0) continue;
-
-          const differential = (113 / slopeRating) * (grossScore - courseRating);
-          differentials.push(Math.round(differential * 10) / 10);
+          if (teeData) {
+            const coursePar = course.holes.reduce((sum, h) => sum + h.par, 0);
+            const { calculateCourseHandicap } = await import('@/lib/usgaHandicap');
+            finalHandicap = calculateCourseHandicap(handicapIndex, teeData.slope_rating, teeData.course_rating, coursePar);
+          }
         }
 
-        const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
-        if (handicapIndex === null) return; // Not enough rounds; keep 0
-
-        // Guardrail: never apply impossible/invalid indexes (prevents negatives like -62.5
-        // caused by malformed historical data).
-        if (!Number.isFinite(handicapIndex) || handicapIndex < 0 || handicapIndex > 54) return;
-
-        // Persist to backend (policy allows user to update their own row)
+        // Persist to backend
         const { error: updateError } = await supabase
           .from('round_players')
-          .update({ handicap_for_round: handicapIndex })
+          .update({ handicap_for_round: finalHandicap })
           .eq('id', targetRoundPlayerId);
 
         if (updateError) throw updateError;
 
-        // Update local player handicap so strokesReceived uses it when scoring starts
+        // Update local player handicap
         setPlayers((prev) =>
-          prev.map((p) => (p.profileId === profile.id || p.id === profile.id ? { ...p, handicap: handicapIndex } : p))
+          prev.map((p) => (p.profileId === profile.id || p.id === profile.id ? { ...p, handicap: finalHandicap } : p))
         );
 
-        // If scores already exist (round in progress), recompute strokesReceived + netScore for my player
+        // Recompute strokesReceived if scores exist
         if (course) {
           setScores((prev) => {
             const next = new Map(prev);
             const myPlayerKey = profile.id;
             const myScores = next.get(myPlayerKey);
             if (!myScores) return prev;
-            const strokesPerHole = calculateStrokesPerHole(handicapIndex, course);
+            const strokesPerHole = calculateStrokesPerHole(finalHandicap, course);
             next.set(
               myPlayerKey,
               myScores.map((s, i) => ({
@@ -1488,15 +1461,93 @@ export const useRoundManagement = ({
       // NOTE: Player vs Player (PvP) records for registered players are updated server-side
       // within the finalize_round_bets RPC function for security.
 
-      // Update handicap history for all players with profiles
+      // Update handicap history + recalculate & persist USGA Handicap Index for all registered players
       try {
+        const { calculateAdjustedGrossScore, calculateDifferential, calculateHandicapIndexFromDifferentials: calcHI } = await import('@/lib/usgaHandicap');
+        const { calculateStrokesPerHole: calcSPH } = await import('@/lib/handicapUtils');
+
         for (const player of sanitizedPlayers) {
-          if (player.profileId && isUuid(player.profileId)) {
-            await supabase.from('handicap_history').insert({
-              profile_id: player.profileId,
-              handicap: player.handicap,
-              round_id: roundState.id,
-            });
+          if (!player.profileId || !isUuid(player.profileId)) continue;
+
+          // Save handicap history record
+          await supabase.from('handicap_history').insert({
+            profile_id: player.profileId,
+            handicap: player.handicap,
+            round_id: roundState.id,
+          });
+
+          // Recalculate USGA Handicap Index and persist to profile
+          try {
+            const { data: rpHistory } = await supabase
+              .from('round_players')
+              .select(`id, tee_color, handicap_for_round,
+                rounds!inner ( id, date, status, course_id, tee_color, golf_courses!inner ( id, name ) )`)
+              .eq('profile_id', player.profileId)
+              .eq('rounds.status', 'completed')
+              .order('rounds(date)', { ascending: false })
+              .limit(20);
+
+            if (!rpHistory?.length) continue;
+
+            const diffs: number[] = [];
+            for (const rp of rpHistory) {
+              const rd = (rp as any).rounds;
+              const crs = rd.golf_courses;
+              const tee = (rp as any).tee_color || rd.tee_color || 'white';
+              const hcpUsed = Number((rp as any).handicap_for_round) || 0;
+
+              const { data: hs } = await supabase
+                .from('hole_scores')
+                .select('hole_number, strokes, confirmed')
+                .eq('round_player_id', rp.id)
+                .eq('confirmed', true)
+                .not('strokes', 'is', null)
+                .order('hole_number');
+              if (!hs || hs.length < 18) continue;
+
+              const { data: ch } = await supabase
+                .from('course_holes')
+                .select('hole_number, par, stroke_index')
+                .eq('course_id', crs.id)
+                .order('hole_number');
+              if (!ch || ch.length < 18) continue;
+
+              const { data: td } = await supabase
+                .from('course_tees')
+                .select('course_rating, slope_rating')
+                .eq('course_id', crs.id)
+                .eq('tee_color', tee)
+                .maybeSingle();
+
+              const cr = td?.course_rating || 72;
+              const sr = td?.slope_rating || 113;
+
+              const holePars = ch.map(h => h.par);
+              const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+              for (const s of hs) {
+                if (s.hole_number >= 1 && s.hole_number <= 18) holeStrokesArr[s.hole_number - 1] = s.strokes;
+              }
+
+              const minCourse = {
+                id: crs.id, name: crs.name, location: '',
+                holes: ch.map(h => ({ number: h.hole_number, par: h.par, handicapIndex: h.stroke_index })),
+              } as any;
+
+              const sph = calcSPH(hcpUsed, minCourse);
+              const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
+              diffs.push(calculateDifferential(ags, cr, sr));
+            }
+
+            const newIndex = calcHI(diffs);
+            if (newIndex !== null && Number.isFinite(newIndex) && newIndex >= 0 && newIndex <= 54) {
+              await supabase
+                .from('profiles')
+                .update({ current_handicap: newIndex })
+                .eq('id', player.profileId);
+              devLog(`[CloseUSGA] ${player.name}: new Handicap Index = ${newIndex}`);
+            }
+          } catch (usgaErr) {
+            devError(`[CloseUSGA] Error recalculating index for ${player.name}:`, usgaErr);
           }
         }
         pushStageOk(report, 'saveHandicapHistory');

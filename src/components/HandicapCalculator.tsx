@@ -5,11 +5,20 @@ import { Calculator, TrendingDown, TrendingUp, Minus, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
+import {
+  calculateDifferential,
+  calculateAdjustedGrossScore,
+  calculateHandicapIndexFromDifferentials,
+  getNumDifferentialsToUse,
+} from '@/lib/usgaHandicap';
+import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { GolfCourse, HoleInfo } from '@/types/golf';
 
 interface RoundScore {
   date: string;
   courseName: string;
   grossScore: number;
+  adjustedGrossScore: number;
   courseRating: number;
   slopeRating: number;
   differential: number;
@@ -35,15 +44,8 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
         const { data: roundPlayers, error } = await supabase
           .from('round_players')
           .select(`
-            id,
-            handicap_for_round,
-            round_id,
-            rounds!inner(
-              id,
-              date,
-              status,
-              golf_courses(name, location)
-            )
+            id, handicap_for_round, round_id, tee_color,
+            rounds!inner( id, date, status, course_id, tee_color, golf_courses(name, location) )
           `)
           .eq('profile_id', profile.id)
           .eq('rounds.status', 'completed')
@@ -57,74 +59,81 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
         for (const rp of roundPlayers || []) {
           const round = rp.rounds as any;
           const course = round.golf_courses as any;
+          const playerTee = (rp as any).tee_color || round.tee_color || 'white';
+          const hcpUsed = Number(rp.handicap_for_round) || 0;
 
-          // Get total strokes
+          // Get hole scores
           const { data: scores } = await supabase
             .from('hole_scores')
-            .select('strokes')
-            .eq('round_player_id', rp.id);
+            .select('hole_number, strokes, confirmed')
+            .eq('round_player_id', rp.id)
+            .eq('confirmed', true)
+            .not('strokes', 'is', null)
+            .order('hole_number');
 
-          const grossScore = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          if (!scores || scores.length < 18) continue;
 
-          // Default course/slope ratings (would come from course data in full implementation)
-          const courseRating = 72.0;
-          const slopeRating = 125;
+          // Get course holes for NDB
+          const { data: courseHoles } = await supabase
+            .from('course_holes')
+            .select('hole_number, par, stroke_index')
+            .eq('course_id', round.course_id)
+            .order('hole_number');
 
-          // Calculate score differential: (113 / Slope) × (Gross - Course Rating)
-          const differential = (113 / slopeRating) * (grossScore - courseRating);
+          if (!courseHoles || courseHoles.length < 18) continue;
+
+          // Get tee-specific rating/slope
+          const { data: teeData } = await supabase
+            .from('course_tees')
+            .select('course_rating, slope_rating')
+            .eq('course_id', round.course_id)
+            .eq('tee_color', playerTee)
+            .maybeSingle();
+
+          const courseRating = teeData?.course_rating || 72;
+          const slopeRating = teeData?.slope_rating || 113;
+          const grossScore = scores.reduce((sum, s) => sum + (s.strokes || 0), 0);
+
+          // NDB adjustment
+          const holePars = courseHoles.map(h => h.par);
+          const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+          for (const s of scores) {
+            if (s.hole_number >= 1 && s.hole_number <= 18) holeStrokesArr[s.hole_number - 1] = s.strokes;
+          }
+
+          const minCourse: GolfCourse = {
+            id: round.course_id, name: course?.name || 'Campo', location: '',
+            holes: courseHoles.map(h => ({ number: h.hole_number, par: h.par, handicapIndex: h.stroke_index })) as HoleInfo[],
+          };
+          const strokesPerHole = calculateStrokesPerHole(hcpUsed, minCourse);
+          const adjustedGrossScore = calculateAdjustedGrossScore(holeStrokesArr, holePars, strokesPerHole);
+          const differential = calculateDifferential(adjustedGrossScore, courseRating, slopeRating);
 
           roundScores.push({
             date: round.date,
             courseName: course?.name || 'Campo',
             grossScore,
+            adjustedGrossScore,
             courseRating,
             slopeRating,
-            differential: Math.round(differential * 10) / 10,
+            differential,
             used: false,
           });
         }
 
-        // Sort by differential (ascending) to find best scores
+        // Sort by differential to find best
         const sortedByDifferential = [...roundScores].sort((a, b) => a.differential - b.differential);
+        const numToUse = getNumDifferentialsToUse(roundScores.length);
 
-        // USGA Handicap Index calculation:
-        // Use best differentials based on number of rounds
-        let numToUse = 0;
-        const totalRounds = roundScores.length;
-
-        if (totalRounds >= 20) numToUse = 8;
-        else if (totalRounds >= 19) numToUse = 7;
-        else if (totalRounds >= 18) numToUse = 7;
-        else if (totalRounds >= 17) numToUse = 6;
-        else if (totalRounds >= 16) numToUse = 6;
-        else if (totalRounds >= 15) numToUse = 5;
-        else if (totalRounds >= 14) numToUse = 5;
-        else if (totalRounds >= 13) numToUse = 4;
-        else if (totalRounds >= 12) numToUse = 4;
-        else if (totalRounds >= 11) numToUse = 3;
-        else if (totalRounds >= 10) numToUse = 3;
-        else if (totalRounds >= 9) numToUse = 2;
-        else if (totalRounds >= 8) numToUse = 2;
-        else if (totalRounds >= 7) numToUse = 2;
-        else if (totalRounds >= 6) numToUse = 1;
-        else if (totalRounds >= 5) numToUse = 1;
-        else if (totalRounds >= 4) numToUse = 1;
-        else if (totalRounds >= 3) numToUse = 1;
-        else numToUse = 0;
-
-        // Mark which rounds are used
         const usedDifferentials: number[] = [];
         for (let i = 0; i < numToUse && i < sortedByDifferential.length; i++) {
           sortedByDifferential[i].used = true;
           usedDifferentials.push(sortedByDifferential[i].differential);
         }
 
-        // Calculate handicap index
         if (usedDifferentials.length > 0) {
-          const avgDifferential = usedDifferentials.reduce((a, b) => a + b, 0) / usedDifferentials.length;
-          // Multiply by 0.96 (96%) per USGA rules
-          const handicapIndex = avgDifferential * 0.96;
-          setCalculatedHandicap(Math.round(handicapIndex * 10) / 10);
+          const hi = calculateHandicapIndexFromDifferentials(usedDifferentials);
+          setCalculatedHandicap(hi);
         }
 
         // Mark used in original order
@@ -252,7 +261,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        * Ratings de campo usando valores por defecto (CR: 72, Slope: 125)
+        * Ajuste Net Double Bogey aplicado. Ratings por tee del campo.
       </p>
     </div>
   );

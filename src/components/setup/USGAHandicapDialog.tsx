@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useUSGAHandicap, RoundDifferential } from '@/hooks/useUSGAHandicap';
+import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 import { Loader2, TrendingDown, Calendar, Flag, CheckCircle2, AlertCircle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
@@ -31,19 +32,7 @@ interface CourseData {
   coursePar: number;
 }
 
-/**
- * Calculate Course Handicap from Handicap Index
- * Formula: Course HCP = Index × (Slope / 113) + (Rating - Par)
- */
-const calculateCourseHandicap = (
-  handicapIndex: number,
-  slopeRating: number,
-  courseRating: number,
-  coursePar: number
-): number => {
-  const courseHcp = handicapIndex * (slopeRating / 113) + (courseRating - coursePar);
-  return Math.round(courseHcp);
-};
+// calculateCourseHandicap now imported from @/lib/usgaHandicap
 
 export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
   open,
@@ -296,6 +285,9 @@ const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({
 
       <div className="text-right shrink-0">
         <p className="font-bold">{round.totalStrokes}</p>
+        {round.adjustedGrossScore !== round.totalStrokes && (
+          <p className="text-[10px] text-muted-foreground">Adj: {round.adjustedGrossScore}</p>
+        )}
         <p className="text-muted-foreground">
           Dif: {round.differential > 0 ? '+' : ''}{round.differential.toFixed(1)}
         </p>
