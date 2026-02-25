@@ -92,10 +92,10 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                   onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
                   className="justify-start"
                 >
-                  <ToggleGroupItem value="blue" className="w-8 h-8 rounded-full bg-blue-600 data-[state=on]:ring-2 ring-offset-2" />
-                  <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:ring-2 ring-offset-2" />
-                  <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:ring-2 ring-offset-2" />
-                  <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:ring-2 ring-offset-2" />
+                  <ToggleGroupItem value="blue" className="w-8 h-8 rounded-full bg-blue-600 data-[state=on]:bg-blue-600 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:bg-white data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:bg-yellow-400 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:bg-red-500 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
                 </ToggleGroup>
               </div>
             )}
