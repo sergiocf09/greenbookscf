@@ -297,6 +297,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
               <thead>
                 <tr>
                   <th className="sticky left-0 z-10 bg-card p-0" />
+                  <th className="p-0 w-[3px]"><div className="w-[3px]" /></th>
                   {allPlayers.map(col => {
                     const isBase = col.id === basePlayerId || col.profileId === basePlayerId;
                     return (
@@ -336,6 +337,13 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                         )}>
                           {row.name.split(' ')[0]}
                         </span>
+                      </td>
+
+                      {/* Separator line */}
+                      <td className="p-0 w-[3px] sticky left-[auto] z-[5]">
+                        <div className="w-[3px] h-10 bg-gradient-to-b from-primary/80 via-primary to-primary/80 relative">
+                          <div className="absolute inset-x-[0.5px] inset-y-0 w-[1px] mx-auto bg-[hsl(45,80%,55%)]/60" />
+                        </div>
                       </td>
 
                       {/* Cells */}
