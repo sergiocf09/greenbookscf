@@ -2401,9 +2401,9 @@ export const calculateTeamPressuresBets = (
       const perPairAmount = totalMoney / 2; // Each loser pays half to each winner
       
       // Build description with breakdown
-      const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : ''}$${pressureMoney}`];
-      if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : ''}$${unitsMoney}`);
-      if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : ''}$${oyesesMoney}`);
+      const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${Math.abs(pressureMoney)}`];
+      if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${Math.abs(unitsMoney)}`);
+      if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${Math.abs(oyesesMoney)}`);
       const descA = descParts.join(' | ');
       const descB = descParts.map(p => {
         // Invert signs for team B perspective

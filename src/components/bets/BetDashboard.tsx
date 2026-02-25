@@ -2344,7 +2344,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         {parts.map((part, i) => {
                           const isUnitsLine = part.includes('Unidades');
                           const isOyesesLine = part.includes('Oyeses');
-                          const colorClass = part.includes('+$') ? 'text-green-600' : part.includes('-$') ? 'text-destructive' : '';
+                          const colorClass = (part.includes('+$') || part.includes('+$')) ? 'text-green-600' : (part.includes('-$') || part.includes('$-')) ? 'text-destructive' : '';
 
                           if (isUnitsLine && unitsDetail) {
                             return (
