@@ -2416,46 +2416,46 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       {/* Team A column */}
                                       <div>
                                         <p className="font-medium text-green-600 mb-1">Tu equipo ({oyesesDetail.winsA})</p>
-                                        {oyesesDetail.par3Holes.map(holeNum => {
-                                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
-                                          const isTeamAWin = win && resolvedTeamA.includes(win.winnerId);
-                                          return (
-                                            <p key={holeNum} className="text-[10px] flex items-center gap-1">
-                                              <span className="text-muted-foreground tabular-nums">H{holeNum}</span>
-                                              {isTeamAWin ? (
-                                                <span className="font-medium text-green-600">
-                                                  {getPlayerInitial(win.winnerId)}
-                                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
-                                                </span>
-                                              ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                              )}
-                                            </p>
-                                          );
-                                        })}
+                        {oyesesDetail.par3Holes.map(holeNum => {
+                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
+                          const isTeamAWin = win && resolvedTeamA.includes(win.winnerId);
+                          return (
+                            <div key={holeNum} className="text-[10px] grid grid-cols-[28px_1fr] items-center">
+                              <span className="text-muted-foreground tabular-nums">H{holeNum}</span>
+                              {isTeamAWin ? (
+                                <span className="font-medium text-green-600">
+                                  {getPlayerInitial(win.winnerId)}
+                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </div>
+                          );
+                        })}
                                       </div>
                                       {/* Divider */}
                                       <div className="w-px bg-border" />
                                       {/* Team B column */}
                                       <div>
                                         <p className="font-medium text-destructive mb-1">Rival ({oyesesDetail.winsB})</p>
-                                        {oyesesDetail.par3Holes.map(holeNum => {
-                                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
-                                          const isTeamBWin = win && resolvedTeamB.includes(win.winnerId);
-                                          return (
-                                            <p key={holeNum} className="text-[10px] flex items-center gap-1">
-                                              <span className="text-muted-foreground tabular-nums">H{holeNum}</span>
-                                              {isTeamBWin ? (
-                                                <span className="font-medium text-destructive">
-                                                  {getPlayerInitial(win.winnerId)}
-                                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
-                                                </span>
-                                              ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                              )}
-                                            </p>
-                                          );
-                                        })}
+                        {oyesesDetail.par3Holes.map(holeNum => {
+                          const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
+                          const isTeamBWin = win && resolvedTeamB.includes(win.winnerId);
+                          return (
+                            <div key={holeNum} className="text-[10px] grid grid-cols-[28px_1fr] items-center">
+                              <span className="text-muted-foreground tabular-nums">H{holeNum}</span>
+                              {isTeamBWin ? (
+                                <span className="font-medium text-destructive">
+                                  {getPlayerInitial(win.winnerId)}
+                                  {win.worth > 1 && <span className="text-muted-foreground ml-0.5">(×{win.worth})</span>}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </div>
+                          );
+                        })}
                                       </div>
                                     </div>
                                     {/* Summary */}
