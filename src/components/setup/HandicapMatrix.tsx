@@ -341,7 +341,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
                       {/* Separator line */}
                       <td className="p-0 w-[3px] sticky left-[auto] z-[5]">
-                        <div className="w-[3px] h-10 bg-gradient-to-b from-primary/80 via-primary to-primary/80 relative">
+                        <div className="w-[3px] h-10 bg-gradient-to-b from-primary/80 via-primary to-primary/80 relative mr-1.5">
                           <div className="absolute inset-x-[0.5px] inset-y-0 w-[1px] mx-auto bg-[hsl(45,80%,55%)]/60" />
                         </div>
                       </td>
