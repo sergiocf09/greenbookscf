@@ -174,30 +174,44 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         coursePar = (holesResult.data || []).reduce((sum, h) => sum + h.par, 0) || 72;
       }
 
-      // Step 3: Calculate full USGA Handicap Index for each player from round history
+      // Step 3: Hybrid approach - use persisted Handicap Index when fresh, fallback to recalculation
       const { calculateHandicapIndexForProfile, calculateCourseHandicap } = await import('@/lib/usgaHandicap');
 
       const handicapUpdates = new Map<string, number>();
+      const profileIds = validPlayers.map(v => v.profileId);
 
-      // Process all players in parallel
-      const results = await Promise.all(
-        validPlayers.map(async ({ player, profileId }) => {
-          try {
-            const handicapIndex = await calculateHandicapIndexForProfile(profileId);
-            return { player, profileId, handicapIndex };
-          } catch (err) {
-            console.warn(`[BulkUSGA] Error calculating for ${player.name}:`, err);
-            return { player, profileId, handicapIndex: null };
-          }
-        })
-      );
+      // 3a: Batch-fetch current_handicap from profiles
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, current_handicap')
+        .in('id', profileIds);
 
-      for (const { player, handicapIndex } of results) {
-        if (handicapIndex === null) {
-          skipped++;
-          continue;
+      const currentHandicapByProfile = new Map<string, number>();
+      (profilesData || []).forEach(p => {
+        currentHandicapByProfile.set(p.id, Number(p.current_handicap) || 0);
+      });
+
+      // 3b: Split into fast-path and slow-path
+      // After backfill, profiles.current_handicap is reliable when it differs from the default (20).
+      // The close flow keeps it updated for future rounds.
+      const freshPlayers: typeof validPlayers = [];
+      const stalePlayers: typeof validPlayers = [];
+
+      for (const vp of validPlayers) {
+        const stored = currentHandicapByProfile.get(vp.profileId);
+        // Trust persisted value when it's > 0 and not the default 20.0
+        if (stored !== undefined && stored > 0 && stored !== 20) {
+          freshPlayers.push(vp);
+        } else {
+          stalePlayers.push(vp);
         }
+      }
 
+      console.log(`[BulkUSGA] Fast path: ${freshPlayers.length}, Slow path: ${stalePlayers.length}`);
+
+      // 3d: Fast path - use persisted current_handicap directly
+      for (const { player, profileId } of freshPlayers) {
+        const handicapIndex = currentHandicapByProfile.get(profileId)!;
         let finalHandicap = Math.round(handicapIndex);
 
         if (courseId) {
@@ -212,6 +226,43 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
         handicapUpdates.set(player.id, finalHandicap);
         updated++;
+      }
+
+      // 3e: Slow path - full recalculation for profiles without history
+      if (stalePlayers.length > 0) {
+        const staleResults = await Promise.all(
+          stalePlayers.map(async ({ player, profileId }) => {
+            try {
+              const handicapIndex = await calculateHandicapIndexForProfile(profileId);
+              return { player, profileId, handicapIndex };
+            } catch (err) {
+              console.warn(`[BulkUSGA] Error calculating for ${player.name}:`, err);
+              return { player, profileId, handicapIndex: null };
+            }
+          })
+        );
+
+        for (const { player, handicapIndex } of staleResults) {
+          if (handicapIndex === null) {
+            skipped++;
+            continue;
+          }
+
+          let finalHandicap = Math.round(handicapIndex);
+
+          if (courseId) {
+            const playerTee = player.teeColor || defaultTeeColor;
+            const teeData = courseTeesMap.get(playerTee);
+            if (teeData) {
+              finalHandicap = calculateCourseHandicap(
+                handicapIndex, teeData.slopeRating, teeData.courseRating, coursePar
+              );
+            }
+          }
+
+          handicapUpdates.set(player.id, finalHandicap);
+          updated++;
+        }
       }
 
       // Apply all updates in a single onChange call
