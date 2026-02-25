@@ -10,6 +10,7 @@ import { initialsFromPlayerName, validatePlayerName, formatPlayerName, disambigu
 import { toast } from 'sonner';
 import { USGAHandicapDialog } from './USGAHandicapDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { supabase } from '@/integrations/supabase/client';
 
 const playerColors = [
@@ -398,15 +399,12 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             key={player.id}
             className="flex items-center gap-2 bg-card border border-border rounded-lg p-2"
           >
-            <div 
-              className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',
-                player.color?.startsWith('#') || player.color?.startsWith('hsl') ? 'text-white' : player.color
-              )}
-              style={player.color?.startsWith('#') || player.color?.startsWith('hsl') ? { backgroundColor: player.color } : undefined}
-            >
-              {disambiguatedInitials.get(player.id) || player.initials}
-            </div>
+            <PlayerAvatar
+              initials={disambiguatedInitials.get(player.id) || player.initials}
+              background={player.color || ''}
+              size="md"
+              isLoggedInUser={!!(profile && (player.profileId === profile.id || player.id.startsWith('organizer')))}
+            />
             
             <div className="flex-1 min-w-0">
               <Input
