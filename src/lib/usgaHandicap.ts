@@ -1,3 +1,7 @@
+/**
+ * USGA World Handicap System utilities
+ */
+
 export const getNumDifferentialsToUse = (totalRounds: number): number => {
   if (totalRounds >= 20) return 8;
   if (totalRounds === 19) return 7;
@@ -33,4 +37,58 @@ export const calculateHandicapIndexFromDifferentials = (
   const avg = best.reduce((sum, d) => sum + d, 0) / best.length;
   const handicapIndex = avg * 0.96;
   return Math.round(handicapIndex * 10) / 10;
+};
+
+/**
+ * Calculate USGA Score Differential
+ * Formula: (Adjusted Gross Score - Course Rating) × 113 / Slope Rating
+ */
+export const calculateDifferential = (
+  adjustedGrossScore: number,
+  courseRating: number,
+  slopeRating: number
+): number => {
+  const differential = ((adjustedGrossScore - courseRating) * 113) / slopeRating;
+  return Math.round(differential * 10) / 10;
+};
+
+/**
+ * Calculate Course Handicap from Handicap Index
+ * Formula: Index × (Slope / 113) + (Rating - Par)
+ */
+export const calculateCourseHandicap = (
+  handicapIndex: number,
+  slopeRating: number,
+  courseRating: number,
+  coursePar: number
+): number => {
+  return Math.round(handicapIndex * (slopeRating / 113) + (courseRating - coursePar));
+};
+
+/**
+ * Net Double Bogey adjustment (WHS Rule 3.1)
+ *
+ * Before summing strokes for the differential, each hole's score is capped at:
+ *   maximum = par + 2 + strokesReceived on that hole
+ *
+ * @param holeStrokes  Array of 18 raw stroke values (index 0 = hole 1)
+ * @param holePars     Array of 18 par values
+ * @param strokesPerHole Array of 18 strokes-received values (from handicap allocation)
+ * @returns The Adjusted Gross Score (sum of capped hole scores)
+ */
+export const calculateAdjustedGrossScore = (
+  holeStrokes: (number | null)[],
+  holePars: number[],
+  strokesPerHole: number[]
+): number => {
+  let adjustedTotal = 0;
+  for (let i = 0; i < 18; i++) {
+    const strokes = holeStrokes[i];
+    if (strokes === null || strokes === undefined) continue;
+    const par = holePars[i] ?? 4;
+    const received = strokesPerHole[i] ?? 0;
+    const maxScore = par + 2 + received;
+    adjustedTotal += Math.min(strokes, maxScore);
+  }
+  return adjustedTotal;
 };

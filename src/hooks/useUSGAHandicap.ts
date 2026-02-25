@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { calculateHandicapIndexFromDifferentials, getNumDifferentialsToUse } from '@/lib/usgaHandicap';
+import {
+  calculateHandicapIndexFromDifferentials,
+  getNumDifferentialsToUse,
+  calculateDifferential,
+  calculateAdjustedGrossScore,
+} from '@/lib/usgaHandicap';
+import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { GolfCourse, HoleInfo } from '@/types/golf';
 
 export interface RoundDifferential {
   roundId: string;
@@ -8,6 +15,7 @@ export interface RoundDifferential {
   courseName: string;
   teeColor: string;
   totalStrokes: number;
+  adjustedGrossScore: number;
   coursePar: number;
   courseRating: number;
   slopeRating: number;
@@ -27,53 +35,28 @@ export interface USGAHandicapResult {
 }
 
 /**
- * Calculate USGA differential for a round
- * Formula: (Adjusted Gross Score - Course Rating) × 113 / Slope Rating
- */
-const calculateDifferential = (
-  totalStrokes: number,
-  courseRating: number,
-  slopeRating: number
-): number => {
-  const differential = ((totalStrokes - courseRating) * 113) / slopeRating;
-  // Round to one decimal place
-  return Math.round(differential * 10) / 10;
-};
-
-/**
- * Hook to fetch and calculate USGA handicap index for a player
+ * Hook to fetch and calculate USGA handicap index for a player.
+ * Uses Net Double Bogey adjustment per hole and tee-specific ratings.
  */
 export const useUSGAHandicap = (profileId: string | null) => {
   const query = useQuery({
     queryKey: ['usga-handicap', profileId],
     queryFn: async (): Promise<Omit<USGAHandicapResult, 'isLoading' | 'error'>> => {
       if (!profileId) {
-        return {
-          handicapIndex: null,
-          differentials: [],
-          roundsUsed: 0,
-          totalRounds: 0,
-          minimumRoundsNeeded: 3,
-        };
+        return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
-      // Fetch completed rounds for this player with their tee color
+      // 1. Fetch completed rounds for this player
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
           id,
           round_id,
           tee_color,
+          handicap_for_round,
           rounds!inner (
-            id,
-            date,
-            status,
-            course_id,
-            tee_color,
-            golf_courses!inner (
-              id,
-              name
-            )
+            id, date, status, course_id, tee_color,
+            golf_courses!inner ( id, name )
           )
         `)
         .eq('profile_id', profileId)
@@ -81,46 +64,39 @@ export const useUSGAHandicap = (profileId: string | null) => {
         .order('rounds(date)', { ascending: false });
 
       if (rpError) throw rpError;
-      if (!roundPlayers || roundPlayers.length === 0) {
-        return {
-          handicapIndex: null,
-          differentials: [],
-          roundsUsed: 0,
-          totalRounds: 0,
-          minimumRoundsNeeded: 3,
-        };
+      if (!roundPlayers?.length) {
+        return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
-      // For each round, get confirmed hole scores and course par
       const differentials: RoundDifferential[] = [];
 
-      for (const rp of roundPlayers) {
+      for (const rp of roundPlayers.slice(0, 20)) {
         const round = rp.rounds as any;
         const course = round.golf_courses;
-        
-        // Determine tee color: player's specific tee or round default
         const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
+        const handicapUsed = Number((rp as any).handicap_for_round) || 0;
 
-        // Get confirmed hole scores for this round_player
+        // Get confirmed hole scores
         const { data: holeScores, error: hsError } = await supabase
           .from('hole_scores')
           .select('hole_number, strokes, confirmed')
           .eq('round_player_id', rp.id)
           .eq('confirmed', true)
-          .not('strokes', 'is', null);
+          .not('strokes', 'is', null)
+          .order('hole_number');
 
-        if (hsError) continue;
-        if (!holeScores || holeScores.length < 18) continue; // Need full 18 holes
+        if (hsError || !holeScores || holeScores.length < 18) continue;
 
-        // Get course par
+        // Get course holes (par + stroke_index) for Net Double Bogey
         const { data: courseHoles, error: chError } = await supabase
           .from('course_holes')
-          .select('hole_number, par')
-          .eq('course_id', course.id);
+          .select('hole_number, par, stroke_index')
+          .eq('course_id', course.id)
+          .order('hole_number');
 
-        if (chError || !courseHoles) continue;
+        if (chError || !courseHoles || courseHoles.length < 18) continue;
 
-        // Get tee-specific rating and slope from course_tees table
+        // Get tee-specific rating and slope
         const { data: teeData } = await supabase
           .from('course_tees')
           .select('course_rating, slope_rating')
@@ -128,14 +104,38 @@ export const useUSGAHandicap = (profileId: string | null) => {
           .eq('tee_color', playerTeeColor)
           .maybeSingle();
 
-        const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
-        const coursePar = courseHoles.reduce((sum, h) => sum + h.par, 0);
-        
-        // Use tee-specific rating/slope or defaults
         const courseRating = teeData?.course_rating || 72;
         const slopeRating = teeData?.slope_rating || 113;
 
-        const differential = calculateDifferential(totalStrokes, courseRating, slopeRating);
+        // Build arrays for NDB calculation
+        const holePars = courseHoles.map(h => h.par);
+        const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+        for (const hs of holeScores) {
+          if (hs.hole_number >= 1 && hs.hole_number <= 18) {
+            holeStrokesArr[hs.hole_number - 1] = hs.strokes;
+          }
+        }
+
+        // Build a minimal GolfCourse for strokesPerHole calculation
+        const minimalCourse: GolfCourse = {
+          id: course.id,
+          name: course.name,
+          location: '',
+          holes: courseHoles.map(h => ({
+            number: h.hole_number,
+            par: h.par,
+            handicapIndex: h.stroke_index,
+          })) as HoleInfo[],
+        };
+
+        const strokesPerHole = calculateStrokesPerHole(handicapUsed, minimalCourse);
+
+        // Apply Net Double Bogey
+        const adjustedGrossScore = calculateAdjustedGrossScore(holeStrokesArr, holePars, strokesPerHole);
+        const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
+        const coursePar = holePars.reduce((s, p) => s + p, 0);
+
+        const differential = calculateDifferential(adjustedGrossScore, courseRating, slopeRating);
 
         differentials.push({
           roundId: round.id,
@@ -143,6 +143,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
           courseName: course.name,
           teeColor: playerTeeColor,
           totalStrokes,
+          adjustedGrossScore,
           coursePar,
           courseRating,
           slopeRating,
@@ -152,15 +153,13 @@ export const useUSGAHandicap = (profileId: string | null) => {
         });
       }
 
-      // Sort by differential (ascending) for display, but keep date order for calculation
+      // Sort by date descending
       const sortedByDate = [...differentials].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
-      // Take most recent 20 rounds max (USGA uses last 20)
       const recentRounds = sortedByDate.slice(0, 20);
       const differentialValues = recentRounds.map(r => r.differential);
-
       const handicapIndex = calculateHandicapIndexFromDifferentials(differentialValues);
       const roundsUsed = getNumDifferentialsToUse(recentRounds.length);
 
@@ -173,7 +172,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
       };
     },
     enabled: !!profileId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   return {
