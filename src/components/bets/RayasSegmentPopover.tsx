@@ -208,7 +208,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                     <div key={hole.holeNumber} className="flex flex-col items-center">
                       <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
                       <div className={cn(
-                        'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                        'w-8 h-7 flex items-center justify-center text-[11px] font-bold rounded',
                         hole.winner === 'A' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                         hole.winner === 'B' ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
                         hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
@@ -218,17 +218,19 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                          hole.winner === 'B' ? `-${hole.skinsWon}` :
                          hole.accumulated > 0 ? `(${hole.accumulated})` : '•'}
                       </div>
-                      <div className="flex flex-col items-center mt-0.5">
-                        <span className={cn('text-[7px]', hole.winner === 'A' ? 'text-green-600 font-bold' : 'text-muted-foreground')}>
-                          {hole.netA ?? '-'}
-                        </span>
-                        <span className={cn('text-[7px]', hole.winner === 'B' ? 'text-destructive font-bold' : 'text-muted-foreground')}>
-                          {hole.netB ?? '-'}
-                        </span>
-                      </div>
                     </div>
                   ))}
                 </div>
+              </div>
+              {/* Skins total summary */}
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <span className="text-[10px] font-bold text-green-700 dark:text-green-400">
+                  {skinsHoles.filter(h => h.winner === 'A').reduce((s, h) => s + h.skinsWon, 0)}
+                </span>
+                <span className="text-[9px] text-muted-foreground">vs</span>
+                <span className="text-[10px] font-bold text-destructive">
+                  {skinsHoles.filter(h => h.winner === 'B').reduce((s, h) => s + h.skinsWon, 0)}
+                </span>
               </div>
             </div>
           )}
@@ -273,7 +275,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                     <span
                       key={i}
                       className={cn(
-                        'text-[9px] px-1 py-0.5 rounded flex items-center justify-center gap-1',
+                        'text-[10px] px-1 py-0.5 rounded flex items-center justify-center gap-1.5',
                         d.winner === 'player'
                           ? 'bg-green-500/15 text-green-700 dark:text-green-400'
                           : d.winner === 'rival'
