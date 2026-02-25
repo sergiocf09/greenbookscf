@@ -92,3 +92,97 @@ export const calculateAdjustedGrossScore = (
   }
   return adjustedTotal;
 };
+
+/**
+ * Calculate USGA Handicap Index for a profile from their completed round history.
+ * Extracted for reuse in bulk calculations and persistence.
+ * Returns the Handicap Index (e.g. 8.3) or null if insufficient rounds.
+ */
+export const calculateHandicapIndexForProfile = async (
+  profileId: string
+): Promise<number | null> => {
+  const { supabase } = await import('@/integrations/supabase/client');
+  const { calculateStrokesPerHole } = await import('@/lib/handicapUtils');
+
+  const { data: roundPlayers, error: rpError } = await supabase
+    .from('round_players')
+    .select(`
+      id,
+      round_id,
+      tee_color,
+      handicap_for_round,
+      rounds!inner (
+        id, date, status, course_id, tee_color,
+        golf_courses!inner ( id, name )
+      )
+    `)
+    .eq('profile_id', profileId)
+    .eq('rounds.status', 'completed')
+    .order('rounds(date)', { ascending: false });
+
+  if (rpError) throw rpError;
+  if (!roundPlayers?.length) return null;
+
+  const differentials: number[] = [];
+
+  for (const rp of roundPlayers.slice(0, 20)) {
+    const round = rp.rounds as any;
+    const course = round.golf_courses;
+    const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
+    const handicapUsed = Number((rp as any).handicap_for_round) || 0;
+
+    const { data: holeScores, error: hsError } = await supabase
+      .from('hole_scores')
+      .select('hole_number, strokes, confirmed')
+      .eq('round_player_id', rp.id)
+      .eq('confirmed', true)
+      .not('strokes', 'is', null)
+      .order('hole_number');
+
+    if (hsError || !holeScores || holeScores.length < 18) continue;
+
+    const { data: courseHoles, error: chError } = await supabase
+      .from('course_holes')
+      .select('hole_number, par, stroke_index')
+      .eq('course_id', course.id)
+      .order('hole_number');
+
+    if (chError || !courseHoles || courseHoles.length < 18) continue;
+
+    const { data: teeData } = await supabase
+      .from('course_tees')
+      .select('course_rating, slope_rating')
+      .eq('course_id', course.id)
+      .eq('tee_color', playerTeeColor)
+      .maybeSingle();
+
+    const courseRating = teeData?.course_rating || 72;
+    const slopeRating = teeData?.slope_rating || 113;
+
+    const holePars = courseHoles.map(h => h.par);
+    const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+    for (const hs of holeScores) {
+      if (hs.hole_number >= 1 && hs.hole_number <= 18) {
+        holeStrokesArr[hs.hole_number - 1] = hs.strokes;
+      }
+    }
+
+    const minimalCourse = {
+      id: course.id,
+      name: course.name,
+      location: '',
+      holes: courseHoles.map(h => ({
+        number: h.hole_number,
+        par: h.par,
+        handicapIndex: h.stroke_index,
+      })),
+    };
+
+    const strokesPerHole = calculateStrokesPerHole(handicapUsed, minimalCourse as any);
+    const adjustedGrossScore = calculateAdjustedGrossScore(holeStrokesArr, holePars, strokesPerHole);
+    const differential = calculateDifferential(adjustedGrossScore, courseRating, slopeRating);
+    differentials.push(differential);
+  }
+
+  return calculateHandicapIndexFromDifferentials(differentials);
+};
