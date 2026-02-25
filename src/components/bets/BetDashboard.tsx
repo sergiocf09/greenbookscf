@@ -1739,12 +1739,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               })}
             </div>
 
-            {/* Vertical separator */}
-            <div className="w-px bg-border self-stretch mx-1" />
+            {/* Vertical separator - Augusta themed */}
+            <div className="flex flex-col self-stretch mx-2">
+              <div className="flex-1 w-[3px] bg-golf-green rounded-full relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 bottom-0 flex items-center">
+                  <div className="w-full h-[1px] bg-augusta-gold" />
+                </div>
+              </div>
+            </div>
 
-            {/* RIVALS grid - right side, 2 per row, rectangular */}
-            <div className="flex-1 pl-3">
-              <div className="grid grid-cols-2 gap-2">
+            {/* RIVALS area - right side, dynamic centered layout */}
+            <div className="flex-1 pl-3 flex items-center justify-center">
+              <div className="flex flex-wrap justify-center items-center gap-3 w-full">
                 {rivals.map(rival => {
                   const balance = getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
@@ -1756,43 +1762,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <button
                         onClick={() => setSelectedRival(isSelected ? null : rival.id)}
                         className={cn(
-                          'w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all relative',
-                          isSelected 
-                            ? 'bg-primary text-primary-foreground shadow-lg' 
-                            : 'bg-muted/50 hover:bg-muted',
-                          isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background'
+                          'flex flex-col items-center gap-1 transition-all relative',
+                          isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background rounded-lg'
                         )}
                       >
                         {hasOverride && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full z-10" />
                         )}
-                        {/* Rectangular avatar */}
+                        {/* Pill-shaped initials label */}
                         <div className={cn(
-                          'w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0',
+                          'px-5 py-1.5 rounded-lg flex items-center justify-center font-bold text-sm transition-all',
                           isSelected
-                            ? 'bg-white/20 text-primary-foreground'
+                            ? 'bg-primary text-primary-foreground shadow-lg'
                             : rival.id === basePlayerId || rival.profileId === basePlayerId
                               ? 'bg-augusta-green text-augusta-gold'
                               : 'bg-white border-2 border-black text-black'
                         )}>
                           {getPlayerAbbr(rival)}
                         </div>
-                        <div className="flex flex-col items-start min-w-0">
-                          <span className={cn(
-                            'text-xs font-medium truncate max-w-[80px]',
-                            isSelected ? 'text-primary-foreground' : 'text-foreground'
-                          )}>
-                            {formatPlayerName(rival.name).split(' ')[0]}
-                          </span>
-                          <div className={cn(
-                            'text-sm font-bold flex items-center gap-0.5',
-                            isSelected ? '' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {balance !== 0 && (
-                              balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
-                            )}
-                            ${Math.abs(balance)}
-                          </div>
+                        {/* Balance below */}
+                        <div className={cn(
+                          'text-xs font-bold flex items-center gap-0.5',
+                          isSelected ? 'text-primary' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        )}>
+                          {balance !== 0 && (
+                            balance > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />
+                          )}
+                          ${Math.abs(balance)}
                         </div>
                       </button>
                       {/* Remove cross-group rival button */}
@@ -1819,12 +1815,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <DialogTrigger asChild>
                       <button
                         type="button"
-                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-muted-foreground/30"
+                        className="flex flex-col items-center gap-1 transition-all"
                       >
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted/50">
-                          <UserPlus className="h-5 w-5 text-muted-foreground" />
+                        <div className="px-5 py-1.5 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
+                          <UserPlus className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <span className="text-xs text-muted-foreground">Otro Grupo</span>
+                        <span className="text-[10px] text-muted-foreground">Grupo</span>
                       </button>
                     </DialogTrigger>
                     <DialogContent className="max-w-sm">
