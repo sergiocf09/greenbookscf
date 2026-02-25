@@ -1983,6 +1983,8 @@ export const calculateCarritosBets = (
   }> = [];
 
   // Primary carritos - only use if no carritosTeams exist (legacy pattern)
+  const disabledIds = new Set(config.disabledTeamBetIds || []);
+
   const hasCarritosTeams = (config.carritosTeams?.length ?? 0) > 0;
   if (!hasCarritosTeams) {
     const c = config.carritos;
@@ -2001,7 +2003,9 @@ export const calculateCarritosBets = (
     }
   }
 
-  config.carritosTeams?.forEach(team => {
+  config.carritosTeams?.forEach((team, idx) => {
+    const teamId = team.id || `carritos-${idx}`;
+    if (disabledIds.has(teamId)) return; // Skip cancelled team bets
     const hasTeams = team.teamA[0] && team.teamA[1] && team.teamB[0] && team.teamB[1];
     if (hasTeams) {
       configs.push({
@@ -2177,8 +2181,11 @@ export const calculateTeamPressuresBets = (
     return match?.id ?? pid;
   };
 
+  const disabledTeamIds = new Set(config.disabledTeamBetIds || []);
+
   config.teamPressures.bets.forEach(bet => {
     if (!bet.enabled) return;
+    if (disabledTeamIds.has(bet.id)) return; // Skip cancelled team bets
     
     const teamA: [string, string] = [resolvePlayerId(bet.teamA[0]), resolvePlayerId(bet.teamA[1])];
     const teamB: [string, string] = [resolvePlayerId(bet.teamB[0]), resolvePlayerId(bet.teamB[1])];
