@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Plus, X, User, Users2, Calculator, UserPlus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, X, User, Users2, Calculator, UserPlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Player, PlayerGroup } from '@/types/golf';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
+import { initialsFromPlayerName, validatePlayerName, formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { toast } from 'sonner';
 import { USGAHandicapDialog } from './USGAHandicapDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,6 +66,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(groups[0]?.id || null);
+  const [bulkCalculating, setBulkCalculating] = useState(false);
   
   // USGA Handicap dialog state
   const [usgaDialogOpen, setUsgaDialogOpen] = useState(false);
@@ -75,6 +76,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     profileId: string | null;
     teeColor: string;
   } | null>(null);
+
+  // Disambiguate initials when there are collisions
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(players), [players]);
 
   // Resolve profile_id for a player (could be the current user or need lookup)
   const getProfileIdForPlayer = async (player: Player): Promise<string | null> => {
@@ -124,6 +128,124 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     
     updatePlayer(selectedPlayerForUSGA.id, { handicap });
     toast.success(`Handicap USGA ${handicap} aplicado a ${selectedPlayerForUSGA.name}`);
+  };
+
+  // Bulk calculate USGA handicaps for all players
+  const handleBulkUSGACalculation = async () => {
+    if (players.length === 0) return;
+    setBulkCalculating(true);
+    let updated = 0;
+    let skipped = 0;
+
+    try {
+      for (const player of players) {
+        const profileId = await getProfileIdForPlayer(player);
+        if (!profileId) {
+          skipped++;
+          continue;
+        }
+
+        // Fetch completed rounds for this player
+        const { data: roundPlayers } = await supabase
+          .from('round_players')
+          .select(`
+            id, tee_color,
+            rounds!inner (id, date, status, course_id, tee_color, golf_courses!inner (id, name))
+          `)
+          .eq('profile_id', profileId)
+          .eq('rounds.status', 'completed')
+          .order('rounds(date)', { ascending: false });
+
+        if (!roundPlayers || roundPlayers.length === 0) {
+          skipped++;
+          continue;
+        }
+
+        const differentials: number[] = [];
+
+        for (const rp of roundPlayers.slice(0, 20)) {
+          const round = (rp as any).rounds;
+          const course = round.golf_courses;
+          const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
+
+          const { data: holeScores } = await supabase
+            .from('hole_scores')
+            .select('strokes, confirmed')
+            .eq('round_player_id', rp.id)
+            .eq('confirmed', true)
+            .not('strokes', 'is', null);
+
+          if (!holeScores || holeScores.length < 18) continue;
+
+          const { data: teeData } = await supabase
+            .from('course_tees')
+            .select('course_rating, slope_rating')
+            .eq('course_id', course.id)
+            .eq('tee_color', playerTeeColor)
+            .maybeSingle();
+
+          const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
+          const courseRating = teeData?.course_rating || 72;
+          const slopeRating = teeData?.slope_rating || 113;
+          const diff = ((totalStrokes - courseRating) * 113) / slopeRating;
+          differentials.push(Math.round(diff * 10) / 10);
+        }
+
+        if (differentials.length < 3) {
+          skipped++;
+          continue;
+        }
+
+        // Calculate handicap index
+        const { calculateHandicapIndexFromDifferentials } = await import('@/lib/usgaHandicap');
+        const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
+        if (handicapIndex === null) {
+          skipped++;
+          continue;
+        }
+
+        // Calculate course handicap if course is selected
+        let finalHandicap = Math.round(handicapIndex);
+        if (courseId) {
+          const playerTee = player.teeColor || defaultTeeColor;
+          const { data: teeData } = await supabase
+            .from('course_tees')
+            .select('course_rating, slope_rating')
+            .eq('course_id', courseId)
+            .eq('tee_color', playerTee)
+            .maybeSingle();
+
+          const { data: holes } = await supabase
+            .from('course_holes')
+            .select('par')
+            .eq('course_id', courseId);
+
+          if (teeData && holes) {
+            const coursePar = holes.reduce((sum, h) => sum + h.par, 0);
+            finalHandicap = Math.round(
+              handicapIndex * (teeData.slope_rating / 113) + (teeData.course_rating - coursePar)
+            );
+          }
+        }
+
+        updatePlayer(player.id, { handicap: finalHandicap });
+        updated++;
+      }
+
+      if (updated > 0) {
+        toast.success(`Handicap USGA calculado para ${updated} jugador${updated !== 1 ? 'es' : ''}`);
+      }
+      if (skipped > 0 && updated === 0) {
+        toast.info('No se encontraron rondas suficientes para calcular handicaps');
+      } else if (skipped > 0) {
+        toast.info(`${skipped} jugador${skipped !== 1 ? 'es' : ''} sin historial suficiente`);
+      }
+    } catch (err) {
+      console.error('Error in bulk USGA calculation:', err);
+      toast.error('Error al calcular handicaps');
+    } finally {
+      setBulkCalculating(false);
+    }
   };
 
   const addPlayer = () => {
@@ -201,17 +323,36 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">Jugadores ({players.length}/{maxPlayers})</Label>
-        {multiGroupEnabled && onGroupsChange && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={addGroup}
-            className="h-8 text-xs gap-1"
-          >
-            <Users2 className="h-3.5 w-3.5" />
-            Agregar Grupo
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          {/* Bulk USGA Calculator */}
+          {players.length >= 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-primary"
+              onClick={handleBulkUSGACalculation}
+              disabled={bulkCalculating}
+              title="Calcular handicap USGA para todos"
+            >
+              {bulkCalculating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Calculator className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          {multiGroupEnabled && onGroupsChange && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={addGroup}
+              className="h-8 text-xs gap-1"
+            >
+              <Users2 className="h-3.5 w-3.5" />
+              Agregar Grupo
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Multi-group tabs */}
@@ -257,16 +398,19 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             key={player.id}
             className="flex items-center gap-2 bg-card border border-border rounded-lg p-2"
           >
-            <div className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-              player.color
-            )}>
-              {player.initials}
+            <div 
+              className={cn(
+                'w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',
+                player.color?.startsWith('#') || player.color?.startsWith('hsl') ? 'text-white' : player.color
+              )}
+              style={player.color?.startsWith('#') || player.color?.startsWith('hsl') ? { backgroundColor: player.color } : undefined}
+            >
+              {disambiguatedInitials.get(player.id) || player.initials}
             </div>
             
             <div className="flex-1 min-w-0">
               <Input
-                value={player.name}
+                value={player.name || ''}
                 maxLength={100}
                 onChange={(e) => {
                   const raw = e.target.value.slice(0, 100);
