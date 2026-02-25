@@ -55,3 +55,4 @@ export const PlayerAvatar = React.forwardRef<HTMLDivElement, PlayerAvatarProps>(
 );
 
 PlayerAvatar.displayName = "PlayerAvatar";
+
