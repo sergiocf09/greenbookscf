@@ -1,6 +1,7 @@
 /**
  * RayasSegmentPopover - Shows detailed breakdown of rayas for a segment (Front/Back)
- * Sections: Skins (hole-by-hole grid), Unidades (hole+concept), Oyes (par 3 results), Medal (net comparison)
+ * Top row: Skins (hole-by-hole grid)
+ * Bottom: 3 columns — Unidades | Oyes | Medal
  */
 import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,14 +10,12 @@ import { RayaDetail } from '@/lib/rayasCalculations';
 import { getAdjustedScoresForPair } from '@/lib/betCalculations';
 import { getEffectiveSkinVariantForPair, getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface UnitEvent {
   holeNumber: number;
   playerId: string;
   label: string;
-  emoji: string;
-  count: number; // rayas this event generates
+  count: number;
 }
 
 interface RayasSegmentPopoverProps {
@@ -46,13 +45,11 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
 }) => {
   const holeRange = segment === 'front' ? [1, 9] : [10, 18];
 
-  // Adjusted scores for bilateral handicap
   const adjustedScores = useMemo(
     () => getAdjustedScoresForPair(player, rival, confirmedScores, course, bilateralHandicaps),
     [player, rival, confirmedScores, course, bilateralHandicaps]
   );
 
-  // Filter rayas details for this segment
   const segmentDetails = useMemo(
     () => rayasDetails.filter(d => d.appliedSegment === segment),
     [rayasDetails, segment]
@@ -119,12 +116,12 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
         .forEach(score => {
           const holePar = course.holes[score.holeNumber - 1]?.par || 4;
           const toPar = score.strokes - holePar;
-          if (toPar === -1) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Birdie', emoji: '🐦', count: 1 });
-          if (toPar === -2) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Eagle', emoji: '🦅', count: 2 });
-          if (toPar <= -3) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Albatross', emoji: '🦤', count: 3 });
-          if (score.markers.sandyPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Sandy', emoji: '⛳', count: 1 });
-          if (score.markers.aquaPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Aqua', emoji: '💧', count: 1 });
-          if (score.markers.holeOut) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'HoleOut', emoji: '🎯', count: 1 });
+          if (toPar === -1) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Birdie', count: 1 });
+          if (toPar === -2) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Eagle', count: 2 });
+          if (toPar <= -3) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Albatross', count: 3 });
+          if (score.markers.sandyPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Sandy', count: 1 });
+          if (score.markers.aquaPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Aqua', count: 1 });
+          if (score.markers.holeOut) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'HoleOut', count: 1 });
         });
     });
     return events.sort((a, b) => a.holeNumber - b.holeNumber);
@@ -132,13 +129,42 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
 
   const unitsEnabled = betConfig.rayas?.segments?.units?.enabled !== false;
 
-  // ── OYES: par 3 results ──
-  const oyesDetails = useMemo(
-    () => segmentDetails.filter(d => d.source === 'oyes'),
-    [segmentDetails]
-  );
+  // ── OYES: par 3 proximity comparison ──
+  const oyesData = useMemo(() => {
+    const par3Holes = [];
+    for (let h = holeRange[0]; h <= holeRange[1]; h++) {
+      const hole = course.holes[h - 1];
+      if (hole && hole.par === 3) par3Holes.push(h);
+    }
+
+    const oyesModality = getOyesModalityForPair(betConfig, player.id, rival.id);
+    const proxKey = oyesModality === 'sangron' ? 'oyesProximitySangron' : 'oyesProximity';
+
+    return par3Holes.map(holeNumber => {
+      const playerScores = confirmedScores.get(player.id) || [];
+      const rivalScores = confirmedScores.get(rival.id) || [];
+      const pScore = playerScores.find(s => s.holeNumber === holeNumber);
+      const rScore = rivalScores.find(s => s.holeNumber === holeNumber);
+
+      const pProx = pScore?.[proxKey] ?? pScore?.oyesProximity ?? null;
+      const rProx = rScore?.[proxKey] ?? rScore?.oyesProximity ?? null;
+
+      // Lower proximity = closer = winner
+      let winner: 'player' | 'rival' | null = null;
+      if (pProx != null && rProx != null) {
+        if (pProx < rProx) winner = 'player';
+        else if (rProx < pProx) winner = 'rival';
+      } else if (pProx != null && rProx == null) {
+        winner = 'player';
+      } else if (rProx != null && pProx == null) {
+        winner = 'rival';
+      }
+
+      return { holeNumber, pProx, rProx, winner };
+    }).filter(d => d.pProx != null || d.rProx != null);
+  }, [confirmedScores, player, rival, holeRange, course, betConfig]);
+
   const oyesEnabled = betConfig.rayas?.segments?.oyes?.enabled !== false;
-  const oyesModality = getOyesModalityForPair(betConfig, player.id, rival.id);
 
   // ── MEDAL: net comparison ──
   const medalData = useMemo(() => {
@@ -167,7 +193,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
         {children}
       </PopoverTrigger>
       <PopoverContent className="w-auto min-w-[280px] max-w-[360px] p-3" side="top">
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="text-xs font-semibold text-muted-foreground border-b border-border/50 pb-1">
             {segmentLabel} — Detalle de Rayas
           </div>
@@ -192,7 +218,6 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                          hole.winner === 'B' ? `-${hole.skinsWon}` :
                          hole.accumulated > 0 ? `(${hole.accumulated})` : '•'}
                       </div>
-                      {/* Net scores below */}
                       <div className="flex flex-col items-center mt-0.5">
                         <span className={cn('text-[7px]', hole.winner === 'A' ? 'text-green-600 font-bold' : 'text-muted-foreground')}>
                           {hole.netA ?? '-'}
@@ -205,92 +230,92 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
-                <PlayerAvatar initials={player.initials} background={player.color} size="xs" isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId} />
-                <span className="text-green-600">arriba</span>
-                <span>·</span>
-                <PlayerAvatar initials={rival.initials} background={rival.color} size="xs" isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId} />
-                <span className="text-destructive">abajo</span>
-              </div>
             </div>
           )}
 
-          {/* ── UNIDADES ── */}
-          {unitsEnabled && unitEvents.length > 0 && (
+          {/* ── 3-COLUMN SECTION: Unidades | Oyes | Medal ── */}
+          <div className="grid grid-cols-3 gap-2 border-t border-border/30 pt-2">
+            {/* UNIDADES column */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Unidades</div>
-              <div className="flex flex-wrap gap-1">
-                {unitEvents.map((evt, i) => {
-                  const isPlayer = evt.playerId === player.id;
-                  return (
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Unidades</div>
+              {unitsEnabled && unitEvents.length > 0 ? (
+                <div className="flex flex-col gap-0.5">
+                  {unitEvents.map((evt, i) => {
+                    const isPlayer = evt.playerId === player.id;
+                    return (
+                      <span
+                        key={i}
+                        className={cn(
+                          'text-[9px] px-1 py-0.5 rounded text-center',
+                          isPlayer
+                            ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                            : 'bg-red-500/15 text-red-700 dark:text-red-400'
+                        )}
+                      >
+                        <span className="font-semibold">H{evt.holeNumber}</span>{' '}
+                        <span>{evt.label}</span>
+                        {evt.count > 1 && <span className="font-bold"> ×{evt.count}</span>}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[8px] text-muted-foreground text-center">—</p>
+              )}
+            </div>
+
+            {/* OYES column */}
+            <div className="space-y-1">
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Oyes</div>
+              {oyesEnabled && oyesData.length > 0 ? (
+                <div className="flex flex-col gap-0.5">
+                  {oyesData.map((d, i) => (
                     <span
                       key={i}
                       className={cn(
-                        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px]',
-                        isPlayer
+                        'text-[9px] px-1 py-0.5 rounded text-center',
+                        d.winner === 'player'
                           ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                          : 'bg-red-500/15 text-red-700 dark:text-red-400'
+                          : d.winner === 'rival'
+                          ? 'bg-red-500/15 text-red-700 dark:text-red-400'
+                          : 'bg-muted/50 text-muted-foreground'
                       )}
                     >
-                      <span className="font-semibold">H{evt.holeNumber}</span>
-                      <span>{evt.emoji}</span>
-                      <span>{evt.label}</span>
-                      {evt.count > 1 && <span className="font-bold">×{evt.count}</span>}
+                      <span className="font-semibold">H{d.holeNumber}</span>{' '}
+                      {d.pProx ?? '-'} vs {d.rProx ?? '-'}
                     </span>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[8px] text-muted-foreground text-center">—</p>
+              )}
             </div>
-          )}
 
-          {/* ── OYES ── */}
-          {oyesEnabled && oyesDetails.length > 0 && (
+            {/* MEDAL column */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Oyes {oyesModality === 'sangron' ? '(Sangrón)' : '(Acumulado)'}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {oyesDetails.map((d, i) => {
-                  const isPlayerWin = d.rayasCount > 0;
-                  return (
-                    <span
-                      key={i}
-                      className={cn(
-                        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px]',
-                        isPlayerWin
-                          ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                          : 'bg-red-500/15 text-red-700 dark:text-red-400'
-                      )}
-                    >
-                      <span className="font-semibold">H{d.holeNumber}</span>
-                      <span>⛳</span>
-                      <span>{isPlayerWin ? 'Ganado' : 'Perdido'}</span>
-                      {Math.abs(d.rayasCount) > 1 && <span className="font-bold">×{Math.abs(d.rayasCount)}</span>}
-                    </span>
-                  );
-                })}
-              </div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Medal</div>
+              {medalEnabled ? (
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[8px] text-muted-foreground">Neto</span>
+                  <div className={cn(
+                    'text-[10px] font-bold rounded px-1.5 py-0.5',
+                    medalData.playerNet < medalData.rivalNet
+                      ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                      : medalData.playerNet > medalData.rivalNet
+                      ? 'bg-red-500/15 text-red-700 dark:text-red-400'
+                      : 'text-muted-foreground'
+                  )}>
+                    {medalData.playerNet} vs {medalData.rivalNet}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[8px] text-muted-foreground text-center">—</p>
+              )}
             </div>
-          )}
-
-          {/* ── MEDAL ── */}
-          {medalEnabled && medalData.rayasCount !== 0 && (
-            <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Medal</div>
-              <div className={cn(
-                'flex items-center justify-between px-2 py-1 rounded text-xs',
-                medalData.rayasCount > 0
-                  ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                  : 'bg-red-500/15 text-red-700 dark:text-red-400'
-              )}>
-                <span>Neto: <span className="font-bold">{medalData.playerNet}</span> vs <span className="font-bold">{medalData.rivalNet}</span></span>
-                <span className="font-bold">{medalData.rayasCount > 0 ? '+1' : '-1'} raya</span>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Empty state */}
-          {segmentDetails.length === 0 && (
+          {segmentDetails.length === 0 && unitEvents.length === 0 && oyesData.length === 0 && (
             <p className="text-[10px] text-muted-foreground text-center py-2">
               Sin rayas registradas en {segmentLabel}
             </p>
