@@ -1748,9 +1748,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               </div>
             </div>
 
-            {/* RIVALS area - right side, dynamic centered layout */}
+            {/* RIVALS area - right side, strict 2-col grid, centered in available height */}
             <div className="flex-1 pl-3 flex items-center justify-center">
-              <div className="flex flex-wrap justify-center items-center gap-3 w-full">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
                   const balance = getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
@@ -1762,16 +1762,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <button
                         onClick={() => setSelectedRival(isSelected ? null : rival.id)}
                         className={cn(
-                          'flex flex-col items-center gap-1 transition-all relative',
+                          'flex flex-col items-center gap-1.5 transition-all relative',
                           isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background rounded-lg'
                         )}
                       >
                         {hasOverride && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full z-10" />
                         )}
-                        {/* Pill-shaped initials label */}
+                        {/* Pill-shaped initials label - fixed width for uniformity */}
                         <div className={cn(
-                          'px-5 py-1.5 rounded-lg flex items-center justify-center font-bold text-sm transition-all',
+                          'w-20 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-all',
                           isSelected
                             ? 'bg-primary text-primary-foreground shadow-lg'
                             : rival.id === basePlayerId || rival.profileId === basePlayerId
@@ -1782,11 +1782,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         </div>
                         {/* Balance below */}
                         <div className={cn(
-                          'text-xs font-bold flex items-center gap-0.5',
+                          'text-sm font-bold flex items-center gap-0.5',
                           isSelected ? 'text-primary' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                         )}>
                           {balance !== 0 && (
-                            balance > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />
+                            balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
                           )}
                           ${Math.abs(balance)}
                         </div>
@@ -1815,9 +1815,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <DialogTrigger asChild>
                       <button
                         type="button"
-                        className="flex flex-col items-center gap-1 transition-all"
+                        className="flex flex-col items-center gap-1.5 transition-all"
                       >
-                        <div className="px-5 py-1.5 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
+                        <div className="w-20 h-8 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
                           <UserPlus className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <span className="text-[10px] text-muted-foreground">Grupo</span>
