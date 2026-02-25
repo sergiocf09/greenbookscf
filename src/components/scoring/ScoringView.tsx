@@ -191,8 +191,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
         {/* Floating Oyes Button — only on Par 3 */}
         {holePar === 3 && (
-          <div className="sticky bottom-24 flex justify-end pointer-events-none z-20 -mt-2 mb-2">
-            <div className="pointer-events-auto mr-1">
+          <div className="sticky bottom-24 flex justify-end pointer-events-none z-20 -mt-2 mb-2 pr-[4.5rem]">
+            <div className="pointer-events-auto">
               <OyesesDialog
                 players={getAllPlayersFromAllGroups(players, playerGroups)}
                 betConfig={betConfig}
@@ -218,7 +218,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
                   updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
                 }}
                 trigger={
-                  <button className="h-12 w-12 rounded-full bg-amber-500 text-white shadow-lg shadow-amber-500/30 flex items-center justify-center animate-pulse hover:animate-none hover:bg-amber-600 transition-colors">
+                  <button className="h-12 w-12 rounded-full bg-[hsl(155,100%,20%)] text-[hsl(50,95%,55%)] shadow-lg shadow-primary/30 border-2 border-[hsl(50,95%,55%)]/40 flex items-center justify-center animate-pulse hover:animate-none hover:brightness-110 transition-all">
                     <Target className="h-6 w-6" />
                   </button>
                 }
