@@ -8,7 +8,7 @@ import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2, DollarSign } from 'lucide-react';
+import { Check, CheckCircle2, DollarSign, Target } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
@@ -160,33 +160,73 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       {/* Hole Navigation */}
       <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
 
-      {/* Player Score Inputs */}
-      {displayPlayers.map(player => {
-        const playerScores = scores.get(player.id) || [];
-        const holeScore = playerScores.find(s => s.holeNumber === currentHole);
-        const isBasePlayer = player.profileId === profile?.id;
-        
-        return (
-          <PlayerScoreInput
-            key={player.id}
-            playerName={player.name}
-            playerInitials={disambiguatedInitials.get(player.id) || player.initials}
-            avatarColor={player.color}
-            holeNumber={currentHole}
-            par={holePar}
-            strokes={holeScore?.strokes ?? holePar}
-            putts={holeScore?.putts ?? 2}
-            markers={holeScore?.markers || defaultMarkerState}
-            onStrokesChange={(strokes) => updateScore(player.id, currentHole, { strokes })}
-            onPuttsChange={(putts) => updateScore(player.id, currentHole, { putts })}
-            onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
-            handicapStrokes={holeScore?.strokesReceived || 0}
-            isBasePlayer={isBasePlayer}
-            playerId={player.profileId || player.id}
-            basePlayerId={profile?.id}
-          />
-        );
-      })}
+      {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
+      <div className="relative">
+        {displayPlayers.map(player => {
+          const playerScores = scores.get(player.id) || [];
+          const holeScore = playerScores.find(s => s.holeNumber === currentHole);
+          const isBasePlayer = player.profileId === profile?.id;
+          
+          return (
+            <PlayerScoreInput
+              key={player.id}
+              playerName={player.name}
+              playerInitials={disambiguatedInitials.get(player.id) || player.initials}
+              avatarColor={player.color}
+              holeNumber={currentHole}
+              par={holePar}
+              strokes={holeScore?.strokes ?? holePar}
+              putts={holeScore?.putts ?? 2}
+              markers={holeScore?.markers || defaultMarkerState}
+              onStrokesChange={(strokes) => updateScore(player.id, currentHole, { strokes })}
+              onPuttsChange={(putts) => updateScore(player.id, currentHole, { putts })}
+              onMarkersChange={(markers) => updateScore(player.id, currentHole, { markers })}
+              handicapStrokes={holeScore?.strokesReceived || 0}
+              isBasePlayer={isBasePlayer}
+              playerId={player.profileId || player.id}
+              basePlayerId={profile?.id}
+            />
+          );
+        })}
+
+        {/* Floating Oyes Button — only on Par 3 */}
+        {holePar === 3 && (
+          <div className="sticky bottom-24 flex justify-end pointer-events-none z-20 -mt-2 mb-2">
+            <div className="pointer-events-auto mr-1">
+              <OyesesDialog
+                players={getAllPlayersFromAllGroups(players, playerGroups)}
+                betConfig={betConfig}
+                basePlayerId={profile?.id}
+                currentHole={currentHole}
+                isPar3={holePar === 3}
+                proximitiesAcumulado={new Map(
+                  getAllPlayersFromAllGroups(players, playerGroups).map(p => {
+                    const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
+                    return [p.id, hs?.oyesProximity ?? null];
+                  })
+                )}
+                onProximityAcumuladoChange={(playerId, proximity) => {
+                  updateScore(playerId, currentHole, { oyesProximity: proximity });
+                }}
+                proximitiesSangron={new Map(
+                  getAllPlayersFromAllGroups(players, playerGroups).map(p => {
+                    const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
+                    return [p.id, hs?.oyesProximitySangron ?? null];
+                  })
+                )}
+                onProximitySangronChange={(playerId, proximity) => {
+                  updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
+                }}
+                trigger={
+                  <button className="h-12 w-12 rounded-full bg-amber-500 text-white shadow-lg shadow-amber-500/30 flex items-center justify-center animate-pulse hover:animate-none hover:bg-amber-600 transition-colors">
+                    <Target className="h-6 w-6" />
+                  </button>
+                }
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Confirm Button */}
       <Button 
@@ -201,42 +241,11 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         )}
       </Button>
 
-      {/* Navigation Buttons, Oyes and Side Bets */}
+      {/* Navigation Buttons and Side Bets */}
       <div className="flex gap-2 pt-2">
         <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1 px-2 text-sm">
           ← Ant
         </Button>
-        
-        {/* Unified Oyes Button - shows on Par 3 when any Oyeses bet is active */}
-        <OyesesDialog
-          players={getAllPlayersFromAllGroups(players, playerGroups)}
-          betConfig={betConfig}
-          basePlayerId={profile?.id}
-          currentHole={currentHole}
-          isPar3={holePar === 3}
-          proximitiesAcumulado={new Map(
-            getAllPlayersFromAllGroups(players, playerGroups).map(p => {
-              const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
-              return [p.id, hs?.oyesProximity ?? null];
-            })
-          )}
-          onProximityAcumuladoChange={(playerId, proximity) => {
-            // Update ONLY Acumulado field - NO syncing to Sangrón
-            // These are independent fields with different meanings
-            updateScore(playerId, currentHole, { oyesProximity: proximity });
-          }}
-          proximitiesSangron={new Map(
-            getAllPlayersFromAllGroups(players, playerGroups).map(p => {
-              const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
-              return [p.id, hs?.oyesProximitySangron ?? null];
-            })
-          )}
-          onProximitySangronChange={(playerId, proximity) => {
-            // Update ONLY Sangrón field - NO syncing to Acumulado
-            // These are independent fields with different meanings
-            updateScore(playerId, currentHole, { oyesProximitySangron: proximity });
-          }}
-        />
         
         {/* Side Bets Button */}
         {onAddSideBet && (
