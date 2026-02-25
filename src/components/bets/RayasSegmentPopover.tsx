@@ -246,15 +246,15 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                       <span
                         key={i}
                         className={cn(
-                          'text-[9px] px-1 py-0.5 rounded text-center',
+                          'text-[9px] px-1 py-0.5 rounded flex items-center justify-center gap-1',
                           isPlayer
                             ? 'bg-green-500/15 text-green-700 dark:text-green-400'
                             : 'bg-red-500/15 text-red-700 dark:text-red-400'
                         )}
                       >
-                        <span className="font-semibold">H{evt.holeNumber}</span>{' '}
+                        <span className="font-semibold">H{evt.holeNumber}</span>
                         <span>{evt.label}</span>
-                        {evt.count > 1 && <span className="font-bold"> ×{evt.count}</span>}
+                        {evt.count > 1 && <span className="font-bold">×{evt.count}</span>}
                       </span>
                     );
                   })}
@@ -273,7 +273,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                     <span
                       key={i}
                       className={cn(
-                        'text-[9px] px-1 py-0.5 rounded text-center',
+                        'text-[9px] px-1 py-0.5 rounded flex items-center justify-center gap-1',
                         d.winner === 'player'
                           ? 'bg-green-500/15 text-green-700 dark:text-green-400'
                           : d.winner === 'rival'
@@ -281,8 +281,8 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                           : 'bg-muted/50 text-muted-foreground'
                       )}
                     >
-                      <span className="font-semibold">H{d.holeNumber}</span>{' '}
-                      {d.pProx ?? '-'} vs {d.rProx ?? '-'}
+                      <span className="font-semibold">H{d.holeNumber}</span>
+                      <span>{d.pProx ?? '-'} vs {d.rProx ?? '-'}</span>
                     </span>
                   ))}
                 </div>
