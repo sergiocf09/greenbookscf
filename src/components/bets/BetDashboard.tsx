@@ -1697,181 +1697,199 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       {/* Balance vs */}
       <Card>
-        <CardHeader className="py-3 space-y-2">
+        <CardHeader className="py-3 pb-0">
           <CardTitle className="text-sm flex items-center gap-2 min-w-0">
-            <span className="text-muted-foreground">Balance de</span>
+            <span className="text-muted-foreground">Balance</span>
             <span className="font-bold truncate">{formatPlayerName(basePlayer?.name || '—')}</span>
-            <span className="text-muted-foreground">vs:</span>
+            <span className="text-muted-foreground">vs</span>
           </CardTitle>
 
           {/* Show group indicator when in 'all' mode */}
           {tablaGeneralMode === 'all' && hasMultipleGroups && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
               <Users className="h-3 w-3" />
-              <span>
-                Grupo {displayGroupIndex + 1}
-              </span>
+              <span>Grupo {displayGroupIndex + 1}</span>
             </div>
           )}
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <span className="text-[10px] text-muted-foreground shrink-0">Base:</span>
-            {balanceVsPlayers.map((p) => {
-              // Compare directly with state, not with computed basePlayer (which can fallback)
-              const isActive = p.id === balanceBasePlayerId;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setBalanceBasePlayerId(p.id);
-                    setSelectedRival(null);
-                  }}
-                  className={cn(
-                    'shrink-0 rounded-full transition-all',
-                    isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'opacity-80 hover:opacity-100'
-                  )}
-                  aria-pressed={isActive}
-                >
-                  <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="md" className="w-9 h-9 text-sm" isLoggedInUser={p.id === basePlayerId} />
-                </button>
-              );
-            })}
-          </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {rivals.map(rival => {
-              const balance = getRivalBalance(rival.id);
-              const isSelected = selectedRival === rival.id;
-              const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
-              const hasOverride = !!pairHandicap;
-              const isCrossGroup = getCrossGroupRivalsForBase(basePlayer?.id).includes(rival.id);
-              return (
-                <div key={rival.id} className="relative">
+        <CardContent className="pt-3 space-y-3">
+          <div className="flex items-stretch gap-0">
+            {/* BASE column - left side */}
+            <div className="flex flex-col items-center gap-2 pr-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Base</span>
+              {balanceVsPlayers.map((p) => {
+                const isActive = p.id === balanceBasePlayerId;
+                return (
                   <button
-                    onClick={() => setSelectedRival(isSelected ? null : rival.id)}
-                    className={cn(
-                      'flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px] relative',
-                      isSelected 
-                        ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
-                        : 'bg-muted/50 hover:bg-muted',
-                      isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background'
-                    )}
-                  >
-                    {hasOverride && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
-                    )}
-                    <PlayerAvatar 
-                      initials={getPlayerAbbr(rival)} 
-                      background={isSelected ? 'rgba(255,255,255,0.2)' : rival.color} 
-                      size="lg" 
-                      className="w-14 h-14 text-lg mb-1"
-                      isLoggedInUser={rival.id === basePlayerId || rival.profileId === basePlayerId}
-                    />
-                    <div className={cn(
-                      'text-sm font-bold flex items-center gap-0.5',
-                      isSelected ? '' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {balance !== 0 && (
-                        balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
-                      )}
-                      ${Math.abs(balance)}
-                    </div>
-                  </button>
-                  {/* Remove cross-group rival button */}
-                  {isCrossGroup && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCrossGroupRivalsForBase(prev => prev.filter(id => id !== rival.id));
-                        if (selectedRival === rival.id) setSelectedRival(null);
-                      }}
-                      className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:bg-destructive/80"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-            
-            {/* Add cross-group player button */}
-            {availableCrossGroupPlayers.length > 0 && (
-              <Dialog open={showCrossGroupPicker} onOpenChange={setShowCrossGroupPicker}>
-                <DialogTrigger asChild>
-                  <button
+                    key={p.id}
                     type="button"
-                    className="flex flex-col items-center p-3 rounded-xl transition-all min-w-[70px] bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-muted-foreground/30"
-                  >
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center bg-muted/50 mb-1">
-                      <UserPlus className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <span className="text-xs text-muted-foreground">Otro Grupo</span>
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-sm">
-                  <DialogHeader>
-                    <DialogTitle className="text-base">Agregar Jugadores de Otros Grupos</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {playerGroups.map((group, groupIdx) => (
-                      <div key={group.id} className="space-y-2">
-                        <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {group.name}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {group.players.map(player => {
-                            const isAdded = getCrossGroupRivalsForBase(balanceBasePlayerId).includes(player.id);
-                            return (
-                              <button
-                                key={player.id}
-                                type="button"
-                                onClick={() => {
-                                  if (isAdded) {
-                                    setCrossGroupRivalsForBase(prev => prev.filter(id => id !== player.id));
-                                  } else {
-                                    setCrossGroupRivalsForBase(prev => [...prev, player.id]);
-                                  }
-                                }}
-                                className={cn(
-                                  'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
-                                  isAdded 
-                                    ? 'bg-primary text-primary-foreground' 
-                                    : 'bg-muted hover:bg-muted/80'
-                                )}
-                              >
-                                <PlayerAvatar 
-                                  initials={player.initials} 
-                                  background={player.color} 
-                                  size="sm" 
-                                  isLoggedInUser={player.id === basePlayerId}
-                                />
-                                <span className="text-sm font-medium">{formatPlayerName(player.name).split(' ')[0]}</span>
-                                {isAdded && <Check className="h-4 w-4" />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                    {playerGroups.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No hay otros grupos de juego
-                      </p>
+                    onClick={() => {
+                      setBalanceBasePlayerId(p.id);
+                      setSelectedRival(null);
+                    }}
+                    className={cn(
+                      'shrink-0 rounded-lg transition-all',
+                      isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'opacity-60 hover:opacity-100'
                     )}
-                  </div>
-                  <Button 
-                    onClick={() => setShowCrossGroupPicker(false)}
-                    className="w-full mt-2"
+                    aria-pressed={isActive}
                   >
-                    Listo
-                  </Button>
-                </DialogContent>
-              </Dialog>
-            )}
+                    <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="md" className="w-10 h-10 text-sm" isLoggedInUser={p.id === basePlayerId} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Vertical separator */}
+            <div className="w-px bg-border self-stretch mx-1" />
+
+            {/* RIVALS grid - right side, 2 per row, rectangular */}
+            <div className="flex-1 pl-3">
+              <div className="grid grid-cols-2 gap-2">
+                {rivals.map(rival => {
+                  const balance = getRivalBalance(rival.id);
+                  const isSelected = selectedRival === rival.id;
+                  const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
+                  const hasOverride = !!pairHandicap;
+                  const isCrossGroup = getCrossGroupRivalsForBase(basePlayer?.id).includes(rival.id);
+                  return (
+                    <div key={rival.id} className="relative">
+                      <button
+                        onClick={() => setSelectedRival(isSelected ? null : rival.id)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all relative',
+                          isSelected 
+                            ? 'bg-primary text-primary-foreground shadow-lg' 
+                            : 'bg-muted/50 hover:bg-muted',
+                          isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background'
+                        )}
+                      >
+                        {hasOverride && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
+                        )}
+                        {/* Rectangular avatar */}
+                        <div className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0',
+                          isSelected
+                            ? 'bg-white/20 text-primary-foreground'
+                            : rival.id === basePlayerId || rival.profileId === basePlayerId
+                              ? 'bg-augusta-green text-augusta-gold'
+                              : 'bg-white border-2 border-black text-black'
+                        )}>
+                          {getPlayerAbbr(rival)}
+                        </div>
+                        <div className="flex flex-col items-start min-w-0">
+                          <span className={cn(
+                            'text-xs font-medium truncate max-w-[80px]',
+                            isSelected ? 'text-primary-foreground' : 'text-foreground'
+                          )}>
+                            {formatPlayerName(rival.name).split(' ')[0]}
+                          </span>
+                          <div className={cn(
+                            'text-sm font-bold flex items-center gap-0.5',
+                            isSelected ? '' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
+                            {balance !== 0 && (
+                              balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
+                            )}
+                            ${Math.abs(balance)}
+                          </div>
+                        </div>
+                      </button>
+                      {/* Remove cross-group rival button */}
+                      {isCrossGroup && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCrossGroupRivalsForBase(prev => prev.filter(id => id !== rival.id));
+                            if (selectedRival === rival.id) setSelectedRival(null);
+                          }}
+                          className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:bg-destructive/80"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                
+                {/* Add cross-group player button */}
+                {availableCrossGroupPlayers.length > 0 && (
+                  <Dialog open={showCrossGroupPicker} onOpenChange={setShowCrossGroupPicker}>
+                    <DialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-muted-foreground/30"
+                      >
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted/50">
+                          <UserPlus className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <span className="text-xs text-muted-foreground">Otro Grupo</span>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle className="text-base">Agregar Jugadores de Otros Grupos</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 max-h-60 overflow-y-auto">
+                        {playerGroups.map((group, groupIdx) => (
+                          <div key={group.id} className="space-y-2">
+                            <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {group.name}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {group.players.map(player => {
+                                const isAdded = getCrossGroupRivalsForBase(balanceBasePlayerId).includes(player.id);
+                                return (
+                                  <button
+                                    key={player.id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (isAdded) {
+                                        setCrossGroupRivalsForBase(prev => prev.filter(id => id !== player.id));
+                                      } else {
+                                        setCrossGroupRivalsForBase(prev => [...prev, player.id]);
+                                      }
+                                    }}
+                                    className={cn(
+                                      'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
+                                      isAdded 
+                                        ? 'bg-primary text-primary-foreground' 
+                                        : 'bg-muted hover:bg-muted/80'
+                                    )}
+                                  >
+                                    <PlayerAvatar 
+                                      initials={player.initials} 
+                                      background={player.color} 
+                                      size="sm" 
+                                      isLoggedInUser={player.id === basePlayerId}
+                                    />
+                                    <span className="text-sm font-medium">{formatPlayerName(player.name).split(' ')[0]}</span>
+                                    {isAdded && <Check className="h-4 w-4" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                        {playerGroups.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No hay otros grupos de juego
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={() => setShowCrossGroupPicker(false)}
+                        className="w-full mt-2"
+                      >
+                        Listo
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Cross-group players info */}
