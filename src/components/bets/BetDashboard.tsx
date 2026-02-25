@@ -16,7 +16,8 @@ import {
   getSkinsEvolution,
 } from '@/lib/betCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
-import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey } from '@/lib/rayasCalculations';
+import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail } from '@/lib/rayasCalculations';
+import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { detectScoreBasedMarkers } from '@/lib/scoreDetection';
 import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
@@ -5478,9 +5479,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <div className="text-center">Medal</div>
                             </div>
                             
-                            {/* Front 9 row */}
-                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1">
-                              <div className="font-medium text-muted-foreground text-xs">Front 9</div>
+                            {/* Front 9 row - wrapped in popover */}
+                            <RayasSegmentPopover
+                              segment="front"
+                              player={player}
+                              rival={rival}
+                              confirmedScores={confirmedScores}
+                              course={course}
+                              betConfig={effectiveBetConfig}
+                              bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
+                              rayasDetails={rayasResult.details}
+                              basePlayerId={basePlayerId}
+                            >
+                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 cursor-pointer hover:bg-muted/20 rounded transition-colors">
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9 <span className="text-[8px]">🔍</span></div>
                               <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-600' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.front !== 0 ? skinsNet.front : '-'}
                               </div>
@@ -5494,6 +5506,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 {medalNet.front !== 0 ? medalNet.front : '-'}
                               </div>
                             </div>
+                            </RayasSegmentPopover>
                             
                             {/* Front 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
@@ -5510,9 +5523,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             </div>
 
                             
-                            {/* Back 9 row */}
-                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2">
-                              <div className="font-medium text-muted-foreground text-xs">Back 9</div>
+                            {/* Back 9 row - wrapped in popover */}
+                            <RayasSegmentPopover
+                              segment="back"
+                              player={player}
+                              rival={rival}
+                              confirmedScores={confirmedScores}
+                              course={course}
+                              betConfig={effectiveBetConfig}
+                              bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
+                              rayasDetails={rayasResult.details}
+                              basePlayerId={basePlayerId}
+                            >
+                            <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2 cursor-pointer hover:bg-muted/20 rounded transition-colors">
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9 <span className="text-[8px]">🔍</span></div>
                               <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-600' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
@@ -5526,6 +5550,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 {medalNet.back !== 0 ? medalNet.back : '-'}
                               </div>
                             </div>
+                            </RayasSegmentPopover>
                             
                             {/* Back 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
