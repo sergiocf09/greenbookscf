@@ -1783,7 +1783,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         {/* Balance below */}
                         <div className={cn(
                           'text-sm font-bold flex items-center gap-0.5',
-                          isSelected ? 'text-primary' : balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                         )}>
                           {balance !== 0 && (
                             balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
