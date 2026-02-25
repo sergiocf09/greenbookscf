@@ -1729,7 +1729,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     }}
                     className={cn(
                       'shrink-0 rounded-lg transition-all',
-                      isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'opacity-60 hover:opacity-100'
+                      isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-primary/20 bg-primary/20 rounded-full' : 'opacity-60 hover:opacity-100'
                     )}
                     aria-pressed={isActive}
                   >
