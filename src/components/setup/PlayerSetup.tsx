@@ -192,6 +192,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       // Step 5: Calculate Course Handicap for each player (pure math, no queries)
       const { calculateCourseHandicap } = await import('@/lib/usgaHandicap');
 
+      const handicapUpdates = new Map<string, number>();
+
       for (const { player, profileId } of validPlayers) {
         const handicapIndex = handicapByProfile.get(profileId);
         if (!handicapIndex || handicapIndex <= 0) {
@@ -212,8 +214,16 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           }
         }
 
-        updatePlayer(player.id, { handicap: finalHandicap });
+        handicapUpdates.set(player.id, finalHandicap);
         updated++;
+      }
+
+      // Apply all updates in a single onChange call to avoid stale closure
+      if (handicapUpdates.size > 0) {
+        onChange(players.map(p => {
+          const newHcp = handicapUpdates.get(p.id);
+          return newHcp !== undefined ? { ...p, handicap: newHcp } : p;
+        }));
       }
 
       // Count players with no profile
