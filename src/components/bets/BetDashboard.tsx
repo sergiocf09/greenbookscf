@@ -5492,7 +5492,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               basePlayerId={basePlayerId}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 cursor-pointer hover:bg-muted/20 rounded transition-colors">
-                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9 <span className="text-[8px]">🔍</span></div>
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9</div>
                               <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-600' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.front !== 0 ? skinsNet.front : '-'}
                               </div>
@@ -5536,7 +5536,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               basePlayerId={basePlayerId}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2 cursor-pointer hover:bg-muted/20 rounded transition-colors">
-                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9 <span className="text-[8px]">🔍</span></div>
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9</div>
                               <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-600' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
