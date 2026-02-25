@@ -131,7 +131,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     toast.success(`Handicap USGA ${handicap} aplicado a ${selectedPlayerForUSGA.name}`);
   };
 
-  // Bulk calculate Course Handicaps for all players using persisted Handicap Index
+  // Bulk calculate Course Handicaps for all players by recalculating from round history
   const handleBulkUSGACalculation = async () => {
     if (players.length === 0) return;
     setBulkCalculating(true);
@@ -147,7 +147,6 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         }))
       );
 
-      // Step 2: Collect valid profile IDs
       const validPlayers = profileIdResults.filter(r => r.profileId !== null) as {
         player: Player;
         profileId: string;
@@ -159,21 +158,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         return;
       }
 
-      // Step 3: Batch-fetch current_handicap from profiles (1 query)
-      const profileIds = validPlayers.map(v => v.profileId);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, current_handicap')
-        .in('id', profileIds);
-
-      const handicapByProfile = new Map<string, number>();
-      (profiles || []).forEach(p => {
-        if (p.current_handicap > 0) {
-          handicapByProfile.set(p.id, Number(p.current_handicap));
-        }
-      });
-
-      // Step 4: If course selected, batch-fetch tee data + par (2 queries max)
+      // Step 2: If course selected, batch-fetch tee data + par
       let courseTeesMap = new Map<string, { courseRating: number; slopeRating: number }>();
       let coursePar = 72;
 
@@ -189,15 +174,26 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         coursePar = (holesResult.data || []).reduce((sum, h) => sum + h.par, 0) || 72;
       }
 
-      // Step 5: Calculate Course Handicap for each player (pure math, no queries)
-      const { calculateCourseHandicap } = await import('@/lib/usgaHandicap');
+      // Step 3: Calculate full USGA Handicap Index for each player from round history
+      const { calculateHandicapIndexForProfile, calculateCourseHandicap } = await import('@/lib/usgaHandicap');
 
       const handicapUpdates = new Map<string, number>();
 
-      for (const { player, profileId } of validPlayers) {
-        const handicapIndex = handicapByProfile.get(profileId);
-        if (!handicapIndex || handicapIndex <= 0) {
-          console.warn(`[BulkUSGA] No persisted Handicap Index for: ${player.name}`);
+      // Process all players in parallel
+      const results = await Promise.all(
+        validPlayers.map(async ({ player, profileId }) => {
+          try {
+            const handicapIndex = await calculateHandicapIndexForProfile(profileId);
+            return { player, profileId, handicapIndex };
+          } catch (err) {
+            console.warn(`[BulkUSGA] Error calculating for ${player.name}:`, err);
+            return { player, profileId, handicapIndex: null };
+          }
+        })
+      );
+
+      for (const { player, handicapIndex } of results) {
+        if (handicapIndex === null) {
           skipped++;
           continue;
         }
@@ -218,7 +214,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         updated++;
       }
 
-      // Apply all updates in a single onChange call to avoid stale closure
+      // Apply all updates in a single onChange call
       if (handicapUpdates.size > 0) {
         onChange(players.map(p => {
           const newHcp = handicapUpdates.get(p.id);
