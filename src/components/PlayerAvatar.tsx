@@ -19,20 +19,30 @@ interface PlayerAvatarProps {
   isLoggedInUser?: boolean;
 }
 
-export function PlayerAvatar({
-  initials,
-  background,
-  size = "md",
-  className,
-  isLoggedInUser = false,
-}: PlayerAvatarProps) {
-  // If logged-in user: Augusta green background + Augusta gold text
-  // Otherwise: black border, white fill, black text (simple style)
-  if (isLoggedInUser) {
+export const PlayerAvatar = React.forwardRef<HTMLDivElement, PlayerAvatarProps>(
+  ({ initials, background, size = "md", className, isLoggedInUser = false }, ref) => {
+    if (isLoggedInUser) {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            "rounded-full flex items-center justify-center font-bold bg-augusta-green text-augusta-gold",
+            sizeClasses[size],
+            className
+          )}
+          aria-label={`Jugador ${initials}`}
+        >
+          {initials}
+        </div>
+      );
+    }
+
     return (
       <div
+        ref={ref}
         className={cn(
-          "rounded-full flex items-center justify-center font-bold bg-augusta-green text-augusta-gold",
+          "rounded-full flex items-center justify-center font-bold",
+          "bg-white border-2 border-black text-black",
           sizeClasses[size],
           className
         )}
@@ -42,19 +52,6 @@ export function PlayerAvatar({
       </div>
     );
   }
+);
 
-  // Simple style for all other players: black ring, white fill, black text
-  return (
-    <div
-      className={cn(
-        "rounded-full flex items-center justify-center font-bold",
-        "bg-white border-2 border-black text-black",
-        sizeClasses[size],
-        className
-      )}
-      aria-label={`Jugador ${initials}`}
-    >
-      {initials}
-    </div>
-  );
-}
+PlayerAvatar.displayName = "PlayerAvatar";
