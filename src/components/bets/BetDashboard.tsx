@@ -2340,7 +2340,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     };
 
                     return (
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                      <div className="flex justify-between gap-y-0.5 text-[11px] text-muted-foreground w-full">
                         {parts.map((part, i) => {
                           const isUnitsLine = part.includes('Unidades');
                           const isOyesesLine = part.includes('Oyeses');
@@ -2359,7 +2359,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                       {/* Team A */}
                                       <div>
-                                        <p className="font-medium text-green-600 mb-1">Pareja A ({unitsDetail.totalA})</p>
+                                        <p className="font-medium text-green-600 mb-1">Tu equipo ({unitsDetail.totalA})</p>
                                         {unitsDetail.hitsA.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
                                         {unitsDetail.hitsA.map((h, hi) => (
                                           <p key={hi} className="text-green-600 text-[10px] flex items-center gap-1">
@@ -2373,7 +2373,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       <div className="w-px bg-border" />
                                       {/* Team B */}
                                       <div>
-                                        <p className="font-medium text-destructive mb-1">Pareja B ({unitsDetail.totalB})</p>
+                                        <p className="font-medium text-destructive mb-1">Rival ({unitsDetail.totalB})</p>
                                         {unitsDetail.hitsB.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
                                         {unitsDetail.hitsB.map((h, hi) => (
                                           <p key={hi} className="text-destructive text-[10px] flex items-center gap-1">
@@ -2415,7 +2415,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                       {/* Team A column */}
                                       <div>
-                                        <p className="font-medium text-green-600 mb-1">Pareja A ({oyesesDetail.winsA})</p>
+                                        <p className="font-medium text-green-600 mb-1">Tu equipo ({oyesesDetail.winsA})</p>
                                         {oyesesDetail.par3Holes.map(holeNum => {
                                           const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
                                           const isTeamAWin = win && resolvedTeamA.includes(win.winnerId);
@@ -2438,7 +2438,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       <div className="w-px bg-border" />
                                       {/* Team B column */}
                                       <div>
-                                        <p className="font-medium text-destructive mb-1">Pareja B ({oyesesDetail.winsB})</p>
+                                        <p className="font-medium text-destructive mb-1">Rival ({oyesesDetail.winsB})</p>
                                         {oyesesDetail.par3Holes.map(holeNum => {
                                           const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
                                           const isTeamBWin = win && resolvedTeamB.includes(win.winnerId);
