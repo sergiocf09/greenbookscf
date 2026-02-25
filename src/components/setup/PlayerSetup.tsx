@@ -140,97 +140,110 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
 
     try {
       for (const player of players) {
-        const profileId = await getProfileIdForPlayer(player);
-        if (!profileId) {
-          skipped++;
-          continue;
-        }
-
-        // Fetch completed rounds for this player
-        const { data: roundPlayers } = await supabase
-          .from('round_players')
-          .select(`
-            id, tee_color,
-            rounds!inner (id, date, status, course_id, tee_color, golf_courses!inner (id, name))
-          `)
-          .eq('profile_id', profileId)
-          .eq('rounds.status', 'completed')
-          .order('rounds(date)', { ascending: false });
-
-        if (!roundPlayers || roundPlayers.length === 0) {
-          skipped++;
-          continue;
-        }
-
-        const differentials: number[] = [];
-
-        for (const rp of roundPlayers.slice(0, 20)) {
-          const round = (rp as any).rounds;
-          const course = round.golf_courses;
-          const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
-
-          const { data: holeScores } = await supabase
-            .from('hole_scores')
-            .select('strokes, confirmed')
-            .eq('round_player_id', rp.id)
-            .eq('confirmed', true)
-            .not('strokes', 'is', null);
-
-          if (!holeScores || holeScores.length < 18) continue;
-
-          const { data: teeData } = await supabase
-            .from('course_tees')
-            .select('course_rating, slope_rating')
-            .eq('course_id', course.id)
-            .eq('tee_color', playerTeeColor)
-            .maybeSingle();
-
-          const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
-          const courseRating = teeData?.course_rating || 72;
-          const slopeRating = teeData?.slope_rating || 113;
-          const diff = ((totalStrokes - courseRating) * 113) / slopeRating;
-          differentials.push(Math.round(diff * 10) / 10);
-        }
-
-        if (differentials.length < 3) {
-          skipped++;
-          continue;
-        }
-
-        // Calculate handicap index
-        const { calculateHandicapIndexFromDifferentials } = await import('@/lib/usgaHandicap');
-        const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
-        if (handicapIndex === null) {
-          skipped++;
-          continue;
-        }
-
-        // Calculate course handicap if course is selected
-        let finalHandicap = Math.round(handicapIndex);
-        if (courseId) {
-          const playerTee = player.teeColor || defaultTeeColor;
-          const { data: teeData } = await supabase
-            .from('course_tees')
-            .select('course_rating, slope_rating')
-            .eq('course_id', courseId)
-            .eq('tee_color', playerTee)
-            .maybeSingle();
-
-          const { data: holes } = await supabase
-            .from('course_holes')
-            .select('par')
-            .eq('course_id', courseId);
-
-          if (teeData && holes) {
-            const coursePar = holes.reduce((sum, h) => sum + h.par, 0);
-            finalHandicap = Math.round(
-              handicapIndex * (teeData.slope_rating / 113) + (teeData.course_rating - coursePar)
-            );
+        try {
+          const profileId = await getProfileIdForPlayer(player);
+          if (!profileId) {
+            console.warn(`[BulkUSGA] No profileId for: ${player.name}`);
+            skipped++;
+            continue;
           }
-        }
 
-        updatePlayer(player.id, { handicap: finalHandicap });
-        updated++;
+          // Fetch completed rounds for this player
+          const { data: roundPlayers, error: rpError } = await supabase
+            .from('round_players')
+            .select(`
+              id, tee_color,
+              rounds!inner (id, date, status, course_id, tee_color, golf_courses!inner (id, name))
+            `)
+            .eq('profile_id', profileId)
+            .eq('rounds.status', 'completed')
+            .order('rounds(date)', { ascending: false });
+
+          if (rpError) {
+            console.error(`[BulkUSGA] Query error for ${player.name}:`, rpError);
+            skipped++;
+            continue;
+          }
+
+          if (!roundPlayers || roundPlayers.length === 0) {
+            console.warn(`[BulkUSGA] No completed rounds for: ${player.name}`);
+            skipped++;
+            continue;
+          }
+
+          const differentials: number[] = [];
+
+          for (const rp of roundPlayers.slice(0, 20)) {
+            const round = (rp as any).rounds;
+            const course = round.golf_courses;
+            const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
+
+            const { data: holeScores } = await supabase
+              .from('hole_scores')
+              .select('strokes, confirmed')
+              .eq('round_player_id', rp.id)
+              .eq('confirmed', true)
+              .not('strokes', 'is', null);
+
+            if (!holeScores || holeScores.length < 18) continue;
+
+            const { data: teeData } = await supabase
+              .from('course_tees')
+              .select('course_rating, slope_rating')
+              .eq('course_id', course.id)
+              .eq('tee_color', playerTeeColor)
+              .maybeSingle();
+
+            const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
+            const courseRating = teeData?.course_rating || 72;
+            const slopeRating = teeData?.slope_rating || 113;
+            const diff = ((totalStrokes - courseRating) * 113) / slopeRating;
+            differentials.push(Math.round(diff * 10) / 10);
+          }
+
+          if (differentials.length < 3) {
+            skipped++;
+            continue;
+          }
+
+          // Calculate handicap index
+          const { calculateHandicapIndexFromDifferentials } = await import('@/lib/usgaHandicap');
+          const handicapIndex = calculateHandicapIndexFromDifferentials(differentials);
+          if (handicapIndex === null) {
+            skipped++;
+            continue;
+          }
+
+          // Calculate course handicap if course is selected
+          let finalHandicap = Math.round(handicapIndex);
+          if (courseId) {
+            const playerTee = player.teeColor || defaultTeeColor;
+            const { data: teeData } = await supabase
+              .from('course_tees')
+              .select('course_rating, slope_rating')
+              .eq('course_id', courseId)
+              .eq('tee_color', playerTee)
+              .maybeSingle();
+
+            const { data: holes } = await supabase
+              .from('course_holes')
+              .select('par')
+              .eq('course_id', courseId);
+
+            if (teeData && holes) {
+              const coursePar = holes.reduce((sum, h) => sum + h.par, 0);
+              finalHandicap = Math.round(
+                handicapIndex * (teeData.slope_rating / 113) + (teeData.course_rating - coursePar)
+              );
+            }
+          }
+
+          updatePlayer(player.id, { handicap: finalHandicap });
+          updated++;
+        } catch (playerErr) {
+          console.error(`[BulkUSGA] Error for ${player.name}:`, playerErr);
+          skipped++;
+        }
       }
 
       if (updated > 0) {
@@ -242,7 +255,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         toast.info(`${skipped} jugador${skipped !== 1 ? 'es' : ''} sin historial suficiente`);
       }
     } catch (err) {
-      console.error('Error in bulk USGA calculation:', err);
+      console.error('[BulkUSGA] Critical error:', err);
       toast.error('Error al calcular handicaps');
     } finally {
       setBulkCalculating(false);
@@ -397,85 +410,91 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
         }).map((player, index) => (
           <div 
             key={player.id}
-            className="flex items-center gap-2 bg-card border border-border rounded-lg p-2"
+            className="bg-card border border-border rounded-lg p-2 space-y-1"
           >
-            <PlayerAvatar
-              initials={disambiguatedInitials.get(player.id) || player.initials}
-              background={player.color || ''}
-              size="md"
-              isLoggedInUser={!!(profile && (player.profileId === profile.id || player.id.startsWith('organizer')))}
-            />
-            
-            <div className="flex-1 min-w-0">
-              <Input
-                value={player.name || ''}
-                maxLength={100}
-                onChange={(e) => {
-                  const raw = e.target.value.slice(0, 100);
-                  let initials = player.initials;
-                  try {
-                    initials = initialsFromPlayerName(raw);
-                  } catch {
-                    // While typing, it's ok if initials can't be derived yet.
-                  }
-                  updatePlayer(player.id, {
-                    name: raw,
-                    initials,
-                  });
-                }}
-                className="h-7 text-sm"
-                placeholder="Nombre del jugador"
+            {/* Row 1: Avatar + Name + Delete */}
+            <div className="flex items-center gap-2">
+              <PlayerAvatar
+                initials={disambiguatedInitials.get(player.id) || player.initials}
+                background={player.color || ''}
+                size="md"
+                isLoggedInUser={!!(profile && (player.profileId === profile.id || player.id.startsWith('organizer')))}
               />
+              
+              <div className="flex-1 min-w-0">
+                <Input
+                  value={player.name || ''}
+                  maxLength={100}
+                  onChange={(e) => {
+                    const raw = e.target.value.slice(0, 100);
+                    let initials = player.initials;
+                    try {
+                      initials = initialsFromPlayerName(raw);
+                    } catch {
+                      // While typing, it's ok if initials can't be derived yet.
+                    }
+                    updatePlayer(player.id, {
+                      name: raw,
+                      initials,
+                    });
+                  }}
+                  className="h-7 text-sm"
+                  placeholder="Nombre del jugador"
+                />
+              </div>
+
+              {/* Hide delete button for organizer - organizer cannot be removed */}
+              {!isPlayerOrganizer(player) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => removePlayer(player.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
-            {/* Tee Selector */}
-            <div className="flex items-center gap-1">
-              <Label className="text-[10px] text-muted-foreground">Tee</Label>
-              <select
-                value={player.teeColor || defaultTeeColor}
-                onChange={(e) => updatePlayer(player.id, { teeColor: e.target.value })}
-                className="h-7 w-20 text-xs rounded border border-border bg-background px-1"
-              >
-                {TEE_OPTIONS.map((tee) => (
-                  <option key={tee.value} value={tee.value}>
-                    {tee.label}
-                  </option>
-                ))}
-              </select>
+            {/* Row 2: Tee + HCP + USGA calc */}
+            <div className="flex items-center gap-2 pl-10">
+              {/* Tee Selector */}
+              <div className="flex items-center gap-1">
+                <Label className="text-[10px] text-muted-foreground">Tee</Label>
+                <select
+                  value={player.teeColor || defaultTeeColor}
+                  onChange={(e) => updatePlayer(player.id, { teeColor: e.target.value })}
+                  className="h-7 w-20 text-xs rounded border border-border bg-background px-1"
+                >
+                  {TEE_OPTIONS.map((tee) => (
+                    <option key={tee.value} value={tee.value}>
+                      {tee.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Label className="text-[10px] text-muted-foreground">HCP</Label>
+                <Input
+                  type="number"
+                  value={player.handicap}
+                  onChange={(e) => updatePlayer(player.id, { handicap: parseInt(e.target.value) || 0 })}
+                  className="h-7 w-14 text-sm text-center"
+                  min={0}
+                  max={54}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-primary"
+                  onClick={() => handleOpenUSGADialog(player)}
+                  title="Calcular handicap USGA"
+                >
+                  <Calculator className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-1">
-              <Label className="text-[10px] text-muted-foreground">HCP</Label>
-              <Input
-                type="number"
-                value={player.handicap}
-                onChange={(e) => updatePlayer(player.id, { handicap: parseInt(e.target.value) || 0 })}
-                className="h-7 w-14 text-sm text-center"
-                min={0}
-                max={54}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-primary"
-                onClick={() => handleOpenUSGADialog(player)}
-                title="Calcular handicap USGA"
-              >
-                <Calculator className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            
-            {/* Hide delete button for organizer - organizer cannot be removed */}
-            {!isPlayerOrganizer(player) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={() => removePlayer(player.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         ))}
       </div>
