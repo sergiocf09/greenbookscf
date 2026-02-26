@@ -1100,6 +1100,35 @@ export const useRoundManagement = ({
       );
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
 
+      // ─── SIDE BETS DIAGNOSTIC LOG ───────────────────────────────────────────
+      {
+        const sideBetsConfig = betConfigWithHandicaps.sideBets;
+        const sideBetsInConfig = sideBetsConfig?.bets?.length ?? 0;
+        const validSideBetsInConfig = sideBetsConfig?.bets?.filter(b => b.winners?.length > 0 && b.losers?.length > 0 && b.amount > 0 && !b.deleted).length ?? 0;
+        const sideBetSummaries = allBetResults.filter(r => r.betType === 'Side Bet');
+        const sideBetSummaryCount = sideBetSummaries.length;
+        const sideBetTotal = sideBetSummaries.filter(r => r.amount > 0).reduce((s, r) => s + r.amount, 0);
+        devLog('[CLOSE] Side Bets diagnostic', {
+          enabled: sideBetsConfig?.enabled ?? false,
+          totalInConfig: sideBetsInConfig,
+          validInConfig: validSideBetsInConfig,
+          summariesGenerated: sideBetSummaryCount,
+          totalPositiveAmount: sideBetTotal,
+          configBets: sideBetsConfig?.bets?.map(b => ({
+            id: b.id,
+            winners: b.winners,
+            losers: b.losers,
+            amount: b.amount,
+            description: b.description,
+            deleted: b.deleted,
+          })) ?? [],
+        });
+        if (sideBetsConfig?.enabled && validSideBetsInConfig > 0 && sideBetSummaryCount === 0) {
+          devWarn('[CLOSE] ⚠️ Side Bets enabled with valid bets but NO summaries generated!');
+        }
+      }
+      // ─── END SIDE BETS DIAGNOSTIC ──────────────────────────────────────────
+
       // ─── POINT 5: Enriched Logging — Player Summaries ───────────────────────
       report.playerSummaries = sanitizedPlayers.map((p): ClosePlayerSummary => ({
         id: p.id,
