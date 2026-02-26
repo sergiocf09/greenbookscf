@@ -288,7 +288,7 @@ export function generateRoundSnapshot(
     // Since we only process amount > 0 (winner's perspective), directionality is
     // inherently preserved: playerId=winner, vsPlayer=loser.
     // Use '::' separator to avoid partial-match collisions between substrings.
-    const pairKey = `${summary.playerId}::${summary.vsPlayer}::${summary.betType}::${summary.segment}::${summary.holeNumber ?? 0}::${summary.description ?? ''}::${summary.amount}`;
+    const pairKey = `${summary.playerId}::${summary.vsPlayer}::${summary.betType}::${summary.segment}::${summary.holeNumber ?? 0}::${summary.description ?? ''}::${summary.amount}::${summary.betId ?? ''}`;
     
     if (processedPairs.has(pairKey)) continue;
     processedPairs.add(pairKey);

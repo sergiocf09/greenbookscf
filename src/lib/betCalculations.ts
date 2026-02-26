@@ -1856,6 +1856,7 @@ export const calculateSideBets = (
           amount: bet.amount,
           segment: 'total',
           description: bet.description || 'Side Bet',
+          betId: bet.id,
         });
         summaries.push({
           playerId: loserId,
@@ -1864,6 +1865,7 @@ export const calculateSideBets = (
           amount: -bet.amount,
           segment: 'total',
           description: bet.description || 'Side Bet',
+          betId: bet.id,
         });
       });
     });
