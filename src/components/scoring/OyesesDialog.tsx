@@ -6,7 +6,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Target, Zap, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getOyesModalityForPair, hasAnySangronPairs } from '@/lib/rayasCalculations';
-import { formatPlayerNameShort } from '@/lib/playerInput';
+import { formatPlayerNameShort, disambiguateInitials } from '@/lib/playerInput';
 
 interface OyesesDialogProps {
   players: Player[];
@@ -101,6 +101,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('acumulado');
+  const disambiguatedInitials = useMemo(() => disambiguateInitials(players), [players]);
 
   // Check if Oyeses is enabled at all
   const oyesesEnabled = useMemo(() => isOyesesEnabled(betConfig), [betConfig]);
@@ -355,7 +356,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                   <div key={player.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-shrink">
                       <PlayerAvatar 
-                        initials={player.initials} 
+                        initials={disambiguatedInitials.get(player.id) || player.initials} 
                         background={player.color} 
                         size="sm" 
                         isLoggedInUser={isLoggedInUser}
