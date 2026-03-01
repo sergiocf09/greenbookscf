@@ -436,12 +436,12 @@ export const useBetConfigPersistence = ({
       }
 
       savingRef.current = true;
-      const { data: updated, error } = await supabase
-        .from('rounds')
-        .update({ bet_config: JSON.parse(JSON.stringify(configToSave)) })
-        .eq('id', roundId)
-        .select('updated_at')
-        .single();
+      // Use RPC so ANY participant (not just organizer) can persist bet_config
+      const { data: updatedAt, error } = await supabase
+        .rpc('update_round_bet_config', {
+          p_round_id: roundId,
+          p_bet_config: JSON.parse(JSON.stringify(configToSave)),
+        });
 
       savingRef.current = false;
 
@@ -449,6 +449,8 @@ export const useBetConfigPersistence = ({
         devError('Error saving bet config:', error);
         return;
       }
+
+      const updated = { updated_at: updatedAt as string | null };
 
       // Register our own save timestamp so we can suppress its Realtime echo
       if (updated?.updated_at) {
