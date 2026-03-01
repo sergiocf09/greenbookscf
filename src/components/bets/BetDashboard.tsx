@@ -280,12 +280,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           // be applied to cross-group calculations. They have different playerAId/playerBId
           // but the betType matching can still produce wrong amount multiplications.
           betOverrides: [],
-          // Clear participantIds so both cross-group players are always included
-          medal: { ...effectiveBetConfig.medal, participantIds: [] },
-          pressures: { ...effectiveBetConfig.pressures, participantIds: [] },
-          skins: { ...effectiveBetConfig.skins, participantIds: [] },
-          caros: { ...effectiveBetConfig.caros, participantIds: [] },
-          units: { ...effectiveBetConfig.units, participantIds: [] },
+          // Clear groupBetOverrides so group-specific config doesn't interfere
+          groupBetOverrides: {},
+          // Clear participantIds so both cross-group players are always included.
+          // CRITICAL: Use `undefined` (not `[]`), because `[]` means "nobody participates"
+          // in resolveParticipantsForGroup, while `undefined` means "everyone participates".
+          medal: { ...effectiveBetConfig.medal, participantIds: undefined },
+          pressures: { ...effectiveBetConfig.pressures, participantIds: undefined },
+          skins: { ...effectiveBetConfig.skins, participantIds: undefined },
+          caros: { ...effectiveBetConfig.caros, participantIds: undefined },
+          units: { ...effectiveBetConfig.units, participantIds: undefined },
+          putts: { ...effectiveBetConfig.putts, participantIds: undefined },
+          stableford: { ...effectiveBetConfig.stableford, participantIds: undefined },
+          medalGeneral: { ...effectiveBetConfig.medalGeneral, participantIds: undefined },
           // Disable group-scoped bets for cross-group pairs
           manchas: { ...effectiveBetConfig.manchas, enabled: false },
           culebras: { ...effectiveBetConfig.culebras, enabled: false },
