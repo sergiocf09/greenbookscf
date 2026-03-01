@@ -1150,7 +1150,7 @@ export const calculateUnitsBets = (
   const countUnits = (playerId: string): { positive: number; negative: number } => {
     const playerScores = scores.get(playerId) || [];
     let positive = 0;
-    let negative = 0;
+    const negative = 0; // Cuatriput is NOT counted here — it's handled by Manchas
     
     playerScores.forEach(score => {
       // Skip if strokes is not a valid positive number
@@ -1168,9 +1168,6 @@ export const calculateUnitsBets = (
       if (score.markers?.sandyPar) positive += 1;
       if (score.markers?.aquaPar) positive += 1;
       if (score.markers?.holeOut) positive += 1;
-      
-      // Negative units - Cuatriput (4+ putts)
-      if (score.putts && score.putts >= 4) negative += 1;
     });
     
     return { positive, negative };
