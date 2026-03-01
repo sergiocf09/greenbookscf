@@ -1189,6 +1189,10 @@ export type Database = {
           initials: string
         }[]
       }
+      update_round_bet_config: {
+        Args: { p_bet_config: Json; p_round_id: string }
+        Returns: string
+      }
     }
     Enums: {
       bet_type:

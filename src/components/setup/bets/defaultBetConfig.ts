@@ -26,6 +26,10 @@ export const defaultBetConfig: BetConfig = {
   coneja: { enabled: false, amount: 50, handicapMode: 'individual' },
   carritosTeams: [],
   betOverrides: [],
+  bilateralHandicaps: [],
+  crossGroupRivals: {},
+  groupBetOverrides: {},
+  disabledTeamBetIds: [],
   // NEW BET TYPES
   putts: { enabled: false, frontAmount: 50, backAmount: 50, totalAmount: 100 },
   sideBets: { enabled: false, bets: [] },
