@@ -1685,71 +1685,73 @@ export const useRoundManagement = ({
           }).then(() => {})
         ));
 
-        // Recalculate USGA Handicap Index for each registered player
-        for (const player of registeredPlayers) {
-          try {
-            const { data: rpHistory } = await supabase
-              .from('round_players')
-              .select(`id, tee_color, handicap_for_round,
-                rounds!inner ( id, date, status, course_id, tee_color, golf_courses!inner ( id, name ) )`)
-              .eq('profile_id', player.profileId!)
-              .eq('rounds.status', 'completed')
-              .order('rounds(date)', { ascending: false })
-              .limit(20);
+        // Recalculate USGA Handicap Index for each registered player (parallel per player)
+        await Promise.all(
+          registeredPlayers.map(async (player) => {
+            try {
+              const { data: rpHistory } = await supabase
+                .from('round_players')
+                .select(`id, tee_color, handicap_for_round,
+                  rounds!inner ( id, date, status, course_id, tee_color, golf_courses!inner ( id, name ) )`)
+                .eq('profile_id', player.profileId!)
+                .eq('rounds.status', 'completed')
+                .order('rounds(date)', { ascending: false })
+                .limit(20);
 
-            if (!rpHistory?.length) continue;
+              if (!rpHistory?.length) return;
 
-            const diffs: number[] = [];
-            for (const rp of rpHistory) {
-              const rd = (rp as any).rounds;
-              const crs = rd.golf_courses;
-              const tee = (rp as any).tee_color || rd.tee_color || 'white';
-              const hcpUsed = Number((rp as any).handicap_for_round) || 0;
+              const diffs: number[] = [];
+              for (const rp of rpHistory) {
+                const rd = (rp as any).rounds;
+                const crs = rd.golf_courses;
+                const tee = (rp as any).tee_color || rd.tee_color || 'white';
+                const hcpUsed = Number((rp as any).handicap_for_round) || 0;
 
-              const { data: hs } = await supabase
-                .from('hole_scores')
-                .select('hole_number, strokes, confirmed')
-                .eq('round_player_id', rp.id)
-                .eq('confirmed', true)
-                .not('strokes', 'is', null)
-                .order('hole_number');
-              if (!hs || hs.length < 18) continue;
+                const { data: hs } = await supabase
+                  .from('hole_scores')
+                  .select('hole_number, strokes, confirmed')
+                  .eq('round_player_id', rp.id)
+                  .eq('confirmed', true)
+                  .not('strokes', 'is', null)
+                  .order('hole_number');
+                if (!hs || hs.length < 18) continue;
 
-              const ch = await getCourseHolesCached(crs.id);
-              if (!ch || ch.length < 18) continue;
+                const ch = await getCourseHolesCached(crs.id);
+                if (!ch || ch.length < 18) continue;
 
-              const td = await getCourseTeeCached(crs.id, tee);
-              const cr = td?.course_rating || 72;
-              const sr = td?.slope_rating || 113;
+                const td = await getCourseTeeCached(crs.id, tee);
+                const cr = td?.course_rating || 72;
+                const sr = td?.slope_rating || 113;
 
-              const holePars = ch.map(h => h.par);
-              const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
-              for (const s of hs) {
-                if (s.hole_number >= 1 && s.hole_number <= 18) holeStrokesArr[s.hole_number - 1] = s.strokes;
+                const holePars = ch.map(h => h.par);
+                const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+                for (const s of hs) {
+                  if (s.hole_number >= 1 && s.hole_number <= 18) holeStrokesArr[s.hole_number - 1] = s.strokes;
+                }
+
+                const minCourse = {
+                  id: crs.id, name: crs.name, location: '',
+                  holes: ch.map(h => ({ number: h.hole_number, par: h.par, handicapIndex: h.stroke_index })),
+                } as any;
+
+                const sph = calcSPH(hcpUsed, minCourse);
+                const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
+                diffs.push(calculateDifferential(ags, cr, sr));
               }
 
-              const minCourse = {
-                id: crs.id, name: crs.name, location: '',
-                holes: ch.map(h => ({ number: h.hole_number, par: h.par, handicapIndex: h.stroke_index })),
-              } as any;
-
-              const sph = calcSPH(hcpUsed, minCourse);
-              const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
-              diffs.push(calculateDifferential(ags, cr, sr));
+              const newIndex = calcHI(diffs);
+              if (newIndex !== null && Number.isFinite(newIndex) && newIndex >= 0 && newIndex <= 54) {
+                await supabase
+                  .from('profiles')
+                  .update({ current_handicap: newIndex })
+                  .eq('id', player.profileId);
+                devLog(`[CloseUSGA] ${player.name}: new Handicap Index = ${newIndex}`);
+              }
+            } catch (usgaErr) {
+              devError(`[CloseUSGA] Error recalculating index for ${player.name}:`, usgaErr);
             }
-
-            const newIndex = calcHI(diffs);
-            if (newIndex !== null && Number.isFinite(newIndex) && newIndex >= 0 && newIndex <= 54) {
-              await supabase
-                .from('profiles')
-                .update({ current_handicap: newIndex })
-                .eq('id', player.profileId);
-              devLog(`[CloseUSGA] ${player.name}: new Handicap Index = ${newIndex}`);
-            }
-          } catch (usgaErr) {
-            devError(`[CloseUSGA] Error recalculating index for ${player.name}:`, usgaErr);
-          }
-        }
+          })
+        );
         pushStageOk(report, 'saveHandicapHistory');
       } catch (e) {
         // Not fatal to closing.
@@ -1793,24 +1795,30 @@ export const useRoundManagement = ({
               devLog(`Saved sliding history for ${slidingResults.length} pairs`);
             }
 
-            // Update sliding_current for each pair
-            for (const result of slidingResults) {
-              const { error: slidingCurrError } = await supabase
-                .from('sliding_current')
-                .upsert({
-                  player_a_profile_id: result.playerAProfileId,
-                  player_b_profile_id: result.playerBProfileId,
-                  strokes_a_gives_b_current: result.strokesNext,
-                  last_round_id: roundState.id,
-                  last_updated_at: new Date().toISOString(),
-                }, {
-                  onConflict: 'player_a_profile_id,player_b_profile_id',
-                });
+            // Update sliding_current for each pair (parallel for faster close)
+            await Promise.all(
+              slidingResults.map(async (result) => {
+                const { error: slidingCurrError } = await supabase
+                  .from('sliding_current')
+                  .upsert({
+                    player_a_profile_id: result.playerAProfileId,
+                    player_b_profile_id: result.playerBProfileId,
+                    strokes_a_gives_b_current: result.strokesNext,
+                    last_round_id: roundState.id,
+                    last_updated_at: new Date().toISOString(),
+                  }, {
+                    onConflict: 'player_a_profile_id,player_b_profile_id',
+                  });
 
-              if (slidingCurrError) {
-                devError('Error upserting sliding_current:', slidingCurrError);
-              }
-            }
+                if (slidingCurrError) {
+                  devError('Error upserting sliding_current:', {
+                    error: slidingCurrError,
+                    playerAProfileId: result.playerAProfileId,
+                    playerBProfileId: result.playerBProfileId,
+                  });
+                }
+              })
+            );
 
             // Log sliding results for debugging
             slidingResults.forEach(r => {
