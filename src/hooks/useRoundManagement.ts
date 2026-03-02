@@ -1117,7 +1117,7 @@ export const useRoundManagement = ({
         intraGroupBetResults = [];
         for (const gId of distinctGroupIds) {
           const groupPlayers = sanitizedPlayers.filter(p => p.groupId === gId);
-          if (groupPlayers.length === 0) continue;
+          if (groupPlayers.length < 2) continue; // Need at least 2 players for intra-group bets
           
           const resolvedConfig = resolveConfigForGroup(betConfigWithHandicaps, gId);
           const groupResults = calculateAllBets(
@@ -1422,7 +1422,7 @@ export const useRoundManagement = ({
           const loser = sanitizedPlayers.find(p => p.id === result.vsPlayer);
           
           // Only create ledger entries for registered players (with profileId)
-          if (winner?.profileId && loser?.profileId && isUuid(winner.profileId) && isUuid(loser.profileId)) {
+          if (winner?.profileId && loser?.profileId && isUuid(winner.profileId) && isUuid(loser.profileId) && winner.profileId !== loser.profileId) {
             // Map human-readable labels to DB enum values
             const labelToEnum: Record<string, string> = {
               'Medal Front 9': 'medal_front',
