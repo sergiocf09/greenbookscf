@@ -1136,10 +1136,16 @@ export const useRoundManagement = ({
             const syntheticA: Player = { ...playerA, groupId: tempGroupId };
             const syntheticB: Player = { ...playerB, groupId: tempGroupId };
 
+            // Filter betOverrides to only those relevant to this pair
+            const pairOverrides = (betConfigWithHandicaps.betOverrides || []).filter(o => {
+              const ids = [playerA.id, playerB.id];
+              return ids.includes(o.playerAId) && ids.includes(o.playerBId);
+            });
+
             const crossGroupConfig: BetConfig = {
               ...betConfigWithHandicaps,
               bilateralHandicaps: [crossGroupBilateral],
-              betOverrides: [],
+              betOverrides: pairOverrides,
               groupBetOverrides: {},
               medal: { ...betConfigWithHandicaps.medal, participantIds: undefined },
               pressures: { ...betConfigWithHandicaps.pressures, participantIds: undefined },
