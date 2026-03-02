@@ -935,10 +935,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Get balance from betSummaries for non-Rayas bets
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
     
-    // CROSS-GROUP FAST PATH: For cross-group pairs, the crossGroupBetSummaries already
-    // contain correctly computed results (with proper bilateral handicaps, clean
-    // participantIds, no betOverrides). Simply sum them — no re-computation needed.
-    // This ensures the icon balance matches the bilateral detail header exactly.
+    // CROSS-GROUP FAST PATH: For cross-group pairs, consume already computed
+    // crossGroupBetSummaries but apply the same pair override cancellation logic
+    // used by the bilateral header (so icon/header/table always match).
     if (playerObj) {
       // Detect cross-group by checking the crossGroupRivalsMap (reliable source of truth).
       // groupId-based detection fails because allPlayersForCalculations may tag all
@@ -953,13 +952,66 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       
       if (isCrossGroupPair) {
         const carritosTypes2 = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+
+        const normalizeType = (s: string): string =>
+          (s || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '');
+
+        const mapBetTypeToOverrideCandidates = (betType: string): string[] => {
+          if (betType.startsWith('Medal') && betType !== 'Medal General') return ['Medal', 'medal'];
+          if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas' && betType !== 'Presiones Pareja') return ['Presiones', 'pressures'];
+          if (betType.startsWith('Skins')) return ['Skins', 'skins'];
+          if (betType === 'Caros') return ['Caros', 'caros'];
+          if (betType === 'Oyes') return ['Oyes', 'oyeses'];
+          if (betType === 'Unidades') return ['Unidades', 'units'];
+          if (betType === 'Manchas') return ['Manchas', 'manchas'];
+          if (betType === 'Culebras') return ['Culebras', 'culebras'];
+          if (betType.includes('Pingüino')) return ['Pingüinos', 'pinguinos'];
+          if (betType === 'Coneja') return ['Coneja', 'coneja'];
+          if (betType === 'Putts' || betType.startsWith('Putts')) return ['Putts', 'putts'];
+          if (betType === 'Side Bet') return ['Side Bet', 'sideBets', 'sidebets'];
+          if (betType === 'Stableford') return ['Stableford', 'stableford'];
+          return [betType];
+        };
+
+        const matchesPlayer = (overrideId: string, pId: string): boolean => {
+          const ids = new Set<string>([pId]);
+          const p = allPlayersForCalculations.find(x => x.id === pId);
+          if (p?.profileId) ids.add(p.profileId);
+          const pByProfile = allPlayersForCalculations.find(x => x.profileId === pId);
+          if (pByProfile) ids.add(pByProfile.id);
+          return ids.has(overrideId);
+        };
+
+        const isBetDisabledForPairFastPath = (betType: string): boolean => {
+          const acceptable = mapBetTypeToOverrideCandidates(betType).map(normalizeType);
+
+          const override = betConfig.betOverrides?.find((o) => {
+            const type = normalizeType(o.betType || '');
+            const matchesType = acceptable.some((a) => type === a || type.includes(a));
+            if (!matchesType) return false;
+
+            const matchesPair =
+              (matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
+              (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId));
+
+            return matchesPair;
+          });
+
+          return override?.enabled === false;
+        };
+
         return betSummaries
           .filter(s =>
             s.playerId === playerId &&
             s.vsPlayer === rivalId &&
             !carritosTypes2.includes(s.betType) &&
             s.betType !== 'Presiones Parejas' &&
-            s.betType !== 'Presiones Pareja'
+            s.betType !== 'Presiones Pareja' &&
+            !isBetDisabledForPairFastPath(s.betType)
           )
           .reduce((sum, s) => sum + s.amount, 0);
       }
