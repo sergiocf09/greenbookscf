@@ -2010,12 +2010,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       )}
 
       {/* All Carritos Results — only render cards that have actual data */}
+      {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
       {allCarritosResults.length > 0 && allCarritosResults.map((result, idx) => {
         const carritosId = result.id || `carritos-primary-${idx}`;
         const disabled = isTeamBetDisabled(carritosId);
         // In historical mode, skip rendering if all hole data is null/empty
         const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
         if (isHistorical && !hasAnyData) return null;
+        // Skip if none of the team members belong to the currently displayed group
+        const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
+        const allTeamMembers = [...result.teamA, ...result.teamB];
+        const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
+        if (hasMultipleGroups && !hasGroupMember) return null;
         return (
           <CarritosResultsCard 
             key={carritosId}
@@ -2040,6 +2046,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         };
         const resolvedTeamA: [string, string] = [resolvePId(bet.teamA[0]), resolvePId(bet.teamA[1])];
         const resolvedTeamB: [string, string] = [resolvePId(bet.teamB[0]), resolvePId(bet.teamB[1])];
+        // Skip if none of the team members belong to the currently displayed group
+        if (hasMultipleGroups) {
+          const dpIds = new Set(displayPlayers.map(p => p.id));
+          const allMembers = [...resolvedTeamA, ...resolvedTeamB];
+          if (!allMembers.some(id => dpIds.has(id))) return null;
+        }
 
         // Calculate team pressures balance from betSummaries for THIS specific bet only
         const teamAPressures = betSummaries.filter(s => 
@@ -2744,7 +2756,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       <GroupBetsCard
         players={allPlayersForCalculations}
         scores={scores}
-        betConfig={effectiveBetConfig}
+        betConfig={hasMultipleGroups
+          ? resolveConfigForGroup(effectiveBetConfig, displayPlayers[0]?.groupId)
+          : effectiveBetConfig}
         course={course}
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
         confirmedHoles={confirmedHoles}
