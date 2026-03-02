@@ -1710,64 +1710,50 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               )}
             </div>
 
-            {/* Manchas panel — grid: initials header + count + detail rows */}
+            {/* Manchas panel — columns: each player's incidents stacked vertically */}
             {showManchasPanel && manchasSummary && (
               <div className="space-y-1">
                 {(() => {
                   const allPlayerData = manchasSummary.playerData;
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
                   const colCount = allPlayerData.length;
-                  // Collect all incidents sorted by hole
-                   const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string; short: string }[] = [];
-                   allPlayerData.forEach(({ player, manchas }) => {
-                     manchas.forEach(m => allIncidents.push({ playerId: player.id, holeNumber: m.holeNumber, emoji: m.emoji, label: m.label, short: m.short }));
-                   });
-                  allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
-                  // Deduplicate: group by holeNumber+playerId
-                   const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string; short: string }[] = [];
-                   allIncidents.forEach(inc => {
-                     if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
-                       uniqueRows.push(inc);
-                     }
-                  });
                   return (
                     <div className="w-full">
                       {/* Header: initials */}
                       <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player }) => (
-                          <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
+                          <div key={player.id} className="text-center text-[11px] font-bold text-destructive py-1">
                             {getPlayerAbbr(player)}
                           </div>
                         ))}
                       </div>
                       {/* Counts row */}
-                      <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-0.5 border-b border-destructive/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, total }) => (
                           <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground/40')}>
                             {total}
                           </div>
                         ))}
                       </div>
-                      {/* Detail rows: one row per incident */}
-                      {uniqueRows.length > 0 ? (
-                         <div className="mt-1">
-                           {uniqueRows.map((inc, i) => (
-                             <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                               {allPlayerData.map(({ player }) => (
-                                 <div key={player.id} className="text-center min-h-[18px] flex items-center justify-center">
-                                   {inc.playerId === player.id ? (
-                                     <span className="text-[9px] text-destructive font-medium leading-tight">
-                                       H{inc.holeNumber} {inc.short}
-                                     </span>
-                                   ) : (
-                                     <span className="text-[9px] text-muted-foreground/20">—</span>
-                                   )}
-                                 </div>
-                               ))}
-                             </div>
-                           ))}
-                         </div>
-                      ) : (
+                      {/* Per-player columns with stacked incidents */}
+                      <div className="grid gap-0.5 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player, manchas }) => {
+                          const sorted = [...manchas].sort((a, b) => a.holeNumber - b.holeNumber);
+                          // Deduplicate
+                          const unique = sorted.filter((m, i) => !sorted.slice(0, i).find(prev => prev.holeNumber === m.holeNumber && prev.label === m.label));
+                          return (
+                            <div key={player.id} className="flex flex-col items-start px-0.5">
+                              {unique.map((m, i) => (
+                                <div key={i} className="flex items-baseline gap-0.5 leading-tight">
+                                  <span className="text-[9px] text-destructive font-mono w-[18px] text-right shrink-0">H{m.holeNumber}</span>
+                                  <span className="text-[9px] text-destructive font-medium">{m.short}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {manchasSummary.totalManchas === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>
                       )}
                     </div>
@@ -1776,62 +1762,49 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               </div>
             )}
 
-            {/* Unidades panel — grid: initials header + count + detail rows */}
+            {/* Unidades panel — columns: each player's incidents stacked vertically */}
             {showUnidadesPanel && unidadesSummary && (
               <div className="space-y-1">
                 {(() => {
                   const allPlayerData = unidadesSummary.playerData;
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
                   const colCount = allPlayerData.length;
-                   const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string; short: string }[] = [];
-                   allPlayerData.forEach(({ player, unidades }) => {
-                     unidades.forEach(u => allIncidents.push({ playerId: player.id, holeNumber: u.holeNumber, emoji: u.emoji, label: u.label, short: u.short }));
-                   });
-                   allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
-                   const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string; short: string }[] = [];
-                   allIncidents.forEach(inc => {
-                     if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
-                       uniqueRows.push(inc);
-                     }
-                   });
-                   return (
-                     <div className="w-full">
-                       {/* Header: initials */}
-                       <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                         {allPlayerData.map(({ player }) => (
-                           <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
-                             {getPlayerAbbr(player)}
-                           </div>
-                         ))}
-                       </div>
-                       {/* Counts row */}
-                       <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                         {allPlayerData.map(({ player, total }) => (
-                           <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
-                             {total}
-                           </div>
-                         ))}
-                       </div>
-                       {/* Detail rows */}
-                       {uniqueRows.length > 0 ? (
-                         <div className="mt-1">
-                           {uniqueRows.map((inc, i) => (
-                             <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                               {allPlayerData.map(({ player }) => (
-                                 <div key={player.id} className="text-center min-h-[18px] flex items-center justify-center">
-                                   {inc.playerId === player.id ? (
-                                     <span className="text-[9px] text-primary font-medium leading-tight">
-                                       H{inc.holeNumber} {inc.short}
-                                     </span>
-                                   ) : (
-                                     <span className="text-[9px] text-muted-foreground/20">—</span>
-                                   )}
-                                 </div>
-                               ))}
-                             </div>
-                           ))}
-                         </div>
-                      ) : (
+                  return (
+                    <div className="w-full">
+                      {/* Header: initials */}
+                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player }) => (
+                          <div key={player.id} className="text-center text-[11px] font-bold text-primary py-1">
+                            {getPlayerAbbr(player)}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Counts row */}
+                      <div className="grid gap-0.5 border-b border-primary/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player, total }) => (
+                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
+                            {total}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Per-player columns with stacked incidents */}
+                      <div className="grid gap-0.5 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player, unidades }) => {
+                          const sorted = [...unidades].sort((a, b) => a.holeNumber - b.holeNumber);
+                          const unique = sorted.filter((u, i) => !sorted.slice(0, i).find(prev => prev.holeNumber === u.holeNumber && prev.label === u.label));
+                          return (
+                            <div key={player.id} className="flex flex-col items-start px-0.5">
+                              {unique.map((u, i) => (
+                                <div key={i} className="flex items-baseline gap-0.5 leading-tight">
+                                  <span className="text-[9px] text-primary font-mono w-[18px] text-right shrink-0">H{u.holeNumber}</span>
+                                  <span className="text-[9px] text-primary font-medium">{u.short}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {unidadesSummary.totalUnidades === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>
                       )}
                     </div>
