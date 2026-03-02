@@ -1273,8 +1273,32 @@ export const useRoundManagement = ({
         }
       }
 
+      const validPlayerIdsForValidation = new Set(sanitizedPlayers.map((p) => p.id));
+      const resolveUiPlayerIdForValidation = (rawId: string): string | undefined => {
+        if (!rawId) return undefined;
+        if (validPlayerIdsForValidation.has(rawId)) return rawId;
+        const byProfile = sanitizedPlayers.find((p) => p.profileId === rawId);
+        if (byProfile) return byProfile.id;
+        return roundPlayerIdToLocalPlayerId.get(rawId);
+      };
+
+      const normalizedUiBetResults: BetSummary[] = allBetResultsFromUI
+        .map((result) => {
+          const playerId = resolveUiPlayerIdForValidation(result.playerId);
+          const vsPlayer = resolveUiPlayerIdForValidation(result.vsPlayer);
+          if (!playerId || !vsPlayer || playerId === vsPlayer) return null;
+          return { ...result, playerId, vsPlayer };
+        })
+        .filter((result): result is BetSummary => result !== null);
+
+      if (normalizedUiBetResults.length !== allBetResultsFromUI.length) {
+        devWarn(
+          `[CLOSE] Filtered ${allBetResultsFromUI.length - normalizedUiBetResults.length} UI summaries with unresolved/stale player IDs before preValidation`
+        );
+      }
+
       const uiBalanceByPlayer = new Map<string, number>();
-      for (const result of allBetResultsFromUI) {
+      for (const result of normalizedUiBetResults) {
         if (result.amount > 0) {
           uiBalanceByPlayer.set(result.playerId, (uiBalanceByPlayer.get(result.playerId) || 0) + result.amount);
           uiBalanceByPlayer.set(result.vsPlayer, (uiBalanceByPlayer.get(result.vsPlayer) || 0) - result.amount);
