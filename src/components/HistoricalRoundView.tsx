@@ -6,10 +6,10 @@ import { Loader2, LayoutGrid, Trophy, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
-import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState } from '@/types/golf';
+import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState, PlayerGroup } from '@/types/golf';
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
-import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer } from '@/lib/roundSnapshot';
+import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer, SnapshotGroup } from '@/lib/roundSnapshot';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,6 +149,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         color: p.color,
         handicap: p.handicap,
         profileId: p.profileId || undefined,
+        groupId: p.groupId,
       }));
     }
     
@@ -162,6 +163,19 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       profileId: p.playerId,
     }));
   }, [hasSnapshot, snapshot, fallbackPlayers]);
+
+  // Reconstruct PlayerGroup[] from snapshot groups for BetDashboard
+  const dashboardPlayerGroups: PlayerGroup[] = useMemo(() => {
+    if (!hasSnapshot || !snapshot?.groups || snapshot.groups.length === 0) return [];
+    
+    return snapshot.groups.map((g: SnapshotGroup) => ({
+      id: g.id,
+      name: g.name,
+      players: g.playerIds
+        .map(pid => dashboardPlayers.find(p => p.id === pid))
+        .filter((p): p is Player => !!p),
+    }));
+  }, [hasSnapshot, snapshot, dashboardPlayers]);
 
   // Convert to Map<string, PlayerScore[]> for BetDashboard
   const dashboardScores: Map<string, PlayerScore[]> = useMemo(() => {
@@ -346,6 +360,8 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             course={course}
             confirmedHoles={confirmedHoles}
             startingHole={hasSnapshot && snapshot ? snapshot.startingHole : undefined}
+            playerGroups={dashboardPlayerGroups}
+            basePlayerId={profile?.id}
             getBilateralHandicapsForEngine={
               hasSnapshot && snapshot
                 ? () => snapshotBilateralHandicapsForEngine

@@ -2335,7 +2335,14 @@ const Index = () => {
         )}
 
         {view === 'betsetup' && (
-          <BetSetup config={betConfig} onChange={setBetConfig} players={players} hasMultipleGroups={playerGroups.length > 0} />
+          <BetSetup
+            config={betConfig}
+            onChange={setBetConfig}
+            players={players}
+            hasMultipleGroups={playerGroups.length > 0}
+            userGroupId={roundState.groupId || undefined}
+            isOrganizer={profile?.id === roundState.organizerProfileId}
+          />
         )}
 
         {view === 'handicaps' && (
