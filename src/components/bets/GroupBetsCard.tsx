@@ -533,24 +533,29 @@ const MedalResultBlock: React.FC<{
     );
   }
 
+  const amountWon = result.winners[0]?.amountWon || 0;
   // Check if winner is from the same group as base player
   const winnerInSameGroup = result.winners.some(w => sameGroupPlayerIds.has(w.playerId));
   const isConfirmed = all18HolesConfirmed;
-  // Green if same group winner, amber if cross-group winner
-  const useGreen = winnerInSameGroup;
-  const useAmber = !useGreen;
+
+  // Neutral style when amount is 0
+  const isZeroAmount = amountWon === 0;
+  const useGreen = !isZeroAmount && winnerInSameGroup;
+  const useAmber = !isZeroAmount && !winnerInSameGroup;
 
   return (
     <div className={cn(
       'rounded-lg p-3',
-      useGreen ? 'bg-green-500/10 border border-green-500/30' : 'bg-amber-500/10 border border-amber-500/30'
+      isZeroAmount
+        ? 'bg-muted/50 border border-border/50'
+        : useGreen ? 'bg-green-500/10 border border-green-500/30' : 'bg-amber-500/10 border border-amber-500/30'
     )}>
       {label && (
         <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-1 block">{label}</span>
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={cn('text-sm', useGreen ? 'text-green-500' : 'text-amber-500')}>
+          <span className={cn('text-sm', isZeroAmount ? 'text-muted-foreground' : useGreen ? 'text-green-500' : 'text-amber-500')}>
             {isConfirmed ? '🏆' : '📊'}
           </span>
           <div className="flex items-center gap-1">
@@ -564,9 +569,13 @@ const MedalResultBlock: React.FC<{
             ))}
           </div>
         </div>
-        <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
-          {isConfirmed ? '+' : '~'}${result.winners[0]?.amountWon || 0}
-        </span>
+        {isZeroAmount ? (
+          <span className="text-xs text-muted-foreground">$0</span>
+        ) : (
+          <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
+            {isConfirmed ? '+' : '~'}${amountWon}
+          </span>
+        )}
       </div>
       {result.winners.length > 1 && (
         <p className="text-[10px] text-muted-foreground mt-1">
@@ -816,7 +825,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     if (!betConfig.medalGeneral?.enabled || pool.length < 2) return null;
 
     const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
-    const amount = betConfig.medalGeneral.amount || 100;
+    const amount = betConfig.medalGeneral.amount ?? 100;
 
     const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number; groupId?: string }> = [];
 
@@ -2020,7 +2029,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount || 100} c/u</span>
+                <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
               </div>
               
               {/* Group result */}
@@ -2105,7 +2114,7 @@ const computeMedalBilateralForPool = (
   course: GolfCourse
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
-  const amount = betConfig.medalGeneral?.amount || 100;
+  const amount = betConfig.medalGeneral?.amount ?? 100;
 
   const netTotals: Array<{ playerId: string; netTotal: number }> = [];
 
