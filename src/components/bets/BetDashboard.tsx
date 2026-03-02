@@ -911,6 +911,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const playerIn = participantIds.includes(playerId);
     const rivalIn = participantIds.includes(rivalId);
     if (playerIn && rivalIn) return true;
+    
+    // Cross-group pairs: if the two players belong to different groups,
+    // the cross-group engine already computed them with participantIds cleared.
+    // Don't reject them here — their summaries are already in betSummaries.
+    const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
+    const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
+    if (playerObj?.groupId && rivalObj?.groupId && playerObj.groupId !== rivalObj.groupId) {
+      return true; // Cross-group pair — always pass participation check
+    }
+    
     // Template inheritance: if no player from the display group is in participantIds, treat as template
     const displayGroupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
     const anyGroupPlayerInList = displayGroupPlayers.some(p => participantIds.includes(p.id));

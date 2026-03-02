@@ -1067,6 +1067,8 @@ export const calculateCarosBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+      // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.caros, playerA.id, playerB.id)) continue;
       
@@ -1195,6 +1197,8 @@ export const calculateUnitsBets = (
       for (let j = i + 1; j < participatingPlayers.length; j++) {
         const playerA = participatingPlayers[i];
         const playerB = participatingPlayers[j];
+        // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
+        if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
         // Skip non-anchor pairs in oneVsAll mode
         if (!shouldCalculatePair(config.units, playerA.id, playerB.id)) continue;
         
@@ -1730,6 +1734,8 @@ export const calculatePuttsBets = (
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
+      // Skip cross-group pairs — handled exclusively by crossGroupBetSummaries in BetDashboard
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.putts, playerA.id, playerB.id)) continue;
       
