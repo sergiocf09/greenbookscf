@@ -10,9 +10,11 @@ import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerS
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer, SnapshotGroup } from '@/lib/roundSnapshot';
+import { filterSnapshotByGroup, filterSnapshotCrossGroup, snapshotHasCrossGroupData } from '@/lib/snapshotGroupFilter';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface PlayerScoreData {
   playerId: string;
@@ -47,38 +49,30 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   const [hasSnapshot, setHasSnapshot] = useState(false);
   const [snapshot, setSnapshot] = useState<RoundSnapshot | null>(null);
   
+  // Group selector for multi-group rounds: 'g0', 'g1', ..., 'cross'
+  const [historicalGroupTab, setHistoricalGroupTab] = useState<string>('g0');
+  
   // Fallback state for rounds without snapshot
   const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [markers, setMarkers] = useState<Map<string, Map<number, MarkerState>>>(new Map());
 
   // Fetch snapshot — this is the ONLY source of truth for historical views.
-  // No recalculation occurs here; we only render what the snapshot contains.
   useEffect(() => {
     const fetchRoundData = async () => {
       try {
-        // PRIMARY PATH: load immutable snapshot
         const { data: snapshotData, error: snapshotError } = await supabase
           .from('round_snapshots')
           .select('snapshot_json')
-          .eq('round_id', roundId)   // ← strict round_id filter, no cross-contamination
+          .eq('round_id', roundId)
           .maybeSingle();
 
         if (!snapshotError && snapshotData?.snapshot_json) {
           const snap = snapshotData.snapshot_json as unknown;
           if (isValidSnapshot(snap)) {
-            // Enforce noRecalcContract — warn if missing (legacy snapshots)
             if (!(snap as any).meta?.noRecalcContract) {
-              devWarn(
-                '[noRecalcContract] Legacy snapshot (no noRecalcContract). ' +
-                'Rendering from snapshot data only — no recalculation.',
-                roundId
-              );
+              devWarn('[noRecalcContract] Legacy snapshot — rendering from snapshot data only.', roundId);
             } else {
-              devLog(
-                '[noRecalcContract] ✅ Snapshot V3 verified — rendering directly from snapshot.',
-                roundId,
-                'schema:', (snap as any).meta?.schemaVersion
-              );
+              devLog('[noRecalcContract] ✅ Snapshot V3 verified.', roundId);
             }
             setSnapshot(snap);
             setHasSnapshot(true);
@@ -87,15 +81,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           }
         }
 
-        // LEGACY FALLBACK: Round predates the snapshot system.
-        // We can only show the scorecard (no bet totals). No recalculation of bets.
-        devWarn('[noRecalcContract] No snapshot found for round:', roundId, '— showing legacy scorecard only.');
+        devWarn('[noRecalcContract] No snapshot found for round:', roundId);
 
-        // For legacy rounds, load only the betConfig for display (no bet recalculation)
         const { data: roundData, error: roundError } = await supabase
           .from('rounds')
           .select('bet_config')
-          .eq('id', roundId)   // ← strict round_id filter
+          .eq('id', roundId)
           .single();
 
         if (roundError) throw roundError;
@@ -124,11 +115,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             teamPressures: { ...defaultBetConfig.teamPressures, ...loadedConfig.teamPressures },
           });
         }
-
-        // NOTE: We intentionally do NOT query hole_scores/hole_markers for legacy rounds
-        // because that would constitute a recalculation — violating noRecalcContract.
-        // Legacy rounds display only the scorecard data passed via props (fallbackPlayers).
-
       } catch (err) {
         devError('[HistoricalRoundView] Error fetching snapshot:', err);
       } finally {
@@ -139,11 +125,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     fetchRoundData();
   }, [roundId]);
 
-  // Convert snapshot players to Player objects for BetDashboard.
-  // IMPORTANT: We must split into "main group" (players prop) and "additional groups"
-  // (playerGroups prop) to mirror the live structure. BetDashboard's
-  // getAllPlayersFromAllGroups merges them, so passing ALL players in both
-  // props would cause duplication and "2" suffixes in disambiguateInitials.
+  // ── All snapshot players (unfiltered) ──────────────────────────────────────
   const allSnapshotPlayers: Player[] = useMemo(() => {
     if (hasSnapshot && snapshot) {
       return snapshot.players.map((p: SnapshotPlayer) => ({
@@ -156,7 +138,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         groupId: p.groupId,
       }));
     }
-    // Fallback to legacy data
     return fallbackPlayers.map(p => ({
       id: p.playerId,
       name: p.playerName,
@@ -167,35 +148,11 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     }));
   }, [hasSnapshot, snapshot, fallbackPlayers]);
 
-  // Split into main group players and additional group players (mirrors live structure)
-  const { dashboardPlayers, dashboardPlayerGroups } = useMemo(() => {
-    if (!hasSnapshot || !snapshot?.groups || snapshot.groups.length === 0) {
-      // No groups or legacy → all players go to main
-      return { dashboardPlayers: allSnapshotPlayers, dashboardPlayerGroups: [] as PlayerGroup[] };
-    }
-
-    // Identify which players belong to additional groups (index 1+)
-    const additionalGroupPlayerIds = new Set<string>();
-    const groups: PlayerGroup[] = snapshot.groups.map((g: SnapshotGroup) => {
-      const groupPlayers = g.playerIds
-        .map(pid => allSnapshotPlayers.find(p => p.id === pid))
-        .filter((p): p is Player => !!p);
-      groupPlayers.forEach(p => additionalGroupPlayerIds.add(p.id));
-      return { id: g.id, name: g.name, players: groupPlayers };
-    });
-
-    // Main group = players NOT in any additional group
-    const mainPlayers = allSnapshotPlayers.filter(p => !additionalGroupPlayerIds.has(p.id));
-
-    return { dashboardPlayers: mainPlayers, dashboardPlayerGroups: groups };
-  }, [hasSnapshot, snapshot, allSnapshotPlayers]);
-
-  // Convert to Map<string, PlayerScore[]> for BetDashboard
-  const dashboardScores: Map<string, PlayerScore[]> = useMemo(() => {
+  // ── All scores (unfiltered) ────────────────────────────────────────────────
+  const allScores: Map<string, PlayerScore[]> = useMemo(() => {
     const scoresMap = new Map<string, PlayerScore[]>();
     
     if (hasSnapshot && snapshot) {
-      // Use snapshot scores directly - NO RECALCULATION
       Object.entries(snapshot.scores).forEach(([playerId, scores]) => {
         const playerScores: PlayerScore[] = (scores as SnapshotHoleScore[]).map(s => ({
           playerId,
@@ -213,7 +170,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       return scoresMap;
     }
     
-    // Fallback: legacy behavior with recalculation (for old rounds)
+    // Legacy fallback
     const strokesPerHoleByPlayer: Record<string, number[]> = {};
     allSnapshotPlayers.forEach(player => {
       strokesPerHoleByPlayer[player.id] = calculateStrokesPerHole(player.handicap, course);
@@ -226,7 +183,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         const strokesReceived = strokesPerHoleByPlayer[player.playerId]?.[s.holeNumber - 1] || 0;
         const playerMarkers = markers.get(player.playerId)?.get(s.holeNumber) || defaultMarkerState;
         
-        // Auto-detect score-based markers
         const toPar = s.strokes - par;
         const detectedMarkers: MarkerState = {
           ...playerMarkers,
@@ -256,25 +212,57 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     return scoresMap;
   }, [hasSnapshot, snapshot, fallbackPlayers, course, allSnapshotPlayers, markers]);
 
-  // Get bet config from snapshot or fallback
-  const effectiveBetConfig = useMemo(() => {
-    if (hasSnapshot && snapshot) {
-      return snapshot.betConfig;
-    }
-    return betConfig;
-  }, [hasSnapshot, snapshot, betConfig]);
+  // ── Multi-group detection ──────────────────────────────────────────────────
+  const hasMultipleGroups = !!(hasSnapshot && snapshot?.groups && snapshot.groups.length > 1);
 
-  // When using snapshots, bilateral handicaps must come from the snapshot too.
-  // Bet engine expects BilateralHandicap[] with absolute handicaps per side.
-  const snapshotBilateralHandicapsForEngine = useMemo(() => {
+  const hasCrossGroupData = useMemo(() => {
+    if (!hasMultipleGroups || !snapshot) return false;
+    return snapshotHasCrossGroupData(snapshot);
+  }, [hasMultipleGroups, snapshot]);
+
+  // ── Group-filtered view ────────────────────────────────────────────────────
+  const groupView = useMemo(() => {
+    if (!hasMultipleGroups || !snapshot) return null;
+
+    if (historicalGroupTab === 'cross') {
+      return filterSnapshotCrossGroup(snapshot, allSnapshotPlayers);
+    }
+
+    const groupIndex = parseInt(historicalGroupTab.replace('g', ''), 10);
+    return filterSnapshotByGroup(snapshot, groupIndex, allSnapshotPlayers);
+  }, [hasMultipleGroups, snapshot, historicalGroupTab, allSnapshotPlayers]);
+
+  // ── Effective data for rendering (filtered or full) ────────────────────────
+  const viewPlayers = useMemo(() => {
+    if (groupView) return groupView.players;
+    // Single-group: all players go to main, no playerGroups
+    return allSnapshotPlayers;
+  }, [groupView, allSnapshotPlayers]);
+
+  const viewScores = useMemo(() => {
+    if (!groupView) return allScores;
+    const filtered = new Map<string, PlayerScore[]>();
+    for (const pid of groupView.playerIds) {
+      const ps = allScores.get(pid);
+      if (ps) filtered.set(pid, ps);
+    }
+    return filtered;
+  }, [groupView, allScores]);
+
+  const viewBalances = groupView?.balances || (snapshot?.balances);
+  const viewLedger = groupView?.ledger || (snapshot?.ledger);
+  const viewPairBreakdowns = groupView?.pairBreakdowns || (snapshot?.pairBreakdowns);
+  const viewPairSegmentResults = groupView?.pairSegmentResults || (snapshot?.pairSegmentResults);
+
+  // ── Bilateral handicaps (filtered) ─────────────────────────────────────────
+  const viewBilateralHandicaps = useMemo(() => {
     if (!hasSnapshot || !snapshot?.bilateralHandicaps) return [];
 
-    return snapshot.bilateralHandicaps
+    const allHandicaps = snapshot.bilateralHandicaps
       .filter((h) => h && typeof h.strokesGivenByA === 'number')
       .map((h) => {
         const strokes = h.strokesGivenByA;
         if (strokes >= 0) {
-          // A gives strokes to B → B is weaker → B gets handicap=strokes, A=0
           return {
             playerAId: h.playerAId,
             playerBId: h.playerBId,
@@ -282,7 +270,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             playerBHandicap: strokes,
           };
         }
-        // A receives strokes from B → A is weaker → A gets handicap=|strokes|, B=0
         return {
           playerAId: h.playerAId,
           playerBId: h.playerBId,
@@ -290,27 +277,56 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           playerBHandicap: 0,
         };
       });
-  }, [hasSnapshot, snapshot]);
 
-  // All 18 holes are confirmed for historical view
+    if (!groupView) return allHandicaps;
+
+    // Filter to only pairs within the current view
+    return allHandicaps.filter(
+      h => groupView.playerIds.has(h.playerAId) && groupView.playerIds.has(h.playerBId),
+    );
+  }, [hasSnapshot, snapshot, groupView]);
+
+  // ── Scorecard data (filtered by group) ─────────────────────────────────────
+  const scorecardPlayers: PlayerScoreData[] = useMemo(() => {
+    if (!hasSnapshot || !snapshot) return fallbackPlayers;
+
+    const targetPlayers = groupView?.players || allSnapshotPlayers;
+    return targetPlayers.map(p => {
+      const scores = (snapshot.scores[p.id] || []) as SnapshotHoleScore[];
+      return {
+        playerId: p.id,
+        playerName: p.name,
+        initials: p.initials,
+        color: p.color,
+        handicap: p.handicap,
+        scores: scores.map(s => ({
+          holeNumber: s.holeNumber,
+          strokes: s.strokes,
+          putts: s.putts,
+          oyesProximity: s.oyesProximity,
+        })),
+        totalStrokes: scores.reduce((sum, s) => sum + (s.strokes || 0), 0),
+      };
+    });
+  }, [hasSnapshot, snapshot, groupView, allSnapshotPlayers, fallbackPlayers]);
+
+  // ── Bet config ─────────────────────────────────────────────────────────────
+  const effectiveBetConfig = useMemo(() => {
+    if (hasSnapshot && snapshot) return snapshot.betConfig;
+    return betConfig;
+  }, [hasSnapshot, snapshot, betConfig]);
+
+  // All 18 holes confirmed for historical view
   const confirmedHoles = useMemo(() => {
     return new Set(Array.from({ length: 18 }, (_, i) => i + 1));
   }, []);
 
-  // Get display data from snapshot or fallback
+  // Display data
   const displayData = useMemo(() => {
     if (hasSnapshot && snapshot) {
-      return {
-        courseName: snapshot.courseName,
-        teeColor: snapshot.teeColor,
-        date: snapshot.date,
-      };
+      return { courseName: snapshot.courseName, teeColor: snapshot.teeColor, date: snapshot.date };
     }
-    return {
-      courseName: course.name,
-      teeColor,
-      date,
-    };
+    return { courseName: course.name, teeColor, date };
   }, [hasSnapshot, snapshot, course.name, teeColor, date]);
 
   if (loading) {
@@ -343,7 +359,40 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         )}
       </div>
 
-      {/* Tabs */}
+      {/* ── Group Selector (multi-group only) ──────────────────────────────── */}
+      {hasMultipleGroups && snapshot?.groups && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 px-1">
+          {snapshot.groups.map((g, idx) => (
+            <button
+              key={g.id}
+              onClick={() => setHistoricalGroupTab(`g${idx}`)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
+                historicalGroupTab === `g${idx}`
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
+              )}
+            >
+              Grupo {idx + 1}
+            </button>
+          ))}
+          {hasCrossGroupData && (
+            <button
+              onClick={() => setHistoricalGroupTab('cross')}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
+                historicalGroupTab === 'cross'
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
+              )}
+            >
+              ⚡ Cruzadas
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets')}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="scorecard" className="text-sm">
@@ -359,34 +408,39 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         <TabsContent value="scorecard" className="mt-4">
           <HistoricalScorecard
             course={course}
-            players={fallbackPlayers}
+            players={scorecardPlayers}
             teeColor={displayData.teeColor}
             date={displayData.date}
           />
         </TabsContent>
 
         <TabsContent value="bets" className="mt-4">
-          <BetDashboard
-            players={dashboardPlayers}
-            scores={dashboardScores}
-            betConfig={effectiveBetConfig}
-            course={course}
-            confirmedHoles={confirmedHoles}
-            startingHole={hasSnapshot && snapshot ? snapshot.startingHole : undefined}
-            playerGroups={dashboardPlayerGroups}
-            basePlayerId={profile?.id}
-            getBilateralHandicapsForEngine={
-              hasSnapshot && snapshot
-                ? () => snapshotBilateralHandicapsForEngine
-                : undefined
-            }
-            snapshotBalances={hasSnapshot && snapshot ? snapshot.balances : undefined}
-            snapshotLedger={hasSnapshot && snapshot ? snapshot.ledger : undefined}
-            snapshotPairBreakdowns={hasSnapshot && snapshot ? snapshot.pairBreakdowns : undefined}
-            snapshotPairSegmentResults={hasSnapshot && snapshot ? snapshot.pairSegmentResults : undefined}
-          />
+          {historicalGroupTab === 'cross' && (!viewLedger || viewLedger.length === 0) ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              No hay apuestas cruzadas registradas en esta ronda.
+            </div>
+          ) : (
+            <BetDashboard
+              players={viewPlayers}
+              scores={viewScores}
+              betConfig={effectiveBetConfig}
+              course={course}
+              confirmedHoles={confirmedHoles}
+              startingHole={hasSnapshot && snapshot ? snapshot.startingHole : undefined}
+              playerGroups={[]}
+              basePlayerId={profile?.id}
+              getBilateralHandicapsForEngine={
+                hasSnapshot && snapshot
+                  ? () => viewBilateralHandicaps
+                  : undefined
+              }
+              snapshotBalances={viewBalances}
+              snapshotLedger={viewLedger}
+              snapshotPairBreakdowns={viewPairBreakdowns}
+              snapshotPairSegmentResults={viewPairSegmentResults}
+            />
+          )}
         </TabsContent>
-
       </Tabs>
     </div>
   );
