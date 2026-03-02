@@ -1612,7 +1612,7 @@ export const calculateMedalGeneralBets = (
     return summaries;
   }
   
-  const amount = config.medalGeneral.amount || 100;
+  const amount = config.medalGeneral.amount ?? 100;
   const playerHandicaps = config.medalGeneral.playerHandicaps || [];
   
   // Calculate net totals for each player using their Medal General handicap
