@@ -1090,7 +1090,7 @@ export const useRoundManagement = ({
           })()
         : normalizedBetConfig;
 
-      const allBetResults = calculateAllBets(
+      const intraGroupBetResults = calculateAllBets(
         sanitizedPlayers,
         confirmedScoresForClose,
         betConfigWithHandicaps,
@@ -1098,6 +1098,89 @@ export const useRoundManagement = ({
         roundState.startingHole,
         new Set(Array.from({ length: 18 }, (_, i) => i + 1))
       );
+
+      // ─── CROSS-GROUP BET CALCULATION ────────────────────────────────────────
+      // The main engine skips cross-group pairs (different groupId). We must compute
+      // them separately — mirroring BetDashboard's crossGroupBetSummaries logic —
+      // so the snapshot includes cross-group balances and the pre-validation check
+      // matches the UI totals.
+      const crossGroupSummaries: BetSummary[] = [];
+      const crossGroupRivalsMap = betConfigWithHandicaps.crossGroupRivals || {};
+      const processedCGPairs = new Set<string>();
+
+      if (getStrokesForPair) {
+        Object.entries(crossGroupRivalsMap).forEach(([baseId, rivalIds]) => {
+          const ids = Array.isArray(rivalIds) ? rivalIds : [];
+          (ids as string[]).forEach((rivalId) => {
+            const pairKey = [baseId, rivalId].sort().join('|');
+            if (processedCGPairs.has(pairKey)) return;
+            processedCGPairs.add(pairKey);
+
+            const playerA = sanitizedPlayers.find(p => p.id === baseId);
+            const playerB = sanitizedPlayers.find(p => p.id === rivalId);
+            if (!playerA || !playerB) return;
+            if (playerA.groupId && playerB.groupId && playerA.groupId === playerB.groupId) return;
+
+            const strokesAGivesB = getStrokesForPair(playerA.id, playerB.id);
+            const handicapA = strokesAGivesB < 0 ? Math.abs(strokesAGivesB) : 0;
+            const handicapB = strokesAGivesB > 0 ? strokesAGivesB : 0;
+
+            const crossGroupBilateral: import('@/types/golf').BilateralHandicap = {
+              playerAId: playerA.id,
+              playerBId: playerB.id,
+              playerAHandicap: handicapA,
+              playerBHandicap: handicapB,
+            };
+
+            const tempGroupId = `__xg_${pairKey}`;
+            const syntheticA: Player = { ...playerA, groupId: tempGroupId };
+            const syntheticB: Player = { ...playerB, groupId: tempGroupId };
+
+            const crossGroupConfig: BetConfig = {
+              ...betConfigWithHandicaps,
+              bilateralHandicaps: [crossGroupBilateral],
+              betOverrides: [],
+              groupBetOverrides: {},
+              medal: { ...betConfigWithHandicaps.medal, participantIds: undefined },
+              pressures: { ...betConfigWithHandicaps.pressures, participantIds: undefined },
+              skins: { ...betConfigWithHandicaps.skins, participantIds: undefined },
+              caros: { ...betConfigWithHandicaps.caros, participantIds: undefined },
+              units: { ...betConfigWithHandicaps.units, participantIds: undefined },
+              putts: { ...betConfigWithHandicaps.putts, participantIds: undefined },
+              stableford: { ...betConfigWithHandicaps.stableford, participantIds: undefined },
+              medalGeneral: { ...betConfigWithHandicaps.medalGeneral, participantIds: undefined },
+              manchas: { ...betConfigWithHandicaps.manchas, enabled: false },
+              culebras: { ...betConfigWithHandicaps.culebras, enabled: false },
+              pinguinos: { ...betConfigWithHandicaps.pinguinos, enabled: false },
+              zoologico: { ...betConfigWithHandicaps.zoologico, enabled: false },
+              coneja: { ...betConfigWithHandicaps.coneja, enabled: false },
+              oyeses: { ...betConfigWithHandicaps.oyeses, enabled: false },
+              rayas: { ...betConfigWithHandicaps.rayas, enabled: false },
+              sideBets: { bets: [], enabled: false },
+            };
+
+            const pairSummaries = calculateAllBets(
+              [syntheticA, syntheticB],
+              confirmedScoresForClose,
+              crossGroupConfig,
+              course,
+              roundState.startingHole,
+              new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+            );
+
+            pairSummaries.forEach(s => {
+              crossGroupSummaries.push({
+                ...s,
+                playerId: s.playerId === syntheticA.id ? playerA.id : playerB.id,
+                vsPlayer: s.vsPlayer === syntheticA.id ? playerA.id : playerB.id,
+              });
+            });
+          });
+        });
+      }
+
+      const allBetResults = [...intraGroupBetResults, ...crossGroupSummaries];
+      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group = ${allBetResults.length} total bet summaries`);
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
 
       // ─── SIDE BETS DIAGNOSTIC LOG ───────────────────────────────────────────
