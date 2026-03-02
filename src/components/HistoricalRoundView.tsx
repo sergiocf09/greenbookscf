@@ -139,8 +139,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     fetchRoundData();
   }, [roundId]);
 
-  // Convert snapshot players to Player objects for BetDashboard
-  const dashboardPlayers: Player[] = useMemo(() => {
+  // Convert snapshot players to Player objects for BetDashboard.
+  // IMPORTANT: We must split into "main group" (players prop) and "additional groups"
+  // (playerGroups prop) to mirror the live structure. BetDashboard's
+  // getAllPlayersFromAllGroups merges them, so passing ALL players in both
+  // props would cause duplication and "2" suffixes in disambiguateInitials.
+  const allSnapshotPlayers: Player[] = useMemo(() => {
     if (hasSnapshot && snapshot) {
       return snapshot.players.map((p: SnapshotPlayer) => ({
         id: p.id,
@@ -152,7 +156,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         groupId: p.groupId,
       }));
     }
-    
     // Fallback to legacy data
     return fallbackPlayers.map(p => ({
       id: p.playerId,
@@ -164,18 +167,28 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     }));
   }, [hasSnapshot, snapshot, fallbackPlayers]);
 
-  // Reconstruct PlayerGroup[] from snapshot groups for BetDashboard
-  const dashboardPlayerGroups: PlayerGroup[] = useMemo(() => {
-    if (!hasSnapshot || !snapshot?.groups || snapshot.groups.length === 0) return [];
-    
-    return snapshot.groups.map((g: SnapshotGroup) => ({
-      id: g.id,
-      name: g.name,
-      players: g.playerIds
-        .map(pid => dashboardPlayers.find(p => p.id === pid))
-        .filter((p): p is Player => !!p),
-    }));
-  }, [hasSnapshot, snapshot, dashboardPlayers]);
+  // Split into main group players and additional group players (mirrors live structure)
+  const { dashboardPlayers, dashboardPlayerGroups } = useMemo(() => {
+    if (!hasSnapshot || !snapshot?.groups || snapshot.groups.length === 0) {
+      // No groups or legacy → all players go to main
+      return { dashboardPlayers: allSnapshotPlayers, dashboardPlayerGroups: [] as PlayerGroup[] };
+    }
+
+    // Identify which players belong to additional groups (index 1+)
+    const additionalGroupPlayerIds = new Set<string>();
+    const groups: PlayerGroup[] = snapshot.groups.map((g: SnapshotGroup) => {
+      const groupPlayers = g.playerIds
+        .map(pid => allSnapshotPlayers.find(p => p.id === pid))
+        .filter((p): p is Player => !!p);
+      groupPlayers.forEach(p => additionalGroupPlayerIds.add(p.id));
+      return { id: g.id, name: g.name, players: groupPlayers };
+    });
+
+    // Main group = players NOT in any additional group
+    const mainPlayers = allSnapshotPlayers.filter(p => !additionalGroupPlayerIds.has(p.id));
+
+    return { dashboardPlayers: mainPlayers, dashboardPlayerGroups: groups };
+  }, [hasSnapshot, snapshot, allSnapshotPlayers]);
 
   // Convert to Map<string, PlayerScore[]> for BetDashboard
   const dashboardScores: Map<string, PlayerScore[]> = useMemo(() => {
@@ -202,7 +215,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     
     // Fallback: legacy behavior with recalculation (for old rounds)
     const strokesPerHoleByPlayer: Record<string, number[]> = {};
-    dashboardPlayers.forEach(player => {
+    allSnapshotPlayers.forEach(player => {
       strokesPerHoleByPlayer[player.id] = calculateStrokesPerHole(player.handicap, course);
     });
     
@@ -241,7 +254,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     });
     
     return scoresMap;
-  }, [hasSnapshot, snapshot, fallbackPlayers, course, dashboardPlayers, markers]);
+  }, [hasSnapshot, snapshot, fallbackPlayers, course, allSnapshotPlayers, markers]);
 
   // Get bet config from snapshot or fallback
   const effectiveBetConfig = useMemo(() => {
