@@ -934,6 +934,26 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
     // Get balance from betSummaries for non-Rayas bets
     const playerObj = allPlayersForCalculations.find(p => p.id === playerId);
+    
+    // CROSS-GROUP FAST PATH: For cross-group pairs, the crossGroupBetSummaries already
+    // contain correctly computed results (with proper bilateral handicaps, clean
+    // participantIds, no betOverrides). Simply sum them — no re-computation needed.
+    // This ensures the icon balance matches the bilateral detail header exactly.
+    if (playerObj) {
+      const rivalObj2 = allPlayersForCalculations.find(p => p.id === rivalId);
+      if (rivalObj2 && playerObj.groupId && rivalObj2.groupId && playerObj.groupId !== rivalObj2.groupId) {
+        const carritosTypes2 = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+        return betSummaries
+          .filter(s =>
+            s.playerId === playerId &&
+            s.vsPlayer === rivalId &&
+            !carritosTypes2.includes(s.betType) &&
+            s.betType !== 'Presiones Parejas' &&
+            s.betType !== 'Presiones Pareja'
+          )
+          .reduce((sum, s) => sum + s.amount, 0);
+      }
+    }
     const rivalObj = allPlayersForCalculations.find(p => p.id === rivalId);
     
     // Helper to check if a bet is disabled for this pair.
