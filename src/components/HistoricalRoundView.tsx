@@ -366,39 +366,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         )}
       </div>
 
-      {/* ── Group Selector (multi-group only) ──────────────────────────────── */}
-      {hasMultipleGroups && snapshot?.groups && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 px-1">
-          {snapshot.groups.map((g, idx) => (
-            <button
-              key={g.id}
-              onClick={() => setHistoricalGroupTab(`g${idx}`)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
-                historicalGroupTab === `g${idx}`
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
-              )}
-            >
-              Grupo {idx + 1}
-            </button>
-          ))}
-          {hasCrossGroupData && (
-            <button
-              onClick={() => setHistoricalGroupTab('cross')}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
-                historicalGroupTab === 'cross'
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
-              )}
-            >
-              ⚡ Cruzadas
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets')}>
         <TabsList className="grid w-full grid-cols-2">
@@ -421,7 +388,40 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           />
         </TabsContent>
 
-        <TabsContent value="bets" className="mt-4">
+        <TabsContent value="bets" className="mt-4 space-y-3">
+          {/* ── Group Selector (multi-group only, bets section) ──────────── */}
+          {hasMultipleGroups && snapshot?.groups && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 px-1">
+              {snapshot.groups.map((g, idx) => (
+                <button
+                  key={g.id}
+                  onClick={() => setHistoricalGroupTab(`g${idx}`)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
+                    historicalGroupTab === `g${idx}`
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
+                  )}
+                >
+                  Grupo {idx + 1}
+                </button>
+              ))}
+              {hasCrossGroupData && (
+                <button
+                  onClick={() => setHistoricalGroupTab('cross')}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors border",
+                    historicalGroupTab === 'cross'
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
+                  )}
+                >
+                  ⚡ Cruzadas
+                </button>
+              )}
+            </div>
+          )}
+
           {historicalGroupTab === 'cross' && (!viewLedger || viewLedger.length === 0) ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               No hay apuestas cruzadas registradas en esta ronda.

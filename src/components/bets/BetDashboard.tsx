@@ -1479,7 +1479,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   ]);
   const selectedCrossGroupPlayers = otherGroupPlayers.filter(p => allCrossGroupIds.has(p.id));
   
-  const rivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
+  const rivals = useMemo(() => {
+    const allRivals = [...sameGroupRivals, ...selectedCrossGroupPlayers];
+    
+    // In historical cross-group mode (no playerGroups, snapshot data), filter rivals
+    // to only those with actual bet entries against the base player
+    if (isHistorical && snapshotBalances && playerGroups.length === 0) {
+      const baseBal = snapshotBalances.find(b => b.playerId === basePlayer?.id);
+      if (baseBal) {
+        const actualRivalIds = new Set(baseBal.vsBalances.map(v => v.rivalId));
+        return allRivals.filter(r => actualRivalIds.has(r.id));
+      }
+    }
+    
+    return allRivals;
+  }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
   return (
     <div className="space-y-4">
