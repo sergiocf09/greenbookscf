@@ -150,6 +150,7 @@ const Index = () => {
     resetRoundForReclose,
   } = useRoundManagement({
     players,
+    playerGroups,
     setPlayers,
     scores,
     setScores,
