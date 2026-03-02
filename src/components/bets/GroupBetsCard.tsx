@@ -1774,15 +1774,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       {/* Header: initials */}
                       <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player }) => (
-                          <div key={player.id} className="text-center text-[11px] font-bold text-primary py-1">
+                          <div key={player.id} className="text-center text-[11px] font-bold text-green-600 py-1">
                             {getPlayerAbbr(player)}
                           </div>
                         ))}
                       </div>
                       {/* Counts row */}
-                      <div className="grid gap-0.5 border-b border-primary/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                       <div className="grid gap-0.5 border-b border-green-600/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, total }) => (
-                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
+                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-green-600' : 'text-muted-foreground/40')}>
                             {total}
                           </div>
                         ))}
@@ -1796,8 +1796,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <div key={player.id} className="flex flex-col items-start px-0.5">
                               {unique.map((u, i) => (
                                 <div key={i} className="flex items-baseline gap-0.5 leading-tight">
-                                  <span className="text-[9px] text-primary font-mono w-[18px] text-right shrink-0">H{u.holeNumber}</span>
-                                  <span className="text-[9px] text-primary font-medium">{u.short}</span>
+                                  <span className="text-[9px] text-green-600 font-mono w-[18px] text-right shrink-0">H{u.holeNumber}</span>
+                                   <span className="text-[9px] text-green-600 font-medium">{u.short}</span>
                                 </div>
                               ))}
                             </div>
