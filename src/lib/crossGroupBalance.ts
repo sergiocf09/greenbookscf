@@ -7,6 +7,7 @@ const EXCLUDED_BET_TYPES = new Set([
   'Carritos Total',
   'Presiones Parejas',
   'Presiones Pareja',
+  'Side Bet',
 ]);
 
 const normalizeType = (value: string): string =>
