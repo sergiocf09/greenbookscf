@@ -1634,27 +1634,52 @@ export const useRoundManagement = ({
       // within the finalize_round_bets RPC function for security.
 
       // Update handicap history + recalculate & persist USGA Handicap Index for all registered players
+      // Uses caches for course_holes and course_tees to avoid repeated queries across players
       try {
         const { calculateAdjustedGrossScore, calculateDifferential, calculateHandicapIndexFromDifferentials: calcHI } = await import('@/lib/usgaHandicap');
         const { calculateStrokesPerHole: calcSPH } = await import('@/lib/handicapUtils');
 
-        for (const player of sanitizedPlayers) {
-          if (!player.profileId || !isUuid(player.profileId)) continue;
+        // Caches to avoid re-fetching the same course data for multiple players
+        const courseHolesCache = new Map<string, any[]>();
+        const courseTeesCache = new Map<string, any>();
 
-          // Save handicap history record
-          await supabase.from('handicap_history').insert({
-            profile_id: player.profileId,
+        const getCourseHolesCached = async (courseId: string) => {
+          if (courseHolesCache.has(courseId)) return courseHolesCache.get(courseId)!;
+          const { data } = await supabase.from('course_holes')
+            .select('hole_number, par, stroke_index')
+            .eq('course_id', courseId).order('hole_number');
+          if (data) courseHolesCache.set(courseId, data);
+          return data || [];
+        };
+
+        const getCourseTeeCached = async (courseId: string, tee: string) => {
+          const key = `${courseId}::${tee}`;
+          if (courseTeesCache.has(key)) return courseTeesCache.get(key);
+          const { data } = await supabase.from('course_tees')
+            .select('course_rating, slope_rating')
+            .eq('course_id', courseId).eq('tee_color', tee).maybeSingle();
+          courseTeesCache.set(key, data);
+          return data;
+        };
+
+        // Insert handicap history records in parallel
+        const registeredPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
+        await Promise.all(registeredPlayers.map(player =>
+          supabase.from('handicap_history').insert({
+            profile_id: player.profileId!,
             handicap: player.handicap,
             round_id: roundState.id,
-          });
+          }).then(() => {})
+        ));
 
-          // Recalculate USGA Handicap Index and persist to profile
+        // Recalculate USGA Handicap Index for each registered player
+        for (const player of registeredPlayers) {
           try {
             const { data: rpHistory } = await supabase
               .from('round_players')
               .select(`id, tee_color, handicap_for_round,
                 rounds!inner ( id, date, status, course_id, tee_color, golf_courses!inner ( id, name ) )`)
-              .eq('profile_id', player.profileId)
+              .eq('profile_id', player.profileId!)
               .eq('rounds.status', 'completed')
               .order('rounds(date)', { ascending: false })
               .limit(20);
@@ -1677,20 +1702,10 @@ export const useRoundManagement = ({
                 .order('hole_number');
               if (!hs || hs.length < 18) continue;
 
-              const { data: ch } = await supabase
-                .from('course_holes')
-                .select('hole_number, par, stroke_index')
-                .eq('course_id', crs.id)
-                .order('hole_number');
+              const ch = await getCourseHolesCached(crs.id);
               if (!ch || ch.length < 18) continue;
 
-              const { data: td } = await supabase
-                .from('course_tees')
-                .select('course_rating, slope_rating')
-                .eq('course_id', crs.id)
-                .eq('tee_color', tee)
-                .maybeSingle();
-
+              const td = await getCourseTeeCached(crs.id, tee);
               const cr = td?.course_rating || 72;
               const sr = td?.slope_rating || 113;
 
@@ -1805,12 +1820,25 @@ export const useRoundManagement = ({
       }
 
       // Mark the round as completed ONLY at the very end.
+      // Retry up to 3 times with backoff to handle stale connections after long USGA recalc.
       try {
-        const { error: roundCompleteError } = await supabase
-          .from('rounds')
-          .update({ status: 'completed' })
-          .eq('id', roundState.id);
-        if (roundCompleteError) throw roundCompleteError;
+        let lastErr: any = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const { error: roundCompleteError } = await supabase
+              .from('rounds')
+              .update({ status: 'completed' })
+              .eq('id', roundState.id);
+            if (roundCompleteError) throw roundCompleteError;
+            lastErr = null;
+            break;
+          } catch (retryErr) {
+            lastErr = retryErr;
+            devWarn(`[setRoundClosed] Attempt ${attempt + 1} failed:`, retryErr);
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          }
+        }
+        if (lastErr) throw lastErr;
         pushStageOk(report, 'setRoundClosed');
       } catch (e) {
         await fail('setRoundClosed', e, report.attemptId);
