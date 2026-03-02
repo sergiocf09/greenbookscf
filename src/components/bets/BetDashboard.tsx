@@ -303,6 +303,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           // Disable Oyes and Rayas for cross-group (too complex for now)
           oyeses: { ...effectiveBetConfig.oyeses, enabled: false },
           rayas: { ...effectiveBetConfig.rayas, enabled: false },
+          // Disable Side Bets for cross-group — they are explicit per-player and
+          // residual bets from other pairs can contaminate balances.
+          sideBets: { bets: [], enabled: false },
         };
 
         const pairSummaries = calculateAllBets(
@@ -908,7 +911,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     if (betConfig_?.oneVsAll && betConfig_?.anchorPlayerId) {
       return playerId === betConfig_.anchorPlayerId || rivalId === betConfig_.anchorPlayerId;
     }
-    if (!participantIds || participantIds.length === 0) return true; // all participate by default
+    if (!participantIds) return true; // undefined = all participate by default
+    if (participantIds.length === 0) return false; // [] = nobody participates
     const playerIn = participantIds.includes(playerId);
     const rivalIn = participantIds.includes(rivalId);
     if (playerIn && rivalIn) return true;
@@ -1103,7 +1107,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const configKey = betTypeToConfigKey(s.betType);
         if (!configKey) return true; // unknown type, include by default
         const betCfg = effectiveBetConfig[configKey as keyof BetConfig] as any;
-        if (!betCfg?.participantIds || betCfg.participantIds.length === 0) return true;
+        if (!betCfg?.participantIds) return true; // undefined = all participate
+        if (betCfg.participantIds.length === 0) return false; // [] = nobody
         return bothParticipateGlobal(betCfg.participantIds, playerId, rivalId, betCfg);
       })
       .reduce((sum, s) => sum + s.amount, 0);
@@ -3749,17 +3754,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       return player.id === resolvedBetConfig.anchorPlayerId || rival.id === resolvedBetConfig.anchorPlayerId;
     }
     
-    if (!participantIds || participantIds.length === 0) return true; // all participate by default
+    if (!participantIds) return true; // undefined = all participate
+    if (participantIds.length === 0) return false; // [] = nobody participates
     
-    // CROSS-GROUP: Only check that the base player participates in the bet.
-    // If the base player is playing this bet, it should appear for cross-group rivals.
+    // CROSS-GROUP: The cross-group engine already computed this bet with
+    // participantIds: undefined (everyone participates). The "X" override button
+    // handles per-pair exclusion. So always show the bet in the detail view.
     if (isCrossGroup) {
-      const playerIn = participantIds.includes(player.id);
-      if (playerIn) return true;
-      // Template inheritance: if no group player is in the list, treat as template
-      const anyGroupPlayerInList = groupPlayers.some(p => participantIds!.includes(p.id));
-      if (!anyGroupPlayerInList) return true;
-      return false;
+      return true;
     }
     
     // Same-group: check if BOTH player and rival are in the list
