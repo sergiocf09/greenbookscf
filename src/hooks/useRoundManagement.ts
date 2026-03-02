@@ -904,7 +904,7 @@ export const useRoundManagement = ({
 
       // Guardrail: if any player has a malformed profileId (e.g. a shortened code like "01f284d7"),
       // treat them as a guest for persistence purposes so backend UUID casts don't fail.
-      const sanitizedPlayers = players.map((p) => {
+      const sanitizedPlayers = allPlayersForClose.map((p) => {
         if (!p.profileId) return p;
         if (isUuid(p.profileId)) return p;
         devError('Malformed profileId detected; treating as guest for closeScorecard:', {
