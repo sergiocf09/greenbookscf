@@ -28,6 +28,14 @@ export interface SnapshotPlayer {
   profileId?: string | null;
   isGuest: boolean;
   teeColor?: string;
+  groupId?: string; // Group ID for multi-group rounds
+}
+
+// Group info stored in snapshot for historical reconstruction
+export interface SnapshotGroup {
+  id: string;
+  name: string;
+  playerIds: string[]; // SnapshotPlayer.id references
 }
 
 // Structure of a score in the snapshot
@@ -125,6 +133,12 @@ export interface RoundSnapshot {
   
   // Players
   players: SnapshotPlayer[];
+  
+  // Groups for multi-group rounds (empty array or undefined for single-group)
+  groups?: SnapshotGroup[];
+  
+  // Cross-group rivals map (copied from betConfig for historical reconstruction)
+  crossGroupRivals?: Record<string, string[]>;
   
   // Scores per player
   scores: Record<string, SnapshotHoleScore[]>;
@@ -246,7 +260,7 @@ export function generateRoundSnapshot(
   // Display-ready result text per pair+segment, pre-computed at close time (no recalc in historic)
   pairSegmentResults?: SnapshotPairSegmentResults
 ): RoundSnapshot {
-  // Build players snapshot
+  // Build players snapshot (now includes groupId)
   const snapshotPlayers: SnapshotPlayer[] = players.map(p => ({
     id: p.id,
     name: p.name,
@@ -256,6 +270,22 @@ export function generateRoundSnapshot(
     profileId: p.profileId || null,
     isGuest: !p.profileId,
     teeColor: p.teeColor,
+    groupId: p.groupId,
+  }));
+
+  // Build groups snapshot from player groupIds
+  const groupMap = new Map<string, string[]>();
+  for (const p of players) {
+    if (p.groupId) {
+      const list = groupMap.get(p.groupId) || [];
+      list.push(p.id);
+      groupMap.set(p.groupId, list);
+    }
+  }
+  const snapshotGroups: SnapshotGroup[] = Array.from(groupMap.entries()).map(([gId, pIds], idx) => ({
+    id: gId,
+    name: `Grupo ${idx + 1}`,
+    playerIds: pIds,
   }));
 
   // Build scores snapshot
@@ -469,6 +499,10 @@ export function generateRoundSnapshot(
       },
     },
     players: snapshotPlayers,
+    groups: snapshotGroups.length > 0 ? snapshotGroups : undefined,
+    crossGroupRivals: betConfig.crossGroupRivals && Object.keys(betConfig.crossGroupRivals).length > 0
+      ? betConfig.crossGroupRivals
+      : undefined,
     scores: snapshotScores,
     betConfig,
     ledger,

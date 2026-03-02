@@ -13,6 +13,7 @@ import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
+import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -1090,14 +1091,43 @@ export const useRoundManagement = ({
           })()
         : normalizedBetConfig;
 
-      const intraGroupBetResults = calculateAllBets(
-        sanitizedPlayers,
-        confirmedScoresForClose,
-        betConfigWithHandicaps,
-        course,
-        roundState.startingHole,
-        new Set(Array.from({ length: 18 }, (_, i) => i + 1))
-      );
+      // Intra-group bet calculation: resolve config per group when overrides exist
+      let intraGroupBetResults: BetSummary[];
+      const hasGroupOverrides = betConfigWithHandicaps.groupBetOverrides && 
+        Object.keys(betConfigWithHandicaps.groupBetOverrides).length > 0;
+      
+      // Detect distinct groups from sanitizedPlayers
+      const distinctGroupIds = new Set(sanitizedPlayers.map(p => p.groupId).filter(Boolean) as string[]);
+      
+      if (hasGroupOverrides && distinctGroupIds.size > 1) {
+        // Multiple groups with overrides: calculate per group with resolved config
+        intraGroupBetResults = [];
+        for (const gId of distinctGroupIds) {
+          const groupPlayers = sanitizedPlayers.filter(p => p.groupId === gId);
+          if (groupPlayers.length === 0) continue;
+          
+          const resolvedConfig = resolveConfigForGroup(betConfigWithHandicaps, gId);
+          const groupResults = calculateAllBets(
+            groupPlayers,
+            confirmedScoresForClose,
+            resolvedConfig,
+            course,
+            roundState.startingHole,
+            new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+          );
+          intraGroupBetResults.push(...groupResults);
+        }
+      } else {
+        // Single group or no overrides: use global config as before
+        intraGroupBetResults = calculateAllBets(
+          sanitizedPlayers,
+          confirmedScoresForClose,
+          betConfigWithHandicaps,
+          course,
+          roundState.startingHole,
+          new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+        );
+      }
 
       // ─── CROSS-GROUP BET CALCULATION ────────────────────────────────────────
       // The main engine skips cross-group pairs (different groupId). We must compute

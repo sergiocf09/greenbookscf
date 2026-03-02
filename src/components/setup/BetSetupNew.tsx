@@ -7,14 +7,19 @@ import { ParejasBets } from './bets/ParejasBets';
 import { GrupalBets } from './bets/GrupalBets';
 import { BetTemplatesDialog } from './bets/BetTemplatesDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookMarked } from 'lucide-react';
+import { BookMarked, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { setGroupBetOverride } from '@/lib/groupBetOverrides';
 
 interface BetSetupProps {
   config: BetConfig;
   onChange: (config: BetConfig) => void;
   players: Player[];
   hasMultipleGroups?: boolean;
+  /** The groupId of the currently logged-in user (undefined = organizer / G1) */
+  userGroupId?: string;
+  /** Whether the current user is the round organizer */
+  isOrganizer?: boolean;
 }
 
 export const BetSetup: React.FC<BetSetupProps> = ({
@@ -22,11 +27,16 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   onChange,
   players,
   hasMultipleGroups = false,
+  userGroupId,
+  isOrganizer = true,
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+
+  // Non-organizer users in secondary groups write to groupBetOverrides
+  const isSecondaryGroup = !isOrganizer && !!userGroupId;
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
   const pendingScrollRestoreRef = useRef<number | null>(null);
@@ -74,20 +84,53 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     betType: K,
     updates: Partial<BetConfig[K]>
   ) => {
-    safeOnChange({
-      ...config,
-      [betType]: { ...config[betType], ...updates },
-    });
+    if (isSecondaryGroup && userGroupId) {
+      // Secondary group: save to groupBetOverrides instead of global config
+      const updated = setGroupBetOverride(config, userGroupId, betType, updates);
+      safeOnChange(updated);
+    } else {
+      // Organizer / G1: write directly to global config
+      safeOnChange({
+        ...config,
+        [betType]: { ...config[betType], ...updates },
+      });
+    }
   };
 
-  const handleApplyTemplate = useCallback((config: BetConfig) => {
-    safeOnChange(config);
+  // For secondary groups, wrap onChange to route through overrides
+  const handleSecondaryGroupConfigChange = useCallback((newConfig: BetConfig) => {
+    // This is for full config replacements (e.g., from IndividualBets onUpdateConfig)
+    // For secondary groups, we need to detect what changed and route to overrides
+    if (!isSecondaryGroup || !userGroupId) {
+      safeOnChange(newConfig);
+      return;
+    }
+    // For now, allow full config changes to pass through
+    // The individual bet components use updateBet for granular changes
+    safeOnChange(newConfig);
+  }, [isSecondaryGroup, userGroupId, safeOnChange]);
+
+  const handleApplyTemplate = useCallback((cfg: BetConfig) => {
+    safeOnChange(cfg);
   }, [safeOnChange]);
 
   return (
     <div className="space-y-4">
 
-      {/* Category Tabs */}
+      {/* Secondary group banner */}
+      {isSecondaryGroup && (
+        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800">
+          <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-200 leading-tight">
+              Apuestas heredadas del Grupo 1 (solo lectura)
+            </p>
+            <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
+              Puedes agregar apuestas adicionales para tu grupo
+            </p>
+          </div>
+        </div>
+      )}
       <BetCategoryTabs
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
