@@ -1668,7 +1668,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {/* Expanded view: balance vs each other player + carritos per rival */}
                   {isExpanded && (
                     <div className="ml-5 mt-1 space-y-1 pb-2">
-                      {otherPlayers.map(other => {
+                      {otherPlayers
+                        .map(other => {
                         // Historical: the TOTAL must come from snapshotBalances.vsBalances.netAmount
                         // (the immutable value calculated at close time).
                         // The breakdown (Ind/Car/Pres) is informational from the ledger.
@@ -1683,11 +1684,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        // CRITICAL: For historical rounds, the total shown in the Tabla General expanded row
-                        // is: Individual (from ledger, excl. team bets) + Carritos + Presiones.
-                        // This matches the avatar (getCorrectedBilateralBalance = individual only) + team bets breakdown.
-                        // We do NOT use getSnapshotBilateralBalance here because in old snapshots it may
-                        // include team bets already inside the vsBalance, causing double-counting.
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
                         
                         // Check if this is a cross-group rival
@@ -1697,7 +1693,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const otherGroupIdx = players.some(p => p.id === other.id) ? 0 : 
                           playerGroups.findIndex(g => g.players.some(p => p.id === other.id)) + 1;
                         
-                        return (
+                        return { other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx };
+                      })
+                      // In historical mode, hide rivals with zero balance (no actual bets)
+                      .filter(({ vsTotalBalance }) => !isHistorical || vsTotalBalance !== 0)
+                      .map(({ other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx }) => (
                           <div 
                             key={other.id} 
                             className={cn(
@@ -1738,8 +1738,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               {vsTotalBalance >= 0 ? '+$' : '-$'}{Math.abs(vsTotalBalance)}
                             </span>
                           </div>
-                        );
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
