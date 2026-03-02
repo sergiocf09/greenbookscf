@@ -286,9 +286,10 @@ const Index = () => {
     const restoreInProgress = sessionStorage.getItem('restore_round_id');
     if (restoreInProgress) return;
     
-    // Skip if no pending rounds or already restoring
+    // Skip if no pending rounds or already restoring/closing
     if (!pendingRounds?.length) return;
     if (isRestoring) return;
+    if (isLoading || isClosing) return;
     if (roundState.id && pendingRounds.some((r) => r.roundId === roundState.id)) return;
     if (isRoundStarted) return;
     
@@ -308,7 +309,7 @@ const Index = () => {
       sessionStorage.setItem('restore_round_id', mostRecentRound.roundId);
       window.location.reload();
     }
-  }, [pendingRounds, isRestoring, roundState.id, isRoundStarted, players.length, selectedCourseId]);
+  }, [pendingRounds, isRestoring, isLoading, isClosing, roundState.id, isRoundStarted, players.length, selectedCourseId]);
 
   // Persist players when round is created (players added before round creation)
   const persistedPlayersForRoundRef = useRef<string | null>(null);
