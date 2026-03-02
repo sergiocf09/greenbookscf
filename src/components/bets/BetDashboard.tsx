@@ -940,8 +940,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // participantIds, no betOverrides). Simply sum them — no re-computation needed.
     // This ensures the icon balance matches the bilateral detail header exactly.
     if (playerObj) {
-      const rivalObj2 = allPlayersForCalculations.find(p => p.id === rivalId);
-      if (rivalObj2 && playerObj.groupId && rivalObj2.groupId && playerObj.groupId !== rivalObj2.groupId) {
+      // Detect cross-group by checking the crossGroupRivalsMap (reliable source of truth).
+      // groupId-based detection fails because allPlayersForCalculations may tag all
+      // players with the same "main" groupId when the players prop contains everyone.
+      const isCrossGroupPair = (() => {
+        const playerRivals = crossGroupRivalsMap[playerId] || [];
+        if ((playerRivals as string[]).includes(rivalId)) return true;
+        const rivalRivals = crossGroupRivalsMap[rivalId] || [];
+        if ((rivalRivals as string[]).includes(playerId)) return true;
+        return false;
+      })();
+      
+      if (isCrossGroupPair) {
         const carritosTypes2 = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
         return betSummaries
           .filter(s =>
