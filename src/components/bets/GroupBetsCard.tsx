@@ -696,18 +696,24 @@ const StablefordResultBlock: React.FC<{
       {isWinner && (
         <div className={cn(
           "rounded-lg p-2",
-          winnerInSameGroup ? "bg-green-500/10 border border-green-500/30" : "bg-amber-500/10 border border-amber-500/30"
+          amount > 0
+            ? (winnerInSameGroup ? "bg-green-500/10 border border-green-500/30" : "bg-amber-500/10 border border-amber-500/30")
+            : "bg-muted/50 border border-border/50"
         )}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={cn("text-xs", winnerInSameGroup ? "text-green-500" : "text-amber-500")}>🏆</span>
+              <span className={cn("text-xs", amount > 0 ? (winnerInSameGroup ? "text-green-500" : "text-amber-500") : "text-muted-foreground")}>🏆</span>
               <PlayerAvatar initials={results[0].player.initials} background={results[0].player.color} size="sm" isLoggedInUser={results[0].playerId === basePlayerId} />
               <span className="font-medium text-sm">{formatPlayerName(results[0].player.name).split(' ')[0]}</span>
               <span className="text-[10px] text-muted-foreground">{results[0].pointsTotal} pts</span>
             </div>
-            <span className={cn("font-bold", winnerInSameGroup ? "text-green-600" : "text-amber-600")}>
-              +${amount * (results.length - 1)}
-            </span>
+            {amount > 0 ? (
+              <span className={cn("font-bold", winnerInSameGroup ? "text-green-600" : "text-amber-600")}>
+                +${amount * (results.length - 1)}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">$0</span>
+            )}
           </div>
         </div>
       )}
