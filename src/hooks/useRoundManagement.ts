@@ -395,6 +395,7 @@ export const useRoundManagement = ({
               handicap: Number(rp.handicap_for_round) || 0,
               profileId: rp.profile_id || undefined,
               teeColor: rp.tee_color || undefined,
+              groupId: rp.group_id || undefined,
             };
             
             // Add to restoredPlayers for score restoration
