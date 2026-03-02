@@ -1127,24 +1127,24 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const manchasSummary = useMemo(() => {
     if (!betConfig.manchas?.enabled || sameGroupPlayers.length < 2) return null;
     const MANCHA_MARKERS = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana', 'cuatriput'];
-    const MANCHA_LABELS: Record<string, { label: string; emoji: string }> = {
-      ladies:       { label: 'Ladies',       emoji: '👠' },
-      swingBlanco:  { label: 'Swing Blanco', emoji: '💨' },
-      retruje:      { label: 'Retruje',      emoji: '↩️' },
-      trampa:       { label: 'Trampa',       emoji: '⚠️' },
-      dobleAgua:    { label: 'Doble Agua',   emoji: '🌊' },
-      dobleOB:      { label: 'Doble OB',     emoji: '🚫' },
-      par3GirMas3:  { label: 'Par3 GIR+3',  emoji: '⛳' },
-      dobleDigito:  { label: 'Doble Dígito',emoji: '💀' },
-      moreliana:    { label: 'Moreliana',    emoji: '🎭' },
-      cuatriput:    { label: 'Cuatriput',    emoji: '😱' },
+    const MANCHA_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
+      ladies:       { label: 'Ladies',       emoji: '👠', short: 'Pinkies' },
+      swingBlanco:  { label: 'Swing Blanco', emoji: '💨', short: 'Paloma' },
+      retruje:      { label: 'Retruje',      emoji: '↩️', short: 'Retruje' },
+      trampa:       { label: 'Trampa',       emoji: '⚠️', short: 'Trampa' },
+      dobleAgua:    { label: 'Doble Agua',   emoji: '🌊', short: '2xAgua' },
+      dobleOB:      { label: 'Doble OB',     emoji: '🚫', short: '2xOB' },
+      par3GirMas3:  { label: 'Par3 GIR+3',  emoji: '⛳', short: 'GIR>3' },
+      dobleDigito:  { label: 'Doble Dígito',emoji: '💀', short: '10+' },
+      moreliana:    { label: 'Moreliana',    emoji: '🎭', short: 'Morel' },
+      cuatriput:    { label: 'Cuatriput',    emoji: '😱', short: '4+Putt' },
     };
     const participatingPlayers = resolveGroupParticipants(betConfig.manchas.participantIds);
     if (participatingPlayers.length < 2) return null;
 
     const playerData = participatingPlayers.map(player => {
       const playerScores = scores.get(player.id) || [];
-      const manchas: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
+      const manchas: { marker: string; label: string; emoji: string; short: string; holeNumber: number }[] = [];
       playerScores.forEach(score => {
         if (!score.confirmed || !score.strokes) return;
         // Manual markers
@@ -1153,7 +1153,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             const camelKey = key;
             if (camelKey === 'dobleDigito' || camelKey === 'cuatriput') return; // handled below
             if ((score.markers as any)[camelKey]) {
-              manchas.push({ marker: camelKey, ...MANCHA_LABELS[key] || { label: key, emoji: '❗' }, holeNumber: score.holeNumber });
+              manchas.push({ marker: camelKey, ...(MANCHA_LABELS[key] || { label: key, emoji: '❗', short: key }), holeNumber: score.holeNumber });
             }
           });
         }
@@ -1179,20 +1179,20 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const unidadesSummary = useMemo(() => {
     if (!betConfig.units?.enabled || sameGroupPlayers.length < 2) return null;
     const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
-    const UNIT_LABELS: Record<string, { label: string; emoji: string }> = {
-      birdie:    { label: 'Birdie',      emoji: '🐦' },
-      eagle:     { label: 'Águila',      emoji: '🦅' },
-      albatross: { label: 'Albatros',    emoji: '🦢' },
-      holeOut:   { label: 'Hole Out',    emoji: '🎯' },
-      aquaPar:   { label: 'Aqua Par',    emoji: '💧' },
-      sandyPar:  { label: 'Sandy Par',   emoji: '🏖️' },
+    const UNIT_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
+      birdie:    { label: 'Birdie',      emoji: '🐦', short: 'Birdie' },
+      eagle:     { label: 'Águila',      emoji: '🦅', short: 'Águila' },
+      albatross: { label: 'Albatros',    emoji: '🦢', short: 'Albatros' },
+      holeOut:   { label: 'Hole Out',    emoji: '🎯', short: 'HoleOut' },
+      aquaPar:   { label: 'Aqua Par',    emoji: '💧', short: 'AquaPar' },
+      sandyPar:  { label: 'Sandy Par',   emoji: '🏖️', short: 'Sandy' },
     };
     const participatingPlayers = resolveGroupParticipants(betConfig.units.participantIds);
     if (participatingPlayers.length < 2) return null;
 
     const playerData = participatingPlayers.map(player => {
       const playerScores = scores.get(player.id) || [];
-      const unidades: { marker: string; label: string; emoji: string; holeNumber: number }[] = [];
+      const unidades: { marker: string; label: string; emoji: string; short: string; holeNumber: number }[] = [];
       playerScores.forEach(score => {
         if (!score.confirmed || !score.strokes) return;
         const holePar = course.holes[score.holeNumber - 1]?.par || 4;
@@ -1209,7 +1209,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         if (score.markers) {
           ['holeOut', 'aquaPar', 'sandyPar'].forEach(key => {
             if ((score.markers as any)[key]) {
-              unidades.push({ marker: key, ...UNIT_LABELS[key] || { label: key, emoji: '⭐' }, holeNumber: score.holeNumber });
+              unidades.push({ marker: key, ...(UNIT_LABELS[key] || { label: key, emoji: '⭐', short: key }), holeNumber: score.holeNumber });
             }
           });
         }
@@ -1718,17 +1718,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
                   const colCount = allPlayerData.length;
                   // Collect all incidents sorted by hole
-                  const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string }[] = [];
-                  allPlayerData.forEach(({ player, manchas }) => {
-                    manchas.forEach(m => allIncidents.push({ playerId: player.id, holeNumber: m.holeNumber, emoji: m.emoji, label: m.label }));
-                  });
+                   const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string; short: string }[] = [];
+                   allPlayerData.forEach(({ player, manchas }) => {
+                     manchas.forEach(m => allIncidents.push({ playerId: player.id, holeNumber: m.holeNumber, emoji: m.emoji, label: m.label, short: m.short }));
+                   });
                   allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
                   // Deduplicate: group by holeNumber+playerId
-                  const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string }[] = [];
-                  allIncidents.forEach(inc => {
-                    if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
-                      uniqueRows.push(inc);
-                    }
+                   const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string; short: string }[] = [];
+                   allIncidents.forEach(inc => {
+                     if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
+                       uniqueRows.push(inc);
+                     }
                   });
                   return (
                     <div className="w-full">
@@ -1750,23 +1750,23 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       </div>
                       {/* Detail rows: one row per incident */}
                       {uniqueRows.length > 0 ? (
-                        <div className="mt-1.5 space-y-0.5">
-                          {uniqueRows.map((inc, i) => (
-                            <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                              {allPlayerData.map(({ player }) => (
-                                <div key={player.id} className="text-center min-h-[20px] flex items-center justify-center">
-                                  {inc.playerId === player.id ? (
-                                    <span className="text-[10px] text-destructive font-medium">
-                                      H{inc.holeNumber} {inc.emoji}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] text-muted-foreground/20">—</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
+                         <div className="mt-1">
+                           {uniqueRows.map((inc, i) => (
+                             <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                               {allPlayerData.map(({ player }) => (
+                                 <div key={player.id} className="text-center min-h-[18px] flex items-center justify-center">
+                                   {inc.playerId === player.id ? (
+                                     <span className="text-[9px] text-destructive font-medium leading-tight">
+                                       H{inc.holeNumber} {inc.short}
+                                     </span>
+                                   ) : (
+                                     <span className="text-[9px] text-muted-foreground/20">—</span>
+                                   )}
+                                 </div>
+                               ))}
+                             </div>
+                           ))}
+                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>
                       )}
@@ -1783,54 +1783,54 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   const allPlayerData = unidadesSummary.playerData;
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
                   const colCount = allPlayerData.length;
-                  const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string }[] = [];
-                  allPlayerData.forEach(({ player, unidades }) => {
-                    unidades.forEach(u => allIncidents.push({ playerId: player.id, holeNumber: u.holeNumber, emoji: u.emoji, label: u.label }));
-                  });
-                  allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
-                  const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string }[] = [];
-                  allIncidents.forEach(inc => {
-                    if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
-                      uniqueRows.push(inc);
-                    }
-                  });
-                  return (
-                    <div className="w-full">
-                      {/* Header: initials */}
-                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                        {allPlayerData.map(({ player }) => (
-                          <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
-                            {getPlayerAbbr(player)}
-                          </div>
-                        ))}
-                      </div>
-                      {/* Counts row */}
-                      <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                        {allPlayerData.map(({ player, total }) => (
-                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
-                            {total}
-                          </div>
-                        ))}
-                      </div>
-                      {/* Detail rows */}
-                      {uniqueRows.length > 0 ? (
-                        <div className="mt-1.5 space-y-0.5">
-                          {uniqueRows.map((inc, i) => (
-                            <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
-                              {allPlayerData.map(({ player }) => (
-                                <div key={player.id} className="text-center min-h-[20px] flex items-center justify-center">
-                                  {inc.playerId === player.id ? (
-                                    <span className="text-[10px] text-primary font-medium">
-                                      H{inc.holeNumber} {inc.emoji}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] text-muted-foreground/20">—</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
+                   const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string; short: string }[] = [];
+                   allPlayerData.forEach(({ player, unidades }) => {
+                     unidades.forEach(u => allIncidents.push({ playerId: player.id, holeNumber: u.holeNumber, emoji: u.emoji, label: u.label, short: u.short }));
+                   });
+                   allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
+                   const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string; short: string }[] = [];
+                   allIncidents.forEach(inc => {
+                     if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
+                       uniqueRows.push(inc);
+                     }
+                   });
+                   return (
+                     <div className="w-full">
+                       {/* Header: initials */}
+                       <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                         {allPlayerData.map(({ player }) => (
+                           <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
+                             {getPlayerAbbr(player)}
+                           </div>
+                         ))}
+                       </div>
+                       {/* Counts row */}
+                       <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                         {allPlayerData.map(({ player, total }) => (
+                           <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
+                             {total}
+                           </div>
+                         ))}
+                       </div>
+                       {/* Detail rows */}
+                       {uniqueRows.length > 0 ? (
+                         <div className="mt-1">
+                           {uniqueRows.map((inc, i) => (
+                             <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                               {allPlayerData.map(({ player }) => (
+                                 <div key={player.id} className="text-center min-h-[18px] flex items-center justify-center">
+                                   {inc.playerId === player.id ? (
+                                     <span className="text-[9px] text-primary font-medium leading-tight">
+                                       H{inc.holeNumber} {inc.short}
+                                     </span>
+                                   ) : (
+                                     <span className="text-[9px] text-muted-foreground/20">—</span>
+                                   )}
+                                 </div>
+                               ))}
+                             </div>
+                           ))}
+                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>
                       )}
