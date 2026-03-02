@@ -1724,9 +1724,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
                   const colCount = allPlayerData.length;
                   return (
-                    <div className="w-full">
+                    <div className="w-full px-2">
                       {/* Header: initials */}
-                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player }) => (
                           <div key={player.id} className="text-center text-[11px] font-bold text-destructive py-1">
                             {getPlayerAbbr(player)}
@@ -1734,7 +1734,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         ))}
                       </div>
                       {/* Counts row */}
-                      <div className="grid gap-0.5 border-b border-destructive/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-2 border-b border-destructive/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, total }) => (
                           <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground/40')}>
                             {total}
@@ -1742,13 +1742,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         ))}
                       </div>
                       {/* Per-player columns with stacked incidents */}
-                      <div className="grid gap-0.5 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-2 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, manchas }) => {
                           const sorted = [...manchas].sort((a, b) => a.holeNumber - b.holeNumber);
                           // Deduplicate
                           const unique = sorted.filter((m, i) => !sorted.slice(0, i).find(prev => prev.holeNumber === m.holeNumber && prev.label === m.label));
                           return (
-                            <div key={player.id} className="flex flex-col items-start px-0.5">
+                            <div key={player.id} className="flex flex-col items-center px-0.5">
                               {unique.map((m, i) => (
                                 <div key={i} className="flex items-baseline gap-0.5 leading-tight">
                                   <span className="text-[9px] text-destructive font-mono w-[18px] text-right shrink-0">H{m.holeNumber}</span>
@@ -1776,9 +1776,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
                   const colCount = allPlayerData.length;
                   return (
-                    <div className="w-full">
+                    <div className="w-full px-2">
                       {/* Header: initials */}
-                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player }) => (
                           <div key={player.id} className="text-center text-[11px] font-bold text-green-600 py-1">
                             {getPlayerAbbr(player)}
@@ -1786,7 +1786,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         ))}
                       </div>
                       {/* Counts row */}
-                       <div className="grid gap-0.5 border-b border-green-600/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                       <div className="grid gap-2 border-b border-green-600/30 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, total }) => (
                           <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-green-600' : 'text-muted-foreground/40')}>
                             {total}
@@ -1794,12 +1794,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         ))}
                       </div>
                       {/* Per-player columns with stacked incidents */}
-                      <div className="grid gap-0.5 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                      <div className="grid gap-2 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, unidades }) => {
                           const sorted = [...unidades].sort((a, b) => a.holeNumber - b.holeNumber);
                           const unique = sorted.filter((u, i) => !sorted.slice(0, i).find(prev => prev.holeNumber === u.holeNumber && prev.label === u.label));
                           return (
-                            <div key={player.id} className="flex flex-col items-start px-0.5">
+                            <div key={player.id} className="flex flex-col items-center px-0.5">
                               {unique.map((u, i) => (
                                 <div key={i} className="flex items-baseline gap-0.5 leading-tight">
                                   <span className="text-[9px] text-green-600 font-mono w-[18px] text-right shrink-0">H{u.holeNumber}</span>
