@@ -2063,14 +2063,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">${betConfig.stableford.amount || 100} c/u</span>
+                <span className="text-xs text-muted-foreground">${betConfig.stableford.amount ?? 100} c/u</span>
               </div>
               
               {/* Group result */}
               {stablefordGroupResults.length > 0 && (
                 <StablefordResultBlock
                   results={stablefordGroupResults}
-                  amount={betConfig.stableford.amount || 100}
+                  amount={betConfig.stableford.amount ?? 100}
                   basePlayerId={basePlayerId}
                   label={stablefordScope === 'both' ? 'Grupo' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
@@ -2081,7 +2081,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               {stablefordGlobalResults.length > 0 && (
                 <StablefordResultBlock
                   results={stablefordGlobalResults}
-                  amount={betConfig.stableford.amount || 100}
+                  amount={betConfig.stableford.amount ?? 100}
                   basePlayerId={basePlayerId}
                   label={stablefordScope === 'both' ? 'General' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
