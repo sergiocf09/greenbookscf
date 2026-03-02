@@ -391,7 +391,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         <TabsContent value="bets" className="mt-4 space-y-3">
           {/* ── Group Selector (multi-group only, bets section) ──────────── */}
           {hasMultipleGroups && snapshot?.groups && (
-            <div className="flex gap-1.5 overflow-x-auto pb-1 px-1">
+            <div className="flex gap-1.5 justify-center pb-1 px-1">
               {snapshot.groups.map((g, idx) => (
                 <button
                   key={g.id}
