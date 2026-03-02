@@ -290,25 +290,32 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   const scorecardPlayers: PlayerScoreData[] = useMemo(() => {
     if (!hasSnapshot || !snapshot) return fallbackPlayers;
 
-    const targetPlayers = groupView?.players || allSnapshotPlayers;
-    return targetPlayers.map(p => {
-      const scores = (snapshot.scores[p.id] || []) as SnapshotHoleScore[];
-      return {
-        playerId: p.id,
-        playerName: p.name,
-        initials: p.initials,
-        color: p.color,
-        handicap: p.handicap,
-        scores: scores.map(s => ({
-          holeNumber: s.holeNumber,
-          strokes: s.strokes,
-          putts: s.putts,
-          oyesProximity: s.oyesProximity,
-        })),
-        totalStrokes: scores.reduce((sum, s) => sum + (s.strokes || 0), 0),
-      };
-    });
-  }, [hasSnapshot, snapshot, groupView, allSnapshotPlayers, fallbackPlayers]);
+    // Scorecard always shows ALL players (all groups), sorted by gross score (best first)
+    return allSnapshotPlayers
+      .map(p => {
+        const scores = (snapshot.scores[p.id] || []) as SnapshotHoleScore[];
+        return {
+          playerId: p.id,
+          playerName: p.name,
+          initials: p.initials,
+          color: p.color,
+          handicap: p.handicap,
+          scores: scores.map(s => ({
+            holeNumber: s.holeNumber,
+            strokes: s.strokes,
+            putts: s.putts,
+            oyesProximity: s.oyesProximity,
+          })),
+          totalStrokes: scores.reduce((sum, s) => sum + (s.strokes || 0), 0),
+        };
+      })
+      .sort((a, b) => {
+        // Players with 0 total (no scores) go last
+        if (a.totalStrokes === 0 && b.totalStrokes > 0) return 1;
+        if (b.totalStrokes === 0 && a.totalStrokes > 0) return -1;
+        return a.totalStrokes - b.totalStrokes;
+      });
+  }, [hasSnapshot, snapshot, allSnapshotPlayers, fallbackPlayers]);
 
   // ── Bet config ─────────────────────────────────────────────────────────────
   const effectiveBetConfig = useMemo(() => {
