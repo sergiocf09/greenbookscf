@@ -1710,76 +1710,130 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               )}
             </div>
 
-            {/* Manchas panel */}
+            {/* Manchas panel — grid: initials header + count + detail rows */}
             {showManchasPanel && manchasSummary && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {(() => {
-                  const active = manchasSummary.playerData.filter(({ total }) => total > 0);
-                  if (active.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
+                  const allPlayerData = manchasSummary.playerData;
+                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
+                  const colCount = allPlayerData.length;
+                  // Collect all incidents sorted by hole
+                  const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string }[] = [];
+                  allPlayerData.forEach(({ player, manchas }) => {
+                    manchas.forEach(m => allIncidents.push({ playerId: player.id, holeNumber: m.holeNumber, emoji: m.emoji, label: m.label }));
+                  });
+                  allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
+                  // Deduplicate: group by holeNumber+playerId
+                  const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string }[] = [];
+                  allIncidents.forEach(inc => {
+                    if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
+                      uniqueRows.push(inc);
+                    }
+                  });
                   return (
-                    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, minmax(0,1fr))` }}>
-                      {active.map(({ player, manchas, total }) => (
-                        <Popover key={player.id}>
-                          <PopoverTrigger asChild>
-                            <button className="flex flex-col items-center bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg px-1 py-2 cursor-pointer w-full">
-                              <span className="text-[10px] text-muted-foreground text-center leading-tight line-clamp-2 h-[2.4em] flex items-center justify-center w-full px-0.5">
-                                {formatPlayerNameTwoWords(player.name)}
-                              </span>
-                              <span className="text-xl font-bold leading-none text-destructive mt-1">{total}</span>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-3" side="top">
-                            <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                            <div className="space-y-1">
-                              {manchas.map((m, i) => (
-                                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{m.emoji}</span>
-                                  <span>H{m.holeNumber}</span>
-                                  <span>{m.label}</span>
+                    <div className="w-full">
+                      {/* Header: initials */}
+                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player }) => (
+                          <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
+                            {getPlayerAbbr(player)}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Counts row */}
+                      <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player, total }) => (
+                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-destructive' : 'text-muted-foreground/40')}>
+                            {total}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Detail rows: one row per incident */}
+                      {uniqueRows.length > 0 ? (
+                        <div className="mt-1.5 space-y-0.5">
+                          {uniqueRows.map((inc, i) => (
+                            <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                              {allPlayerData.map(({ player }) => (
+                                <div key={player.id} className="text-center min-h-[20px] flex items-center justify-center">
+                                  {inc.playerId === player.id ? (
+                                    <span className="text-[10px] text-destructive font-medium">
+                                      H{inc.holeNumber} {inc.emoji}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-muted-foreground/20">—</span>
+                                  )}
                                 </div>
                               ))}
                             </div>
-                          </PopoverContent>
-                        </Popover>
-                      ))}
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>
+                      )}
                     </div>
                   );
                 })()}
               </div>
             )}
 
-            {/* Unidades panel */}
+            {/* Unidades panel — grid: initials header + count + detail rows */}
             {showUnidadesPanel && unidadesSummary && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {(() => {
-                  const active = unidadesSummary.playerData.filter(({ total }) => total > 0);
-                  if (active.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
+                  const allPlayerData = unidadesSummary.playerData;
+                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
+                  const colCount = allPlayerData.length;
+                  const allIncidents: { playerId: string; holeNumber: number; emoji: string; label: string }[] = [];
+                  allPlayerData.forEach(({ player, unidades }) => {
+                    unidades.forEach(u => allIncidents.push({ playerId: player.id, holeNumber: u.holeNumber, emoji: u.emoji, label: u.label }));
+                  });
+                  allIncidents.sort((a, b) => a.holeNumber - b.holeNumber);
+                  const uniqueRows: { holeNumber: number; playerId: string; emoji: string; label: string }[] = [];
+                  allIncidents.forEach(inc => {
+                    if (!uniqueRows.find(r => r.holeNumber === inc.holeNumber && r.playerId === inc.playerId && r.label === inc.label)) {
+                      uniqueRows.push(inc);
+                    }
+                  });
                   return (
-                    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(active.length, 4)}, minmax(0,1fr))` }}>
-                      {active.map(({ player, unidades, total }) => (
-                        <Popover key={player.id}>
-                          <PopoverTrigger asChild>
-                            <button className="flex flex-col items-center bg-muted/40 hover:bg-muted/70 transition-colors rounded-lg px-1 py-2 cursor-pointer w-full">
-                              <span className="text-[10px] text-muted-foreground text-center leading-tight line-clamp-2 h-[2.4em] flex items-center justify-center w-full px-0.5">
-                                {formatPlayerNameTwoWords(player.name)}
-                              </span>
-                              <span className="text-xl font-bold leading-none text-primary mt-1">{total}</span>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-3" side="top">
-                            <p className="text-xs font-medium mb-2">{formatPlayerName(player.name)}</p>
-                            <div className="space-y-1">
-                              {unidades.map((u, i) => (
-                                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{u.emoji}</span>
-                                  <span>H{u.holeNumber}</span>
-                                  <span>{u.label}</span>
+                    <div className="w-full">
+                      {/* Header: initials */}
+                      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player }) => (
+                          <div key={player.id} className="text-center text-[11px] font-bold text-foreground py-1">
+                            {getPlayerAbbr(player)}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Counts row */}
+                      <div className="grid gap-0.5 border-b border-border/50 pb-1.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                        {allPlayerData.map(({ player, total }) => (
+                          <div key={player.id} className={cn('text-center text-lg font-bold leading-none', total > 0 ? 'text-primary' : 'text-muted-foreground/40')}>
+                            {total}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Detail rows */}
+                      {uniqueRows.length > 0 ? (
+                        <div className="mt-1.5 space-y-0.5">
+                          {uniqueRows.map((inc, i) => (
+                            <div key={i} className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
+                              {allPlayerData.map(({ player }) => (
+                                <div key={player.id} className="text-center min-h-[20px] flex items-center justify-center">
+                                  {inc.playerId === player.id ? (
+                                    <span className="text-[10px] text-primary font-medium">
+                                      H{inc.holeNumber} {inc.emoji}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-muted-foreground/20">—</span>
+                                  )}
                                 </div>
                               ))}
                             </div>
-                          </PopoverContent>
-                        </Popover>
-                      ))}
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>
+                      )}
                     </div>
                   );
                 })()}

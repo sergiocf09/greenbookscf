@@ -1495,6 +1495,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
+  // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
+  if (isHistorical && players.length < 2) {
+    return (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        No hay apuestas en este grupo (solo 1 jugador).
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       
@@ -2001,10 +2010,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {/* All Carritos Results */}
-      {allCarritosResults.map((result, idx) => {
+      {/* All Carritos Results — only render cards that have actual data */}
+      {allCarritosResults.length > 0 && allCarritosResults.map((result, idx) => {
         const carritosId = result.id || `carritos-primary-${idx}`;
         const disabled = isTeamBetDisabled(carritosId);
+        // In historical mode, skip rendering if all hole data is null/empty
+        const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
+        if (isHistorical && !hasAnyData) return null;
         return (
           <CarritosResultsCard 
             key={carritosId}
