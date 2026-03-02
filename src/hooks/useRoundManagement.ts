@@ -50,6 +50,7 @@ export interface PendingRoundInfo {
 
 interface UseRoundManagementProps {
   players: Player[];
+  playerGroups: PlayerGroup[];
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   scores: Map<string, PlayerScore[]>;
   setScores: React.Dispatch<React.SetStateAction<Map<string, PlayerScore[]>>>;
@@ -66,6 +67,7 @@ interface UseRoundManagementProps {
 
 export const useRoundManagement = ({
   players,
+  playerGroups,
   setPlayers,
   scores,
   setScores,
@@ -760,16 +762,26 @@ export const useRoundManagement = ({
   ) => {
     if (!roundState.id || !profile || !course) return false;
 
+    // Build a canonical player list for close: main group + additional groups (deduped by id)
+    const allPlayersForClose = (() => {
+      const merged = [...players, ...playerGroups.flatMap((g) => g.players)];
+      const byId = new Map<string, Player>();
+      merged.forEach((p) => {
+        if (!byId.has(p.id)) byId.set(p.id, p);
+      });
+      return Array.from(byId.values());
+    })();
+
     // Local lock (prevents double-tap / re-entrancy)
     if (closeInFlightRef.current) {
       const report = newCloseAttemptReport({
         roundId: roundState.id,
         currentRoundStatus: roundState.status,
         userId: profile?.id,
-        playersCount: players.length,
-        loggedPlayers: players.filter((p) => p.profileId && isUuid(p.profileId)).length,
-        guestPlayers: players.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
-        invalidProfileIds: players
+        playersCount: allPlayersForClose.length,
+        loggedPlayers: allPlayersForClose.filter((p) => p.profileId && isUuid(p.profileId)).length,
+        guestPlayers: allPlayersForClose.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
+        invalidProfileIds: allPlayersForClose
           .filter((p) => p.profileId && !isUuid(p.profileId))
           .map((p) => ({ playerId: p.id, name: p.name, profileId: p.profileId as string })),
       });
@@ -786,7 +798,7 @@ export const useRoundManagement = ({
     setIsLoading(true);
 
     // Build base report early
-    const invalidProfileIds = players
+    const invalidProfileIds = allPlayersForClose
       .filter((p) => p.profileId && !isUuid(p.profileId))
       .map((p) => ({ playerId: p.id, name: p.name, profileId: p.profileId as string }));
 
@@ -794,9 +806,9 @@ export const useRoundManagement = ({
       roundId: roundState.id,
       currentRoundStatus: roundState.status,
       userId: profile?.id,
-      playersCount: players.length,
-      loggedPlayers: players.filter((p) => p.profileId && isUuid(p.profileId)).length,
-      guestPlayers: players.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
+      playersCount: allPlayersForClose.length,
+      loggedPlayers: allPlayersForClose.filter((p) => p.profileId && isUuid(p.profileId)).length,
+      guestPlayers: allPlayersForClose.filter((p) => !p.profileId || !isUuid(p.profileId)).length,
       invalidProfileIds,
     });
 
