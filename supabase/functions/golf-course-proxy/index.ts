@@ -131,6 +131,13 @@ Deno.serve(async (req) => {
 
       const courseData = await apiRes.json();
 
+      console.log("API response keys:", JSON.stringify(Object.keys(courseData)));
+      console.log("tees:", JSON.stringify(courseData.tees ? {
+        male: (courseData.tees.male || []).length,
+        female: (courseData.tees.female || []).length,
+        keys: Object.keys(courseData.tees),
+      } : "null"));
+
       // Determine name and location
       const courseName = courseData.course_name || courseData.club_name || "Unknown";
       const city = courseData.location?.city || "";
@@ -138,21 +145,19 @@ Deno.serve(async (req) => {
       const country = courseData.location?.country || "";
       const locationStr = [city, state].filter(Boolean).join(", ");
 
-      // Get male tees (primary for our app)
+      // Get tees - try male first, then female
       const maleTees: any[] = courseData.tees?.male || [];
       const femaleTees: any[] = courseData.tees?.female || [];
       const allTees = [...maleTees, ...femaleTees];
 
       if (allTees.length === 0) {
-        return new Response(
-          JSON.stringify({ error: "No tee data available for this course" }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Import course anyway with default 18-hole par 72 layout
+        console.log("No tee data, importing with defaults for course:", apiId);
       }
 
-      // Use first tee to get hole pars (they should be same across tees)
-      const referenceTee = allTees[0];
-      const numberOfHoles = referenceTee.number_of_holes || referenceTee.holes?.length || 18;
+      // Use first tee to get hole pars, or generate defaults
+      const referenceTee = allTees[0] || null;
+      const numberOfHoles = referenceTee?.number_of_holes || referenceTee?.holes?.length || 18;
 
       if (numberOfHoles !== 18 && numberOfHoles !== 9) {
         return new Response(
@@ -177,8 +182,8 @@ Deno.serve(async (req) => {
           source: "golfcourseapi",
           source_course_id: apiId,
           last_synced_at: new Date().toISOString(),
-          course_rating: referenceTee.course_rating || null,
-          slope_rating: referenceTee.slope_rating || null,
+          course_rating: referenceTee?.course_rating || null,
+          slope_rating: referenceTee?.slope_rating || null,
         })
         .select("id")
         .single();
@@ -222,18 +227,28 @@ Deno.serve(async (req) => {
         holesPerTee.set(teeColor, tee.holes || []);
       }
 
-      if (teesPayload.length > 0) {
-        await adminClient.from("course_tees").insert(teesPayload);
+      // If no tees from API, insert a default white tee
+      if (teesPayload.length === 0) {
+        teesPayload.push({
+          course_id: courseId,
+          tee_color: "white",
+          course_rating: 72,
+          slope_rating: 113,
+        });
       }
 
+      await adminClient.from("course_tees").insert(teesPayload);
+
       // Insert holes - build one row per hole with yards from each tee color
+      // Default par sequence for 18 holes if no data
+      const defaultPars = [4,4,4,3,5,4,4,3,5, 4,4,4,3,5,4,4,3,5];
       const holesPayload: any[] = [];
       for (let i = 0; i < numberOfHoles; i++) {
         const hole: any = {
           course_id: courseId,
           hole_number: i + 1,
-          par: referenceTee.holes?.[i]?.par || 4,
-          stroke_index: referenceTee.holes?.[i]?.handicap || (i + 1),
+          par: referenceTee?.holes?.[i]?.par || defaultPars[i] || 4,
+          stroke_index: referenceTee?.holes?.[i]?.handicap || (i + 1),
         };
 
         // Add yards from each tee
