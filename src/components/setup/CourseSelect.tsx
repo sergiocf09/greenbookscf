@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Loader2, Star, Plus } from 'lucide-react';
+import { MapPin, Loader2, Star, Plus, Search } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useCourseFavorites } from '@/hooks/useCourseFavorites';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
+import { CourseSearchDialog } from '@/components/courses/CourseSearchDialog';
 import { cn } from '@/lib/utils';
 
 interface CourseSelectProps {
@@ -39,6 +40,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   const { favoriteIds, toggleFavorite } = useCourseFavorites();
   const [showAll, setShowAll] = useState(false);
   const [showAddCourse, setShowAddCourse] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const selectedCourse = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
   // Split courses into favorites and others
@@ -71,15 +73,26 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">Campo de Golf</Label>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs gap-1"
-          onClick={() => setShowAddCourse(true)}
-        >
-          <Plus className="h-3 w-3" />
-          Agregar campo
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setShowSearch(true)}
+          >
+            <Search className="h-3 w-3" />
+            Buscar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setShowAddCourse(true)}
+          >
+            <Plus className="h-3 w-3" />
+            Manual
+          </Button>
+        </div>
       </div>
       
       <Select value={selectedCourseId || ''} onValueChange={onChange}>
@@ -206,7 +219,15 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
         onOpenChange={setShowAddCourse}
         onCreated={(courseId) => {
           refresh();
-          // Small delay to let the refresh complete before selecting
+          setTimeout(() => onChange(courseId), 500);
+        }}
+      />
+
+      <CourseSearchDialog
+        open={showSearch}
+        onOpenChange={setShowSearch}
+        onImported={(courseId) => {
+          refresh();
           setTimeout(() => onChange(courseId), 500);
         }}
       />

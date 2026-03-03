@@ -1,1 +1,7 @@
 project_id = "fudkywbthxspmvgcmhrn"
+
+[functions.golf-course-proxy]
+verify_jwt = false
+
+[functions.backfill-handicap-index]
+verify_jwt = false
