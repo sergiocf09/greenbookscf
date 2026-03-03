@@ -314,9 +314,12 @@ export type Database = {
           created_by_profile_id: string | null
           id: string
           is_manual: boolean
+          last_synced_at: string | null
           location: string
           name: string
           slope_rating: number | null
+          source: string
+          source_course_id: number | null
         }
         Insert: {
           country?: string
@@ -325,9 +328,12 @@ export type Database = {
           created_by_profile_id?: string | null
           id?: string
           is_manual?: boolean
+          last_synced_at?: string | null
           location: string
           name: string
           slope_rating?: number | null
+          source?: string
+          source_course_id?: number | null
         }
         Update: {
           country?: string
@@ -336,9 +342,12 @@ export type Database = {
           created_by_profile_id?: string | null
           id?: string
           is_manual?: boolean
+          last_synced_at?: string | null
           location?: string
           name?: string
           slope_rating?: number | null
+          source?: string
+          source_course_id?: number | null
         }
         Relationships: [
           {
