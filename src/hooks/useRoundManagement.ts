@@ -1941,6 +1941,27 @@ export const useRoundManagement = ({
           return newMap;
         });
 
+        // Propagate course visibility for manual courses
+        if (roundState.courseId && player.profileId) {
+          supabase
+            .from('golf_courses')
+            .select('is_manual')
+            .eq('id', roundState.courseId)
+            .single()
+            .then(({ data: courseData }) => {
+              if (courseData?.is_manual) {
+                supabase
+                  .from('course_visibility')
+                  .upsert({
+                    course_id: roundState.courseId!,
+                    profile_id: player.profileId!,
+                    reason: 'round_participant',
+                  }, { onConflict: 'course_id,profile_id' })
+                  .then(() => {});
+              }
+            });
+        }
+
         // participantIds are managed exclusively by the organizer through the UI.
         // We do NOT auto-add players to bets — this caused guests to be included
         // in bets they were intentionally excluded from.

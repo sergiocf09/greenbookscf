@@ -5,6 +5,7 @@ export interface GolfCourse {
   name: string;
   location: string;
   holes: HoleInfo[];
+  isManual?: boolean;
 }
 
 export interface HoleInfo {
