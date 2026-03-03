@@ -129,9 +129,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      const courseData = await apiRes.json();
+      const apiRaw = await apiRes.json();
+      // API wraps course details inside a "course" key
+      const courseData = apiRaw.course || apiRaw;
 
-      console.log("API response keys:", JSON.stringify(Object.keys(courseData)));
+      console.log("API response keys:", JSON.stringify(Object.keys(apiRaw)));
+      console.log("Using courseData keys:", JSON.stringify(Object.keys(courseData)));
       console.log("tees:", JSON.stringify(courseData.tees ? {
         male: (courseData.tees.male || []).length,
         female: (courseData.tees.female || []).length,
