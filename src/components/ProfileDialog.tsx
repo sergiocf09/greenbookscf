@@ -7,8 +7,9 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Mail, Lock, ChevronRight } from 'lucide-react';
+import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin } from 'lucide-react';
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
+import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 
 type EditSection = 'menu' | 'name' | 'email' | 'password' | 'handicap';
 
@@ -22,6 +23,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
   const [section, setSection] = useState<EditSection>('menu');
   const [saving, setSaving] = useState(false);
+  const [showManualCourse, setShowManualCourse] = useState(false);
 
   // Name
   const [newName, setNewName] = useState('');
@@ -286,6 +288,19 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           </Button>
         </div>
       </div>
+
+      <div className="border-t border-border pt-4">
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => setShowManualCourse(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Agregar Campo Manual</span>
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
     </div>
   );
 
@@ -422,16 +437,22 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{sectionTitles[section]}</DialogTitle>
-        </DialogHeader>
-        {section === 'menu' && renderMenu()}
-        {section === 'name' && renderNameSection()}
-        {section === 'email' && renderEmailSection()}
-        {section === 'password' && renderPasswordSection()}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{sectionTitles[section]}</DialogTitle>
+          </DialogHeader>
+          {section === 'menu' && renderMenu()}
+          {section === 'name' && renderNameSection()}
+          {section === 'email' && renderEmailSection()}
+          {section === 'password' && renderPasswordSection()}
+        </DialogContent>
+      </Dialog>
+      <AddManualCourseDialog
+        open={showManualCourse}
+        onOpenChange={setShowManualCourse}
+      />
+    </>
   );
 };

@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Loader2, Star, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -9,7 +9,12 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
+import { useCourseFavorites } from '@/hooks/useCourseFavorites';
+import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
+import { cn } from '@/lib/utils';
 
 interface CourseSelectProps {
   selectedCourseId: string | null;
@@ -30,8 +35,16 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onStartingHoleChange,
   enabled = true,
 }) => {
-  const { courses, loading, error, getCourseById } = useGolfCourses({ enabled });
+  const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
+  const { favoriteIds, toggleFavorite } = useCourseFavorites();
+  const [showAll, setShowAll] = useState(false);
+  const [showAddCourse, setShowAddCourse] = useState(false);
   const selectedCourse = selectedCourseId ? getCourseById(selectedCourseId) : null;
+
+  // Split courses into favorites and others
+  const favoriteCourses = courses.filter(c => favoriteIds.has(c.id));
+  const otherCourses = courses.filter(c => !favoriteIds.has(c.id));
+  const displayCourses = showAll ? courses : (favoriteCourses.length > 0 ? favoriteCourses : courses);
 
   if (loading) {
     return (
@@ -56,20 +69,62 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">Campo de Golf</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Campo de Golf</Label>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => setShowAddCourse(true)}
+        >
+          <Plus className="h-3 w-3" />
+          Agregar campo
+        </Button>
+      </div>
       
       <Select value={selectedCourseId || ''} onValueChange={onChange}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Selecciona un campo" />
         </SelectTrigger>
         <SelectContent>
-          {courses.map((course) => (
+          {displayCourses.map((course) => (
             <SelectItem key={course.id} value={course.id}>
               <div className="flex items-center gap-2">
                 <span>{course.name}</span>
+                {course.isManual && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                    *Manual
+                  </Badge>
+                )}
               </div>
             </SelectItem>
           ))}
+          {!showAll && otherCourses.length > 0 && (
+            <div className="px-2 py-1.5">
+              <button
+                className="text-xs text-primary hover:underline w-full text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAll(true);
+                }}
+              >
+                Ver todos los campos ({otherCourses.length} más)
+              </button>
+            </div>
+          )}
+          {showAll && favoriteCourses.length > 0 && (
+            <div className="px-2 py-1.5">
+              <button
+                className="text-xs text-primary hover:underline w-full text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAll(false);
+                }}
+              >
+                Solo mis campos visibles
+              </button>
+            </div>
+          )}
         </SelectContent>
       </Select>
 
@@ -80,6 +135,24 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             <span>{selectedCourse.location}</span>
             <span className="mx-1">•</span>
             <span>Par {selectedCourse.holes.reduce((sum, h) => sum + h.par, 0)}</span>
+            {selectedCourse.isManual && (
+              <>
+                <span className="mx-1">•</span>
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+              </>
+            )}
+            <button
+              className="ml-auto p-0.5 hover:text-primary transition-colors"
+              onClick={() => toggleFavorite(selectedCourse.id)}
+              title={favoriteIds.has(selectedCourse.id) ? 'Quitar de visibles' : 'Agregar a mis visibles'}
+            >
+              <Star
+                className={cn(
+                  'h-3.5 w-3.5',
+                  favoriteIds.has(selectedCourse.id) ? 'fill-primary text-primary' : ''
+                )}
+              />
+            </button>
           </div>
 
           <div className="flex gap-6">
@@ -127,6 +200,16 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
           </div>
         </>
       )}
+
+      <AddManualCourseDialog
+        open={showAddCourse}
+        onOpenChange={setShowAddCourse}
+        onCreated={(courseId) => {
+          refresh();
+          // Small delay to let the refresh complete before selecting
+          setTimeout(() => onChange(courseId), 500);
+        }}
+      />
     </div>
   );
 };

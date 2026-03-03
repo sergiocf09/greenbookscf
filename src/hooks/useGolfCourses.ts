@@ -21,6 +21,7 @@ interface CourseDB {
   location: string;
   country: string;
   created_at: string;
+  is_manual?: boolean;
 }
 
 export const useGolfCourses = (opts?: { enabled?: boolean }) => {
@@ -28,6 +29,9 @@ export const useGolfCourses = (opts?: { enabled?: boolean }) => {
   const [courses, setCourses] = useState<GolfCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = () => setRefreshKey(k => k + 1);
 
   useEffect(() => {
     if (!enabled) {
@@ -96,6 +100,7 @@ export const useGolfCourses = (opts?: { enabled?: boolean }) => {
             name: course.name,
             location: course.location,
             holes: courseHoles,
+            isManual: course.is_manual ?? false,
           };
         });
         
@@ -114,11 +119,11 @@ export const useGolfCourses = (opts?: { enabled?: boolean }) => {
     };
     
     fetchCourses();
-  }, [enabled]);
+  }, [enabled, refreshKey]);
 
   const getCourseById = (id: string): GolfCourse | undefined => {
     return courses.find(course => course.id === id);
   };
 
-  return { courses, loading, error, getCourseById };
+  return { courses, loading, error, getCourseById, refresh };
 };

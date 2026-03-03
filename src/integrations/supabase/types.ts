@@ -119,6 +119,39 @@ export type Database = {
           },
         ]
       }
+      course_favorites: {
+        Row: {
+          course_id: string
+          created_at: string
+          profile_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          profile_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_favorites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_favorites_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_holes: {
         Row: {
           course_id: string
@@ -198,6 +231,42 @@ export type Database = {
           },
         ]
       }
+      course_visibility: {
+        Row: {
+          course_id: string
+          created_at: string
+          profile_id: string
+          reason: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          profile_id: string
+          reason?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          profile_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_visibility_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_visibility_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -242,7 +311,9 @@ export type Database = {
           country: string
           course_rating: number | null
           created_at: string
+          created_by_profile_id: string | null
           id: string
+          is_manual: boolean
           location: string
           name: string
           slope_rating: number | null
@@ -251,7 +322,9 @@ export type Database = {
           country?: string
           course_rating?: number | null
           created_at?: string
+          created_by_profile_id?: string | null
           id?: string
+          is_manual?: boolean
           location: string
           name: string
           slope_rating?: number | null
@@ -260,12 +333,22 @@ export type Database = {
           country?: string
           course_rating?: number | null
           created_at?: string
+          created_by_profile_id?: string | null
           id?: string
+          is_manual?: boolean
           location?: string
           name?: string
           slope_rating?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_courses_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       handicap_history: {
         Row: {
