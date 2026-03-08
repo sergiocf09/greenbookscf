@@ -4422,7 +4422,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         effectiveBetConfig,
         course,
         effectiveBetConfig.bilateralHandicaps,
-        allPlayers
+        allPlayers,
+        startingHole
       );
       
       // Get Dashboard override amounts for this pair
