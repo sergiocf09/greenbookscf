@@ -1316,7 +1316,7 @@ export const calculateRayasBets = (
   const summaries: BetSummary[] = [];
   
   // Calculate Oyes rayas (absolute closest) — only among participating players
-  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course);
+  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course, startingHole);
   summaries.push(...oyesSummaries);
   
   // Calculate bilateral rayas (skins, units, medal)
