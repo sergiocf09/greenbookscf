@@ -5345,7 +5345,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           effectiveBetConfig,
                           course,
                           effectiveBetConfig.bilateralHandicaps,
-                          allPlayers
+                          allPlayers,
+                          startingHole
                         );
                         
                         // Group details by source - counting net rayas won (positive = player wins)
