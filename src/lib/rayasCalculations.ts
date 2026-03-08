@@ -421,7 +421,8 @@ const calculateRayasForPair = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): RayasPairResult => {
   const details: RayaDetail[] = [];
   
