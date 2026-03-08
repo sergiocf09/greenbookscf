@@ -779,7 +779,7 @@ const processOyesSangronForPair = (
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   par3Holes.forEach(holeNum => {
-    const segment: 'front' | 'back' = holeNum <= 9 ? 'front' : 'back';
+    const segment: 'front' | 'back' = holeNum >= segRanges.front[0] && holeNum <= segRanges.front[1] ? 'front' : 'back';
     const segmentValue = segment === 'front' ? oyesConfig.frontValue : oyesConfig.backValue;
     
     const scoresA = scores.get(playerAId) || [];
