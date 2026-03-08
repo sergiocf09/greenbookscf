@@ -573,10 +573,10 @@ const calculateRayasForPair = (
   // =========== 2. UNITS RAYAS ===========
   if (unitsConfig.enabled) {
     // Count positive units per segment
-    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front');
-    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front');
-    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back');
-    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back');
+    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front', startingHole);
+    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front', startingHole);
+    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back', startingHole);
+    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back', startingHole);
     
     // Front units rayas
     if (frontUnitsA > frontUnitsB) {
