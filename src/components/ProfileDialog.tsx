@@ -270,6 +270,37 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         </button>
       </div>
 
+      <div className="border-t border-border pt-4 space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Golf</p>
+
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => setSection('handicap')}
+        >
+          <span className="flex items-center gap-2.5">
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Historial de Handicap</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground font-medium">
+              {profile?.current_handicap != null ? Number(profile.current_handicap).toFixed(1) : '-'}
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </span>
+        </button>
+
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => setShowManualCourse(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Agregar Campo Manual</span>
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
       <div className="border-t border-border pt-4 space-y-2">
         <Label htmlFor="manual-handicap">Handicap (manual)</Label>
         <div className="flex gap-2">
@@ -288,19 +319,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
           </Button>
         </div>
-      </div>
-
-      <div className="border-t border-border pt-4">
-        <button
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
-          onClick={() => setShowManualCourse(true)}
-        >
-          <span className="flex items-center gap-2.5">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Agregar Campo Manual</span>
-          </span>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <p className="text-[10px] text-muted-foreground">Sobreescribe el índice calculado por USGA.</p>
       </div>
     </div>
   );
