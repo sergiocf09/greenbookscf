@@ -690,8 +690,8 @@ const calculateRayasForPair = (
     }
     
     // Medal Total (additional raya)
-    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total');
-    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total');
+    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
+    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
     
     if (totalA < totalB) {
       medalTotalRayaWinner = playerA.id;
