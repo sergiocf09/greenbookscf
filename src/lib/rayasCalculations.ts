@@ -16,7 +16,7 @@
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant } from '@/types/golf';
 import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsWithOneVsAll } from './betCalculations';
 import { resolveConfigForGroup } from './groupBetOverrides';
-import { calculateStrokesPerHole } from './handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 
 /**
  * Get effective segment configuration for a pair, respecting:
@@ -352,10 +352,12 @@ const countPositiveUnits = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
   course: GolfCourse,
-  segment: 'front' | 'back' | 'total'
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const holeRange = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+  const ranges = getSegmentHoleRanges(startingHole);
+  const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   let units = 0;
   playerScores
@@ -384,10 +386,12 @@ const countPositiveUnits = (
 const getSegmentNetTotal = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
-  segment: 'front' | 'back' | 'total'
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const holeRange = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+  const ranges = getSegmentHoleRanges(startingHole);
+  const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   return playerScores
     // Rayas must respect confirmation rules (only confirmed holes count)
@@ -417,7 +421,8 @@ const calculateRayasForPair = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): RayasPairResult => {
   const details: RayaDetail[] = [];
   
@@ -442,10 +447,11 @@ const calculateRayasForPair = (
   const useAccumulation = effectiveVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
+  const segRanges = getSegmentHoleRanges(startingHole);
   if (skinsConfig.enabled) {
     // Front 9 skins
     let frontAccumulated = 0;
-    for (let holeNum = 1; holeNum <= 9; holeNum++) {
+    for (let holeNum = segRanges.front[0]; holeNum <= segRanges.front[1]; holeNum++) {
       const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
       const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
       
@@ -490,7 +496,7 @@ const calculateRayasForPair = (
     let backAccumulated = 0;
     let pendingFrontCarry = useAccumulation ? frontAccumulated : 0;
     
-    for (let holeNum = 10; holeNum <= 18; holeNum++) {
+    for (let holeNum = segRanges.back[0]; holeNum <= segRanges.back[1]; holeNum++) {
       const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
       const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
       
@@ -567,10 +573,10 @@ const calculateRayasForPair = (
   // =========== 2. UNITS RAYAS ===========
   if (unitsConfig.enabled) {
     // Count positive units per segment
-    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front');
-    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front');
-    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back');
-    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back');
+    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front', startingHole);
+    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front', startingHole);
+    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back', startingHole);
+    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back', startingHole);
     
     // Front units rayas
     if (frontUnitsA > frontUnitsB) {
@@ -634,8 +640,8 @@ const calculateRayasForPair = (
   
   if (medalConfig.enabled) {
     // Front medal
-    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front');
-    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front');
+    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
+    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
     if (frontTotalA < frontTotalB) {
       frontRayasA += 1;
       details.push({
@@ -659,8 +665,8 @@ const calculateRayasForPair = (
     }
     
     // Back medal
-    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back');
-    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back');
+    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
+    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
     if (backTotalA < backTotalB) {
       backRayasA += 1;
       details.push({
@@ -684,8 +690,8 @@ const calculateRayasForPair = (
     }
     
     // Medal Total (additional raya)
-    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total');
-    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total');
+    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
+    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
     
     if (totalA < totalB) {
       medalTotalRayaWinner = playerA.id;
@@ -760,13 +766,15 @@ const processOyesSangronForPair = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
+  const segRanges = getSegmentHoleRanges(startingHole);
   
   if (!oyesConfig.enabled) return;
-  
+
   const pairKey = [playerAId, playerBId].sort().join('-');
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
