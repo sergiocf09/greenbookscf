@@ -352,10 +352,12 @@ const countPositiveUnits = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
   course: GolfCourse,
-  segment: 'front' | 'back' | 'total'
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const holeRange = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+  const ranges = getSegmentHoleRanges(startingHole);
+  const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   let units = 0;
   playerScores
