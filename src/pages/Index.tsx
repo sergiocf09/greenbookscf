@@ -11,6 +11,7 @@ import { RoundHistory, CloneRoundData, FullCloneRoundData } from '@/components/R
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { HistoricalBalances } from '@/components/HistoricalBalances';
+import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
@@ -41,7 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,6 +96,7 @@ const Index = () => {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showBalancesDialog, setShowBalancesDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
+  const [showHandicapHistoryDialog, setShowHandicapHistoryDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
@@ -2086,6 +2088,10 @@ const Index = () => {
                   <Calculator className="h-4 w-4 mr-2" />
                   Calcular Handicap
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowHandicapHistoryDialog(true)}>
+                  <TrendingDown className="h-4 w-4 mr-2" />
+                  Historial de Handicap
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
@@ -2626,7 +2632,17 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Historical Round View Dialog */}
+      {/* Handicap History Dialog */}
+      <Dialog open={showHandicapHistoryDialog} onOpenChange={setShowHandicapHistoryDialog}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historial de Handicap</DialogTitle>
+          </DialogHeader>
+          <HandicapHistoryView profileId={profile?.id ?? null} />
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={showScorecardDialog} onOpenChange={setShowScorecardDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
