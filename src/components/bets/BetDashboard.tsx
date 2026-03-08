@@ -1128,7 +1128,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         effectiveBetConfig,
         course,
         effectiveBetConfig.bilateralHandicaps,
-        allPlayersForCalculations
+        allPlayersForCalculations,
+        startingHole
       );
       
       // Get Dashboard override amounts for this pair
