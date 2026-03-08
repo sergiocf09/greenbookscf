@@ -491,6 +491,7 @@ export function generateRoundSnapshot(
     meta: {
       noRecalcContract: true,
       schemaVersion: 3,
+      betConfigVersion: 1,
       createdBy: undefined,
       integrityChecks: {
         symmetryOk: integrityResult.symmetryOk,
