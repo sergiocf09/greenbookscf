@@ -1276,9 +1276,9 @@ const calculateOyesRayasForAll = (
         const modality = getOyesModalityForPair(config, playerA.id, playerB.id);
         
         if (modality === 'sangron') {
-          processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+          processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair, startingHole);
         } else {
-          processOyesAcumuladosForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+          processOyesAcumuladosForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair, startingHole);
         }
         
         processedPairs.add(pairKey);
