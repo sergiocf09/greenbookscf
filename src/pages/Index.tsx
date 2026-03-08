@@ -2632,7 +2632,17 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Historical Round View Dialog */}
+      {/* Handicap History Dialog */}
+      <Dialog open={showHandicapHistoryDialog} onOpenChange={setShowHandicapHistoryDialog}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historial de Handicap</DialogTitle>
+          </DialogHeader>
+          <HandicapHistoryView profileId={profile?.id ?? null} />
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={showScorecardDialog} onOpenChange={setShowScorecardDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
