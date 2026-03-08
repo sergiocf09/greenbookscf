@@ -11,7 +11,7 @@ import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin, TrendingDown } from 
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 
-type EditSection = 'menu' | 'name' | 'email' | 'password' | 'handicap';
+type EditSection = 'menu' | 'name' | 'email' | 'password';
 
 interface ProfileDialogProps {
   open: boolean;
