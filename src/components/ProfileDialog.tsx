@@ -274,22 +274,6 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
         <button
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
-          onClick={() => setSection('handicap')}
-        >
-          <span className="flex items-center gap-2.5">
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Historial de Handicap</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground font-medium">
-              {profile?.current_handicap != null ? Number(profile.current_handicap).toFixed(1) : '-'}
-            </span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </span>
-        </button>
-
-        <button
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
           onClick={() => setShowManualCourse(true)}
         >
           <span className="flex items-center gap-2.5">
