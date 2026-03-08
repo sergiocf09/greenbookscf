@@ -766,13 +766,15 @@ const processOyesSangronForPair = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
+  const segRanges = getSegmentHoleRanges(startingHole);
   
   if (!oyesConfig.enabled) return;
-  
+
   const pairKey = [playerAId, playerBId].sort().join('-');
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
