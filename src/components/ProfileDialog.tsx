@@ -449,7 +449,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           {section === 'name' && renderNameSection()}
           {section === 'email' && renderEmailSection()}
           {section === 'password' && renderPasswordSection()}
-          {section === 'handicap' && renderHandicapSection()}
+          
         </DialogContent>
       </Dialog>
       <AddManualCourseDialog
