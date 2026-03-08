@@ -486,9 +486,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       const userScores = snap.scores[userPlayer.id] || [];
       const score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
 
-      // Read the net from the snapshot balances (NO recalculation)
-      const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
-      const netAmount = userBalance?.totalNet ?? 0;
+      // Recalculate net from ledger applying betOverrides (matches "Vs Rivales" logic)
+      const betOverrides = snap.betConfig?.betOverrides;
+      let netAmount = 0;
+      for (const rival of snap.players) {
+        if (rival.id === userPlayer.id) continue;
+        netAmount += calculateNetFromLedger(
+          snap.ledger,
+          betOverrides,
+          userPlayer.id,
+          rival.id,
+          snap.players
+        );
+      }
 
       rows.push({
         roundId: snap.roundId,
