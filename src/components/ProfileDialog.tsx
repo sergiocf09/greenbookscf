@@ -7,7 +7,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin, TrendingDown } from 'lucide-react';
+import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin } from 'lucide-react';
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 
