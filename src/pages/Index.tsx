@@ -11,6 +11,7 @@ import { RoundHistory, CloneRoundData, FullCloneRoundData } from '@/components/R
 import { HandicapCalculator } from '@/components/HandicapCalculator';
 import { HistoricalRoundView } from '@/components/HistoricalRoundView';
 import { HistoricalBalances } from '@/components/HistoricalBalances';
+import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
