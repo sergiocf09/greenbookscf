@@ -665,8 +665,8 @@ const calculateRayasForPair = (
     }
     
     // Back medal
-    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back');
-    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back');
+    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
+    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
     if (backTotalA < backTotalB) {
       backRayasA += 1;
       details.push({
