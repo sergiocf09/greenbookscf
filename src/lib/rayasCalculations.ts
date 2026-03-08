@@ -496,7 +496,7 @@ const calculateRayasForPair = (
     let backAccumulated = 0;
     let pendingFrontCarry = useAccumulation ? frontAccumulated : 0;
     
-    for (let holeNum = 10; holeNum <= 18; holeNum++) {
+    for (let holeNum = segRanges.back[0]; holeNum <= segRanges.back[1]; holeNum++) {
       const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
       const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
       
