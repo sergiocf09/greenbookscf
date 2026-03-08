@@ -1077,11 +1077,13 @@ const processOyesSingleWinner = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
-  const frontPar3s = par3Holes.filter(h => h <= 9);
-  const backPar3s = par3Holes.filter(h => h > 9);
+  const segRanges = getSegmentHoleRanges(startingHole);
+  const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
+  const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
 
   // Track carry per pair, segmented by vuelta (Front/Back)
   // key = sorted pair key, value = { front: number, back: number }
