@@ -1410,9 +1410,10 @@ export const getRayasDetailForPair = (
   config: BetConfig,
   course: GolfCourse,
   bilateralHandicaps?: BilateralHandicap[],
-  allPlayers?: Player[]
+  allPlayers?: Player[],
+  startingHole: 1 | 10 = 1
 ): RayasPairResult => {
-  const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
   
   // Check if Oyes segment is enabled for THIS SPECIFIC PAIR (bilateral override)
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerA.id, playerB.id);
