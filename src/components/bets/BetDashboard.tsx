@@ -1506,7 +1506,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-x-hidden">
       
       {/* Tabla General */}
       <Card>
