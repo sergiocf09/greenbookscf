@@ -361,25 +361,43 @@ export type Database = {
       }
       handicap_history: {
         Row: {
+          adjusted_gross_score: number | null
+          course_rating: number | null
+          differential: number | null
+          gross_score: number | null
           handicap: number
           id: string
           profile_id: string
           recorded_at: string
           round_id: string | null
+          slope_rating: number | null
+          tee_color: string | null
         }
         Insert: {
+          adjusted_gross_score?: number | null
+          course_rating?: number | null
+          differential?: number | null
+          gross_score?: number | null
           handicap: number
           id?: string
           profile_id: string
           recorded_at?: string
           round_id?: string | null
+          slope_rating?: number | null
+          tee_color?: string | null
         }
         Update: {
+          adjusted_gross_score?: number | null
+          course_rating?: number | null
+          differential?: number | null
+          gross_score?: number | null
           handicap?: number
           id?: string
           profile_id?: string
           recorded_at?: string
           round_id?: string | null
+          slope_rating?: number | null
+          tee_color?: string | null
         }
         Relationships: [
           {
