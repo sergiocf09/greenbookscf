@@ -1332,7 +1332,7 @@ export const calculateRayasBets = (
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
       
-      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
