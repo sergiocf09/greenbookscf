@@ -7,12 +7,11 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin, TrendingDown } from 'lucide-react';
+import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin } from 'lucide-react';
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
-import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 
-type EditSection = 'menu' | 'name' | 'email' | 'password' | 'handicap';
+type EditSection = 'menu' | 'name' | 'email' | 'password';
 
 interface ProfileDialogProps {
   open: boolean;
@@ -275,22 +274,6 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
         <button
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
-          onClick={() => setSection('handicap')}
-        >
-          <span className="flex items-center gap-2.5">
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Historial de Handicap</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground font-medium">
-              {profile?.current_handicap != null ? Number(profile.current_handicap).toFixed(1) : '-'}
-            </span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </span>
-        </button>
-
-        <button
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
           onClick={() => setShowManualCourse(true)}
         >
           <span className="flex items-center gap-2.5">
@@ -448,19 +431,11 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     </div>
   );
 
-  const renderHandicapSection = () => (
-    <div className="space-y-2">
-      {renderBackButton()}
-      <HandicapHistoryView profileId={profile?.id ?? null} />
-    </div>
-  );
-
   const sectionTitles: Record<EditSection, string> = {
     menu: 'Perfil',
     name: 'Cambiar nombre',
     email: 'Cambiar correo',
     password: 'Cambiar contraseña',
-    handicap: 'Historial de Handicap',
   };
 
   return (
@@ -474,7 +449,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           {section === 'name' && renderNameSection()}
           {section === 'email' && renderEmailSection()}
           {section === 'password' && renderPasswordSection()}
-          {section === 'handicap' && renderHandicapSection()}
+          
         </DialogContent>
       </Dialog>
       <AddManualCourseDialog
