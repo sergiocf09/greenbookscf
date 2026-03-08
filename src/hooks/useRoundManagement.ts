@@ -159,7 +159,17 @@ export const useRoundManagement = ({
         if (profileError) throw profileError;
 
         const handicapIndex = Number(profileData?.current_handicap);
-        if (!Number.isFinite(handicapIndex) || handicapIndex <= 0 || handicapIndex > 54) return;
+        if (!Number.isFinite(handicapIndex) || handicapIndex < 0 || handicapIndex > 54) return;
+
+        // Check if user has actual handicap history; skip if no history AND value is default 20.0
+        // This avoids applying the DB default (20.0) as a real handicap for new users
+        if (handicapIndex === 20.0) {
+          const { count } = await supabase
+            .from('handicap_history')
+            .select('id', { count: 'exact', head: true })
+            .eq('profile_id', profile.id);
+          if (!count || count === 0) return;
+        }
 
         // Calculate Course Handicap if course is available
         let finalHandicap = handicapIndex;
@@ -1675,17 +1685,9 @@ export const useRoundManagement = ({
           return data;
         };
 
-        // Insert handicap history records in parallel
-        const registeredPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
-        await Promise.all(registeredPlayers.map(player =>
-          supabase.from('handicap_history').insert({
-            profile_id: player.profileId!,
-            handicap: player.handicap,
-            round_id: roundState.id,
-          }).then(() => {})
-        ));
-
         // Recalculate USGA Handicap Index for each registered player (parallel per player)
+        // Also insert handicap_history with traceability data
+        const registeredPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
         await Promise.all(
           registeredPlayers.map(async (player) => {
             try {
@@ -1701,6 +1703,14 @@ export const useRoundManagement = ({
               if (!rpHistory?.length) return;
 
               const diffs: number[] = [];
+              // Track this round's differential data for traceability
+              let thisRoundDiff: number | null = null;
+              let thisRoundAGS: number | null = null;
+              let thisRoundGross: number | null = null;
+              let thisRoundCR: number | null = null;
+              let thisRoundSR: number | null = null;
+              let thisRoundTee: string | null = null;
+
               for (const rp of rpHistory) {
                 const rd = (rp as any).rounds;
                 const crs = rd.golf_courses;
@@ -1736,10 +1746,35 @@ export const useRoundManagement = ({
 
                 const sph = calcSPH(hcpUsed, minCourse);
                 const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
-                diffs.push(calculateDifferential(ags, cr, sr));
+                const diff = calculateDifferential(ags, cr, sr);
+                diffs.push(diff);
+
+                // Capture data for the current round being closed
+                if (rd.id === roundState.id) {
+                  thisRoundDiff = diff;
+                  thisRoundAGS = ags;
+                  thisRoundGross = hs.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+                  thisRoundCR = cr;
+                  thisRoundSR = sr;
+                  thisRoundTee = tee;
+                }
               }
 
               const newIndex = calcHI(diffs);
+
+              // Insert handicap_history with traceability data
+              await supabase.from('handicap_history').insert({
+                profile_id: player.profileId!,
+                handicap: newIndex ?? player.handicap,
+                round_id: roundState.id,
+                differential: thisRoundDiff,
+                adjusted_gross_score: thisRoundAGS,
+                gross_score: thisRoundGross,
+                course_rating: thisRoundCR,
+                slope_rating: thisRoundSR,
+                tee_color: thisRoundTee,
+              });
+
               if (newIndex !== null && Number.isFinite(newIndex) && newIndex >= 0 && newIndex <= 54) {
                 await supabase
                   .from('profiles')

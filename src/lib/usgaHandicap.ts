@@ -1,7 +1,18 @@
 /**
  * USGA World Handicap System utilities
+ * 
+ * *** SINGLE SOURCE OF TRUTH ***
+ * All handicap calculations MUST use functions from this file.
+ * Do NOT duplicate this logic elsewhere.
  */
 
+/** Maximum Handicap Index per WHS rules */
+export const MAX_HANDICAP_INDEX = 54.0;
+
+/**
+ * Number of best differentials to use based on total rounds available.
+ * Per USGA WHS lookup table.
+ */
 export const getNumDifferentialsToUse = (totalRounds: number): number => {
   if (totalRounds >= 20) return 8;
   if (totalRounds === 19) return 7;
@@ -24,6 +35,10 @@ export const getNumDifferentialsToUse = (totalRounds: number): number => {
   return 0;
 };
 
+/**
+ * Calculate Handicap Index from an array of score differentials.
+ * Applies the 0.96 multiplier and caps at MAX_HANDICAP_INDEX (54.0).
+ */
 export const calculateHandicapIndexFromDifferentials = (
   differentials: number[]
 ): number | null => {
@@ -36,7 +51,9 @@ export const calculateHandicapIndexFromDifferentials = (
 
   const avg = best.reduce((sum, d) => sum + d, 0) / best.length;
   const handicapIndex = avg * 0.96;
-  return Math.round(handicapIndex * 10) / 10;
+  // Round to 1 decimal and cap at 54.0
+  const rounded = Math.round(handicapIndex * 10) / 10;
+  return Math.min(rounded, MAX_HANDICAP_INDEX);
 };
 
 /**
