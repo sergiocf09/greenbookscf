@@ -1480,13 +1480,14 @@ export const getRayasSummaryBySource = (
   config: BetConfig,
   course: GolfCourse,
   players: Player[],
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): { source: string; frontRayas: number; backRayas: number; totalRayas: number }[] => {
   const playerA = players.find(p => p.id === playerAId);
   const playerB = players.find(p => p.id === playerBId);
   if (!playerA || !playerB) return [];
   
-  const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
   
   const sources: Record<string, { front: number; back: number; total: number }> = {
     skins: { front: 0, back: 0, total: 0 },
