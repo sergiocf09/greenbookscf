@@ -35,7 +35,7 @@ export interface USGAHandicapResult {
 }
 
 /**
- * Hook to fetch and calculate USGA handicap index for a player.
+ * Hook to calculate USGA handicap index using BATCH queries (4 total instead of 61).
  * Uses Net Double Bogey adjustment per hole and tee-specific ratings.
  */
 export const useUSGAHandicap = (profileId: string | null) => {
@@ -46,7 +46,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
         return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
-      // 1. Fetch completed rounds for this player
+      // === QUERY 1: Fetch completed rounds for this player (1 request) ===
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
@@ -68,46 +68,89 @@ export const useUSGAHandicap = (profileId: string | null) => {
         return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
+      const recent = roundPlayers.slice(0, 20);
+      const rpIds = recent.map(rp => rp.id);
+
+      // Deduplicate course IDs
+      const courseIdSet = new Set<string>();
+      const teeKeys = new Set<string>(); // course_id|tee_color
+      for (const rp of recent) {
+        const round = rp.rounds as any;
+        const courseId = round.golf_courses.id;
+        courseIdSet.add(courseId);
+        const teeColor = (rp as any).tee_color || round.tee_color || 'white';
+        teeKeys.add(`${courseId}|${teeColor}`);
+      }
+      const uniqueCourseIds = Array.from(courseIdSet);
+
+      // === QUERIES 2-4: Batch fetch all data in parallel (3 requests) ===
+      const [holeScoresRes, courseHolesRes, courseTeesRes] = await Promise.all([
+        // All hole scores for all round_players at once
+        supabase
+          .from('hole_scores')
+          .select('round_player_id, hole_number, strokes, confirmed')
+          .in('round_player_id', rpIds)
+          .eq('confirmed', true)
+          .not('strokes', 'is', null)
+          .order('hole_number'),
+        // All course holes for all unique courses
+        supabase
+          .from('course_holes')
+          .select('course_id, hole_number, par, stroke_index')
+          .in('course_id', uniqueCourseIds)
+          .order('hole_number'),
+        // All tee ratings for all unique courses
+        supabase
+          .from('course_tees')
+          .select('course_id, tee_color, course_rating, slope_rating')
+          .in('course_id', uniqueCourseIds),
+      ]);
+
+      if (holeScoresRes.error) throw holeScoresRes.error;
+      if (courseHolesRes.error) throw courseHolesRes.error;
+
+      // Index data for O(1) lookups
+      const scoresByRpId = new Map<string, typeof holeScoresRes.data>();
+      for (const hs of holeScoresRes.data || []) {
+        const arr = scoresByRpId.get(hs.round_player_id) || [];
+        arr.push(hs);
+        scoresByRpId.set(hs.round_player_id, arr);
+      }
+
+      const holesByCourseId = new Map<string, typeof courseHolesRes.data>();
+      for (const ch of courseHolesRes.data || []) {
+        const arr = holesByCourseId.get(ch.course_id) || [];
+        arr.push(ch);
+        holesByCourseId.set(ch.course_id, arr);
+      }
+
+      const teeMap = new Map<string, { course_rating: number; slope_rating: number }>();
+      for (const t of courseTeesRes.data || []) {
+        teeMap.set(`${t.course_id}|${t.tee_color}`, {
+          course_rating: t.course_rating,
+          slope_rating: t.slope_rating,
+        });
+      }
+
+      // === Process in memory (0 network requests) ===
       const differentials: RoundDifferential[] = [];
 
-      for (const rp of roundPlayers.slice(0, 20)) {
+      for (const rp of recent) {
         const round = rp.rounds as any;
         const course = round.golf_courses;
         const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
         const handicapUsed = Number((rp as any).handicap_for_round) || 0;
 
-        // Get confirmed hole scores
-        const { data: holeScores, error: hsError } = await supabase
-          .from('hole_scores')
-          .select('hole_number, strokes, confirmed')
-          .eq('round_player_id', rp.id)
-          .eq('confirmed', true)
-          .not('strokes', 'is', null)
-          .order('hole_number');
+        const holeScores = scoresByRpId.get(rp.id);
+        if (!holeScores || holeScores.length < 18) continue;
 
-        if (hsError || !holeScores || holeScores.length < 18) continue;
+        const courseHoles = holesByCourseId.get(course.id);
+        if (!courseHoles || courseHoles.length < 18) continue;
 
-        // Get course holes (par + stroke_index) for Net Double Bogey
-        const { data: courseHoles, error: chError } = await supabase
-          .from('course_holes')
-          .select('hole_number, par, stroke_index')
-          .eq('course_id', course.id)
-          .order('hole_number');
-
-        if (chError || !courseHoles || courseHoles.length < 18) continue;
-
-        // Get tee-specific rating and slope
-        const { data: teeData } = await supabase
-          .from('course_tees')
-          .select('course_rating, slope_rating')
-          .eq('course_id', course.id)
-          .eq('tee_color', playerTeeColor)
-          .maybeSingle();
-
+        const teeData = teeMap.get(`${course.id}|${playerTeeColor}`);
         const courseRating = teeData?.course_rating || 72;
         const slopeRating = teeData?.slope_rating || 113;
 
-        // Build arrays for NDB calculation
         const holePars = courseHoles.map(h => h.par);
         const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
         for (const hs of holeScores) {
@@ -116,7 +159,6 @@ export const useUSGAHandicap = (profileId: string | null) => {
           }
         }
 
-        // Build a minimal GolfCourse for strokesPerHole calculation
         const minimalCourse: GolfCourse = {
           id: course.id,
           name: course.name,
@@ -129,12 +171,9 @@ export const useUSGAHandicap = (profileId: string | null) => {
         };
 
         const strokesPerHole = calculateStrokesPerHole(handicapUsed, minimalCourse);
-
-        // Apply Net Double Bogey
         const adjustedGrossScore = calculateAdjustedGrossScore(holeStrokesArr, holePars, strokesPerHole);
         const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
         const coursePar = holePars.reduce((s, p) => s + p, 0);
-
         const differential = calculateDifferential(adjustedGrossScore, courseRating, slopeRating);
 
         differentials.push({
@@ -153,11 +192,9 @@ export const useUSGAHandicap = (profileId: string | null) => {
         });
       }
 
-      // Sort by date descending
       const sortedByDate = [...differentials].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-
       const recentRounds = sortedByDate.slice(0, 20);
       const differentialValues = recentRounds.map(r => r.differential);
       const handicapIndex = calculateHandicapIndexFromDifferentials(differentialValues);

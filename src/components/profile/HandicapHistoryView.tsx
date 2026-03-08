@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUSGAHandicap, RoundDifferential } from '@/hooks/useUSGAHandicap';
+import { useHandicapHistory, HandicapHistoryEntry } from '@/hooks/useHandicapHistory';
 import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
@@ -21,13 +21,13 @@ const TEE_COLORS: Record<string, string> = {
 export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profileId }) => {
   const {
     handicapIndex,
-    differentials,
+    entries,
     roundsUsed,
     totalRounds,
     minimumRoundsNeeded,
     isLoading,
     error,
-  } = useUSGAHandicap(profileId);
+  } = useHandicapHistory(profileId);
 
   if (isLoading) {
     return (
@@ -62,24 +62,24 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
     );
   }
 
-  // Sort differentials by value to find which ones are used
-  const sortedByValue = [...differentials].sort((a, b) => a.differential - b.differential);
-  const usedDifferentialIds = new Set(
+  // Sort by value to find which ones are used
+  const sortedByValue = [...entries].sort((a, b) => a.differential - b.differential);
+  const usedRoundIds = new Set(
     sortedByValue.slice(0, roundsUsed).map(d => d.roundId)
   );
 
-  // Chart data: differentials chronologically (oldest first)
-  const chartData = [...differentials]
+  // Chart data (oldest first)
+  const chartData = [...entries]
     .reverse()
     .map((r) => ({
       date: format(parseLocalDate(r.date), 'dd/MM', { locale: es }),
       differential: r.differential,
-      used: usedDifferentialIds.has(r.roundId),
+      used: usedRoundIds.has(r.roundId),
     }));
 
-  // Trend indicator
-  const recentDiffs = differentials.slice(0, Math.min(3, differentials.length));
-  const olderDiffs = differentials.slice(Math.min(3, differentials.length), Math.min(6, differentials.length));
+  // Trend
+  const recentDiffs = entries.slice(0, Math.min(3, entries.length));
+  const olderDiffs = entries.slice(Math.min(3, entries.length), Math.min(6, entries.length));
   const recentAvg = recentDiffs.length ? recentDiffs.reduce((s, d) => s + d.differential, 0) / recentDiffs.length : 0;
   const olderAvg = olderDiffs.length ? olderDiffs.reduce((s, d) => s + d.differential, 0) / olderDiffs.length : 0;
   const trendDown = olderDiffs.length > 0 && recentAvg < olderAvg;
@@ -180,11 +180,11 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           Historial de Rondas ({totalRounds})
         </p>
         <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-          {differentials.map((round) => (
+          {entries.map((entry) => (
             <RoundRow
-              key={round.roundId}
-              round={round}
-              isUsed={usedDifferentialIds.has(round.roundId)}
+              key={entry.roundId}
+              entry={entry}
+              isUsed={usedRoundIds.has(entry.roundId)}
             />
           ))}
         </div>
@@ -193,8 +193,8 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
   );
 };
 
-const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({ round, isUsed }) => {
-  const teeColorClass = TEE_COLORS[round.teeColor] || TEE_COLORS.white;
+const RoundRow: React.FC<{ entry: HandicapHistoryEntry; isUsed: boolean }> = ({ entry, isUsed }) => {
+  const teeColorClass = TEE_COLORS[entry.teeColor] || TEE_COLORS.white;
 
   return (
     <div
@@ -208,31 +208,31 @@ const RoundRow: React.FC<{ round: RoundDifferential; isUsed: boolean }> = ({ rou
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <Flag className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="font-medium truncate">{round.courseName}</span>
+          <span className="font-medium truncate">{entry.courseName}</span>
           <span
             className={cn('w-2 h-2 rounded-full shrink-0', teeColorClass)}
-            title={`Tee ${round.teeColor}`}
+            title={`Tee ${entry.teeColor}`}
           />
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground mt-0.5">
           <Calendar className="h-3 w-3 shrink-0" />
-          <span>{format(parseLocalDate(round.date), 'dd MMM yy', { locale: es })}</span>
+          <span>{format(parseLocalDate(entry.date), 'dd MMM yy', { locale: es })}</span>
           <span className="text-[9px] opacity-70">
-            R:{round.courseRating} S:{round.slopeRating}
+            R:{entry.courseRating} S:{entry.slopeRating}
           </span>
         </div>
       </div>
 
       <div className="text-right shrink-0 leading-tight">
-        <p className="font-bold tabular-nums">{round.totalStrokes}</p>
-        {round.adjustedGrossScore !== round.totalStrokes && (
-          <p className="text-[9px] text-muted-foreground">NDB:{round.adjustedGrossScore}</p>
+        <p className="font-bold tabular-nums">{entry.totalStrokes}</p>
+        {entry.adjustedGrossScore !== entry.totalStrokes && (
+          <p className="text-[9px] text-muted-foreground">NDB:{entry.adjustedGrossScore}</p>
         )}
         <p className={cn(
           'font-medium tabular-nums',
           isUsed ? 'text-primary' : 'text-muted-foreground'
         )}>
-          {round.differential > 0 ? '+' : ''}{round.differential.toFixed(1)}
+          {entry.differential > 0 ? '+' : ''}{entry.differential.toFixed(1)}
         </p>
       </div>
     </div>
