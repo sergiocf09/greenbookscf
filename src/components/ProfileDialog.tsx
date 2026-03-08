@@ -7,9 +7,10 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin } from 'lucide-react';
+import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin, TrendingDown } from 'lucide-react';
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
+import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 
 type EditSection = 'menu' | 'name' | 'email' | 'password' | 'handicap';
 
@@ -269,6 +270,37 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         </button>
       </div>
 
+      <div className="border-t border-border pt-4 space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Golf</p>
+
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => setSection('handicap')}
+        >
+          <span className="flex items-center gap-2.5">
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Historial de Handicap</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground font-medium">
+              {profile?.current_handicap != null ? Number(profile.current_handicap).toFixed(1) : '-'}
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </span>
+        </button>
+
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => setShowManualCourse(true)}
+        >
+          <span className="flex items-center gap-2.5">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Agregar Campo Manual</span>
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
       <div className="border-t border-border pt-4 space-y-2">
         <Label htmlFor="manual-handicap">Handicap (manual)</Label>
         <div className="flex gap-2">
@@ -287,19 +319,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
           </Button>
         </div>
-      </div>
-
-      <div className="border-t border-border pt-4">
-        <button
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
-          onClick={() => setShowManualCourse(true)}
-        >
-          <span className="flex items-center gap-2.5">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Agregar Campo Manual</span>
-          </span>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <p className="text-[10px] text-muted-foreground">Sobreescribe el índice calculado por USGA.</p>
       </div>
     </div>
   );
@@ -428,12 +448,19 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     </div>
   );
 
+  const renderHandicapSection = () => (
+    <div className="space-y-2">
+      {renderBackButton()}
+      <HandicapHistoryView profileId={profile?.id ?? null} />
+    </div>
+  );
+
   const sectionTitles: Record<EditSection, string> = {
     menu: 'Perfil',
     name: 'Cambiar nombre',
     email: 'Cambiar correo',
     password: 'Cambiar contraseña',
-    handicap: 'Handicap',
+    handicap: 'Historial de Handicap',
   };
 
   return (
@@ -447,6 +474,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           {section === 'name' && renderNameSection()}
           {section === 'email' && renderEmailSection()}
           {section === 'password' && renderPasswordSection()}
+          {section === 'handicap' && renderHandicapSection()}
         </DialogContent>
       </Dialog>
       <AddManualCourseDialog
