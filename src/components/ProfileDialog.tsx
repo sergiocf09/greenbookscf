@@ -431,19 +431,11 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     </div>
   );
 
-  const renderHandicapSection = () => (
-    <div className="space-y-2">
-      {renderBackButton()}
-      <HandicapHistoryView profileId={profile?.id ?? null} />
-    </div>
-  );
-
   const sectionTitles: Record<EditSection, string> = {
     menu: 'Perfil',
     name: 'Cambiar nombre',
     email: 'Cambiar correo',
     password: 'Cambiar contraseña',
-    handicap: 'Historial de Handicap',
   };
 
   return (
