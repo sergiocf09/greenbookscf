@@ -876,7 +876,8 @@ const processOyesAcumuladosForPair = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
@@ -886,9 +887,10 @@ const processOyesAcumuladosForPair = (
   const pairKey = [playerAId, playerBId].sort().join('-');
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
-  // Separate par 3s by segment
-  const frontPar3s = par3Holes.filter(h => h <= 9);
-  const backPar3s = par3Holes.filter(h => h > 9);
+  // Separate par 3s by segment using dynamic ranges
+  const segRanges = getSegmentHoleRanges(startingHole);
+  const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
+  const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
   
   // Track carry SEPARATELY per segment
   let carryFront = 0; // Accumulates only from Front holes where nobody won
