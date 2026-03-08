@@ -159,7 +159,17 @@ export const useRoundManagement = ({
         if (profileError) throw profileError;
 
         const handicapIndex = Number(profileData?.current_handicap);
-        if (!Number.isFinite(handicapIndex) || handicapIndex <= 0 || handicapIndex > 54) return;
+        if (!Number.isFinite(handicapIndex) || handicapIndex < 0 || handicapIndex > 54) return;
+
+        // Check if user has actual handicap history; skip if no history AND value is default 20.0
+        // This avoids applying the DB default (20.0) as a real handicap for new users
+        if (handicapIndex === 20.0) {
+          const { count } = await supabase
+            .from('handicap_history')
+            .select('id', { count: 'exact', head: true })
+            .eq('profile_id', profile.id);
+          if (!count || count === 0) return;
+        }
 
         // Calculate Course Handicap if course is available
         let finalHandicap = handicapIndex;
