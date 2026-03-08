@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin, TrendingDown } from 'lucide-react';
 import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
-import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 
 type EditSection = 'menu' | 'name' | 'email' | 'password' | 'handicap';
 
