@@ -1420,7 +1420,7 @@ export const getRayasDetailForPair = (
   
   // If we have all players and Oyes is enabled for this pair, calculate Oyes details
   if (allPlayers && allPlayers.length > 0 && oyesConfig.enabled) {
-    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course);
+    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course, startingHole);
     
     // Get Oyes details for this specific pair
     const pairKey = [playerA.id, playerB.id].sort().join('-');
