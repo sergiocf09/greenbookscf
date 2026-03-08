@@ -640,8 +640,8 @@ const calculateRayasForPair = (
   
   if (medalConfig.enabled) {
     // Front medal
-    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front');
-    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front');
+    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
+    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
     if (frontTotalA < frontTotalB) {
       frontRayasA += 1;
       details.push({
