@@ -6,17 +6,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ── USGA Calculation Logic (replicated from frontend for edge function use) ──
+// ── USGA Calculation Logic ──
+// MUST match src/lib/usgaHandicap.ts exactly
+
+const MAX_HANDICAP_INDEX = 54.0;
 
 const getNumDifferentialsToUse = (totalRounds: number): number => {
   if (totalRounds >= 20) return 8;
-  if (totalRounds >= 17) return Math.floor((totalRounds - 11) / 2) + 3;
-  if (totalRounds >= 15) return 5;
-  if (totalRounds >= 13) return 4;
-  if (totalRounds >= 11) return 3;
-  if (totalRounds >= 9) return 2;
-  if (totalRounds >= 7) return 2;
-  if (totalRounds >= 3) return 1;
+  if (totalRounds === 19) return 7;
+  if (totalRounds === 18) return 7;
+  if (totalRounds === 17) return 6;
+  if (totalRounds === 16) return 6;
+  if (totalRounds === 15) return 5;
+  if (totalRounds === 14) return 5;
+  if (totalRounds === 13) return 4;
+  if (totalRounds === 12) return 4;
+  if (totalRounds === 11) return 3;
+  if (totalRounds === 10) return 3;
+  if (totalRounds === 9) return 2;
+  if (totalRounds === 8) return 2;
+  if (totalRounds === 7) return 2;
+  if (totalRounds === 6) return 1;
+  if (totalRounds === 5) return 1;
+  if (totalRounds === 4) return 1;
+  if (totalRounds === 3) return 1;
   return 0;
 };
 
@@ -26,7 +39,8 @@ const calculateHandicapIndex = (differentials: number[]): number | null => {
   const best = [...differentials].sort((a, b) => a - b).slice(0, numToUse);
   if (!best.length) return null;
   const avg = best.reduce((s, d) => s + d, 0) / best.length;
-  return Math.round(avg * 0.96 * 10) / 10;
+  const rounded = Math.round(avg * 0.96 * 10) / 10;
+  return Math.min(rounded, MAX_HANDICAP_INDEX);
 };
 
 const calculateDifferential = (
@@ -37,10 +51,6 @@ const calculateDifferential = (
   return Math.round(((adjustedGross - courseRating) * 113) / slopeRating * 10) / 10;
 };
 
-/**
- * Distribute handicap strokes across 18 holes using stroke index.
- * Simplified version: distributes evenly across all 18 holes by stroke index.
- */
 const calculateStrokesPerHole = (
   handicap: number,
   strokeIndices: number[]
@@ -49,12 +59,10 @@ const calculateStrokesPerHole = (
   const totalStrokes = Math.round(handicap);
   if (totalStrokes <= 0) return strokes;
 
-  // Create indexed array and sort by stroke index
   const indexed = strokeIndices.map((si, i) => ({ index: i, si }));
   indexed.sort((a, b) => a.si - b.si);
 
   let remaining = totalStrokes;
-  // Multiple passes for high handicaps (>18, >36)
   while (remaining > 0) {
     for (const hole of indexed) {
       if (remaining <= 0) break;
@@ -65,9 +73,6 @@ const calculateStrokesPerHole = (
   return strokes;
 };
 
-/**
- * Net Double Bogey adjustment: cap each hole at par + 2 + strokes received
- */
 const calculateAdjustedGrossScore = (
   holeStrokes: (number | null)[],
   holePars: number[],
@@ -91,7 +96,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -104,7 +108,6 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the JWT using anon client
     const anonClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -117,10 +120,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role client for data operations (bypasses RLS intentionally for backfill)
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Get all profiles
     const { data: allProfiles, error: profErr } = await supabase
       .from("profiles")
       .select("id");
@@ -133,7 +134,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Find profiles that already have handicap_history (skip them)
     const { data: existingHistory } = await supabase
       .from("handicap_history")
       .select("profile_id");
@@ -157,11 +157,9 @@ Deno.serve(async (req) => {
 
     for (const profile of profilesToProcess) {
       try {
-        // 3. Get completed rounds for this profile
         const { data: roundPlayers, error: rpErr } = await supabase
           .from("round_players")
-          .select(
-            `
+          .select(`
             id,
             round_id,
             tee_color,
@@ -169,8 +167,7 @@ Deno.serve(async (req) => {
             rounds!inner (
               id, date, status, course_id, tee_color
             )
-          `
-          )
+          `)
           .eq("profile_id", profile.id)
           .eq("rounds.status", "completed")
           .order("rounds(date)", { ascending: false });
@@ -188,7 +185,6 @@ Deno.serve(async (req) => {
           const playerTeeColor = (rp as any).tee_color || round.tee_color || "white";
           const handicapUsed = Number((rp as any).handicap_for_round) || 0;
 
-          // Get hole scores
           const { data: holeScores } = await supabase
             .from("hole_scores")
             .select("hole_number, strokes")
@@ -199,7 +195,6 @@ Deno.serve(async (req) => {
 
           if (!holeScores || holeScores.length < 18) continue;
 
-          // Get course holes
           const { data: courseHoles } = await supabase
             .from("course_holes")
             .select("hole_number, par, stroke_index")
@@ -208,7 +203,6 @@ Deno.serve(async (req) => {
 
           if (!courseHoles || courseHoles.length < 18) continue;
 
-          // Get tee ratings
           const { data: teeData } = await supabase
             .from("course_tees")
             .select("course_rating, slope_rating")
@@ -219,7 +213,6 @@ Deno.serve(async (req) => {
           const courseRating = teeData?.course_rating || 72;
           const slopeRating = teeData?.slope_rating || 113;
 
-          // Build arrays
           const holePars = courseHoles.map((h: any) => h.par);
           const strokeIndices = courseHoles.map((h: any) => h.stroke_index);
           const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
@@ -251,7 +244,6 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // 4. Persist
         await supabase
           .from("profiles")
           .update({
@@ -263,7 +255,7 @@ Deno.serve(async (req) => {
         await supabase.from("handicap_history").insert({
           profile_id: profile.id,
           handicap: handicapIndex,
-          round_id: null, // backfill entry, not tied to a specific round
+          round_id: null,
         });
 
         processed++;
