@@ -813,8 +813,9 @@ export const calculateSkinsBets = (
           });
         };
 
-        calcNine(playerA, playerB, adjustedScores, 1, 9, config.skins.frontValue, 'Skins Front', 'front');
-        calcNine(playerA, playerB, adjustedScores, 10, 18, config.skins.backValue, 'Skins Back', 'back');
+        const sinAcumRanges = getSegmentHoleRanges(startingHole);
+        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.front[0], sinAcumRanges.front[1], config.skins.frontValue, 'Skins Front', 'front');
+        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], config.skins.backValue, 'Skins Back', 'back');
         continue; // Next pair
       }
 
