@@ -1258,7 +1258,7 @@ const calculateOyesRayasForAll = (
   
   if (oyesMode === 'singleWinner') {
     // Mode A: Un solo ganador - #1 beats all
-    processOyesSingleWinner(players, scores, config, course, summaries, detailsByPair);
+    processOyesSingleWinner(players, scores, config, course, summaries, detailsByPair, startingHole);
   } else {
     // Mode B: Todos vs Todos - compare by pair with modality
     const processedPairs = new Set<string>();
