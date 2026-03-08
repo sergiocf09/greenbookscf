@@ -1242,7 +1242,8 @@ const calculateOyesRayasForAll = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { summaries: BetSummary[]; details: Map<string, RayaDetail[]> } => {
   const summaries: BetSummary[] = [];
   const detailsByPair = new Map<string, RayaDetail[]>();
