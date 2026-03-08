@@ -1,4 +1,5 @@
-// Bet Calculations Engine - All bilateral calculations
+// Bet Calculations Engine - Orchestrator + remaining calculators not yet extracted
+// Extracted modules live under src/lib/bets/ — re-exported here for backward compatibility.
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MedalGeneralPlayerConfig, StablefordPointConfig, SideBet, TeamPressuresBet, ZooAnimalType, ZooEvent, ZOO_ANIMALS, ZoologicoBetConfig, MarkerState, markerInfo } from '@/types/golf';
 import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateOyesesBets } from './oyesesCalculations';
@@ -7,6 +8,33 @@ import { calculateConejaBets } from './conejaCalculations';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
 import { devLog } from './logger';
 import { detectScoreBasedMarkers } from './scoreDetection';
+
+// ── Re-exports from extracted modules (backward compatibility) ──
+export { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, shouldCalculatePair, resolveParticipantsWithOneVsAll, getBilateralHandicapForPair, getAdjustedScoresForPair, getHoleScore, getSegmentHoleRange, getSegmentNetTotal, getMutualSegmentNetTotals } from './bets/shared';
+export { calculateMedalBets } from './bets/medal';
+export { calculatePressureBets, getPressureEvolution, type PressureHoleState, type PressureEvolution } from './bets/pressures';
+export { calculateUnitsBets } from './bets/units';
+export { calculateManchasBets } from './bets/manchas';
+export { calculateCulebrasBets } from './bets/culebras';
+export { calculatePinguinosBets } from './bets/pinguinos';
+export { calculateMedalGeneralBets } from './bets/medalGeneral';
+export { calculatePuttsBets } from './bets/putts';
+export { calculateSideBets } from './bets/sideBets';
+export { calculateStablefordBets } from './bets/stableford';
+export { getSkinsEvolution, type SkinsHoleState, type SkinsEvolution } from './bets/skinsEvolution';
+
+// Import extracted modules for use in calculateAllBets
+import { type BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, shouldCalculatePair, resolveParticipantsWithOneVsAll, getBilateralHandicapForPair, getAdjustedScoresForPair, getHoleScore } from './bets/shared';
+import { calculateMedalBets } from './bets/medal';
+import { calculatePressureBets } from './bets/pressures';
+import { calculateUnitsBets } from './bets/units';
+import { calculateManchasBets } from './bets/manchas';
+import { calculateCulebrasBets } from './bets/culebras';
+import { calculatePinguinosBets } from './bets/pinguinos';
+import { calculateMedalGeneralBets } from './bets/medalGeneral';
+import { calculatePuttsBets } from './bets/putts';
+import { calculateSideBets } from './bets/sideBets';
+import { calculateStablefordBets } from './bets/stableford';
 
 // Helper: group players by their groupId for per-group bet scoping
 // Players without groupId are all placed in a single "ungrouped" bucket
