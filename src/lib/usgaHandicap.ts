@@ -51,7 +51,6 @@ export const calculateHandicapIndexFromDifferentials = (
 
   const avg = best.reduce((sum, d) => sum + d, 0) / best.length;
   const handicapIndex = avg * 0.96;
-  // Round to 1 decimal and cap at 54.0
   const rounded = Math.round(handicapIndex * 10) / 10;
   return Math.min(rounded, MAX_HANDICAP_INDEX);
 };
@@ -87,11 +86,6 @@ export const calculateCourseHandicap = (
  *
  * Before summing strokes for the differential, each hole's score is capped at:
  *   maximum = par + 2 + strokesReceived on that hole
- *
- * @param holeStrokes  Array of 18 raw stroke values (index 0 = hole 1)
- * @param holePars     Array of 18 par values
- * @param strokesPerHole Array of 18 strokes-received values (from handicap allocation)
- * @returns The Adjusted Gross Score (sum of capped hole scores)
  */
 export const calculateAdjustedGrossScore = (
   holeStrokes: (number | null)[],
@@ -111,9 +105,8 @@ export const calculateAdjustedGrossScore = (
 };
 
 /**
- * Calculate USGA Handicap Index for a profile from their completed round history.
- * Extracted for reuse in bulk calculations and persistence.
- * Returns the Handicap Index (e.g. 8.3) or null if insufficient rounds.
+ * Calculate USGA Handicap Index for a profile using BATCH queries.
+ * 4 queries total instead of N+1 (was 61).
  */
 export const calculateHandicapIndexForProfile = async (
   profileId: string
@@ -121,13 +114,11 @@ export const calculateHandicapIndexForProfile = async (
   const { supabase } = await import('@/integrations/supabase/client');
   const { calculateStrokesPerHole } = await import('@/lib/handicapUtils');
 
+  // === QUERY 1: round_players with rounds + courses ===
   const { data: roundPlayers, error: rpError } = await supabase
     .from('round_players')
     .select(`
-      id,
-      round_id,
-      tee_color,
-      handicap_for_round,
+      id, round_id, tee_color, handicap_for_round,
       rounds!inner (
         id, date, status, course_id, tee_color,
         golf_courses!inner ( id, name )
@@ -140,39 +131,78 @@ export const calculateHandicapIndexForProfile = async (
   if (rpError) throw rpError;
   if (!roundPlayers?.length) return null;
 
+  const recent = roundPlayers.slice(0, 20);
+  const rpIds = recent.map(rp => rp.id);
+
+  // Deduplicate course IDs
+  const courseIdSet = new Set<string>();
+  for (const rp of recent) {
+    courseIdSet.add((rp.rounds as any).golf_courses.id);
+  }
+  const uniqueCourseIds = Array.from(courseIdSet);
+
+  // === QUERIES 2-4: Batch in parallel ===
+  const [holeScoresRes, courseHolesRes, courseTeesRes] = await Promise.all([
+    supabase
+      .from('hole_scores')
+      .select('round_player_id, hole_number, strokes, confirmed')
+      .in('round_player_id', rpIds)
+      .eq('confirmed', true)
+      .not('strokes', 'is', null)
+      .order('hole_number'),
+    supabase
+      .from('course_holes')
+      .select('course_id, hole_number, par, stroke_index')
+      .in('course_id', uniqueCourseIds)
+      .order('hole_number'),
+    supabase
+      .from('course_tees')
+      .select('course_id, tee_color, course_rating, slope_rating')
+      .in('course_id', uniqueCourseIds),
+  ]);
+
+  if (holeScoresRes.error) throw holeScoresRes.error;
+  if (courseHolesRes.error) throw courseHolesRes.error;
+
+  // Index for O(1) lookups
+  const scoresByRpId = new Map<string, typeof holeScoresRes.data>();
+  for (const hs of holeScoresRes.data || []) {
+    const arr = scoresByRpId.get(hs.round_player_id) || [];
+    arr.push(hs);
+    scoresByRpId.set(hs.round_player_id, arr);
+  }
+
+  const holesByCourseId = new Map<string, typeof courseHolesRes.data>();
+  for (const ch of courseHolesRes.data || []) {
+    const arr = holesByCourseId.get(ch.course_id) || [];
+    arr.push(ch);
+    holesByCourseId.set(ch.course_id, arr);
+  }
+
+  const teeMap = new Map<string, { course_rating: number; slope_rating: number }>();
+  for (const t of courseTeesRes.data || []) {
+    teeMap.set(`${t.course_id}|${t.tee_color}`, {
+      course_rating: t.course_rating,
+      slope_rating: t.slope_rating,
+    });
+  }
+
+  // === Process in memory ===
   const differentials: number[] = [];
 
-  for (const rp of roundPlayers.slice(0, 20)) {
+  for (const rp of recent) {
     const round = rp.rounds as any;
     const course = round.golf_courses;
     const playerTeeColor = (rp as any).tee_color || round.tee_color || 'white';
     const handicapUsed = Number((rp as any).handicap_for_round) || 0;
 
-    const { data: holeScores, error: hsError } = await supabase
-      .from('hole_scores')
-      .select('hole_number, strokes, confirmed')
-      .eq('round_player_id', rp.id)
-      .eq('confirmed', true)
-      .not('strokes', 'is', null)
-      .order('hole_number');
+    const holeScores = scoresByRpId.get(rp.id);
+    if (!holeScores || holeScores.length < 18) continue;
 
-    if (hsError || !holeScores || holeScores.length < 18) continue;
+    const courseHoles = holesByCourseId.get(course.id);
+    if (!courseHoles || courseHoles.length < 18) continue;
 
-    const { data: courseHoles, error: chError } = await supabase
-      .from('course_holes')
-      .select('hole_number, par, stroke_index')
-      .eq('course_id', course.id)
-      .order('hole_number');
-
-    if (chError || !courseHoles || courseHoles.length < 18) continue;
-
-    const { data: teeData } = await supabase
-      .from('course_tees')
-      .select('course_rating, slope_rating')
-      .eq('course_id', course.id)
-      .eq('tee_color', playerTeeColor)
-      .maybeSingle();
-
+    const teeData = teeMap.get(`${course.id}|${playerTeeColor}`);
     const courseRating = teeData?.course_rating || 72;
     const slopeRating = teeData?.slope_rating || 113;
 
