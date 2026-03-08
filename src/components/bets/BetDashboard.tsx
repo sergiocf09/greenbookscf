@@ -1128,7 +1128,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         effectiveBetConfig,
         course,
         effectiveBetConfig.bilateralHandicaps,
-        allPlayersForCalculations
+        allPlayersForCalculations,
+        startingHole
       );
       
       // Get Dashboard override amounts for this pair
@@ -4421,7 +4422,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         effectiveBetConfig,
         course,
         effectiveBetConfig.bilateralHandicaps,
-        allPlayers
+        allPlayers,
+        startingHole
       );
       
       // Get Dashboard override amounts for this pair
@@ -5343,7 +5345,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           effectiveBetConfig,
                           course,
                           effectiveBetConfig.bilateralHandicaps,
-                          allPlayers
+                          allPlayers,
+                          startingHole
                         );
                         
                         // Group details by source - counting net rayas won (positive = player wins)

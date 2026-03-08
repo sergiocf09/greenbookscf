@@ -779,7 +779,7 @@ const processOyesSangronForPair = (
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   par3Holes.forEach(holeNum => {
-    const segment: 'front' | 'back' = holeNum <= 9 ? 'front' : 'back';
+    const segment: 'front' | 'back' = holeNum >= segRanges.front[0] && holeNum <= segRanges.front[1] ? 'front' : 'back';
     const segmentValue = segment === 'front' ? oyesConfig.frontValue : oyesConfig.backValue;
     
     const scoresA = scores.get(playerAId) || [];
@@ -876,7 +876,8 @@ const processOyesAcumuladosForPair = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
@@ -886,9 +887,10 @@ const processOyesAcumuladosForPair = (
   const pairKey = [playerAId, playerBId].sort().join('-');
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
-  // Separate par 3s by segment
-  const frontPar3s = par3Holes.filter(h => h <= 9);
-  const backPar3s = par3Holes.filter(h => h > 9);
+  // Separate par 3s by segment using dynamic ranges
+  const segRanges = getSegmentHoleRanges(startingHole);
+  const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
+  const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
   
   // Track carry SEPARATELY per segment
   let carryFront = 0; // Accumulates only from Front holes where nobody won
@@ -1075,11 +1077,13 @@ const processOyesSingleWinner = (
   config: BetConfig,
   course: GolfCourse,
   summaries: BetSummary[],
-  detailsByPair: Map<string, RayaDetail[]>
+  detailsByPair: Map<string, RayaDetail[]>,
+  startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
-  const frontPar3s = par3Holes.filter(h => h <= 9);
-  const backPar3s = par3Holes.filter(h => h > 9);
+  const segRanges = getSegmentHoleRanges(startingHole);
+  const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
+  const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
 
   // Track carry per pair, segmented by vuelta (Front/Back)
   // key = sorted pair key, value = { front: number, back: number }
@@ -1238,7 +1242,8 @@ const calculateOyesRayasForAll = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { summaries: BetSummary[]; details: Map<string, RayaDetail[]> } => {
   const summaries: BetSummary[] = [];
   const detailsByPair = new Map<string, RayaDetail[]>();
@@ -1253,7 +1258,7 @@ const calculateOyesRayasForAll = (
   
   if (oyesMode === 'singleWinner') {
     // Mode A: Un solo ganador - #1 beats all
-    processOyesSingleWinner(players, scores, config, course, summaries, detailsByPair);
+    processOyesSingleWinner(players, scores, config, course, summaries, detailsByPair, startingHole);
   } else {
     // Mode B: Todos vs Todos - compare by pair with modality
     const processedPairs = new Set<string>();
@@ -1271,9 +1276,9 @@ const calculateOyesRayasForAll = (
         const modality = getOyesModalityForPair(config, playerA.id, playerB.id);
         
         if (modality === 'sangron') {
-          processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+          processOyesSangronForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair, startingHole);
         } else {
-          processOyesAcumuladosForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair);
+          processOyesAcumuladosForPair(playerA.id, playerB.id, scores, config, course, summaries, detailsByPair, startingHole);
         }
         
         processedPairs.add(pairKey);
@@ -1311,7 +1316,7 @@ export const calculateRayasBets = (
   const summaries: BetSummary[] = [];
   
   // Calculate Oyes rayas (absolute closest) — only among participating players
-  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course);
+  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course, startingHole);
   summaries.push(...oyesSummaries);
   
   // Calculate bilateral rayas (skins, units, medal)
@@ -1327,7 +1332,7 @@ export const calculateRayasBets = (
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
       
-      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
@@ -1405,16 +1410,17 @@ export const getRayasDetailForPair = (
   config: BetConfig,
   course: GolfCourse,
   bilateralHandicaps?: BilateralHandicap[],
-  allPlayers?: Player[]
+  allPlayers?: Player[],
+  startingHole: 1 | 10 = 1
 ): RayasPairResult => {
-  const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  const bilateralResult = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
   
   // Check if Oyes segment is enabled for THIS SPECIFIC PAIR (bilateral override)
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerA.id, playerB.id);
   
   // If we have all players and Oyes is enabled for this pair, calculate Oyes details
   if (allPlayers && allPlayers.length > 0 && oyesConfig.enabled) {
-    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course);
+    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course, startingHole);
     
     // Get Oyes details for this specific pair
     const pairKey = [playerA.id, playerB.id].sort().join('-');
@@ -1474,13 +1480,14 @@ export const getRayasSummaryBySource = (
   config: BetConfig,
   course: GolfCourse,
   players: Player[],
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): { source: string; frontRayas: number; backRayas: number; totalRayas: number }[] => {
   const playerA = players.find(p => p.id === playerAId);
   const playerB = players.find(p => p.id === playerBId);
   if (!playerA || !playerB) return [];
   
-  const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps);
+  const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
   
   const sources: Record<string, { front: number; back: number; total: number }> = {
     skins: { front: 0, back: 0, total: 0 },
