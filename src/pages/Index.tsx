@@ -95,6 +95,7 @@ const Index = () => {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showBalancesDialog, setShowBalancesDialog] = useState(false);
   const [showHandicapDialog, setShowHandicapDialog] = useState(false);
+  const [showHandicapHistoryDialog, setShowHandicapHistoryDialog] = useState(false);
   const [showScorecardDialog, setShowScorecardDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
