@@ -447,10 +447,11 @@ const calculateRayasForPair = (
   const useAccumulation = effectiveVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
+  const segRanges = getSegmentHoleRanges(startingHole);
   if (skinsConfig.enabled) {
     // Front 9 skins
     let frontAccumulated = 0;
-    for (let holeNum = 1; holeNum <= 9; holeNum++) {
+    for (let holeNum = segRanges.front[0]; holeNum <= segRanges.front[1]; holeNum++) {
       const netA = getHoleNetScore(playerA.id, holeNum, adjustedScores);
       const netB = getHoleNetScore(playerB.id, holeNum, adjustedScores);
       
