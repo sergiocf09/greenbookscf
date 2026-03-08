@@ -109,6 +109,7 @@ export interface SnapshotBilateralHandicap {
 export interface SnapshotMeta {
   noRecalcContract: true;    // Historical UI must render only from snapshot; never recalculate
   schemaVersion: number;     // 1 = original, 3 = current (V3 with integrity guarantees)
+  betConfigVersion?: number; // Version of the BetConfig schema used at close time (for future migrations)
   createdBy?: string | null; // organizer profileId
   integrityChecks?: {        // Results of pre-write integrity validation
     symmetryOk: boolean;
@@ -490,6 +491,7 @@ export function generateRoundSnapshot(
     meta: {
       noRecalcContract: true,
       schemaVersion: 3,
+      betConfigVersion: 1,
       createdBy: undefined,
       integrityChecks: {
         symmetryOk: integrityResult.symmetryOk,
