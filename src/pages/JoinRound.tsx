@@ -185,7 +185,7 @@ const JoinRound = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Unirse a Ronda</CardTitle>
             <CardDescription>
-              {roundInfo.organizer.display_name} te invita a jugar
+              {formatPlayerName(roundInfo.organizer.display_name)} te invita a jugar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
