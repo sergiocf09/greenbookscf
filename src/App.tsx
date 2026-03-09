@@ -9,6 +9,9 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import JoinRound from "./pages/JoinRound";
 import JoinByCode from "./pages/JoinByCode";
+import Leaderboards from "./pages/Leaderboards";
+import LeaderboardDetail from "./pages/LeaderboardDetail";
+import JoinLeaderboard from "./pages/JoinLeaderboard";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
