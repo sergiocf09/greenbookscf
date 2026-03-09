@@ -31,7 +31,7 @@ interface ScoringViewProps {
   onAddZooEvent?: (event: ZooEvent) => void;
   onUpdateZooEvent?: (event: ZooEvent) => void;
   onDeleteZooEvent?: (eventId: string) => void;
-  onLinkToLeaderboard?: () => void;
+  
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
