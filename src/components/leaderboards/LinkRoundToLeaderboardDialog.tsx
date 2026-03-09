@@ -117,26 +117,44 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         .eq('is_active', true);
       if (partsErr) throw partsErr;
 
-      const current = currentParts ?? existingParticipants;
+      const current = currentParts ?? [];
 
-      // Add selected participants
+      // Build batch of new participants (filter out already-existing ones)
+      const newRows: Array<{
+        leaderboard_id: string;
+        profile_id: string | null;
+        guest_name: string | null;
+        guest_initials: string | null;
+        guest_color: string | null;
+        handicap_for_leaderboard: number;
+        source_round_id: string;
+      }> = [];
+
       for (const player of allPlayers) {
         if (!selectedPlayerIds.has(player.id)) continue;
 
-        // Check if already a participant
         const alreadyExists = current.some(
           (p: any) => p.profile_id === player.profileId || (p.guest_name && p.guest_name === player.name)
         );
         if (alreadyExists) continue;
 
-        await addParticipant({
-          profile_id: player.profileId || undefined,
-          guest_name: player.profileId ? undefined : player.name,
-          guest_initials: player.profileId ? undefined : player.initials,
-          guest_color: player.profileId ? undefined : player.color,
+        newRows.push({
+          leaderboard_id: selectedLeaderboardId,
+          profile_id: player.profileId || null,
+          guest_name: player.profileId ? null : player.name,
+          guest_initials: player.profileId ? null : player.initials,
+          guest_color: player.profileId ? null : player.color,
           handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
           source_round_id: roundId,
         });
+      }
+
+      // Single batch insert instead of sequential calls
+      if (newRows.length > 0) {
+        const { error: insertErr } = await supabase
+          .from('leaderboard_participants')
+          .insert(newRows);
+        if (insertErr) throw insertErr;
       }
 
       toast.success('Ronda vinculada al leaderboard');
