@@ -205,10 +205,10 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                           </span>
                         </div>
                       </td>
-                      <td className="text-center text-xs text-muted-foreground px-1 py-1.5">
+                      <td className="text-center text-xs text-foreground font-bold px-1 py-1.5">
                         {entry.participant.handicap_for_leaderboard}
                       </td>
-                      <td className="text-center text-xs text-muted-foreground px-1 py-1.5">
+                      <td className="text-center text-xs text-foreground font-bold px-1 py-1.5">
                         {hasPlayed ? entry.holesPlayed : '-'}
                       </td>
                       <td className={cn(
