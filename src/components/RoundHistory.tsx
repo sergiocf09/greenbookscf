@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { devError } from '@/lib/logger';
+import { formatPlayerName } from '@/lib/playerInput';
 import { parseLocalDate } from '@/lib/dateUtils';
 import {
   AlertDialog,
