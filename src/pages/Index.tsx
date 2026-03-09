@@ -2849,9 +2849,21 @@ const Index = () => {
       {/* Link Round to Leaderboard Dialog */}
       <LinkRoundToLeaderboardDialog
         open={showLinkLeaderboardDialog}
-        onOpenChange={(open) => {
+        onOpenChange={async (open) => {
           setShowLinkLeaderboardDialog(open);
-          if (!open) setPreselectedLeaderboardId(null);
+          if (!open) {
+            setPreselectedLeaderboardId(null);
+            // Recheck link status after dialog closes
+            if (leaderboardDetailId && roundState.id) {
+              const { data } = await supabase
+                .from('leaderboard_rounds')
+                .select('id')
+                .eq('leaderboard_id', leaderboardDetailId)
+                .eq('round_id', roundState.id)
+                .maybeSingle();
+              setIsRoundLinkedToLeaderboard(!!data);
+            }
+          }
         }}
         roundId={roundState.id}
         players={players}
