@@ -2044,6 +2044,10 @@ const Index = () => {
                   <Hash className="h-4 w-4 mr-2" />
                   Unirse con Código
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/leaderboards')}>
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Leaderboards
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
