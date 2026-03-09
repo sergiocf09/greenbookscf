@@ -90,57 +90,48 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const availableModes = event.scoring_modes || ['gross', 'net'];
 
   return (
-    <div className="space-y-4">
-      {/* Back + share bar */}
+    <div className="space-y-2">
+      {/* Top bar: code left, share right */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
-          <ArrowLeft className="h-4 w-4" /> Leaderboards
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
+            <ArrowLeft className="h-4 w-4" /> Leaderboards
+          </Button>
+          <button
+            onClick={copyCode}
+            className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors"
+          >
+            <Hash className="h-3 w-3" />
+            <span className="font-mono font-bold">{event.code}</span>
+            <Copy className="h-3 w-3 ml-0.5" />
+          </button>
+        </div>
         <Button variant="ghost" size="icon" onClick={copyShareLink}>
           <Share2 className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Event info */}
+      {/* Tournament name + mode on one line */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+          <span className="font-semibold text-lg truncate">{event.name}</span>
+        </div>
+        <span className="text-sm text-muted-foreground whitespace-nowrap ml-2">
+          {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
+        </span>
+      </div>
+
+      {/* Leaderboard table */}
       <Card>
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-amber-500" />
-            <CardTitle className="text-lg">{event.name}</CardTitle>
-          </div>
-          {event.description && (
-            <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
-          )}
-        </CardHeader>
-        <CardContent className="px-4 pb-3 pt-0">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <button
-              onClick={copyCode}
-              className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors"
-            >
-              <Hash className="h-3 w-3" />
-              <span className="font-mono font-bold">{event.code}</span>
-              <Copy className="h-3 w-3 ml-1" />
-            </button>
-            <span className="flex items-center gap-1">
+        <CardHeader className="pb-1 pt-3 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Leaderboard</CardTitle>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
-              {participants.length} jugadores
+              {participants.length}
             </span>
           </div>
-          <div className="flex gap-1 mt-2">
-            {availableModes.map(m => (
-              <span key={m} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                {m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford'}
-              </span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Standings */}
-      <Card>
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-base">Standings</CardTitle>
         </CardHeader>
         <CardContent className="px-0 pb-2 pt-0">
           {availableModes.length > 1 && (
