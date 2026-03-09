@@ -2666,13 +2666,29 @@ const Index = () => {
                     }
                   }
 
-                  // Always remove rows explicitly sourced from this round
-                  const { error: sourceDeleteErr } = await supabase
+                  // Remove participants sourced from this round ONLY if they're not present in any other linked round
+                  const { data: sourcedParts, error: sourcedErr } = await supabase
                     .from('leaderboard_participants')
-                    .delete()
+                    .select('id, profile_id, guest_name')
                     .eq('leaderboard_id', leaderboardId)
                     .eq('source_round_id', roundId);
-                  if (sourceDeleteErr) throw sourceDeleteErr;
+                  if (sourcedErr) throw sourcedErr;
+
+                  const sourcedIdsToDelete = (sourcedParts || [])
+                    .filter((p) => {
+                      if (p.profile_id) return !stillProfileIds.has(p.profile_id);
+                      if (p.guest_name) return !stillGuestNames.has(p.guest_name);
+                      return true;
+                    })
+                    .map((p) => p.id);
+
+                  if (sourcedIdsToDelete.length > 0) {
+                    const { error } = await supabase
+                      .from('leaderboard_participants')
+                      .delete()
+                      .in('id', sourcedIdsToDelete);
+                    if (error) throw error;
+                  }
 
                   const profileIdsToDelete = removedProfileIds.filter((id) => !stillProfileIds.has(id));
                   if (profileIdsToDelete.length > 0) {
