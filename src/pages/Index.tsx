@@ -2443,6 +2443,7 @@ const Index = () => {
                 },
               }));
             }}
+            onLinkToLeaderboard={() => setShowLinkLeaderboardDialog(true)}
           />
         )}
 
