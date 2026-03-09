@@ -17,6 +17,7 @@ import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
+import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
