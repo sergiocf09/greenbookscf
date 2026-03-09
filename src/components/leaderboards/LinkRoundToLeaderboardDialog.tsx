@@ -23,6 +23,7 @@ interface LinkRoundToLeaderboardDialogProps {
   players: Player[];
   playerGroups: PlayerGroup[];
   profileId?: string;
+  preselectedLeaderboardId?: string | null;
 }
 
 type Step = 'select-leaderboard' | 'select-participants';
@@ -34,6 +35,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   players,
   playerGroups,
   profileId,
+  preselectedLeaderboardId,
 }) => {
   const { events, loading: loadingEvents, joinByCode } = useLeaderboards();
   const [step, setStep] = useState<Step>('select-leaderboard');
@@ -58,8 +60,13 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep('select-leaderboard');
-      setSelectedLeaderboardId(null);
+      if (preselectedLeaderboardId) {
+        setSelectedLeaderboardId(preselectedLeaderboardId);
+        setStep('select-participants');
+      } else {
+        setStep('select-leaderboard');
+        setSelectedLeaderboardId(null);
+      }
       setJoinCode('');
       setSelectedPlayerIds(new Set(allPlayers.map(p => p.id)));
       setHandicaps(new Map(allPlayers.map(p => [p.id, p.handicap])));

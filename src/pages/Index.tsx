@@ -105,6 +105,7 @@ const Index = () => {
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
   const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
+  const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
@@ -2444,7 +2445,7 @@ const Index = () => {
                 },
               }));
             }}
-            onLinkToLeaderboard={() => setShowLinkLeaderboardDialog(true)}
+            
           />
         )}
 
@@ -2581,6 +2582,11 @@ const Index = () => {
             <LeaderboardDetailInline
               leaderboardId={leaderboardDetailId}
               onBack={() => setLeaderboardDetailId(null)}
+              hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+              onLinkRound={() => {
+                setPreselectedLeaderboardId(leaderboardDetailId);
+                setShowLinkLeaderboardDialog(true);
+              }}
             />
           ) : (
             <LeaderboardsInlineView
@@ -2808,11 +2814,15 @@ const Index = () => {
       {/* Link Round to Leaderboard Dialog */}
       <LinkRoundToLeaderboardDialog
         open={showLinkLeaderboardDialog}
-        onOpenChange={setShowLinkLeaderboardDialog}
+        onOpenChange={(open) => {
+          setShowLinkLeaderboardDialog(open);
+          if (!open) setPreselectedLeaderboardId(null);
+        }}
         roundId={roundState.id}
         players={players}
         playerGroups={playerGroups}
         profileId={profile?.id}
+        preselectedLeaderboardId={preselectedLeaderboardId}
       />
 
       {/* Quick Score Entry Dialog */}

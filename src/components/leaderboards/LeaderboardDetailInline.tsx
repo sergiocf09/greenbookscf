@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -14,11 +14,15 @@ type SortMode = 'gross' | 'net' | 'stableford';
 interface LeaderboardDetailInlineProps {
   leaderboardId: string;
   onBack: () => void;
+  onLinkRound?: () => void;
+  hasActiveRound?: boolean;
 }
 
 export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = ({
   leaderboardId,
   onBack,
+  onLinkRound,
+  hasActiveRound,
 }) => {
   const { profile } = useAuth();
   const {
@@ -121,6 +125,19 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
         </span>
       </div>
+
+      {/* Link current round button */}
+      {hasActiveRound && onLinkRound && (
+        <Button 
+          onClick={onLinkRound} 
+          variant="outline" 
+          size="sm" 
+          className="w-full gap-2"
+        >
+          <Link2 className="h-4 w-4" />
+          Vincular ronda actual a este leaderboard
+        </Button>
+      )}
 
       {/* Leaderboard table */}
       <Card>
