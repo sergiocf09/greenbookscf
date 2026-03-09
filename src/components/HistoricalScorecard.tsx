@@ -167,7 +167,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
               return (
                 <tr key={player.playerId} className="border-t border-border/50">
                   <td className="px-1 py-1 sticky left-0 bg-card">
-                    <span className="font-medium truncate max-w-[56px] block text-[11px]">{player.playerName.split(' ')[0]}</span>
+                    <span className="font-medium truncate max-w-[56px] block text-[11px]">{formatPlayerName(player.playerName).split(' ')[0]}</span>
                   </td>
                   {backNine.map(hole => {
                     const strokes = getPlayerScoreForHole(player, hole.number);

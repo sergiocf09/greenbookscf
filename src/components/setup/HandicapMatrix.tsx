@@ -509,8 +509,8 @@ const CellEditor: React.FC<CellEditorProps> = ({
   const isGiving = strokes > 0;
   const isReceiving = strokes < 0;
   const slidingDiffers = sliding.hasSliding && sliding.strokes !== strokes;
-  const rowFirstName = rowPlayer.name.split(' ')[0];
-  const colFirstName = colPlayer.name.split(' ')[0];
+  const rowFirstName = formatPlayerName(rowPlayer.name).split(' ')[0];
+  const colFirstName = formatPlayerName(colPlayer.name).split(' ')[0];
 
   return (
     <div className="space-y-3">

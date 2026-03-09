@@ -284,7 +284,7 @@ const JoinRound = () => {
                       >
                         {p.initials}
                       </div>
-                      <span className="text-sm">{p.display_name}</span>
+                      <span className="text-sm">{formatPlayerName(p.display_name)}</span>
                     </div>
                   ))}
                   {(!roundInfo.groups[0] || roundInfo.groups[0].players.length === 0) && (

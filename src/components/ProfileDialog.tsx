@@ -227,7 +227,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           />
         )}
         <div>
-          <p className="font-semibold leading-tight">{profile?.display_name}</p>
+          <p className="font-semibold leading-tight">{formatPlayerName(profile?.display_name || '')}</p>
           <p className="text-xs text-muted-foreground">{user?.email}</p>
         </div>
       </div>

@@ -326,9 +326,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
         
         return {
           profileId: rp.profile_id,
-          name: isGuest 
+          name: formatPlayerName(isGuest 
             ? (rp.guest_name || 'Invitado') 
-            : (profileData?.display_name || 'Jugador'),
+            : (profileData?.display_name || 'Jugador')),
           initials: isGuest 
             ? (rp.guest_initials || 'IN') 
             : (profileData?.initials || 'XX'),
