@@ -107,6 +107,7 @@ const Index = () => {
   const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
+  const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
@@ -208,6 +209,24 @@ const Index = () => {
     if (!roundState.id) return;
     void loadBetConfig();
   }, [roundState.id, loadBetConfig]);
+
+  // Check if current round is linked to the selected leaderboard
+  useEffect(() => {
+    if (!leaderboardDetailId || !roundState.id) {
+      setIsRoundLinkedToLeaderboard(false);
+      return;
+    }
+    const checkLink = async () => {
+      const { data } = await supabase
+        .from('leaderboard_rounds')
+        .select('id')
+        .eq('leaderboard_id', leaderboardDetailId)
+        .eq('round_id', roundState.id)
+        .maybeSingle();
+      setIsRoundLinkedToLeaderboard(!!data);
+    };
+    checkLink();
+  }, [leaderboardDetailId, roundState.id]);
 
   // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
   const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
@@ -2583,9 +2602,25 @@ const Index = () => {
               leaderboardId={leaderboardDetailId}
               onBack={() => setLeaderboardDetailId(null)}
               hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+              isRoundLinked={isRoundLinkedToLeaderboard}
               onLinkRound={() => {
                 setPreselectedLeaderboardId(leaderboardDetailId);
                 setShowLinkLeaderboardDialog(true);
+              }}
+              onUnlinkRound={async () => {
+                if (!roundState.id || !leaderboardDetailId) return;
+                try {
+                  const { error } = await supabase
+                    .from('leaderboard_rounds')
+                    .delete()
+                    .eq('leaderboard_id', leaderboardDetailId)
+                    .eq('round_id', roundState.id);
+                  if (error) throw error;
+                  setIsRoundLinkedToLeaderboard(false);
+                  toast.success('Ronda desvinculada del leaderboard');
+                } catch (err: any) {
+                  toast.error('Error al desvincular: ' + err.message);
+                }
               }}
             />
           ) : (
@@ -2814,9 +2849,21 @@ const Index = () => {
       {/* Link Round to Leaderboard Dialog */}
       <LinkRoundToLeaderboardDialog
         open={showLinkLeaderboardDialog}
-        onOpenChange={(open) => {
+        onOpenChange={async (open) => {
           setShowLinkLeaderboardDialog(open);
-          if (!open) setPreselectedLeaderboardId(null);
+          if (!open) {
+            setPreselectedLeaderboardId(null);
+            // Recheck link status after dialog closes
+            if (leaderboardDetailId && roundState.id) {
+              const { data } = await supabase
+                .from('leaderboard_rounds')
+                .select('id')
+                .eq('leaderboard_id', leaderboardDetailId)
+                .eq('round_id', roundState.id)
+                .maybeSingle();
+              setIsRoundLinkedToLeaderboard(!!data);
+            }
+          }
         }}
         roundId={roundState.id}
         players={players}

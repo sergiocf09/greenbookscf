@@ -423,6 +423,33 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     }
   }, [leaderboardId, profile, fetchDetail]);
 
+  const unlinkRound = useCallback(async (roundId: string) => {
+    if (!leaderboardId) return;
+    try {
+      const { error } = await supabase
+        .from('leaderboard_rounds')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', roundId);
+      if (error) throw error;
+      toast.success('Ronda desvinculada del leaderboard');
+      await fetchDetail();
+    } catch (err: any) {
+      toast.error('Error al desvincular ronda: ' + err.message);
+    }
+  }, [leaderboardId, fetchDetail]);
+
+  const checkRoundLinked = useCallback(async (roundId: string): Promise<boolean> => {
+    if (!leaderboardId) return false;
+    const { data } = await supabase
+      .from('leaderboard_rounds')
+      .select('id')
+      .eq('leaderboard_id', leaderboardId)
+      .eq('round_id', roundId)
+      .single();
+    return !!data;
+  }, [leaderboardId]);
+
   const isCreator = event?.created_by === profile?.id;
 
   return {
@@ -436,5 +463,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     addParticipant,
     updateParticipantHandicap,
     linkRound,
+    unlinkRound,
+    checkRoundLinked,
   };
 }
