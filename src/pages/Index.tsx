@@ -107,6 +107,7 @@ const Index = () => {
   const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
+  const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
