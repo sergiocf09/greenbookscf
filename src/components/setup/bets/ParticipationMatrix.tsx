@@ -125,9 +125,17 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
       return;
     }
 
-    // If in oneVsAll mode and clicking another player, switch anchor to that player
+    // If in oneVsAll mode and clicking another player, add them both in normal bilateral mode
     if (currentOneVsAll && currentAnchor !== playerId) {
-      onUpdateBet(betKey, { participantIds: [playerId], enabled: true, oneVsAll: true, anchorPlayerId: playerId } as any);
+      const newIds = currentAnchor ? [currentAnchor, playerId] : [playerId];
+      const allIds = players.map(p => p.id);
+      const isAll = allIds.every(id => newIds.includes(id));
+      onUpdateBet(betKey, {
+        participantIds: isAll ? undefined : newIds,
+        enabled: true,
+        oneVsAll: false,
+        anchorPlayerId: undefined,
+      } as any);
       return;
     }
 
