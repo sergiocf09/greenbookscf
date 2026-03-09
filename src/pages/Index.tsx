@@ -103,6 +103,8 @@ const Index = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
+  const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
+  const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
