@@ -2814,14 +2814,16 @@ const Index = () => {
       {/* Link Round to Leaderboard Dialog */}
       <LinkRoundToLeaderboardDialog
         open={showLinkLeaderboardDialog}
-        onOpenChange={setShowLinkLeaderboardDialog}
+        onOpenChange={(open) => {
+          setShowLinkLeaderboardDialog(open);
+          if (!open) setPreselectedLeaderboardId(null);
+        }}
         roundId={roundState.id}
         players={players}
         playerGroups={playerGroups}
         profileId={profile?.id}
+        preselectedLeaderboardId={preselectedLeaderboardId}
       />
-
-      {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
         // Calculate holes confirmed by OTHER players (excluding the quick score player)
         const otherPlayers = players.filter(p => p.id !== quickScorePlayer.id);
