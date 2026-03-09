@@ -2065,8 +2065,9 @@ const Index = () => {
                 <Users className="h-5 w-5" />
               </Button>
             )}
-            
-            
+
+const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
