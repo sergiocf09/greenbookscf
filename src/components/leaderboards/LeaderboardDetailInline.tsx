@@ -21,6 +21,8 @@ interface LeaderboardDetailInlineProps {
 export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = ({
   leaderboardId,
   onBack,
+  onLinkRound,
+  hasActiveRound,
 }) => {
   const { profile } = useAuth();
   const {
