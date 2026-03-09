@@ -165,30 +165,26 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     if (!leaderboardId) return;
     setLoading(true);
     try {
-      // Fetch event
-      const { data: eventData, error: eventError } = await supabase
-        .from('leaderboard_events')
-        .select('*')
-        .eq('id', leaderboardId)
-        .single();
-      if (eventError) throw eventError;
+      // Parallel fetch: event, participants, linked rounds
+      const [eventRes, partRes, linkedRes] = await Promise.all([
+        supabase.from('leaderboard_events').select('*').eq('id', leaderboardId).single(),
+        supabase.from('leaderboard_participants').select('*').eq('leaderboard_id', leaderboardId).eq('is_active', true),
+        supabase.from('leaderboard_rounds').select('round_id').eq('leaderboard_id', leaderboardId),
+      ]);
+      if (eventRes.error) throw eventRes.error;
+      if (partRes.error) throw partRes.error;
 
+      const eventData = eventRes.data;
       setEvent({
         ...eventData,
         scoring_modes: Array.isArray(eventData.scoring_modes) ? eventData.scoring_modes as string[] : ['gross', 'net'],
         rules_json: (eventData.rules_json || {}) as Record<string, any>,
       });
 
-      // Fetch participants with profile data
-      const { data: partData, error: partError } = await supabase
-        .from('leaderboard_participants')
-        .select('*')
-        .eq('leaderboard_id', leaderboardId)
-        .eq('is_active', true);
-      if (partError) throw partError;
+      const partData = partRes.data || [];
 
       // Resolve profile names
-      const profileIds = (partData || []).filter(p => p.profile_id).map(p => p.profile_id!);
+      const profileIds = partData.filter(p => p.profile_id).map(p => p.profile_id!);
       let profileMap: Record<string, { display_name: string; initials: string; avatar_color: string }> = {};
       if (profileIds.length > 0) {
         const { data: profiles } = await supabase
@@ -200,7 +196,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
         }
       }
 
-      const enrichedParticipants: LeaderboardParticipant[] = (partData || []).map(p => {
+      const enrichedParticipants: LeaderboardParticipant[] = partData.map(p => {
         const prof = p.profile_id ? profileMap[p.profile_id] : null;
         return {
           ...p,
@@ -211,11 +207,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       });
       setParticipants(enrichedParticipants);
 
-      // Fetch linked rounds
-      const { data: linkedRounds } = await supabase
-        .from('leaderboard_rounds')
-        .select('round_id')
-        .eq('leaderboard_id', leaderboardId);
+      const { data: linkedRounds } = linkedRes;
       const roundIds = (linkedRounds || []).map(lr => lr.round_id);
 
       // Compute standings from live hole_scores data
