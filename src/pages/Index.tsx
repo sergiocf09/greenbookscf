@@ -2576,9 +2576,16 @@ const Index = () => {
 
         {/* Leaderboards View */}
         {view === 'leaderboards' && (
-          <LeaderboardsInlineView
-            onNavigateToDetail={(id) => navigate(`/leaderboards/${id}`)}
-          />
+          leaderboardDetailId ? (
+            <LeaderboardDetailInline
+              leaderboardId={leaderboardDetailId}
+              onBack={() => setLeaderboardDetailId(null)}
+            />
+          ) : (
+            <LeaderboardsInlineView
+              onNavigateToDetail={(id) => setLeaderboardDetailId(id)}
+            />
+          )
         )}
       </main>
 
