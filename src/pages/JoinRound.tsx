@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface GroupInfo {
   id: string;
@@ -184,7 +185,7 @@ const JoinRound = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Unirse a Ronda</CardTitle>
             <CardDescription>
-              {roundInfo.organizer.display_name} te invita a jugar
+              {formatPlayerName(roundInfo.organizer.display_name)} te invita a jugar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -246,7 +247,7 @@ const JoinRound = () => {
                               >
                                 {p.initials}
                               </div>
-                              <span className="text-xs">{p.display_name}</span>
+                              <span className="text-xs">{formatPlayerName(p.display_name)}</span>
                               {p.is_guest && (
                                 <span className="text-[10px] text-muted-foreground">(inv)</span>
                               )}
@@ -283,7 +284,7 @@ const JoinRound = () => {
                       >
                         {p.initials}
                       </div>
-                      <span className="text-sm">{p.display_name}</span>
+                      <span className="text-sm">{formatPlayerName(p.display_name)}</span>
                     </div>
                   ))}
                   {(!roundInfo.groups[0] || roundInfo.groups[0].players.length === 0) && (
