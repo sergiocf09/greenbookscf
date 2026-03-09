@@ -501,6 +501,233 @@ export type Database = {
           },
         ]
       }
+      leaderboard_events: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          rules_json: Json
+          scoring_modes: Json
+          start_date: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          rules_json?: Json
+          scoring_modes?: Json
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          rules_json?: Json
+          scoring_modes?: Json
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_participants: {
+        Row: {
+          guest_color: string | null
+          guest_initials: string | null
+          guest_name: string | null
+          handicap_for_leaderboard: number
+          id: string
+          is_active: boolean
+          joined_at: string
+          leaderboard_id: string
+          profile_id: string | null
+          source_round_id: string | null
+        }
+        Insert: {
+          guest_color?: string | null
+          guest_initials?: string | null
+          guest_name?: string | null
+          handicap_for_leaderboard?: number
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          leaderboard_id: string
+          profile_id?: string | null
+          source_round_id?: string | null
+        }
+        Update: {
+          guest_color?: string | null
+          guest_initials?: string | null
+          guest_name?: string | null
+          handicap_for_leaderboard?: number
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          leaderboard_id?: string
+          profile_id?: string | null
+          source_round_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_participants_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_participants_source_round_id_fkey"
+            columns: ["source_round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_rounds: {
+        Row: {
+          added_at: string
+          added_by: string
+          id: string
+          leaderboard_id: string
+          round_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          id?: string
+          leaderboard_id: string
+          round_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          id?: string
+          leaderboard_id?: string
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_rounds_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_rounds_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_rounds_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_scores: {
+        Row: {
+          computed_at: string
+          gross_total: number | null
+          gross_vs_par: number | null
+          holes_played: number
+          id: string
+          leaderboard_id: string
+          net_total: number | null
+          net_vs_par: number | null
+          participant_id: string
+          round_id: string
+          stableford_total: number | null
+        }
+        Insert: {
+          computed_at?: string
+          gross_total?: number | null
+          gross_vs_par?: number | null
+          holes_played?: number
+          id?: string
+          leaderboard_id: string
+          net_total?: number | null
+          net_vs_par?: number | null
+          participant_id: string
+          round_id: string
+          stableford_total?: number | null
+        }
+        Update: {
+          computed_at?: string
+          gross_total?: number | null
+          gross_vs_par?: number | null
+          holes_played?: number
+          id?: string
+          leaderboard_id?: string
+          net_total?: number | null
+          net_vs_par?: number | null
+          participant_id?: string
+          round_id?: string
+          stableford_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_scores_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_scores_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_scores_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ledger_transactions: {
         Row: {
           amount: number
@@ -1288,6 +1515,7 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      resolve_leaderboard_by_code: { Args: { p_code: string }; Returns: string }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
       search_profiles: {
         Args: { p_query: string }
