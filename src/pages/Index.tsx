@@ -15,6 +15,8 @@ import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
+import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
+import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
