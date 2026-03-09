@@ -126,6 +126,19 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </span>
       </div>
 
+      {/* Link current round button */}
+      {hasActiveRound && onLinkRound && (
+        <Button 
+          onClick={onLinkRound} 
+          variant="outline" 
+          size="sm" 
+          className="w-full gap-2"
+        >
+          <Link2 className="h-4 w-4" />
+          Vincular ronda actual a este leaderboard
+        </Button>
+      )}
+
       {/* Leaderboard table */}
       <Card>
         <CardHeader className="pb-1 pt-3 px-4">
