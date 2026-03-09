@@ -140,6 +140,12 @@ const Index = () => {
   const { getCourseById } = useGolfCourses({ enabled: enableCourseCatalog });
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
+  // Swipe navigation between tabs
+  const swipeHandlers = useSwipeNavigation(TAB_ORDER, view as AppView, (v) => {
+    setView(v);
+    if (v !== 'leaderboards') setLeaderboardDetailId(null);
+  });
+
   // Round management hook with restoration
   const {
     roundState,
