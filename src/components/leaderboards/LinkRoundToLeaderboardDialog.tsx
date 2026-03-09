@@ -60,8 +60,13 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep('select-leaderboard');
-      setSelectedLeaderboardId(null);
+      if (preselectedLeaderboardId) {
+        setSelectedLeaderboardId(preselectedLeaderboardId);
+        setStep('select-participants');
+      } else {
+        setStep('select-leaderboard');
+        setSelectedLeaderboardId(null);
+      }
       setJoinCode('');
       setSelectedPlayerIds(new Set(allPlayers.map(p => p.id)));
       setHandicaps(new Map(allPlayers.map(p => [p.id, p.handicap])));
