@@ -463,5 +463,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     addParticipant,
     updateParticipantHandicap,
     linkRound,
+    unlinkRound,
+    checkRoundLinked,
   };
 }
