@@ -8,7 +8,7 @@ import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2, DollarSign, Target } from 'lucide-react';
+import { Check, CheckCircle2, DollarSign, Target, Trophy } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
@@ -31,6 +31,7 @@ interface ScoringViewProps {
   onAddZooEvent?: (event: ZooEvent) => void;
   onUpdateZooEvent?: (event: ZooEvent) => void;
   onDeleteZooEvent?: (eventId: string) => void;
+  onLinkToLeaderboard?: () => void;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
@@ -93,6 +94,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onAddZooEvent,
   onUpdateZooEvent,
   onDeleteZooEvent,
+  onLinkToLeaderboard,
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
@@ -283,6 +285,13 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
               </Button>
             }
           />
+        )}
+
+        {/* Leaderboard Link Button */}
+        {onLinkToLeaderboard && (
+          <Button variant="outline" size="icon" className="shrink-0" onClick={onLinkToLeaderboard}>
+            <Trophy className="h-4 w-4" />
+          </Button>
         )}
         
         <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1 px-2 text-sm">

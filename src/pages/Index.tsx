@@ -15,6 +15,8 @@ import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
 import { ShareRoundDialog } from '@/components/ShareRoundDialog';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
+import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
+import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
@@ -72,7 +74,7 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 
-type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps';
+type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -101,6 +103,8 @@ const Index = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
+  const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
+  const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
@@ -2044,7 +2048,7 @@ const Index = () => {
                   <Hash className="h-4 w-4 mr-2" />
                   Unirse con Código
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/leaderboards')}>
+                <DropdownMenuItem onClick={() => setView('leaderboards')}>
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboards
                 </DropdownMenuItem>
@@ -2439,6 +2443,7 @@ const Index = () => {
                 },
               }));
             }}
+            onLinkToLeaderboard={() => setShowLinkLeaderboardDialog(true)}
           />
         )}
 
@@ -2567,6 +2572,13 @@ const Index = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Leaderboards View */}
+        {view === 'leaderboards' && (
+          <LeaderboardsInlineView
+            onNavigateToDetail={(id) => navigate(`/leaderboards/${id}`)}
+          />
         )}
       </main>
 
@@ -2784,6 +2796,16 @@ const Index = () => {
       />
 
       {/* Bet Setup removed from here – now rendered inline as a tab view in main content */}
+
+      {/* Link Round to Leaderboard Dialog */}
+      <LinkRoundToLeaderboardDialog
+        open={showLinkLeaderboardDialog}
+        onOpenChange={setShowLinkLeaderboardDialog}
+        roundId={roundState.id}
+        players={players}
+        playerGroups={playerGroups}
+        profileId={profile?.id}
+      />
 
       {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
