@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface GroupInfo {
   id: string;
