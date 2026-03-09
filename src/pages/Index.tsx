@@ -2797,6 +2797,16 @@ const Index = () => {
 
       {/* Bet Setup removed from here – now rendered inline as a tab view in main content */}
 
+      {/* Link Round to Leaderboard Dialog */}
+      <LinkRoundToLeaderboardDialog
+        open={showLinkLeaderboardDialog}
+        onOpenChange={setShowLinkLeaderboardDialog}
+        roundId={roundState.id}
+        players={players}
+        playerGroups={playerGroups}
+        profileId={profile?.id}
+      />
+
       {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
         // Calculate holes confirmed by OTHER players (excluding the quick score player)
