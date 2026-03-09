@@ -108,6 +108,7 @@ const Index = () => {
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
+  const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string } | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
@@ -227,6 +228,37 @@ const Index = () => {
     };
     checkLink();
   }, [leaderboardDetailId, roundState.id]);
+
+  // Detect which leaderboard the current round is linked to (for quick-access badge)
+  useEffect(() => {
+    if (!roundState.id) {
+      setLinkedLeaderboardInfo(null);
+      return;
+    }
+    const fetchLinked = async () => {
+      const { data: links } = await supabase
+        .from('leaderboard_rounds')
+        .select('leaderboard_id')
+        .eq('round_id', roundState.id)
+        .limit(1);
+      if (!links || links.length === 0) {
+        setLinkedLeaderboardInfo(null);
+        return;
+      }
+      const leaderboardId = links[0].leaderboard_id;
+      const { data: ev } = await supabase
+        .from('leaderboard_events')
+        .select('id, name, code')
+        .eq('id', leaderboardId)
+        .single();
+      if (ev) {
+        setLinkedLeaderboardInfo({ id: ev.id, name: ev.name, code: ev.code });
+      } else {
+        setLinkedLeaderboardInfo(null);
+      }
+    };
+    fetchLinked();
+  }, [roundState.id, isRoundLinkedToLeaderboard]);
 
   // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
   const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
@@ -2149,6 +2181,27 @@ const Index = () => {
             </Tabs>
           </div>
         </div>
+      )}
+
+      {/* Leaderboard Quick-Access Banner */}
+      {linkedLeaderboardInfo && isRoundStarted && roundState.status !== 'completed' && view !== 'leaderboards' && (
+        <button
+          onClick={() => {
+            setLeaderboardDetailId(linkedLeaderboardInfo.id);
+            setView('leaderboards');
+          }}
+          className="w-full bg-amber-500/10 border-b border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+        >
+          <div className="max-w-md mx-auto flex items-center justify-center gap-2 py-1.5 px-4">
+            <Trophy className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 truncate">
+              {linkedLeaderboardInfo.name}
+            </span>
+            <span className="text-[10px] font-mono text-amber-600/70 dark:text-amber-500/70">
+              #{linkedLeaderboardInfo.code}
+            </span>
+          </div>
+        </button>
       )}
 
       {/* Main Content */}
