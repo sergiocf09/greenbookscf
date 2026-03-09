@@ -2572,6 +2572,26 @@ const Index = () => {
             )}
           </>
         )}
+
+        {/* Leaderboards View */}
+        {view === 'leaderboards' && (
+          <>
+            {leaderboardDetailId ? (
+              <div className="space-y-2">
+                <Button variant="ghost" size="sm" onClick={() => setLeaderboardDetailId(null)} className="gap-1">
+                  <Settings className="h-4 w-4" />
+                  ← Volver a Leaderboards
+                </Button>
+                {/* Navigate to detail page for full functionality */}
+                <script>{`window.location.href='/leaderboards/${leaderboardDetailId}'`}</script>
+              </div>
+            ) : (
+              <LeaderboardsInlineView
+                onNavigateToDetail={(id) => navigate(`/leaderboards/${id}`)}
+              />
+            )}
+          </>
+        )}
       </main>
 
       {/* Floating Action Button for Score Capture */}
