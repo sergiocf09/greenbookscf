@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Player, PlayerGroup } from '@/types/golf';
+import { supabase } from '@/integrations/supabase/client';
 import { useLeaderboards, useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { Loader2, Search, Trophy, ChevronRight, ArrowLeft, Check } from 'lucide-react';
@@ -54,7 +55,6 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     participants: existingParticipants,
     addParticipant,
     linkRound,
-    fetchDetail,
   } = useLeaderboardDetail(selectedLeaderboardId);
 
   // Reset on open
@@ -109,14 +109,23 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
       // Link the round first
       await linkRound(roundId);
 
+      // Fetch fresh participants from backend (avoid stale state when re-linking)
+      const { data: currentParts, error: partsErr } = await supabase
+        .from('leaderboard_participants')
+        .select('profile_id, guest_name')
+        .eq('leaderboard_id', selectedLeaderboardId)
+        .eq('is_active', true);
+      if (partsErr) throw partsErr;
+
+      const current = currentParts ?? existingParticipants;
+
       // Add selected participants
       for (const player of allPlayers) {
         if (!selectedPlayerIds.has(player.id)) continue;
 
         // Check if already a participant
-        const alreadyExists = existingParticipants.some(
-          p => p.profile_id === player.profileId || 
-               (p.guest_name && p.guest_name === player.name)
+        const alreadyExists = current.some(
+          (p: any) => p.profile_id === player.profileId || (p.guest_name && p.guest_name === player.name)
         );
         if (alreadyExists) continue;
 
