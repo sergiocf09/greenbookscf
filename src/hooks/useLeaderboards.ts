@@ -226,17 +226,13 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       }
 
       if (roundIds.length > 0) {
-        // Get round_players for linked rounds that match participant profiles
-        const { data: rpData } = await supabase
-          .from('round_players')
-          .select('id, profile_id, round_id, handicap_for_round, guest_name')
-          .in('round_id', roundIds);
-
-        // Get course info for each round to know pars
-        const { data: roundsData } = await supabase
-          .from('rounds')
-          .select('id, course_id')
-          .in('id', roundIds);
+        // Parallel fetch: round_players + rounds info
+        const [rpRes, roundsRes] = await Promise.all([
+          supabase.from('round_players').select('id, profile_id, round_id, handicap_for_round, guest_name').in('round_id', roundIds),
+          supabase.from('rounds').select('id, course_id').in('id', roundIds),
+        ]);
+        const rpData = rpRes.data;
+        const roundsData = roundsRes.data;
         
         const courseIds = [...new Set((roundsData || []).map(r => r.course_id))];
         let holesMap: Record<string, { hole_number: number; par: number; stroke_index: number }[]> = {};
