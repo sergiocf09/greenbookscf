@@ -2824,6 +2824,8 @@ const Index = () => {
         profileId={profile?.id}
         preselectedLeaderboardId={preselectedLeaderboardId}
       />
+
+      {/* Quick Score Entry Dialog */}
       {quickScorePlayer && course && (() => {
         // Calculate holes confirmed by OTHER players (excluding the quick score player)
         const otherPlayers = players.filter(p => p.id !== quickScorePlayer.id);
