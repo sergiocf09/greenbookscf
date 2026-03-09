@@ -58,6 +58,7 @@ import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import {
   DropdownMenu,
