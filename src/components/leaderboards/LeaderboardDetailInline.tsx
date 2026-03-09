@@ -15,14 +15,18 @@ interface LeaderboardDetailInlineProps {
   leaderboardId: string;
   onBack: () => void;
   onLinkRound?: () => void;
+  onUnlinkRound?: () => void;
   hasActiveRound?: boolean;
+  isRoundLinked?: boolean;
 }
 
 export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = ({
   leaderboardId,
   onBack,
   onLinkRound,
+  onUnlinkRound,
   hasActiveRound,
+  isRoundLinked,
 }) => {
   const { profile } = useAuth();
   const {
