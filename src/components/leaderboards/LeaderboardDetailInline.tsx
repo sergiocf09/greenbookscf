@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,14 +29,14 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   isRoundLinked,
 }) => {
   const { profile } = useAuth();
-  const {
-    event,
-    participants,
-    standings,
-    loading,
-  } = useLeaderboardDetail(leaderboardId);
+  const { event, participants, standings, loading, fetchDetail } = useLeaderboardDetail(leaderboardId);
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
+
+  // Refresh when link status changes so the list/scores update immediately after (des)vincular
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail, isRoundLinked]);
 
   const sortedStandings = useMemo(() => {
     const filtered = standings.filter(s => s.holesPlayed > 0);
