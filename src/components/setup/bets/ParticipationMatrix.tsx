@@ -38,7 +38,8 @@ const getActiveIds = (
   players: Player[]
 ): string[] => {
   const allIds = players.map(p => p.id);
-  if (!participantIds || participantIds.length === 0) return allIds;
+  if (participantIds === undefined) return allIds;
+  if (participantIds.length === 0) return [];
   const valid = participantIds.filter(id => allIds.includes(id));
   return valid.length === 0 ? allIds : valid;
 };
