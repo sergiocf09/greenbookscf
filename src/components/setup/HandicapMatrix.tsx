@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, Users, Minus, Plus, Sparkles, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { disambiguateInitials } from '@/lib/playerInput';
+import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
 import { supabase } from '@/integrations/supabase/client';
 import { devLog, devError } from '@/lib/logger';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
