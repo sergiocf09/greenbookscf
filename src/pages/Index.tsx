@@ -210,6 +210,24 @@ const Index = () => {
     void loadBetConfig();
   }, [roundState.id, loadBetConfig]);
 
+  // Check if current round is linked to the selected leaderboard
+  useEffect(() => {
+    if (!leaderboardDetailId || !roundState.id) {
+      setIsRoundLinkedToLeaderboard(false);
+      return;
+    }
+    const checkLink = async () => {
+      const { data } = await supabase
+        .from('leaderboard_rounds')
+        .select('id')
+        .eq('leaderboard_id', leaderboardDetailId)
+        .eq('round_id', roundState.id)
+        .maybeSingle();
+      setIsRoundLinkedToLeaderboard(!!data);
+    };
+    checkLink();
+  }, [leaderboardDetailId, roundState.id]);
+
   // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
   const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
   const wasRestoringRef = useRef(false);
