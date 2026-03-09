@@ -2183,6 +2183,27 @@ const Index = () => {
         </div>
       )}
 
+      {/* Leaderboard Quick-Access Banner */}
+      {linkedLeaderboardInfo && isRoundStarted && roundState.status !== 'completed' && view !== 'leaderboards' && (
+        <button
+          onClick={() => {
+            setLeaderboardDetailId(linkedLeaderboardInfo.id);
+            setView('leaderboards');
+          }}
+          className="w-full bg-amber-500/10 border-b border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+        >
+          <div className="max-w-md mx-auto flex items-center justify-center gap-2 py-1.5 px-4">
+            <Trophy className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 truncate">
+              {linkedLeaderboardInfo.name}
+            </span>
+            <span className="text-[10px] font-mono text-amber-600/70 dark:text-amber-500/70">
+              #{linkedLeaderboardInfo.code}
+            </span>
+          </div>
+        </button>
+      )}
+
       {/* Main Content */}
       <main className="max-w-md mx-auto p-4 space-y-4">
         {view === 'setup' && (
