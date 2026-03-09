@@ -2066,7 +2066,6 @@ const Index = () => {
               </Button>
             )}
 
-const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
