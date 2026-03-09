@@ -2118,7 +2118,7 @@ const Index = () => {
       {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
-            <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => setView(v as AppView)}>
+            <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-12">
                 <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
                 <TabsTrigger value="betsetup" className="text-xs"><Dices className="h-5 w-5" /></TabsTrigger>
