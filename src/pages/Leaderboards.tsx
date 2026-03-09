@@ -84,7 +84,7 @@ const Leaderboards = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <GreenBookLogo size="sm" />
+          <GreenBookLogo height={24} />
           <h1 className="text-lg font-bold">Leaderboards</h1>
         </div>
         <DropdownMenu>
