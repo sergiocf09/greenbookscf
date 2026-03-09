@@ -14,6 +14,8 @@ type SortMode = 'gross' | 'net' | 'stableford';
 interface LeaderboardDetailInlineProps {
   leaderboardId: string;
   onBack: () => void;
+  onLinkRound?: () => void;
+  hasActiveRound?: boolean;
 }
 
 export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = ({
