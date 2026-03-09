@@ -2044,7 +2044,7 @@ const Index = () => {
                   <Hash className="h-4 w-4 mr-2" />
                   Unirse con Código
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/leaderboards')}>
+                <DropdownMenuItem onClick={() => setView('leaderboards')}>
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboards
                 </DropdownMenuItem>
