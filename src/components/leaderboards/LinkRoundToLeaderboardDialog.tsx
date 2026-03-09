@@ -35,6 +35,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   players,
   playerGroups,
   profileId,
+  preselectedLeaderboardId,
 }) => {
   const { events, loading: loadingEvents, joinByCode } = useLeaderboards();
   const [step, setStep] = useState<Step>('select-leaderboard');
