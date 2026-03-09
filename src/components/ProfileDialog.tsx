@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Pencil, Mail, Lock, ChevronRight, MapPin } from 'lucide-react';
-import { validatePlayerName, initialsFromPlayerName } from '@/lib/playerInput';
+import { validatePlayerName, initialsFromPlayerName, formatPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 
 type EditSection = 'menu' | 'name' | 'email' | 'password';
