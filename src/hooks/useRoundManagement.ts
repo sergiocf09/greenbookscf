@@ -10,7 +10,7 @@ import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { devError, devLog, devWarn } from '@/lib/logger';
-import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
+import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
