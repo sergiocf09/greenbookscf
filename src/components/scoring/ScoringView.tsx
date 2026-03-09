@@ -287,12 +287,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           />
         )}
 
-        {/* Leaderboard Link Button */}
-        {onLinkToLeaderboard && (
-          <Button variant="outline" size="icon" className="shrink-0" onClick={onLinkToLeaderboard}>
-            <Trophy className="h-4 w-4" />
-          </Button>
-        )}
         
         <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1 px-2 text-sm">
           Sig →

@@ -23,6 +23,7 @@ interface LinkRoundToLeaderboardDialogProps {
   players: Player[];
   playerGroups: PlayerGroup[];
   profileId?: string;
+  preselectedLeaderboardId?: string | null;
 }
 
 type Step = 'select-leaderboard' | 'select-participants';
