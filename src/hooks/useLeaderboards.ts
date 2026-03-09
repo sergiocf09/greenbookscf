@@ -211,15 +211,14 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       });
       setParticipants(enrichedParticipants);
 
-      // Fetch scores
-      const { data: scoreData, error: scoreError } = await supabase
-        .from('leaderboard_scores')
-        .select('*')
+      // Fetch linked rounds
+      const { data: linkedRounds } = await supabase
+        .from('leaderboard_rounds')
+        .select('round_id')
         .eq('leaderboard_id', leaderboardId);
-      if (scoreError) throw scoreError;
-      setScores(scoreData || []);
+      const roundIds = (linkedRounds || []).map(lr => lr.round_id);
 
-      // Compute standings
+      // Compute standings from live hole_scores data
       const standingsMap = new Map<string, StandingsEntry>();
       for (const part of enrichedParticipants) {
         standingsMap.set(part.id, {
@@ -234,18 +233,125 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
         });
       }
 
-      for (const score of (scoreData || [])) {
-        const entry = standingsMap.get(score.participant_id);
-        if (!entry) continue;
-        entry.grossVsPar += score.gross_vs_par || 0;
-        entry.netVsPar += score.net_vs_par || 0;
-        entry.stablefordTotal += score.stableford_total || 0;
-        entry.grossTotal += score.gross_total || 0;
-        entry.netTotal += score.net_total || 0;
-        entry.holesPlayed += score.holes_played || 0;
-        if (score.holes_played && score.holes_played > 0) entry.roundsPlayed += 1;
+      if (roundIds.length > 0) {
+        // Get round_players for linked rounds that match participant profiles
+        const { data: rpData } = await supabase
+          .from('round_players')
+          .select('id, profile_id, round_id, handicap_for_round, guest_name')
+          .in('round_id', roundIds);
+
+        // Get course info for each round to know pars
+        const { data: roundsData } = await supabase
+          .from('rounds')
+          .select('id, course_id')
+          .in('id', roundIds);
+        
+        const courseIds = [...new Set((roundsData || []).map(r => r.course_id))];
+        let holesMap: Record<string, { hole_number: number; par: number; stroke_index: number }[]> = {};
+        if (courseIds.length > 0) {
+          const { data: holesData } = await supabase
+            .from('course_holes')
+            .select('course_id, hole_number, par, stroke_index')
+            .in('course_id', courseIds);
+          for (const h of (holesData || [])) {
+            if (!holesMap[h.course_id]) holesMap[h.course_id] = [];
+            holesMap[h.course_id].push(h);
+          }
+        }
+
+        // Map round_id -> course_id
+        const roundCourseMap: Record<string, string> = {};
+        for (const r of (roundsData || [])) {
+          roundCourseMap[r.id] = r.course_id;
+        }
+
+        // Map participant profile_id/guest_name -> participant_id
+        const profileToParticipant = new Map<string, string>();
+        const guestToParticipant = new Map<string, string>();
+        for (const part of enrichedParticipants) {
+          if (part.profile_id) profileToParticipant.set(part.profile_id, part.id);
+          if (part.guest_name) guestToParticipant.set(part.guest_name, part.id);
+        }
+
+        // Get the round_player_ids that match participants
+        const rpIds: string[] = [];
+        const rpToParticipant = new Map<string, string>();
+        const rpToRound = new Map<string, string>();
+        const rpToHandicap = new Map<string, number>(); // leaderboard handicap
+        for (const rp of (rpData || [])) {
+          let participantId: string | undefined;
+          if (rp.profile_id && profileToParticipant.has(rp.profile_id)) {
+            participantId = profileToParticipant.get(rp.profile_id);
+          } else if (rp.guest_name && guestToParticipant.has(rp.guest_name)) {
+            participantId = guestToParticipant.get(rp.guest_name);
+          }
+          if (participantId) {
+            rpIds.push(rp.id);
+            rpToParticipant.set(rp.id, participantId);
+            rpToRound.set(rp.id, rp.round_id);
+            // Use leaderboard handicap
+            const partEntry = standingsMap.get(participantId);
+            rpToHandicap.set(rp.id, partEntry?.participant.handicap_for_leaderboard ?? rp.handicap_for_round);
+          }
+        }
+
+        // Fetch confirmed hole_scores
+        if (rpIds.length > 0) {
+          const { data: holeScores } = await supabase
+            .from('hole_scores')
+            .select('round_player_id, hole_number, strokes, confirmed')
+            .in('round_player_id', rpIds)
+            .eq('confirmed', true);
+
+          for (const hs of (holeScores || [])) {
+            const participantId = rpToParticipant.get(hs.round_player_id);
+            if (!participantId || !hs.strokes) continue;
+            const entry = standingsMap.get(participantId);
+            if (!entry) continue;
+
+            const roundId = rpToRound.get(hs.round_player_id)!;
+            const courseId = roundCourseMap[roundId];
+            const courseHoles = holesMap[courseId] || [];
+            const holeInfo = courseHoles.find(h => h.hole_number === hs.hole_number);
+            const par = holeInfo?.par || 4;
+
+            // Calculate strokes received on this hole using leaderboard handicap
+            const handicap = rpToHandicap.get(hs.round_player_id) ?? 0;
+            const sortedHoles = [...courseHoles].sort((a, b) => a.stroke_index - b.stroke_index);
+            const holeStrokeIndex = sortedHoles.findIndex(h => h.hole_number === hs.hole_number);
+            const fullStrokes = Math.floor(handicap / 18);
+            const remainder = Math.round(handicap) % 18;
+            const strokesReceived = fullStrokes + (holeStrokeIndex < remainder ? 1 : 0);
+
+            const netStrokes = hs.strokes - strokesReceived;
+            const grossVsPar = hs.strokes - par;
+            const netVsPar = netStrokes - par;
+
+            // Stableford: points based on net score vs par
+            const diff = netStrokes - par;
+            let stbPoints = 0;
+            if (diff <= -3) stbPoints = 5;
+            else if (diff === -2) stbPoints = 4;
+            else if (diff === -1) stbPoints = 3;
+            else if (diff === 0) stbPoints = 2;
+            else if (diff === 1) stbPoints = 1;
+
+            entry.grossTotal += hs.strokes;
+            entry.grossVsPar += grossVsPar;
+            entry.netTotal += netStrokes;
+            entry.netVsPar += netVsPar;
+            entry.stablefordTotal += stbPoints;
+            entry.holesPlayed += 1;
+          }
+
+          // Count rounds played
+          for (const [, entry] of standingsMap) {
+            if (entry.holesPlayed > 0) entry.roundsPlayed = 1;
+          }
+        }
       }
 
+      setScores([]);
       setStandings(Array.from(standingsMap.values()));
     } catch (err: any) {
       console.error('Error fetching leaderboard detail:', err);
