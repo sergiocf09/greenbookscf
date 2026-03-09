@@ -246,7 +246,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             .order('hole_number');
 
           const totalStrokes = scores?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
-          const playerName = isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador');
+          const rawName = isGuest ? (rp.guest_name || 'Invitado') : (profileData?.display_name || 'Jugador');
+          const playerName = formatPlayerName(rawName);
           const initials = isGuest ? (rp.guest_initials || 'IN') : (profileData?.initials || 'XX');
           const color = isGuest ? (rp.guest_color || '#3B82F6') : (profileData?.avatar_color || '#3B82F6');
 
