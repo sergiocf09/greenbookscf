@@ -229,6 +229,37 @@ const Index = () => {
     checkLink();
   }, [leaderboardDetailId, roundState.id]);
 
+  // Detect which leaderboard the current round is linked to (for quick-access badge)
+  useEffect(() => {
+    if (!roundState.id) {
+      setLinkedLeaderboardInfo(null);
+      return;
+    }
+    const fetchLinked = async () => {
+      const { data: links } = await supabase
+        .from('leaderboard_rounds')
+        .select('leaderboard_id')
+        .eq('round_id', roundState.id)
+        .limit(1);
+      if (!links || links.length === 0) {
+        setLinkedLeaderboardInfo(null);
+        return;
+      }
+      const leaderboardId = links[0].leaderboard_id;
+      const { data: ev } = await supabase
+        .from('leaderboard_events')
+        .select('id, name, code')
+        .eq('id', leaderboardId)
+        .single();
+      if (ev) {
+        setLinkedLeaderboardInfo({ id: ev.id, name: ev.name, code: ev.code });
+      } else {
+        setLinkedLeaderboardInfo(null);
+      }
+    };
+    fetchLinked();
+  }, [roundState.id, isRoundLinkedToLeaderboard]);
+
   // Auto-cleanup after restore: if Carritos is enabled but teams are incomplete, disable and persist.
   const hasSanitizedCarritosForRoundRef = useRef<string | null>(null);
   const wasRestoringRef = useRef(false);
