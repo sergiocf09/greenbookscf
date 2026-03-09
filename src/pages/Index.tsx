@@ -58,6 +58,7 @@ import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import {
   DropdownMenu,
@@ -76,6 +77,7 @@ import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog'
 import { Friend } from '@/hooks/useFriends';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards';
+const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -137,6 +139,12 @@ const Index = () => {
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
   const { getCourseById } = useGolfCourses({ enabled: enableCourseCatalog });
   const course = selectedCourseId ? getCourseById(selectedCourseId) : null;
+
+  // Swipe navigation between tabs
+  const swipeHandlers = useSwipeNavigation(TAB_ORDER, view as AppView, (v) => {
+    setView(v);
+    if (v !== 'leaderboards') setLeaderboardDetailId(null);
+  });
 
   // Round management hook with restoration
   const {
@@ -2064,8 +2072,8 @@ const Index = () => {
                 <Users className="h-5 w-5" />
               </Button>
             )}
-            
-            
+
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -2205,7 +2213,7 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto p-4 space-y-4">
+      <main className="max-w-md mx-auto p-4 space-y-4" {...swipeHandlers}>
         {view === 'setup' && (
           <>
             {/* Date Picker */}
