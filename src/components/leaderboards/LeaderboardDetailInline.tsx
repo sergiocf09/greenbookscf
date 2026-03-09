@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
