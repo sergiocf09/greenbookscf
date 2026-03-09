@@ -2582,6 +2582,11 @@ const Index = () => {
             <LeaderboardDetailInline
               leaderboardId={leaderboardDetailId}
               onBack={() => setLeaderboardDetailId(null)}
+              hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+              onLinkRound={() => {
+                setPreselectedLeaderboardId(leaderboardDetailId);
+                setShowLinkLeaderboardDialog(true);
+              }}
             />
           ) : (
             <LeaderboardsInlineView
