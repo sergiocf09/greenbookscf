@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { GolfCourse } from '@/types/golf';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface PlayerScoreData {
   playerId: string;
