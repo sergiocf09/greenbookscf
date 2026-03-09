@@ -219,70 +219,76 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
             </>
           )}
 
-          {step === 'select-participants' && selectedEvent && (
-            <>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="font-medium text-sm">{selectedEvent.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  #{selectedEvent.code} · {selectedEvent.scoring_modes.map(m => 
-                    m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
-                  ).join(' · ')}
-                </p>
-              </div>
+          {step === 'select-participants' && (
+            selectedEvent ? (
+              <>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="font-medium text-sm">{selectedEvent.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    #{selectedEvent.code} · {selectedEvent.scoring_modes.map(m => 
+                      m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
+                    ).join(' · ')}
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Selecciona jugadores y asigna handicap para el leaderboard
-                </Label>
-                {allPlayers.map(player => {
-                  const isSelected = selectedPlayerIds.has(player.id);
-                  const hcp = handicaps.get(player.id) ?? player.handicap;
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Selecciona jugadores y asigna handicap para el leaderboard
+                  </Label>
+                  {allPlayers.map(player => {
+                    const isSelected = selectedPlayerIds.has(player.id);
+                    const hcp = handicaps.get(player.id) ?? player.handicap;
 
-                  return (
-                    <div
-                      key={player.id}
-                      className="flex items-center gap-2 p-2 rounded-lg border border-border"
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => togglePlayer(player.id)}
-                      />
-                      <PlayerAvatar
-                        initials={player.initials}
-                        background={player.color}
-                        size="sm"
-                        isLoggedInUser={player.profileId === profileId}
-                      />
-                      <span className="flex-1 text-sm font-medium truncate">{player.name}</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Hcp:</span>
-                        <Input
-                          type="number"
-                          value={hcp}
-                          onChange={e => updateHandicap(player.id, parseFloat(e.target.value) || 0)}
-                          className="w-16 h-7 text-center text-sm"
-                          disabled={!isSelected}
-                          step="0.1"
+                    return (
+                      <div
+                        key={player.id}
+                        className="flex items-center gap-2 p-2 rounded-lg border border-border"
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => togglePlayer(player.id)}
                         />
+                        <PlayerAvatar
+                          initials={player.initials}
+                          background={player.color}
+                          size="sm"
+                          isLoggedInUser={player.profileId === profileId}
+                        />
+                        <span className="flex-1 text-sm font-medium truncate">{player.name}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Hcp:</span>
+                          <Input
+                            type="number"
+                            value={hcp}
+                            onChange={e => updateHandicap(player.id, parseFloat(e.target.value) || 0)}
+                            className="w-16 h-7 text-center text-sm"
+                            disabled={!isSelected}
+                            step="0.1"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              <Button
-                onClick={handleSubmit}
-                disabled={selectedPlayerIds.size === 0 || submitting}
-                className="w-full"
-              >
-                {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Check className="h-4 w-4 mr-2" />
-                )}
-                Vincular {selectedPlayerIds.size} jugador{selectedPlayerIds.size !== 1 ? 'es' : ''}
-              </Button>
-            </>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={selectedPlayerIds.size === 0 || submitting}
+                  className="w-full"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  Vincular {selectedPlayerIds.size} jugador{selectedPlayerIds.size !== 1 ? 'es' : ''}
+                </Button>
+              </>
+            ) : (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            )
           )}
         </div>
       </DialogContent>
