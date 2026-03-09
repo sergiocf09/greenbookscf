@@ -130,17 +130,32 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </span>
       </div>
 
-      {/* Link current round button */}
-      {hasActiveRound && onLinkRound && (
-        <Button 
-          onClick={onLinkRound} 
-          variant="outline" 
-          size="sm" 
-          className="w-full gap-2"
-        >
-          <Link2 className="h-4 w-4" />
-          Vincular ronda actual a este leaderboard
-        </Button>
+      {/* Link/Unlink round buttons */}
+      {hasActiveRound && (
+        <div className="flex gap-2">
+          {!isRoundLinked && onLinkRound && (
+            <Button 
+              onClick={onLinkRound} 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 gap-2"
+            >
+              <Link2 className="h-4 w-4" />
+              Vincular ronda
+            </Button>
+          )}
+          {isRoundLinked && onUnlinkRound && (
+            <Button 
+              onClick={onUnlinkRound} 
+              variant="outline" 
+              size="sm" 
+              className="flex-1 gap-2 text-destructive hover:text-destructive"
+            >
+              <Unlink className="h-4 w-4" />
+              Desvincular ronda
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Leaderboard table */}
