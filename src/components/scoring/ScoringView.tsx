@@ -94,7 +94,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onAddZooEvent,
   onUpdateZooEvent,
   onDeleteZooEvent,
-  onLinkToLeaderboard,
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
