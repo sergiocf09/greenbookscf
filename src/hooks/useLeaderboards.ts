@@ -426,12 +426,30 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
   const unlinkRound = useCallback(async (roundId: string) => {
     if (!leaderboardId) return;
     try {
-      const { error } = await supabase
+      // 1. Remove the round link
+      const { error: linkError } = await supabase
         .from('leaderboard_rounds')
         .delete()
         .eq('leaderboard_id', leaderboardId)
         .eq('round_id', roundId);
-      if (error) throw error;
+      if (linkError) throw linkError;
+
+      // 2. Remove participants that came from this round
+      const { error: partError } = await supabase
+        .from('leaderboard_participants')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('source_round_id', roundId);
+      if (partError) throw partError;
+
+      // 3. Remove leaderboard scores for this round
+      const { error: scoresError } = await supabase
+        .from('leaderboard_scores')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', roundId);
+      if (scoresError) throw scoresError;
+
       toast.success('Ronda desvinculada del leaderboard');
       await fetchDetail();
     } catch (err: any) {
