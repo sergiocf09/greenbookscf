@@ -2602,9 +2602,25 @@ const Index = () => {
               leaderboardId={leaderboardDetailId}
               onBack={() => setLeaderboardDetailId(null)}
               hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+              isRoundLinked={isRoundLinkedToLeaderboard}
               onLinkRound={() => {
                 setPreselectedLeaderboardId(leaderboardDetailId);
                 setShowLinkLeaderboardDialog(true);
+              }}
+              onUnlinkRound={async () => {
+                if (!roundState.id || !leaderboardDetailId) return;
+                try {
+                  const { error } = await supabase
+                    .from('leaderboard_rounds')
+                    .delete()
+                    .eq('leaderboard_id', leaderboardDetailId)
+                    .eq('round_id', roundState.id);
+                  if (error) throw error;
+                  setIsRoundLinkedToLeaderboard(false);
+                  toast.success('Ronda desvinculada del leaderboard');
+                } catch (err: any) {
+                  toast.error('Error al desvincular: ' + err.message);
+                }
               }}
             />
           ) : (
