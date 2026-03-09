@@ -298,8 +298,6 @@ const Leaderboards = () => {
       <ProfileDialog
         open={showProfileDialog}
         onOpenChange={setShowProfileDialog}
-        profile={profile}
-        onUpdateProfile={updateProfile}
       />
     </div>
   );

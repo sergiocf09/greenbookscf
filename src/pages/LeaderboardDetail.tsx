@@ -95,7 +95,7 @@ const LeaderboardDetail = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate('/leaderboards')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <GreenBookLogo size="sm" />
+            <GreenBookLogo height={24} />
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={copyShareLink}>
