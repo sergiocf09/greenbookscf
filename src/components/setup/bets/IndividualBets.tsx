@@ -56,6 +56,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('medal', { enabled })}
           isExpanded={expandedSections.includes('medal')}
           onExpandChange={(open) => onToggleSection('medal', open)}
+          helpText="El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
