@@ -140,6 +140,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
           isExpanded={expandedSections.includes('caros')}
           onExpandChange={(open) => onToggleSection('caros', open)}
+          helpText="Match de score neto en los últimos hoyos de la ronda (por defecto hoyos 15 al 18, configurable). El jugador con menor total neto en esos hoyos gana la apuesta."
         >
           <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary={`Hoyos ${config.caros.startHole ?? 15} a ${config.caros.endHole ?? 18}`}>
