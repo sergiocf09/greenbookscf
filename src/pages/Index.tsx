@@ -97,6 +97,8 @@ const Index = () => {
 
   // Keep an always-fresh reference to scores to avoid stale closures when persisting confirmations.
   const scoresRef = useRef<Map<string, PlayerScore[]>>(new Map());
+  // Guard against race conditions when persisting new players concurrently
+  const persistingPlayerIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     scoresRef.current = scores;
   }, [scores]);
