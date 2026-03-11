@@ -56,6 +56,12 @@ export const BetSection: React.FC<BetSectionProps> = ({
       </div>
       <CollapsibleContent>
         <div className="p-3 pt-0 space-y-3">
+          {helpText && (
+            <div className="flex items-start gap-2 bg-muted/40 rounded-lg p-2.5 mb-1">
+              <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{helpText}</p>
+            </div>
+          )}
           {children}
         </div>
       </CollapsibleContent>

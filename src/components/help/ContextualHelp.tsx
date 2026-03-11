@@ -43,6 +43,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
       'El ícono ⚡ junto al nombre de cada jugador permite captura rápida de su score sin salir del scorecard.',
       'El botón 🏆 Leaderboard muestra el ranking en tiempo real de todos los jugadores de la ronda, ya sea que haya uno o varios grupos.',
       'En hoyos par 3 con la apuesta de Oyeses activa, aparece un ícono flotante especial para registrar la proximidad al pin de cada jugador — tócalo al terminar el hoyo.',
+      'El ícono de tu avatar en la esquina superior derecha del header abre el menú de perfil con acceso a todas las funciones adicionales de la app.',
     ],
   },
   bets: {
