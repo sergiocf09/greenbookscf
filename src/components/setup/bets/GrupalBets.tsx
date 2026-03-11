@@ -58,6 +58,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           isExpanded={expandedSections.includes('coneja')}
           onExpandChange={(open) => onToggleSection('coneja', open)}
           color="gold"
+          helpText="Juego grupal dividido en 3 sets de 6 hoyos. Ganar un hoyo da una pata; perder un hoyo quita una pata. Al cierre del set, quien tenga al menos 1 pata cobra a todos. Si nadie tiene pata, la coneja se acumula al siguiente set."
         >
           <AmountInput label="Cantidad por coneja" value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
@@ -97,6 +98,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           id="culebras" title="Culebras 🐍" description="3+ putts, el último paga todas"
           enabled={config.culebras.enabled} onToggle={(enabled) => onUpdateBet('culebras', { enabled })}
           isExpanded={expandedSections.includes('culebras')} onExpandChange={(open) => onToggleSection('culebras', open)} color="red"
+          helpText="Cada vez que un jugador tiene 3 o más putts en un hoyo, se marca una culebra. Al final de la ronda, el último jugador en haber tenido una culebra paga el valor a todos los demás participantes."
         >
           <AmountInput label="Valor por culebra" value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
         </BetSection>
@@ -108,6 +110,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           id="pinguinos" title="Pingüinos 🐧" description="Triple bogey o peor (bruto vs par), el último paga todas"
           enabled={config.pinguinos.enabled} onToggle={(enabled) => onUpdateBet('pinguinos', { enabled })}
           isExpanded={expandedSections.includes('pinguinos')} onExpandChange={(open) => onToggleSection('pinguinos', open)} color="red"
+          helpText="Si un jugador hace triple bogey o peor (score bruto vs par del hoyo), se marca un pingüino. Al final de la ronda, el último jugador en haber tenido un pingüino paga el valor a todos los demás."
         >
           <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
         </BetSection>
@@ -122,6 +125,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
           isExpanded={expandedSections.includes('zoologico')}
           onExpandChange={(open) => onToggleSection('zoologico', open)} color="red"
+          helpText="Tres animales: Camello (caer en bunker), Pez (caer en agua), Gorila (salir OB). Cada incidencia se registra al capturar el hoyo. Al final, el último jugador en cometer cada tipo de incidencia paga a todos los demás."
         >
           <AmountInput label="Valor por incidencia" value={config.zoologico?.valuePerOccurrence ?? 10} onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} />
           <CollapsibleSubSection label="Configuración" summary={`${(config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila']).length} animales`}>
@@ -161,6 +165,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('medalGeneral')}
           onExpandChange={(open) => onToggleSection('medalGeneral', open)} color="gold"
+          helpText="El jugador con el menor score neto total de los 18 hoyos gana y cobra la cantidad configurada a cada perdedor. En caso de empate, se divide. Cada jugador puede tener un handicap independiente para esta apuesta."
         >
           <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
           {hasMultipleGroups && (
@@ -217,6 +222,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('stableford')}
           onExpandChange={(open) => onToggleSection('stableford', open)} color="gold"
+          helpText="Sistema de puntos por score neto relativo al par de cada hoyo. Birdie = 3 pts, Par = 2 pts, Bogey = 1 pt (configurable). El jugador con más puntos totales gana y cobra a cada perdedor."
         >
           <AmountInput label="Cantidad por jugador" value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
           {hasMultipleGroups && (

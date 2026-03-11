@@ -169,6 +169,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
+        helpText="Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado."
       >
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
@@ -217,6 +218,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
+        helpText="Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento."
       >
         {/* Show add button if no carritos configured yet */}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (

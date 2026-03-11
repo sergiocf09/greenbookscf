@@ -56,6 +56,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('medal', { enabled })}
           isExpanded={expandedSections.includes('medal')}
           onExpandChange={(open) => onToggleSection('medal', open)}
+          helpText="El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
@@ -73,6 +74,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
           isExpanded={expandedSections.includes('pressures')}
           onExpandChange={(open) => onToggleSection('pressures', open)}
+          helpText="Match play hoyo a hoyo. Se abre una nueva apuesta cada vez que un jugador va arriba por 2 hoyos. Al final del Front y del Back se suma la apuesta principal más todas las secundarias que se abrieron."
         >
           <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
@@ -98,6 +100,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('skins', { enabled })}
           isExpanded={expandedSections.includes('skins')}
           onExpandChange={(open) => onToggleSection('skins', open)}
+          helpText="Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato)."
         >
           <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
           <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
@@ -137,6 +140,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
           isExpanded={expandedSections.includes('caros')}
           onExpandChange={(open) => onToggleSection('caros', open)}
+          helpText="Match de score neto en los últimos hoyos de la ronda (por defecto hoyos 15 al 18, configurable). El jugador con menor total neto en esos hoyos gana la apuesta."
         >
           <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary={`Hoyos ${config.caros.startHole ?? 15} a ${config.caros.endHole ?? 18}`}>
@@ -174,6 +178,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           isExpanded={expandedSections.includes('oyeses')}
           onExpandChange={(open) => onToggleSection('oyeses', open)}
           color="gold"
+          helpText="En hoyos par 3, gana quien queda más cerca al pin. Se registra el orden de proximidad al terminar el hoyo. Si hay acumulación activa, los hoyos empatados suman al siguiente. Ganar todos los oyeses del 9 da un bonus 2x (zapato)."
         >
           <AmountInput label="Importe por Oyes" value={config.oyeses.amount} onChange={(v) => onUpdateBet('oyeses', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
@@ -221,6 +226,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="units" title="Unidades" description="Birdie, Águila, Sandy Par, etc."
           enabled={config.units.enabled} onToggle={(enabled) => onUpdateBet('units', { enabled })}
           isExpanded={expandedSections.includes('units')} onExpandChange={(open) => onToggleSection('units', open)} color="gold"
+          helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
         >
           <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
         </BetSection>
@@ -232,6 +238,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="manchas" title="Manchas" description="Pinkie, Paloma, Trampa, Cuatriput, etc."
           enabled={config.manchas.enabled} onToggle={(enabled) => onUpdateBet('manchas', { enabled })}
           isExpanded={expandedSections.includes('manchas')} onExpandChange={(open) => onToggleSection('manchas', open)} color="red"
+          helpText="Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia."
         >
           <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
         </BetSection>
@@ -257,6 +264,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="rayas" title="Rayas" description="Agregador: Skins + Unidades + Oyes + Medal"
           enabled={config.rayas?.enabled ?? false} onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
           isExpanded={expandedSections.includes('rayas')} onExpandChange={(open) => onToggleSection('rayas', open)} color="gold"
+          helpText="Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back."
         >
           <RayasConfig config={config} players={players} basePlayerId={basePlayerId} onUpdateRayas={(updates) => onUpdateBet('rayas', updates)} />
         </BetSection>
