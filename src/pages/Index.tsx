@@ -2119,6 +2119,11 @@ const Index = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowProfileMenuHelp(true)}>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  ¿Qué hay en este menú?
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">
                   <p className="font-medium text-sm">{profile?.display_name}</p>
                   <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
