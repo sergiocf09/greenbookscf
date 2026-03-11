@@ -45,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,6 +60,8 @@ import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
+import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
+import ContextualHelp from '@/components/help/ContextualHelp';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,7 +119,8 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
-  // showBetSetupDialog removed – betsetup is now a real tab view
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
@@ -182,6 +185,14 @@ const Index = () => {
     getCourseById,
     setPlayerGroups,
   });
+
+  // Onboarding check – first time user
+  useEffect(() => {
+    if (!profile) return;
+    if (!localStorage.getItem('gbcf_onboarding_done')) {
+      setShowOnboarding(true);
+    }
+  }, [profile]);
 
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
   useEffect(() => {
@@ -2061,6 +2072,17 @@ const Index = () => {
           
           {/* Right: Friends (only in setup) + Profile Menu */}
           <div className="flex items-center flex-shrink-0 gap-1">
+            {/* Help Button - show on main tab views */}
+            {view !== 'scoring' && view !== 'leaderboards' && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => setShowHelp(true)}
+              >
+                <HelpCircle className="h-5 w-5" />
+              </Button>
+            )}
             {/* Friends Button - only show in setup view */}
             {view === 'setup' && (
               <Button 
@@ -2179,12 +2201,12 @@ const Index = () => {
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); }}>
-              <TabsList className="w-full grid grid-cols-5 h-12">
-                <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs"><Dices className="h-5 w-5" /></TabsTrigger>
-                <TabsTrigger value="handicaps" className="text-xs"><RefreshCw className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="scorecard" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="bets" className="text-xs"><CoinDollarIcon className="h-5 w-5" /></TabsTrigger>
+              <TabsList className="w-full grid grid-cols-5 h-14">
+                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
+                <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">Hándicaps</span></TabsTrigger>
+                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">Scorecard</span></TabsTrigger>
+                <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">Resultados</span></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -3117,6 +3139,8 @@ const Index = () => {
         />
         );
       })()}
+      <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 };
