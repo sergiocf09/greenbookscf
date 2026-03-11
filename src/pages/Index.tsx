@@ -2201,12 +2201,12 @@ const Index = () => {
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); }}>
-              <TabsList className="w-full grid grid-cols-5 h-12">
-                <TabsTrigger value="setup" className="text-xs"><Settings className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs"><Dices className="h-5 w-5" /></TabsTrigger>
-                <TabsTrigger value="handicaps" className="text-xs"><RefreshCw className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="scorecard" className="text-xs"><Trophy className="h-4 w-4" /></TabsTrigger>
-                <TabsTrigger value="bets" className="text-xs"><CoinDollarIcon className="h-5 w-5" /></TabsTrigger>
+              <TabsList className="w-full grid grid-cols-5 h-14">
+                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
+                <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">Hándicaps</span></TabsTrigger>
+                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">Scorecard</span></TabsTrigger>
+                <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">Resultados</span></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
