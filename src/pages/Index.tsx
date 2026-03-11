@@ -3147,6 +3147,26 @@ const Index = () => {
       })()}
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* Profile Menu Help Dialog */}
+      <Dialog open={showProfileMenuHelp} onOpenChange={setShowProfileMenuHelp}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Menú de perfil</DialogTitle>
+          </DialogHeader>
+          <ul className="space-y-3 mt-2">
+            <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
+            <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
+            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Ve los rankings de eventos o ligas en los que participas</span></li>
+            <li className="flex gap-3 text-sm"><span>📋</span><span><strong>Historial de Rondas</strong> — Consulta todas tus rondas anteriores con scorecard y resultados de apuestas</span></li>
+            <li className="flex gap-3 text-sm"><span>💰</span><span><strong>Balances Históricos</strong> — Ve cuánto has ganado o perdido con cada jugador a lo largo del tiempo</span></li>
+            <li className="flex gap-3 text-sm"><span>▶️</span><span><strong>Rondas Pendientes</strong> — Rondas que iniciaste y no has cerrado todavía (aparece solo si hay pendientes)</span></li>
+            <li className="flex gap-3 text-sm"><span>🧮</span><span><strong>Calcular Handicap</strong> — Calcula tu Handicap Index USGA con tus rondas recientes</span></li>
+            <li className="flex gap-3 text-sm"><span>📉</span><span><strong>Historial de Handicap</strong> — Ve cómo ha evolucionado tu handicap ronda a ronda</span></li>
+            <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>Cerrar Sesión</strong></span></li>
+          </ul>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
