@@ -9,6 +9,7 @@ import {
   Droplets,
   CircleDot,
   Hourglass,
+  XCircle,
 } from 'lucide-react';
 import { highHeel } from '@lucide/lab';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,15 @@ const PinkiesHeelIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <Icon iconNode={highHeel} {...props} />
 );
 
+const MorelianaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 18 Q12 10 20 18" />
+    <circle cx="17" cy="7" r="2.5" fill="currentColor" />
+    <path d="M14 12 L16 8.5" />
+    <polyline points="14.5,8 16,8.5 15.5,10" />
+  </svg>
+);
+
 // Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
@@ -50,6 +60,8 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha', emoji: '🔄' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha', emoji: '💦' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha', emoji: '🕊️' },
+  { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces fuera de límites', type: 'mancha', emoji: '🚫' },
+  { key: 'moreliana', icon: MorelianaIcon, label: 'Moreliana', description: 'Se salió del green poteando', type: 'mancha', emoji: '🎭' },
 ];
 
 // Export marker labels for external use (short versions)
@@ -63,6 +75,8 @@ export const markerLabels: Record<string, string> = {
   retruje: 'Retruje',
   dobleAgua: '2xAgua',
   swingBlanco: 'Paloma',
+  dobleOB: 'Doble OB',
+  moreliana: 'Moreliana',
 };
 
 interface InlineMarkersProps {
