@@ -60,6 +60,8 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha', emoji: '🔄' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha', emoji: '💦' },
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha', emoji: '🕊️' },
+  { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces fuera de límites', type: 'mancha', emoji: '🚫' },
+  { key: 'moreliana', icon: MorelianaIcon, label: 'Moreliana', description: 'Se salió del green poteando', type: 'mancha', emoji: '🎭' },
 ];
 
 // Export marker labels for external use (short versions)
