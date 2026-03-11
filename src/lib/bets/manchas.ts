@@ -19,7 +19,7 @@ export const calculateManchasBets = (
   const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana'] as const;
   
   const countManchas = (playerId: string): number => {
-    const playerScores = scores.get(playerId) || [];
+    const playerScores = (scores.get(playerId) || []).filter(s => s.confirmed);
     let manchas = 0;
     playerScores.forEach(score => {
       manualManchaMarkers.forEach(marker => {

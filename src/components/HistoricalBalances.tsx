@@ -264,9 +264,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
             // Build a stable key for this rival across rounds.
             // Guests use roundId+name to avoid merging different guests with the same name.
+            // Guests accumulate by normalized name (case-insensitive, trimmed)
             const rivalKey = rival.profileId
               ? `profile:${rival.profileId}`
-              : `guest:${snap.roundId}:${rival.name}`;
+              : `guest:${rival.name.trim().toLowerCase()}`;
 
             const existing = rivalMap.get(rivalKey);
             if (existing) {
@@ -397,7 +398,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (!userPlayer) continue;
 
         const rivalPlayer = rival.isGuest
-          ? snap.players.find((p: any) => p.isGuest && p.name === rival.rivalName)
+          ? snap.players.find((p: any) => p.isGuest && p.name?.trim().toLowerCase() === rival.rivalName?.trim().toLowerCase())
           : snap.players.find((p: any) => p.profileId === rival.profileId);
 
         if (!rivalPlayer) continue;
@@ -684,13 +685,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 </div>
               </div>
               {rivals.some(r => r.isGuest) && (
-                <button
-                  onClick={() => setShowGuests(!showGuests)}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-                >
-                  {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-                  {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
-                </button>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setShowGuests(!showGuests)}
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                  >
+                    {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                    {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+                  </button>
+                  {showGuests && (
+                    <p className="text-[11px] text-muted-foreground px-1">
+                      Los invitados se identifican por nombre. Si un mismo jugador aparece duplicado, verifica que su nombre se haya escrito exactamente igual en todas las rondas.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
