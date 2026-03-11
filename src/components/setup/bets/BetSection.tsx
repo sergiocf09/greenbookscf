@@ -29,7 +29,8 @@ export const BetSection: React.FC<BetSectionProps> = ({
   isExpanded,
   onExpandChange,
   children, 
-  color = 'green' 
+  color = 'green',
+  helpText,
 }) => (
   <Collapsible 
     open={isExpanded} 
