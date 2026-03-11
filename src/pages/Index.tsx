@@ -60,6 +60,8 @@ import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
+import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
+import ContextualHelp from '@/components/help/ContextualHelp';
 import {
   DropdownMenu,
   DropdownMenuContent,
