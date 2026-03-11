@@ -125,6 +125,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
           isExpanded={expandedSections.includes('zoologico')}
           onExpandChange={(open) => onToggleSection('zoologico', open)} color="red"
+          helpText="Tres animales: Camello (caer en bunker), Pez (caer en agua), Gorila (salir OB). Cada incidencia se registra al capturar el hoyo. Al final, el último jugador en cometer cada tipo de incidencia paga a todos los demás."
         >
           <AmountInput label="Valor por incidencia" value={config.zoologico?.valuePerOccurrence ?? 10} onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} />
           <CollapsibleSubSection label="Configuración" summary={`${(config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila']).length} animales`}>
