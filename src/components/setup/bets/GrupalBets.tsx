@@ -58,6 +58,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           isExpanded={expandedSections.includes('coneja')}
           onExpandChange={(open) => onToggleSection('coneja', open)}
           color="gold"
+          helpText="Juego grupal dividido en 3 sets de 6 hoyos. Ganar un hoyo da una pata; perder un hoyo quita una pata. Al cierre del set, quien tenga al menos 1 pata cobra a todos. Si nadie tiene pata, la coneja se acumula al siguiente set."
         >
           <AmountInput label="Cantidad por coneja" value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
