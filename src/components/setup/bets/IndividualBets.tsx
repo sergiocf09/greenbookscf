@@ -100,6 +100,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('skins', { enabled })}
           isExpanded={expandedSections.includes('skins')}
           onExpandChange={(open) => onToggleSection('skins', open)}
+          helpText="Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato)."
         >
           <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
           <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
