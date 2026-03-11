@@ -264,6 +264,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="rayas" title="Rayas" description="Agregador: Skins + Unidades + Oyes + Medal"
           enabled={config.rayas?.enabled ?? false} onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
           isExpanded={expandedSections.includes('rayas')} onExpandChange={(open) => onToggleSection('rayas', open)} color="gold"
+          helpText="Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back."
         >
           <RayasConfig config={config} players={players} basePlayerId={basePlayerId} onUpdateRayas={(updates) => onUpdateBet('rayas', updates)} />
         </BetSection>
