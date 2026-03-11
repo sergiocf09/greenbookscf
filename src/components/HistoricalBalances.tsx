@@ -264,9 +264,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
             // Build a stable key for this rival across rounds.
             // Guests use roundId+name to avoid merging different guests with the same name.
+            // Guests accumulate by normalized name (case-insensitive, trimmed)
             const rivalKey = rival.profileId
               ? `profile:${rival.profileId}`
-              : `guest:${snap.roundId}:${rival.name}`;
+              : `guest:${rival.name.trim().toLowerCase()}`;
 
             const existing = rivalMap.get(rivalKey);
             if (existing) {
