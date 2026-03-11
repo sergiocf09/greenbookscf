@@ -2081,7 +2081,7 @@ const Index = () => {
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
                 onClick={() => setShowHelp(true)}
               >
-                <HelpCircle className="h-5 w-5" />
+                <HelpCircle className="h-7 w-7" />
               </Button>
             )}
             {/* Friends Button - only show in setup view */}

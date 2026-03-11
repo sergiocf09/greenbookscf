@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,40 +31,56 @@ export const BetSection: React.FC<BetSectionProps> = ({
   children, 
   color = 'green',
   helpText,
-}) => (
-  <Collapsible 
-    open={isExpanded} 
-    onOpenChange={onExpandChange}
-  >
-    <div className="border rounded-lg overflow-hidden transition-colors border-border bg-card">
-      <div className="flex items-center justify-between p-3">
-        <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
-          <div className={cn(
-            'w-2 h-2 rounded-full',
-            color === 'gold' ? 'bg-golf-gold' : color === 'red' ? 'bg-destructive' : 'bg-golf-green'
-          )} />
-          <div className="flex-1">
-            <p className="font-medium text-sm">{title}</p>
-            <p className="text-[10px] text-muted-foreground">{description}</p>
-          </div>
-          {isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
-        </CollapsibleTrigger>
-      </div>
-      <CollapsibleContent>
-        <div className="p-3 pt-0 space-y-3">
+}) => {
+  const [showHelp, setShowHelp] = useState(false);
+
+  return (
+    <Collapsible 
+      open={isExpanded} 
+      onOpenChange={onExpandChange}
+    >
+      <div className="border rounded-lg overflow-hidden transition-colors border-border bg-card">
+        <div className="flex items-center justify-between p-3">
+          <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
+            <div className={cn(
+              'w-2 h-2 rounded-full',
+              color === 'gold' ? 'bg-golf-gold' : color === 'red' ? 'bg-destructive' : 'bg-golf-green'
+            )} />
+            <div className="flex-1">
+              <p className="font-medium text-sm">{title}</p>
+              <p className="text-[10px] text-muted-foreground">{description}</p>
+            </div>
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </CollapsibleTrigger>
           {helpText && (
-            <div className="flex items-start gap-2 bg-muted/40 rounded-lg p-2.5 mb-1">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowHelp(prev => !prev); }}
+              className="ml-2 p-1 rounded-full hover:bg-muted/60 transition-colors"
+              aria-label="Info de apuesta"
+            >
+              <Info className={cn('h-4 w-4', showHelp ? 'text-primary' : 'text-muted-foreground')} />
+            </button>
+          )}
+        </div>
+        {helpText && showHelp && (
+          <div className="px-3 pb-2">
+            <div className="flex items-start gap-2 bg-muted/40 rounded-lg p-2.5">
               <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <p className="text-[11px] text-muted-foreground leading-relaxed">{helpText}</p>
             </div>
-          )}
-          {children}
-        </div>
-      </CollapsibleContent>
-    </div>
-  </Collapsible>
-);
+          </div>
+        )}
+        <CollapsibleContent>
+          <div className="p-3 pt-0 space-y-3">
+            {children}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+};
