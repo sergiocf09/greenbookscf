@@ -8,28 +8,28 @@ import GreenBookLogo from '@/components/GreenBookLogo';
 const steps = [
   {
     icon: <GreenBookLogo className="h-16 w-16" />,
-    title: 'Bienvenido a GreenBooks CF',
+    title: 'Bienvenido a GreenBook by SCF',
     description: 'La forma más fácil de llevar tus rondas y apuestas de golf.',
   },
   {
     icon: <Settings className="h-12 w-12 text-primary" />,
     title: 'Setup',
-    description: 'Elige el campo, el tee y agrega a tus compañeros de juego.',
+    description: 'Selecciona el campo y el tee. Agrega hasta 6 jugadores por grupo. Si son más jugadores, crea grupos adicionales con el botón \'+\' — todos quedan vinculados a la misma ronda y pueden participar en apuestas entre grupos.',
   },
   {
     icon: <Dices className="h-12 w-12 text-primary" />,
     title: 'Apuestas',
-    description: 'Configura qué apuestas van en la ronda: Medal, Skins, Presiones, Rayas y más.',
+    description: 'Hay tres categorías: Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Culebras, Pingüinos). Activa las que quieras y ajusta los montos.',
   },
   {
     icon: <Trophy className="h-12 w-12 text-primary" />,
-    title: 'Scorecard',
-    description: 'Captura los golpes y putts de cada hoyo en tiempo real.',
+    title: 'Scorecard y Captura',
+    description: 'El botón flotante 📓 siempre visible lleva a capturar golpes y putts de todos los jugadores. El ícono ⚡ junto a cada jugador es carga rápida. En hoyos par 3 con Oyeses activos aparece un ícono especial para registrar proximidad al pin.',
   },
   {
     icon: <CoinDollarIcon className="h-12 w-12 text-primary" />,
     title: 'Resultados',
-    description: 'Ve quién le debe a quién al terminar la ronda, con el desglose completo.',
+    description: 'El Balance General muestra el saldo neto de cada jugador. Selecciona un jugador y luego su rival para ver el desglose completo de apuestas individuales, de parejas y grupales entre ellos.',
   },
 ];
 
