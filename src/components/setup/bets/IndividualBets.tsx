@@ -74,6 +74,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
           isExpanded={expandedSections.includes('pressures')}
           onExpandChange={(open) => onToggleSection('pressures', open)}
+          helpText="Match play hoyo a hoyo. Se abre una nueva apuesta cada vez que un jugador va arriba por 2 hoyos. Al final del Front y del Back se suma la apuesta principal más todas las secundarias que se abrieron."
         >
           <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
