@@ -1184,9 +1184,14 @@ const Index = () => {
     if (roundState.id && roundState.groupId && addedPlayers.length > 0) {
       // Persist new players to round_players table
       for (const player of addedPlayers) {
-        // Skip if already persisted
-        if (!roundPlayerIds.has(player.id)) {
-          await addPlayerToRound(player);
+        // Skip if already persisted or currently being persisted (prevents race condition with concurrent renders)
+        if (!roundPlayerIds.has(player.id) && !persistingPlayerIdsRef.current.has(player.id)) {
+          persistingPlayerIdsRef.current.add(player.id);
+          try {
+            await addPlayerToRound(player);
+          } finally {
+            persistingPlayerIdsRef.current.delete(player.id);
+          }
         }
       }
     }

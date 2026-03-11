@@ -685,13 +685,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 </div>
               </div>
               {rivals.some(r => r.isGuest) && (
-                <button
-                  onClick={() => setShowGuests(!showGuests)}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-                >
-                  {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-                  {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
-                </button>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setShowGuests(!showGuests)}
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+                  >
+                    {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                    {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+                  </button>
+                  {showGuests && (
+                    <p className="text-[11px] text-muted-foreground px-1">
+                      Los invitados se identifican por nombre. Si un mismo jugador aparece duplicado, verifica que su nombre se haya escrito exactamente igual en todas las rondas.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
