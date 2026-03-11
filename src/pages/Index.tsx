@@ -3150,11 +3150,11 @@ const Index = () => {
 
       {/* Profile Menu Help Dialog */}
       <Dialog open={showProfileMenuHelp} onOpenChange={setShowProfileMenuHelp}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm max-h-[calc(100vh-4rem)] mt-14 top-0 translate-y-0 flex flex-col">
           <DialogHeader>
             <DialogTitle>Menú de perfil</DialogTitle>
           </DialogHeader>
-          <ul className="space-y-3 mt-2">
+          <ul className="space-y-3 mt-2 overflow-y-auto flex-1 pr-1">
             <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
             <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
             <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.</span></li>
@@ -3165,6 +3165,11 @@ const Index = () => {
             <li className="flex gap-3 text-sm"><span>📉</span><span><strong>Historial de Handicap</strong> — Ve cómo ha evolucionado tu handicap ronda a ronda</span></li>
             <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>Cerrar Sesión</strong></span></li>
           </ul>
+          <div className="pt-3 border-t border-border">
+            <Button variant="outline" className="w-full" onClick={() => setShowProfileMenuHelp(false)}>
+              Cerrar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
