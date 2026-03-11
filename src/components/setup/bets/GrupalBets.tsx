@@ -110,6 +110,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           id="pinguinos" title="Pingüinos 🐧" description="Triple bogey o peor (bruto vs par), el último paga todas"
           enabled={config.pinguinos.enabled} onToggle={(enabled) => onUpdateBet('pinguinos', { enabled })}
           isExpanded={expandedSections.includes('pinguinos')} onExpandChange={(open) => onToggleSection('pinguinos', open)} color="red"
+          helpText="Si un jugador hace triple bogey o peor (score bruto vs par del hoyo), se marca un pingüino. Al final de la ronda, el último jugador en haber tenido un pingüino paga el valor a todos los demás."
         >
           <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
         </BetSection>
