@@ -3150,7 +3150,13 @@ const Index = () => {
       <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Profile Menu Help Dialog */}
-      <Dialog open={showProfileMenuHelp} onOpenChange={setShowProfileMenuHelp}>
+      <Dialog open={showProfileMenuHelp} onOpenChange={(open) => {
+        setShowProfileMenuHelp(open);
+        if (!open) {
+          // Reabrir el menú de perfil al cerrar el help
+          setProfileMenuOpen(true);
+        }
+      }}>
         <DialogContent className="max-w-sm max-h-[calc(100vh-4rem)] mt-14 top-0 translate-y-0 flex flex-col">
           <DialogHeader>
             <DialogTitle>Menú de perfil</DialogTitle>
