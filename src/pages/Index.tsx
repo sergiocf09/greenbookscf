@@ -122,6 +122,7 @@ const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showProfileMenuHelp, setShowProfileMenuHelp] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
@@ -2097,7 +2098,7 @@ const Index = () => {
             )}
 
 
-            <DropdownMenu>
+            <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   {profile?.initials ? (
@@ -3149,7 +3150,13 @@ const Index = () => {
       <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Profile Menu Help Dialog */}
-      <Dialog open={showProfileMenuHelp} onOpenChange={setShowProfileMenuHelp}>
+      <Dialog open={showProfileMenuHelp} onOpenChange={(open) => {
+        setShowProfileMenuHelp(open);
+        if (!open) {
+          // Reabrir el menú de perfil al cerrar el help
+          setProfileMenuOpen(true);
+        }
+      }}>
         <DialogContent className="max-w-sm max-h-[calc(100vh-4rem)] mt-14 top-0 translate-y-0 flex flex-col">
           <DialogHeader>
             <DialogTitle>Menú de perfil</DialogTitle>
