@@ -8,54 +8,50 @@ type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handic
 const helpContent: Record<string, { icon: React.ReactNode; title: string; items: string[] }> = {
   setup: {
     icon: <Settings className="h-5 w-5 text-primary" />,
-    title: 'Configuración de Ronda',
+    title: '⚙️ Configuración de Ronda',
     items: [
-      'Selecciona el campo y el tee desde donde jugarán.',
-      'Agrega jugadores manualmente o usa el botón de amigos para invitar a conocidos.',
-      'Puedes tener hasta 6 jugadores por grupo.',
-      'Crea la ronda para obtener un link, QR o código que tus compañeros pueden usar para unirse.',
-      'Cuando todos estén listos, presiona "Iniciar Ronda".',
+      'Selecciona el campo de golf y el color de tee desde donde juegan.',
+      'Agrega hasta 6 jugadores por grupo. Usa el botón de amigos (ícono 👥 en el header) para agregar compañeros frecuentes sin teclear su nombre.',
+      '¿Son más de 6 o quieren organizarse en equipos? Usa el botón \'+\' para crear grupos adicionales dentro de la misma ronda — pueden tener apuestas compartidas entre grupos.',
     ],
   },
   betsetup: {
     icon: <Dices className="h-5 w-5 text-primary" />,
-    title: 'Configuración de Apuestas',
+    title: '🎲 Configuración de Apuestas',
     items: [
-      'Activa o desactiva cada tipo de apuesta: Medal, Skins, Presiones, Rayas, Manchas y más.',
-      'Configura el monto de cada apuesta.',
-      'Usa la matriz de participación para elegir quién juega qué apuesta.',
-      'Las apuestas se calculan automáticamente al capturar scores.',
+      'Las apuestas se dividen en 3 categorías: navega entre Individuales, Parejas y Grupales con los tabs superiores.',
+      'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Caros (match en los últimos 4 hoyos, configurable).',
+      'PAREJAS — entre equipos de 2 vs 2: Carritos (lowball, highball o combined) y Presiones Parejas.',
+      'GRUPALES — un ganador entre todos: Medal General (menor neto total), Stableford (puntos por hoyo), Culebras (último en tener 3+ putts paga a todos), Pingüinos (último en tener triple bogey paga a todos), Zoológico, Putts.',
+      'Toca el ícono ℹ️ junto a cada apuesta para ver exactamente cómo funciona y cuándo se cobra.',
     ],
   },
   handicaps: {
     icon: <RefreshCw className="h-5 w-5 text-primary" />,
-    title: 'Matriz de Hándicaps',
+    title: '🔄 Matriz de Hándicaps',
     items: [
-      'Aquí ves los strokes que se dan entre cada par de jugadores.',
-      'Los hándicaps se calculan automáticamente con base en el handicap de cada jugador y el slope del campo.',
-      'Puedes ajustar manualmente los strokes si el grupo tiene un acuerdo diferente.',
-      'El sliding se actualiza automáticamente entre rondas según resultados anteriores.',
+      'Muestra los strokes que se dan entre cada par de jugadores para emparejar el juego.',
+      'Cómo leerla: encuentra tu nombre en las filas (lado izquierdo) y el de tu rival en las columnas. El número en esa celda son los strokes que tú le das a él. Positivo = tú das strokes. Negativo = él te los da a ti.',
+      'Sliding automático: si ya jugaron rondas juntos anteriormente, el sistema ajusta los strokes según el historial de resultados. Puedes verificar o corregir cualquier valor manualmente.',
     ],
   },
   scorecard: {
     icon: <Trophy className="h-5 w-5 text-primary" />,
-    title: 'Scorecard',
+    title: '🏆 Scorecard',
     items: [
-      'Captura los golpes y putts de cada jugador en cada hoyo.',
-      'Los badges de birdie, eagle, cuatriput, 10+, etc. se detectan automáticamente.',
-      'Puedes agregar marcadores manuales como sandy par, aqua par, doble OB y más.',
-      'Confirma cada hoyo cuando todos los scores estén capturados.',
-      'Desliza izquierda/derecha para moverte entre hoyos.',
+      'El botón flotante 📓 con el número del hoyo actual está siempre visible — úsalo para ir a la pantalla de captura donde ingresas golpes y putts de todos los jugadores y confirmas el hoyo.',
+      'El ícono ⚡ junto al nombre de cada jugador permite captura rápida de su score sin salir del scorecard.',
+      'El botón 🏆 Leaderboard muestra el ranking en tiempo real si la ronda está vinculada a un evento o liga.',
+      'En hoyos par 3 con la apuesta de Oyeses activa, aparece un ícono flotante especial para registrar la proximidad al pin de cada jugador — tócalo al terminar el hoyo.',
     ],
   },
   bets: {
     icon: <CoinDollarIcon className="h-5 w-5 text-primary" />,
-    title: 'Resultados y Apuestas',
+    title: '💰 Balance General',
     items: [
-      'Ve la tabla general de quién le debe a quién.',
-      'Toca un jugador para ver el desglose bilateral detallado.',
-      'Los cálculos se actualizan en tiempo real conforme se capturan scores.',
-      'Al cerrar la ronda, los balances se guardan en el historial.',
+      'El Balance General muestra el saldo neto de cada jugador — lo que ganó o perdió contra todos los demás combinado.',
+      'Para ver el detalle: toca un jugador para seleccionarlo como base, luego toca a su rival. Verás el desglose completo de todas las apuestas entre esos dos.',
+      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, etc.).',
     ],
   },
 };
@@ -72,7 +68,7 @@ const ContextualHelp: React.FC<ContextualHelpProps> = ({ view, open, onClose }) 
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
+      <SheetContent side="top" className="rounded-b-2xl mt-14 max-h-[80vh] overflow-y-auto">
         <SheetHeader className="text-left">
           <div className="flex items-center gap-2">
             {content.icon}

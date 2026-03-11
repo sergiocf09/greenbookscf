@@ -86,7 +86,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ open, onClose }) =>
             )}
             {isLast ? (
               <Button onClick={handleFinish} className="flex-1">
-                ¡Empezar!
+                Entendido, no mostrar más
               </Button>
             ) : (
               <Button onClick={() => setStep(step + 1)} className="flex-1">
