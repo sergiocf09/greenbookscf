@@ -98,6 +98,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           id="culebras" title="Culebras 🐍" description="3+ putts, el último paga todas"
           enabled={config.culebras.enabled} onToggle={(enabled) => onUpdateBet('culebras', { enabled })}
           isExpanded={expandedSections.includes('culebras')} onExpandChange={(open) => onToggleSection('culebras', open)} color="red"
+          helpText="Cada vez que un jugador tiene 3 o más putts en un hoyo, se marca una culebra. Al final de la ronda, el último jugador en haber tenido una culebra paga el valor a todos los demás participantes."
         >
           <AmountInput label="Valor por culebra" value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
         </BetSection>
