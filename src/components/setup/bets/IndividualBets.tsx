@@ -178,6 +178,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           isExpanded={expandedSections.includes('oyeses')}
           onExpandChange={(open) => onToggleSection('oyeses', open)}
           color="gold"
+          helpText="En hoyos par 3, gana quien queda más cerca al pin. Se registra el orden de proximidad al terminar el hoyo. Si hay acumulación activa, los hoyos empatados suman al siguiente. Ganar todos los oyeses del 9 da un bonus 2x (zapato)."
         >
           <AmountInput label="Importe por Oyes" value={config.oyeses.amount} onChange={(v) => onUpdateBet('oyeses', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
