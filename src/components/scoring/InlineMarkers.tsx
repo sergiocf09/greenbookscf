@@ -35,6 +35,15 @@ const PinkiesHeelIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <Icon iconNode={highHeel} {...props} />
 );
 
+const MorelianaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 18 Q12 10 20 18" />
+    <circle cx="17" cy="7" r="2.5" fill="currentColor" />
+    <path d="M14 12 L16 8.5" />
+    <polyline points="14.5,8 16,8.5 15.5,10" />
+  </svg>
+);
+
 // Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
