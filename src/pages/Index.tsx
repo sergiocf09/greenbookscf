@@ -121,6 +121,7 @@ const Index = () => {
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showProfileMenuHelp, setShowProfileMenuHelp] = useState(false);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
