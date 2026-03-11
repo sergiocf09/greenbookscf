@@ -119,7 +119,8 @@ const Index = () => {
   const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
   const [showFriendsDialog, setShowFriendsDialog] = useState(false);
   const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
-  // showBetSetupDialog removed – betsetup is now a real tab view
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
