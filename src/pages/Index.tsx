@@ -3157,7 +3157,7 @@ const Index = () => {
           <ul className="space-y-3 mt-2">
             <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
             <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
-            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Ve los rankings de eventos o ligas en los que participas</span></li>
+            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.</span></li>
             <li className="flex gap-3 text-sm"><span>📋</span><span><strong>Historial de Rondas</strong> — Consulta todas tus rondas anteriores con scorecard y resultados de apuestas</span></li>
             <li className="flex gap-3 text-sm"><span>💰</span><span><strong>Balances Históricos</strong> — Ve cuánto has ganado o perdido con cada jugador a lo largo del tiempo</span></li>
             <li className="flex gap-3 text-sm"><span>▶️</span><span><strong>Rondas Pendientes</strong> — Rondas que iniciaste y no has cerrado todavía (aparece solo si hay pendientes)</span></li>
