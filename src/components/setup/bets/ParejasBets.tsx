@@ -169,6 +169,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
+        helpText="Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado."
       >
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
