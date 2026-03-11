@@ -75,6 +75,8 @@ export const markerLabels: Record<string, string> = {
   retruje: 'Retruje',
   dobleAgua: '2xAgua',
   swingBlanco: 'Paloma',
+  dobleOB: 'Doble OB',
+  moreliana: 'Moreliana',
 };
 
 interface InlineMarkersProps {

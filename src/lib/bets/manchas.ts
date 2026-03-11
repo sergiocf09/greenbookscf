@@ -57,21 +57,6 @@ export const calculateManchasBets = (
           summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Manchas', amount, segment: 'total', description: `${manchasA} vs ${manchasB} manchas`, units: Math.abs(diff), baseUnitAmount: config.manchas.valuePerPoint });
           summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Manchas', amount: -amount, segment: 'total', description: `${manchasB} vs ${manchasA} manchas`, units: Math.abs(diff), baseUnitAmount: config.manchas.valuePerPoint });
         }
-        
-        const cuatriputsA = countCuatriputs(playerA.id);
-        const cuatriputsB = countCuatriputs(playerB.id);
-        
-        if (cuatriputsA > 0) {
-          const cuatriputAmount = cuatriputsA * config.manchas.valuePerPoint;
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Manchas', amount: -cuatriputAmount, segment: 'total', description: `Cuatriput x${cuatriputsA}` });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Manchas', amount: cuatriputAmount, segment: 'total', description: `Cuatriput rival x${cuatriputsA}` });
-        }
-        
-        if (cuatriputsB > 0) {
-          const cuatriputAmount = cuatriputsB * config.manchas.valuePerPoint;
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Manchas', amount: -cuatriputAmount, segment: 'total', description: `Cuatriput x${cuatriputsB}` });
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Manchas', amount: cuatriputAmount, segment: 'total', description: `Cuatriput rival x${cuatriputsB}` });
-        }
       }
     }
   });
