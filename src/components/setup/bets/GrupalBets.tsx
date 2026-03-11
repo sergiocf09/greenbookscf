@@ -222,6 +222,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('stableford')}
           onExpandChange={(open) => onToggleSection('stableford', open)} color="gold"
+          helpText="Sistema de puntos por score neto relativo al par de cada hoyo. Birdie = 3 pts, Par = 2 pts, Bogey = 1 pt (configurable). El jugador con más puntos totales gana y cobra a cada perdedor."
         >
           <AmountInput label="Cantidad por jugador" value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
           {hasMultipleGroups && (
