@@ -238,6 +238,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="manchas" title="Manchas" description="Pinkie, Paloma, Trampa, Cuatriput, etc."
           enabled={config.manchas.enabled} onToggle={(enabled) => onUpdateBet('manchas', { enabled })}
           isExpanded={expandedSections.includes('manchas')} onExpandChange={(open) => onToggleSection('manchas', open)} color="red"
+          helpText="Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia."
         >
           <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
         </BetSection>
