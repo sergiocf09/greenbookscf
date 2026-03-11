@@ -398,7 +398,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (!userPlayer) continue;
 
         const rivalPlayer = rival.isGuest
-          ? snap.players.find((p: any) => p.isGuest && p.name === rival.rivalName)
+          ? snap.players.find((p: any) => p.isGuest && p.name?.trim().toLowerCase() === rival.rivalName?.trim().toLowerCase())
           : snap.players.find((p: any) => p.profileId === rival.profileId);
 
         if (!rivalPlayer) continue;
