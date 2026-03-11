@@ -165,6 +165,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('medalGeneral')}
           onExpandChange={(open) => onToggleSection('medalGeneral', open)} color="gold"
+          helpText="El jugador con el menor score neto total de los 18 hoyos gana y cobra la cantidad configurada a cada perdedor. En caso de empate, se divide. Cada jugador puede tener un handicap independiente para esta apuesta."
         >
           <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
           {hasMultipleGroups && (
