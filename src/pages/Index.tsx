@@ -2098,7 +2098,7 @@ const Index = () => {
             )}
 
 
-            <DropdownMenu>
+            <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   {profile?.initials ? (
