@@ -3139,6 +3139,8 @@ const Index = () => {
         />
         );
       })()}
+      <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 };
