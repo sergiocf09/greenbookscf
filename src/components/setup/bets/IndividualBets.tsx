@@ -226,6 +226,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="units" title="Unidades" description="Birdie, Águila, Sandy Par, etc."
           enabled={config.units.enabled} onToggle={(enabled) => onUpdateBet('units', { enabled })}
           isExpanded={expandedSections.includes('units')} onExpandChange={(open) => onToggleSection('units', open)} color="gold"
+          helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
         >
           <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
         </BetSection>
