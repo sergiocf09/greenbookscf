@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -17,6 +17,7 @@ interface BetSectionProps {
   onExpandChange: (open: boolean) => void;
   children: React.ReactNode;
   color?: 'gold' | 'green' | 'red';
+  helpText?: string;
 }
 
 export const BetSection: React.FC<BetSectionProps> = ({ 
