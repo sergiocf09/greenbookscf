@@ -1,5 +1,5 @@
 /**
- * Manchas Bet Calculator — negative markers bilateral comparison + cuatriput additive
+ * Manchas Bet Calculator — differential bilateral comparison
  */
 import { Player, PlayerScore, BetConfig } from '@/types/golf';
 import { resolveConfigForGroup } from '../groupBetOverrides';
@@ -16,7 +16,7 @@ export const calculateManchasBets = (
   
   const summaries: BetSummary[] = [];
   
-  const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3'] as const;
+  const manualManchaMarkers = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana'] as const;
   
   const countManchas = (playerId: string): number => {
     const playerScores = scores.get(playerId) || [];
@@ -26,13 +26,9 @@ export const calculateManchasBets = (
         if (score.markers[marker]) manchas += 1;
       });
       if (score.strokes >= 10) manchas += 1;
+      if (score.putts >= 4 || score.markers.cuatriput) manchas += 1;
     });
     return manchas;
-  };
-  
-  const countCuatriputs = (playerId: string): number => {
-    const playerScores = scores.get(playerId) || [];
-    return playerScores.filter(s => s.putts >= 4 || s.markers.cuatriput).length;
   };
   
   const playersByGroup = groupPlayersByGroup(players);
