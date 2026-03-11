@@ -9,6 +9,7 @@ import {
   Droplets,
   CircleDot,
   Hourglass,
+  XCircle,
 } from 'lucide-react';
 import { highHeel } from '@lucide/lab';
 import { cn } from '@/lib/utils';
