@@ -186,6 +186,14 @@ const Index = () => {
     setPlayerGroups,
   });
 
+  // Onboarding check – first time user
+  useEffect(() => {
+    if (!profile) return;
+    if (!localStorage.getItem('gbcf_onboarding_done')) {
+      setShowOnboarding(true);
+    }
+  }, [profile]);
+
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
   useEffect(() => {
     if (!profile) return;
