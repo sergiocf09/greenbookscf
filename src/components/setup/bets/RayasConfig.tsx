@@ -112,8 +112,42 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
     <div className="space-y-4">
       {/* Global values - always visible */}
       <div className="space-y-1">
-        <AmountInput label="Front 9" value={rayas.frontValue} onChange={(v) => onUpdateRayas({ frontValue: v })} />
-        <AmountInput label="Back 9" value={rayas.backValue} onChange={(v) => onUpdateRayas({ backValue: v })} />
+        <AmountInput label="Front 9" value={rayas.frontValue} onChange={(v) => {
+          const updates: Partial<typeof rayas> = { frontValue: v };
+          // Cascade to segments whose frontValue matched the OLD global value
+          if (rayas.segments) {
+            const oldGlobal = rayas.frontValue;
+            const newSegments = { ...rayas.segments };
+            let changed = false;
+            for (const key of Object.keys(newSegments) as Array<keyof typeof newSegments>) {
+              const seg = newSegments[key];
+              if (seg && seg.frontValue === oldGlobal) {
+                newSegments[key] = { ...seg, frontValue: v };
+                changed = true;
+              }
+            }
+            if (changed) updates.segments = newSegments;
+          }
+          onUpdateRayas(updates);
+        }} />
+        <AmountInput label="Back 9" value={rayas.backValue} onChange={(v) => {
+          const updates: Partial<typeof rayas> = { backValue: v };
+          // Cascade to segments whose backValue matched the OLD global value
+          if (rayas.segments) {
+            const oldGlobal = rayas.backValue;
+            const newSegments = { ...rayas.segments };
+            let changed = false;
+            for (const key of Object.keys(newSegments) as Array<keyof typeof newSegments>) {
+              const seg = newSegments[key];
+              if (seg && seg.backValue === oldGlobal) {
+                newSegments[key] = { ...seg, backValue: v };
+                changed = true;
+              }
+            }
+            if (changed) updates.segments = newSegments;
+          }
+          onUpdateRayas(updates);
+        }} />
         <AmountInput label="Medal Total" value={rayas.medalTotalValue} onChange={(v) => onUpdateRayas({ medalTotalValue: v })} />
       </div>
 
