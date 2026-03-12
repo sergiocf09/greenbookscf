@@ -13,7 +13,16 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Service role client for direct table updates (bypasses RLS)
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    
+    // User client for RPC calls that need auth context
+    const authHeader = req.headers.get('Authorization');
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader || '' } },
+    });
 
     const { roundId } = await req.json();
     if (!roundId) {
@@ -24,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     // 1. Fix bet_config: cascade global rayas values to segments
-    const { data: round, error: fetchErr } = await supabase
+    const { data: round, error: fetchErr } = await adminClient
       .from('rounds')
       .select('bet_config')
       .eq('id', roundId)
@@ -39,6 +48,8 @@ Deno.serve(async (req) => {
 
     const betConfig = round.bet_config as any;
     const rayas = betConfig?.rayas;
+    const oldSegments = rayas?.segments ? JSON.parse(JSON.stringify(rayas.segments)) : null;
+    
     if (rayas?.segments) {
       const globalFront = rayas.frontValue;
       const globalBack = rayas.backValue;
@@ -48,8 +59,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Update bet_config
-    const { error: updateErr } = await supabase
+    // 2. Update bet_config with service role (bypasses RLS)
+    const { error: updateErr } = await adminClient
       .from('rounds')
       .update({ bet_config: betConfig })
       .eq('id', roundId);
@@ -61,8 +72,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Reset round for re-close
-    const { error: resetErr } = await supabase.rpc('reset_round_for_reclose', {
+    // 3. Reset round for re-close (needs user auth context for organizer check)
+    const { error: resetErr } = await userClient.rpc('reset_round_for_reclose', {
       p_round_id: roundId,
     });
 
@@ -76,6 +87,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Bet config fixed and round reset for re-close',
+      oldSegments,
       fixedSegments: rayas?.segments,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
