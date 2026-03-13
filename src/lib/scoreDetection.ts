@@ -39,7 +39,7 @@ export const mergeMarkers = (
     eagle: autoDetected.eagle ?? manual.eagle,
     albatross: autoDetected.albatross ?? manual.albatross,
     cuatriput: autoDetected.cuatriput ?? manual.cuatriput,
-    moreliana: autoDetected.moreliana ?? manual.moreliana,
+    moreliana: manual.moreliana,
     culebra: autoDetected.culebra ?? manual.culebra,
     dobleDigito: autoDetected.dobleDigito ?? manual.dobleDigito,
   };
