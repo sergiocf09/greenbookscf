@@ -3958,8 +3958,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
 
       // ── Putts — total único, sin desplegable ───────────────────────────────
-      const puttsFront = getAmt('Putts Front');
-      const puttsBack  = getAmt('Putts Back');
+      const puttsFront = getAmt('Putts Front 9');
+      const puttsBack  = getAmt('Putts Back 9');
       const puttsTotal = getAmt('Putts Total');
       const puttsSum   = puttsFront + puttsBack + puttsTotal;
       if (puttsSum !== 0) {
@@ -4003,7 +4003,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Presiones Front','Presiones Back','Presiones Back (Carry x2+Match)','Presiones Match 18',
         'Skins Front','Skins Back',
         'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
-        'Putts Front','Putts Back','Putts Total',
+        'Putts Front 9','Putts Back 9','Putts Total',
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
         'Coneja','Medal General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
@@ -4057,8 +4057,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Putts - Individual bet (no handicap) - Show total putts for each player (after Medal)
     if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
-      const puttsFront = groupedSummaries['Putts Front']?.total || 0;
-      const puttsBack = groupedSummaries['Putts Back']?.total || 0;
+      const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
+      const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
       const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
       const total = puttsFront + puttsBack + puttsTotal;
       
