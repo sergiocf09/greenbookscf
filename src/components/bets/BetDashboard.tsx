@@ -4057,8 +4057,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Putts - Individual bet (no handicap) - Show total putts for each player (after Medal)
     if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
-      const puttsFront = groupedSummaries['Putts Front']?.total || 0;
-      const puttsBack = groupedSummaries['Putts Back']?.total || 0;
+      const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
+      const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
       const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
       const total = puttsFront + puttsBack + puttsTotal;
       

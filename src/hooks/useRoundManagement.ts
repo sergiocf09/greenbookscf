@@ -1572,8 +1572,8 @@ export const useRoundManagement = ({
                   .reduce((sum, sc) => sum + (sc.putts || 0), 0);
               const pPuttsFront = puttsFn(pA.id, 1, 9);  const rPuttsFront = puttsFn(pB.id, 1, 9);
               const pPuttsBack  = puttsFn(pA.id, 10, 18); const rPuttsBack  = puttsFn(pB.id, 10, 18);
-              pairSegmentResults[`${pA.id}::${pB.id}::Putts Front::front`] = { resultText: `${pPuttsFront} vs ${rPuttsFront} putts` };
-              pairSegmentResults[`${pA.id}::${pB.id}::Putts Back::back`]   = { resultText: `${pPuttsBack} vs ${rPuttsBack} putts` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Putts Front 9::front`] = { resultText: `${pPuttsFront} vs ${rPuttsFront} putts` };
+              pairSegmentResults[`${pA.id}::${pB.id}::Putts Back 9::back`]   = { resultText: `${pPuttsBack} vs ${rPuttsBack} putts` };
               pairSegmentResults[`${pA.id}::${pB.id}::Putts Total::total`] = { resultText: `${pPuttsFront + pPuttsBack} vs ${rPuttsFront + rPuttsBack} putts` };
             }
           }
