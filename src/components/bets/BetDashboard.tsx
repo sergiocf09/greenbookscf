@@ -4003,7 +4003,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Presiones Front','Presiones Back','Presiones Back (Carry x2+Match)','Presiones Match 18',
         'Skins Front','Skins Back',
         'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
-        'Putts Front','Putts Back','Putts Total',
+        'Putts Front 9','Putts Back 9','Putts Total',
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
         'Coneja','Medal General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
