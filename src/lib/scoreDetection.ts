@@ -54,7 +54,6 @@ export const isAutoDetectedMarker = (key: keyof MarkerState): boolean => {
     'eagle',
     'albatross',
     'cuatriput',
-    'moreliana',
     'culebra',
     'dobleDigito',
   ];
