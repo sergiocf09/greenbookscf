@@ -3958,8 +3958,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
 
       // ── Putts — total único, sin desplegable ───────────────────────────────
-      const puttsFront = getAmt('Putts Front');
-      const puttsBack  = getAmt('Putts Back');
+      const puttsFront = getAmt('Putts Front 9');
+      const puttsBack  = getAmt('Putts Back 9');
       const puttsTotal = getAmt('Putts Total');
       const puttsSum   = puttsFront + puttsBack + puttsTotal;
       if (puttsSum !== 0) {
