@@ -26,10 +26,24 @@ export const calculatePuttsBets = (
   const ranges = getSegmentHoleRanges(startingHole);
   
   const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
-    { key: 'front', holes: ranges.front, amount: config.putts.frontAmount || 0, label: 'Putts Front' },
-    { key: 'back', holes: ranges.back, amount: config.putts.backAmount || 0, label: 'Putts Back' },
+    { key: 'front', holes: ranges.front, amount: config.putts.frontAmount || 0, label: 'Putts Front 9' },
+    { key: 'back', holes: ranges.back, amount: config.putts.backAmount || 0, label: 'Putts Back 9' },
     { key: 'total', holes: [1, 18], amount: config.putts.totalAmount || 0, label: 'Putts Total' },
   ];
+
+  const getPairOverrideAmount = (playerAId: string, playerBId: string, label: string): number | undefined => {
+    const overrides = config.betOverrides;
+    if (!overrides || overrides.length === 0) return undefined;
+    const match = overrides.find((o) => {
+      const matchesPair = (o.playerAId === playerAId && o.playerBId === playerBId) ||
+                          (o.playerAId === playerBId && o.playerBId === playerAId);
+      if (!matchesPair || o.enabled === false) return false;
+      return o.betType?.toLowerCase() === label.toLowerCase();
+    });
+    return typeof match?.amountOverride === 'number' && Number.isFinite(match.amountOverride)
+      ? match.amountOverride
+      : undefined;
+  };
   
   for (let i = 0; i < participatingPlayers.length; i++) {
     for (let j = i + 1; j < participatingPlayers.length; j++) {
@@ -39,7 +53,8 @@ export const calculatePuttsBets = (
       if (!shouldCalculatePair(config.putts, playerA.id, playerB.id)) continue;
       
       segments.forEach(({ key, holes, amount, label }) => {
-        if (amount <= 0) return;
+        const effectiveAmount = getPairOverrideAmount(playerA.id, playerB.id, label) ?? amount;
+        if (effectiveAmount <= 0) return;
         const [start, end] = holes;
         
         const scoresA = (scores.get(playerA.id) || []).filter(s => s.confirmed && s.holeNumber >= start && s.holeNumber <= end && typeof s.putts === 'number');
@@ -58,11 +73,11 @@ export const calculatePuttsBets = (
         if (commonHoles === 0) return;
         
         if (puttsA < puttsB) {
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: label, amount, segment: key, description: `${puttsA} vs ${puttsB} putts` });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: label, amount: -amount, segment: key, description: `${puttsB} vs ${puttsA} putts` });
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: label, amount: effectiveAmount, segment: key, description: `${puttsA} vs ${puttsB} putts` });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: label, amount: -effectiveAmount, segment: key, description: `${puttsB} vs ${puttsA} putts` });
         } else if (puttsB < puttsA) {
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: label, amount, segment: key, description: `${puttsB} vs ${puttsA} putts` });
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: label, amount: -amount, segment: key, description: `${puttsA} vs ${puttsB} putts` });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: label, amount: effectiveAmount, segment: key, description: `${puttsB} vs ${puttsA} putts` });
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: label, amount: -effectiveAmount, segment: key, description: `${puttsA} vs ${puttsB} putts` });
         }
       });
     }
