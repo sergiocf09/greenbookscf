@@ -45,7 +45,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,6 +85,7 @@ const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'be
 const Index = () => {
   const navigate = useNavigate();
   const { profile, signOut, updateProfile } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [view, setView] = useState<AppView>('setup');
@@ -2131,6 +2133,12 @@ const Index = () => {
                   <HelpCircle className="h-4 w-4 mr-2" />
                   ¿Qué hay en este menú?
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  {theme === 'dark'
+                    ? <Sun className="h-4 w-4 mr-2" />
+                    : <Moon className="h-4 w-4 mr-2" />}
+                  {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">
                   <p className="font-medium text-sm">{profile?.display_name}</p>
@@ -3169,6 +3177,7 @@ const Index = () => {
             <DialogTitle>Menú de perfil</DialogTitle>
           </DialogHeader>
           <ul className="space-y-3 mt-2 overflow-y-auto flex-1 pr-1">
+            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>Modo oscuro / Modo claro</strong> — Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.</span></li>
             <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
             <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
             <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.</span></li>
