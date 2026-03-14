@@ -2133,6 +2133,12 @@ const Index = () => {
                   <HelpCircle className="h-4 w-4 mr-2" />
                   ¿Qué hay en este menú?
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                  {theme === 'dark'
+                    ? <Sun className="h-4 w-4 mr-2" />
+                    : <Moon className="h-4 w-4 mr-2" />}
+                  {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">
                   <p className="font-medium text-sm">{profile?.display_name}</p>
