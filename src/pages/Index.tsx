@@ -85,6 +85,7 @@ const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'be
 const Index = () => {
   const navigate = useNavigate();
   const { profile, signOut, updateProfile } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [view, setView] = useState<AppView>('setup');
