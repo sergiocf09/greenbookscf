@@ -3177,6 +3177,7 @@ const Index = () => {
             <DialogTitle>Menú de perfil</DialogTitle>
           </DialogHeader>
           <ul className="space-y-3 mt-2 overflow-y-auto flex-1 pr-1">
+            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>Modo oscuro / Modo claro</strong> — Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.</span></li>
             <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
             <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
             <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.</span></li>
