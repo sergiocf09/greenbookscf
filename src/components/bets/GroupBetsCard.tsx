@@ -1140,7 +1140,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Manchas summary per player (informational only)
   const manchasSummary = useMemo(() => {
-    if (!betConfig.manchas?.enabled || sameGroupPlayers.length < 2) return null;
+    if (sameGroupPlayers.length < 2) return null;
     const MANCHA_MARKERS = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana', 'cuatriput'];
     const MANCHA_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       ladies:       { label: 'Ladies',       emoji: '👠', short: 'Pinkies' },
