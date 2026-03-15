@@ -1140,7 +1140,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Manchas summary per player (informational only)
   const manchasSummary = useMemo(() => {
-    if (!betConfig.manchas?.enabled || sameGroupPlayers.length < 2) return null;
+    if (sameGroupPlayers.length < 2) return null;
     const MANCHA_MARKERS = ['ladies', 'swingBlanco', 'retruje', 'trampa', 'dobleAgua', 'dobleOB', 'par3GirMas3', 'dobleDigito', 'moreliana', 'cuatriput'];
     const MANCHA_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       ladies:       { label: 'Ladies',       emoji: '👠', short: 'Pinkies' },
@@ -1192,7 +1192,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Unidades summary per player (informational only)
   const unidadesSummary = useMemo(() => {
-    if (!betConfig.units?.enabled || sameGroupPlayers.length < 2) return null;
+    if (sameGroupPlayers.length < 2) return null;
     const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
     const UNIT_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       birdie:    { label: 'Birdie',      emoji: '🐦', short: 'Birdie' },
@@ -1239,13 +1239,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Oyeses summary per par-3 hole (informational only)
   const oyesesSummary = useMemo(() => {
-    if (!betConfig.oyeses?.enabled) return null;
+    if (sameGroupPlayers.length < 2) return null;
 
     // Use resolveGroupParticipants for proper participant resolution (handles profileId/id mismatch)
     const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
     if (activePlayers.length < 2) return null;
 
-    const playerConfigs = betConfig.oyeses.playerConfigs || [];
+    const playerConfigs = betConfig.oyeses?.playerConfigs || [];
     // CRITICAL: Filter configs to only active participants to prevent a sangron config
     // from a non-participant from poisoning the fallback. Default is ALWAYS 'acumulados'.
     const activePlayerIds = new Set(activePlayers.map(p => p.id));

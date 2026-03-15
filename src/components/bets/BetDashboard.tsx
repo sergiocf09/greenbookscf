@@ -4259,23 +4259,21 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Unidades — always visible as event counter, isInfoOnly when bet is not active
-    {
-      const unitsInfoOnly = !betConfig.units.enabled || !bothParticipate(betConfig.units.participantIds, 'units');
+    // Unidades
+    if (betConfig.units.enabled && bothParticipate(betConfig.units.participantIds, 'units')) {
       groups.push({
         key: 'units',
         label: 'Unidades',
         configKey: 'units',
-        isInfoOnly: unitsInfoOnly,
         segments: [{ label: 'Detalle', key: 'units_detail' }],
-        getTotal: () => unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0),
+        getTotal: () => groupedSummaries['Unidades']?.total || 0,
         getSegmentData: () => {
           const playerDetails = getMarkerDetails(player.id, 'units');
           const rivalDetails = getMarkerDetails(rival.id, 'units');
           return { 
             playerNet: playerDetails.length, 
             rivalNet: rivalDetails.length, 
-            amount: unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0)
+            amount: groupedSummaries['Unidades']?.total || 0
           };
         },
       });
