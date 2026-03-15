@@ -4291,23 +4291,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Manchas
-    if (betConfig.manchas.enabled && bothParticipate(betConfig.manchas.participantIds, 'manchas')) {
-      groups.push({
-        key: 'manchas',
-        label: 'Manchas',
-        configKey: 'manchas',
-        segments: [{ label: 'Detalle', key: 'manchas_detail' }],
-        getTotal: () => groupedSummaries['Manchas']?.total || 0,
-        getSegmentData: () => {
-          const playerDetails = getMarkerDetails(player.id, 'manchas');
-          const rivalDetails = getMarkerDetails(rival.id, 'manchas');
-          return { 
-            playerNet: playerDetails.length, 
-            rivalNet: rivalDetails.length, 
-            amount: groupedSummaries['Manchas']?.total || 0 
-          };
-        },
-      });
+    {
+      const manchaDetailsPlayer = getMarkerDetails(player.id, 'manchas');
+      const manchaDetailsRival = getMarkerDetails(rival.id, 'manchas');
+      const hasAnyManchas = manchaDetailsPlayer.length > 0 || manchaDetailsRival.length > 0;
+      const manchasIsActive = betConfig.manchas.enabled && bothParticipate(betConfig.manchas.participantIds, 'manchas');
+      if (manchasIsActive || hasAnyManchas) {
+        groups.push({
+          key: 'manchas',
+          label: 'Manchas',
+          configKey: 'manchas',
+          isInfoOnly: !manchasIsActive,
+          segments: [{ label: 'Detalle', key: 'manchas_detail' }],
+          getTotal: () => manchasIsActive ? (groupedSummaries['Manchas']?.total || 0) : 0,
+          getSegmentData: () => {
+            return { 
+              playerNet: manchaDetailsPlayer.length, 
+              rivalNet: manchaDetailsRival.length, 
+              amount: manchasIsActive ? (groupedSummaries['Manchas']?.total || 0) : 0
+            };
+          },
+        });
+      }
     }
     
     // Culebras
