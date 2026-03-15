@@ -1281,7 +1281,7 @@ const calculateOyesRayasForAll = (
     return { summaries, details: detailsByPair };
   }
   
-  const oyesMode = (config.rayas as any)?.oyesMode ?? 'allVsAll';
+  const oyesMode = (config.rayas as any)?.oyesMode ?? 'singleWinner';
   
   if (oyesMode === 'singleWinner') {
     // Mode A: Un solo ganador - #1 beats all
