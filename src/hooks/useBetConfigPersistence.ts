@@ -60,6 +60,7 @@ interface RoundBetConfig {
         medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
       };
     }>>;
+    pairSegmentOverrides?: Record<string, Record<string, boolean>>;
     participantIds?: string[];
     oneVsAll?: boolean;
     anchorPlayerId?: string;
@@ -230,6 +231,7 @@ export const useBetConfigPersistence = ({
           oyesMode: dbRayas.oyesMode ?? 'allVsAll',
           playerSkinVariants: dbRayas.playerSkinVariants ?? prev.rayas.playerSkinVariants,
           pairSkinVariantOverrides: dbRayas.pairSkinVariantOverrides ?? prev.rayas.pairSkinVariantOverrides,
+          pairSegmentOverrides: dbRayas.pairSegmentOverrides ?? prev.rayas.pairSegmentOverrides,
           segments: dbRayas.segments ?? prev.rayas.segments,
           bilateralOverrides: dbRayas.bilateralOverrides ?? prev.rayas.bilateralOverrides,
           participantIds: 'participantIds' in dbRayas ? dbRayas.participantIds : prev.rayas.participantIds,
@@ -359,6 +361,7 @@ export const useBetConfigPersistence = ({
           oyesMode: config.rayas.oyesMode,
           playerSkinVariants: config.rayas.playerSkinVariants,
           pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
+          pairSegmentOverrides: config.rayas.pairSegmentOverrides,
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
           participantIds: config.rayas.participantIds,

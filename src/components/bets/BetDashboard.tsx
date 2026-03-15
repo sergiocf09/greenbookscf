@@ -17,7 +17,7 @@ import {
 } from '@/lib/betCalculations';
 import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
-import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail } from '@/lib/rayasCalculations';
+import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
@@ -33,6 +33,7 @@ import {
   Users,
   XCircle,
   CheckCircle,
+  AlertTriangle,
   Edit2,
   Check,
   X,
@@ -5518,6 +5519,59 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 </div>
                               </div>
                             )}
+                            {/* Segment conflict resolution toggles */}
+                            {!isHistorical && onBetConfigChange && effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id) && (() => {
+                              const segConflicts = getRayasSegmentConflicts(effectiveBetConfig, player.id, rival.id);
+                              if (segConflicts.length === 0) return null;
+                              const pairKey = getPairKey(player.id, rival.id);
+                              const hasUnresolved = segConflicts.some(s => s.playerAWants !== s.playerBWants && !s.resolved);
+                              const SEGMENT_LABELS: Record<string, string> = {
+                                skins: 'Skins', units: 'Unidades', oyes: 'Oyes', medal: 'Medal'
+                              };
+                              return (
+                                <div className={cn(
+                                  "rounded-lg px-3 py-2 border",
+                                  hasUnresolved ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border/50"
+                                )}>
+                                  {hasUnresolved && (
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                      <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                                      <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                                        Configuraciones distintas — define qué juegan
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {segConflicts.map(seg => (
+                                      <div key={seg.segmentKey} className="flex flex-col items-center gap-1">
+                                        <span className="text-[10px] text-muted-foreground">{SEGMENT_LABELS[seg.segmentKey]}</span>
+                                        <Switch
+                                          className={cn(
+                                            "scale-75",
+                                            seg.playerAWants !== seg.playerBWants && !seg.resolved && "ring-1 ring-amber-400 rounded-full"
+                                          )}
+                                          checked={seg.effectiveEnabled}
+                                          onCheckedChange={(newValue) => {
+                                            const current = betConfig.rayas?.pairSegmentOverrides ?? {};
+                                            const currentPair = current[pairKey] ?? {};
+                                            onBetConfigChange({
+                                              ...betConfig,
+                                              rayas: {
+                                                ...betConfig.rayas,
+                                                pairSegmentOverrides: {
+                                                  ...current,
+                                                  [pairKey]: { ...currentPair, [seg.segmentKey]: newValue }
+                                                }
+                                              }
+                                            });
+                                          }}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {/* Header row */}
                             <div className="grid grid-cols-5 gap-1 text-[10px] font-medium text-muted-foreground border-b border-border/30 pb-1">
                               <div>Fuente</div>

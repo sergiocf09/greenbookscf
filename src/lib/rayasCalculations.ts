@@ -47,6 +47,13 @@ export const getEffectiveSegmentConfig = (
     return baseConfig;
   }
   
+  // Check for explicit pair segment override (highest priority)
+  const pairKey = getPairKey(playerAId, playerBId);
+  const pairSegRes = config.rayas?.pairSegmentOverrides?.[pairKey]?.[segmentKey];
+  if (pairSegRes !== undefined) {
+    return { ...baseConfig, enabled: pairSegRes };
+  }
+  
   // Check for bilateral overrides (from either player's perspective)
   const overridesA = rayas?.bilateralOverrides?.[playerAId];
   const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
@@ -158,28 +165,10 @@ export const isRayasActiveForPair = (
     return false;
   }
   
-  // SIMPLIFIED MODEL: Check if either player is a "Rayas participant"
-  // A player "participates" if they have at least one override with enabled=true
-  // OR if they have no overrides at all (default = participate)
-  
-  // A player "participates" if:
-  // 1. They have overrides with at least one enabled, OR
-  // 2. They have NO overrides at all (default = participate)
-  // 3. They are referenced as a rival by someone else
-  // Only explicitly disabled (all overrides disabled) means exclusion.
-  
-  const playerParticipates = (playerId: string): boolean => {
-    const overrides = config.rayas?.bilateralOverrides?.[playerId];
-    if (!overrides || overrides.length === 0) {
-      // No overrides for this player = participates by default
-      return true;
-    }
-    // Has overrides - participates if at least one is enabled
-    return overrides.some(o => o.enabled !== false);
-  };
-  
-  // Rayas is active for this pair if EITHER player participates
-  return playerParticipates(playerAId) || playerParticipates(playerBId);
+  // Pair is active if at least one segment is effectively enabled
+  const segConflicts = getRayasSegmentConflicts(config, playerAId, playerBId);
+  const anySegmentActive = segConflicts.length === 0 || segConflicts.some(s => s.effectiveEnabled);
+  return anySegmentActive;
 };
 
 /**
@@ -247,6 +236,44 @@ export const getOyesModalityForPair = (
  */
 export const getPairKey = (idA: string, idB: string): string => {
   return [idA, idB].sort().join('_');
+};
+
+export interface RayasSegmentConflict {
+  segmentKey: 'skins' | 'units' | 'oyes' | 'medal';
+  playerAWants: boolean;
+  playerBWants: boolean;
+  resolved: boolean;
+  effectiveEnabled: boolean;
+}
+
+export const getRayasSegmentConflicts = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): RayasSegmentConflict[] => {
+  const SEGMENT_KEYS = ['skins', 'units', 'oyes', 'medal'] as const;
+  const result: RayasSegmentConflict[] = [];
+  const pairKey = getPairKey(playerAId, playerBId);
+
+  for (const seg of SEGMENT_KEYS) {
+    const globalEnabled = config.rayas?.segments?.[seg]?.enabled ?? true;
+    if (!globalEnabled) continue;
+
+    const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
+    const segFromA = overridesA?.find(o => o.rivalId === playerBId)?.segments?.[seg];
+
+    const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
+    const segFromB = overridesB?.find(o => o.rivalId === playerAId)?.segments?.[seg];
+
+    const playerAWants = segFromA?.enabled ?? true;
+    const playerBWants = segFromB?.enabled ?? true;
+    const pairResolution = config.rayas?.pairSegmentOverrides?.[pairKey]?.[seg];
+    const resolved = pairResolution !== undefined;
+    const effectiveEnabled = resolved ? pairResolution! : (playerAWants && playerBWants);
+
+    result.push({ segmentKey: seg, playerAWants, playerBWants, resolved, effectiveEnabled });
+  }
+  return result;
 };
 
 export const getSkinVariantConflict = (

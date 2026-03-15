@@ -214,6 +214,8 @@ export interface RayasBetConfig {
   };
   // Per-player bilateral overrides (keyed by logged-in player's ID)
   bilateralOverrides?: Record<string, RayasBilateralOverride[]>;
+  // Per-pair segment resolution when players disagree. Key = sorted "idA_idB", value = segmentKey -> enabled
+  pairSegmentOverrides?: Record<string, Record<string, boolean>>;
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
