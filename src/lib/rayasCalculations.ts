@@ -1242,6 +1242,14 @@ const processOyesSingleWinner = (
         appliedSegment: segment,
       });
     });
+
+    // CRITICAL: In singleWinner mode, once a par 3 is resolved (someone is #1),
+    // ALL pair carries for this segment must reset — not just the winner's pairs.
+    // Otherwise, pairs not involving the winner (e.g. RE-AG when JdD wins) keep
+    // orphaned carry that incorrectly credits oyes later.
+    pairCarry.forEach((carry) => {
+      carry[segment] = 0;
+    });
   };
 
   // Process Front 9 Par 3s
