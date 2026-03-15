@@ -4238,25 +4238,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Oyeses (before Units as per spec)
-    if (betConfig.oyeses.enabled && bothParticipate(betConfig.oyeses.participantIds, 'oyeses')) {
-      groups.push({
-        key: 'oyeses',
-        label: 'Oyes',
-        configKey: 'oyeses',
-        segments: [{ label: 'Par 3s', key: 'oyeses_detail' }],
-        getTotal: () => groupedSummaries['Oyes']?.total || 0,
-        getSegmentData: () => {
-          const oyesSummary = groupedSummaries['Oyes'];
-          const details = oyesSummary?.details || [];
-          const wins = details.filter(d => d.amount > 0).length;
-          const losses = details.filter(d => d.amount < 0).length;
-          return { 
-            playerNet: wins, 
-            rivalNet: losses, 
-            amount: oyesSummary?.total || 0 
-          };
-        },
-      });
+    {
+      const oyesesIsActive = betConfig.oyeses.enabled && bothParticipate(betConfig.oyeses.participantIds, 'oyeses');
+      const rayasOyesActive = betConfig.rayas?.enabled && (betConfig.rayas?.segments?.oyes?.enabled ?? true) &&
+        isRayasActiveForPair(betConfig, player.id, rival.id);
+      const hasOyesData = (groupedSummaries['Oyes']?.total || 0) !== 0 ||
+        (confirmedScores.get(player.id) || []).some(s => s.oyesProximity && s.oyesProximity > 0) ||
+        (confirmedScores.get(rival.id) || []).some(s => s.oyesProximity && s.oyesProximity > 0);
+      if (oyesesIsActive || rayasOyesActive || hasOyesData) {
+        groups.push({
+          key: 'oyeses',
+          label: 'Oyes',
+          configKey: 'oyeses',
+          isInfoOnly: !oyesesIsActive,
+          segments: [{ label: 'Par 3s', key: 'oyeses_detail' }],
+          getTotal: () => oyesesIsActive ? (groupedSummaries['Oyes']?.total || 0) : 0,
+          getSegmentData: () => {
+            const oyesSummary = groupedSummaries['Oyes'];
+            const details = oyesSummary?.details || [];
+            const wins = details.filter(d => d.amount > 0).length;
+            const losses = details.filter(d => d.amount < 0).length;
+            return { 
+              playerNet: wins, 
+              rivalNet: losses, 
+              amount: oyesesIsActive ? (oyesSummary?.total || 0) : 0
+            };
+          },
+        });
+      }
     }
     
     // Unidades — always visible as event counter, isInfoOnly when bet is not active
