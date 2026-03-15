@@ -2365,10 +2365,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           const playerScores = confirmedScores.get(pid) || [];
                           playerScores.forEach(s => {
                             if (!s.strokes || s.strokes <= 0) return;
-                            // Merge auto-detected markers (birdie/eagle/albatross) with stored markers
+                            // Merge auto-detected markers with stored markers using mergeMarkers
+                            // to preserve manual-only markers like moreliana
                             const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
                             const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
-                            const merged = { ...s.markers, ...autoDetected };
+                            const merged = mergeMarkers(autoDetected, s.markers);
                             enabledMarkersSet.forEach(marker => {
                               if (merged[marker as keyof MarkerState]) {
                                 hits.push({ holeNumber: s.holeNumber, playerId: pid, marker });
