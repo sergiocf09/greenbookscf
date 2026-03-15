@@ -1245,7 +1245,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
     if (activePlayers.length < 2) return null;
 
-    const playerConfigs = betConfig.oyeses.playerConfigs || [];
+    const playerConfigs = betConfig.oyeses?.playerConfigs || [];
     // CRITICAL: Filter configs to only active participants to prevent a sangron config
     // from a non-participant from poisoning the fallback. Default is ALWAYS 'acumulados'.
     const activePlayerIds = new Set(activePlayers.map(p => p.id));
