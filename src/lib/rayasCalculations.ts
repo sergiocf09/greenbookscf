@@ -165,28 +165,10 @@ export const isRayasActiveForPair = (
     return false;
   }
   
-  // SIMPLIFIED MODEL: Check if either player is a "Rayas participant"
-  // A player "participates" if they have at least one override with enabled=true
-  // OR if they have no overrides at all (default = participate)
-  
-  // A player "participates" if:
-  // 1. They have overrides with at least one enabled, OR
-  // 2. They have NO overrides at all (default = participate)
-  // 3. They are referenced as a rival by someone else
-  // Only explicitly disabled (all overrides disabled) means exclusion.
-  
-  const playerParticipates = (playerId: string): boolean => {
-    const overrides = config.rayas?.bilateralOverrides?.[playerId];
-    if (!overrides || overrides.length === 0) {
-      // No overrides for this player = participates by default
-      return true;
-    }
-    // Has overrides - participates if at least one is enabled
-    return overrides.some(o => o.enabled !== false);
-  };
-  
-  // Rayas is active for this pair if EITHER player participates
-  return playerParticipates(playerAId) || playerParticipates(playerBId);
+  // Pair is active if at least one segment is effectively enabled
+  const segConflicts = getRayasSegmentConflicts(config, playerAId, playerBId);
+  const anySegmentActive = segConflicts.length === 0 || segConflicts.some(s => s.effectiveEnabled);
+  return anySegmentActive;
 };
 
 /**
