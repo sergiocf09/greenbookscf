@@ -3832,6 +3832,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       getTotal: () => number;
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
       configKey: string;
+      isInfoOnly?: boolean;
     }[] = [];
 
     // ── HISTORICAL MODE ────────────────────────────────────────────────────────
@@ -4258,21 +4259,23 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
     
-    // Unidades
-    if (betConfig.units.enabled && bothParticipate(betConfig.units.participantIds, 'units')) {
+    // Unidades — always visible as event counter, isInfoOnly when bet is not active
+    {
+      const unitsInfoOnly = !betConfig.units.enabled || !bothParticipate(betConfig.units.participantIds, 'units');
       groups.push({
         key: 'units',
         label: 'Unidades',
         configKey: 'units',
+        isInfoOnly: unitsInfoOnly,
         segments: [{ label: 'Detalle', key: 'units_detail' }],
-        getTotal: () => groupedSummaries['Unidades']?.total || 0,
+        getTotal: () => unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0),
         getSegmentData: () => {
           const playerDetails = getMarkerDetails(player.id, 'units');
           const rivalDetails = getMarkerDetails(rival.id, 'units');
           return { 
             playerNet: playerDetails.length, 
             rivalNet: rivalDetails.length, 
-            amount: groupedSummaries['Unidades']?.total || 0 
+            amount: unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0)
           };
         },
       });
@@ -4946,7 +4949,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     {/* Cancel/Enable toggle */}
-                    {onBetConfigChange && (
+                    {onBetConfigChange && !group.isInfoOnly && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -4975,6 +4978,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
                         {group.label}
                       </span>
+                      {group.isInfoOnly && !isDisabled && (
+                        <span className="text-[9px] text-muted-foreground">Solo conteo</span>
+                      )}
                       {/* Presiones histórico: mostrar resultado del Match (18 hoyos) inline */}
                       {isHistorical && group.key === 'hist_presiones' && !isDisabled && (() => {
                         const matchText = group.getSegmentData?.('')?.description;
@@ -5004,8 +5010,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {/* Edit amount button */}
-                    {onBetConfigChange && !isDisabled && (
+                    {/* Edit amount button — hide for info-only groups */}
+                    {onBetConfigChange && !isDisabled && !group.isInfoOnly && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -5019,13 +5025,22 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       </Button>
                     )}
                     
-                    <span className={cn(
-                      'text-lg font-bold',
-                      isDisabled ? 'text-muted-foreground' :
-                      total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
-                    </span>
+                    {group.isInfoOnly ? (
+                      <span className="text-sm text-muted-foreground">
+                        {(() => {
+                          const seg = group.getSegmentData('');
+                          return `${seg.playerNet} - ${seg.rivalNet}`;
+                        })()}
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        'text-lg font-bold',
+                        isDisabled ? 'text-muted-foreground' :
+                        total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
