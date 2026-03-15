@@ -5520,11 +5520,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               </div>
                             )}
                             {/* Segment conflict resolution toggles */}
-                            {!isHistorical && onBetConfigChange && effectiveBetConfig.rayas?.enabled && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id) && (() => {
+                            {!isHistorical && onBetConfigChange && effectiveBetConfig.rayas?.enabled && (() => {
                               const segConflicts = getRayasSegmentConflicts(effectiveBetConfig, player.id, rival.id);
                               if (segConflicts.length === 0) return null;
                               const pairKey = getPairKey(player.id, rival.id);
                               const hasUnresolved = segConflicts.some(s => s.playerAWants !== s.playerBWants && !s.resolved);
+                              const allOff = segConflicts.every(s => !s.effectiveEnabled);
                               const SEGMENT_LABELS: Record<string, string> = {
                                 skins: 'Skins', units: 'Unidades', oyes: 'Oyes', medal: 'Medal'
                               };
@@ -5569,6 +5570,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                     ))}
                                   </div>
+                                  {allOff && (
+                                    <div className="text-[10px] text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
+                                      <X className="h-3 w-3" />
+                                      <span>Rayas desactivadas para este par — valor $0</span>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })()}
