@@ -3,7 +3,7 @@
  */
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState } from '@/types/golf';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
-import { detectScoreBasedMarkers } from '../scoreDetection';
+import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
 import { BetSummary } from './shared';
 
