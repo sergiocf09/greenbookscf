@@ -18,7 +18,7 @@ export const detectScoreBasedMarkers = (
     birdie: scoreToPar === -1,
     // Putt-based auto-detection
     cuatriput: putts >= 4,
-    moreliana: putts === 4, // Exactly 4 putts
+    // moreliana is MANUAL ONLY — never auto-detect (ball off green while putting)
     culebra: putts >= 3, // 3+ putts for cumulative bet
     // Score-based stains
     dobleDigito: strokes >= 10,

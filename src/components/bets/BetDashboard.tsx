@@ -3750,12 +3750,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣', isPositive: isManchaPositiveForBasePlayer });
+        // Moreliana — manual marker, independent of putts count
+        if (score.markers.moreliana) details.push({ holeNumber: score.holeNumber, marker: 'Moreliana', emoji: '🎭', isPositive: isManchaPositiveForBasePlayer });
         // DobleDigito - auto-detected when strokes >= 10 (not persisted to DB)
         if (score.strokes >= 10 || score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
         // Cuatriput - 4+ putts - negative for the player who commits it
-        // Moreliana (exactly 4 putts) is a subset of cuatriput — show as cuatriput label
         if (score.putts >= 4 || score.markers.cuatriput) {
-          details.push({ holeNumber: score.holeNumber, marker: score.putts === 4 ? 'Moreliana' : 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
       }
     });
