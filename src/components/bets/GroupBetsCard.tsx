@@ -1192,7 +1192,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Unidades summary per player (informational only)
   const unidadesSummary = useMemo(() => {
-    if (!betConfig.units?.enabled || sameGroupPlayers.length < 2) return null;
+    if (sameGroupPlayers.length < 2) return null;
     const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
     const UNIT_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       birdie:    { label: 'Birdie',      emoji: '🐦', short: 'Birdie' },
