@@ -176,7 +176,10 @@ export const calculateAllBets = (
         const isCarryLabel = summaryType.includes('(carry');
         
         const matchesBetType = (() => {
-          if (isCarryLabel) return summaryType === overrideType;
+          // Carry variants like "presiones back (carry x2+match)" must still match
+          // their parent override type ("presiones"). Previously this required exact
+          // match which prevented the override from disabling carry results.
+          if (isCarryLabel) return summaryType.includes(overrideType);
           if (overrideType === 'medal' && (summaryType.includes('medal general') || summaryType.includes('rayas medal'))) return false;
           if (overrideType === 'rayas' && summaryType.includes('rayas medal') && o.enabled !== false) return false;
           if (overrideType === 'presiones' && summaryType.includes('presiones parejas')) return false;
