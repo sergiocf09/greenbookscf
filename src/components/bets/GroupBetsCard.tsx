@@ -1239,7 +1239,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Oyeses summary per par-3 hole (informational only)
   const oyesesSummary = useMemo(() => {
-    if (!betConfig.oyeses?.enabled) return null;
+    if (sameGroupPlayers.length < 2) return null;
 
     // Use resolveGroupParticipants for proper participant resolution (handles profileId/id mismatch)
     const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
