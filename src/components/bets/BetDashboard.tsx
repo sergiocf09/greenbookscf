@@ -20,7 +20,7 @@ import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculati
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
-import { detectScoreBasedMarkers } from '@/lib/scoreDetection';
+import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { 
@@ -2365,10 +2365,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           const playerScores = confirmedScores.get(pid) || [];
                           playerScores.forEach(s => {
                             if (!s.strokes || s.strokes <= 0) return;
-                            // Merge auto-detected markers (birdie/eagle/albatross) with stored markers
+                            // Merge auto-detected markers with stored markers using mergeMarkers
+                            // to preserve manual-only markers like moreliana
                             const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
                             const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
-                            const merged = { ...s.markers, ...autoDetected };
+                            const merged = mergeMarkers(autoDetected, s.markers);
                             enabledMarkersSet.forEach(marker => {
                               if (merged[marker as keyof MarkerState]) {
                                 hits.push({ holeNumber: s.holeNumber, playerId: pid, marker });
@@ -3750,12 +3751,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣', isPositive: isManchaPositiveForBasePlayer });
+        // Moreliana — manual marker, independent of putts count
+        if (score.markers.moreliana) details.push({ holeNumber: score.holeNumber, marker: 'Moreliana', emoji: '🎭', isPositive: isManchaPositiveForBasePlayer });
         // DobleDigito - auto-detected when strokes >= 10 (not persisted to DB)
         if (score.strokes >= 10 || score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
         // Cuatriput - 4+ putts - negative for the player who commits it
-        // Moreliana (exactly 4 putts) is a subset of cuatriput — show as cuatriput label
         if (score.putts >= 4 || score.markers.cuatriput) {
-          details.push({ holeNumber: score.holeNumber, marker: score.putts === 4 ? 'Moreliana' : 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
       }
     });

@@ -3,7 +3,7 @@
  */
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState } from '@/types/golf';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
-import { detectScoreBasedMarkers } from '../scoreDetection';
+import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
 import { BetSummary } from './shared';
 
@@ -117,7 +117,7 @@ export const calculateTeamPressuresBets = (
             if (!s.confirmed || !s.strokes || s.strokes <= 0) return;
             const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
             const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
-            const merged = { ...s.markers, ...autoDetected };
+            const merged = mergeMarkers(autoDetected, s.markers);
             enabledMarkersSet.forEach(marker => { if (merged[marker as keyof MarkerState]) total++; });
           });
         });
