@@ -4949,7 +4949,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     {/* Cancel/Enable toggle */}
-                    {onBetConfigChange && (
+                    {onBetConfigChange && !group.isInfoOnly && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
