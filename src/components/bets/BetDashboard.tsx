@@ -4270,24 +4270,27 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Unidades — always visible as event counter, isInfoOnly when bet is not active
     {
-      const unitsInfoOnly = !betConfig.units.enabled || !bothParticipate(betConfig.units.participantIds, 'units');
-      groups.push({
-        key: 'units',
-        label: 'Unidades',
-        configKey: 'units',
-        isInfoOnly: unitsInfoOnly,
-        segments: [{ label: 'Detalle', key: 'units_detail' }],
-        getTotal: () => unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0),
-        getSegmentData: () => {
-          const playerDetails = getMarkerDetails(player.id, 'units');
-          const rivalDetails = getMarkerDetails(rival.id, 'units');
-          return { 
-            playerNet: playerDetails.length, 
-            rivalNet: rivalDetails.length, 
-            amount: unitsInfoOnly ? 0 : (groupedSummaries['Unidades']?.total || 0)
-          };
-        },
-      });
+      const unitDetailsPlayer = getMarkerDetails(player.id, 'units');
+      const unitDetailsRival = getMarkerDetails(rival.id, 'units');
+      const hasAnyUnits = unitDetailsPlayer.length > 0 || unitDetailsRival.length > 0;
+      const unitsIsActive = betConfig.units.enabled && bothParticipate(betConfig.units.participantIds, 'units');
+      if (unitsIsActive || hasAnyUnits) {
+        groups.push({
+          key: 'units',
+          label: 'Unidades',
+          configKey: 'units',
+          isInfoOnly: !unitsIsActive,
+          segments: [{ label: 'Detalle', key: 'units_detail' }],
+          getTotal: () => unitsIsActive ? (groupedSummaries['Unidades']?.total || 0) : 0,
+          getSegmentData: () => {
+            return { 
+              playerNet: unitDetailsPlayer.length, 
+              rivalNet: unitDetailsRival.length, 
+              amount: unitsIsActive ? (groupedSummaries['Unidades']?.total || 0) : 0
+            };
+          },
+        });
+      }
     }
     
     // Manchas
