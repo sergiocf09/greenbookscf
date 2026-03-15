@@ -238,6 +238,44 @@ export const getPairKey = (idA: string, idB: string): string => {
   return [idA, idB].sort().join('_');
 };
 
+export interface RayasSegmentConflict {
+  segmentKey: 'skins' | 'units' | 'oyes' | 'medal';
+  playerAWants: boolean;
+  playerBWants: boolean;
+  resolved: boolean;
+  effectiveEnabled: boolean;
+}
+
+export const getRayasSegmentConflicts = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string
+): RayasSegmentConflict[] => {
+  const SEGMENT_KEYS = ['skins', 'units', 'oyes', 'medal'] as const;
+  const result: RayasSegmentConflict[] = [];
+  const pairKey = getPairKey(playerAId, playerBId);
+
+  for (const seg of SEGMENT_KEYS) {
+    const globalEnabled = config.rayas?.segments?.[seg]?.enabled ?? true;
+    if (!globalEnabled) continue;
+
+    const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
+    const segFromA = overridesA?.find(o => o.rivalId === playerBId)?.segments?.[seg];
+
+    const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
+    const segFromB = overridesB?.find(o => o.rivalId === playerAId)?.segments?.[seg];
+
+    const playerAWants = segFromA?.enabled ?? true;
+    const playerBWants = segFromB?.enabled ?? true;
+    const pairResolution = config.rayas?.pairSegmentOverrides?.[pairKey]?.[seg];
+    const resolved = pairResolution !== undefined;
+    const effectiveEnabled = resolved ? pairResolution! : (playerAWants && playerBWants);
+
+    result.push({ segmentKey: seg, playerAWants, playerBWants, resolved, effectiveEnabled });
+  }
+  return result;
+};
+
 export const getSkinVariantConflict = (
   config: BetConfig,
   playerAId: string,

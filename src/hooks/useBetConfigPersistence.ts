@@ -360,6 +360,7 @@ export const useBetConfigPersistence = ({
           oyesMode: config.rayas.oyesMode,
           playerSkinVariants: config.rayas.playerSkinVariants,
           pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
+          pairSegmentOverrides: config.rayas.pairSegmentOverrides,
           segments: config.rayas.segments,
           bilateralOverrides: config.rayas.bilateralOverrides,
           participantIds: config.rayas.participantIds,

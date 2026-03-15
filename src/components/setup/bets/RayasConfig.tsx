@@ -220,94 +220,11 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
       {/* Bilateral overrides */}
       {rivals.length > 0 && (
         <CollapsibleSubSection label="Personalizar por rival" summary={`${rivals.length} rivales`}>
-          <div className="space-y-2">
-            <p className="text-[9px] text-muted-foreground mb-2">
-              Puedes desactivar Rayas o ajustar segmentos con rivales específicos.
-            </p>
-            
-            {rivals.map(rival => {
-              const override = getRivalOverride(rival.id);
-              const isCustomized = override !== undefined;
-              const isEnabled = override?.enabled ?? true;
-              
-              return (
-                <div key={rival.id} className={cn("p-2 rounded-lg transition-colors border", isCustomized ? "border-primary/30 bg-primary/5" : "border-transparent bg-muted/30")}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: rival.color }}>
-                        {rival.initials}
-                      </div>
-                      <span className="text-xs font-medium">{rival.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-muted-foreground">{isEnabled ? 'Activo' : 'Desactivado'}</span>
-                      <Switch checked={isEnabled} onCheckedChange={(v) => updateBilateralOverride(rival.id, { enabled: v })} className="scale-75" />
-                    </div>
-                  </div>
-                  
-                  {isEnabled && isCustomized && (
-                    <div className="space-y-2 mt-2">
-                      <div className="grid grid-cols-4 gap-1">
-                        {SEGMENT_KEYS.map(segKey => {
-                          const segOverride = override?.segments?.[segKey as keyof typeof override.segments];
-                          const globalSeg = getSegmentConfig(segKey);
-                          const isSegEnabled = segOverride?.enabled ?? globalSeg.enabled;
-                          
-                          return (
-                            <button key={segKey} type="button"
-                              onClick={(e) => {
-                                e.preventDefault(); e.stopPropagation();
-                                const currentSegments = override?.segments ?? {};
-                                updateBilateralOverride(rival.id, {
-                                  segments: { ...currentSegments, [segKey]: { ...currentSegments[segKey as keyof typeof currentSegments], enabled: !isSegEnabled } },
-                                });
-                              }}
-                              className={cn("px-1 py-1 text-[8px] rounded transition-colors",
-                                isSegEnabled ? "bg-emerald-100 text-emerald-800 font-medium" : "bg-muted text-muted-foreground line-through opacity-60"
-                              )}
-                            >{SEGMENT_LABELS[segKey].name}</button>
-                          );
-                        })}
-                      </div>
-                      
-                      {(override?.segments?.oyes?.enabled ?? getSegmentConfig('oyes').enabled) && (
-                        <div className="flex items-center justify-between pt-1 border-t border-border/30">
-                          <span className="text-[9px] text-muted-foreground">Modalidad Oyes:</span>
-                          <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
-                            <button type="button"
-                              onClick={(e) => {
-                                e.preventDefault(); e.stopPropagation();
-                                const currentSegments = override?.segments ?? {};
-                                updateBilateralOverride(rival.id, { segments: { ...currentSegments, oyes: { ...currentSegments.oyes, modality: 'acumulados' as OyesModality } } });
-                              }}
-                              className={cn("px-2 py-0.5 text-[9px] rounded transition-colors",
-                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'acumulados' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              )}>Acumulado</button>
-                            <button type="button"
-                              onClick={(e) => {
-                                e.preventDefault(); e.stopPropagation();
-                                const currentSegments = override?.segments ?? {};
-                                updateBilateralOverride(rival.id, { segments: { ...currentSegments, oyes: { ...currentSegments.oyes, modality: 'sangron' as OyesModality } } });
-                              }}
-                              className={cn("px-2 py-0.5 text-[9px] rounded transition-colors",
-                                (override?.segments?.oyes?.modality ?? 'acumulados') === 'sangron' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              )}>Sangrón</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {!isCustomized && (
-                    <button type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateBilateralOverride(rival.id, { enabled: true }); }}
-                      className="text-[9px] text-primary hover:underline"
-                    >+ Personalizar</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-[10px] text-muted-foreground">
+            La configuración de segmentos por par se ajusta en la pantalla de Resultados,
+            en el detalle bilateral de cada par. Si dos jugadores tienen preferencias distintas,
+            ahí se resuelve qué segmentos juegan.
+          </p>
         </CollapsibleSubSection>
       )}
       
