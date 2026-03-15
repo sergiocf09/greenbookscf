@@ -4372,7 +4372,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     // Rayas (Aggregator bet)
     // HISTORICAL: Read directly from snapshot ledger via groupedSummaries
     // LIVE: Recalculate from scores
-    if (effectiveBetConfig.rayas?.enabled && bothParticipate(effectiveBetConfig.rayas?.participantIds, 'rayas') && isRayasActiveForPair(effectiveBetConfig, player.id, rival.id)) {
+    if (effectiveBetConfig.rayas?.enabled && bothParticipate(effectiveBetConfig.rayas?.participantIds, 'rayas')) {
       if (isHistorical) {
         // Historical mode: use ledger-derived groupedSummaries directly
         const rayasFrontTotal = groupedSummaries['Rayas Front']?.total || 0;
