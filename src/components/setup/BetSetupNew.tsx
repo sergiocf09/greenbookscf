@@ -36,7 +36,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
 
   // Non-organizer users in secondary groups write to groupBetOverrides
-  const isSecondaryGroup = !isOrganizer && !!userGroupId;
+  // Only treat as secondary if there are actually multiple groups AND user is not organizer
+  const isSecondaryGroup = hasMultipleGroups && !isOrganizer && !!userGroupId;
 
   // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
   const pendingScrollRestoreRef = useRef<number | null>(null);
