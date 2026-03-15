@@ -5010,8 +5010,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {/* Edit amount button */}
-                    {onBetConfigChange && !isDisabled && (
+                    {/* Edit amount button — hide for info-only groups */}
+                    {onBetConfigChange && !isDisabled && !group.isInfoOnly && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -5025,13 +5025,22 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       </Button>
                     )}
                     
-                    <span className={cn(
-                      'text-lg font-bold',
-                      isDisabled ? 'text-muted-foreground' :
-                      total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
-                    </span>
+                    {group.isInfoOnly ? (
+                      <span className="text-sm text-muted-foreground">
+                        {(() => {
+                          const seg = group.getSegmentData('');
+                          return `${seg.playerNet} - ${seg.rivalNet}`;
+                        })()}
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        'text-lg font-bold',
+                        isDisabled ? 'text-muted-foreground' :
+                        total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
