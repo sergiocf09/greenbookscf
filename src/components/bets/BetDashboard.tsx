@@ -3832,6 +3832,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       getTotal: () => number;
       getSegmentData: (segmentKey: string) => { playerNet: number; rivalNet: number; amount: number; description?: string };
       configKey: string;
+      isInfoOnly?: boolean;
     }[] = [];
 
     // ── HISTORICAL MODE ────────────────────────────────────────────────────────
