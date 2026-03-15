@@ -47,6 +47,13 @@ export const getEffectiveSegmentConfig = (
     return baseConfig;
   }
   
+  // Check for explicit pair segment override (highest priority)
+  const pairKey = getPairKey(playerAId, playerBId);
+  const pairSegRes = config.rayas?.pairSegmentOverrides?.[pairKey]?.[segmentKey];
+  if (pairSegRes !== undefined) {
+    return { ...baseConfig, enabled: pairSegRes };
+  }
+  
   // Check for bilateral overrides (from either player's perspective)
   const overridesA = rayas?.bilateralOverrides?.[playerAId];
   const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
