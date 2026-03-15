@@ -60,6 +60,7 @@ interface RoundBetConfig {
         medal?: { enabled?: boolean; frontValue?: number; backValue?: number };
       };
     }>>;
+    pairSegmentOverrides?: Record<string, Record<string, boolean>>;
     participantIds?: string[];
     oneVsAll?: boolean;
     anchorPlayerId?: string;
