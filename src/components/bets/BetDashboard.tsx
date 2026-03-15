@@ -4978,6 +4978,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
                         {group.label}
                       </span>
+                      {group.isInfoOnly && !isDisabled && (
+                        <span className="text-[9px] text-muted-foreground">Solo conteo</span>
+                      )}
                       {/* Presiones histórico: mostrar resultado del Match (18 hoyos) inline */}
                       {isHistorical && group.key === 'hist_presiones' && !isDisabled && (() => {
                         const matchText = group.getSegmentData?.('')?.description;
