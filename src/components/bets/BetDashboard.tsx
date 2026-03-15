@@ -20,7 +20,7 @@ import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculati
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
-import { detectScoreBasedMarkers } from '@/lib/scoreDetection';
+import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { 
