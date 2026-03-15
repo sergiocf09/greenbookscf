@@ -160,15 +160,17 @@ export const isRayasActiveForPair = (
   const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
   const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
   
-  // If there's an explicit disable between these two, respect it
+  // If there's an explicit TOP-LEVEL disable between these two, respect it
   if (overrideForB?.enabled === false || overrideForA?.enabled === false) {
     return false;
   }
   
-  // Pair is active if at least one segment is effectively enabled
-  const segConflicts = getRayasSegmentConflicts(config, playerAId, playerBId);
-  const anySegmentActive = segConflicts.length === 0 || segConflicts.some(s => s.effectiveEnabled);
-  return anySegmentActive;
+  // FIX: If no top-level disable, always consider pair active.
+  // Individual segment visibility is handled by getEffectiveSegmentConfig
+  // at calculation/display time. Previously, stale bilateral override data
+  // with all segments disabled would hide the entire Rayas block even though
+  // ledger data existed for the pair.
+  return true;
 };
 
 /**
