@@ -590,6 +590,7 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   culebras: 'grupal',
   pinguinos: 'grupal',
   zoologico: 'grupal', // NEW: Zoo bet
+  skinsGrupal: 'grupal', // NEW: Group skins
   medalGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets

@@ -48,4 +48,12 @@ export const defaultBetConfig: BetConfig = {
     events: [],
     tieBreakers: {},
   },
+  // SKINS GRUPAL - NEW
+  skinsGrupal: {
+    enabled: false,
+    frontAmount: 50,
+    backAmount: 100,
+    modality: 'acumulados',
+    playerHandicaps: [],
+  },
 };
