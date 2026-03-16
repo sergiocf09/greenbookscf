@@ -5741,6 +5741,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // If there are multiple lines (e.g., +1 -1), show actual results even if net is $0
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
+                        const isPutts = group.key === 'putts';
                         const pressureDesc = data.description || '';
                         
                         // NOTE: pressureDisplay is computed after segmentType/pressureSegmentData are defined.
@@ -5830,7 +5831,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && segmentType !== 'total') || isSkins) && !isHistorical ? (
+                            {((isPressures && segmentType !== 'total') || isSkins || isPutts) && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -5916,6 +5917,71 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                     </div>
                                   )}
+                                  {isPutts && (() => {
+                                    // Build hole-by-hole putts comparison
+                                    const [startH, endH] = segmentType === 'front' ? [1, 9] : segmentType === 'back' ? [10, 18] : [1, 18];
+                                    const playerScores = allScores.get(player.id) || [];
+                                    const rivalScores = allScores.get(rival.id) || [];
+                                    const holes: Array<{ h: number; pP: number; pR: number }> = [];
+                                    for (let h = startH; h <= endH; h++) {
+                                      const pS = playerScores.find(s => s.confirmed && s.holeNumber === h && typeof s.putts === 'number');
+                                      const rS = rivalScores.find(s => s.confirmed && s.holeNumber === h && typeof s.putts === 'number');
+                                      if (pS && rS) holes.push({ h, pP: pS.putts || 0, pR: rS.putts || 0 });
+                                    }
+                                    if (holes.length === 0) return <span className="text-xs text-muted-foreground">Sin datos</span>;
+                                    const totalP = holes.reduce((s, x) => s + x.pP, 0);
+                                    const totalR = holes.reduce((s, x) => s + x.pR, 0);
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <span className="font-medium text-sm">Putts {segment.label}</span>
+                                          <span className="text-xs text-muted-foreground">{player.initials} vs {rival.initials}</span>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                          <div className="min-w-max">
+                                            {/* Hole numbers */}
+                                            <div className="flex gap-0.5">
+                                              {holes.map(x => (
+                                                <div key={x.h} className="w-7 text-center text-[8px] text-muted-foreground">{x.h}</div>
+                                              ))}
+                                            </div>
+                                            {/* Player putts row */}
+                                            <div className="flex gap-0.5">
+                                              {holes.map(x => (
+                                                <div key={x.h} className={cn(
+                                                  'w-7 h-6 flex items-center justify-center text-[10px] font-bold rounded',
+                                                  x.pP < x.pR ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                  x.pP > x.pR ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                  'bg-muted/50 text-muted-foreground'
+                                                )}>
+                                                  {x.pP}
+                                                </div>
+                                              ))}
+                                            </div>
+                                            {/* Rival putts row */}
+                                            <div className="flex gap-0.5">
+                                              {holes.map(x => (
+                                                <div key={x.h} className={cn(
+                                                  'w-7 h-6 flex items-center justify-center text-[10px] font-bold rounded',
+                                                  x.pR < x.pP ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                  x.pR > x.pP ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                  'bg-muted/50 text-muted-foreground'
+                                                )}>
+                                                  {x.pR}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
+                                          <span>{player.initials}: <span className={cn('font-bold', totalP < totalR ? 'text-green-600' : totalP > totalR ? 'text-destructive' : '')}>{totalP}</span></span>
+                                          <span className="text-muted-foreground">vs</span>
+                                          <span>{rival.initials}: <span className={cn('font-bold', totalR < totalP ? 'text-green-600' : totalR > totalP ? 'text-destructive' : '')}>{totalR}</span></span>
+                                          <span className="text-muted-foreground">putts</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </PopoverContent>
                               </Popover>
                             ) : (

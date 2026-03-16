@@ -1,4 +1,4 @@
-// Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford consolidated display
+// Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford, Skins Grupal consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -730,6 +730,67 @@ const StablefordResultBlock: React.FC<{
   );
 };
 
+// Skins Grupal Popover - detailed hole-by-hole grid
+const SkinsGrupalPopover: React.FC<{
+  segment: string;
+  holes: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>;
+  participants: Player[];
+  getPlayerAbbr: (p: Player) => string;
+  basePlayerId?: string;
+}> = ({ segment, holes, participants, getPlayerAbbr, basePlayerId }) => {
+  return (
+    <div className="space-y-2">
+      <span className="font-medium text-sm">{segment} — Skins Grupal</span>
+      <div className="overflow-x-auto">
+        <table className="text-[10px] border-collapse w-full">
+          <thead>
+            <tr>
+              <th className="p-0.5 text-[9px] text-muted-foreground font-normal text-left">H</th>
+              {participants.map(p => (
+                <th key={p.id} className="p-0.5 text-center font-bold min-w-[28px]">
+                  {getPlayerAbbr(p)}
+                </th>
+              ))}
+              <th className="p-0.5 text-center text-[9px] text-muted-foreground font-normal">Skin</th>
+            </tr>
+          </thead>
+          <tbody>
+            {holes.map(hole => {
+              const winner = hole.winnerId;
+              return (
+                <tr key={hole.holeNum}>
+                  <td className="p-0.5 text-muted-foreground font-medium">{hole.holeNum}</td>
+                  {participants.map(p => {
+                    const entry = hole.nets.find(n => n.playerId === p.id);
+                    if (!entry) return <td key={p.id} className="p-0.5 text-center text-muted-foreground">-</td>;
+                    const isWinner = winner === p.id;
+                    return (
+                      <td key={p.id} className={cn(
+                        'p-0.5 text-center font-bold',
+                        isWinner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                        winner ? 'bg-red-100 dark:bg-red-900/20 text-destructive' :
+                        'text-muted-foreground'
+                      )}>
+                        {entry.net}{entry.strokesReceived > 0 && <span className="text-primary">•</span>}
+                      </td>
+                    );
+                  })}
+                  <td className={cn(
+                    'p-0.5 text-center font-bold',
+                    winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
+                  )}>
+                    {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   players,
   scores,
@@ -1361,8 +1422,82 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
   };
   
+  // Calculate Skins Grupal results
+  const skinsGrupalResult = useMemo(() => {
+    if (!betConfig.skinsGrupal?.enabled || sameGroupPlayers.length < 2) return null;
+    
+    const cfg = betConfig.skinsGrupal;
+    const participants = cfg.participantIds?.length
+      ? sameGroupPlayers.filter(p => cfg.participantIds!.includes(p.id))
+      : sameGroupPlayers;
+    if (participants.length < 2) return null;
+
+    const getNetScore = (playerId: string, holeNum: number): number | null => {
+      const ph = cfg.playerHandicaps?.find(h => h.playerId === playerId);
+      const hcp = ph?.handicap ?? players.find(p => p.id === playerId)?.handicap ?? 0;
+      const strokesPerHole = calculateStrokesPerHole(hcp, course);
+      const playerScores = scores.get(playerId) || [];
+      const score = playerScores.find(s => s.confirmed && s.holeNumber === holeNum);
+      if (!score || !score.strokes) return null;
+      return score.strokes - (strokesPerHole[holeNum - 1] || 0);
+    };
+
+    const getStrokesReceived = (playerId: string, holeNum: number): number => {
+      const ph = cfg.playerHandicaps?.find(h => h.playerId === playerId);
+      const hcp = ph?.handicap ?? players.find(p => p.id === playerId)?.handicap ?? 0;
+      return calculateStrokesPerHole(hcp, course)[holeNum - 1] || 0;
+    };
+
+    const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
+      if (amount <= 0) return { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>() };
+      
+      const modality = cfg.modality ?? 'acumulados';
+      const holeResults: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }> = [];
+      const totalByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
+
+      if (modality === 'sinAcumular') {
+        holes.forEach(holeNum => {
+          const nets = participants.map(p => ({ playerId: p.id, net: getNetScore(p.id, holeNum), strokesReceived: getStrokesReceived(p.id, holeNum) }))
+            .filter(x => x.net !== null) as Array<{ playerId: string; net: number; strokesReceived: number }>;
+          if (nets.length < 2) { holeResults.push({ holeNum, nets, winnerId: null, accumulated: 0, skinValue: 0 }); return; }
+          const minNet = Math.min(...nets.map(x => x.net));
+          const winners = nets.filter(x => x.net === minNet);
+          const winnerId = winners.length === 1 ? winners[0].playerId : null;
+          if (winnerId) totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? 1 : 0 });
+        });
+      } else {
+        let accumulated = 0;
+        holes.forEach(holeNum => {
+          const nets = participants.map(p => ({ playerId: p.id, net: getNetScore(p.id, holeNum), strokesReceived: getStrokesReceived(p.id, holeNum) }))
+            .filter(x => x.net !== null) as Array<{ playerId: string; net: number; strokesReceived: number }>;
+          accumulated += amount;
+          if (nets.length < 2) { holeResults.push({ holeNum, nets, winnerId: null, accumulated, skinValue: 0 }); return; }
+          const minNet = Math.min(...nets.map(x => x.net));
+          const winners = nets.filter(x => x.net === minNet);
+          if (winners.length === 1) {
+            holeResults.push({ holeNum, nets, winnerId: winners[0].playerId, accumulated: 0, skinValue: accumulated });
+            totalByPlayer.set(winners[0].playerId, (totalByPlayer.get(winners[0].playerId) || 0) + accumulated);
+            accumulated = 0;
+          } else {
+            holeResults.push({ holeNum, nets, winnerId: null, accumulated, skinValue: 0 });
+          }
+        });
+      }
+
+      return { holes: holeResults, totalByPlayer };
+    };
+
+    const frontHoles = Array.from({ length: 9 }, (_, i) => i + 1);
+    const backHoles = Array.from({ length: 9 }, (_, i) => i + 10);
+    const front = processSegment(frontHoles, cfg.frontAmount, 'front');
+    const back = processSegment(backHoles, cfg.backAmount, 'back');
+
+    return { front, back, participants, cfg };
+  }, [betConfig.skinsGrupal, sameGroupPlayers, scores, course, players]);
+
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult;
 
   if (!hasAnyBet) {
     return null;
@@ -2095,6 +2230,94 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   label={stablefordScope === 'both' ? 'General' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
                 />
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Skins Grupal */}
+        {skinsGrupalResult && (
+          <>
+            <div className="border-t border-border/50" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-emerald-500" />
+                  <span className="font-medium text-sm">Skins Grupal</span>
+                  <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? 'Sin Acum' : 'Acumulados'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Front 9 */}
+              {skinsGrupalResult.cfg.frontAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.frontAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.front.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Front 9" holes={skinsGrupalResult.front.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Back 9 */}
+              {skinsGrupalResult.cfg.backAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.backAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.back.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Back 9" holes={skinsGrupalResult.back.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           </>
