@@ -1,5 +1,5 @@
 import React from 'react';
-import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope } from '@/types/golf';
+import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope, SkinsGrupalBetConfig } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
