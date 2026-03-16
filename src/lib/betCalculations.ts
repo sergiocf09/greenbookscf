@@ -44,6 +44,7 @@ export { calculateCarritosBets } from './bets/carritos';
 export { calculateTeamPressuresBets } from './bets/teamPressures';
 export { calculateZoologicoBets, calculateZoologicoAnimalResult } from './bets/zoologico';
 export type { ZoologicoAnimalResult } from './bets/zoologico';
+export { calculateSkinsGrupalBets } from './bets/skinsGrupal';
 export { getSkinsEvolution } from './bets/skinsEvolution';
 export type { SkinsHoleState, SkinsEvolution } from './bets/skinsEvolution';
 export {
