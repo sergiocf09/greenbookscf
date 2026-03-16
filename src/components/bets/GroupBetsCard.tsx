@@ -730,7 +730,68 @@ const StablefordResultBlock: React.FC<{
   );
 };
 
-export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
+// Skins Grupal Popover - detailed hole-by-hole grid
+const SkinsGrupalPopover: React.FC<{
+  segment: string;
+  holes: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>;
+  participants: Player[];
+  getPlayerAbbr: (p: Player) => string;
+  basePlayerId?: string;
+}> = ({ segment, holes, participants, getPlayerAbbr, basePlayerId }) => {
+  return (
+    <div className="space-y-2">
+      <span className="font-medium text-sm">{segment} — Skins Grupal</span>
+      <div className="overflow-x-auto">
+        <table className="text-[10px] border-collapse w-full">
+          <thead>
+            <tr>
+              <th className="p-0.5 text-[9px] text-muted-foreground font-normal text-left">H</th>
+              {participants.map(p => (
+                <th key={p.id} className="p-0.5 text-center font-bold min-w-[28px]">
+                  {getPlayerAbbr(p)}
+                </th>
+              ))}
+              <th className="p-0.5 text-center text-[9px] text-muted-foreground font-normal">Skin</th>
+            </tr>
+          </thead>
+          <tbody>
+            {holes.map(hole => {
+              const winner = hole.winnerId;
+              return (
+                <tr key={hole.holeNum}>
+                  <td className="p-0.5 text-muted-foreground font-medium">{hole.holeNum}</td>
+                  {participants.map(p => {
+                    const entry = hole.nets.find(n => n.playerId === p.id);
+                    if (!entry) return <td key={p.id} className="p-0.5 text-center text-muted-foreground">-</td>;
+                    const isWinner = winner === p.id;
+                    return (
+                      <td key={p.id} className={cn(
+                        'p-0.5 text-center font-bold',
+                        isWinner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                        winner ? 'bg-red-100 dark:bg-red-900/20 text-destructive' :
+                        'text-muted-foreground'
+                      )}>
+                        {entry.net}{entry.strokesReceived > 0 && <span className="text-primary">•</span>}
+                      </td>
+                    );
+                  })}
+                  <td className={cn(
+                    'p-0.5 text-center font-bold',
+                    winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
+                  )}>
+                    {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+
   players,
   scores,
   betConfig,
