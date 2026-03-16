@@ -397,6 +397,19 @@ export interface ZoologicoBetConfig {
 }
 
 // =====================================================
+// SKINS GRUPAL BET (GROUP BET)
+// =====================================================
+
+export interface SkinsGrupalBetConfig {
+  enabled: boolean;
+  frontAmount: number;
+  backAmount: number;
+  modality: 'acumulados' | 'sinAcumular';
+  playerHandicaps: { playerId: string; handicap: number }[];
+  participantIds?: string[];
+}
+
+// =====================================================
 // MAIN BET CONFIG
 // =====================================================
 
@@ -429,6 +442,7 @@ export interface BetConfig {
   stableford: StablefordBetConfig;
   teamPressures: TeamPressuresBetConfig;
   zoologico: ZoologicoBetConfig; // NEW: Zoo bet
+  skinsGrupal?: SkinsGrupalBetConfig; // NEW: Group skins
 }
 
 export interface MedalBetConfig {
