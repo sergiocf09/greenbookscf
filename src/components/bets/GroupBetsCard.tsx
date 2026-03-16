@@ -2173,6 +2173,94 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             </div>
           </>
         )}
+
+        {/* Skins Grupal */}
+        {skinsGrupalResult && (
+          <>
+            <div className="border-t border-border/50" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-emerald-500" />
+                  <span className="font-medium text-sm">Skins Grupal</span>
+                  <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? 'Sin Acum' : 'Acumulados'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Front 9 */}
+              {skinsGrupalResult.cfg.frontAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.frontAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.front.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Front 9" holes={skinsGrupalResult.front.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Back 9 */}
+              {skinsGrupalResult.cfg.backAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.backAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.back.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Back 9" holes={skinsGrupalResult.back.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
