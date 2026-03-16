@@ -1,4 +1,4 @@
-import { BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
+import { BetConfig, DEFAULT_STABLEFORD_POINTS, SkinsGrupalBetConfig } from '@/types/golf';
 
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: false, frontAmount: 50, backAmount: 100, totalAmount: 100 },
