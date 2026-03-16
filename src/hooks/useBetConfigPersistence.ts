@@ -435,6 +435,7 @@ export const useBetConfigPersistence = ({
           bets: config.teamPressures.bets,
         },
         zoologico: config.zoologico,
+        skinsGrupal: config.skinsGrupal,
       };
 
       // Concurrency guard: check updated_at before writing
