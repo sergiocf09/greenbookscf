@@ -145,6 +145,7 @@ export const calculateAllBets = (
     ...calculateStablefordBets(players, scores, config, course),
     ...calculateTeamPressuresBets(players, scores, config, course, startingHole),
     ...calculateCarritosBets(players, scores, config, course),
+    ...calculateSkinsGrupalBets(players, scores, config, course),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides
