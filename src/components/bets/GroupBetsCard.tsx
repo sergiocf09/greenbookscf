@@ -1361,8 +1361,82 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     });
   };
   
+  // Calculate Skins Grupal results
+  const skinsGrupalResult = useMemo(() => {
+    if (!betConfig.skinsGrupal?.enabled || sameGroupPlayers.length < 2) return null;
+    
+    const cfg = betConfig.skinsGrupal;
+    const participants = cfg.participantIds?.length
+      ? sameGroupPlayers.filter(p => cfg.participantIds!.includes(p.id))
+      : sameGroupPlayers;
+    if (participants.length < 2) return null;
+
+    const getNetScore = (playerId: string, holeNum: number): number | null => {
+      const ph = cfg.playerHandicaps?.find(h => h.playerId === playerId);
+      const hcp = ph?.handicap ?? players.find(p => p.id === playerId)?.handicap ?? 0;
+      const strokesPerHole = calculateStrokesPerHole(hcp, course);
+      const playerScores = scores.get(playerId) || [];
+      const score = playerScores.find(s => s.confirmed && s.holeNumber === holeNum);
+      if (!score || !score.strokes) return null;
+      return score.strokes - (strokesPerHole[holeNum - 1] || 0);
+    };
+
+    const getStrokesReceived = (playerId: string, holeNum: number): number => {
+      const ph = cfg.playerHandicaps?.find(h => h.playerId === playerId);
+      const hcp = ph?.handicap ?? players.find(p => p.id === playerId)?.handicap ?? 0;
+      return calculateStrokesPerHole(hcp, course)[holeNum - 1] || 0;
+    };
+
+    const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
+      if (amount <= 0) return { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>() };
+      
+      const modality = cfg.modality ?? 'acumulados';
+      const holeResults: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }> = [];
+      const totalByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
+
+      if (modality === 'sinAcumular') {
+        holes.forEach(holeNum => {
+          const nets = participants.map(p => ({ playerId: p.id, net: getNetScore(p.id, holeNum), strokesReceived: getStrokesReceived(p.id, holeNum) }))
+            .filter(x => x.net !== null) as Array<{ playerId: string; net: number; strokesReceived: number }>;
+          if (nets.length < 2) { holeResults.push({ holeNum, nets, winnerId: null, accumulated: 0, skinValue: 0 }); return; }
+          const minNet = Math.min(...nets.map(x => x.net));
+          const winners = nets.filter(x => x.net === minNet);
+          const winnerId = winners.length === 1 ? winners[0].playerId : null;
+          if (winnerId) totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? 1 : 0 });
+        });
+      } else {
+        let accumulated = 0;
+        holes.forEach(holeNum => {
+          const nets = participants.map(p => ({ playerId: p.id, net: getNetScore(p.id, holeNum), strokesReceived: getStrokesReceived(p.id, holeNum) }))
+            .filter(x => x.net !== null) as Array<{ playerId: string; net: number; strokesReceived: number }>;
+          accumulated += amount;
+          if (nets.length < 2) { holeResults.push({ holeNum, nets, winnerId: null, accumulated, skinValue: 0 }); return; }
+          const minNet = Math.min(...nets.map(x => x.net));
+          const winners = nets.filter(x => x.net === minNet);
+          if (winners.length === 1) {
+            holeResults.push({ holeNum, nets, winnerId: winners[0].playerId, accumulated: 0, skinValue: accumulated });
+            totalByPlayer.set(winners[0].playerId, (totalByPlayer.get(winners[0].playerId) || 0) + accumulated);
+            accumulated = 0;
+          } else {
+            holeResults.push({ holeNum, nets, winnerId: null, accumulated, skinValue: 0 });
+          }
+        });
+      }
+
+      return { holes: holeResults, totalByPlayer };
+    };
+
+    const frontHoles = Array.from({ length: 9 }, (_, i) => i + 1);
+    const backHoles = Array.from({ length: 9 }, (_, i) => i + 10);
+    const front = processSegment(frontHoles, cfg.frontAmount, 'front');
+    const back = processSegment(backHoles, cfg.backAmount, 'back');
+
+    return { front, back, participants, cfg };
+  }, [betConfig.skinsGrupal, sameGroupPlayers, scores, course, players]);
+
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult;
 
   if (!hasAnyBet) {
     return null;
