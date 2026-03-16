@@ -5741,6 +5741,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // If there are multiple lines (e.g., +1 -1), show actual results even if net is $0
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
+                        const isPutts = group.key === 'putts';
                         const pressureDesc = data.description || '';
                         
                         // NOTE: pressureDisplay is computed after segmentType/pressureSegmentData are defined.
