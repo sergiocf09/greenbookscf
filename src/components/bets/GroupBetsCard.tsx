@@ -1,4 +1,4 @@
-// Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford consolidated display
+// Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford, Skins Grupal consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
