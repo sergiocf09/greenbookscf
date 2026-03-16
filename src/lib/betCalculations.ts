@@ -73,6 +73,7 @@ import { calculateCarosBets } from './bets/caros';
 import { calculateCarritosBets } from './bets/carritos';
 import { calculateTeamPressuresBets } from './bets/teamPressures';
 import { calculateZoologicoBets } from './bets/zoologico';
+import { calculateSkinsGrupalBets } from './bets/skinsGrupal';
 
 // Calculate ALL bet summaries with bet overrides and bilateral handicap overrides applied
 export const calculateAllBets = (
