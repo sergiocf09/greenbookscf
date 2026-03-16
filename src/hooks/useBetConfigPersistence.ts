@@ -341,6 +341,13 @@ export const useBetConfigPersistence = ({
           participantIds: dbConfig.zoologico.participantIds ?? prev.zoologico.participantIds,
         };
       }
+
+      if (dbConfig.skinsGrupal) {
+        newConfig.skinsGrupal = {
+          ...prev.skinsGrupal,
+          ...dbConfig.skinsGrupal,
+        };
+      }
       
       return newConfig;
     });
