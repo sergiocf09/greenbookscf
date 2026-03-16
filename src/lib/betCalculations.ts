@@ -44,6 +44,7 @@ export { calculateCarritosBets } from './bets/carritos';
 export { calculateTeamPressuresBets } from './bets/teamPressures';
 export { calculateZoologicoBets, calculateZoologicoAnimalResult } from './bets/zoologico';
 export type { ZoologicoAnimalResult } from './bets/zoologico';
+export { calculateSkinsGrupalBets } from './bets/skinsGrupal';
 export { getSkinsEvolution } from './bets/skinsEvolution';
 export type { SkinsHoleState, SkinsEvolution } from './bets/skinsEvolution';
 export {
@@ -72,6 +73,7 @@ import { calculateCarosBets } from './bets/caros';
 import { calculateCarritosBets } from './bets/carritos';
 import { calculateTeamPressuresBets } from './bets/teamPressures';
 import { calculateZoologicoBets } from './bets/zoologico';
+import { calculateSkinsGrupalBets } from './bets/skinsGrupal';
 
 // Calculate ALL bet summaries with bet overrides and bilateral handicap overrides applied
 export const calculateAllBets = (
@@ -143,6 +145,7 @@ export const calculateAllBets = (
     ...calculateStablefordBets(players, scores, config, course),
     ...calculateTeamPressuresBets(players, scores, config, course, startingHole),
     ...calculateCarritosBets(players, scores, config, course),
+    ...calculateSkinsGrupalBets(players, scores, config, course),
   ];
   
   // Apply bet overrides - cancel disabled bets and apply amount overrides

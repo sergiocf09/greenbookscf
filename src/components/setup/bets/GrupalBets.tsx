@@ -1,5 +1,5 @@
 import React from 'react';
-import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope } from '@/types/golf';
+import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope, SkinsGrupalBetConfig } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
@@ -148,6 +148,75 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             </div>
           </CollapsibleSubSection>
           <p className="text-[9px] text-muted-foreground mt-2">El último jugador en cometer cada tipo de incidencia paga a todos los demás.</p>
+        </BetSection>
+      )}
+
+      {/* Skins Grupal */}
+      {show('skinsGrupal') && (
+        <BetSection
+          id="skinsGrupal" title="Skins Grupal 🏅"
+          description="Grupal: skins netos por hoyo, cada perdedor paga al ganador"
+          enabled={config.skinsGrupal?.enabled ?? false}
+          onToggle={(enabled) => {
+            const currentHandicaps = config.skinsGrupal?.playerHandicaps || [];
+            if (enabled && currentHandicaps.length === 0) {
+              const initialHandicaps = players.map(p => ({ playerId: p.id, handicap: p.handicap }));
+              onUpdateBet('skinsGrupal', { enabled, playerHandicaps: initialHandicaps } as any);
+            } else { onUpdateBet('skinsGrupal', { enabled } as any); }
+          }}
+          isExpanded={expandedSections.includes('skinsGrupal')}
+          onExpandChange={(open) => onToggleSection('skinsGrupal', open)} color="gold"
+          helpText="Skins grupal: en cada hoyo, el jugador con el menor score neto gana un skin. En 'Acumulados', los empates acumulan al siguiente hoyo. En 'Sin Acumular', los empates se pierden. Cada perdedor paga al ganador del skin."
+        >
+          <AmountInput label="Front 9" value={config.skinsGrupal?.frontAmount ?? 50} onChange={(v) => onUpdateBet('skinsGrupal', { frontAmount: v } as any)} />
+          <AmountInput label="Back 9" value={config.skinsGrupal?.backAmount ?? 100} onChange={(v) => onUpdateBet('skinsGrupal', { backAmount: v } as any)} />
+          <CollapsibleSubSection label="Configuración" summary={`${(config.skinsGrupal?.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'} · Handicaps`}>
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground">Modalidad</Label>
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skinsGrupal', { modality: 'acumulados' } as any); }}
+                  className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", (config.skinsGrupal?.modality ?? 'acumulados') === 'acumulados' ? "bg-primary text-primary-foreground font-medium border-primary" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
+                  <div className="font-medium">Acumulados</div>
+                  <div className="text-[9px] opacity-80">Empates se acumulan</div>
+                </button>
+                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skinsGrupal', { modality: 'sinAcumular' } as any); }}
+                  className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", config.skinsGrupal?.modality === 'sinAcumular' ? "bg-primary text-primary-foreground font-medium border-primary" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
+                  <div className="font-medium">Sin Acumular</div>
+                  <div className="text-[9px] opacity-80">Solo gana hoyo limpio</div>
+                </button>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Handicaps para Skins Grupal</Label>
+                {players.map(player => {
+                  const playerHandicaps = config.skinsGrupal?.playerHandicaps || [];
+                  const playerConfig = playerHandicaps.find(pc => pc.playerId === player.id);
+                  const currentHcp = playerConfig?.handicap ?? player.handicap;
+                  return (
+                    <div key={player.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: player.color }}>{player.initials}</div>
+                        <span className="text-xs font-medium">{formatPlayerName(player.name)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button type="button" variant="outline" size="icon" className="h-6 w-6"
+                          onClick={(e) => { e.stopPropagation(); const eh = config.skinsGrupal?.playerHandicaps || []; const nh = eh.map(pc => pc.playerId === player.id ? { ...pc, handicap: Math.max(0, pc.handicap - 1) } : pc); if (!nh.some(pc => pc.playerId === player.id)) nh.push({ playerId: player.id, handicap: Math.max(0, player.handicap - 1) }); onUpdateBet('skinsGrupal', { playerHandicaps: nh } as any); }}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input type="number" value={currentHcp}
+                          onChange={(e) => { const nv = parseInt(e.target.value) || 0; const eh = config.skinsGrupal?.playerHandicaps || []; const nh = eh.map(pc => pc.playerId === player.id ? { ...pc, handicap: nv } : pc); if (!nh.some(pc => pc.playerId === player.id)) nh.push({ playerId: player.id, handicap: nv }); onUpdateBet('skinsGrupal', { playerHandicaps: nh } as any); }}
+                          className="w-14 h-6 text-center text-xs p-1" onClick={(e) => e.stopPropagation()} />
+                        <Button type="button" variant="outline" size="icon" className="h-6 w-6"
+                          onClick={(e) => { e.stopPropagation(); const eh = config.skinsGrupal?.playerHandicaps || []; const nh = eh.map(pc => pc.playerId === player.id ? { ...pc, handicap: pc.handicap + 1 } : pc); if (!nh.some(pc => pc.playerId === player.id)) nh.push({ playerId: player.id, handicap: player.handicap + 1 }); onUpdateBet('skinsGrupal', { playerHandicaps: nh } as any); }}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CollapsibleSubSection>
+          <p className="text-[9px] text-muted-foreground mt-2">El ganador de cada skin cobra a todos los demás participantes.</p>
         </BetSection>
       )}
 

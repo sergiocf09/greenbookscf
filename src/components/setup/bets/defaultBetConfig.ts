@@ -1,4 +1,4 @@
-import { BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
+import { BetConfig, DEFAULT_STABLEFORD_POINTS, SkinsGrupalBetConfig } from '@/types/golf';
 
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: false, frontAmount: 50, backAmount: 100, totalAmount: 100 },
@@ -47,5 +47,13 @@ export const defaultBetConfig: BetConfig = {
     enabledAnimals: ['camello', 'pez', 'gorila'], // All enabled by default
     events: [],
     tieBreakers: {},
+  },
+  // SKINS GRUPAL - NEW
+  skinsGrupal: {
+    enabled: false,
+    frontAmount: 50,
+    backAmount: 100,
+    modality: 'acumulados',
+    playerHandicaps: [],
   },
 };

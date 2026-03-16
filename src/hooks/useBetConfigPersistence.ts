@@ -153,6 +153,14 @@ interface RoundBetConfig {
     }>;
   };
   zoologico?: ZoologicoBetConfig;
+  skinsGrupal?: {
+    enabled: boolean;
+    frontAmount: number;
+    backAmount: number;
+    modality: 'acumulados' | 'sinAcumular';
+    playerHandicaps: { playerId: string; handicap: number }[];
+    participantIds?: string[];
+  };
 }
 
 export const useBetConfigPersistence = ({
@@ -333,6 +341,13 @@ export const useBetConfigPersistence = ({
           participantIds: dbConfig.zoologico.participantIds ?? prev.zoologico.participantIds,
         };
       }
+
+      if (dbConfig.skinsGrupal) {
+        newConfig.skinsGrupal = {
+          ...prev.skinsGrupal,
+          ...dbConfig.skinsGrupal,
+        };
+      }
       
       return newConfig;
     });
@@ -420,6 +435,7 @@ export const useBetConfigPersistence = ({
           bets: config.teamPressures.bets,
         },
         zoologico: config.zoologico,
+        skinsGrupal: config.skinsGrupal,
       };
 
       // Concurrency guard: check updated_at before writing

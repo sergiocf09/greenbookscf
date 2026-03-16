@@ -397,6 +397,19 @@ export interface ZoologicoBetConfig {
 }
 
 // =====================================================
+// SKINS GRUPAL BET (GROUP BET)
+// =====================================================
+
+export interface SkinsGrupalBetConfig {
+  enabled: boolean;
+  frontAmount: number;
+  backAmount: number;
+  modality: 'acumulados' | 'sinAcumular';
+  playerHandicaps: { playerId: string; handicap: number }[];
+  participantIds?: string[];
+}
+
+// =====================================================
 // MAIN BET CONFIG
 // =====================================================
 
@@ -429,6 +442,7 @@ export interface BetConfig {
   stableford: StablefordBetConfig;
   teamPressures: TeamPressuresBetConfig;
   zoologico: ZoologicoBetConfig; // NEW: Zoo bet
+  skinsGrupal?: SkinsGrupalBetConfig; // NEW: Group skins
 }
 
 export interface MedalBetConfig {
@@ -576,6 +590,7 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   culebras: 'grupal',
   pinguinos: 'grupal',
   zoologico: 'grupal', // NEW: Zoo bet
+  skinsGrupal: 'grupal', // NEW: Group skins
   medalGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
