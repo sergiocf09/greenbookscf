@@ -153,6 +153,14 @@ interface RoundBetConfig {
     }>;
   };
   zoologico?: ZoologicoBetConfig;
+  skinsGrupal?: {
+    enabled: boolean;
+    frontAmount: number;
+    backAmount: number;
+    modality: 'acumulados' | 'sinAcumular';
+    playerHandicaps: { playerId: string; handicap: number }[];
+    participantIds?: string[];
+  };
 }
 
 export const useBetConfigPersistence = ({
