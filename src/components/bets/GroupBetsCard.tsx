@@ -791,7 +791,7 @@ const SkinsGrupalPopover: React.FC<{
   );
 };
 
-
+export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   players,
   scores,
   betConfig,
