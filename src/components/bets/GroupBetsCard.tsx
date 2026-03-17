@@ -745,13 +745,13 @@ const SkinsGrupalPopover: React.FC<{
         <table className="text-[10px] border-collapse w-full">
           <thead>
             <tr>
-              <th className="p-0.5 text-[9px] text-muted-foreground font-normal text-left">H</th>
+              <th className="p-1 text-[10px] text-muted-foreground font-normal text-left">H</th>
               {participants.map(p => (
-                <th key={p.id} className="p-0.5 text-center font-bold min-w-[28px]">
+                <th key={p.id} className="p-1 text-center font-bold min-w-[40px]">
                   {getPlayerAbbr(p)}
                 </th>
               ))}
-              <th className="p-0.5 text-center text-[9px] text-muted-foreground font-normal">Skin</th>
+              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">Skin</th>
             </tr>
           </thead>
           <tbody>
