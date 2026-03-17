@@ -6277,7 +6277,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'putts':
                   upsert('Putts Front 9', overrides.front);
                   upsert('Putts Back 9', overrides.back);
-                  upsert('Putts Total', overrides.total);
                   break;
                 case 'caros':
                   upsert('Caros', overrides.total);
