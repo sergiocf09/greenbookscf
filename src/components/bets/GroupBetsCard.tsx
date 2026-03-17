@@ -412,7 +412,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
             <tr>
               <th className="p-1.5 text-[10px] text-muted-foreground font-normal">Gross</th>
               {matrix.playerIds.map(pid => (
-                <th key={`gross-${pid}`} className="p-0.5 text-center text-muted-foreground font-normal">
+                <th key={`gross-${pid}`} className="p-1 text-center text-muted-foreground font-normal">
                   {matrix.playerGrossScores[pid] || '-'}
                 </th>
               ))}
