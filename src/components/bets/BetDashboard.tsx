@@ -1097,6 +1097,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         !s.betType.startsWith('Rayas') &&
         s.betType !== 'Medal General' &&
         s.betType !== 'Stableford' &&
+        !s.betType.startsWith('Skins Grupal') &&
         s.betType !== 'Presiones Parejas' &&
         !carritosTypes.includes(s.betType)
       )
