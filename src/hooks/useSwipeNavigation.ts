@@ -1,7 +1,8 @@
 import { useRef, useCallback } from 'react';
 
-const SWIPE_THRESHOLD = 50;
-const SWIPE_MAX_Y = 80; // ignore if vertical movement is too large
+const SWIPE_THRESHOLD = 120;       // Requiere gesto más largo e intencional
+const SWIPE_MAX_Y = 40;            // Cancela antes si hay movimiento vertical (scroll)
+const SWIPE_MIN_RATIO = 2.5;       // El movimiento horizontal debe ser 2.5x mayor que el vertical
 
 export function useSwipeNavigation<T extends string>(
   views: T[],
