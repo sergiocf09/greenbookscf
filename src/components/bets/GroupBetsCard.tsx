@@ -1449,11 +1449,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
 
     const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
-      if (amount <= 0) return { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>() };
+      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>(), skinCountByPlayer: new Map<string, number>() };
+      if (amount <= 0) return empty;
       
       const modality = cfg.modality ?? 'acumulados';
-      const holeResults: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }> = [];
+      const holeResults: typeof empty.holes = [];
       const totalByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
+      const skinCountByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
 
       if (modality === 'sinAcumular') {
         holes.forEach(holeNum => {
@@ -1463,7 +1465,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           const minNet = Math.min(...nets.map(x => x.net));
           const winners = nets.filter(x => x.net === minNet);
           const winnerId = winners.length === 1 ? winners[0].playerId : null;
-          if (winnerId) totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          if (winnerId) {
+            skinCountByPlayer.set(winnerId, (skinCountByPlayer.get(winnerId) || 0) + 1);
+            totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          }
           holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? 1 : 0 });
         });
       } else {
@@ -1476,6 +1481,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           const minNet = Math.min(...nets.map(x => x.net));
           const winners = nets.filter(x => x.net === minNet);
           if (winners.length === 1) {
+            skinCountByPlayer.set(winners[0].playerId, (skinCountByPlayer.get(winners[0].playerId) || 0) + 1);
             holeResults.push({ holeNum, nets, winnerId: winners[0].playerId, accumulated: 0, skinValue: accumulated });
             totalByPlayer.set(winners[0].playerId, (totalByPlayer.get(winners[0].playerId) || 0) + accumulated);
             accumulated = 0;
@@ -1485,7 +1491,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         });
       }
 
-      return { holes: holeResults, totalByPlayer };
+      return { holes: holeResults, totalByPlayer, skinCountByPlayer };
     };
 
     const frontHoles = Array.from({ length: 9 }, (_, i) => i + 1);
@@ -2322,31 +2328,74 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
               {/* Totals per player */}
               {(() => {
-                // Merge front + back totals
+                // Merge front + back totals and skin counts
                 const merged = new Map<string, number>();
+                const mergedCount = new Map<string, number>();
                 skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
                 skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
-                const winners = Array.from(merged.entries())
-                  .filter(([, v]) => v > 0)
+                skinsGrupalResult.front.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                skinsGrupalResult.back.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                const winners = Array.from(mergedCount.entries())
+                  .filter(([, count]) => count > 0)
                   .sort((a, b) => b[1] - a[1]);
                 if (winners.length === 0) return null;
+                const isAcumulados = skinsGrupalResult.cfg.modality !== 'sinAcumular';
+                const numOthers = skinsGrupalResult.participants.length - 1;
+
+                // Compute actual net money per player
+                const netMoney = new Map<string, number>();
+                if (isAcumulados) {
+                  // Each skin win: winner collects skinValue from each other participant
+                  merged.forEach((val, pid) => {
+                    netMoney.set(pid, val * numOthers);
+                  });
+                } else {
+                  // sinAcumular: pairwise settlement per segment
+                  const pIds = skinsGrupalResult.participants.map(p => p.id);
+                  pIds.forEach(pid => netMoney.set(pid, 0));
+                  const computePairwise = (countMap: Map<string, number>, amt: number) => {
+                    for (let i = 0; i < pIds.length; i++) {
+                      for (let j = i + 1; j < pIds.length; j++) {
+                        const wA = countMap.get(pIds[i]) || 0;
+                        const wB = countMap.get(pIds[j]) || 0;
+                        const diff = wA - wB;
+                        if (diff === 0) continue;
+                        const pay = Math.abs(diff) * amt;
+                        const winnerId = diff > 0 ? pIds[i] : pIds[j];
+                        const loserId = diff > 0 ? pIds[j] : pIds[i];
+                        netMoney.set(winnerId, (netMoney.get(winnerId) || 0) + pay);
+                        netMoney.set(loserId, (netMoney.get(loserId) || 0) - pay);
+                      }
+                    }
+                  };
+                  computePairwise(skinsGrupalResult.front.skinCountByPlayer, skinsGrupalResult.cfg.frontAmount);
+                  computePairwise(skinsGrupalResult.back.skinCountByPlayer, skinsGrupalResult.cfg.backAmount);
+                }
+
                 return (
                   <div className="space-y-1 mt-1">
-                    {winners.map(([pid, total]) => {
+                    {winners.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
+                      const displayAmount = netMoney.get(pid) || 0;
+                      if (displayAmount <= 0) return null;
                       return (
                         <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
                           <div className="flex items-center gap-2">
                             <span className="text-green-500 text-xs">🏆</span>
                             <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                             <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
+                            <span className="text-[10px] text-muted-foreground">#{skinCount}</span>
                           </div>
-                          <span className="text-green-600 font-bold text-sm">+${total}</span>
+                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}
