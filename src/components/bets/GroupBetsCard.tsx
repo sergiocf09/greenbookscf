@@ -594,7 +594,8 @@ const StablefordResultBlock: React.FC<{
   basePlayerId?: string;
   label?: string;
   sameGroupPlayerIds: Set<string>;
-}> = ({ results, amount, basePlayerId, label, sameGroupPlayerIds }) => {
+  getPlayerAbbr: (p: Player) => string;
+}> = ({ results, amount, basePlayerId, label, sameGroupPlayerIds, getPlayerAbbr }) => {
   if (results.length === 0) return null;
   const isWinner = results[0].pointsTotal > (results[1]?.pointsTotal ?? 0);
   const winnerInSameGroup = isWinner && sameGroupPlayerIds.has(results[0].playerId);
@@ -606,27 +607,30 @@ const StablefordResultBlock: React.FC<{
       )}
       <Popover>
         <PopoverTrigger asChild>
-          <div className="grid grid-cols-4 gap-2 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
-            {results.slice(0, 8).map((result, idx) => {
+          <div className="grid grid-cols-3 gap-1.5 cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors">
+            {results.slice(0, 9).map((result, idx) => {
               const isTop = idx === 0 && isWinner;
               return (
                 <div
                   key={result.playerId}
                   className={cn(
-                    "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg",
+                    "rounded-lg px-2 py-1.5",
                     isTop ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
                   )}
                 >
-                  <div className="relative">
-                    <PlayerAvatar initials={result.player.initials} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
-                    {isTop && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative shrink-0">
+                      <PlayerAvatar initials={getPlayerAbbr(result.player)} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
+                      {isTop && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
+                    </div>
+                    <span className={cn("text-base font-bold leading-tight", isTop ? "text-green-600" : "")}>
+                      {result.pointsTotal}
+                    </span>
                   </div>
-                  <span className={cn("text-sm font-bold", isTop ? "text-green-600" : "")}>
-                    {result.pointsTotal}
-                  </span>
-                  <span className="text-[8px] text-muted-foreground">
-                    F{result.pointsFront} B{result.pointsBack}
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5 pl-1">
+                    <span className="text-[10px] text-muted-foreground">F{result.pointsFront}</span>
+                    <span className="text-[10px] text-muted-foreground">B{result.pointsBack}</span>
+                  </div>
                 </div>
               );
             })}
@@ -2226,6 +2230,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   basePlayerId={basePlayerId}
                   label={stablefordScope === 'both' ? 'Grupo' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                  getPlayerAbbr={getPlayerAbbr}
                 />
               )}
               
@@ -2237,6 +2242,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   basePlayerId={basePlayerId}
                   label={stablefordScope === 'both' ? 'General' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                  getPlayerAbbr={getPlayerAbbr}
                 />
               )}
             </div>
