@@ -438,6 +438,8 @@ export interface BetConfig {
   // Per-group overrides: allows each group to customize bet participation/amounts
   // Key is the groupId, value is a partial bet config that overrides the template
   groupBetOverrides?: Record<string, GroupBetOverride>;
+  // Per-pair oyes modality override for individual oyeses bet (pairKey -> modality)
+  oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
   // NEW BET TYPES
   putts: PuttsBetConfig;
   sideBets: SideBetsConfig;
