@@ -776,7 +776,7 @@ const SkinsGrupalPopover: React.FC<{
                     );
                   })}
                   <td className={cn(
-                    'p-0.5 text-center font-bold',
+                    'p-1 text-center text-[12px] font-bold',
                     winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
                   )}>
                     {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
