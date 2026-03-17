@@ -6167,7 +6167,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             )}
                           </div>
                         );
-                      })
+                      })}
+                      </div>
                     )}
                   </div>
                 )}
