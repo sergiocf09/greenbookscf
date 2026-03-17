@@ -1469,7 +1469,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             skinCountByPlayer.set(winnerId, (skinCountByPlayer.get(winnerId) || 0) + 1);
             totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
           }
-          holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? 1 : 0 });
+          holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? amount : 0 });
         });
       } else {
         let accumulated = 0;
