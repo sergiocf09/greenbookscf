@@ -186,6 +186,7 @@ interface ConejaSectionProps {
   confirmedHoles: Set<number>;
   basePlayerId?: string;
   getPlayer: (id: string) => Player | undefined;
+  getPlayerAbbr: (p: Player) => string;
 }
 
 const ConejaSection: React.FC<ConejaSectionProps> = ({
