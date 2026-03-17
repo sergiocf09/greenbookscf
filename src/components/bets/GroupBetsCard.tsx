@@ -509,7 +509,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
           <span>gana pata</span>
         </div>
       ) : (
-        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
+        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t-2 border-primary/40">
           Empate - Sin ganador absoluto
         </div>
       )}
