@@ -276,7 +276,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
           </button>
         </PopoverTrigger>
         {hd.isConfirmed && (
-          <PopoverContent className="w-auto p-2" side="top">
+          <PopoverContent className="w-[95vw] max-w-sm p-3" side="top">
             <HoleMatrixTooltip 
               holeNumber={hd.holeNumber} 
               players={players}
