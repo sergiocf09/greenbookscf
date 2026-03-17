@@ -181,18 +181,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       {/* Hole Navigation */}
       <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
 
-      {/* Help button row */}
-      <div className="flex justify-end -mt-1 mb-1">
-        <button
-          type="button"
-          onClick={() => setShowHelp(true)}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded-full hover:bg-muted/50"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          Ayuda
-        </button>
-      </div>
-
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
         {displayPlayers.map(player => {
