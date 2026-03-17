@@ -469,7 +469,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                   // cells[colPlayerId][rowPlayerId] gives column's perspective
                   const cell = matrix.cells[colPlayerId]?.[rowPlayerId];
                   if (!cell) {
-                    return <td key={colPlayerId} className="p-1 text-center">-</td>;
+                    return <td key={colPlayerId} className="p-1.5 text-center">-</td>;
                   }
                   
                   // cell.playerNet is column player's net, cell.rivalNet is row player's net
