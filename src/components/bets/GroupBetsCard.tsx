@@ -618,18 +618,18 @@ const StablefordResultBlock: React.FC<{
                     isTop ? "bg-green-500/20 border border-green-500/30" : "bg-muted/50"
                   )}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
                     <div className="relative shrink-0">
                       <PlayerAvatar initials={getPlayerAbbr(result.player)} background={result.player.color} size="sm" isLoggedInUser={result.playerId === basePlayerId} />
                       {isTop && <Trophy className="h-3 w-3 text-amber-500 absolute -top-1 -right-1" />}
                     </div>
-                    <span className={cn("text-base font-bold leading-tight", isTop ? "text-green-600" : "")}>
+                    <span className={cn("text-lg font-bold leading-tight", isTop ? "text-green-600" : "")}>
                       {result.pointsTotal}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 pl-1">
-                    <span className="text-[10px] text-muted-foreground">F{result.pointsFront}</span>
-                    <span className="text-[10px] text-muted-foreground">B{result.pointsBack}</span>
+                  <div className="flex items-center justify-center gap-3 mt-0.5">
+                    <span className="text-xs font-bold text-muted-foreground">F{result.pointsFront}</span>
+                    <span className="text-xs font-bold text-muted-foreground">B{result.pointsBack}</span>
                   </div>
                 </div>
               );
