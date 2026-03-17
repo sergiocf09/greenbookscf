@@ -679,7 +679,7 @@ const StablefordResultBlock: React.FC<{
             </div>
             {results.map(r => (
               <div key={`${r.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
-                <PlayerAvatar initials={r.player.initials} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
+                <PlayerAvatar initials={getPlayerAbbr(r.player)} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
                 {[10,11,12,13,14,15,16,17,18].map(h => {
                   const hp = r.holePoints.find(p => p.holeNumber === h);
                   return (
