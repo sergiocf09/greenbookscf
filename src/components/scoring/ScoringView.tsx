@@ -305,6 +305,38 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           Sig →
         </Button>
       </div>
+
+      {/* Help Sheet */}
+      <Sheet open={showHelp} onOpenChange={(o) => { if (!o) setShowHelp(false); }}>
+        <SheetContent side="top" className="max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              <div className="flex items-center gap-2">
+                <span>📓</span>
+                <span>Captura de Scores</span>
+              </div>
+            </SheetTitle>
+            <SheetDescription>Ayuda de captura</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-3 mt-4 text-sm text-muted-foreground">
+            {[
+              'Navega entre hoyos tocando el número en la barra superior. Los hoyos confirmados aparecen en verde.',
+              'Para cada jugador ingresa los golpes (strokes) y los putts del hoyo. Los badges de birdie 🐦, águila 🦅 y doble dígito 🔟 se detectan automáticamente al capturar.',
+              'Toca el ícono de marcadores junto a cada jugador para registrar manualmente: Sandy Par 🏖️, Aqua Par 💧, Hole Out 🎯, Doble OB 🚫, Trampa ⚠️, Pinkies 👠, Paloma 💨, Retruje ↩️, Moreliana 🎭 y más.',
+              'En hoyos par 3, si la apuesta de Oyeses está activa aparece el botón 🎯 flotante — tócalo para registrar el orden de proximidad al pin de todos los jugadores.',
+              'Cuando estén capturados todos los golpes y putts del hoyo, toca "Confirmar Scores del Hoyo" — solo los hoyos confirmados entran al cálculo de apuestas.',
+              'Usa los botones "← Ant" y "Sig →" para moverte entre hoyos, o toca directamente el número en la barra de navegación.',
+              'Si hay grupos adicionales en la ronda, aparece un selector arriba para cambiar de grupo y capturar sus scores.',
+              'El botón 💲 permite agregar Side Bets manuales para apuestas extra no contempladas en la configuración. El botón 🐾 registra incidencias del Zoológico si esa apuesta está activa.',
+            ].map((item, i) => (
+              <div key={i} className="flex gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
