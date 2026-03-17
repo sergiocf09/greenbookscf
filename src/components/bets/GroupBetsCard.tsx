@@ -345,9 +345,8 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                   <div key={playerId} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-green-500 text-xs">🏆</span>
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="font-medium text-sm">{formatPlayerNameTwoWords(player.name)}</span>
                         <span className="text-[10px] text-muted-foreground">
                           {setDescriptions}
                         </span>
