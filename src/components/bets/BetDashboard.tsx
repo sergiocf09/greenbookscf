@@ -4100,6 +4100,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           segments: [
             { label: 'Front 9', key: 'putts_front', overrideLabel: 'Putts Front 9' },
             { label: 'Back 9', key: 'putts_back', overrideLabel: 'Putts Back 9' },
+            { label: 'Total 18', key: 'putts_total', overrideLabel: 'Putts Total' },
           ],
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
