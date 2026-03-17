@@ -759,14 +759,14 @@ const SkinsGrupalPopover: React.FC<{
               const winner = hole.winnerId;
               return (
                 <tr key={hole.holeNum}>
-                  <td className="p-0.5 text-muted-foreground font-medium">{hole.holeNum}</td>
+                  <td className="p-1 text-[11px] text-muted-foreground font-medium">{hole.holeNum}</td>
                   {participants.map(p => {
                     const entry = hole.nets.find(n => n.playerId === p.id);
-                    if (!entry) return <td key={p.id} className="p-0.5 text-center text-muted-foreground">-</td>;
+                    if (!entry) return <td key={p.id} className="p-1 text-center text-[12px] text-muted-foreground">-</td>;
                     const isWinner = winner === p.id;
                     return (
                       <td key={p.id} className={cn(
-                        'p-0.5 text-center font-bold',
+                        'p-1 text-center text-[12px] font-bold',
                         isWinner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                         winner ? 'bg-red-100 dark:bg-red-900/20 text-destructive' :
                         'text-muted-foreground'
