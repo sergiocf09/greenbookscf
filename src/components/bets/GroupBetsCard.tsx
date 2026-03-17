@@ -2230,6 +2230,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   basePlayerId={basePlayerId}
                   label={stablefordScope === 'both' ? 'Grupo' : undefined}
                   sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
+                  getPlayerAbbr={getPlayerAbbr}
                 />
               )}
               
