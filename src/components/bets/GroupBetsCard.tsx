@@ -2371,7 +2371,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
                 const allWithSkins = Array.from(mergedCount.entries())
                   .filter(([, count]) => count > 0)
-                  .sort((a, b) => (netMoney.get(b[0]) || 0) - (netMoney.get(a[0]) || 0));
+                  .sort((a, b) => (grossWinnings.get(b[0]) || 0) - (grossWinnings.get(a[0]) || 0));
                 if (allWithSkins.length === 0) return null;
 
                 return (
@@ -2379,25 +2379,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     {allWithSkins.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
-                      const displayAmount = netMoney.get(pid) || 0;
-                      const isPositive = displayAmount > 0;
-                      const isNegative = displayAmount < 0;
+                      const displayAmount = grossWinnings.get(pid) || 0;
+                      if (displayAmount <= 0) return null;
                       return (
-                        <div key={pid} className={cn(
-                          'flex items-center justify-between rounded-lg px-2 py-1',
-                          isPositive ? 'bg-green-500/10 border border-green-500/30' : 'bg-muted/30 border border-border/50'
-                        )}>
+                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
                           <div className="flex items-center gap-2">
-                            {isPositive && <span className="text-green-500 text-xs">🏆</span>}
+                            <span className="text-green-500 text-xs">🏆</span>
                             <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                             <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
                             <span className="text-[10px] text-muted-foreground bg-golf-gold/20 text-golf-dark rounded-full px-1.5 py-0.5 font-semibold">
                               {skinCount} skin{skinCount !== 1 ? 's' : ''}
                             </span>
                           </div>
-                          <span className={cn('font-bold text-sm', isPositive ? 'text-green-600' : isNegative ? 'text-red-500' : 'text-muted-foreground')}>
-                            {isPositive ? '+' : isNegative ? '-' : ''}${Math.abs(displayAmount)}
-                          </span>
+                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}
