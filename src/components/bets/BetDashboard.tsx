@@ -1039,6 +1039,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const betTypeToOverrideKey = (betType: string): { label: string; aliases: string[] } => {
       if (betType.startsWith('Medal') && betType !== 'Medal General') return { label: 'Medal', aliases: ['medal'] };
       if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return { label: 'Presiones', aliases: ['pressures'] };
+      if (betType.startsWith('Skins Grupal')) return { label: 'Skins Grupal', aliases: ['skinsGrupal'] };
       if (betType.startsWith('Skins')) return { label: 'Skins', aliases: ['skins'] };
       if (betType === 'Caros') return { label: 'Caros', aliases: ['caros'] };
       if (betType === 'Oyes') return { label: 'Oyes', aliases: ['oyeses'] };
