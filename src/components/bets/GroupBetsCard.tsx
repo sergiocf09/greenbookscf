@@ -1449,11 +1449,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
 
     const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
-      if (amount <= 0) return { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>() };
+      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>(), skinCountByPlayer: new Map<string, number>() };
+      if (amount <= 0) return empty;
       
       const modality = cfg.modality ?? 'acumulados';
-      const holeResults: Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }> = [];
+      const holeResults: typeof empty.holes = [];
       const totalByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
+      const skinCountByPlayer = new Map<string, number>(participants.map(p => [p.id, 0]));
 
       if (modality === 'sinAcumular') {
         holes.forEach(holeNum => {
@@ -1463,7 +1465,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           const minNet = Math.min(...nets.map(x => x.net));
           const winners = nets.filter(x => x.net === minNet);
           const winnerId = winners.length === 1 ? winners[0].playerId : null;
-          if (winnerId) totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          if (winnerId) {
+            skinCountByPlayer.set(winnerId, (skinCountByPlayer.get(winnerId) || 0) + 1);
+            totalByPlayer.set(winnerId, (totalByPlayer.get(winnerId) || 0) + 1);
+          }
           holeResults.push({ holeNum, nets, winnerId, accumulated: 0, skinValue: winnerId ? 1 : 0 });
         });
       } else {
@@ -1476,6 +1481,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           const minNet = Math.min(...nets.map(x => x.net));
           const winners = nets.filter(x => x.net === minNet);
           if (winners.length === 1) {
+            skinCountByPlayer.set(winners[0].playerId, (skinCountByPlayer.get(winners[0].playerId) || 0) + 1);
             holeResults.push({ holeNum, nets, winnerId: winners[0].playerId, accumulated: 0, skinValue: accumulated });
             totalByPlayer.set(winners[0].playerId, (totalByPlayer.get(winners[0].playerId) || 0) + accumulated);
             accumulated = 0;
@@ -1485,7 +1491,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         });
       }
 
-      return { holes: holeResults, totalByPlayer };
+      return { holes: holeResults, totalByPlayer, skinCountByPlayer };
     };
 
     const frontHoles = Array.from({ length: 9 }, (_, i) => i + 1);
