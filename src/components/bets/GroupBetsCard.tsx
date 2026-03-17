@@ -1747,8 +1747,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         className="h-8"
                         onClick={() => handleSelectZooTieBreakLoser(result.animalType, result.tieHole || 0, player.id)}
                       >
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                        <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="ml-1.5">{formatPlayerNameTwoWords(player.name)}</span>
                       </Button>
                     ))}
                   </div>
