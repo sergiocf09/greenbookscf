@@ -5987,7 +5987,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && segmentType !== 'total') || isSkins || isPutts) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && segmentType !== 'total') || isSkins || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
