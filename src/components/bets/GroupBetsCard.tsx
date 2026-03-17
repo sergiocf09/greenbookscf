@@ -455,7 +455,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
           <tbody>
             {matrix.playerIds.map(rowPlayerId => (
               <tr key={rowPlayerId}>
-                <td className="p-1 border-r border-border/50 font-bold">
+                <td className="p-1.5 border-r border-border/50 font-bold">
                   {matrix.playerInitials[rowPlayerId]}
                 </td>
                 {matrix.playerIds.map(colPlayerId => {
