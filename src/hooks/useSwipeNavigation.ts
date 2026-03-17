@@ -23,7 +23,10 @@ export function useSwipeNavigation<T extends string>(
     const dy = Math.abs(t.clientY - touchStart.current.y);
     touchStart.current = null;
 
-    if (dy > SWIPE_MAX_Y || Math.abs(dx) < SWIPE_THRESHOLD) return;
+    const absDx = Math.abs(dx);
+    if (dy > SWIPE_MAX_Y) return;                        // Cancela si hay mucho scroll vertical
+    if (absDx < SWIPE_THRESHOLD) return;                 // Requiere gesto largo
+    if (dy > 0 && absDx / dy < SWIPE_MIN_RATIO) return;  // Cancela si no es claramente horizontal
 
     const idx = views.indexOf(currentView);
     if (idx === -1) return;
