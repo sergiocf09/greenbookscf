@@ -4091,7 +4091,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
       const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
       
-      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
+      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0)) {
         groups.push({
           key: 'putts',
           label: 'Putts',
@@ -4099,7 +4099,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           segments: [
             { label: 'Front 9', key: 'putts_front', overrideLabel: 'Putts Front 9' },
             { label: 'Back 9', key: 'putts_back', overrideLabel: 'Putts Back 9' },
-            { label: 'Total', key: 'putts_total', overrideLabel: 'Putts Total' },
           ],
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
@@ -4110,19 +4109,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 amount: puttsFront, 
                 description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
               };
-            } else if (segmentKey === 'putts_back') {
+            } else {
               return { 
                 playerNet: playerPuttsBack, 
                 rivalNet: rivalPuttsBack, 
                 amount: puttsBack, 
                 description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
-              };
-            } else {
-              return { 
-                playerNet: playerPuttsTotal, 
-                rivalNet: rivalPuttsTotal, 
-                amount: puttsTotal, 
-                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
               };
             }
           },
