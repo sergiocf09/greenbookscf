@@ -1496,6 +1496,10 @@ export type Database = {
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
+      join_leaderboard_by_code: {
+        Args: { p_code: string; p_handicap?: number }
+        Returns: string
+      }
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
