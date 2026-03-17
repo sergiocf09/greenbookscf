@@ -4744,31 +4744,25 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
-    // Skins Grupal - Group bet shown in bilateral view (like Medal General)
+    // Skins Grupal - Group bet shown in bilateral view (like Medal General) — single row, no expandable segments
     if (betConfig.skinsGrupal?.enabled) {
       const sgFrontTotal = groupedSummaries['Skins Grupal Front']?.total || 0;
       const sgBackTotal = groupedSummaries['Skins Grupal Back']?.total || 0;
       const sgTotal = sgFrontTotal + sgBackTotal;
       
       if (sgTotal !== 0) {
-        const segments: Array<{ label: string; key: string }> = [];
-        if (sgFrontTotal !== 0) segments.push({ label: 'Front 9', key: 'sg_front' });
-        if (sgBackTotal !== 0) segments.push({ label: 'Back 9', key: 'sg_back' });
-        
         groups.push({
           key: 'skinsGrupal',
           label: 'Skins Grupal',
           configKey: 'skinsGrupal',
-          segments,
+          segments: [],
           getTotal: () => sgTotal,
-          getSegmentData: (segmentKey) => {
-            const amount = segmentKey === 'sg_front' ? sgFrontTotal : sgBackTotal;
-            const summaryKey = segmentKey === 'sg_front' ? 'Skins Grupal Front' : 'Skins Grupal Back';
+          getSegmentData: () => {
             return {
               playerNet: 0,
               rivalNet: 0,
-              amount,
-              description: groupedSummaries[summaryKey]?.details?.[0]?.description || '',
+              amount: sgTotal,
+              description: `Front: ${sgFrontTotal >= 0 ? '+' : ''}$${sgFrontTotal} · Back: ${sgBackTotal >= 0 ? '+' : ''}$${sgBackTotal}`,
             };
           },
         });
