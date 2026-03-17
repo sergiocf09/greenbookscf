@@ -419,7 +419,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
             </tr>
             {/* Row 2: Column player initials with circles for winner (multiple if accumulated) */}
             <tr>
-              <th className="p-1 border-b border-r border-border/50"></th>
+              <th className="p-1.5 border-b border-r border-border/50"></th>
               {matrix.playerIds.map(pid => {
                 const isWinner = matrix.winnerId === pid;
                 const circleCount = isWinner ? Math.min(matrix.conejasWonCount || 1, 3) : 0;
