@@ -503,7 +503,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
       
       {/* Winner indicator */}
       {winnerPlayer ? (
-        <div className="text-[10px] text-green-600 text-center pt-1 border-t border-border/50 flex items-center justify-center gap-1">
+        <div className="text-[10px] text-green-600 text-center pt-1 border-t-2 border-primary/40 flex items-center justify-center gap-1">
           <span>🐰</span>
           <span className="font-bold">{winnerPlayer.initials}</span>
           <span>gana pata</span>
