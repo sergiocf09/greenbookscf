@@ -5785,6 +5785,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
+                        const isSkinsGrupal = group.key === 'skinsGrupal';
                         const pressureDesc = data.description || '';
                         
                         // NOTE: pressureDisplay is computed after segmentType/pressureSegmentData are defined.
