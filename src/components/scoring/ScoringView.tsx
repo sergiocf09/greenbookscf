@@ -8,8 +8,7 @@ import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2, DollarSign, HelpCircle, Target } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Check, CheckCircle2, DollarSign, Target } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
