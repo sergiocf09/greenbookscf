@@ -139,7 +139,27 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   const handleConfirmHole = useCallback((holeNumber: number) => {
     const playerIds = displayPlayers.map(p => p.id);
     confirmHole(holeNumber, playerIds);
-  }, [displayPlayers, confirmHole]);
+
+    // Auto-advance to next unconfirmed hole
+    // Look forward first from current hole, then wrap around from hole 1
+    const findNextUnconfirmed = (): number | null => {
+      // Forward from current+1 to 18
+      for (let h = holeNumber + 1; h <= 18; h++) {
+        if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      }
+      // Wrap: from 1 to current-1
+      for (let h = 1; h < holeNumber; h++) {
+        if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      }
+      return null;
+    };
+
+    const next = findNextUnconfirmed();
+    if (next !== null) {
+      // Small delay so the user sees the green confirmation before navigating
+      setTimeout(() => setCurrentHole(next), 350);
+    }
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole]);
 
   return (
     <>
