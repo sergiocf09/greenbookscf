@@ -229,12 +229,13 @@ export const getOyesesDisplayData = (
   const modalityA = cfgA.enabled ? cfgA.modality : null;
   const modalityB = cfgB.enabled ? cfgB.modality : null;
   
-  // Skip if either player doesn't have Oyeses enabled
   if (!modalityA || !modalityB) return { playerAHoles, playerBHoles };
   
   // Determine the pair's effective modality
-  // If both same → that modality. If mixed → Sangrón takes precedence (no accumulation)
-  const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
+  const pairKey = [playerAId, playerBId].sort().join('_');
+  const pairOverride = config.oyesPairModalityOverrides?.[pairKey];
+  const pairModality: OyesModality = pairOverride
+    ?? ((modalityA === modalityB) ? modalityA : 'sangron');
   
   let accumulated = 0;
   
