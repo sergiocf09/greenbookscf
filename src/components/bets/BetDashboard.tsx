@@ -1077,6 +1077,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const betTypeToConfigKey = (betType: string): string | null => {
       if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
       if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
+      if (betType.startsWith('Skins Grupal')) return 'skinsGrupal';
       if (betType.startsWith('Skins')) return 'skins';
       if (betType === 'Caros') return 'caros';
       if (betType === 'Oyes') return 'oyeses';
