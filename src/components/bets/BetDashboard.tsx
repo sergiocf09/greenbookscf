@@ -5303,6 +5303,55 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 />
                               </div>
                             )}
+                            {/* Oyes modality pair override */}
+                            {!isHistorical && onBetConfigChange && (() => {
+                              const cfgA = betConfig.oyeses?.playerConfigs?.find(pc => pc.playerId === player.id);
+                              const cfgB = betConfig.oyeses?.playerConfigs?.find(pc => pc.playerId === rival.id);
+                              const modalityA = cfgA?.modality ?? 'acumulados';
+                              const modalityB = cfgB?.modality ?? 'acumulados';
+                              const pairKey = [player.id, rival.id].sort().join('_');
+                              const pairOverride = betConfig.oyesPairModalityOverrides?.[pairKey];
+                              const hasConflict = modalityA !== modalityB;
+                              const currentModality = pairOverride ?? (hasConflict ? 'sangron' : modalityA);
+
+                              if (!hasConflict && !pairOverride) return null;
+
+                              return (
+                                <div className={cn(
+                                  "flex items-center justify-between rounded-lg px-3 py-2 border",
+                                  hasConflict && !pairOverride ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border/50"
+                                )}>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-medium">Modalidad Oyes (este par)</span>
+                                    {hasConflict && !pairOverride && (
+                                      <span className="text-[9px] text-amber-600">
+                                        {player.initials}: {modalityA === 'sangron' ? 'Sangrón' : 'Acum'} · {rival.initials}: {modalityB === 'sangron' ? 'Sangrón' : 'Acum'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {(['acumulados', 'sangron'] as const).map(mod => (
+                                      <button key={mod} type="button"
+                                        onClick={() => onBetConfigChange({
+                                          ...betConfig,
+                                          oyesPairModalityOverrides: {
+                                            ...(betConfig.oyesPairModalityOverrides ?? {}),
+                                            [pairKey]: mod
+                                          }
+                                        })}
+                                        className={cn(
+                                          'px-2 py-0.5 text-[9px] rounded transition-colors',
+                                          currentModality === mod
+                                            ? mod === 'sangron' ? 'bg-destructive text-destructive-foreground font-medium' : 'bg-golf-gold text-golf-dark font-medium'
+                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                        )}>
+                                        {mod === 'acumulados' ? 'Acumulado' : 'Sangrón'}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {/* Header row with hole numbers */}
                             <div className="flex items-center gap-2 text-[10px]">
                               <div className="w-8 shrink-0"></div>
