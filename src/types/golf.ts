@@ -202,6 +202,8 @@ export interface RayasBetConfig {
   medalTotalValue: number; // Value for the Medal Total raya
   skinVariant: RayasSkinVariant; // Default skins variant
   oyesMode: RayasOyesMode; // How Oyes winners are calculated: 'singleWinner' = #1 beats all, 'allVsAll' = compare by pair
+  oyesModality?: 'acumulados' | 'sangron'; // Global default modality for Rayas oyes segment
+  pairOyesModalityOverrides?: Record<string, 'acumulados' | 'sangron'>; // pairKey -> modality
   playerSkinVariants?: Record<string, RayasSkinVariant>; // Per-player skin variant override (playerId -> variant)
   // Per-pair skin variant resolution when players disagree. Key = sorted "idA_idB"
   pairSkinVariantOverrides?: Record<string, RayasSkinVariant>;
