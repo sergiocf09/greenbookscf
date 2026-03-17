@@ -2326,39 +2326,36 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 </Popover>
               )}
 
-              {/* Totals per player */}
+              {/* Totals per player — unified format: #skins + $amount */}
               {(() => {
-                // Merge front + back totals and skin counts
-                const merged = new Map<string, number>();
+                // Merge front + back skin counts
                 const mergedCount = new Map<string, number>();
-                skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
-                  merged.set(pid, (merged.get(pid) || 0) + val);
-                });
-                skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
-                  merged.set(pid, (merged.get(pid) || 0) + val);
-                });
                 skinsGrupalResult.front.skinCountByPlayer.forEach((val, pid) => {
                   mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
                 });
                 skinsGrupalResult.back.skinCountByPlayer.forEach((val, pid) => {
                   mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
                 });
-                const winners = Array.from(mergedCount.entries())
-                  .filter(([, count]) => count > 0)
-                  .sort((a, b) => b[1] - a[1]);
-                if (winners.length === 0) return null;
+
+                // Merge front + back raw skin values (for acumulados)
+                const mergedValues = new Map<string, number>();
+                skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
+                  mergedValues.set(pid, (mergedValues.get(pid) || 0) + val);
+                });
+                skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
+                  mergedValues.set(pid, (mergedValues.get(pid) || 0) + val);
+                });
+
                 const isAcumulados = skinsGrupalResult.cfg.modality !== 'sinAcumular';
                 const numOthers = skinsGrupalResult.participants.length - 1;
 
                 // Compute actual net money per player
                 const netMoney = new Map<string, number>();
                 if (isAcumulados) {
-                  // Each skin win: winner collects skinValue from each other participant
-                  merged.forEach((val, pid) => {
+                  mergedValues.forEach((val, pid) => {
                     netMoney.set(pid, val * numOthers);
                   });
                 } else {
-                  // sinAcumular: pairwise settlement per segment
                   const pIds = skinsGrupalResult.participants.map(p => p.id);
                   pIds.forEach(pid => netMoney.set(pid, 0));
                   const computePairwise = (countMap: Map<string, number>, amt: number) => {
@@ -2380,20 +2377,26 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   computePairwise(skinsGrupalResult.back.skinCountByPlayer, skinsGrupalResult.cfg.backAmount);
                 }
 
+                const winners = Array.from(mergedCount.entries())
+                  .filter(([pid]) => (netMoney.get(pid) || 0) > 0)
+                  .sort((a, b) => (netMoney.get(b[0]) || 0) - (netMoney.get(a[0]) || 0));
+                if (winners.length === 0) return null;
+
                 return (
                   <div className="space-y-1 mt-1">
                     {winners.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
                       const displayAmount = netMoney.get(pid) || 0;
-                      if (displayAmount <= 0) return null;
                       return (
                         <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
                           <div className="flex items-center gap-2">
                             <span className="text-green-500 text-xs">🏆</span>
                             <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                             <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
-                            <span className="text-[10px] text-muted-foreground">#{skinCount}</span>
+                            <span className="text-[10px] text-muted-foreground bg-golf-gold/20 text-golf-dark rounded-full px-1.5 py-0.5 font-semibold">
+                              {skinCount} skin{skinCount !== 1 ? 's' : ''}
+                            </span>
                           </div>
                           <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
