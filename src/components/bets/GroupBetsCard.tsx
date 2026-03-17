@@ -2382,16 +2382,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       const displayAmount = grossWinnings.get(pid) || 0;
                       if (displayAmount <= 0) return null;
                       return (
-                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-500 text-xs">🏆</span>
-                            <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                            <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
-                            <span className="text-[10px] text-muted-foreground bg-golf-gold/20 text-golf-dark rounded-full px-1.5 py-0.5 font-semibold">
-                              {skinCount} skin{skinCount !== 1 ? 's' : ''}
+                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                            <span className="font-medium text-sm truncate">{formatPlayerNameTwoWords(p.name)}</span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-2">
+                            <span className="text-sm font-bold text-green-600">+${displayAmount}</span>
+                            <span className="text-sm font-bold text-golf-dark bg-golf-gold/30 rounded-full w-6 h-6 flex items-center justify-center">
+                              {skinCount}
                             </span>
                           </div>
-                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}

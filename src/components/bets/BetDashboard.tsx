@@ -6044,7 +6044,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                             <div key={hole.holeNumber} className="flex flex-col items-center">
                                               <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
                                               <div className={cn(
-                                                'w-8 h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                                'w-8 h-7 flex items-center justify-center text-[11px] font-bold rounded',
                                                 hole.winner === 'A' ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                                                 hole.winner === 'B' ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
                                                 hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
