@@ -271,7 +271,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
             </div>
             {/* Only show initials of the pata holder, not when a pata was lost to someone */}
             {(hd.hasPata && pataPlayer && !showTie) && (
-              <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{pataPlayer.initials}</span>
+              <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{getPlayerAbbr(pataPlayer)}</span>
             )}
           </button>
         </PopoverTrigger>
