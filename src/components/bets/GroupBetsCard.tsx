@@ -564,7 +564,7 @@ const MedalResultBlock: React.FC<{
               <React.Fragment key={winner.playerId}>
                 {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
                 <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                <span className="font-medium text-sm">{formatPlayerName(winner.name).split(' ')[0]}</span>
+                <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
                 <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
               </React.Fragment>
             ))}
