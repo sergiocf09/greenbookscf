@@ -2254,37 +2254,111 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     {skinsGrupalResult.cfg.modality === 'sinAcumular' ? 'Sin Acum' : 'Acumulados'}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  ${skinsGrupalResult.cfg.frontAmount > 0 ? skinsGrupalResult.cfg.frontAmount : skinsGrupalResult.cfg.backAmount}/skin
-                </span>
               </div>
 
-              {/* Winners list — same style as Medal General */}
+              {/* Front 9 */}
+              {skinsGrupalResult.cfg.frontAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.frontAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.front.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Front 9" holes={skinsGrupalResult.front.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Back 9 */}
+              {skinsGrupalResult.cfg.backAmount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.backAmount}/skin</span>
+                      </div>
+                      <div className="grid grid-cols-9 gap-0.5">
+                        {skinsGrupalResult.back.holes.map(hole => {
+                          const winner = hole.winnerId ? getPlayer(hole.winnerId) : null;
+                          return (
+                            <div key={hole.holeNum} className="flex flex-col items-center">
+                              <span className="text-[8px] text-muted-foreground">{hole.holeNum}</span>
+                              <div className={cn(
+                                'w-full h-6 flex items-center justify-center text-[9px] font-bold rounded',
+                                winner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                hole.accumulated > 0 ? 'bg-muted text-muted-foreground' :
+                                'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {winner ? getPlayerAbbr(winner) : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto max-w-[340px] p-3" side="top">
+                    <SkinsGrupalPopover segment="Back 9" holes={skinsGrupalResult.back.holes} participants={skinsGrupalResult.participants} getPlayerAbbr={getPlayerAbbr} basePlayerId={basePlayerId} />
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Totals per player */}
               {(() => {
-                const mergedCount = new Map<string, number>();
+                // Merge front + back totals and skin counts
                 const merged = new Map<string, number>();
-                skinsGrupalResult.front.skinCountByPlayer.forEach((val, pid) => {
-                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
-                });
-                skinsGrupalResult.back.skinCountByPlayer.forEach((val, pid) => {
-                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
-                });
+                const mergedCount = new Map<string, number>();
                 skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
                 skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
-
+                skinsGrupalResult.front.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                skinsGrupalResult.back.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                const winners = Array.from(mergedCount.entries())
+                  .filter(([, count]) => count > 0)
+                  .sort((a, b) => b[1] - a[1]);
+                if (winners.length === 0) return null;
                 const isAcumulados = skinsGrupalResult.cfg.modality !== 'sinAcumular';
                 const numOthers = skinsGrupalResult.participants.length - 1;
 
+                // Compute actual net money per player
                 const netMoney = new Map<string, number>();
                 if (isAcumulados) {
+                  // Each skin win: winner collects skinValue from each other participant
                   merged.forEach((val, pid) => {
                     netMoney.set(pid, val * numOthers);
                   });
                 } else {
+                  // sinAcumular: pairwise settlement per segment
                   const pIds = skinsGrupalResult.participants.map(p => p.id);
                   pIds.forEach(pid => netMoney.set(pid, 0));
                   const computePairwise = (countMap: Map<string, number>, amt: number) => {
@@ -2306,33 +2380,22 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   computePairwise(skinsGrupalResult.back.skinCountByPlayer, skinsGrupalResult.cfg.backAmount);
                 }
 
-                const winners = Array.from(mergedCount.entries())
-                  .filter(([, count]) => count > 0)
-                  .sort((a, b) => b[1] - a[1]);
-
-                if (winners.length === 0) {
-                  return (
-                    <p className="text-xs text-muted-foreground text-center py-2">Sin skins ganados aún</p>
-                  );
-                }
-
                 return (
-                  <div className="space-y-1">
+                  <div className="space-y-1 mt-1">
                     {winners.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
-                      const amt = netMoney.get(pid) || 0;
+                      const displayAmount = netMoney.get(pid) || 0;
+                      if (displayAmount <= 0) return null;
                       return (
-                        <div key={pid} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs">🏆</span>
-                              <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                              <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
-                              <span className="text-[10px] text-muted-foreground">(#{skinCount})</span>
-                            </div>
-                            <span className="text-green-600 font-bold">~${amt}</span>
+                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500 text-xs">🏆</span>
+                            <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                            <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
+                            <span className="text-[10px] text-muted-foreground">#{skinCount}</span>
                           </div>
+                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}
