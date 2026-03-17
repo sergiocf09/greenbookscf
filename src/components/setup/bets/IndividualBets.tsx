@@ -250,12 +250,11 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="putts" title="Putts ⛳" description="Comparación directa de putts (sin hándicap)"
           enabled={config.putts?.enabled ?? false} onToggle={(enabled) => onUpdateBet('putts', { enabled })}
           isExpanded={expandedSections.includes('putts')} onExpandChange={(open) => onToggleSection('putts', open)}
-          helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
+          helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9 y Back 9 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
           <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
-          <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
-          <p className="text-[9px] text-muted-foreground mt-2">⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts totales.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada 9.</p>
         </BetSection>
       )}
 

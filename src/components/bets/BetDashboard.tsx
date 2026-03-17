@@ -3976,8 +3976,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       // ── Putts — total único, sin desplegable ───────────────────────────────
       const puttsFront = getAmt('Putts Front 9');
       const puttsBack  = getAmt('Putts Back 9');
-      const puttsTotal = getAmt('Putts Total');
-      const puttsSum   = puttsFront + puttsBack + puttsTotal;
+      const puttsSum   = puttsFront + puttsBack;
       if (puttsSum !== 0) {
         groups.push({
           key: 'hist_putts', label: 'Putts', configKey: 'putts',
@@ -4019,7 +4018,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Presiones Front','Presiones Back','Presiones Back (Carry x2+Match)','Presiones Match 18',
         'Skins Front','Skins Back',
         'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
-        'Putts Front 9','Putts Back 9','Putts Total',
+        'Putts Front 9','Putts Back 9',
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
         'Coneja','Medal General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
@@ -4075,8 +4074,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
       const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
-      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
-      const total = puttsFront + puttsBack + puttsTotal;
+      const total = puttsFront + puttsBack;
       
       // Calculate total putts for each player
       const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
@@ -4093,7 +4091,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
       const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
       
-      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0 || betConfig.putts.totalAmount > 0)) {
+      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0)) {
         groups.push({
           key: 'putts',
           label: 'Putts',
@@ -4101,7 +4099,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           segments: [
             { label: 'Front 9', key: 'putts_front', overrideLabel: 'Putts Front 9' },
             { label: 'Back 9', key: 'putts_back', overrideLabel: 'Putts Back 9' },
-            { label: 'Total', key: 'putts_total', overrideLabel: 'Putts Total' },
           ],
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
@@ -4112,19 +4109,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 amount: puttsFront, 
                 description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
               };
-            } else if (segmentKey === 'putts_back') {
+            } else {
               return { 
                 playerNet: playerPuttsBack, 
                 rivalNet: rivalPuttsBack, 
                 amount: puttsBack, 
                 description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
-              };
-            } else {
-              return { 
-                playerNet: playerPuttsTotal, 
-                rivalNet: rivalPuttsTotal, 
-                amount: puttsTotal, 
-                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
               };
             }
           },
@@ -6221,7 +6211,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   return {
                     front: byLabel('Putts Front 9') ?? (betConfig.putts?.frontAmount ?? 50),
                     back: byLabel('Putts Back 9') ?? (betConfig.putts?.backAmount ?? 50),
-                    total: byLabel('Putts Total') ?? (betConfig.putts?.totalAmount ?? 100),
                   };
                 default:
                   return undefined;
@@ -6288,7 +6277,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'putts':
                   upsert('Putts Front 9', overrides.front);
                   upsert('Putts Back 9', overrides.back);
-                  upsert('Putts Total', overrides.total);
                   break;
                 case 'caros':
                   upsert('Caros', overrides.total);
@@ -6380,7 +6368,6 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
         return {
           front: betConfig.putts?.frontAmount ?? 50,
           back: betConfig.putts?.backAmount ?? 50,
-          total: betConfig.putts?.totalAmount ?? 100,
         };
       default: 
         return {};
