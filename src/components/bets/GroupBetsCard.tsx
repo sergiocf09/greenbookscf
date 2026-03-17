@@ -2349,23 +2349,44 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 if (winners.length === 0) return null;
                 const isAcumulados = skinsGrupalResult.cfg.modality !== 'sinAcumular';
                 const numOthers = skinsGrupalResult.participants.length - 1;
+
+                // Compute actual net money per player
+                const netMoney = new Map<string, number>();
+                if (isAcumulados) {
+                  // Each skin win: winner collects skinValue from each other participant
+                  merged.forEach((val, pid) => {
+                    netMoney.set(pid, val * numOthers);
+                  });
+                } else {
+                  // sinAcumular: pairwise settlement per segment
+                  const pIds = skinsGrupalResult.participants.map(p => p.id);
+                  pIds.forEach(pid => netMoney.set(pid, 0));
+                  const computePairwise = (countMap: Map<string, number>, amt: number) => {
+                    for (let i = 0; i < pIds.length; i++) {
+                      for (let j = i + 1; j < pIds.length; j++) {
+                        const wA = countMap.get(pIds[i]) || 0;
+                        const wB = countMap.get(pIds[j]) || 0;
+                        const diff = wA - wB;
+                        if (diff === 0) continue;
+                        const pay = Math.abs(diff) * amt;
+                        const winnerId = diff > 0 ? pIds[i] : pIds[j];
+                        const loserId = diff > 0 ? pIds[j] : pIds[i];
+                        netMoney.set(winnerId, (netMoney.get(winnerId) || 0) + pay);
+                        netMoney.set(loserId, (netMoney.get(loserId) || 0) - pay);
+                      }
+                    }
+                  };
+                  computePairwise(skinsGrupalResult.front.skinCountByPlayer, skinsGrupalResult.cfg.frontAmount);
+                  computePairwise(skinsGrupalResult.back.skinCountByPlayer, skinsGrupalResult.cfg.backAmount);
+                }
+
                 return (
                   <div className="space-y-1 mt-1">
                     {winners.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
-                      const moneyTotal = isAcumulados
-                        ? (merged.get(pid) || 0) * numOthers
-                        : skinCount * (skinsGrupalResult.cfg.frontAmount + skinsGrupalResult.cfg.backAmount > 0 ? 1 : 0) * numOthers;
-                      // For acumulados use the merged money; for sinAcumular compute from count
-                      const displayAmount = isAcumulados
-                        ? (merged.get(pid) || 0) * numOthers
-                        : (() => {
-                            // Sum front skins * frontAmount + back skins * backAmount
-                            const frontSkins = skinsGrupalResult.front.skinCountByPlayer.get(pid) || 0;
-                            const backSkins = skinsGrupalResult.back.skinCountByPlayer.get(pid) || 0;
-                            return (frontSkins * skinsGrupalResult.cfg.frontAmount + backSkins * skinsGrupalResult.cfg.backAmount) * numOthers;
-                          })();
+                      const displayAmount = netMoney.get(pid) || 0;
+                      if (displayAmount <= 0) return null;
                       return (
                         <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
                           <div className="flex items-center gap-2">
