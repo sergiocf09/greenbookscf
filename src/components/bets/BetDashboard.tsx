@@ -1202,7 +1202,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       }
     }
     
-    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal;
+    // Calculate Skins Grupal from betSummaries (group bet, already pair-level)
+    let skinsGrupalTotal = 0;
+    const isSkinsGrupalDisabled = isBetDisabledForPair('Skins Grupal', ['skinsGrupal']);
+    if (betConfig.skinsGrupal?.enabled && !isSkinsGrupalDisabled) {
+      skinsGrupalTotal = betSummaries
+        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId && s.betType.startsWith('Skins Grupal'))
+        .reduce((sum, s) => sum + s.amount, 0);
+    }
+    
+    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal + skinsGrupalTotal;
   };
   
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
