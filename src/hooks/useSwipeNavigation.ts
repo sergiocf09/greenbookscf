@@ -1,7 +1,8 @@
 import { useRef, useCallback } from 'react';
 
-const SWIPE_THRESHOLD = 50;
-const SWIPE_MAX_Y = 80; // ignore if vertical movement is too large
+const SWIPE_THRESHOLD = 120;       // Requiere gesto más largo e intencional
+const SWIPE_MAX_Y = 40;            // Cancela antes si hay movimiento vertical (scroll)
+const SWIPE_MIN_RATIO = 2.5;       // El movimiento horizontal debe ser 2.5x mayor que el vertical
 
 export function useSwipeNavigation<T extends string>(
   views: T[],
@@ -22,7 +23,10 @@ export function useSwipeNavigation<T extends string>(
     const dy = Math.abs(t.clientY - touchStart.current.y);
     touchStart.current = null;
 
-    if (dy > SWIPE_MAX_Y || Math.abs(dx) < SWIPE_THRESHOLD) return;
+    const absDx = Math.abs(dx);
+    if (dy > SWIPE_MAX_Y) return;                        // Cancela si hay mucho scroll vertical
+    if (absDx < SWIPE_THRESHOLD) return;                 // Requiere gesto largo
+    if (dy > 0 && absDx / dy < SWIPE_MIN_RATIO) return;  // Cancela si no es claramente horizontal
 
     const idx = views.indexOf(currentView);
     if (idx === -1) return;
