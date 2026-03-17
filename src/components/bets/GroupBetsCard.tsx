@@ -2328,31 +2328,53 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
               {/* Totals per player */}
               {(() => {
-                // Merge front + back totals
+                // Merge front + back totals and skin counts
                 const merged = new Map<string, number>();
+                const mergedCount = new Map<string, number>();
                 skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
                 skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
                   merged.set(pid, (merged.get(pid) || 0) + val);
                 });
-                const winners = Array.from(merged.entries())
-                  .filter(([, v]) => v > 0)
+                skinsGrupalResult.front.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                skinsGrupalResult.back.skinCountByPlayer.forEach((val, pid) => {
+                  mergedCount.set(pid, (mergedCount.get(pid) || 0) + val);
+                });
+                const winners = Array.from(mergedCount.entries())
+                  .filter(([, count]) => count > 0)
                   .sort((a, b) => b[1] - a[1]);
                 if (winners.length === 0) return null;
+                const isAcumulados = skinsGrupalResult.cfg.modality !== 'sinAcumular';
+                const numOthers = skinsGrupalResult.participants.length - 1;
                 return (
                   <div className="space-y-1 mt-1">
-                    {winners.map(([pid, total]) => {
+                    {winners.map(([pid, skinCount]) => {
                       const p = getPlayer(pid);
                       if (!p) return null;
+                      const moneyTotal = isAcumulados
+                        ? (merged.get(pid) || 0) * numOthers
+                        : skinCount * (skinsGrupalResult.cfg.frontAmount + skinsGrupalResult.cfg.backAmount > 0 ? 1 : 0) * numOthers;
+                      // For acumulados use the merged money; for sinAcumular compute from count
+                      const displayAmount = isAcumulados
+                        ? (merged.get(pid) || 0) * numOthers
+                        : (() => {
+                            // Sum front skins * frontAmount + back skins * backAmount
+                            const frontSkins = skinsGrupalResult.front.skinCountByPlayer.get(pid) || 0;
+                            const backSkins = skinsGrupalResult.back.skinCountByPlayer.get(pid) || 0;
+                            return (frontSkins * skinsGrupalResult.cfg.frontAmount + backSkins * skinsGrupalResult.cfg.backAmount) * numOthers;
+                          })();
                       return (
                         <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
                           <div className="flex items-center gap-2">
                             <span className="text-green-500 text-xs">🏆</span>
                             <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
                             <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
+                            <span className="text-[10px] text-muted-foreground">#{skinCount}</span>
                           </div>
-                          <span className="text-green-600 font-bold text-sm">+${total}</span>
+                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}
