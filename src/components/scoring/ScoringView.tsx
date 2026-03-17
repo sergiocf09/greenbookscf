@@ -97,7 +97,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
-  const [showHelp, setShowHelp] = useState(false);
   
   const hasMultipleGroups = playerGroups.length > 0;
   
