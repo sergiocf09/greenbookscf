@@ -377,6 +377,8 @@ export const useBetConfigPersistence = ({
           medalTotalValue: config.rayas.medalTotalValue,
           skinVariant: config.rayas.skinVariant,
           oyesMode: config.rayas.oyesMode,
+          oyesModality: config.rayas.oyesModality,
+          pairOyesModalityOverrides: config.rayas.pairOyesModalityOverrides,
           playerSkinVariants: config.rayas.playerSkinVariants,
           pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
           pairSegmentOverrides: config.rayas.pairSegmentOverrides,
@@ -392,6 +394,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: config.oyeses.playerConfigs,
           participantIds: config.oyeses.participantIds,
         },
+        oyesPairModalityOverrides: config.oyesPairModalityOverrides,
         medalGeneral: {
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
