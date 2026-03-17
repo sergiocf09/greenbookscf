@@ -106,7 +106,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
     return pv !== undefined && pv !== (rayas.skinVariant ?? 'acumulados');
   }).length;
 
-  const configSummary = `${(rayas.skinVariant ?? 'acumulados') === 'acumulados' ? 'Acum' : 'Sin Acum'} · ${(rayas as any).oyesMode === 'singleWinner' ? '1 Ganador' : 'Todos vs Todos'}${customSkinVariantCount > 0 ? ` · ${customSkinVariantCount} personaliz.` : ''}`;
+  const configSummary = `${(rayas.skinVariant ?? 'acumulados') === 'acumulados' ? 'Acum' : 'Sin Acum'} · ${(rayas as any).oyesMode === 'singleWinner' ? '1 Ganador' : 'Todos vs Todos'} · ${(rayas.oyesModality ?? 'acumulados') === 'sangron' ? 'Sang' : 'Acum'}${customSkinVariantCount > 0 ? ` · ${customSkinVariantCount} personaliz.` : ''}`;
 
   return (
     <div className="space-y-4">
