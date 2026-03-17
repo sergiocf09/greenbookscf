@@ -5832,7 +5832,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isZoologico = group.key === 'zoologico';
                         const isHistPresion  = group.key === 'hist_presiones';
                         // En histórico solo Presiones tiene segments visibles y muestra description
-                        const showScoreComparison = !isZoologico && (!isHistorical || isHistPresion);
+                        const showScoreComparison = !isZoologico && !isSkinsGrupal && (!isHistorical || isHistPresion);
                         
                         const segmentContent = (
                           <div className="flex items-center gap-3">
