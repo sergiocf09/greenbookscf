@@ -20,6 +20,14 @@ export const calculatePressureBets = (
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.pressures.enabled) return [];
+
+  const getPairOnlyMatch = (pA: string, pB: string): boolean => {
+    const pairKey = [pA, pB].sort().join('_');
+    const pairOverride = config.pressurePairOverrides?.[pairKey];
+    return pairOverride?.onlyMatch !== undefined
+      ? pairOverride.onlyMatch
+      : config.pressures.onlyMatch === true;
+  };
   
   const playersByGroup = groupPlayersByGroup(players);
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
@@ -64,7 +72,7 @@ export const calculatePressureBets = (
       if (!shouldCalculatePair(config.pressures, playerA.id, playerB.id)) continue;
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
-      const onlyMatch = config.pressures.onlyMatch === true;
+      const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
 
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0];

@@ -102,6 +102,8 @@ const remapParticipants = (
   result.crossGroupRivals = {};
   result.groupBetOverrides = {};
   result.disabledTeamBetIds = [];
+  result.pressurePairOverrides = {};
+  result.oyesPairModalityOverrides = {};
 
   // Clear carritos teams (player-specific pairings)
   result.carritos = {

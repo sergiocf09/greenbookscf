@@ -78,6 +78,7 @@ interface RoundBetConfig {
     participantIds?: string[];
   };
   oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
+  pressurePairOverrides?: Record<string, { onlyMatch?: boolean }>;
   medalGeneral?: {
     enabled: boolean;
     amount: number;
@@ -222,12 +223,36 @@ export const useBetConfigPersistence = ({
     setBetConfig(prev => {
       const newConfig = { ...prev };
 
-      if (dbConfig.medal) newConfig.medal = { ...prev.medal, ...dbConfig.medal };
-      if (dbConfig.pressures) newConfig.pressures = { ...prev.pressures, ...dbConfig.pressures };
-      if (dbConfig.skins) newConfig.skins = { ...prev.skins, ...dbConfig.skins };
-      if (dbConfig.caros) newConfig.caros = { ...prev.caros, ...dbConfig.caros };
-      if (dbConfig.units) newConfig.units = { ...prev.units, ...dbConfig.units };
-      if (dbConfig.manchas) newConfig.manchas = { ...prev.manchas, ...dbConfig.manchas };
+      if (dbConfig.medal) newConfig.medal = { ...prev.medal, ...dbConfig.medal,
+        participantIds: 'participantIds' in dbConfig.medal ? dbConfig.medal.participantIds : prev.medal.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.medal ? dbConfig.medal.oneVsAll : prev.medal.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.medal ? dbConfig.medal.anchorPlayerId : prev.medal.anchorPlayerId,
+      };
+      if (dbConfig.pressures) newConfig.pressures = { ...prev.pressures, ...dbConfig.pressures,
+        participantIds: 'participantIds' in dbConfig.pressures ? dbConfig.pressures.participantIds : prev.pressures.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.pressures ? dbConfig.pressures.oneVsAll : prev.pressures.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.pressures ? dbConfig.pressures.anchorPlayerId : prev.pressures.anchorPlayerId,
+      };
+      if (dbConfig.skins) newConfig.skins = { ...prev.skins, ...dbConfig.skins,
+        participantIds: 'participantIds' in dbConfig.skins ? dbConfig.skins.participantIds : prev.skins.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.skins ? dbConfig.skins.oneVsAll : prev.skins.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.skins ? dbConfig.skins.anchorPlayerId : prev.skins.anchorPlayerId,
+      };
+      if (dbConfig.caros) newConfig.caros = { ...prev.caros, ...dbConfig.caros,
+        participantIds: 'participantIds' in dbConfig.caros ? dbConfig.caros.participantIds : prev.caros.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.caros ? dbConfig.caros.oneVsAll : prev.caros.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.caros ? dbConfig.caros.anchorPlayerId : prev.caros.anchorPlayerId,
+      };
+      if (dbConfig.units) newConfig.units = { ...prev.units, ...dbConfig.units,
+        participantIds: 'participantIds' in dbConfig.units ? dbConfig.units.participantIds : prev.units.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.units ? dbConfig.units.oneVsAll : prev.units.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.units ? dbConfig.units.anchorPlayerId : prev.units.anchorPlayerId,
+      };
+      if (dbConfig.manchas) newConfig.manchas = { ...prev.manchas, ...dbConfig.manchas,
+        participantIds: 'participantIds' in dbConfig.manchas ? dbConfig.manchas.participantIds : prev.manchas.participantIds,
+        oneVsAll: 'oneVsAll' in dbConfig.manchas ? dbConfig.manchas.oneVsAll : prev.manchas.oneVsAll,
+        anchorPlayerId: 'anchorPlayerId' in dbConfig.manchas ? dbConfig.manchas.anchorPlayerId : prev.manchas.anchorPlayerId,
+      };
       if (dbConfig.culebras) newConfig.culebras = { ...prev.culebras, ...dbConfig.culebras };
       if (dbConfig.pinguinos) newConfig.pinguinos = { ...prev.pinguinos, ...dbConfig.pinguinos };
       
@@ -263,6 +288,7 @@ export const useBetConfigPersistence = ({
       }
       
       if ('oyesPairModalityOverrides' in dbConfig) newConfig.oyesPairModalityOverrides = dbConfig.oyesPairModalityOverrides;
+      if ('pressurePairOverrides' in dbConfig) newConfig.pressurePairOverrides = dbConfig.pressurePairOverrides;
       
       if (dbConfig.bilateralHandicaps) newConfig.bilateralHandicaps = dbConfig.bilateralHandicaps;
       if (dbConfig.betOverrides) newConfig.betOverrides = dbConfig.betOverrides;
@@ -446,6 +472,7 @@ export const useBetConfigPersistence = ({
         },
         zoologico: config.zoologico,
         skinsGrupal: config.skinsGrupal,
+        pressurePairOverrides: config.pressurePairOverrides,
       };
 
       // Concurrency guard: check updated_at before writing
