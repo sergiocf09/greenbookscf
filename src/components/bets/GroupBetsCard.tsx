@@ -2152,6 +2152,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               confirmedHoles={confirmedHoles}
               basePlayerId={basePlayerId}
               getPlayer={getPlayer}
+              getPlayerAbbr={getPlayerAbbr}
             />
           </>
         )}
