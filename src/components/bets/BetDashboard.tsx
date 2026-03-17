@@ -4074,7 +4074,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
       const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
-      const total = puttsFront + puttsBack;
+      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
+      const total = puttsFront + puttsBack + puttsTotal;
       
       // Calculate total putts for each player
       const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
