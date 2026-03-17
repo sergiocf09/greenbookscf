@@ -2319,6 +2319,40 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   </PopoverContent>
                 </Popover>
               )}
+
+              {/* Totals per player */}
+              {(() => {
+                // Merge front + back totals
+                const merged = new Map<string, number>();
+                skinsGrupalResult.front.totalByPlayer.forEach((val, pid) => {
+                  merged.set(pid, (merged.get(pid) || 0) + val);
+                });
+                skinsGrupalResult.back.totalByPlayer.forEach((val, pid) => {
+                  merged.set(pid, (merged.get(pid) || 0) + val);
+                });
+                const winners = Array.from(merged.entries())
+                  .filter(([, v]) => v > 0)
+                  .sort((a, b) => b[1] - a[1]);
+                if (winners.length === 0) return null;
+                return (
+                  <div className="space-y-1 mt-1">
+                    {winners.map(([pid, total]) => {
+                      const p = getPlayer(pid);
+                      if (!p) return null;
+                      return (
+                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500 text-xs">🏆</span>
+                            <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                            <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
+                          </div>
+                          <span className="text-green-600 font-bold text-sm">+${total}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}
