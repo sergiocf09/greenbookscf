@@ -135,20 +135,20 @@ export function useLeaderboards() {
 
   const joinByCode = useCallback(async (code: string) => {
     try {
-      const { data: eventId, error } = await supabase
-        .rpc('resolve_leaderboard_by_code', { p_code: code });
+      const { data: leaderboardId, error } = await supabase
+        .rpc('join_leaderboard_by_code', { p_code: code, p_handicap: profile?.current_handicap ?? 0 });
       
       if (error) throw error;
-      if (!eventId) {
+      if (!leaderboardId) {
         toast.error('No se encontró un leaderboard con ese código');
         return null;
       }
-      return eventId as string;
+      return leaderboardId as string;
     } catch (err: any) {
       toast.error('Error: ' + err.message);
       return null;
     }
-  }, []);
+  }, [profile]);
 
   return { events, loading, fetchEvents, createEvent, joinByCode };
 }

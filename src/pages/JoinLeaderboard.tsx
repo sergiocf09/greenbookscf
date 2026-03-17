@@ -24,10 +24,10 @@ const JoinLeaderboard = () => {
 
     const resolve = async () => {
       try {
-        const { data: eventId } = await supabase
-          .rpc('resolve_leaderboard_by_code', { p_code: code });
-        if (eventId) {
-          navigate(`/leaderboards/${eventId}`, { replace: true });
+        const { data: leaderboardId } = await supabase
+          .rpc('join_leaderboard_by_code', { p_code: code, p_handicap: 0 });
+        if (leaderboardId) {
+          navigate(`/leaderboards/${leaderboardId}`, { replace: true });
         } else {
           setResolving(false);
         }
