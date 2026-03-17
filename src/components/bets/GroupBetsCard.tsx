@@ -198,6 +198,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
   confirmedHoles,
   basePlayerId,
   getPlayer,
+  getPlayerAbbr,
 }) => {
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
   
