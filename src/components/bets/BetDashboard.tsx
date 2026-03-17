@@ -6211,7 +6211,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   return {
                     front: byLabel('Putts Front 9') ?? (betConfig.putts?.frontAmount ?? 50),
                     back: byLabel('Putts Back 9') ?? (betConfig.putts?.backAmount ?? 50),
-                    total: byLabel('Putts Total') ?? (betConfig.putts?.totalAmount ?? 100),
                   };
                 default:
                   return undefined;
