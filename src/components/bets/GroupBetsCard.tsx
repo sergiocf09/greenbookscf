@@ -406,7 +406,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
       
       {/* Matrix table - columns are the perspective */}
       <div className="overflow-x-auto">
-        <table className="text-[10px] border-collapse">
+        <table className="text-[12px] border-collapse">
           <thead>
             {/* Row 1: Label + Gross scores above column headers */}
             <tr>
