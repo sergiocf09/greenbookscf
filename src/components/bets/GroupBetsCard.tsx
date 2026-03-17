@@ -696,7 +696,7 @@ const StablefordResultBlock: React.FC<{
                 <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsBack}</div>
               </div>
             ))}
-            <div className="border-t border-border/50 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
+            <div className="border-t-2 border-primary/40 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
               Toca afuera para cerrar
             </div>
           </div>
