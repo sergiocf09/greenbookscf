@@ -210,21 +210,33 @@ export const getOyesModalityForPair = (
   playerAId: string,
   playerBId: string
 ): 'acumulados' | 'sangron' => {
+  const pairKey = getPairKey(playerAId, playerBId);
+
+  // 1) Explicit pair override in Rayas (highest priority)
+  const rayasPairOverride = config.rayas?.pairOyesModalityOverrides?.[pairKey];
+  if (rayasPairOverride) return rayasPairOverride;
+
+  // 2) Explicit pair override in individual Oyeses bet
+  const oyesPairOverride = config.oyesPairModalityOverrides?.[pairKey];
+  if (oyesPairOverride) return oyesPairOverride;
+
+  // 3) Bilateral overrides from either player
   const overridesA = config.rayas?.bilateralOverrides?.[playerAId];
   const overrideForB = overridesA?.find(o => o.rivalId === playerBId);
-  
   const overridesB = config.rayas?.bilateralOverrides?.[playerBId];
   const overrideForA = overridesB?.find(o => o.rivalId === playerAId);
-  
-  // Check if either player has set a modality for Oyes with the other
   const modalityFromA = overrideForB?.segments?.oyes?.modality;
   const modalityFromB = overrideForA?.segments?.oyes?.modality;
-  
-  // If either has set 'sangron', use that (takes precedence)
-  if (modalityFromA === 'sangron' || modalityFromB === 'sangron') {
-    return 'sangron';
-  }
-  
+  if (modalityFromA === 'sangron' || modalityFromB === 'sangron') return 'sangron';
+
+  // 4) Global Rayas oyesModality
+  if (config.rayas?.oyesModality) return config.rayas.oyesModality;
+
+  // 5) Per-player configs in individual oyeses
+  const cfgA = config.oyeses?.playerConfigs?.find(pc => pc.playerId === playerAId);
+  const cfgB = config.oyeses?.playerConfigs?.find(pc => pc.playerId === playerBId);
+  if (cfgA?.modality === 'sangron' || cfgB?.modality === 'sangron') return 'sangron';
+
   return 'acumulados';
 };
 

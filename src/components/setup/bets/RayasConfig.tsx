@@ -106,7 +106,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
     return pv !== undefined && pv !== (rayas.skinVariant ?? 'acumulados');
   }).length;
 
-  const configSummary = `${(rayas.skinVariant ?? 'acumulados') === 'acumulados' ? 'Acum' : 'Sin Acum'} · ${(rayas as any).oyesMode === 'singleWinner' ? '1 Ganador' : 'Todos vs Todos'}${customSkinVariantCount > 0 ? ` · ${customSkinVariantCount} personaliz.` : ''}`;
+  const configSummary = `${(rayas.skinVariant ?? 'acumulados') === 'acumulados' ? 'Acum' : 'Sin Acum'} · ${(rayas as any).oyesMode === 'singleWinner' ? '1 Ganador' : 'Todos vs Todos'} · ${(rayas.oyesModality ?? 'acumulados') === 'sangron' ? 'Sang' : 'Acum'}${customSkinVariantCount > 0 ? ` · ${customSkinVariantCount} personaliz.` : ''}`;
 
   return (
     <div className="space-y-4">
@@ -179,6 +179,27 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                 <SelectItem value="allVsAll" className="text-[11px]">Todos vs Todos</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Oyes Modality Selector (Acumulado / Sangrón) */}
+          <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+            <Label className="text-xs text-muted-foreground">Modalidad Oyes</Label>
+            <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ oyesModality: 'acumulados' }); }}
+                className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                  (rayas.oyesModality ?? 'acumulados') === 'acumulados'
+                    ? "bg-golf-gold text-golf-dark font-medium"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}>Acumulado</button>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ oyesModality: 'sangron' }); }}
+                className={cn("px-2 py-1 text-[10px] rounded transition-colors",
+                  (rayas.oyesModality ?? 'acumulados') === 'sangron'
+                    ? "bg-destructive text-destructive-foreground font-medium"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}>Sangrón</button>
+            </div>
           </div>
 
           <p className="text-[9px] text-muted-foreground">La variante por par de jugadores se puede ajustar en el Dashboard de Apuestas.</p>

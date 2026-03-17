@@ -202,6 +202,8 @@ export interface RayasBetConfig {
   medalTotalValue: number; // Value for the Medal Total raya
   skinVariant: RayasSkinVariant; // Default skins variant
   oyesMode: RayasOyesMode; // How Oyes winners are calculated: 'singleWinner' = #1 beats all, 'allVsAll' = compare by pair
+  oyesModality?: 'acumulados' | 'sangron'; // Global default modality for Rayas oyes segment
+  pairOyesModalityOverrides?: Record<string, 'acumulados' | 'sangron'>; // pairKey -> modality
   playerSkinVariants?: Record<string, RayasSkinVariant>; // Per-player skin variant override (playerId -> variant)
   // Per-pair skin variant resolution when players disagree. Key = sorted "idA_idB"
   pairSkinVariantOverrides?: Record<string, RayasSkinVariant>;
@@ -436,6 +438,8 @@ export interface BetConfig {
   // Per-group overrides: allows each group to customize bet participation/amounts
   // Key is the groupId, value is a partial bet config that overrides the template
   groupBetOverrides?: Record<string, GroupBetOverride>;
+  // Per-pair oyes modality override for individual oyeses bet (pairKey -> modality)
+  oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
   // NEW BET TYPES
   putts: PuttsBetConfig;
   sideBets: SideBetsConfig;

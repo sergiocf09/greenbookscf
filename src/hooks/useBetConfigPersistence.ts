@@ -42,6 +42,8 @@ interface RoundBetConfig {
     medalTotalValue: number;
     skinVariant: 'acumulados' | 'sinAcumulacion';
     oyesMode?: 'allVsAll' | 'singleWinner';
+    oyesModality?: 'acumulados' | 'sangron';
+    pairOyesModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
     playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumulacion'>;
     pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumulacion'>;
     segments?: {
@@ -75,6 +77,7 @@ interface RoundBetConfig {
     }>;
     participantIds?: string[];
   };
+  oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
   medalGeneral?: {
     enabled: boolean;
     amount: number;
@@ -237,6 +240,8 @@ export const useBetConfigPersistence = ({
           medalTotalValue: dbRayas.medalTotalValue ?? prev.rayas.medalTotalValue,
           skinVariant: dbRayas.skinVariant ?? prev.rayas.skinVariant,
           oyesMode: dbRayas.oyesMode ?? 'allVsAll',
+          oyesModality: dbRayas.oyesModality ?? prev.rayas.oyesModality,
+          pairOyesModalityOverrides: dbRayas.pairOyesModalityOverrides ?? prev.rayas.pairOyesModalityOverrides,
           playerSkinVariants: dbRayas.playerSkinVariants ?? prev.rayas.playerSkinVariants,
           pairSkinVariantOverrides: dbRayas.pairSkinVariantOverrides ?? prev.rayas.pairSkinVariantOverrides,
           pairSegmentOverrides: dbRayas.pairSegmentOverrides ?? prev.rayas.pairSegmentOverrides,
@@ -256,6 +261,8 @@ export const useBetConfigPersistence = ({
           participantIds: 'participantIds' in dbConfig.oyeses ? dbConfig.oyeses.participantIds : prev.oyeses.participantIds,
         };
       }
+      
+      if ('oyesPairModalityOverrides' in dbConfig) newConfig.oyesPairModalityOverrides = dbConfig.oyesPairModalityOverrides;
       
       if (dbConfig.bilateralHandicaps) newConfig.bilateralHandicaps = dbConfig.bilateralHandicaps;
       if (dbConfig.betOverrides) newConfig.betOverrides = dbConfig.betOverrides;
@@ -374,6 +381,8 @@ export const useBetConfigPersistence = ({
           medalTotalValue: config.rayas.medalTotalValue,
           skinVariant: config.rayas.skinVariant,
           oyesMode: config.rayas.oyesMode,
+          oyesModality: config.rayas.oyesModality,
+          pairOyesModalityOverrides: config.rayas.pairOyesModalityOverrides,
           playerSkinVariants: config.rayas.playerSkinVariants,
           pairSkinVariantOverrides: config.rayas.pairSkinVariantOverrides,
           pairSegmentOverrides: config.rayas.pairSegmentOverrides,
@@ -389,6 +398,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: config.oyeses.playerConfigs,
           participantIds: config.oyeses.participantIds,
         },
+        oyesPairModalityOverrides: config.oyesPairModalityOverrides,
         medalGeneral: {
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
