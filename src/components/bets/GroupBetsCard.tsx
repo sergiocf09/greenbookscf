@@ -427,7 +427,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                 return (
                   <th 
                     key={pid} 
-                    className="p-1 border-b border-border/50 text-center min-w-[36px]"
+                    className="p-1.5 border-b border-border/50 text-center min-w-[44px]"
                   >
                     {isWinner && circleCount > 0 ? (
                       <div className="relative inline-flex items-center justify-center">
