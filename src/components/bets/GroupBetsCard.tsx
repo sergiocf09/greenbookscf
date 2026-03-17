@@ -480,7 +480,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                     <td 
                       key={colPlayerId} 
                       className={cn(
-                        "p-1 text-center",
+                        "p-1.5 text-center",
                         cell.result === 'win' && "bg-green-100 dark:bg-green-900/30 text-green-700",
                         cell.result === 'loss' && "bg-red-100 dark:bg-red-900/30 text-destructive",
                         cell.result === 'tie' && "bg-muted/50"
