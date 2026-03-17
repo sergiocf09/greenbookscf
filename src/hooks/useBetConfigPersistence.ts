@@ -42,6 +42,8 @@ interface RoundBetConfig {
     medalTotalValue: number;
     skinVariant: 'acumulados' | 'sinAcumulacion';
     oyesMode?: 'allVsAll' | 'singleWinner';
+    oyesModality?: 'acumulados' | 'sangron';
+    pairOyesModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
     playerSkinVariants?: Record<string, 'acumulados' | 'sinAcumulacion'>;
     pairSkinVariantOverrides?: Record<string, 'acumulados' | 'sinAcumulacion'>;
     segments?: {
@@ -75,6 +77,7 @@ interface RoundBetConfig {
     }>;
     participantIds?: string[];
   };
+  oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
   medalGeneral?: {
     enabled: boolean;
     amount: number;
