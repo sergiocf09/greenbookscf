@@ -8,8 +8,7 @@ import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2, DollarSign, HelpCircle, Target } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Check, CheckCircle2, DollarSign, Target } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
@@ -98,7 +97,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 }) => {
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
-  const [showHelp, setShowHelp] = useState(false);
   
   const hasMultipleGroups = playerGroups.length > 0;
   
@@ -141,7 +139,27 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   const handleConfirmHole = useCallback((holeNumber: number) => {
     const playerIds = displayPlayers.map(p => p.id);
     confirmHole(holeNumber, playerIds);
-  }, [displayPlayers, confirmHole]);
+
+    // Auto-advance to next unconfirmed hole
+    // Look forward first from current hole, then wrap around from hole 1
+    const findNextUnconfirmed = (): number | null => {
+      // Forward from current+1 to 18
+      for (let h = holeNumber + 1; h <= 18; h++) {
+        if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      }
+      // Wrap: from 1 to current-1
+      for (let h = 1; h < holeNumber; h++) {
+        if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      }
+      return null;
+    };
+
+    const next = findNextUnconfirmed();
+    if (next !== null) {
+      // Small delay so the user sees the green confirmation before navigating
+      setTimeout(() => setCurrentHole(next), 350);
+    }
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole]);
 
   return (
     <>
@@ -162,18 +180,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Hole Navigation */}
       <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
-
-      {/* Help button row */}
-      <div className="flex justify-end -mt-1 mb-1">
-        <button
-          type="button"
-          onClick={() => setShowHelp(true)}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded-full hover:bg-muted/50"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          Ayuda
-        </button>
-      </div>
 
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
@@ -305,38 +311,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           Sig →
         </Button>
       </div>
-
-      {/* Help Sheet */}
-      <Sheet open={showHelp} onOpenChange={(o) => { if (!o) setShowHelp(false); }}>
-        <SheetContent side="top" className="max-h-[80vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>
-              <div className="flex items-center gap-2">
-                <span>📓</span>
-                <span>Captura de Scores</span>
-              </div>
-            </SheetTitle>
-            <SheetDescription>Ayuda de captura</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-3 mt-4 text-sm text-muted-foreground">
-            {[
-              'Navega entre hoyos tocando el número en la barra superior. Los hoyos confirmados aparecen en verde.',
-              'Para cada jugador ingresa los golpes (strokes) y los putts del hoyo. Los badges de birdie 🐦, águila 🦅 y doble dígito 🔟 se detectan automáticamente al capturar.',
-              'Toca el ícono de marcadores junto a cada jugador para registrar manualmente: Sandy Par 🏖️, Aqua Par 💧, Hole Out 🎯, Doble OB 🚫, Trampa ⚠️, Pinkies 👠, Paloma 💨, Retruje ↩️, Moreliana 🎭 y más.',
-              'En hoyos par 3, si la apuesta de Oyeses está activa aparece el botón 🎯 flotante — tócalo para registrar el orden de proximidad al pin de todos los jugadores.',
-              'Cuando estén capturados todos los golpes y putts del hoyo, toca "Confirmar Scores del Hoyo" — solo los hoyos confirmados entran al cálculo de apuestas.',
-              'Usa los botones "← Ant" y "Sig →" para moverte entre hoyos, o toca directamente el número en la barra de navegación.',
-              'Si hay grupos adicionales en la ronda, aparece un selector arriba para cambiar de grupo y capturar sus scores.',
-              'El botón 💲 permite agregar Side Bets manuales para apuestas extra no contempladas en la configuración. El botón 🐾 registra incidencias del Zoológico si esa apuesta está activa.',
-            ].map((item, i) => (
-              <div key={i} className="flex gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
     </>
   );
 };

@@ -6,6 +6,20 @@ import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards';
 
 const helpContent: Record<string, { icon: React.ReactNode; title: string; items: string[] }> = {
+  scoring: {
+    icon: <Settings className="h-5 w-5 text-primary" />,
+    title: '📓 Captura de Scores',
+    items: [
+      'Navega entre hoyos tocando el número en la barra superior. Los hoyos confirmados aparecen en verde.',
+      'Para cada jugador ingresa los golpes (strokes) y los putts del hoyo. Los badges de birdie 🐦, águila 🦅 y doble dígito 🔟 se detectan automáticamente al capturar.',
+      'Toca el ícono de marcadores junto a cada jugador para registrar manualmente: Sandy Par 🏖️, Aqua Par 💧, Hole Out 🎯, Doble OB 🚫, Trampa ⚠️, Pinkies 👠, Paloma 💨, Retruje ↩️, Moreliana 🎭 y más.',
+      'En hoyos par 3, si la apuesta de Oyeses está activa aparece el botón 🎯 flotante — tócalo para registrar el orden de proximidad al pin de todos los jugadores.',
+      'Cuando estén capturados todos los golpes y putts del hoyo, toca "Confirmar Scores del Hoyo" — solo los hoyos confirmados entran al cálculo de apuestas. Al confirmar, avanzas automáticamente al siguiente hoyo sin confirmar.',
+      'Usa los botones "← Ant" y "Sig →" para moverte entre hoyos, o toca directamente el número en la barra de navegación.',
+      'Si hay grupos adicionales en la ronda, aparece un selector arriba para cambiar de grupo y capturar sus scores.',
+      'El botón 💲 permite agregar Side Bets manuales para apuestas extra no contempladas en la configuración. El botón 🐾 registra incidencias del Zoológico si esa apuesta está activa.',
+    ],
+  },
   setup: {
     icon: <Settings className="h-5 w-5 text-primary" />,
     title: '⚙️ Configuración de Ronda',
