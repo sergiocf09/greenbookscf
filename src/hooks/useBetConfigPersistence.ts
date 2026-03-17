@@ -240,6 +240,8 @@ export const useBetConfigPersistence = ({
           medalTotalValue: dbRayas.medalTotalValue ?? prev.rayas.medalTotalValue,
           skinVariant: dbRayas.skinVariant ?? prev.rayas.skinVariant,
           oyesMode: dbRayas.oyesMode ?? 'allVsAll',
+          oyesModality: dbRayas.oyesModality ?? prev.rayas.oyesModality,
+          pairOyesModalityOverrides: dbRayas.pairOyesModalityOverrides ?? prev.rayas.pairOyesModalityOverrides,
           playerSkinVariants: dbRayas.playerSkinVariants ?? prev.rayas.playerSkinVariants,
           pairSkinVariantOverrides: dbRayas.pairSkinVariantOverrides ?? prev.rayas.pairSkinVariantOverrides,
           pairSegmentOverrides: dbRayas.pairSegmentOverrides ?? prev.rayas.pairSegmentOverrides,
