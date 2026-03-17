@@ -440,6 +440,8 @@ export interface BetConfig {
   groupBetOverrides?: Record<string, GroupBetOverride>;
   // Per-pair oyes modality override for individual oyeses bet (pairKey -> modality)
   oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
+  // Per-pair pressure overrides (pairKey -> overrides)
+  pressurePairOverrides?: Record<string, { onlyMatch?: boolean }>;
   // NEW BET TYPES
   putts: PuttsBetConfig;
   sideBets: SideBetsConfig;
