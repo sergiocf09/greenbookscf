@@ -486,7 +486,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                         cell.result === 'tie' && "bg-muted/50"
                       )}
                     >
-                      <div className="flex items-center justify-center gap-0.5">
+                      <div className="flex items-center justify-center gap-1">
                         <span className="font-medium">{cell.rivalNet}</span>
                         <span className="text-muted-foreground">v</span>
                         <span className="font-medium">{cell.playerNet}</span>
