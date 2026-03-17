@@ -5851,7 +5851,44 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         );
                       })()
                     ) : (
-                      group.segments.map((segment) => {
+                      <div>
+                        {/* Solo Match per-pair toggle for Pressures */}
+                        {group.key === 'pressures' && !isHistorical && onBetConfigChange && (() => {
+                          const pairKey = [player.id, rival.id].sort().join('_');
+                          const pairOverride = betConfig.pressurePairOverrides?.[pairKey];
+                          const globalOnlyMatch = betConfig.pressures.onlyMatch === true;
+                          const currentOnlyMatch = pairOverride?.onlyMatch !== undefined
+                            ? pairOverride.onlyMatch
+                            : globalOnlyMatch;
+                          const isOverridden = pairOverride?.onlyMatch !== undefined && pairOverride.onlyMatch !== globalOnlyMatch;
+                          return (
+                            <div className="flex items-center justify-between px-3 py-1.5 bg-muted/20 border-t border-border/20">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground">Solo Match</span>
+                                {isOverridden && (
+                                  <span className="text-[9px] text-amber-500 bg-amber-500/10 rounded px-1">✱ este par</span>
+                                )}
+                              </div>
+                              <Switch
+                                className="scale-75"
+                                checked={currentOnlyMatch}
+                                onCheckedChange={(val) => {
+                                  onBetConfigChange({
+                                    ...betConfig,
+                                    pressurePairOverrides: {
+                                      ...(betConfig.pressurePairOverrides ?? {}),
+                                      [pairKey]: {
+                                        ...(betConfig.pressurePairOverrides?.[pairKey] ?? {}),
+                                        onlyMatch: val,
+                                      },
+                                    },
+                                  });
+                                }}
+                              />
+                            </div>
+                          );
+                        })()}
+                      {group.segments.map((segment) => {
                         const data = group.getSegmentData(segment.key);
                         
                         // For pressures, show "Even" ONLY when:
