@@ -88,7 +88,11 @@ export const getOyesesPairResult = (
   
   if (!modalityA || !modalityB) return null;
   
-  const pairModality = (modalityA === modalityB) ? modalityA : 'sangron';
+  // Check explicit pair override first (from individual oyeses bet)
+  const pairKey = [playerAId, playerBId].sort().join('_');
+  const pairOverride = config.oyesPairModalityOverrides?.[pairKey];
+  const pairModality: OyesModality = pairOverride
+    ?? ((modalityA === modalityB) ? modalityA : 'sangron');
   
   let accumulated = 0;
   let pendingAccumulatedHoles = 0; // Holes accumulated but not yet won
