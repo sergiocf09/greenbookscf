@@ -472,6 +472,7 @@ export const useBetConfigPersistence = ({
         },
         zoologico: config.zoologico,
         skinsGrupal: config.skinsGrupal,
+        pressurePairOverrides: config.pressurePairOverrides,
       };
 
       // Concurrency guard: check updated_at before writing
