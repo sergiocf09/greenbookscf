@@ -4074,7 +4074,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
       const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
-      const total = puttsFront + puttsBack;
+      const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
+      const total = puttsFront + puttsBack + puttsTotal;
       
       // Calculate total putts for each player
       const getPlayerPutts = (playerId: string, startHole: number, endHole: number): number => {
@@ -4099,6 +4100,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           segments: [
             { label: 'Front 9', key: 'putts_front', overrideLabel: 'Putts Front 9' },
             { label: 'Back 9', key: 'putts_back', overrideLabel: 'Putts Back 9' },
+            { label: 'Total 18', key: 'putts_total', overrideLabel: 'Putts Total' },
           ],
           getTotal: () => total,
           getSegmentData: (segmentKey) => {
@@ -4109,12 +4111,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 amount: puttsFront, 
                 description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
               };
-            } else {
+            } else if (segmentKey === 'putts_back') {
               return { 
                 playerNet: playerPuttsBack, 
                 rivalNet: rivalPuttsBack, 
                 amount: puttsBack, 
                 description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
+              };
+            } else {
+              return { 
+                playerNet: playerPuttsTotal, 
+                rivalNet: rivalPuttsTotal, 
+                amount: puttsTotal, 
+                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
               };
             }
           },
@@ -5978,7 +5987,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && segmentType !== 'total') || isSkins || isPutts) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && segmentType !== 'total') || isSkins || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">

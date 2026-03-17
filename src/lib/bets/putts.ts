@@ -28,6 +28,7 @@ export const calculatePuttsBets = (
   const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
     { key: 'front', holes: ranges.front, amount: config.putts.frontAmount || 0, label: 'Putts Front 9' },
     { key: 'back', holes: ranges.back, amount: config.putts.backAmount || 0, label: 'Putts Back 9' },
+    { key: 'total', holes: [ranges.front[0], ranges.back[1]], amount: config.putts.totalAmount || 0, label: 'Putts Total' },
   ];
 
   const getPairOverrideAmount = (playerAId: string, playerBId: string, label: string): number | undefined => {
