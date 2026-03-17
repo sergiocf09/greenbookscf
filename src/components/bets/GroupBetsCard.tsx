@@ -291,7 +291,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
 
   return (
     <>
-      <div className="border-t border-border/50" />
+      <div className="border-t-2 border-primary/40" />
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -745,13 +745,13 @@ const SkinsGrupalPopover: React.FC<{
         <table className="text-[10px] border-collapse w-full">
           <thead>
             <tr>
-              <th className="p-0.5 text-[9px] text-muted-foreground font-normal text-left">H</th>
+              <th className="p-1 text-[10px] text-muted-foreground font-normal text-left">H</th>
               {participants.map(p => (
-                <th key={p.id} className="p-0.5 text-center font-bold min-w-[28px]">
+                <th key={p.id} className="p-1 text-center font-bold min-w-[40px]">
                   {getPlayerAbbr(p)}
                 </th>
               ))}
-              <th className="p-0.5 text-center text-[9px] text-muted-foreground font-normal">Skin</th>
+              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">Skin</th>
             </tr>
           </thead>
           <tbody>
@@ -759,14 +759,14 @@ const SkinsGrupalPopover: React.FC<{
               const winner = hole.winnerId;
               return (
                 <tr key={hole.holeNum}>
-                  <td className="p-0.5 text-muted-foreground font-medium">{hole.holeNum}</td>
+                  <td className="p-1 text-[11px] text-muted-foreground font-medium">{hole.holeNum}</td>
                   {participants.map(p => {
                     const entry = hole.nets.find(n => n.playerId === p.id);
-                    if (!entry) return <td key={p.id} className="p-0.5 text-center text-muted-foreground">-</td>;
+                    if (!entry) return <td key={p.id} className="p-1 text-center text-[12px] text-muted-foreground">-</td>;
                     const isWinner = winner === p.id;
                     return (
                       <td key={p.id} className={cn(
-                        'p-0.5 text-center font-bold',
+                        'p-1 text-center text-[12px] font-bold',
                         isWinner ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                         winner ? 'bg-red-100 dark:bg-red-900/20 text-destructive' :
                         'text-muted-foreground'
@@ -776,7 +776,7 @@ const SkinsGrupalPopover: React.FC<{
                     );
                   })}
                   <td className={cn(
-                    'p-0.5 text-center font-bold',
+                    'p-1 text-center text-[12px] font-bold',
                     winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
                   )}>
                     {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
@@ -1610,7 +1610,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Pinguinos - Simplified view with collapsible detail */}
         {pinguinosResult && (
           <>
-            {culebrasResult && <div className="border-t border-border/50" />}
+            {culebrasResult && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
               <div 
                 className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
@@ -1699,8 +1699,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Zoologico - Camellos, Peces, Gorilas (after Pingüinos, before Coneja) */}
         {zoologicoResults.map((result, idx) => (
           <React.Fragment key={result.animalType}>
-            {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t border-border/50" />}
-            {idx > 0 && <div className="border-t border-border/30" />}
+            {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t-2 border-primary/40" />}
+            {idx > 0 && <div className="border-t-2 border-primary/25" />}
             <div className="space-y-2">
               <div 
                 className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
@@ -1789,7 +1789,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Manchas & Unidades toggle buttons - Informational */}
         {(manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t-2 border-primary/40" />}
             {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
             <div className="flex justify-center gap-6">
               {oyesesSummary && (
@@ -2141,7 +2141,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Coneja - Patas system (before Medal General) */}
         {conejaResult && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t-2 border-primary/40" />}
             <ConejaSection
               conejaResult={conejaResult}
               players={sameGroupPlayers}
@@ -2158,7 +2158,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Medal General - Scope-aware rendering */}
         {(medalGeneralGroupResult || medalGeneralGlobalResult) && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2201,7 +2201,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Stableford - Scope-aware rendering */}
         {betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
-            <div className="border-t border-border/50" />
+            <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2244,7 +2244,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Skins Grupal */}
         {skinsGrupalResult && (
           <>
-            <div className="border-t border-border/50" />
+            <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2382,16 +2382,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       const displayAmount = grossWinnings.get(pid) || 0;
                       if (displayAmount <= 0) return null;
                       return (
-                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-500 text-xs">🏆</span>
-                            <PlayerAvatar initials={p.initials} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
-                            <span className="font-medium text-sm">{formatPlayerNameTwoWords(p.name)}</span>
-                            <span className="text-[10px] text-muted-foreground bg-golf-gold/20 text-golf-dark rounded-full px-1.5 py-0.5 font-semibold">
-                              {skinCount} skin{skinCount !== 1 ? 's' : ''}
+                        <div key={pid} className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-2 py-1.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="sm" isLoggedInUser={p.id === basePlayerId} />
+                            <span className="font-medium text-sm truncate">{formatPlayerNameTwoWords(p.name)}</span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-2">
+                            <span className="text-sm font-bold text-green-600">+${displayAmount}</span>
+                            <span className="text-sm font-bold text-golf-dark bg-golf-gold/30 rounded-full w-6 h-6 flex items-center justify-center">
+                              {skinCount}
                             </span>
                           </div>
-                          <span className="text-green-600 font-bold text-sm">+${displayAmount}</span>
                         </div>
                       );
                     })}
