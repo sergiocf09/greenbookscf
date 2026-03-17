@@ -5669,6 +5669,39 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                     ))}
                                   </div>
+                                  {/* Oyes modality toggle within Rayas */}
+                                  {segConflicts.find(s => s.segmentKey === 'oyes')?.effectiveEnabled && (
+                                    <div className="flex items-center justify-between pt-2 border-t border-border/20 mt-1">
+                                      <span className="text-[10px] text-muted-foreground">Oyes modalidad:</span>
+                                      <div className="flex gap-1">
+                                        {(['acumulados', 'sangron'] as const).map(mod => {
+                                          const oyesPairKey = getPairKey(player.id, rival.id);
+                                          const currentOyesModality = getOyesModalityForPair(effectiveBetConfig, player.id, rival.id);
+                                          return (
+                                            <button key={mod} type="button"
+                                              onClick={() => onBetConfigChange({
+                                                ...betConfig,
+                                                rayas: {
+                                                  ...betConfig.rayas,
+                                                  pairOyesModalityOverrides: {
+                                                    ...(betConfig.rayas?.pairOyesModalityOverrides ?? {}),
+                                                    [oyesPairKey]: mod,
+                                                  }
+                                                }
+                                              })}
+                                              className={cn(
+                                                'px-2 py-0.5 text-[9px] rounded transition-colors',
+                                                currentOyesModality === mod
+                                                  ? mod === 'sangron' ? 'bg-destructive text-destructive-foreground font-medium' : 'bg-golf-gold text-golf-dark font-medium'
+                                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                              )}>
+                                              {mod === 'acumulados' ? 'Acumulado' : 'Sangrón'}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                   {allOff && (
                                     <div className="text-[10px] text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
                                       <X className="h-3 w-3" />
