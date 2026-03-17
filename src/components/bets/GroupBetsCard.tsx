@@ -186,6 +186,7 @@ interface ConejaSectionProps {
   confirmedHoles: Set<number>;
   basePlayerId?: string;
   getPlayer: (id: string) => Player | undefined;
+  getPlayerAbbr: (p: Player) => string;
 }
 
 const ConejaSection: React.FC<ConejaSectionProps> = ({
@@ -197,6 +198,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
   confirmedHoles,
   basePlayerId,
   getPlayer,
+  getPlayerAbbr,
 }) => {
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
   
@@ -269,12 +271,12 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
             </div>
             {/* Only show initials of the pata holder, not when a pata was lost to someone */}
             {(hd.hasPata && pataPlayer && !showTie) && (
-              <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{pataPlayer.initials}</span>
+              <span className="text-[8px] font-bold text-amber-700 dark:text-amber-400">{getPlayerAbbr(pataPlayer)}</span>
             )}
           </button>
         </PopoverTrigger>
         {hd.isConfirmed && (
-          <PopoverContent className="w-auto p-2" side="top">
+          <PopoverContent className="w-[95vw] max-w-sm p-3" side="top">
             <HoleMatrixTooltip 
               holeNumber={hd.holeNumber} 
               players={players}
@@ -343,9 +345,8 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                   <div key={playerId} className="bg-green-500/10 border border-green-500/30 rounded-lg p-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-green-500 text-xs">🏆</span>
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="font-medium text-sm">{player.name.split(' ')[0]}</span>
+                        <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="font-medium text-sm">{formatPlayerNameTwoWords(player.name)}</span>
                         <span className="text-[10px] text-muted-foreground">
                           {setDescriptions}
                         </span>
@@ -405,20 +406,20 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
       
       {/* Matrix table - columns are the perspective */}
       <div className="overflow-x-auto">
-        <table className="text-[10px] border-collapse">
+        <table className="text-[12px] border-collapse">
           <thead>
             {/* Row 1: Label + Gross scores above column headers */}
             <tr>
-              <th className="p-1 text-[9px] text-muted-foreground font-normal">Gross</th>
+              <th className="p-1.5 text-[10px] text-muted-foreground font-normal">Gross</th>
               {matrix.playerIds.map(pid => (
-                <th key={`gross-${pid}`} className="p-0.5 text-center text-muted-foreground font-normal">
+                <th key={`gross-${pid}`} className="p-1 text-center text-muted-foreground font-normal">
                   {matrix.playerGrossScores[pid] || '-'}
                 </th>
               ))}
             </tr>
             {/* Row 2: Column player initials with circles for winner (multiple if accumulated) */}
             <tr>
-              <th className="p-1 border-b border-r border-border/50"></th>
+              <th className="p-1.5 border-b border-r border-border/50"></th>
               {matrix.playerIds.map(pid => {
                 const isWinner = matrix.winnerId === pid;
                 const circleCount = isWinner ? Math.min(matrix.conejasWonCount || 1, 3) : 0;
@@ -426,7 +427,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                 return (
                   <th 
                     key={pid} 
-                    className="p-1 border-b border-border/50 text-center min-w-[36px]"
+                    className="p-1.5 border-b border-border/50 text-center min-w-[44px]"
                   >
                     {isWinner && circleCount > 0 ? (
                       <div className="relative inline-flex items-center justify-center">
@@ -454,13 +455,13 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
           <tbody>
             {matrix.playerIds.map(rowPlayerId => (
               <tr key={rowPlayerId}>
-                <td className="p-1 border-r border-border/50 font-bold">
+                <td className="p-1.5 border-r border-border/50 font-bold">
                   {matrix.playerInitials[rowPlayerId]}
                 </td>
                 {matrix.playerIds.map(colPlayerId => {
                   if (rowPlayerId === colPlayerId) {
                     return (
-                      <td key={colPlayerId} className="p-1 text-center bg-muted/30">—</td>
+                      <td key={colPlayerId} className="p-1.5 text-center bg-muted/30">—</td>
                     );
                   }
                   
@@ -468,7 +469,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                   // cells[colPlayerId][rowPlayerId] gives column's perspective
                   const cell = matrix.cells[colPlayerId]?.[rowPlayerId];
                   if (!cell) {
-                    return <td key={colPlayerId} className="p-1 text-center">-</td>;
+                    return <td key={colPlayerId} className="p-1.5 text-center">-</td>;
                   }
                   
                   // cell.playerNet is column player's net, cell.rivalNet is row player's net
@@ -479,13 +480,13 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
                     <td 
                       key={colPlayerId} 
                       className={cn(
-                        "p-1 text-center",
+                        "p-1.5 text-center",
                         cell.result === 'win' && "bg-green-100 dark:bg-green-900/30 text-green-700",
                         cell.result === 'loss' && "bg-red-100 dark:bg-red-900/30 text-destructive",
                         cell.result === 'tie' && "bg-muted/50"
                       )}
                     >
-                      <div className="flex items-center justify-center gap-0.5">
+                      <div className="flex items-center justify-center gap-1">
                         <span className="font-medium">{cell.rivalNet}</span>
                         <span className="text-muted-foreground">v</span>
                         <span className="font-medium">{cell.playerNet}</span>
@@ -502,13 +503,13 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
       
       {/* Winner indicator */}
       {winnerPlayer ? (
-        <div className="text-[10px] text-green-600 text-center pt-1 border-t border-border/50 flex items-center justify-center gap-1">
+        <div className="text-[10px] text-green-600 text-center pt-1 border-t-2 border-primary/40 flex items-center justify-center gap-1">
           <span>🐰</span>
           <span className="font-bold">{winnerPlayer.initials}</span>
           <span>gana pata</span>
         </div>
       ) : (
-        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t border-border/50">
+        <div className="text-[10px] text-muted-foreground text-center pt-1 border-t-2 border-primary/40">
           Empate - Sin ganador absoluto
         </div>
       )}
@@ -695,7 +696,7 @@ const StablefordResultBlock: React.FC<{
                 <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsBack}</div>
               </div>
             ))}
-            <div className="border-t border-border/50 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
+            <div className="border-t-2 border-primary/40 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
               Toca afuera para cerrar
             </div>
           </div>
@@ -1568,8 +1569,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       className="h-8"
                       onClick={() => handleSelectTieBreakLoser('culebras', culebrasResult.tieHole || 0, player.id)}
                     >
-                      <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                      <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                      <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                      <span className="ml-1.5">{formatPlayerNameTwoWords(player.name)}</span>
                     </Button>
                   ))}
                 </div>
@@ -1656,8 +1657,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         className="h-8"
                         onClick={() => handleSelectTieBreakLoser('pinguinos', pinguinosResult.tieHole || 0, player.id)}
                       >
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                        <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="ml-1.5">{formatPlayerNameTwoWords(player.name)}</span>
                       </Button>
                     ))}
                   </div>
@@ -1746,8 +1747,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         className="h-8"
                         onClick={() => handleSelectZooTieBreakLoser(result.animalType, result.tieHole || 0, player.id)}
                       >
-                        <PlayerAvatar initials={player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                        <span className="ml-1.5">{formatPlayerName(player.name).split(' ')[0]}</span>
+                        <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
+                        <span className="ml-1.5">{formatPlayerNameTwoWords(player.name)}</span>
                       </Button>
                     ))}
                   </div>
@@ -2151,6 +2152,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               confirmedHoles={confirmedHoles}
               basePlayerId={basePlayerId}
               getPlayer={getPlayer}
+              getPlayerAbbr={getPlayerAbbr}
             />
           </>
         )}
