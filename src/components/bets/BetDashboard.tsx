@@ -5785,6 +5785,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isPressures = group.key === 'pressures';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
+                        const isSkinsGrupal = group.key === 'skinsGrupal';
                         const pressureDesc = data.description || '';
                         
                         // NOTE: pressureDisplay is computed after segmentType/pressureSegmentData are defined.
@@ -5831,7 +5832,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isZoologico = group.key === 'zoologico';
                         const isHistPresion  = group.key === 'hist_presiones';
                         // En histórico solo Presiones tiene segments visibles y muestra description
-                        const showScoreComparison = !isZoologico && (!isHistorical || isHistPresion);
+                        const showScoreComparison = !isZoologico && !isSkinsGrupal && (!isHistorical || isHistPresion);
                         
                         const segmentContent = (
                           <div className="flex items-center gap-3">
@@ -5874,7 +5875,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && segmentType !== 'total') || isSkins || isPutts) && !isHistorical ? (
+                            {((isPressures && segmentType !== 'total') || isSkins || isPutts) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
