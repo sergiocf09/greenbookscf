@@ -291,7 +291,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
 
   return (
     <>
-      <div className="border-t border-border/50" />
+      <div className="border-t-2 border-primary/40" />
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -1610,7 +1610,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Pinguinos - Simplified view with collapsible detail */}
         {pinguinosResult && (
           <>
-            {culebrasResult && <div className="border-t border-border/50" />}
+            {culebrasResult && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
               <div 
                 className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
@@ -1699,8 +1699,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Zoologico - Camellos, Peces, Gorilas (after Pingüinos, before Coneja) */}
         {zoologicoResults.map((result, idx) => (
           <React.Fragment key={result.animalType}>
-            {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t border-border/50" />}
-            {idx > 0 && <div className="border-t border-border/30" />}
+            {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t-2 border-primary/40" />}
+            {idx > 0 && <div className="border-t-2 border-primary/25" />}
             <div className="space-y-2">
               <div 
                 className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
@@ -1789,7 +1789,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Manchas & Unidades toggle buttons - Informational */}
         {(manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t-2 border-primary/40" />}
             {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
             <div className="flex justify-center gap-6">
               {oyesesSummary && (
@@ -2141,7 +2141,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Coneja - Patas system (before Medal General) */}
         {conejaResult && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t-2 border-primary/40" />}
             <ConejaSection
               conejaResult={conejaResult}
               players={sameGroupPlayers}
@@ -2158,7 +2158,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Medal General - Scope-aware rendering */}
         {(medalGeneralGroupResult || medalGeneralGlobalResult) && (
           <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t border-border/50" />}
+            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2201,7 +2201,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Stableford - Scope-aware rendering */}
         {betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
-            <div className="border-t border-border/50" />
+            <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2244,7 +2244,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Skins Grupal */}
         {skinsGrupalResult && (
           <>
-            <div className="border-t border-border/50" />
+            <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
