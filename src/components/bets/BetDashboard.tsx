@@ -4111,12 +4111,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 amount: puttsFront, 
                 description: `${playerPuttsFront} vs ${rivalPuttsFront} putts` 
               };
-            } else {
+            } else if (segmentKey === 'putts_back') {
               return { 
                 playerNet: playerPuttsBack, 
                 rivalNet: rivalPuttsBack, 
                 amount: puttsBack, 
                 description: `${playerPuttsBack} vs ${rivalPuttsBack} putts` 
+              };
+            } else {
+              return { 
+                playerNet: playerPuttsTotal, 
+                rivalNet: rivalPuttsTotal, 
+                amount: puttsTotal, 
+                description: `${playerPuttsTotal} vs ${rivalPuttsTotal} putts` 
               };
             }
           },
