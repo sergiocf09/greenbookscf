@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import type { ShareHighlights, BadgeData } from '@/lib/shareHighlights';
 import {
   Dialog,
   DialogContent,
