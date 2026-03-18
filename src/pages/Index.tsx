@@ -128,6 +128,8 @@ const Index = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showProfileMenuHelp, setShowProfileMenuHelp] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [showRoundShare, setShowRoundShare] = useState(false);
+  const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
