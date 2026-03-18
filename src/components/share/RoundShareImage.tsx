@@ -203,7 +203,7 @@ function drawCanvas(
 
     const diff = player.totalGross - coursePar;
     const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
-    ctx.fillStyle = diff <= 0 ? 'rgba(74,222,128,0.85)' : 'rgba(255,100,100,0.7)';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = 'bold 20px Arial, sans-serif';
     ctx.fillText(`(${diffLabel})`, cursorX, lineY);
     cursorX += ctx.measureText(`(${diffLabel})`).width + 18;
