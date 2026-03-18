@@ -2896,6 +2896,28 @@ const Index = () => {
                   .single();
                 if (data?.snapshot_json) {
                   const snap = data.snapshot_json as any;
+
+                  // Calculate round highlight
+                  const calcHighlight = (s: any): string => {
+                    let birdiesTotal = 0, culebrasTotal = 0, manchasTotal = 0;
+                    (s.players || []).forEach((p: any) => {
+                      const playerScores = s.scores?.[p.id] || [];
+                      playerScores.forEach((sc: any) => {
+                        const holePar = s.betConfig?.course?.holes?.[sc.holeNumber - 1]?.par || 4;
+                        if (sc.strokes > 0 && sc.strokes - holePar <= -1) birdiesTotal++;
+                        const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua','dobleOB','par3GirMas3','moreliana'];
+                        manchaKeys.forEach(k => { if (sc.markers?.[k]) manchasTotal++; });
+                        if (sc.putts >= 3) culebrasTotal++;
+                      });
+                    });
+                    if (birdiesTotal >= 6) return `¡${birdiesTotal} birdies en la ronda! 🐦`;
+                    if (culebrasTotal >= 8) return `¡${culebrasTotal} culebras! Día difícil en los greens 🐍`;
+                    if (manchasTotal >= 10) return `${manchasTotal} manchas en total — ronda de alto impacto ⚠️`;
+                    if (birdiesTotal >= 3) return `${birdiesTotal} birdies hoy — buena ronda 🐦`;
+                    if (culebrasTotal >= 4) return `${culebrasTotal} culebras en juego 🐍`;
+                    return 'Ronda completada en GreenBook 🏌️';
+                  };
+
                   setRoundShareData({
                     courseName: snap.courseName || course?.name || 'Campo',
                     date: snap.date || format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
@@ -2910,6 +2932,7 @@ const Index = () => {
                       };
                     }),
                     betTypes: [],
+                    roundHighlight: calcHighlight(snap),
                   });
                   setShowRoundShare(true);
                 }
