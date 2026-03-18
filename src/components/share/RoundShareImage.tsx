@@ -57,19 +57,7 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 }
 
 function buildDisplayName(name: string, allNames: string[]): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  const firstName = parts[0];
-  const lastName1 = parts[1] || '';
-  const lastName2 = parts[2] || '';
-  const fullBase = `${firstName} ${lastName1}`.trim();
-  const hasDuplicate = allNames.some(n => {
-    if (n === name) return false;
-    const p = n.trim().split(/\s+/);
-    return p[0] === firstName && (p[1] || '') === lastName1;
-  });
-  if (hasDuplicate && lastName2) return `${fullBase} ${lastName2[0]}.`;
-  return fullBase;
+  return name.trim();
 }
 
 function computeCanvasHeight(
