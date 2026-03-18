@@ -33,7 +33,6 @@ export interface RoundShareImageProps {
     };
   }>;
   betTypes: string[];
-  roundHighlight?: string;
 }
 
 const CANVAS_W = 1080;
