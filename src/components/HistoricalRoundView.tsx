@@ -356,10 +356,21 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
         </p>
         {hasSnapshot && (
-          <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            Vista histórica inmutable
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Vista histórica inmutable
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => setShowShare(true)}
+            >
+              <Share2 className="h-3 w-3 mr-1" />
+              Compartir
+            </Button>
+          </div>
         )}
         {!hasSnapshot && (
           <p className="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
