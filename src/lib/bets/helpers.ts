@@ -5,9 +5,9 @@ import { Player, PlayerScore, GolfCourse } from '@/types/golf';
 import { BetSummary } from './shared';
 
 export const getPlayerBalance = (playerId: string, summaries: BetSummary[]): number => {
-  return summaries
+  return Math.round(summaries
     .filter(s => s.playerId === playerId)
-    .reduce((sum, s) => sum + s.amount, 0);
+    .reduce((sum, s) => sum + s.amount, 0));
 };
 
 export const getBilateralBalance = (
@@ -15,9 +15,9 @@ export const getBilateralBalance = (
   vsPlayerId: string,
   summaries: BetSummary[]
 ): number => {
-  return summaries
+  return Math.round(summaries
     .filter(s => s.playerId === playerId && s.vsPlayer === vsPlayerId)
-    .reduce((sum, s) => sum + s.amount, 0);
+    .reduce((sum, s) => sum + s.amount, 0));
 };
 
 export const groupSummariesByType = (
