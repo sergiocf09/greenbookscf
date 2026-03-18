@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, LayoutGrid, Trophy, AlertCircle, Share2 } from 'lucide-react';
 import { RoundShareImage } from '@/components/share/RoundShareImage';
+import { calcHighlightsFromSnapshot, calcRoundHighlight, detectZapatos } from '@/lib/shareHighlights';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
@@ -466,67 +467,10 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 
       {/* Share dialog for historical rounds */}
       {hasSnapshot && snapshot && (() => {
-        const calcHistHighlights = () => {
-          const betTotals = new Map<string, number>();
-          ((snapshot as any).ledger || []).forEach((entry: any) => {
-            if (entry.amount <= 0) return;
-            const key = entry.betType
-              .replace(/ Front.*| Back.*| Total.*| Match.*| Hoyo.*/g, '').trim();
-            betTotals.set(key, (betTotals.get(key) || 0) + entry.amount);
-          });
-          const topBetEntry = Array.from(betTotals.entries())
-            .sort((a, b) => b[1] - a[1])[0];
-
-          let unitsTotal = 0;
-          let manchasTotal = 0;
-          const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua',
-            'dobleOB','par3GirMas3','moreliana'];
-          Object.values((snapshot as any).scores || {}).forEach((playerScores: any) => {
-            playerScores.forEach((sc: any) => {
-              if (!sc.confirmed) return;
-              const holes = (snapshot as any).betConfig?.course?.holes || [];
-              const holePar = holes[sc.holeNumber - 1]?.par || 4;
-              const toPar = (sc.strokes || 0) - holePar;
-              if (toPar === -1) unitsTotal += 1;
-              else if (toPar === -2) unitsTotal += 2;
-              else if (toPar <= -3) unitsTotal += 3;
-              if (sc.markers?.sandyPar) unitsTotal += 1;
-              if (sc.markers?.aquaPar) unitsTotal += 1;
-              if (sc.markers?.holeOut) unitsTotal += 1;
-              manchaKeys.forEach((k: string) => { if (sc.markers?.[k]) manchasTotal++; });
-              if ((sc.strokes || 0) >= 10) manchasTotal++;
-              if ((sc.putts || 0) >= 4) manchasTotal++;
-            });
-          });
-
-          return {
-            topBet: topBetEntry
-              ? { label: 'Mayor apuesta', value: `${topBetEntry[0]}  $${topBetEntry[1].toLocaleString()}` }
-              : { label: 'Mayor apuesta', value: '—' },
-            units: { label: 'Unidades en ronda', value: `${unitsTotal}` },
-            manchas: { label: 'Manchas en ronda', value: `${manchasTotal}` },
-          };
-        };
-
-        const calcHistHighlight = (): string => {
-          let birdiesTotal = 0, culebrasTotal = 0, manchasTotal = 0;
-          ((snapshot as any).players || []).forEach((p: any) => {
-            const playerScores = (snapshot as any).scores?.[p.id] || [];
-            playerScores.forEach((sc: any) => {
-              const holePar = (snapshot as any).betConfig?.course?.holes?.[sc.holeNumber - 1]?.par || 4;
-              if (sc.strokes > 0 && sc.strokes - holePar <= -1) birdiesTotal++;
-              const mKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua','dobleOB','par3GirMas3','moreliana'];
-              mKeys.forEach(k => { if (sc.markers?.[k]) manchasTotal++; });
-              if (sc.putts >= 3) culebrasTotal++;
-            });
-          });
-          if (birdiesTotal >= 6) return `¡${birdiesTotal} birdies en la ronda! 🐦`;
-          if (culebrasTotal >= 8) return `¡${culebrasTotal} culebras! Día difícil en los greens 🐍`;
-          if (manchasTotal >= 10) return `${manchasTotal} manchas en total — ronda de alto impacto ⚠️`;
-          if (birdiesTotal >= 3) return `${birdiesTotal} birdies hoy — buena ronda 🐦`;
-          if (culebrasTotal >= 4) return `${culebrasTotal} culebras en juego 🐍`;
-          return 'Ronda completada en GreenBook 🏌️';
-        };
+        const histZapatos = detectZapatos(snapshot);
+        const zapatoHighlight = histZapatos.length > 0
+          ? histZapatos.map(z => `🥾 Zapato ${z.type}: ${z.winnerName.split(' ')[0]} le ganó a ${z.loserName.split(' ')[0]}`).join(' · ')
+          : null;
 
         return (
           <RoundShareImage
@@ -561,8 +505,9 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             }
             betTypes={[]}
             coursePar={(snapshot as any).coursePar || 72}
-            highlights={calcHistHighlights()}
-            roundHighlight={calcHistHighlight()}
+            highlights={calcHighlightsFromSnapshot(snapshot)}
+            roundHighlight={zapatoHighlight || calcRoundHighlight(snapshot)}
+            zapatoEvents={histZapatos}
           />
         );
       })()}

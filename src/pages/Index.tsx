@@ -76,6 +76,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
+import { calcHighlightsFromSnapshot, calcRoundHighlight, detectZapatos } from '@/lib/shareHighlights';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
@@ -2897,69 +2898,10 @@ const Index = () => {
                 if (data?.snapshot_json) {
                   const snap = data.snapshot_json as any;
 
-                  // Calculate round highlight
-                  const calcHighlight = (s: any): string => {
-                    let birdiesTotal = 0, culebrasTotal = 0, manchasTotal = 0;
-                    (s.players || []).forEach((p: any) => {
-                      const playerScores = s.scores?.[p.id] || [];
-                      playerScores.forEach((sc: any) => {
-                        const holePar = s.betConfig?.course?.holes?.[sc.holeNumber - 1]?.par || 4;
-                        if (sc.strokes > 0 && sc.strokes - holePar <= -1) birdiesTotal++;
-                        const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua','dobleOB','par3GirMas3','moreliana'];
-                        manchaKeys.forEach(k => { if (sc.markers?.[k]) manchasTotal++; });
-                        if (sc.putts >= 3) culebrasTotal++;
-                      });
-                    });
-                    if (birdiesTotal >= 6) return `¡${birdiesTotal} birdies en la ronda! 🐦`;
-                    if (culebrasTotal >= 8) return `¡${culebrasTotal} culebras! Día difícil en los greens 🐍`;
-                    if (manchasTotal >= 10) return `${manchasTotal} manchas en total — ronda de alto impacto ⚠️`;
-                    if (birdiesTotal >= 3) return `${birdiesTotal} birdies hoy — buena ronda 🐦`;
-                    if (culebrasTotal >= 4) return `${culebrasTotal} culebras en juego 🐍`;
-                    return 'Ronda completada en GreenBook 🏌️';
-                  };
-
-                  // Calculate highlights from snapshot
-                  const calcHighlights = (s: any) => {
-                    const betTotals = new Map<string, number>();
-                    (s.ledger || []).forEach((entry: any) => {
-                      if (entry.amount <= 0) return;
-                      const key = entry.betType
-                        .replace(/ Front.*| Back.*| Total.*| Match.*| Hoyo.*/g, '').trim();
-                      betTotals.set(key, (betTotals.get(key) || 0) + entry.amount);
-                    });
-                    const topBetEntry = Array.from(betTotals.entries())
-                      .sort((a, b) => b[1] - a[1])[0];
-
-                    let unitsTotal = 0;
-                    let manchasTotal = 0;
-                    const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua',
-                      'dobleOB','par3GirMas3','moreliana'];
-                    Object.values(s.scores || {}).forEach((playerScores: any) => {
-                      playerScores.forEach((sc: any) => {
-                        if (!sc.confirmed) return;
-                        const holes = s.betConfig?.course?.holes || [];
-                        const holePar = holes[sc.holeNumber - 1]?.par || 4;
-                        const toPar = (sc.strokes || 0) - holePar;
-                        if (toPar === -1) unitsTotal += 1;
-                        else if (toPar === -2) unitsTotal += 2;
-                        else if (toPar <= -3) unitsTotal += 3;
-                        if (sc.markers?.sandyPar) unitsTotal += 1;
-                        if (sc.markers?.aquaPar) unitsTotal += 1;
-                        if (sc.markers?.holeOut) unitsTotal += 1;
-                        manchaKeys.forEach((k: string) => { if (sc.markers?.[k]) manchasTotal++; });
-                        if ((sc.strokes || 0) >= 10) manchasTotal++;
-                        if ((sc.putts || 0) >= 4) manchasTotal++;
-                      });
-                    });
-
-                    return {
-                      topBet: topBetEntry
-                        ? { label: 'Mayor apuesta', value: `${topBetEntry[0]}  $${topBetEntry[1].toLocaleString()}` }
-                        : { label: 'Mayor apuesta', value: '—' },
-                      units: { label: 'Unidades en ronda', value: `${unitsTotal}` },
-                      manchas: { label: 'Manchas en ronda', value: `${manchasTotal}` },
-                    };
-                  };
+                  const zapatos = detectZapatos(snap);
+                  const zapatoHighlight = zapatos.length > 0
+                    ? zapatos.map(z => `🥾 Zapato ${z.type}: ${z.winnerName.split(' ')[0]} le ganó a ${z.loserName.split(' ')[0]}`).join(' · ')
+                    : null;
 
                   setRoundShareData({
                     courseName: snap.courseName || course?.name || 'Campo',
@@ -2989,8 +2931,9 @@ const Index = () => {
                     }),
                     betTypes: [],
                     coursePar: snap.coursePar || 72,
-                    highlights: calcHighlights(snap),
-                    roundHighlight: calcHighlight(snap),
+                    highlights: calcHighlightsFromSnapshot(snap),
+                    roundHighlight: zapatoHighlight || calcRoundHighlight(snap),
+                    zapatoEvents: zapatos,
                   });
                   setShowRoundShare(true);
                 }

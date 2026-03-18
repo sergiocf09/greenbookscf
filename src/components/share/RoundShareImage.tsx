@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import type { ZapatoEvent } from '@/lib/shareHighlights';
 
 export interface RoundShareImageProps {
   open: boolean;
@@ -34,6 +35,7 @@ export interface RoundShareImageProps {
   }>;
   betTypes: string[];
   roundHighlight?: string;
+  zapatoEvents?: ZapatoEvent[];
 }
 
 const CANVAS_W = 1080;
@@ -70,9 +72,18 @@ function buildDisplayName(name: string, allNames: string[]): string {
   return fullBase;
 }
 
-function computeCanvasHeight(playerCount: number, hasHighlights: boolean) {
-  const base = 275 + playerCount * 160 + (hasHighlights ? 120 : 0) + 180;
-  return Math.max(1080, base);
+function computeCanvasHeight(
+  playerCount: number,
+  hasHighlights: boolean,
+  zapatoCount: number,
+  hasRoundHighlight: boolean,
+) {
+  let h = 275 + playerCount * 160;
+  if (hasHighlights) h += 120;
+  if (zapatoCount > 0) h += 40 + zapatoCount * 38 + 20;
+  if (hasRoundHighlight) h += 90;
+  h += 120; // footer
+  return Math.max(1080, h);
 }
 
 function drawCanvas(
@@ -83,9 +94,11 @@ function drawCanvas(
   coursePar: number,
   roundHighlight?: string,
   highlights?: RoundShareImageProps['highlights'],
+  zapatoEvents?: ZapatoEvent[],
 ) {
   const W = CANVAS_W;
-  const H = computeCanvasHeight(players.length, !!highlights);
+  const zaps = zapatoEvents || [];
+  const H = computeCanvasHeight(players.length, !!highlights, zaps.length, !!roundHighlight);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
@@ -273,9 +286,11 @@ function drawCanvas(
     }
   });
 
+  // Track current Y for remaining sections
+  let curY = startY + sorted.length * rowH + 15;
+
   // ── Highlight badges ──
   if (highlights) {
-    const badgeAreaY = startY + sorted.length * rowH + 15;
     const badges = [highlights.topBet, highlights.units, highlights.manchas];
     const badgeW = 278;
     const gap = 27;
@@ -285,7 +300,7 @@ function drawCanvas(
     badges.forEach((badge, i) => {
       const bx = bStartX + i * (badgeW + gap);
       ctx.fillStyle = 'rgba(252,227,0,0.10)';
-      roundRectPath(ctx, bx, badgeAreaY, badgeW, 72, 8);
+      roundRectPath(ctx, bx, curY, badgeW, 72, 8);
       ctx.fill();
       ctx.strokeStyle = 'rgba(252,227,0,0.25)';
       ctx.lineWidth = 1;
@@ -293,18 +308,43 @@ function drawCanvas(
       ctx.fillStyle = 'rgba(252,227,0,0.60)';
       ctx.font = '13px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, badgeAreaY + 22);
+      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 22);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 24px Georgia, serif';
-      ctx.fillText(badge.value, bx + badgeW / 2, badgeAreaY + 55);
+      ctx.fillText(badge.value, bx + badgeW / 2, curY + 55);
     });
+    curY += 92;
+  }
+
+  // ── Zapato events banner ──
+  if (zaps.length > 0) {
+    const bannerH = 40 + zaps.length * 38;
+    curY += 10;
+    ctx.fillStyle = 'rgba(252,227,0,0.12)';
+    roundRectPath(ctx, 60, curY, W - 120, bannerH, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    zaps.forEach((z, i) => {
+      const winName = buildDisplayName(z.winnerName, [z.winnerName, z.loserName]);
+      const loseName = buildDisplayName(z.loserName, [z.winnerName, z.loserName]);
+      ctx.fillText(
+        `🥾 Zapato ${z.type} — ${winName} ganó a ${loseName}`,
+        W / 2, curY + 30 + i * 38
+      );
+    });
+    curY += bannerH + 10;
   }
 
   // ── Round highlight banner ──
-  if (roundHighlight) {
-    const bannerY = H - 175;
+  if (roundHighlight && zaps.length === 0) {
+    curY += 10;
     ctx.fillStyle = 'rgba(252,227,0,0.12)';
-    roundRectPath(ctx, 60, bannerY, W - 120, 70, 8);
+    roundRectPath(ctx, 60, curY, W - 120, 70, 8);
     ctx.fill();
     ctx.strokeStyle = 'rgba(252,227,0,0.3)';
     ctx.lineWidth = 1;
@@ -312,7 +352,8 @@ function drawCanvas(
     ctx.fillStyle = GOLD;
     ctx.font = 'bold 20px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🏆 ' + roundHighlight, W / 2, bannerY + 42);
+    ctx.fillText('🏆 ' + roundHighlight, W / 2, curY + 42);
+    curY += 80;
   }
 
   // ── Bottom gold banner ──
@@ -339,52 +380,58 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   coursePar,
   highlights,
   roundHighlight,
+  zapatoEvents,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showFallbackInstructions, setShowFallbackInstructions] = useState(false);
 
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const h = computeCanvasHeight(players.length, !!highlights);
+    const zaps = zapatoEvents || [];
+    const h = computeCanvasHeight(players.length, !!highlights, zaps.length, !!roundHighlight);
     canvas.width = CANVAS_W;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights, zapatoEvents);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, coursePar, highlights, roundHighlight]);
+  }, [courseName, date, players, coursePar, highlights, roundHighlight, zapatoEvents]);
 
   useEffect(() => {
     if (open) {
+      setShowFallbackInstructions(false);
       const t = setTimeout(render, 50);
       return () => clearTimeout(t);
     }
   }, [open, render]);
 
-  const downloadImage = () => {
+  const handleShare = async () => {
     render();
+    await new Promise(r => setTimeout(r, 100));
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'greenbook-resultado.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 'image/png');
-  };
 
-  const shareToWhatsApp = () => {
-    render();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.toBlob((blob) => {
+    canvas.toBlob(async (blob) => {
       if (!blob) return;
+      const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
+
+      // Try native Web Share API with file
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `GreenBook — ${courseName}`,
+            text: `🏌️ Mis resultados de golf en ${courseName}\n📲 golfgreenbookscf.com`,
+          });
+          return;
+        } catch {
+          // User cancelled or failed — fall through
+        }
+      }
+
+      // Fallback: download + instructions
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -393,10 +440,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setTimeout(() => {
-        const text = encodeURIComponent(`🏌️ Mis resultados de golf hoy en ${courseName}\n📲 Lleva tus apuestas con GreenBook\ngolfgreenbookscf.com`);
-        window.open(`https://wa.me/?text=${text}`, '_blank');
-      }, 800);
+      setShowFallbackInstructions(true);
     }, 'image/png');
   };
 
@@ -420,21 +464,21 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
         <div className="space-y-2 pt-2">
           <Button
             className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-base gap-2"
-            onClick={shareToWhatsApp}
+            onClick={handleShare}
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
               <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.428l5.7-1.496A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.893 9.893 0 01-5.031-1.378l-.361-.214-3.735.979 1.004-3.632-.235-.374A9.86 9.86 0 012.106 12C2.106 6.58 6.58 2.106 12 2.106c5.421 0 9.894 4.474 9.894 9.894 0 5.421-4.473 9.894-9.894 9.894z" />
             </svg>
-            Guardar y abrir WhatsApp
+            Compartir resultado 🏌️
           </Button>
-          <p className="text-xs text-center text-muted-foreground -mt-1">
-            La imagen se guarda en tu galería para adjuntarla en WhatsApp
-          </p>
-          <Button variant="outline" className="w-full gap-2" onClick={downloadImage}>
-            <Download className="h-4 w-4" />
-            Descargar imagen
-          </Button>
+
+          {showFallbackInstructions && (
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200 text-center">
+              ✅ Imagen guardada en tu galería. Abre WhatsApp, selecciona el chat y adjunta la imagen desde tu galería de fotos.
+            </div>
+          )}
+
           <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
             Ahora no
           </Button>
