@@ -59,7 +59,7 @@ function computeCanvasHeight(
   hasHighlights: boolean,
 ) {
   let h = 275 + playerCount * 150;
-  if (hasHighlights) h += 120;
+  if (hasHighlights) h += 180;
   h += 120; // footer
   return Math.max(1080, h);
 }
