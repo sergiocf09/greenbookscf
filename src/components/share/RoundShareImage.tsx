@@ -221,7 +221,7 @@ function drawCanvas(
     const lostTo = player.lostTo || 0;
     const rivalStats = player.rivalStats;
     if (rivalStats && rivalStats.won > 0) {
-      const wonText = `▲ +$${wonFrom.toLocaleString()}`;
+      const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const wonW = ctx.measureText(wonText).width + 16;
       ctx.fillStyle = 'rgba(74,222,128,0.15)';
@@ -235,7 +235,7 @@ function drawCanvas(
       cursorX += wonW + 8;
     }
     if (rivalStats && rivalStats.lost > 0) {
-      const lostText = `▼ -$${lostTo.toLocaleString()}`;
+      const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const lostW = ctx.measureText(lostText).width + 16;
       ctx.fillStyle = 'rgba(248,113,113,0.12)';
