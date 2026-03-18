@@ -47,6 +47,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 }) => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'scorecard' | 'bets'>('scorecard');
+  const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSnapshot, setHasSnapshot] = useState(false);
   const [snapshot, setSnapshot] = useState<RoundSnapshot | null>(null);
