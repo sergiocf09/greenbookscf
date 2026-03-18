@@ -78,11 +78,9 @@ function drawCanvas(
   coursePar: number,
   roundHighlight?: string,
   highlights?: RoundShareImageProps['highlights'],
-  zapatoEvents?: ZapatoEvent[],
 ) {
   const W = CANVAS_W;
-  const zaps = zapatoEvents || [];
-  const H = computeCanvasHeight(players.length, !!highlights, zaps.length, !!roundHighlight);
+  const H = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
