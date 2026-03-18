@@ -60,11 +60,9 @@ function buildDisplayName(name: string, allNames: string[]): string {
 function computeCanvasHeight(
   playerCount: number,
   hasHighlights: boolean,
-  hasRoundHighlight: boolean,
 ) {
   let h = 275 + playerCount * 150;
   if (hasHighlights) h += 120;
-  if (hasRoundHighlight) h += 90;
   h += 120; // footer
   return Math.max(1080, h);
 }
