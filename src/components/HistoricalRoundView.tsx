@@ -466,13 +466,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       </Tabs>
 
       {/* Share dialog for historical rounds */}
-      {hasSnapshot && snapshot && (() => {
-        const histZapatos = detectZapatos(snapshot);
-        const zapatoHighlight = histZapatos.length > 0
-          ? histZapatos.map(z => `🥾 Zapato ${z.type}: ${z.winnerName.split(' ')[0]} le ganó a ${z.loserName.split(' ')[0]}`).join(' · ')
-          : null;
-
-        return (
+      {hasSnapshot && snapshot && (
           <RoundShareImage
             open={showShare}
             onClose={() => setShowShare(false)}
@@ -506,11 +500,9 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             betTypes={[]}
             coursePar={(snapshot as any).coursePar || 72}
             highlights={calcHighlightsFromSnapshot(snapshot)}
-            roundHighlight={zapatoHighlight || calcRoundHighlight(snapshot)}
-            zapatoEvents={histZapatos}
+            roundHighlight={calcRoundHighlight(snapshot)}
           />
-        );
-      })()}
+      )}
     </div>
   );
 };

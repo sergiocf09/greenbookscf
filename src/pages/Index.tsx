@@ -2898,11 +2898,6 @@ const Index = () => {
                 if (data?.snapshot_json) {
                   const snap = data.snapshot_json as any;
 
-                  const zapatos = detectZapatos(snap);
-                  const zapatoHighlight = zapatos.length > 0
-                    ? zapatos.map(z => `🥾 Zapato ${z.type}: ${z.winnerName.split(' ')[0]} le ganó a ${z.loserName.split(' ')[0]}`).join(' · ')
-                    : null;
-
                   setRoundShareData({
                     courseName: snap.courseName || course?.name || 'Campo',
                     date: snap.date || format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
@@ -2932,8 +2927,7 @@ const Index = () => {
                     betTypes: [],
                     coursePar: snap.coursePar || 72,
                     highlights: calcHighlightsFromSnapshot(snap),
-                    roundHighlight: zapatoHighlight || calcRoundHighlight(snap),
-                    zapatoEvents: zapatos,
+                    roundHighlight: calcRoundHighlight(snap),
                   });
                   setShowRoundShare(true);
                 }
