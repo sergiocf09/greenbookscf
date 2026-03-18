@@ -2071,7 +2071,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const teamAPressures = betSummaries.filter(s => 
           s.betType === 'Presiones Parejas' && s.betId === bet.id && resolvedTeamA.includes(s.playerId)
         );
-        const teamABalance = teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2; // Each member's share (team total / 2 members)
+        const teamABalance = Math.round(teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2); // Each member's share (team total / 2 members)
         
         const getPlayer = (id: string) => allPlayersForCalculations.find(p => p.id === id);
         const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
