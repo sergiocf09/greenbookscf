@@ -73,11 +73,10 @@ function drawCanvas(
   date: string,
   players: RoundShareImageProps['players'],
   coursePar: number,
-  roundHighlight?: string,
   highlights?: RoundShareImageProps['highlights'],
 ) {
   const W = CANVAS_W;
-  const H = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
+  const H = computeCanvasHeight(players.length, !!highlights);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
