@@ -273,10 +273,12 @@ function drawCanvas(
   // ── Highlight badges ──
   if (highlights) {
     const badges: BadgeData[] = [highlights.medalTotal, highlights.front9, highlights.back9];
-    // Calculate max names across badges to determine badge height
     const maxNames = Math.max(...badges.map(b => b.names.length), 1);
-    const nameLineH = 26;
-    const badgeH = 32 + maxNames * nameLineH + 16; // label + names + padding
+    const nameLineH = 28;
+    const labelAreaH = 30; // space for label at top
+    const namesAreaH = maxNames * nameLineH;
+    const paddingBottom = 14;
+    const badgeH = labelAreaH + namesAreaH + paddingBottom;
     const badgeW = 300;
     const gap = 20;
     const totalBW = badgeW * 3 + gap * 2;
@@ -292,34 +294,39 @@ function drawCanvas(
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Label
+      // Label centered at top
       ctx.fillStyle = 'rgba(252,227,0,0.60)';
       ctx.font = '13px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 20);
+      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 18);
+
+      const namesTop = curY + labelAreaH; // where names area starts
 
       if (badge.names.length === 0 || badge.score === null) {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.font = 'bold 22px Georgia, serif';
         ctx.textAlign = 'center';
-        ctx.fillText('—', bx + badgeW / 2, curY + 50);
+        ctx.fillText('—', bx + badgeW / 2, namesTop + namesAreaH / 2 + 7);
       } else {
-        // Each name on its own line, score right-aligned
+        const count = badge.names.length;
+        // Center the names block vertically within the names area
+        const blockH = count * nameLineH;
+        const namesStartY = namesTop + (namesAreaH - blockH) / 2;
+
         badge.names.forEach((name, ni) => {
-          const ny = curY + 40 + ni * nameLineH;
-          // Name left-aligned
+          const ny = namesStartY + ni * nameLineH + 20; // +20 for baseline
           ctx.fillStyle = '#ffffff';
           ctx.font = '18px Arial, sans-serif';
           ctx.textAlign = 'left';
           ctx.fillText(name, bx + 14, ny);
-          // Score right-aligned (only on first line, or repeated)
-          if (ni === 0) {
-            ctx.fillStyle = GOLD;
-            ctx.font = 'bold 22px Georgia, serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(`${badge.score}`, bx + badgeW - 14, ny);
-          }
         });
+
+        // Score vertically centered in the names area
+        const scoreCenterY = namesTop + namesAreaH / 2 + 8;
+        ctx.fillStyle = GOLD;
+        ctx.font = 'bold 24px Georgia, serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${badge.score}`, bx + badgeW - 14, scoreCenterY);
       }
     });
     curY += badgeH + 15;
