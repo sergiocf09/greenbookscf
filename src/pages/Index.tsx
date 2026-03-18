@@ -3216,6 +3216,13 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {roundShareData && (
+        <RoundShareImage
+          {...roundShareData}
+          open={showRoundShare}
+          onClose={() => setShowRoundShare(false)}
+        />
+      )}
     </div>
   );
 };
