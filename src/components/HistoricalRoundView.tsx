@@ -463,6 +463,29 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Share dialog for historical rounds */}
+      {hasSnapshot && snapshot && (
+        <RoundShareImage
+          open={showShare}
+          onClose={() => setShowShare(false)}
+          courseName={displayData.courseName}
+          date={format(parseLocalDate(displayData.date), "d 'de' MMMM yyyy", { locale: es })}
+          players={
+            (snapshot.balances || []).map((b: any) => {
+              const sp = snapshot.players.find((p: any) => p.id === b.playerId);
+              return {
+                name: b.playerName || sp?.name || '??',
+                initials: sp?.initials || '??',
+                color: sp?.color || '#006747',
+                totalNet: b.totalNet || 0,
+                totalGross: b.totalGross || 0,
+              };
+            })
+          }
+          betTypes={[]}
+        />
+      )}
     </div>
   );
 };
