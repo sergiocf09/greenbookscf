@@ -24,9 +24,211 @@ export interface RoundShareImageProps {
 }
 
 const CANVAS_W = 1080;
-const CANVAS_H = 1080;
 const GREEN = '#006747';
 const GOLD = '#FCE300';
+
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function computeCanvasHeight(playerCount: number) {
+  return Math.max(1080, 275 + playerCount * 138 + 180);
+}
+
+function drawCanvas(
+  ctx: CanvasRenderingContext2D,
+  courseName: string,
+  date: string,
+  players: RoundShareImageProps['players'],
+) {
+  const W = CANVAS_W;
+  const H = computeCanvasHeight(players.length);
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Background gradient ──
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#004d35');
+  bgGrad.addColorStop(0.5, GREEN);
+  bgGrad.addColorStop(1, '#003d2e');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Fairway texture ──
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let i = -H; i < W + H; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + H, H);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Top gold banner ──
+  ctx.fillStyle = GOLD;
+  ctx.fillRect(0, 0, W, 12);
+
+  // ── Header ──
+  ctx.fillStyle = GOLD;
+  ctx.font = 'bold 72px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('GreenBook', W / 2, 105);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.90)';
+  ctx.font = '28px Georgia, serif';
+  ctx.fillText(courseName, W / 2, 148);
+
+  ctx.fillStyle = 'rgba(252,227,0,0.75)';
+  ctx.font = '20px Arial, sans-serif';
+  ctx.fillText(date, W / 2, 180);
+
+  // ── Ornamental separator ──
+  ctx.strokeStyle = GOLD;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(60, 208); ctx.lineTo(460, 208); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(620, 208); ctx.lineTo(1020, 208); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Diamond ornament
+  ctx.fillStyle = GOLD;
+  ctx.save();
+  ctx.translate(540, 208);
+  ctx.rotate(Math.PI / 4);
+  ctx.fillRect(-8, -8, 16, 16);
+  ctx.restore();
+
+  // ── Section title ──
+  ctx.fillStyle = 'rgba(255,255,255,0.60)';
+  ctx.font = '500 20px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('R E S U L T A D O S   F I N A L E S', W / 2, 250);
+
+  // ── Player rows ──
+  const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
+  const rowH = 138;
+  const startY = 275;
+  const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
+
+  sorted.forEach((player, idx) => {
+    const y = startY + idx * rowH;
+    const isWinner = idx === 0;
+    const isLoser = player.totalNet < 0;
+    const rowAlpha = isWinner ? 1 : 0.88 - idx * 0.06;
+
+    // Row background highlight
+    if (isWinner) {
+      const rowGrad = ctx.createLinearGradient(40, y, W - 40, y);
+      rowGrad.addColorStop(0, 'rgba(252,227,0,0.18)');
+      rowGrad.addColorStop(0.5, 'rgba(252,227,0,0.08)');
+      rowGrad.addColorStop(1, 'rgba(252,227,0,0.02)');
+      ctx.fillStyle = rowGrad;
+      roundRectPath(ctx, 40, y + 4, W - 80, rowH - 12, 12);
+      ctx.fill();
+    } else if (isLoser) {
+      ctx.fillStyle = 'rgba(220,50,50,0.06)';
+      roundRectPath(ctx, 40, y + 4, W - 80, rowH - 12, 8);
+      ctx.fill();
+    }
+
+    // Position badge
+    if (isWinner) {
+      ctx.fillStyle = GOLD;
+      ctx.beginPath(); ctx.arc(105, y + rowH / 2, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#003d2e';
+      ctx.font = 'bold 26px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('1°', 105, y + rowH / 2 + 9);
+    } else {
+      ctx.fillStyle = 'rgba(252,227,0,0.25)';
+      ctx.beginPath(); ctx.arc(105, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = GOLD;
+      ctx.font = 'bold 22px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 105, y + rowH / 2 + 8);
+    }
+
+    // Avatar
+    const avatarR = isWinner ? 38 : 32;
+    const avatarX = 195;
+    const avatarY = y + rowH / 2;
+    if (isWinner) {
+      ctx.fillStyle = GOLD;
+      ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = player.color;
+    ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${isWinner ? 22 : 18}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(player.initials, avatarX, avatarY + 7);
+
+    // Name
+    const parts = player.name.trim().split(' ');
+    const displayName = parts.length >= 2 ? `${parts[0]} ${parts[1][0]}.` : parts[0];
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = rowAlpha;
+    ctx.fillStyle = isWinner ? '#ffffff' : 'rgba(255,255,255,0.88)';
+    ctx.font = `bold ${isWinner ? 34 : 30}px Georgia, serif`;
+    ctx.fillText(displayName, 252, y + rowH / 2 - 4);
+
+    // Gross strokes
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillText(`${player.totalGross} golpes`, 252, y + rowH / 2 + 26);
+    ctx.globalAlpha = 1;
+
+    // Net amount
+    const netLabel = player.totalNet > 0
+      ? `+$${player.totalNet.toLocaleString()}`
+      : player.totalNet < 0
+        ? `-$${Math.abs(player.totalNet).toLocaleString()}`
+        : 'Par';
+    ctx.textAlign = 'right';
+    ctx.font = `bold ${isWinner ? 52 : 44}px Georgia, serif`;
+    ctx.fillStyle = player.totalNet > 0
+      ? (isWinner ? GOLD : '#4ade80')
+      : player.totalNet < 0
+        ? '#f87171'
+        : 'rgba(255,255,255,0.5)';
+    ctx.fillText(netLabel, W - 55, y + rowH / 2 + 12);
+
+    // Row separator
+    if (idx < sorted.length - 1) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(80, y + rowH - 8);
+      ctx.lineTo(W - 80, y + rowH - 8);
+      ctx.stroke();
+    }
+  });
+
+  // ── Bottom gold banner ──
+  ctx.fillStyle = GOLD;
+  ctx.fillRect(0, H - 12, W, 12);
+
+  // ── Footer ──
+  const footerY = H - 90;
+  ctx.fillStyle = 'rgba(255,255,255,0.40)';
+  ctx.font = '18px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('¿Quieres llevar tus apuestas de golf?', W / 2, footerY + 20);
+  ctx.fillStyle = GOLD;
+  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.fillText('golfgreenbookscf.com', W / 2, footerY + 52);
+}
 
 export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   open,
@@ -38,146 +240,24 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const drawCanvas = useCallback(() => {
+  const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const h = computeCanvasHeight(players.length);
+    canvas.width = CANVAS_W;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Background
-    ctx.fillStyle = GREEN;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-    // Header — GreenBook
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 52px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('GreenBook', 540, 90);
-
-    // Course name
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '24px Georgia, serif';
-    ctx.fillText(courseName, 540, 130);
-
-    // Date
-    ctx.fillStyle = 'rgba(252, 227, 0, 0.7)';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText(date, 540, 162);
-
-    // Gold separator
-    ctx.strokeStyle = GOLD;
-    ctx.globalAlpha = 0.4;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(60, 195);
-    ctx.lineTo(1020, 195);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // Title
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Resultados Finales', 540, 250);
-
-    // Players sorted by totalNet descending
-    const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
-    const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
-
-    sorted.forEach((player, idx) => {
-      const y = 320 + idx * 140;
-
-      // Position circle (gold)
-      ctx.fillStyle = GOLD;
-      ctx.beginPath();
-      ctx.arc(90, y + 30, 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = GREEN;
-      ctx.font = 'bold 22px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 90, y + 38);
-
-      // Avatar circle
-      ctx.fillStyle = player.color;
-      ctx.beginPath();
-      ctx.arc(170, y + 30, 32, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(player.initials, 170, y + 38);
-
-      // Name
-      const parts = player.name.trim().split(' ');
-      const displayName =
-        parts.length >= 2 ? `${parts[0]} ${parts[1][0]}.` : parts[0];
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px Georgia, serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(displayName, 225, y + 28);
-
-      // Gross score
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.font = '18px Arial, sans-serif';
-      ctx.fillText(`Golpes: ${player.totalGross}`, 225, y + 58);
-
-      // Net amount (right-aligned)
-      ctx.textAlign = 'right';
-      const netLabel =
-        player.totalNet > 0
-          ? `+$${player.totalNet}`
-          : player.totalNet < 0
-          ? `-$${Math.abs(player.totalNet)}`
-          : '$0';
-      ctx.fillStyle =
-        player.totalNet > 0
-          ? '#4ade80'
-          : player.totalNet < 0
-          ? '#f87171'
-          : 'rgba(255,255,255,0.4)';
-      ctx.font = 'bold 34px Georgia, serif';
-      ctx.fillText(netLabel, 1000, y + 38);
-
-      // Separator between players
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(60, y + 100);
-      ctx.lineTo(1020, y + 100);
-      ctx.stroke();
-    });
-
-    // Footer separator
-    const footerY = 320 + sorted.length * 140 + 20;
-    ctx.strokeStyle = GOLD;
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(60, footerY);
-    ctx.lineTo(1020, footerY);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // Footer text
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('¿Quieres llevar tus apuestas de golf?', 540, footerY + 45);
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 22px Arial, sans-serif';
-    ctx.fillText('greenbookscf.lovable.app', 540, footerY + 78);
-
-    // Generate preview
+    drawCanvas(ctx, courseName, date, players);
     setPreviewUrl(canvas.toDataURL('image/png'));
   }, [courseName, date, players]);
 
   useEffect(() => {
     if (open) {
-      // Small delay so canvas is mounted
-      const t = setTimeout(drawCanvas, 50);
+      const t = setTimeout(render, 50);
       return () => clearTimeout(t);
     }
-  }, [open, drawCanvas]);
+  }, [open, render]);
 
   const getBlob = (): Promise<Blob> =>
     new Promise((resolve) => {
@@ -185,6 +265,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
     });
 
   const handleShare = async () => {
+    render(); // re-draw before export
     const blob = await getBlob();
     const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
 
@@ -193,10 +274,10 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
         await navigator.share({
           files: [file],
           title: `GreenBook — ${courseName}`,
-          text: `Resultados de hoy en ${courseName} 🏌️\ngreenbookscf.lovable.app`,
+          text: `Resultados de hoy en ${courseName} 🏌️\ngolfgreenbookscf.com`,
         });
       } catch {
-        // User cancelled share
+        // cancelled
       }
     } else {
       handleDownload();
@@ -204,6 +285,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   };
 
   const handleDownload = async () => {
+    render();
     const blob = await getBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -220,15 +302,8 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
           <DialogTitle className="text-center">Compartir Resultado</DialogTitle>
         </DialogHeader>
 
-        {/* Hidden canvas */}
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
-          className="hidden"
-        />
+        <canvas ref={canvasRef} className="hidden" />
 
-        {/* Preview */}
         {previewUrl && (
           <img
             src={previewUrl}

@@ -2886,21 +2886,37 @@ const Index = () => {
           setShowCloseConfirmDialog(false);
           const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
           if (success) {
-            const allPlayers = [...players, ...playerGroups.flatMap(g => g.players)]
-              .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
-            setRoundShareData({
-              courseName: course?.name || 'Campo',
-              date: format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
-              players: allPlayers.map(p => ({
-                name: p.name,
-                initials: p.initials,
-                color: p.color,
-                totalNet: 0,
-                totalGross: (scores.get(p.id) || []).reduce((sum, s) => sum + (s.strokes || 0), 0),
-              })),
-              betTypes: [],
-            });
-            setShowRoundShare(true);
+            // Fetch snapshot from DB after a short delay to get real balances
+            setTimeout(async () => {
+              try {
+                const { data } = await supabase
+                  .from('round_snapshots')
+                  .select('snapshot_json')
+                  .eq('round_id', roundState.id)
+                  .single();
+                if (data?.snapshot_json) {
+                  const snap = data.snapshot_json as any;
+                  setRoundShareData({
+                    courseName: snap.courseName || course?.name || 'Campo',
+                    date: snap.date || format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
+                    players: (snap.balances || []).map((b: any) => {
+                      const p = (snap.players || []).find((pl: any) => pl.id === b.playerId);
+                      return {
+                        name: b.playerName,
+                        initials: p?.initials || '??',
+                        color: p?.color || '#006747',
+                        totalNet: b.totalNet ?? 0,
+                        totalGross: b.totalGross ?? 0,
+                      };
+                    }),
+                    betTypes: [],
+                  });
+                  setShowRoundShare(true);
+                }
+              } catch (e) {
+                console.error('Failed to load snapshot for share image', e);
+              }
+            }, 1500);
           } else {
             setShowCloseAttemptDialog(true);
           }
