@@ -187,7 +187,7 @@ function drawCanvas(
     }
 
     // ── LEFT COLUMN: Name + Score + Stats (all inline on row 2) ──
-    const nameX = 145;
+    const nameX = 165;
     const displayName = buildDisplayName(player.name, allPlayerNames);
 
     // Row 1: Full name
