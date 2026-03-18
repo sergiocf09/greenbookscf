@@ -1364,11 +1364,9 @@ export const calculateRayasBets = (
   
   const summaries: BetSummary[] = [];
   
-  // Calculate Oyes rayas (absolute closest) — only among participating players
-  const { summaries: oyesSummaries } = calculateOyesRayasForAll(participatingPlayers, scores, config, course, startingHole);
-  summaries.push(...oyesSummaries);
-  
-  // Calculate bilateral rayas (skins, units, medal)
+  // Calculate bilateral rayas (skins, units, medal) AND oyes per pair
+  // NOTE: Oyes are calculated inside the loop (via getRayasDetailForPair) instead of
+  // globally, so that per-pair amount overrides (betOverrides) are correctly applied.
   for (let i = 0; i < participatingPlayers.length; i++) {
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
@@ -1381,7 +1379,8 @@ export const calculateRayasBets = (
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
       
-      const result = calculateRayasForPair(playerA, playerB, scores, config, course, bilateralHandicaps, startingHole);
+      // Use getRayasDetailForPair which includes Oyes with correct per-pair override values
+      const result = getRayasDetailForPair(playerA, playerB, scores, config, course, bilateralHandicaps, participatingPlayers, startingHole);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
