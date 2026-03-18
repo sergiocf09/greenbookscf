@@ -500,7 +500,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             betTypes={[]}
             coursePar={(snapshot as any).coursePar || 72}
             highlights={calcHighlightsFromSnapshot(snapshot)}
-            roundHighlight={calcRoundHighlight(snapshot)}
           />
       )}
     </div>

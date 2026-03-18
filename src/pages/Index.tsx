@@ -2927,7 +2927,6 @@ const Index = () => {
                     betTypes: [],
                     coursePar: snap.coursePar || 72,
                     highlights: calcHighlightsFromSnapshot(snap),
-                    roundHighlight: calcRoundHighlight(snap),
                   });
                   setShowRoundShare(true);
                 }
