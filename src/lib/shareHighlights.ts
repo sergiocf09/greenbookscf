@@ -3,20 +3,22 @@
  * Three badges: Best Medal Gross Total, Best Front 9, Best Back 9.
  */
 
-export interface ShareHighlights {
-  medalTotal: { label: string; value: string };
-  front9: { label: string; value: string };
-  back9: { label: string; value: string };
+export interface BadgeData {
+  label: string;
+  names: string[];
+  score: number | null;
 }
 
-function formatBestPlayers(players: { name: string; score: number }[]): string {
-  if (players.length === 0) return '—';
-  if (players.length === 1) return `${players[0].name}  ${players[0].score}`;
-  return `${players.map(p => p.name).join(', ')}  ${players[0].score}`;
+export interface ShareHighlights {
+  medalTotal: BadgeData;
+  front9: BadgeData;
+  back9: BadgeData;
 }
 
 function firstName(name: string): string {
-  return (name || '').trim().split(/\s+/)[0] || name;
+  const parts = (name || '').trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0]} ${parts[1]}`;
+  return parts[0] || name;
 }
 
 export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
@@ -26,13 +28,13 @@ export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
 
   (s.players || []).forEach((p: any) => {
     const playerScores: any[] = s.scores?.[p.id] || [];
-    const confirmed = playerScores.filter((sc: any) => sc.strokes > 0);
+    const valid = playerScores.filter((sc: any) => sc.strokes > 0);
 
-    const total = confirmed.reduce((sum: number, sc: any) => sum + sc.strokes, 0);
-    const front = confirmed
+    const total = valid.reduce((sum: number, sc: any) => sum + sc.strokes, 0);
+    const front = valid
       .filter((sc: any) => sc.holeNumber >= 1 && sc.holeNumber <= 9)
       .reduce((sum: number, sc: any) => sum + sc.strokes, 0);
-    const back = confirmed
+    const back = valid
       .filter((sc: any) => sc.holeNumber >= 10 && sc.holeNumber <= 18)
       .reduce((sum: number, sc: any) => sum + sc.strokes, 0);
 
@@ -42,16 +44,20 @@ export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
     if (back > 0) backScores.push({ name, score: back });
   });
 
-  const best = (arr: { name: string; score: number }[]) => {
+  const best = (arr: { name: string; score: number }[]): { names: string[]; score: number | null } => {
     arr.sort((a, b) => a.score - b.score);
-    if (arr.length === 0) return [];
+    if (arr.length === 0) return { names: [], score: null };
     const min = arr[0].score;
-    return arr.filter(x => x.score === min);
+    return { names: arr.filter(x => x.score === min).map(x => x.name), score: min };
   };
 
+  const t = best(totalScores);
+  const f = best(frontScores);
+  const b = best(backScores);
+
   return {
-    medalTotal: { label: 'Medal Gross', value: formatBestPlayers(best(totalScores)) },
-    front9: { label: 'Mejor Front 9', value: formatBestPlayers(best(frontScores)) },
-    back9: { label: 'Mejor Back 9', value: formatBestPlayers(best(backScores)) },
+    medalTotal: { label: 'Medal Gross', names: t.names, score: t.score },
+    front9: { label: 'Mejor Front 9', names: f.names, score: f.score },
+    back9: { label: 'Mejor Back 9', names: b.names, score: b.score },
   };
 }
