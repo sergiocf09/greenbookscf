@@ -304,32 +304,8 @@ function drawCanvas(
     curY += 92;
   }
 
-  // ── Zapato events banner ──
-  if (zaps.length > 0) {
-    const bannerH = 40 + zaps.length * 38;
-    curY += 10;
-    ctx.fillStyle = 'rgba(252,227,0,0.12)';
-    roundRectPath(ctx, 60, curY, W - 120, bannerH, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 18px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    zaps.forEach((z, i) => {
-      const winName = buildDisplayName(z.winnerName, [z.winnerName, z.loserName]);
-      const loseName = buildDisplayName(z.loserName, [z.winnerName, z.loserName]);
-      ctx.fillText(
-        `🥾 Zapato ${z.type} — ${winName} ganó a ${loseName}`,
-        W / 2, curY + 30 + i * 38
-      );
-    });
-    curY += bannerH + 10;
-  }
-
   // ── Round highlight banner ──
-  if (roundHighlight && zaps.length === 0) {
+  if (roundHighlight) {
     curY += 10;
     ctx.fillStyle = 'rgba(252,227,0,0.12)';
     roundRectPath(ctx, 60, curY, W - 120, 70, 8);
