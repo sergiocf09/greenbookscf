@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, LayoutGrid, Trophy, AlertCircle, Share2 } from 'lucide-react';
 import { RoundShareImage } from '@/components/share/RoundShareImage';
+import { calcHighlightsFromSnapshot, calcRoundHighlight, detectZapatos } from '@/lib/shareHighlights';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';

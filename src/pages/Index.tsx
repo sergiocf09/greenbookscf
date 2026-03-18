@@ -76,6 +76,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
+import { calcHighlightsFromSnapshot, calcRoundHighlight, detectZapatos } from '@/lib/shareHighlights';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
