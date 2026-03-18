@@ -17,7 +17,7 @@ export interface ZapatoEvent {
 }
 
 export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
-  // ── Top bet: deduplicate by using only one direction per pair+type ──
+  // ── Badge 1: Top bet — deduplicate by using only one direction per pair+type ──
   const betTotals = new Map<string, number>();
   const processedPairs = new Set<string>();
   (s.ledger || []).forEach((entry: any) => {
@@ -32,68 +32,80 @@ export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
   const topBetEntry = Array.from(betTotals.entries())
     .sort((a, b) => b[1] - a[1])[0];
 
-  // ── Units: derive from ledger if available, else from markers ──
-  let unitsTotal = 0;
-  (s.ledger || []).forEach((entry: any) => {
-    if (entry.betType === 'Unidades' && entry.amount > 0) {
-      unitsTotal += entry.amount / (s.betConfig?.units?.valuePerPoint || 1);
+  // ── Badge 2: Best Front 9 gross score ──
+  let bestFront: { name: string; score: number } | null = null;
+  (s.players || []).forEach((p: any) => {
+    const playerScores: any[] = s.scores?.[p.id] || [];
+    const frontScore = playerScores
+      .filter((sc: any) => sc.confirmed && sc.holeNumber >= 1 && sc.holeNumber <= 9 && sc.strokes > 0)
+      .reduce((sum: number, sc: any) => sum + sc.strokes, 0);
+    if (frontScore > 0 && (!bestFront || frontScore < bestFront.score)) {
+      const nameParts = (p.name || '').trim().split(/\s+/);
+      bestFront = { name: nameParts[0] || p.name, score: frontScore };
     }
   });
-  if (unitsTotal === 0) {
-    Object.values(s.scores || {}).forEach((playerScores: any) => {
-      (playerScores as any[]).forEach((sc: any) => {
-        if (!sc.confirmed) return;
-        const avgPar = (s.coursePar || 72) / 18;
-        const toPar = (sc.strokes || 0) - avgPar;
-        if (toPar <= -1) unitsTotal += Math.abs(Math.round(toPar));
-        if (sc.markers?.sandyPar) unitsTotal += 1;
-        if (sc.markers?.aquaPar) unitsTotal += 1;
-        if (sc.markers?.holeOut) unitsTotal += 1;
-      });
-    });
-  }
 
-  // ── Manchas: count from confirmed markers ──
-  let manchasTotal = 0;
-  const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua',
-    'dobleOB','par3GirMas3','moreliana'];
-  Object.values(s.scores || {}).forEach((playerScores: any) => {
-    (playerScores as any[]).forEach((sc: any) => {
-      if (!sc.confirmed) return;
-      manchaKeys.forEach((k: string) => { if (sc.markers?.[k]) manchasTotal++; });
-      if ((sc.strokes || 0) >= 10) manchasTotal++;
-      if ((sc.putts || 0) >= 4 || sc.markers?.cuatriput) manchasTotal++;
-    });
+  // ── Badge 3: Best Back 9 gross score ──
+  let bestBack: { name: string; score: number } | null = null;
+  (s.players || []).forEach((p: any) => {
+    const playerScores: any[] = s.scores?.[p.id] || [];
+    const backScore = playerScores
+      .filter((sc: any) => sc.confirmed && sc.holeNumber >= 10 && sc.holeNumber <= 18 && sc.strokes > 0)
+      .reduce((sum: number, sc: any) => sum + sc.strokes, 0);
+    if (backScore > 0 && (!bestBack || backScore < bestBack.score)) {
+      const nameParts = (p.name || '').trim().split(/\s+/);
+      bestBack = { name: nameParts[0] || p.name, score: backScore };
+    }
   });
 
   return {
     topBet: topBetEntry
-      ? { label: 'Apuesta más alta', value: `${topBetEntry[0]}  $${topBetEntry[1].toLocaleString()}` }
-      : { label: 'Apuesta más alta', value: '—' },
-    units: { label: 'Unidades totales', value: `${unitsTotal}` },
-    manchas: { label: 'Manchas totales', value: `${manchasTotal}` },
+      ? { label: 'Mayor apuesta', value: `${topBetEntry[0]}  $${topBetEntry[1].toLocaleString()}` }
+      : { label: 'Mayor apuesta', value: '—' },
+    units: bestFront
+      ? { label: 'Mejor Front 9', value: `${bestFront.name}  ${bestFront.score}` }
+      : { label: 'Mejor Front 9', value: '—' },
+    manchas: bestBack
+      ? { label: 'Mejor Back 9', value: `${bestBack.name}  ${bestBack.score}` }
+      : { label: 'Mejor Back 9', value: '—' },
   };
 }
 
 export function calcRoundHighlight(s: any): string {
-  // Use manchas from markers for highlight text
-  let birdiesTotal = 0, culebrasTotal = 0, manchasTotal = 0;
-  const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua','dobleOB','par3GirMas3','moreliana'];
+  // Find the player with the most units (from ledger + markers)
+  let topUnitsPlayer = '';
+  let topUnitsCount = 0;
+
   (s.players || []).forEach((p: any) => {
-    const playerScores = s.scores?.[p.id] || [];
-    playerScores.forEach((sc: any) => {
-      // Use avgPar since course holes may not be in snapshot
-      const avgPar = Math.round((s.coursePar || 72) / 18);
-      if (sc.strokes > 0 && sc.strokes - avgPar <= -1) birdiesTotal++;
-      manchaKeys.forEach(k => { if (sc.markers?.[k]) manchasTotal++; });
-      if (sc.putts >= 3) culebrasTotal++;
+    const playerScores: any[] = s.scores?.[p.id] || [];
+    let units = 0;
+
+    // Count from ledger: entries where this player won units
+    (s.ledger || []).forEach((entry: any) => {
+      if (entry.betType !== 'Unidades') return;
+      if (entry.amount <= 0) return;
+      if (entry.toPlayerId === p.id) {
+        units += 1;
+      }
     });
+
+    // Count from markers
+    playerScores.forEach((sc: any) => {
+      if (!sc.confirmed) return;
+      if (sc.markers?.sandyPar) units += 1;
+      if (sc.markers?.aquaPar) units += 1;
+      if (sc.markers?.holeOut) units += 1;
+    });
+
+    if (units > topUnitsCount) {
+      topUnitsCount = units;
+      topUnitsPlayer = (p.name || '').trim();
+    }
   });
-  if (birdiesTotal >= 6) return `¡${birdiesTotal} birdies en la ronda! 🐦`;
-  if (culebrasTotal >= 8) return `¡${culebrasTotal} culebras! Día difícil en los greens 🐍`;
-  if (manchasTotal >= 10) return `${manchasTotal} manchas en total — ronda de alto impacto ⚠️`;
-  if (birdiesTotal >= 3) return `${birdiesTotal} birdies hoy — buena ronda 🐦`;
-  if (culebrasTotal >= 4) return `${culebrasTotal} culebras en juego 🐍`;
+
+  if (topUnitsPlayer && topUnitsCount > 0) {
+    return `⭐ Mayor en unidades: ${topUnitsPlayer}`;
+  }
   return 'Ronda completada en GreenBook 🏌️';
 }
 
