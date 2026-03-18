@@ -272,29 +272,57 @@ function drawCanvas(
 
   // ── Highlight badges ──
   if (highlights) {
-    const badges = [highlights.medalTotal, highlights.front9, highlights.back9];
-    const badgeW = 278;
-    const gap = 27;
+    const badges: BadgeData[] = [highlights.medalTotal, highlights.front9, highlights.back9];
+    // Calculate max names across badges to determine badge height
+    const maxNames = Math.max(...badges.map(b => b.names.length), 1);
+    const nameLineH = 26;
+    const badgeH = 32 + maxNames * nameLineH + 16; // label + names + padding
+    const badgeW = 300;
+    const gap = 20;
     const totalBW = badgeW * 3 + gap * 2;
     const bStartX = (W - totalBW) / 2;
 
     badges.forEach((badge, i) => {
       const bx = bStartX + i * (badgeW + gap);
+      // Badge background
       ctx.fillStyle = 'rgba(252,227,0,0.10)';
-      roundRectPath(ctx, bx, curY, badgeW, 72, 8);
+      roundRectPath(ctx, bx, curY, badgeW, badgeH, 8);
       ctx.fill();
       ctx.strokeStyle = 'rgba(252,227,0,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
+
+      // Label
       ctx.fillStyle = 'rgba(252,227,0,0.60)';
       ctx.font = '13px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 22);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Georgia, serif';
-      ctx.fillText(badge.value, bx + badgeW / 2, curY + 55);
+      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 20);
+
+      if (badge.names.length === 0 || badge.score === null) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = 'bold 22px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('—', bx + badgeW / 2, curY + 50);
+      } else {
+        // Each name on its own line, score right-aligned
+        badge.names.forEach((name, ni) => {
+          const ny = curY + 40 + ni * nameLineH;
+          // Name left-aligned
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '18px Arial, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(name, bx + 14, ny);
+          // Score right-aligned (only on first line, or repeated)
+          if (ni === 0) {
+            ctx.fillStyle = GOLD;
+            ctx.font = 'bold 22px Georgia, serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${badge.score}`, bx + badgeW - 14, ny);
+          }
+        });
+      }
     });
-    curY += 92;
+    curY += badgeH + 15;
   }
 
 
