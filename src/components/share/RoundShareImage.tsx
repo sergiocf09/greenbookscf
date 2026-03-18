@@ -300,21 +300,6 @@ function drawCanvas(
     curY += 92;
   }
 
-  // ── Round highlight banner ──
-  if (roundHighlight) {
-    curY += 10;
-    ctx.fillStyle = 'rgba(252,227,0,0.12)';
-    roundRectPath(ctx, 60, curY, W - 120, 70, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🏆 ' + roundHighlight, W / 2, curY + 42);
-    curY += 80;
-  }
 
   // ── Bottom gold banner ──
   ctx.fillStyle = GOLD;
