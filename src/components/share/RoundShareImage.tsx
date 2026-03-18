@@ -15,9 +15,9 @@ export interface RoundShareImageProps {
   date: string;
   coursePar?: number;
   highlights?: {
-    topBet: { label: string; value: string };
-    units: { label: string; value: string };
-    manchas: { label: string; value: string };
+    medalTotal: { label: string; value: string };
+    front9: { label: string; value: string };
+    back9: { label: string; value: string };
   };
   players: Array<{
     name: string;
@@ -33,7 +33,6 @@ export interface RoundShareImageProps {
     };
   }>;
   betTypes: string[];
-  roundHighlight?: string;
 }
 
 const CANVAS_W = 1080;
@@ -61,11 +60,9 @@ function buildDisplayName(name: string, allNames: string[]): string {
 function computeCanvasHeight(
   playerCount: number,
   hasHighlights: boolean,
-  hasRoundHighlight: boolean,
 ) {
   let h = 275 + playerCount * 150;
   if (hasHighlights) h += 120;
-  if (hasRoundHighlight) h += 90;
   h += 120; // footer
   return Math.max(1080, h);
 }
@@ -76,11 +73,10 @@ function drawCanvas(
   date: string,
   players: RoundShareImageProps['players'],
   coursePar: number,
-  roundHighlight?: string,
   highlights?: RoundShareImageProps['highlights'],
 ) {
   const W = CANVAS_W;
-  const H = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
+  const H = computeCanvasHeight(players.length, !!highlights);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
@@ -207,7 +203,7 @@ function drawCanvas(
 
     const diff = player.totalGross - coursePar;
     const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
-    ctx.fillStyle = diff <= 0 ? 'rgba(74,222,128,0.85)' : 'rgba(255,100,100,0.7)';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = 'bold 20px Arial, sans-serif';
     ctx.fillText(`(${diffLabel})`, cursorX, lineY);
     cursorX += ctx.measureText(`(${diffLabel})`).width + 18;
@@ -279,7 +275,7 @@ function drawCanvas(
 
   // ── Highlight badges ──
   if (highlights) {
-    const badges = [highlights.topBet, highlights.units, highlights.manchas];
+    const badges = [highlights.medalTotal, highlights.front9, highlights.back9];
     const badgeW = 278;
     const gap = 27;
     const totalBW = badgeW * 3 + gap * 2;
@@ -304,21 +300,6 @@ function drawCanvas(
     curY += 92;
   }
 
-  // ── Round highlight banner ──
-  if (roundHighlight) {
-    curY += 10;
-    ctx.fillStyle = 'rgba(252,227,0,0.12)';
-    roundRectPath(ctx, 60, curY, W - 120, 70, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🏆 ' + roundHighlight, W / 2, curY + 42);
-    curY += 80;
-  }
 
   // ── Bottom gold banner ──
   ctx.fillStyle = GOLD;
@@ -343,7 +324,6 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   players,
   coursePar,
   highlights,
-  roundHighlight,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -352,14 +332,14 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const h = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
+    const h = computeCanvasHeight(players.length, !!highlights);
     canvas.width = CANVAS_W;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, highlights);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, coursePar, highlights, roundHighlight]);
+  }, [courseName, date, players, coursePar, highlights]);
 
   useEffect(() => {
     if (open) {

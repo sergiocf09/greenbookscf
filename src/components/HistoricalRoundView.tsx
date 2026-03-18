@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, LayoutGrid, Trophy, AlertCircle, Share2 } from 'lucide-react';
 import { RoundShareImage } from '@/components/share/RoundShareImage';
-import { calcHighlightsFromSnapshot, calcRoundHighlight } from '@/lib/shareHighlights';
+import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
@@ -500,7 +500,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             betTypes={[]}
             coursePar={(snapshot as any).coursePar || 72}
             highlights={calcHighlightsFromSnapshot(snapshot)}
-            roundHighlight={calcRoundHighlight(snapshot)}
           />
       )}
     </div>
