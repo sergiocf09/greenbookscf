@@ -2885,7 +2885,25 @@ const Index = () => {
         onConfirm={async () => {
           setShowCloseConfirmDialog(false);
           const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-          if (!success) setShowCloseAttemptDialog(true);
+          if (success) {
+            const allPlayers = [...players, ...playerGroups.flatMap(g => g.players)]
+              .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+            setRoundShareData({
+              courseName: course?.name || 'Campo',
+              date: format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
+              players: allPlayers.map(p => ({
+                name: p.name,
+                initials: p.initials,
+                color: p.color,
+                totalNet: 0,
+                totalGross: (scores.get(p.id) || []).reduce((sum, s) => sum + (s.strokes || 0), 0),
+              })),
+              betTypes: [],
+            });
+            setShowRoundShare(true);
+          } else {
+            setShowCloseAttemptDialog(true);
+          }
         }}
       />
 
