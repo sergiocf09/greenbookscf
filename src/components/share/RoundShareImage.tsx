@@ -15,9 +15,9 @@ export interface RoundShareImageProps {
   date: string;
   coursePar?: number;
   highlights?: {
-    topBet: { label: string; value: string };
-    units: { label: string; value: string };
-    manchas: { label: string; value: string };
+    medalTotal: { label: string; value: string };
+    front9: { label: string; value: string };
+    back9: { label: string; value: string };
   };
   players: Array<{
     name: string;
