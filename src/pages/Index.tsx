@@ -2918,20 +2918,78 @@ const Index = () => {
                     return 'Ronda completada en GreenBook 🏌️';
                   };
 
+                  // Calculate highlights from snapshot
+                  const calcHighlights = (s: any) => {
+                    const betTotals = new Map<string, number>();
+                    (s.ledger || []).forEach((entry: any) => {
+                      if (entry.amount <= 0) return;
+                      const key = entry.betType
+                        .replace(/ Front.*| Back.*| Total.*| Match.*| Hoyo.*/g, '').trim();
+                      betTotals.set(key, (betTotals.get(key) || 0) + entry.amount);
+                    });
+                    const topBetEntry = Array.from(betTotals.entries())
+                      .sort((a, b) => b[1] - a[1])[0];
+
+                    let unitsTotal = 0;
+                    let manchasTotal = 0;
+                    const manchaKeys = ['ladies','swingBlanco','retruje','trampa','dobleAgua',
+                      'dobleOB','par3GirMas3','moreliana'];
+                    Object.values(s.scores || {}).forEach((playerScores: any) => {
+                      playerScores.forEach((sc: any) => {
+                        if (!sc.confirmed) return;
+                        const holes = s.betConfig?.course?.holes || [];
+                        const holePar = holes[sc.holeNumber - 1]?.par || 4;
+                        const toPar = (sc.strokes || 0) - holePar;
+                        if (toPar === -1) unitsTotal += 1;
+                        else if (toPar === -2) unitsTotal += 2;
+                        else if (toPar <= -3) unitsTotal += 3;
+                        if (sc.markers?.sandyPar) unitsTotal += 1;
+                        if (sc.markers?.aquaPar) unitsTotal += 1;
+                        if (sc.markers?.holeOut) unitsTotal += 1;
+                        manchaKeys.forEach((k: string) => { if (sc.markers?.[k]) manchasTotal++; });
+                        if ((sc.strokes || 0) >= 10) manchasTotal++;
+                        if ((sc.putts || 0) >= 4) manchasTotal++;
+                      });
+                    });
+
+                    return {
+                      topBet: topBetEntry
+                        ? { label: 'Mayor apuesta', value: `${topBetEntry[0]}  $${topBetEntry[1].toLocaleString()}` }
+                        : { label: 'Mayor apuesta', value: '—' },
+                      units: { label: 'Unidades en ronda', value: `${unitsTotal}` },
+                      manchas: { label: 'Manchas en ronda', value: `${manchasTotal}` },
+                    };
+                  };
+
                   setRoundShareData({
                     courseName: snap.courseName || course?.name || 'Campo',
                     date: snap.date || format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
                     players: (snap.balances || []).map((b: any) => {
                       const p = (snap.players || []).find((pl: any) => pl.id === b.playerId);
+                      const vsBalances = b.vsBalances || [];
+                      const wonFrom = vsBalances
+                        .filter((v: any) => v.netAmount > 0)
+                        .reduce((sum: number, v: any) => sum + v.netAmount, 0);
+                      const lostTo = vsBalances
+                        .filter((v: any) => v.netAmount < 0)
+                        .reduce((sum: number, v: any) => sum + Math.abs(v.netAmount), 0);
                       return {
                         name: b.playerName,
                         initials: p?.initials || '??',
                         color: p?.color || '#006747',
                         totalNet: b.totalNet ?? 0,
                         totalGross: b.totalGross ?? 0,
+                        wonFrom,
+                        lostTo,
+                        rivalStats: {
+                          won: vsBalances.filter((v: any) => v.netAmount > 0).length,
+                          lost: vsBalances.filter((v: any) => v.netAmount < 0).length,
+                        },
                       };
                     }),
                     betTypes: [],
+                    coursePar: snap.coursePar || 72,
+                    highlights: calcHighlights(snap),
                     roundHighlight: calcHighlight(snap),
                   });
                   setShowRoundShare(true);

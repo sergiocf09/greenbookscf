@@ -13,12 +13,24 @@ export interface RoundShareImageProps {
   onClose: () => void;
   courseName: string;
   date: string;
+  coursePar?: number;
+  highlights?: {
+    topBet: { label: string; value: string };
+    units: { label: string; value: string };
+    manchas: { label: string; value: string };
+  };
   players: Array<{
     name: string;
     initials: string;
     color: string;
     totalNet: number;
     totalGross: number;
+    wonFrom?: number;
+    lostTo?: number;
+    rivalStats?: {
+      won: number;
+      lost: number;
+    };
   }>;
   betTypes: string[];
   roundHighlight?: string;
@@ -44,21 +56,22 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 
 function buildDisplayName(name: string, allNames: string[]): string {
   const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
   const firstName = parts[0];
   const lastName1 = parts[1] || '';
   const lastName2 = parts[2] || '';
-  const candidateName = `${firstName} ${lastName1}`.trim();
+  const fullBase = `${firstName} ${lastName1}`.trim();
   const hasDuplicate = allNames.some(n => {
     if (n === name) return false;
     const p = n.trim().split(/\s+/);
     return p[0] === firstName && (p[1] || '') === lastName1;
   });
-  if (hasDuplicate && lastName2) return `${candidateName} ${lastName2[0]}.`;
-  return candidateName;
+  if (hasDuplicate && lastName2) return `${fullBase} ${lastName2[0]}.`;
+  return fullBase;
 }
 
-function computeCanvasHeight(playerCount: number, hasHighlight: boolean) {
-  const base = 275 + playerCount * 138 + (hasHighlight ? 100 : 0) + 180;
+function computeCanvasHeight(playerCount: number, hasHighlights: boolean) {
+  const base = 275 + playerCount * 160 + (hasHighlights ? 120 : 0) + 180;
   return Math.max(1080, base);
 }
 
@@ -67,10 +80,12 @@ function drawCanvas(
   courseName: string,
   date: string,
   players: RoundShareImageProps['players'],
+  coursePar: number,
   roundHighlight?: string,
+  highlights?: RoundShareImageProps['highlights'],
 ) {
   const W = CANVAS_W;
-  const H = computeCanvasHeight(players.length, !!roundHighlight);
+  const H = computeCanvasHeight(players.length, !!highlights);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
@@ -136,95 +151,158 @@ function drawCanvas(
   // ── Player rows ──
   const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
   const allPlayerNames = sorted.map(p => p.name);
-  const rowH = 138;
+  const rowH = 160;
   const startY = 275;
   const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
 
   sorted.forEach((player, idx) => {
     const y = startY + idx * rowH;
-    const isWinner = idx === 0;
+    const isFirst = idx === 0;
     const isLoser = player.totalNet < 0;
-    const rowAlpha = isWinner ? 1 : 0.88 - idx * 0.06;
 
-    // Row background highlight
-    if (isWinner) {
+    // ── Row background ──
+    if (isFirst) {
       const rowGrad = ctx.createLinearGradient(40, y, W - 40, y);
       rowGrad.addColorStop(0, 'rgba(252,227,0,0.18)');
-      rowGrad.addColorStop(0.5, 'rgba(252,227,0,0.08)');
       rowGrad.addColorStop(1, 'rgba(252,227,0,0.02)');
       ctx.fillStyle = rowGrad;
-      roundRectPath(ctx, 40, y + 4, W - 80, rowH - 12, 12);
-      ctx.fill();
     } else if (isLoser) {
       ctx.fillStyle = 'rgba(220,50,50,0.06)';
-      roundRectPath(ctx, 40, y + 4, W - 80, rowH - 12, 8);
-      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
     }
+    roundRectPath(ctx, 40, y + 4, W - 80, rowH - 12, 10);
+    ctx.fill();
 
-    // Position badge
-    if (isWinner) {
+    // ── Position badge ──
+    if (isFirst) {
       ctx.fillStyle = GOLD;
-      ctx.beginPath(); ctx.arc(85, y + rowH / 2, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(95, y + rowH / 2, 34, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#003d2e';
       ctx.font = 'bold 26px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText('1°', 85, y + rowH / 2 + 9);
+      ctx.fillText('1°', 95, y + rowH / 2 + 9);
     } else {
       ctx.fillStyle = 'rgba(252,227,0,0.25)';
-      ctx.beginPath(); ctx.arc(85, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(95, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = GOLD;
       ctx.font = 'bold 22px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 85, y + rowH / 2 + 8);
+      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 95, y + rowH / 2 + 8);
     }
 
-    // Name (no avatar circle — full name with differentiation)
+    // ── LEFT COLUMN: Name + Score + Stats ──
+    const nameX = 145;
     const displayName = buildDisplayName(player.name, allPlayerNames);
     ctx.textAlign = 'left';
-    ctx.globalAlpha = rowAlpha;
-    ctx.fillStyle = isWinner ? '#ffffff' : 'rgba(255,255,255,0.88)';
-    ctx.font = `bold ${isWinner ? 34 : 30}px Georgia, serif`;
-    ctx.fillText(displayName, 160, y + rowH / 2 + 10);
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = isFirst ? '#ffffff' : 'rgba(255,255,255,0.88)';
+    ctx.font = `bold ${isFirst ? 34 : 30}px Georgia, serif`;
+    ctx.fillText(displayName, nameX, y + 46);
 
-    // Gross strokes — right-middle column
+    // Gross score + differential vs par
+    const diff = player.totalGross - coursePar;
+    const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = 'bold 26px Arial, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${player.totalGross}`, W - 320, y + rowH / 2 + 4);
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('golpes', W - 320, y + rowH / 2 + 26);
+    ctx.font = 'bold 22px Arial, sans-serif';
+    const grossText = `${player.totalGross}  `;
+    ctx.fillText(grossText, nameX, y + 78);
+    const diffWidth = ctx.measureText(grossText).width;
+    ctx.fillStyle = diff <= 0 ? 'rgba(74,222,128,0.8)' : 'rgba(255,255,255,0.38)';
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillText(`(${diffLabel})`, nameX + diffWidth, y + 78);
 
-    // Net amount — far right
+    // Rival stats badges
+    const rivalStats = player.rivalStats;
+    const wonFrom = player.wonFrom || 0;
+    const lostTo = player.lostTo || 0;
+    if (rivalStats && (rivalStats.won > 0 || rivalStats.lost > 0)) {
+      let statsX = nameX;
+      ctx.font = 'bold 17px Arial, sans-serif';
+
+      if (rivalStats.won > 0) {
+        const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
+        const wonW = ctx.measureText(wonText).width + 20;
+        ctx.fillStyle = 'rgba(74,222,128,0.15)';
+        roundRectPath(ctx, statsX, y + 96, wonW, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(74,222,128,0.35)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(74,222,128,0.9)';
+        ctx.fillText(wonText, statsX + 10, y + 117);
+        statsX += wonW + 12;
+      }
+
+      if (rivalStats.lost > 0) {
+        const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
+        const lostW = ctx.measureText(lostText).width + 20;
+        ctx.fillStyle = 'rgba(248,113,113,0.12)';
+        roundRectPath(ctx, statsX, y + 96, lostW, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(248,113,113,0.30)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(248,113,113,0.85)';
+        ctx.fillText(lostText, statsX + 10, y + 117);
+      }
+    }
+
+    // ── RIGHT COLUMN: Net amount ──
     const netLabel = player.totalNet > 0
       ? `+$${player.totalNet.toLocaleString()}`
       : player.totalNet < 0
         ? `-$${Math.abs(player.totalNet).toLocaleString()}`
-        : 'Par';
+        : '$0';
     ctx.textAlign = 'right';
-    ctx.font = `bold ${isWinner ? 52 : 44}px Georgia, serif`;
+    ctx.font = `bold ${isFirst ? 52 : 44}px Georgia, serif`;
     ctx.fillStyle = player.totalNet > 0
-      ? (isWinner ? GOLD : '#4ade80')
+      ? (isFirst ? GOLD : '#4ade80')
       : player.totalNet < 0
         ? '#f87171'
         : 'rgba(255,255,255,0.5)';
-    ctx.fillText(netLabel, W - 55, y + rowH / 2 + 12);
+    ctx.fillText(netLabel, W - 55, y + 60);
 
     // Row separator
     if (idx < sorted.length - 1) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(80, y + rowH - 8);
-      ctx.lineTo(W - 80, y + rowH - 8);
+      ctx.moveTo(80, y + rowH - 6);
+      ctx.lineTo(W - 80, y + rowH - 6);
       ctx.stroke();
     }
   });
 
+  // ── Highlight badges ──
+  if (highlights) {
+    const badgeAreaY = startY + sorted.length * rowH + 15;
+    const badges = [highlights.topBet, highlights.units, highlights.manchas];
+    const badgeW = 278;
+    const gap = 27;
+    const totalBW = badgeW * 3 + gap * 2;
+    const bStartX = (W - totalBW) / 2;
+
+    badges.forEach((badge, i) => {
+      const bx = bStartX + i * (badgeW + gap);
+      ctx.fillStyle = 'rgba(252,227,0,0.10)';
+      roundRectPath(ctx, bx, badgeAreaY, badgeW, 72, 8);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(252,227,0,0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(252,227,0,0.60)';
+      ctx.font = '13px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, badgeAreaY + 22);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Georgia, serif';
+      ctx.fillText(badge.value, bx + badgeW / 2, badgeAreaY + 55);
+    });
+  }
+
   // ── Round highlight banner ──
   if (roundHighlight) {
-    const bannerY = startY + sorted.length * rowH + 10;
+    const bannerY = H - 175;
     ctx.fillStyle = 'rgba(252,227,0,0.12)';
     roundRectPath(ctx, 60, bannerY, W - 120, 70, 8);
     ctx.fill();
@@ -258,6 +336,8 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   courseName,
   date,
   players,
+  coursePar,
+  highlights,
   roundHighlight,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -266,14 +346,14 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const h = computeCanvasHeight(players.length, !!roundHighlight);
+    const h = computeCanvasHeight(players.length, !!highlights);
     canvas.width = CANVAS_W;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, roundHighlight);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, roundHighlight]);
+  }, [courseName, date, players, coursePar, highlights, roundHighlight]);
 
   useEffect(() => {
     if (open) {
@@ -282,47 +362,42 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
     }
   }, [open, render]);
 
-  const getBlob = (): Promise<Blob> =>
-    new Promise((resolve) => {
-      canvasRef.current!.toBlob((blob) => resolve(blob!), 'image/png');
-    });
-
-  const downloadImage = async () => {
+  const downloadImage = () => {
     render();
-    const blob = await getBlob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'greenbook-resultado.png';
-    a.click();
-    URL.revokeObjectURL(url);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'greenbook-resultado.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
   };
 
-  const shareToWhatsApp = async () => {
+  const shareToWhatsApp = () => {
     render();
-    const blob = await getBlob();
-    const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'GreenBook',
-          text: `Ronda en ${courseName} 🏌️\ngolfgreenbookscf.com`,
-        });
-      } catch {
-        // cancelled
-      }
-    } else {
-      // Fallback: download + open WhatsApp Web
-      await downloadImage();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'greenbook-resultado.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setTimeout(() => {
-        window.open(
-          'https://wa.me/?text=Mis%20resultados%20de%20golf%20en%20GreenBook%20%F0%9F%8F%8C%EF%B8%8F%20golfgreenbookscf.com',
-          '_blank',
-        );
+        const text = encodeURIComponent(`🏌️ Mis resultados de golf hoy en ${courseName}\n📲 Lleva tus apuestas con GreenBook\ngolfgreenbookscf.com`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
       }, 800);
-    }
+    }, 'image/png');
   };
 
   return (
@@ -351,8 +426,11 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
               <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.428l5.7-1.496A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.893 9.893 0 01-5.031-1.378l-.361-.214-3.735.979 1.004-3.632-.235-.374A9.86 9.86 0 012.106 12C2.106 6.58 6.58 2.106 12 2.106c5.421 0 9.894 4.474 9.894 9.894 0 5.421-4.473 9.894-9.894 9.894z" />
             </svg>
-            Compartir en WhatsApp
+            Guardar y abrir WhatsApp
           </Button>
+          <p className="text-xs text-center text-muted-foreground -mt-1">
+            La imagen se guarda en tu galería para adjuntarla en WhatsApp
+          </p>
           <Button variant="outline" className="w-full gap-2" onClick={downloadImage}>
             <Download className="h-4 w-4" />
             Descargar imagen
@@ -360,9 +438,6 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
           <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
             Ahora no
           </Button>
-          <p className="text-xs text-center text-muted-foreground">
-            Comparte en WhatsApp, Instagram o donde prefieras
-          </p>
         </div>
       </DialogContent>
     </Dialog>
