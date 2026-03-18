@@ -216,5 +216,5 @@ export const calculateAllBets = (
     }));
   }
   
-  return allSummaries;
+  return allSummaries.map(s => ({ ...s, amount: Math.round(s.amount) }));
 };

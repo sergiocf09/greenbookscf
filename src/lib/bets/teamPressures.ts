@@ -163,7 +163,7 @@ export const calculateTeamPressuresBets = (
     devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} totalMoney=${totalMoney}`);
 
     if (totalMoney !== 0) {
-      const perPairAmount = totalMoney / 2;
+      const perPairAmount = Math.round(totalMoney / 2);
       const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${Math.abs(pressureMoney)}`];
       if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${Math.abs(unitsMoney)}`);
       if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${Math.abs(oyesesMoney)}`);

@@ -47,7 +47,7 @@ export const calculateMedalGeneralBets = (
   if (losers.length === 0) return summaries;
   
   losers.forEach(loser => {
-    const amountToPayPerWinner = amount / winners.length;
+    const amountToPayPerWinner = Math.round(amount / winners.length);
     winners.forEach(winner => {
       summaries.push({ playerId: loser.playerId, vsPlayer: winner.playerId, betType: 'Medal General', amount: -amountToPayPerWinner, segment: 'total', description: `Neto ${loser.netTotal} vs ${winner.netTotal}${winners.length > 1 ? ' (empate dividido)' : ''}` });
       summaries.push({ playerId: winner.playerId, vsPlayer: loser.playerId, betType: 'Medal General', amount: amountToPayPerWinner, segment: 'total', description: `Neto ${winner.netTotal} vs ${loser.netTotal}${winners.length > 1 ? ' (empate dividido)' : ''}` });
