@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import type { ZapatoEvent } from '@/lib/shareHighlights';
 
 export interface RoundShareImageProps {
   open: boolean;
