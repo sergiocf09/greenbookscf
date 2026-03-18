@@ -152,7 +152,7 @@ function drawCanvas(
   // ── Player rows ──
   const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
   const allPlayerNames = sorted.map(p => p.name);
-  const rowH = 160;
+  const rowH = 150;
   const startY = 275;
   const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
 
@@ -192,60 +192,66 @@ function drawCanvas(
       ctx.fillText(posLabels[idx] || `${idx + 1}°`, 95, y + rowH / 2 + 8);
     }
 
-    // ── LEFT COLUMN: Name + Score + Stats ──
+    // ── LEFT COLUMN: Name + Score + Stats (all inline on row 2) ──
     const nameX = 145;
     const displayName = buildDisplayName(player.name, allPlayerNames);
+
+    // Row 1: Full name
     ctx.textAlign = 'left';
     ctx.fillStyle = isFirst ? '#ffffff' : 'rgba(255,255,255,0.88)';
-    ctx.font = `bold ${isFirst ? 34 : 30}px Georgia, serif`;
-    ctx.fillText(displayName, nameX, y + 46);
+    ctx.font = `bold ${isFirst ? 36 : 32}px Georgia, serif`;
+    ctx.fillText(displayName, nameX, y + 48);
 
-    // Gross score + differential vs par
+    // Row 2: Gross score bold + differential + won/lost badges — all inline
+    const lineY = y + 90;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px Arial, sans-serif';
+    const grossText = `${player.totalGross}`;
+    ctx.fillText(grossText, nameX, lineY);
+    let cursorX = nameX + ctx.measureText(grossText).width + 8;
+
     const diff = player.totalGross - coursePar;
     const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = 'bold 22px Arial, sans-serif';
-    const grossText = `${player.totalGross}  `;
-    ctx.fillText(grossText, nameX, y + 78);
-    const diffWidth = ctx.measureText(grossText).width;
-    ctx.fillStyle = diff <= 0 ? 'rgba(74,222,128,0.8)' : 'rgba(255,255,255,0.38)';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText(`(${diffLabel})`, nameX + diffWidth, y + 78);
+    ctx.fillStyle = diff <= 0 ? 'rgba(74,222,128,0.85)' : 'rgba(255,100,100,0.7)';
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText(`(${diffLabel})`, cursorX, lineY);
+    cursorX += ctx.measureText(`(${diffLabel})`).width + 18;
 
-    // Rival stats badges
-    const rivalStats = player.rivalStats;
+    // Thin vertical separator
+    ctx.fillStyle = 'rgba(255,255,255,0.20)';
+    ctx.fillRect(cursorX, lineY - 20, 1.5, 26);
+    cursorX += 14;
+
     const wonFrom = player.wonFrom || 0;
     const lostTo = player.lostTo || 0;
-    if (rivalStats && (rivalStats.won > 0 || rivalStats.lost > 0)) {
-      let statsX = nameX;
-      ctx.font = 'bold 17px Arial, sans-serif';
-
-      if (rivalStats.won > 0) {
-        const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
-        const wonW = ctx.measureText(wonText).width + 20;
-        ctx.fillStyle = 'rgba(74,222,128,0.15)';
-        roundRectPath(ctx, statsX, y + 96, wonW, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(74,222,128,0.35)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(74,222,128,0.9)';
-        ctx.fillText(wonText, statsX + 10, y + 117);
-        statsX += wonW + 12;
-      }
-
-      if (rivalStats.lost > 0) {
-        const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
-        const lostW = ctx.measureText(lostText).width + 20;
-        ctx.fillStyle = 'rgba(248,113,113,0.12)';
-        roundRectPath(ctx, statsX, y + 96, lostW, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(248,113,113,0.30)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(248,113,113,0.85)';
-        ctx.fillText(lostText, statsX + 10, y + 117);
-      }
+    const rivalStats = player.rivalStats;
+    if (rivalStats && rivalStats.won > 0) {
+      const wonText = `▲ +$${wonFrom.toLocaleString()}`;
+      ctx.font = 'bold 20px Arial, sans-serif';
+      const wonW = ctx.measureText(wonText).width + 16;
+      ctx.fillStyle = 'rgba(74,222,128,0.15)';
+      roundRectPath(ctx, cursorX, lineY - 22, wonW, 30, 5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(74,222,128,0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(74,222,128,0.95)';
+      ctx.fillText(wonText, cursorX + 8, lineY);
+      cursorX += wonW + 8;
+    }
+    if (rivalStats && rivalStats.lost > 0) {
+      const lostText = `▼ -$${lostTo.toLocaleString()}`;
+      ctx.font = 'bold 20px Arial, sans-serif';
+      const lostW = ctx.measureText(lostText).width + 16;
+      ctx.fillStyle = 'rgba(248,113,113,0.12)';
+      roundRectPath(ctx, cursorX, lineY - 22, lostW, 30, 5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(248,113,113,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(248,113,113,0.90)';
+      ctx.fillText(lostText, cursorX + 8, lineY);
     }
 
     // ── RIGHT COLUMN: Net amount ──
