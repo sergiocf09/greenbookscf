@@ -107,8 +107,10 @@ export const getEffectiveSegmentConfig = (
   };
   
   // Apply dashboard overrides if present
-  const frontOverride = findDashboardOverride('Rayas Front');
-  const backOverride = findDashboardOverride('Rayas Back');
+  // Check both specific ('Rayas Front'/'Rayas Back') and generic ('Rayas') betType keys,
+  // since the dashboard saves overrides as 'Rayas' (generic) but the engine needs per-segment.
+  const frontOverride = findDashboardOverride('Rayas Front') ?? findDashboardOverride('Rayas');
+  const backOverride = findDashboardOverride('Rayas Back') ?? findDashboardOverride('Rayas');
   
   if (frontOverride !== undefined) frontValue = frontOverride;
   if (backOverride !== undefined) backValue = backOverride;
