@@ -58,7 +58,7 @@ export const calculateStablefordBets = (
   if (losers.length === 0) return [];
   
   losers.forEach(loser => {
-    const amountToPayPerWinner = amount / winners.length;
+    const amountToPayPerWinner = Math.round(amount / winners.length);
     winners.forEach(winner => {
       summaries.push({ playerId: loser.playerId, vsPlayer: winner.playerId, betType: 'Stableford', amount: -amountToPayPerWinner, segment: 'total', description: `${loser.points} vs ${winner.points} pts` });
       summaries.push({ playerId: winner.playerId, vsPlayer: loser.playerId, betType: 'Stableford', amount: amountToPayPerWinner, segment: 'total', description: `${winner.points} vs ${loser.points} pts` });
