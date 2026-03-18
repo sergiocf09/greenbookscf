@@ -484,6 +484,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             })
           }
           betTypes={[]}
+          roundHighlight="Ronda completada en GreenBook 🏌️"
         />
       )}
     </div>

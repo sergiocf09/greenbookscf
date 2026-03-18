@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Share2, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 export interface RoundShareImageProps {
   open: boolean;
@@ -21,6 +21,7 @@ export interface RoundShareImageProps {
     totalGross: number;
   }>;
   betTypes: string[];
+  roundHighlight?: string;
 }
 
 const CANVAS_W = 1080;
@@ -41,8 +42,24 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
-function computeCanvasHeight(playerCount: number) {
-  return Math.max(1080, 275 + playerCount * 138 + 180);
+function buildDisplayName(name: string, allNames: string[]): string {
+  const parts = name.trim().split(/\s+/);
+  const firstName = parts[0];
+  const lastName1 = parts[1] || '';
+  const lastName2 = parts[2] || '';
+  const candidateName = `${firstName} ${lastName1}`.trim();
+  const hasDuplicate = allNames.some(n => {
+    if (n === name) return false;
+    const p = n.trim().split(/\s+/);
+    return p[0] === firstName && (p[1] || '') === lastName1;
+  });
+  if (hasDuplicate && lastName2) return `${candidateName} ${lastName2[0]}.`;
+  return candidateName;
+}
+
+function computeCanvasHeight(playerCount: number, hasHighlight: boolean) {
+  const base = 275 + playerCount * 138 + (hasHighlight ? 100 : 0) + 180;
+  return Math.max(1080, base);
 }
 
 function drawCanvas(
@@ -50,9 +67,10 @@ function drawCanvas(
   courseName: string,
   date: string,
   players: RoundShareImageProps['players'],
+  roundHighlight?: string,
 ) {
   const W = CANVAS_W;
-  const H = computeCanvasHeight(players.length);
+  const H = computeCanvasHeight(players.length, !!roundHighlight);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
@@ -117,6 +135,7 @@ function drawCanvas(
 
   // ── Player rows ──
   const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
+  const allPlayerNames = sorted.map(p => p.name);
   const rowH = 138;
   const startY = 275;
   const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
@@ -145,51 +164,39 @@ function drawCanvas(
     // Position badge
     if (isWinner) {
       ctx.fillStyle = GOLD;
-      ctx.beginPath(); ctx.arc(105, y + rowH / 2, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(85, y + rowH / 2, 34, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#003d2e';
       ctx.font = 'bold 26px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText('1°', 105, y + rowH / 2 + 9);
+      ctx.fillText('1°', 85, y + rowH / 2 + 9);
     } else {
       ctx.fillStyle = 'rgba(252,227,0,0.25)';
-      ctx.beginPath(); ctx.arc(105, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(85, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = GOLD;
       ctx.font = 'bold 22px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 105, y + rowH / 2 + 8);
+      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 85, y + rowH / 2 + 8);
     }
 
-    // Avatar
-    const avatarR = isWinner ? 38 : 32;
-    const avatarX = 195;
-    const avatarY = y + rowH / 2;
-    if (isWinner) {
-      ctx.fillStyle = GOLD;
-      ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 4, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.fillStyle = player.color;
-    ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${isWinner ? 22 : 18}px Arial, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(player.initials, avatarX, avatarY + 7);
-
-    // Name
-    const parts = player.name.trim().split(' ');
-    const displayName = parts.length >= 2 ? `${parts[0]} ${parts[1][0]}.` : parts[0];
+    // Name (no avatar circle — full name with differentiation)
+    const displayName = buildDisplayName(player.name, allPlayerNames);
     ctx.textAlign = 'left';
     ctx.globalAlpha = rowAlpha;
     ctx.fillStyle = isWinner ? '#ffffff' : 'rgba(255,255,255,0.88)';
     ctx.font = `bold ${isWinner ? 34 : 30}px Georgia, serif`;
-    ctx.fillText(displayName, 252, y + rowH / 2 - 4);
-
-    // Gross strokes
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText(`${player.totalGross} golpes`, 252, y + rowH / 2 + 26);
+    ctx.fillText(displayName, 160, y + rowH / 2 + 10);
     ctx.globalAlpha = 1;
 
-    // Net amount
+    // Gross strokes — right-middle column
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = 'bold 26px Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${player.totalGross}`, W - 320, y + rowH / 2 + 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillText('golpes', W - 320, y + rowH / 2 + 26);
+
+    // Net amount — far right
     const netLabel = player.totalNet > 0
       ? `+$${player.totalNet.toLocaleString()}`
       : player.totalNet < 0
@@ -215,6 +222,21 @@ function drawCanvas(
     }
   });
 
+  // ── Round highlight banner ──
+  if (roundHighlight) {
+    const bannerY = startY + sorted.length * rowH + 10;
+    ctx.fillStyle = 'rgba(252,227,0,0.12)';
+    roundRectPath(ctx, 60, bannerY, W - 120, 70, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆 ' + roundHighlight, W / 2, bannerY + 42);
+  }
+
   // ── Bottom gold banner ──
   ctx.fillStyle = GOLD;
   ctx.fillRect(0, H - 12, W, 12);
@@ -236,6 +258,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   courseName,
   date,
   players,
+  roundHighlight,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -243,14 +266,14 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const h = computeCanvasHeight(players.length);
+    const h = computeCanvasHeight(players.length, !!roundHighlight);
     canvas.width = CANVAS_W;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players);
+    drawCanvas(ctx, courseName, date, players, roundHighlight);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players]);
+  }, [courseName, date, players, roundHighlight]);
 
   useEffect(() => {
     if (open) {
@@ -264,27 +287,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
       canvasRef.current!.toBlob((blob) => resolve(blob!), 'image/png');
     });
 
-  const handleShare = async () => {
-    render(); // re-draw before export
-    const blob = await getBlob();
-    const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
-
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: `GreenBook — ${courseName}`,
-          text: `Resultados de hoy en ${courseName} 🏌️\ngolfgreenbookscf.com`,
-        });
-      } catch {
-        // cancelled
-      }
-    } else {
-      handleDownload();
-    }
-  };
-
-  const handleDownload = async () => {
+  const downloadImage = async () => {
     render();
     const blob = await getBlob();
     const url = URL.createObjectURL(blob);
@@ -293,6 +296,33 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
     a.download = 'greenbook-resultado.png';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const shareToWhatsApp = async () => {
+    render();
+    const blob = await getBlob();
+    const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
+
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'GreenBook',
+          text: `Ronda en ${courseName} 🏌️\ngolfgreenbookscf.com`,
+        });
+      } catch {
+        // cancelled
+      }
+    } else {
+      // Fallback: download + open WhatsApp Web
+      await downloadImage();
+      setTimeout(() => {
+        window.open(
+          'https://wa.me/?text=Mis%20resultados%20de%20golf%20en%20GreenBook%20%F0%9F%8F%8C%EF%B8%8F%20golfgreenbookscf.com',
+          '_blank',
+        );
+      }, 800);
+    }
   };
 
   return (
@@ -313,15 +343,21 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
         )}
 
         <div className="space-y-2 pt-2">
-          <Button onClick={handleShare} className="w-full bg-[#006747] hover:bg-[#005538] text-white">
-            <Share2 className="h-4 w-4 mr-2" />
-            Compartir resultado 🏌️
+          <Button
+            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-base gap-2"
+            onClick={shareToWhatsApp}
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.862L.057 23.428l5.7-1.496A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.893 9.893 0 01-5.031-1.378l-.361-.214-3.735.979 1.004-3.632-.235-.374A9.86 9.86 0 012.106 12C2.106 6.58 6.58 2.106 12 2.106c5.421 0 9.894 4.474 9.894 9.894 0 5.421-4.473 9.894-9.894 9.894z" />
+            </svg>
+            Compartir en WhatsApp
           </Button>
-          <Button variant="outline" onClick={handleDownload} className="w-full">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full gap-2" onClick={downloadImage}>
+            <Download className="h-4 w-4" />
             Descargar imagen
           </Button>
-          <Button variant="ghost" onClick={onClose} className="w-full">
+          <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
             Ahora no
           </Button>
           <p className="text-xs text-center text-muted-foreground">
