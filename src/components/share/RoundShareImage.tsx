@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import type { ZapatoEvent } from '@/lib/shareHighlights';
 
 export interface RoundShareImageProps {
   open: boolean;
@@ -35,7 +34,6 @@ export interface RoundShareImageProps {
   }>;
   betTypes: string[];
   roundHighlight?: string;
-  zapatoEvents?: ZapatoEvent[];
 }
 
 const CANVAS_W = 1080;
@@ -63,12 +61,10 @@ function buildDisplayName(name: string, allNames: string[]): string {
 function computeCanvasHeight(
   playerCount: number,
   hasHighlights: boolean,
-  zapatoCount: number,
   hasRoundHighlight: boolean,
 ) {
   let h = 275 + playerCount * 150;
   if (hasHighlights) h += 120;
-  if (zapatoCount > 0) h += 40 + zapatoCount * 38 + 20;
   if (hasRoundHighlight) h += 90;
   h += 120; // footer
   return Math.max(1080, h);
@@ -82,11 +78,9 @@ function drawCanvas(
   coursePar: number,
   roundHighlight?: string,
   highlights?: RoundShareImageProps['highlights'],
-  zapatoEvents?: ZapatoEvent[],
 ) {
   const W = CANVAS_W;
-  const zaps = zapatoEvents || [];
-  const H = computeCanvasHeight(players.length, !!highlights, zaps.length, !!roundHighlight);
+  const H = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background gradient ──
@@ -193,7 +187,7 @@ function drawCanvas(
     }
 
     // ── LEFT COLUMN: Name + Score + Stats (all inline on row 2) ──
-    const nameX = 145;
+    const nameX = 165;
     const displayName = buildDisplayName(player.name, allPlayerNames);
 
     // Row 1: Full name
@@ -227,7 +221,7 @@ function drawCanvas(
     const lostTo = player.lostTo || 0;
     const rivalStats = player.rivalStats;
     if (rivalStats && rivalStats.won > 0) {
-      const wonText = `▲ +$${wonFrom.toLocaleString()}`;
+      const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const wonW = ctx.measureText(wonText).width + 16;
       ctx.fillStyle = 'rgba(74,222,128,0.15)';
@@ -241,7 +235,7 @@ function drawCanvas(
       cursorX += wonW + 8;
     }
     if (rivalStats && rivalStats.lost > 0) {
-      const lostText = `▼ -$${lostTo.toLocaleString()}`;
+      const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const lostW = ctx.measureText(lostText).width + 16;
       ctx.fillStyle = 'rgba(248,113,113,0.12)';
@@ -310,32 +304,8 @@ function drawCanvas(
     curY += 92;
   }
 
-  // ── Zapato events banner ──
-  if (zaps.length > 0) {
-    const bannerH = 40 + zaps.length * 38;
-    curY += 10;
-    ctx.fillStyle = 'rgba(252,227,0,0.12)';
-    roundRectPath(ctx, 60, curY, W - 120, bannerH, 8);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(252,227,0,0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = GOLD;
-    ctx.font = 'bold 18px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    zaps.forEach((z, i) => {
-      const winName = buildDisplayName(z.winnerName, [z.winnerName, z.loserName]);
-      const loseName = buildDisplayName(z.loserName, [z.winnerName, z.loserName]);
-      ctx.fillText(
-        `🥾 Zapato ${z.type} — ${winName} ganó a ${loseName}`,
-        W / 2, curY + 30 + i * 38
-      );
-    });
-    curY += bannerH + 10;
-  }
-
   // ── Round highlight banner ──
-  if (roundHighlight && zaps.length === 0) {
+  if (roundHighlight) {
     curY += 10;
     ctx.fillStyle = 'rgba(252,227,0,0.12)';
     roundRectPath(ctx, 60, curY, W - 120, 70, 8);
@@ -374,7 +344,6 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   coursePar,
   highlights,
   roundHighlight,
-  zapatoEvents,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -383,15 +352,14 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   const render = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const zaps = zapatoEvents || [];
-    const h = computeCanvasHeight(players.length, !!highlights, zaps.length, !!roundHighlight);
+    const h = computeCanvasHeight(players.length, !!highlights, !!roundHighlight);
     canvas.width = CANVAS_W;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights, zapatoEvents);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, roundHighlight, highlights);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, coursePar, highlights, roundHighlight, zapatoEvents]);
+  }, [courseName, date, players, coursePar, highlights, roundHighlight]);
 
   useEffect(() => {
     if (open) {
