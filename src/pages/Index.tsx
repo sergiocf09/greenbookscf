@@ -75,6 +75,7 @@ import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
+import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
@@ -127,6 +128,8 @@ const Index = () => {
   const [showHelp, setShowHelp] = useState(false);
   const [showProfileMenuHelp, setShowProfileMenuHelp] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [showRoundShare, setShowRoundShare] = useState(false);
+  const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
   const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
@@ -2882,7 +2885,25 @@ const Index = () => {
         onConfirm={async () => {
           setShowCloseConfirmDialog(false);
           const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-          if (!success) setShowCloseAttemptDialog(true);
+          if (success) {
+            const allPlayers = [...players, ...playerGroups.flatMap(g => g.players)]
+              .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+            setRoundShareData({
+              courseName: course?.name || 'Campo',
+              date: format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
+              players: allPlayers.map(p => ({
+                name: p.name,
+                initials: p.initials,
+                color: p.color,
+                totalNet: 0,
+                totalGross: (scores.get(p.id) || []).reduce((sum, s) => sum + (s.strokes || 0), 0),
+              })),
+              betTypes: [],
+            });
+            setShowRoundShare(true);
+          } else {
+            setShowCloseAttemptDialog(true);
+          }
         }}
       />
 
@@ -3195,6 +3216,13 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {roundShareData && (
+        <RoundShareImage
+          {...roundShareData}
+          open={showRoundShare}
+          onClose={() => setShowRoundShare(false)}
+        />
+      )}
     </div>
   );
 };

@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LayoutGrid, Trophy, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, LayoutGrid, Trophy, AlertCircle, Share2 } from 'lucide-react';
+import { RoundShareImage } from '@/components/share/RoundShareImage';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
@@ -45,6 +47,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 }) => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'scorecard' | 'bets'>('scorecard');
+  const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSnapshot, setHasSnapshot] = useState(false);
   const [snapshot, setSnapshot] = useState<RoundSnapshot | null>(null);
@@ -353,10 +356,21 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
         </p>
         {hasSnapshot && (
-          <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            Vista histórica inmutable
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Vista histórica inmutable
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => setShowShare(true)}
+            >
+              <Share2 className="h-3 w-3 mr-1" />
+              Compartir
+            </Button>
+          </div>
         )}
         {!hasSnapshot && (
           <p className="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
@@ -449,6 +463,29 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Share dialog for historical rounds */}
+      {hasSnapshot && snapshot && (
+        <RoundShareImage
+          open={showShare}
+          onClose={() => setShowShare(false)}
+          courseName={displayData.courseName}
+          date={format(parseLocalDate(displayData.date), "d 'de' MMMM yyyy", { locale: es })}
+          players={
+            (snapshot.balances || []).map((b: any) => {
+              const sp = snapshot.players.find((p: any) => p.id === b.playerId);
+              return {
+                name: b.playerName || sp?.name || '??',
+                initials: sp?.initials || '??',
+                color: sp?.color || '#006747',
+                totalNet: b.totalNet || 0,
+                totalGross: b.totalGross || 0,
+              };
+            })
+          }
+          betTypes={[]}
+        />
+      )}
     </div>
   );
 };
