@@ -122,7 +122,7 @@ export const calculateCarritosBets = (
     if (totalPtsA !== totalPtsB) segments.push({ label: 'Carritos Total', segment: 'total', moneyA: totalPtsA > totalPtsB ? cfg.totalAmount : -cfg.totalAmount });
 
     segments.forEach(({ label, segment, moneyA }) => {
-      const perPairAmount = moneyA / 2;
+      const perPairAmount = Math.round(moneyA / 2);
       teamA.forEach(aId => {
         teamB.forEach(bId => {
           if (perPairAmount !== 0) {
