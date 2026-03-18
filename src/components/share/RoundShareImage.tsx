@@ -275,7 +275,7 @@ function drawCanvas(
 
   // ── Highlight badges ──
   if (highlights) {
-    const badges = [highlights.topBet, highlights.units, highlights.manchas];
+    const badges = [highlights.medalTotal, highlights.front9, highlights.back9];
     const badgeW = 278;
     const gap = 27;
     const totalBW = badgeW * 3 + gap * 2;
