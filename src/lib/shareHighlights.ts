@@ -26,7 +26,7 @@ export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
 
   (s.players || []).forEach((p: any) => {
     const playerScores: any[] = s.scores?.[p.id] || [];
-    const confirmed = playerScores.filter((sc: any) => sc.confirmed && sc.strokes > 0);
+    const confirmed = playerScores.filter((sc: any) => sc.strokes > 0);
 
     const total = confirmed.reduce((sum: number, sc: any) => sum + sc.strokes, 0);
     const front = confirmed
