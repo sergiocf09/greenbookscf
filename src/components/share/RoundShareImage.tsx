@@ -324,7 +324,6 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   players,
   coursePar,
   highlights,
-  roundHighlight,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
