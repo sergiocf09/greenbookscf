@@ -66,7 +66,7 @@ function computeCanvasHeight(
   zapatoCount: number,
   hasRoundHighlight: boolean,
 ) {
-  let h = 275 + playerCount * 160;
+  let h = 275 + playerCount * 150;
   if (hasHighlights) h += 120;
   if (zapatoCount > 0) h += 40 + zapatoCount * 38 + 20;
   if (hasRoundHighlight) h += 90;
