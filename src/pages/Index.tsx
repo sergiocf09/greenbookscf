@@ -2110,58 +2110,6 @@ const Index = () => {
               </Button>
             )}
 
-  // Actualizar scores cuando cambia el campo
-  useEffect(() => {
-    if (!course || players.length === 0) return;
-
-    setScores(prev => {
-      const next = new Map(prev);
-
-      players.forEach(player => {
-        const existingScores = prev.get(player.id);
-
-        // Sin scores previos: inicializar completo con el nuevo campo
-        if (!existingScores || existingScores.length === 0) {
-          next.set(player.id, initializePlayerScores(player));
-          return;
-        }
-
-        // Con scores existentes: recalcular par, strokesReceived y netScore
-        // para TODOS los hoyos usando el nuevo campo
-        const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
-
-        const updated = existingScores.map(s => {
-          const holeInfo = course.holes.find(h => h.number === s.holeNumber);
-          const holePar = holeInfo?.par || 4;
-          const strokesReceived = strokesPerHole[s.holeNumber - 1] || 0;
-
-          if (s.confirmed) {
-            // Hoyo confirmado: conservar strokes y putts capturados
-            // pero recalcular strokesReceived y netScore con el nuevo campo
-            return {
-              ...s,
-              strokesReceived,
-              netScore: s.strokes - strokesReceived,
-            };
-          }
-
-          // Hoyo no confirmado: reinicializar strokes con el par del nuevo campo
-          return {
-            ...s,
-            strokes: holePar,
-            strokesReceived,
-            netScore: holePar - strokesReceived,
-          };
-        });
-
-        next.set(player.id, updated);
-      });
-
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.id]);
-
 
             <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
               <DropdownMenuTrigger asChild>
