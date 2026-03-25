@@ -1576,6 +1576,7 @@ export type Database = {
         | "doble_digito"
         | "moreliana"
         | "culebra"
+        | "oyes_uni"
       round_status: "setup" | "in_progress" | "completed"
     }
     CompositeTypes: {
@@ -1744,6 +1745,7 @@ export const Constants = {
         "doble_digito",
         "moreliana",
         "culebra",
+        "oyes_uni",
       ],
       round_status: ["setup", "in_progress", "completed"],
     },

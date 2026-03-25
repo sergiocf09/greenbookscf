@@ -53,6 +53,7 @@ export interface MarkerState {
   sandyPar: boolean;
   aquaPar: boolean;
   holeOut: boolean;
+  oyesUni: boolean;   // Oyes-unidad: manual unit for oyes proximity win
   // Manually toggleable - Manchas (UPDATED NAMES)
   ladies: boolean;        // was pinkie - tiro de damas
   swingBlanco: boolean;   // was paloma - swing en blanco
@@ -74,6 +75,7 @@ export const defaultMarkerState: MarkerState = {
   sandyPar: false,
   aquaPar: false,
   holeOut: false,
+  oyesUni: false,
   ladies: false,
   swingBlanco: false,
   retruje: false,
@@ -95,6 +97,7 @@ export const markerInfo: Record<keyof MarkerState, { label: string; emoji: strin
   sandyPar: { label: 'Sandy Par', emoji: '🏖️', isUnit: true, autoDetected: false },
   aquaPar: { label: 'Aqua Par', emoji: '💧', isUnit: true, autoDetected: false },
   holeOut: { label: 'Hole Out', emoji: '🎯', isUnit: true, autoDetected: false },
+  oyesUni: { label: 'Oyes Uni', emoji: '📍', isUnit: true, autoDetected: false },
   ladies: { label: 'Ladies', emoji: '👠', isUnit: false, autoDetected: false },
   swingBlanco: { label: 'Swing Blanco', emoji: '💨', isUnit: false, autoDetected: false },
   retruje: { label: 'Retruje', emoji: '↩️', isUnit: false, autoDetected: false },
