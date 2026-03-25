@@ -122,6 +122,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
           if (score.markers.sandyPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Sandy', count: 1 });
           if (score.markers.aquaPar) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'Aqua', count: 1 });
           if (score.markers.holeOut) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'HoleOut', count: 1 });
+          if (score.markers.oyesUni) events.push({ holeNumber: score.holeNumber, playerId: p.id, label: 'OyesUni', count: 1 });
         });
     });
     return events.sort((a, b) => a.holeNumber - b.holeNumber);
