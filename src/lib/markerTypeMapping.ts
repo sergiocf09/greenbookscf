@@ -24,6 +24,7 @@ export const markerKeyToDb: Record<MarkerKey, string> = {
   dobleDigito: 'doble_digito',
   moreliana: 'moreliana',
   culebra: 'culebra',
+  oyesUni: 'oyes_uni',
 };
 
 const dbToMarkerKey: Record<string, MarkerKey> = Object.fromEntries(

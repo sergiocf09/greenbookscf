@@ -49,6 +49,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', emoji: '🎯', points: 1 },
   { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', emoji: '💧', points: 1 },
+  { key: 'oyesUni', icon: CircleDot, label: 'Oyes Uni', description: 'Unidad de oyes', type: 'unidad', emoji: '📍', points: 1 },
 ];
 
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
@@ -69,6 +70,7 @@ export const markerLabels: Record<string, string> = {
   sandyPar: 'Sandy',
   holeOut: 'HoleOut',
   aquaPar: 'Aqua',
+  oyesUni: 'OyesUni',
   par3GirMas3: 'GIR>3',
   trampa: 'Trampa',
   ladies: 'Pinkies',
