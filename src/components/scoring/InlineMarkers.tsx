@@ -10,6 +10,7 @@ import {
   CircleDot,
   Hourglass,
   XCircle,
+  MapPin,
 } from 'lucide-react';
 import { highHeel } from '@lucide/lab';
 import { cn } from '@/lib/utils';
