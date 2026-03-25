@@ -34,6 +34,7 @@ export const calculateUnitsBets = (
       if (score.markers?.sandyPar) positive += 1;
       if (score.markers?.aquaPar) positive += 1;
       if (score.markers?.holeOut) positive += 1;
+      if (score.markers?.oyesUni) positive += 1;
     });
     
     return { positive, negative };
