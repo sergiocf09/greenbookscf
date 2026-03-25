@@ -3752,6 +3752,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers?.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
         if (score.markers?.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
         if (score.markers?.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
+        if (score.markers?.oyesUni) details.push({ holeNumber: score.holeNumber, marker: 'Oyes Uni', emoji: '📍', isPositive: isBasePlayer });
       } else {
         // Manchas - negative for the player who commits them
         // When it's the base player's mancha, it's negative (red). When it's rival's mancha, it's positive (green).
