@@ -294,7 +294,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           units: { ...effectiveBetConfig.units, participantIds: undefined },
           putts: { ...effectiveBetConfig.putts, participantIds: undefined },
           stableford: { ...effectiveBetConfig.stableford, participantIds: undefined },
-          medalGeneral: { ...effectiveBetConfig.medalGeneral, participantIds: undefined },
+          // CRITICAL: Disable Medal General in cross-group synthetic context.
+          // Medal General is a POOL bet calculated across ALL players in the main engine
+          // (liveBetSummaries). If we also calculate it here, it gets double-counted
+          // because both sets merge into betSummaries.
+          medalGeneral: { ...effectiveBetConfig.medalGeneral, enabled: false },
           // Disable group-scoped bets for cross-group pairs
           manchas: { ...effectiveBetConfig.manchas, enabled: false },
           culebras: { ...effectiveBetConfig.culebras, enabled: false },
