@@ -220,6 +220,20 @@ const Index = () => {
     setBetConfig,
   });
 
+  // Combine players from all groups for handicap resolution across groups
+  const allPlayersForBets = useMemo(() => {
+    const mainGroupId = roundState?.groupId;
+    const mainWithGroup = players.map(p => ({
+      ...p,
+      groupId: p.groupId || mainGroupId || undefined,
+    }));
+    const mainPlayerIds = new Set(players.map(p => p.id));
+    const additionalPlayers = playerGroups
+      .flatMap(g => g.players.map(p => ({ ...p, groupId: g.id })))
+      .filter(p => !mainPlayerIds.has(p.id));
+    return [...mainWithGroup, ...additionalPlayers];
+  }, [players, playerGroups, roundState?.groupId]);
+
   // Bilateral handicaps hook - NEW dedicated table for handicap persistence
   const {
     isLoading: isLoadingHandicaps,
