@@ -1377,21 +1377,27 @@ export const calculateRayasBets = (
       // Skip cross-group pairs (same logic as pressures)
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       
+      // Resolve the effective config for this pair's group
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const resolvedConfig = pairGroupId ? resolveConfigForGroup(config, pairGroupId) : config;
+      
       // Check if rayas is active for this pair (respects bilateral overrides)
-      if (!isRayasActiveForPair(config, playerA.id, playerB.id)) {
+      if (!isRayasActiveForPair(resolvedConfig, playerA.id, playerB.id)) {
         continue;
       }
       // Skip non-anchor pairs in oneVsAll mode
-      if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
+      if (!shouldCalculatePair(resolvedConfig.rayas, playerA.id, playerB.id)) continue;
       
       // CRITICAL: Only pass same-group players to Oyes calculation so the winner
-      // determination is scoped to the group (not mixing G1 and G2 players)
-      const sameGroupPlayers = participatingPlayers.filter(
-        p => !p.groupId || !playerA.groupId || p.groupId === playerA.groupId
-      );
+      // determination is scoped to the group (not mixing G1 and G2 players).
+      // Use the pair's groupId to filter; if no groupId is set, include all players.
+      const sameGroupPlayers = pairGroupId
+        ? participatingPlayers.filter(p => p.groupId === pairGroupId || !p.groupId)
+        : participatingPlayers;
       
       // Use getRayasDetailForPair which includes Oyes with correct per-pair override values
-      const result = getRayasDetailForPair(playerA, playerB, scores, config, course, bilateralHandicaps, sameGroupPlayers, startingHole);
+      // Pass resolvedConfig so G2+ overrides are respected
+      const result = getRayasDetailForPair(playerA, playerB, scores, resolvedConfig, course, bilateralHandicaps, sameGroupPlayers, startingHole);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
