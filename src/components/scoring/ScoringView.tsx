@@ -95,8 +95,29 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onUpdateZooEvent,
   onDeleteZooEvent,
 }) => {
+  // Auto-detect user's group for default selection
+  const userGroupIndex = useMemo(() => {
+    if (!profile?.id || playerGroups.length === 0) return 0;
+    // Check if user is in main group
+    if (players.some(p => p.profileId === profile.id)) return 0;
+    // Check additional groups
+    for (let i = 0; i < playerGroups.length; i++) {
+      if (playerGroups[i].players.some(p => p.profileId === profile.id)) return i + 1;
+    }
+    return 0;
+  }, [profile?.id, players, playerGroups]);
+
   // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
+
+  // Sync default when userGroupIndex changes (e.g. on restore)
+  const hasSetInitialGroup = useRef(false);
+  useEffect(() => {
+    if (!hasSetInitialGroup.current && playerGroups.length > 0) {
+      setDisplayGroupIndex(userGroupIndex);
+      hasSetInitialGroup.current = true;
+    }
+  }, [userGroupIndex, playerGroups.length]);
   
   const hasMultipleGroups = playerGroups.length > 0;
   
@@ -215,13 +236,13 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           <div className="sticky bottom-24 flex justify-end pointer-events-none z-20 -mt-2 mb-2 pr-[4.5rem]">
             <div className="pointer-events-auto">
               <OyesesDialog
-                players={getAllPlayersFromAllGroups(players, playerGroups)}
+                players={displayPlayers}
                 betConfig={betConfig}
                 basePlayerId={profile?.id}
                 currentHole={currentHole}
                 isPar3={holePar === 3}
                 proximitiesAcumulado={new Map(
-                  getAllPlayersFromAllGroups(players, playerGroups).map(p => {
+                  displayPlayers.map(p => {
                     const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
                     return [p.id, hs?.oyesProximity ?? null];
                   })
@@ -230,7 +251,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
                   updateScore(playerId, currentHole, { oyesProximity: proximity });
                 }}
                 proximitiesSangron={new Map(
-                  getAllPlayersFromAllGroups(players, playerGroups).map(p => {
+                  displayPlayers.map(p => {
                     const hs = scores.get(p.id)?.find(s => s.holeNumber === currentHole);
                     return [p.id, hs?.oyesProximitySangron ?? null];
                   })

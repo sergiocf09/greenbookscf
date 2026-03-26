@@ -42,8 +42,26 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   betConfig,
   onQuickScoreClick,
 }) => {
+  // Auto-detect user's group for default selection
+  const userGroupIndex = useMemo(() => {
+    if (!basePlayerId || playerGroups.length === 0) return 0;
+    if (players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) return 0;
+    for (let i = 0; i < playerGroups.length; i++) {
+      if (playerGroups[i].players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) return i + 1;
+    }
+    return 0;
+  }, [basePlayerId, players, playerGroups]);
+
   // State for which group to display
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
+  
+  const hasSetInitialGroup = React.useRef(false);
+  React.useEffect(() => {
+    if (!hasSetInitialGroup.current && playerGroups.length > 0) {
+      setDisplayGroupIndex(userGroupIndex);
+      hasSetInitialGroup.current = true;
+    }
+  }, [userGroupIndex, playerGroups.length]);
   
   // Get players to display based on selected group, with logged-in player first
   const displayPlayers = useMemo(() => {

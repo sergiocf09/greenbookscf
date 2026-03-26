@@ -114,7 +114,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
+  // Auto-detect user's group for default selection
+  const userGroupIndex = useMemo(() => {
+    if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
+    if (players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) return 0;
+    for (let i = 0; i < (playerGroups ?? []).length; i++) {
+      if ((playerGroups ?? [])[i].players.some(p => p.id === basePlayerId || p.profileId === basePlayerId)) return i + 1;
+    }
+    return 0;
+  }, [basePlayerId, players, playerGroups]);
+
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0); // For group selector in detail view
+  
+  const hasSetInitialGroupRef = useRef(false);
+  useEffect(() => {
+    if (!hasSetInitialGroupRef.current && (playerGroups ?? []).length > 0) {
+      setDisplayGroupIndex(userGroupIndex);
+      hasSetInitialGroupRef.current = true;
+    }
+  }, [userGroupIndex, playerGroups]);
   
   // Tabla General view mode: 'group' = show selected group only, 'all' = show all groups combined
   const [tablaGeneralMode, setTablaGeneralMode] = useState<'group' | 'all'>('group');
