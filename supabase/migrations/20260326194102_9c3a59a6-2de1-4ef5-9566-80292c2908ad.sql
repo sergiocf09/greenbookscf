@@ -1,0 +1,1 @@
+UPDATE auth.users SET email = 'jalejandrodriguezg@hotmail.com', raw_user_meta_data = raw_user_meta_data || '{"email": "jalejandrodriguezg@hotmail.com"}' WHERE id = '84125db5-50d0-4461-9c68-0da8d8e648db';
