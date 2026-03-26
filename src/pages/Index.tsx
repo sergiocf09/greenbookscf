@@ -2527,16 +2527,26 @@ const Index = () => {
           </>
         )}
 
-        {view === 'betsetup' && (
-          <BetSetup
-            config={betConfig}
-            onChange={setBetConfig}
-            players={players}
-            hasMultipleGroups={playerGroups.length > 0}
-            userGroupId={roundState.groupId || undefined}
-            isOrganizer={profile?.id === roundState.organizerProfileId}
-          />
-        )}
+        {view === 'betsetup' && (() => {
+          const isOrg = profile?.id === roundState.organizerProfileId;
+          const hasMulti = playerGroups.length > 0;
+          const userGid = roundState.groupId || undefined;
+          // Secondary group users see their own group's players
+          const isSecondary = hasMulti && !isOrg && !!userGid;
+          const myGroupPlayers = isSecondary
+            ? (playerGroups.find(g => g.id === userGid)?.players || players)
+            : players;
+          return (
+            <BetSetup
+              config={betConfig}
+              onChange={setBetConfig}
+              players={myGroupPlayers}
+              hasMultipleGroups={hasMulti}
+              userGroupId={userGid}
+              isOrganizer={isOrg}
+            />
+          );
+        })()}
 
         {view === 'handicaps' && (
           <HandicapMatrix
