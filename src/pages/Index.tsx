@@ -230,7 +230,7 @@ const Index = () => {
     getBilateralHandicapsForEngine,
   } = useRoundHandicaps({
     roundId: roundState.id,
-    players,
+    players: allPlayersForBets,
     roundPlayerIds,
   });
 
