@@ -51,6 +51,10 @@ export const calculateSkinsBets = (
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       if (!shouldCalculatePair(config.skins, playerA.id, playerB.id)) continue;
 
+      // Resolve group-specific amounts for this pair
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const rc = resolveConfigForGroup(config, pairGroupId);
+
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
