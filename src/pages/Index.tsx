@@ -220,6 +220,20 @@ const Index = () => {
     setBetConfig,
   });
 
+  // Combine players from all groups for handicap resolution across groups
+  const allPlayersForBets = useMemo(() => {
+    const mainGroupId = roundState?.groupId;
+    const mainWithGroup = players.map(p => ({
+      ...p,
+      groupId: p.groupId || mainGroupId || undefined,
+    }));
+    const mainPlayerIds = new Set(players.map(p => p.id));
+    const additionalPlayers = playerGroups
+      .flatMap(g => g.players.map(p => ({ ...p, groupId: g.id })))
+      .filter(p => !mainPlayerIds.has(p.id));
+    return [...mainWithGroup, ...additionalPlayers];
+  }, [players, playerGroups, roundState?.groupId]);
+
   // Bilateral handicaps hook - NEW dedicated table for handicap persistence
   const {
     isLoading: isLoadingHandicaps,
@@ -230,7 +244,7 @@ const Index = () => {
     getBilateralHandicapsForEngine,
   } = useRoundHandicaps({
     roundId: roundState.id,
-    players,
+    players: allPlayersForBets,
     roundPlayerIds,
   });
 
@@ -981,20 +995,7 @@ const Index = () => {
     }
   }, [profile, players.length, isRestoring]);
 
-  // Combine players from all groups with groupId for bet scope detection
-  const allPlayersForBets = useMemo(() => {
-    const mainGroupId = roundState?.groupId;
-    const mainWithGroup = players.map(p => ({
-      ...p,
-      groupId: p.groupId || mainGroupId || undefined,
-    }));
-    // Add players from additional groups
-    const mainPlayerIds = new Set(players.map(p => p.id));
-    const additionalPlayers = playerGroups
-      .flatMap(g => g.players.map(p => ({ ...p, groupId: g.id })))
-      .filter(p => !mainPlayerIds.has(p.id));
-    return [...mainWithGroup, ...additionalPlayers];
-  }, [players, playerGroups, roundState?.groupId]);
+  // allPlayersForBets is defined earlier (before useRoundHandicaps) for cross-group handicap resolution
 
   // Can create and start round with just 1 player (for solo score tracking)
   const canCreateRound = players.length >= 1 && course !== null;
