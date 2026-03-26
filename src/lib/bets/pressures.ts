@@ -66,7 +66,7 @@ export const calculatePressureBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(config.pressures, playerA.id, playerB.id)) continue;
+      if (!shouldCalculatePair(resolvedPairConfig.pressures, playerA.id, playerB.id)) continue;
       
       // Resolve group-specific config for this pair's amounts
       const pairGroupId = playerA.groupId || playerB.groupId;
