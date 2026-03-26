@@ -66,11 +66,12 @@ export const calculatePressureBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(resolvedPairConfig.pressures, playerA.id, playerB.id)) continue;
       
       // Resolve group-specific config for this pair's amounts
       const pairGroupId = playerA.groupId || playerB.groupId;
       const resolvedPairConfig = resolveConfigForGroup(config, pairGroupId);
+      
+      if (!shouldCalculatePair(resolvedPairConfig.pressures, playerA.id, playerB.id)) continue;
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);

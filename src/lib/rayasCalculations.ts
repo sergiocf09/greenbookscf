@@ -17,6 +17,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSeg
 import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsWithOneVsAll } from './betCalculations';
 import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
+import { devLog } from './logger';
 
 /**
  * Get effective segment configuration for a pair, respecting:
