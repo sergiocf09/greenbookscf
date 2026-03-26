@@ -17,6 +17,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, RayasSeg
 import { BetSummary, getBilateralHandicapForPair, getAdjustedScoresForPair, shouldCalculatePair, groupPlayersByGroup, resolveParticipantsWithOneVsAll } from './betCalculations';
 import { resolveConfigForGroup } from './groupBetOverrides';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from './handicapUtils';
+import { devLog } from './logger';
 
 /**
  * Get effective segment configuration for a pair, respecting:
@@ -1169,8 +1170,11 @@ const processOyesSingleWinner = (
       pairCarry.forEach((carry) => {
         carry[segment] += 1;
       });
+      devLog(`[OyesSingleWinner] H${holeNum} (${segment}): no winner, carry incremented`);
       return;
     }
+
+    devLog(`[OyesSingleWinner] H${holeNum} (${segment}): winner=${closestPlayerId}`);
 
     // Winner found — settle carry + current hole for each rival
     players.forEach(rival => {
@@ -1190,6 +1194,8 @@ const processOyesSingleWinner = (
       if (segment === 'back' && carry.front > 0) {
         const frontCarryCount = carry.front;
         carry.front = 0;
+
+        devLog(`[OyesSingleWinner] H${holeNum}: settling front carry=${frontCarryCount} for pair ${pairKey} at frontValue=${oyesConfig.frontValue}`);
 
         summaries.push({
           playerId: closestPlayerId!,
@@ -1228,6 +1234,8 @@ const processOyesSingleWinner = (
 
       const segmentValue = segment === 'front' ? oyesConfig.frontValue : oyesConfig.backValue;
 
+      devLog(`[OyesSingleWinner] H${holeNum}: settling ${segment} carry=${segmentCarryCount} for pair ${pairKey} at value=${segmentValue}`);
+
       summaries.push({
         playerId: closestPlayerId!,
         vsPlayer: rival.id,
@@ -1260,11 +1268,16 @@ const processOyesSingleWinner = (
     });
 
     // CRITICAL: In singleWinner mode, once a par 3 is resolved (someone is #1),
-    // ALL pair carries for this segment must reset — not just the winner's pairs.
-    // Otherwise, pairs not involving the winner (e.g. RE-AG when JdD wins) keep
-    // orphaned carry that incorrectly credits oyes later.
+    // ALL pair carries must reset — not just the winner's pairs.
+    // This prevents orphaned carry from being incorrectly credited to later winners.
+    // Reset BOTH segments: back (current) AND front (consumed by the winner).
     pairCarry.forEach((carry) => {
       carry[segment] = 0;
+      // When resolving in back, also clear any remaining front carry for non-winner pairs
+      // because the oyes event is global — the winner already collected it.
+      if (segment === 'back') {
+        carry.front = 0;
+      }
     });
   };
 
