@@ -51,6 +51,10 @@ export const calculateSkinsBets = (
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       if (!shouldCalculatePair(config.skins, playerA.id, playerB.id)) continue;
 
+      // Resolve group-specific amounts for this pair
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const rc = resolveConfigForGroup(config, pairGroupId);
+
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
@@ -80,8 +84,8 @@ export const calculateSkinsBets = (
           summaries.push({ playerId: pB.id, vsPlayer: pA.id, betType, amount: -amount, segment, description: `${winsB} vs ${winsA} skins${doubleLabel} (sin acumular)` });
         };
         const sinAcumRanges = getSegmentHoleRanges(startingHole);
-        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.front[0], sinAcumRanges.front[1], config.skins.frontValue, 'Skins Front', 'front');
-        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], config.skins.backValue, 'Skins Back', 'back');
+        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.front[0], sinAcumRanges.front[1], rc.skins.frontValue, 'Skins Front', 'front');
+        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], rc.skins.backValue, 'Skins Back', 'back');
         continue;
       }
 
@@ -141,9 +145,9 @@ export const calculateSkinsBets = (
       const backDoubleMultiplierB = (backPerfectSweepB || hasZapatoBack) ? 2 : 1;
 
       const netSkinsFront = frontSkinsA - frontSkinsB;
-      if (netSkinsFront !== 0 && config.skins.frontValue > 0) {
+      if (netSkinsFront !== 0 && rc.skins.frontValue > 0) {
         const multiplier = netSkinsFront > 0 ? frontDoubleMultiplierA : frontDoubleMultiplierB;
-        const frontAmount = netSkinsFront * config.skins.frontValue * multiplier;
+        const frontAmount = netSkinsFront * rc.skins.frontValue * multiplier;
         const shoeLabel = multiplier === 2 ? ' 🥾' : '';
         const doubleLabel = multiplier === 2 ? ` (x2)${shoeLabel}` : '';
         const hasCarried = carriedSkinsWonByA > 0 || carriedSkinsWonByB > 0;
@@ -153,18 +157,18 @@ export const calculateSkinsBets = (
         const descB = hasCarried
           ? `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel} (inc. ${frontCarryToBack} carry)`
           : `${frontSkinsB} vs ${frontSkinsA} skins${doubleLabel}`;
-        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Skins Front', amount: frontAmount, segment: 'front', description: descA, units: netSkinsFront, baseUnitAmount: config.skins.frontValue, multiplier });
-        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Skins Front', amount: -frontAmount, segment: 'front', description: descB, units: -netSkinsFront, baseUnitAmount: config.skins.frontValue, multiplier });
+        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Skins Front', amount: frontAmount, segment: 'front', description: descA, units: netSkinsFront, baseUnitAmount: rc.skins.frontValue, multiplier });
+        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Skins Front', amount: -frontAmount, segment: 'front', description: descB, units: -netSkinsFront, baseUnitAmount: rc.skins.frontValue, multiplier });
       }
 
       const netPureBackSkins = backSkinsA - backSkinsB;
-      if (netPureBackSkins !== 0 && config.skins.backValue > 0) {
+      if (netPureBackSkins !== 0 && rc.skins.backValue > 0) {
         const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
-        const backAmount = netPureBackSkins * config.skins.backValue * pureBackMultiplier;
+        const backAmount = netPureBackSkins * rc.skins.backValue * pureBackMultiplier;
         const shoeLabel = pureBackMultiplier === 2 ? ' 🥾' : '';
         const doubleLabel = pureBackMultiplier === 2 ? ` (x2)${shoeLabel}` : '';
-        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Skins Back', amount: backAmount, segment: 'back', description: `${backSkinsA} vs ${backSkinsB} skins${doubleLabel}`, units: netPureBackSkins, baseUnitAmount: config.skins.backValue, multiplier: pureBackMultiplier });
-        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Skins Back', amount: -backAmount, segment: 'back', description: `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}`, units: -netPureBackSkins, baseUnitAmount: config.skins.backValue, multiplier: pureBackMultiplier });
+        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Skins Back', amount: backAmount, segment: 'back', description: `${backSkinsA} vs ${backSkinsB} skins${doubleLabel}`, units: netPureBackSkins, baseUnitAmount: rc.skins.backValue, multiplier: pureBackMultiplier });
+        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Skins Back', amount: -backAmount, segment: 'back', description: `${backSkinsB} vs ${backSkinsA} skins${doubleLabel}`, units: -netPureBackSkins, baseUnitAmount: rc.skins.backValue, multiplier: pureBackMultiplier });
       }
     }
   }

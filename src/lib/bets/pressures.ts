@@ -38,9 +38,6 @@ export const calculatePressureBets = (
   
   const summaries: BetSummary[] = [];
   const ranges = getSegmentHoleRanges(startingHole);
-  const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
-  const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
-  const totalMatchAmount = config.pressures.totalAmount;
 
   const resolveOverrideId = (pid: string): string => {
     const direct = participatingPlayers.find((p) => p.id === pid);
@@ -71,8 +68,16 @@ export const calculatePressureBets = (
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       if (!shouldCalculatePair(config.pressures, playerA.id, playerB.id)) continue;
       
+      // Resolve group-specific config for this pair's amounts
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const resolvedPairConfig = resolveConfigForGroup(config, pairGroupId);
+      
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
+
+      const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
+      const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+      const totalMatchAmount = resolvedPairConfig.pressures.totalAmount;
 
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0];
@@ -98,9 +103,9 @@ export const calculatePressureBets = (
       const backBets = processNine(backHoles);
       const frontIsTied = frontBets[0] === 0;
 
-      const frontUnit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Front') ?? config.pressures.frontAmount;
+      const frontUnit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Front') ?? resolvedPairConfig.pressures.frontAmount;
       const match18Unit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Match 18') ?? totalMatchAmount;
-      const backUnit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Back') ?? config.pressures.backAmount;
+      const backUnit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Back') ?? resolvedPairConfig.pressures.backAmount;
       
       const frontBetsWonA = frontBets.filter(b => b > 0).length;
       const frontBetsLostA = frontBets.filter(b => b < 0).length;

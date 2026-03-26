@@ -27,12 +27,6 @@ export const calculateMedalBets = (
   
   const summaries: BetSummary[] = [];
   
-  const segments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
-    { key: 'front', amount: config.medal.frontAmount, label: 'Medal Front 9' },
-    { key: 'back', amount: config.medal.backAmount, label: 'Medal Back 9' },
-    { key: 'total', amount: config.medal.totalAmount, label: 'Medal Total' },
-  ];
-  
   for (let i = 0; i < participatingPlayers.length; i++) {
     for (let j = i + 1; j < participatingPlayers.length; j++) {
       const playerA = participatingPlayers[i];
@@ -40,6 +34,16 @@ export const calculateMedalBets = (
 
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       if (!shouldCalculatePair(config.medal, playerA.id, playerB.id)) continue;
+      
+      // Resolve group-specific amounts for this pair
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const resolvedPairConfig = resolveConfigForGroup(config, pairGroupId);
+      
+      const segments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
+        { key: 'front', amount: resolvedPairConfig.medal.frontAmount, label: 'Medal Front 9' },
+        { key: 'back', amount: resolvedPairConfig.medal.backAmount, label: 'Medal Back 9' },
+        { key: 'total', amount: resolvedPairConfig.medal.totalAmount, label: 'Medal Total' },
+      ];
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       
