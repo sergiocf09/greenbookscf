@@ -341,6 +341,14 @@ export const useRoundManagement = ({
             devLog('Using fallback mainGroupId from first player:', mainGroupId);
           }
 
+          // Detect the logged-in user's actual group
+          const myProfileId = profile?.id;
+          const myRoundPlayer = myProfileId
+            ? allRoundPlayers.find((rp: any) => rp.profile_id === myProfileId)
+            : null;
+          const myGroupId = myRoundPlayer?.group_id || mainGroupId;
+          devLog('User group detection:', { myProfileId, myGroupId, mainGroupId, isMainGroup: myGroupId === mainGroupId });
+
           // Restore round state
           setRoundState({
             id: activeRound.id,
@@ -349,7 +357,7 @@ export const useRoundManagement = ({
             courseId: activeRound.course_id,
             teeColor: activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red',
             startingHole: (activeRound.starting_hole === 10 ? 10 : 1) as 1 | 10,
-            groupId: mainGroupId,
+            groupId: myGroupId,
             organizerProfileId: activeRound.organizer_id,
           });
           
