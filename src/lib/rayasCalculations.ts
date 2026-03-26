@@ -1374,6 +1374,9 @@ export const calculateRayasBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       
+      // Skip cross-group pairs (same logic as pressures)
+      if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
+      
       // Check if rayas is active for this pair (respects bilateral overrides)
       if (!isRayasActiveForPair(config, playerA.id, playerB.id)) {
         continue;
@@ -1381,8 +1384,14 @@ export const calculateRayasBets = (
       // Skip non-anchor pairs in oneVsAll mode
       if (!shouldCalculatePair(config.rayas, playerA.id, playerB.id)) continue;
       
+      // CRITICAL: Only pass same-group players to Oyes calculation so the winner
+      // determination is scoped to the group (not mixing G1 and G2 players)
+      const sameGroupPlayers = participatingPlayers.filter(
+        p => !p.groupId || !playerA.groupId || p.groupId === playerA.groupId
+      );
+      
       // Use getRayasDetailForPair which includes Oyes with correct per-pair override values
-      const result = getRayasDetailForPair(playerA, playerB, scores, config, course, bilateralHandicaps, participatingPlayers, startingHole);
+      const result = getRayasDetailForPair(playerA, playerB, scores, config, course, bilateralHandicaps, sameGroupPlayers, startingHole);
       
       // Front rayas
       if (result.frontAmountA !== 0) {
