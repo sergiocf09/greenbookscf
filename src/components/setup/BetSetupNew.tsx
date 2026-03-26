@@ -1,5 +1,4 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { BetConfig, Player, BetCategory } from '@/types/golf';
 import { BetCategoryTabs } from './BetCategoryTabs';
 import { IndividualBets } from './bets/IndividualBets';
@@ -7,9 +6,10 @@ import { ParejasBets } from './bets/ParejasBets';
 import { GrupalBets } from './bets/GrupalBets';
 import { BetTemplatesDialog } from './bets/BetTemplatesDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookMarked, Lock } from 'lucide-react';
+import { BookMarked, Lock, Pencil, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { setGroupBetOverride } from '@/lib/groupBetOverrides';
+import { setGroupBetOverride, resolveConfigForGroup } from '@/lib/groupBetOverrides';
+import { cn } from '@/lib/utils';
 
 interface BetSetupProps {
   config: BetConfig;
@@ -21,6 +21,8 @@ interface BetSetupProps {
   /** Whether the current user is the round organizer */
   isOrganizer?: boolean;
 }
+
+type GroupTab = 'inherited' | 'mygroup';
 
 export const BetSetup: React.FC<BetSetupProps> = ({
   config,
@@ -34,35 +36,22 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const [groupTab, setGroupTab] = useState<GroupTab>('mygroup');
 
-  // Non-organizer users in secondary groups write to groupBetOverrides
-  // Only treat as secondary if there are actually multiple groups AND user is not organizer
   const isSecondaryGroup = hasMultipleGroups && !isOrganizer && !!userGroupId;
 
-  // Prevent scroll jumping to the top of the bet setup when the parent re-renders.
+  // Prevent scroll jumping
   const pendingScrollRestoreRef = useRef<number | null>(null);
   const isRestoringRef = useRef(false);
 
   useLayoutEffect(() => {
     const y = pendingScrollRestoreRef.current;
     if (typeof y !== 'number' || isRestoringRef.current) return;
-    
     isRestoringRef.current = true;
     pendingScrollRestoreRef.current = null;
-    
-    // Immediate restore
     window.scrollTo({ top: y, behavior: 'instant' });
-    
-    // Backup restore after a microtask
-    queueMicrotask(() => {
-      window.scrollTo({ top: y, behavior: 'instant' });
-    });
-    
-    // Final backup with RAF
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: y, behavior: 'instant' });
-      isRestoringRef.current = false;
-    });
+    queueMicrotask(() => { window.scrollTo({ top: y, behavior: 'instant' }); });
+    requestAnimationFrame(() => { window.scrollTo({ top: y, behavior: 'instant' }); isRestoringRef.current = false; });
   });
 
   const safeOnChange = useCallback(
@@ -81,16 +70,15 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     });
   };
 
-  const updateBet = <K extends keyof BetConfig>(
+  // For secondary groups editing their own overrides
+  const updateBetForMyGroup = <K extends keyof BetConfig>(
     betType: K,
     updates: Partial<BetConfig[K]>
   ) => {
     if (isSecondaryGroup && userGroupId) {
-      // Secondary group: save to groupBetOverrides instead of global config
       const updated = setGroupBetOverride(config, userGroupId, betType, updates);
       safeOnChange(updated);
     } else {
-      // Organizer / G1: write directly to global config
       safeOnChange({
         ...config,
         [betType]: { ...config[betType], ...updates },
@@ -98,99 +86,166 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     }
   };
 
-  // For secondary groups, wrap onChange to route through overrides
-  const handleSecondaryGroupConfigChange = useCallback((newConfig: BetConfig) => {
-    // This is for full config replacements (e.g., from IndividualBets onUpdateConfig)
-    // For secondary groups, we need to detect what changed and route to overrides
-    if (!isSecondaryGroup || !userGroupId) {
-      safeOnChange(newConfig);
-      return;
-    }
-    // For now, allow full config changes to pass through
-    // The individual bet components use updateBet for granular changes
-    safeOnChange(newConfig);
-  }, [isSecondaryGroup, userGroupId, safeOnChange]);
+  // Read-only no-op for inherited view
+  const noOpUpdateBet = <K extends keyof BetConfig>(
+    _betType: K,
+    _updates: Partial<BetConfig[K]>
+  ) => {
+    // Read-only — do nothing
+  };
+
+  const noOpOnChange = useCallback((_: BetConfig) => {
+    // Read-only — do nothing
+  }, []);
 
   const handleApplyTemplate = useCallback((cfg: BetConfig) => {
     safeOnChange(cfg);
   }, [safeOnChange]);
 
+  // The resolved config for the user's group (base + overrides merged)
+  const resolvedConfig = isSecondaryGroup
+    ? resolveConfigForGroup(config, userGroupId)
+    : config;
+
+  // Determine which config and handlers to use based on active tab
+  const isReadOnly = isSecondaryGroup && groupTab === 'inherited';
+  const activeConfig = isReadOnly ? config : resolvedConfig;
+  const activeUpdateBet = isReadOnly ? noOpUpdateBet : updateBetForMyGroup;
+  const activeOnChange = isReadOnly ? noOpOnChange : safeOnChange;
+
+  const renderBetContent = () => (
+    <div className="min-h-[200px]">
+      {activeCategory === 'individual' && (
+        <IndividualBets
+          config={activeConfig}
+          players={players}
+          expandedSections={expandedSections}
+          onToggleSection={isReadOnly ? () => {} : toggleSection}
+          onUpdateBet={activeUpdateBet}
+          onUpdateConfig={activeOnChange}
+          basePlayerId={profile?.id}
+        />
+      )}
+      {activeCategory === 'parejas' && (
+        <ParejasBets
+          config={activeConfig}
+          players={players}
+          expandedSections={expandedSections}
+          onToggleSection={isReadOnly ? () => {} : toggleSection}
+          onUpdateBet={activeUpdateBet}
+          onUpdateConfig={activeOnChange}
+        />
+      )}
+      {activeCategory === 'grupal' && (
+        <GrupalBets
+          config={activeConfig}
+          players={players}
+          expandedSections={expandedSections}
+          onToggleSection={isReadOnly ? () => {} : toggleSection}
+          onUpdateBet={activeUpdateBet}
+          onUpdateConfig={activeOnChange}
+          hasMultipleGroups={hasMultipleGroups}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
 
-      {/* Secondary group banner */}
+      {/* Secondary group: dual tab selector */}
       {isSecondaryGroup && (
-        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800">
-          <Lock className="h-4 w-4 text-amber-600 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-amber-800 dark:text-amber-200 leading-tight">
-              Apuestas heredadas del Grupo 1 (solo lectura)
-            </p>
-            <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
-              Puedes agregar apuestas adicionales para tu grupo
-            </p>
+        <div className="space-y-3">
+          <div className="flex gap-1.5 p-1 bg-muted/50 rounded-xl border border-border/40">
+            <button
+              type="button"
+              onClick={() => setGroupTab('inherited')}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                groupTab === 'inherited'
+                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Lock className="h-3.5 w-3.5" />
+              Grupo 1 (heredado)
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupTab('mygroup')}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                groupTab === 'mygroup'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Mi Grupo
+            </button>
           </div>
+
+          {/* Context banner */}
+          {groupTab === 'inherited' ? (
+            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800">
+              <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-200 leading-tight">
+                  Configuración base del Grupo 1 (solo lectura)
+                </p>
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
+                  Esta es la plantilla que tu grupo hereda. No se puede modificar desde aquí.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-primary/5 p-3 rounded-xl border border-primary/20">
+              <Pencil className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground leading-tight">
+                  Apuestas de tu grupo
+                </p>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                  Heredas la base del Grupo 1. Aquí puedes modificar montos o activar/desactivar apuestas para tu grupo.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
       <BetCategoryTabs
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
 
-      {/* Templates Strip */}
-      <div className="flex items-center gap-3 bg-muted/40 p-3 rounded-xl border border-border/30">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-foreground leading-tight">Guarda esta configuración como plantilla</p>
-          <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Cárgala después para iniciar rondas recurrentes</p>
+      {/* Templates Strip — only show for organizer or when on "mygroup" tab */}
+      {(!isSecondaryGroup || groupTab === 'mygroup') && (
+        <div className="flex items-center gap-3 bg-muted/40 p-3 rounded-xl border border-border/30">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-foreground leading-tight">Guarda esta configuración como plantilla</p>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Cárgala después para iniciar rondas recurrentes</p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0 gap-1.5 font-medium"
+            onClick={() => setShowTemplatesDialog(true)}
+          >
+            <BookMarked className="h-4 w-4" />
+            Plantillas
+          </Button>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="shrink-0 gap-1.5 font-medium"
-          onClick={() => setShowTemplatesDialog(true)}
-        >
-          <BookMarked className="h-4 w-4" />
-          Plantillas
-        </Button>
-      </div>
+      )}
 
-      {/* Category Content */}
-      <div className="min-h-[200px]">
-        {activeCategory === 'individual' && (
-          <IndividualBets
-            config={config}
-            players={players}
-            expandedSections={expandedSections}
-            onToggleSection={toggleSection}
-            onUpdateBet={updateBet}
-            onUpdateConfig={safeOnChange}
-            basePlayerId={profile?.id}
-          />
-        )}
-        
-        {activeCategory === 'parejas' && (
-          <ParejasBets
-            config={config}
-            players={players}
-            expandedSections={expandedSections}
-            onToggleSection={toggleSection}
-            onUpdateBet={updateBet}
-            onUpdateConfig={safeOnChange}
-          />
-        )}
-        
-        {activeCategory === 'grupal' && (
-          <GrupalBets
-            config={config}
-            players={players}
-            expandedSections={expandedSections}
-            onToggleSection={toggleSection}
-            onUpdateBet={updateBet}
-            onUpdateConfig={safeOnChange}
-            hasMultipleGroups={hasMultipleGroups}
-          />
-        )}
-      </div>
+      {/* Read-only overlay wrapper for inherited tab */}
+      {isReadOnly ? (
+        <div className="pointer-events-none opacity-60">
+          {renderBetContent()}
+        </div>
+      ) : (
+        renderBetContent()
+      )}
 
       {/* Templates Dialog */}
       <BetTemplatesDialog
