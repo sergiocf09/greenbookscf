@@ -4866,6 +4866,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups]);
 
+  // Report computed total to parent so avatar can stay in sync with header
+  useEffect(() => {
+    onComputedBalance?.(computedTotalBalance);
+  }, [computedTotalBalance, onComputedBalance]);
+
 
 
 
