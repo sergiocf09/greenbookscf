@@ -1564,6 +1564,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
+  // Single source of truth: precompute all bilateral balances for the current basePlayer.
+  // Both avatars and BilateralDetail header read from here — no callbacks, no clicks needed.
+  const pairBalanceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!basePlayer) return map;
+    for (const rival of rivals) {
+      map.set(rival.id, getCorrectedBilateralBalance(basePlayer.id, rival.id));
+    }
+    return map;
+  }, [basePlayer?.id, rivals, betSummaries, confirmedScores, effectiveBetConfig, course, displayGroupIndex]);
+
+  const getRivalBalance = (rivalId: string): number => {
+    return pairBalanceMap.get(rivalId) ?? 0;
+  };
+
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
   if (isHistorical && players.length < 2) {
     return (
