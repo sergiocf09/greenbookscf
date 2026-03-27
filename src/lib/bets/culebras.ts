@@ -2,7 +2,7 @@
  * Culebras Bet Calculator — last culebra pays all
  */
 import { Player, PlayerScore, BetConfig } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
 
 export const calculateCulebrasBets = (
@@ -10,7 +10,7 @@ export const calculateCulebrasBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig
 ): BetSummary[] => {
-  if (!config.culebras.enabled || config.culebras.valuePerOccurrence <= 0) return [];
+  if (!isBetEnabledAnywhere(config, 'culebras')) return [];
   
   const playersByGroup = groupPlayersByGroup(players);
   const allSummaries: BetSummary[] = [];
@@ -18,6 +18,7 @@ export const calculateCulebrasBets = (
   playersByGroup.forEach(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
+    if (!resolved.culebras.enabled || resolved.culebras.valuePerOccurrence <= 0) return;
     const participatingPlayers = resolveParticipantsForGroup(players, resolved.culebras.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
@@ -63,7 +64,7 @@ export const calculateCulebrasBets = (
     }
     
     const totalCulebras = allCulebras.length;
-    const amountPerPlayer = totalCulebras * config.culebras.valuePerOccurrence;
+    const amountPerPlayer = totalCulebras * resolved.culebras.valuePerOccurrence;
     
     groupPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;

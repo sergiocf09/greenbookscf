@@ -2,7 +2,7 @@
  * Medal Bet Calculator — bilateral net total comparison per segment
  */
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import {
   BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll,
   shouldCalculatePair, getAdjustedScoresForPair, getSegmentNetTotal,
@@ -16,7 +16,7 @@ export const calculateMedalBets = (
   bilateralHandicaps?: BilateralHandicap[],
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
-  if (!config.medal.enabled) return [];
+  if (!isBetEnabledAnywhere(config, 'medal')) return [];
   
   const playersByGroup = groupPlayersByGroup(players);
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
@@ -33,7 +33,7 @@ export const calculateMedalBets = (
       const playerB = participatingPlayers[j];
 
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(config.medal, playerA.id, playerB.id)) continue;
+      if (!shouldCalculatePair(resolvedPairConfig.medal, playerA.id, playerB.id)) continue;
       
       // Resolve group-specific amounts for this pair
       const pairGroupId = playerA.groupId || playerB.groupId;

@@ -2,7 +2,7 @@
  * Skins Bet Calculator — bilateral accumulated/sinAcumular with carry-over and zapato
  */
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { getSegmentHoleRanges } from '../handicapUtils';
 import {
   BetSummary,
@@ -21,7 +21,7 @@ export const calculateSkinsBets = (
   bilateralHandicaps?: BilateralHandicap[],
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
-  if (!config.skins.enabled) return [];
+  if (!isBetEnabledAnywhere(config, 'skins')) return [];
 
   const playersByGroup = groupPlayersByGroup(players);
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
@@ -32,10 +32,10 @@ export const calculateSkinsBets = (
 
   const summaries: BetSummary[] = [];
 
-  const getEffectiveSkinsModality = (playerAId: string, playerBId: string): 'acumulados' | 'sinAcumular' => {
-    const globalModality = config.skins.modality ?? 'acumulados';
-    const pairOverrides = config.skins.pairSkinVariantOverrides;
-    const playerVariants = config.skins.playerSkinVariants;
+  const getEffectiveSkinsModality = (playerAId: string, playerBId: string, resolvedSkins: typeof config.skins): 'acumulados' | 'sinAcumular' => {
+    const globalModality = resolvedSkins.modality ?? 'acumulados';
+    const pairOverrides = resolvedSkins.pairSkinVariantOverrides;
+    const playerVariants = resolvedSkins.playerSkinVariants;
     const pairKey = [playerAId, playerBId].sort().join('_');
     if (pairOverrides?.[pairKey]) return pairOverrides[pairKey];
     const variantA = playerVariants?.[playerAId] ?? globalModality;
@@ -49,13 +49,13 @@ export const calculateSkinsBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(config.skins, playerA.id, playerB.id)) continue;
+      if (!shouldCalculatePair(rc.skins, playerA.id, playerB.id)) continue;
 
       // Resolve group-specific amounts for this pair
       const pairGroupId = playerA.groupId || playerB.groupId;
       const rc = resolveConfigForGroup(config, pairGroupId);
 
-      const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id);
+      const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id, rc.skins);
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
       if (pairModality === 'sinAcumular') {
@@ -104,7 +104,7 @@ export const calculateSkinsBets = (
         else { frontTiedHoles++; if (holeNum === 9) frontHole9Tied = true; }
       }
 
-      if (config.skins.carryOver) { frontCarryToBack = frontAccumulated; frontAccumulated = 0; }
+      if (rc.skins.carryOver) { frontCarryToBack = frontAccumulated; frontAccumulated = 0; }
 
       let backSkinsA = 0, backSkinsB = 0, carriedSkinsWonByA = 0, carriedSkinsWonByB = 0;
       let backAccumulated = 0, pendingCarrySkins = frontCarryToBack;
@@ -128,7 +128,7 @@ export const calculateSkinsBets = (
       const frontSkinsA = frontSkinsABase + carriedSkinsWonByA;
       const frontSkinsB = frontSkinsBBase + carriedSkinsWonByB;
 
-      const skinsZapatoEnabled = config.skins.zapatoEnabled !== false;
+      const skinsZapatoEnabled = rc.skins.zapatoEnabled !== false;
       const hasZapatoFront = skinsZapatoEnabled && !frontHole9Tied &&
         ((frontSkinsA > 0 && frontSkinsB === 0) || (frontSkinsB > 0 && frontSkinsA === 0));
       const hasZapatoBack = skinsZapatoEnabled && !backHole18Tied &&

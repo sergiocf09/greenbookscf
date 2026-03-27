@@ -2,7 +2,7 @@
  * Pingüinos Bet Calculator — last triple-bogey-or-worse pays all
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
 
 export const calculatePinguinosBets = (
@@ -11,7 +11,7 @@ export const calculatePinguinosBets = (
   config: BetConfig,
   course: GolfCourse
 ): BetSummary[] => {
-  if (!config.pinguinos.enabled || config.pinguinos.valuePerOccurrence <= 0) return [];
+  if (!isBetEnabledAnywhere(config, 'pinguinos')) return [];
   
   const playersByGroup = groupPlayersByGroup(players);
   const allSummaries: BetSummary[] = [];
@@ -19,6 +19,7 @@ export const calculatePinguinosBets = (
   playersByGroup.forEach(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
+    if (!resolved.pinguinos.enabled || resolved.pinguinos.valuePerOccurrence <= 0) return;
     const participatingPlayers = resolveParticipantsForGroup(players, resolved.pinguinos.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
@@ -66,7 +67,7 @@ export const calculatePinguinosBets = (
     }
     
     const totalPinguinos = allPinguinos.length;
-    const amountPerPlayer = totalPinguinos * config.pinguinos.valuePerOccurrence;
+    const amountPerPlayer = totalPinguinos * resolved.pinguinos.valuePerOccurrence;
     
     groupPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
