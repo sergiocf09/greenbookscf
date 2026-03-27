@@ -1191,12 +1191,9 @@ const processOyesSingleWinner = (
       const carry = getOrCreateCarry(pairKey);
 
       // Step 1: If resolving in Back and there's pending Front carry, settle at Front value
-      console.log(`[OyesSingleWinner-DEBUG] H${holeNum}: pair=${pairKey}, carry.front=${carry.front}, carry.back=${carry.back}, segment=${segment}`);
       if (segment === 'back' && carry.front > 0) {
         const frontCarryCount = carry.front;
         carry.front = 0;
-
-        console.log(`[OyesSingleWinner-DEBUG] H${holeNum}: SETTLING front carry=${frontCarryCount} for pair ${pairKey}`);
 
         summaries.push({
           playerId: closestPlayerId!,
