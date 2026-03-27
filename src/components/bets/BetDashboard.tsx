@@ -4863,7 +4863,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups, betConfig.betOverrides, player, rival]);
 
-  // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
+  // Propagate computed balance to parent so avatar stays in sync with the header
+  useEffect(() => {
+    onComputedBalance?.(computedTotalBalance);
+  }, [computedTotalBalance, onComputedBalance]);
+
+
   // Positive value = player gives strokes to rival, Negative = player receives from rival
   const strokesFromMatrix = useMemo(() => {
     // First try the live matrix hook (for active rounds)
