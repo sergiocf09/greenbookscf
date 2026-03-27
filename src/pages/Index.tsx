@@ -54,7 +54,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { devError, devWarn } from '@/lib/logger';
+import { devError, devLog, devWarn } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
@@ -909,13 +909,19 @@ const Index = () => {
               }
 
               if (Object.keys(updates).length > 0) {
+                devLog(`[Handicap Persist G2+] Player ${newPlayer.name} (rpId: ${roundPlayerId}):`, updates);
                 supabase
                   .from('round_players')
                   .update(updates)
                   .eq('id', roundPlayerId)
                   .then(({ error }) => {
-                    if (error) devError('Error persisting group player changes:', error);
+                    if (error) devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
+                    else devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`);
                   });
+              }
+            } else {
+              if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
+                devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
               }
             }
           }
@@ -1216,15 +1222,23 @@ const Index = () => {
             
             // Only persist if there are changes
             if (Object.keys(updates).length > 0) {
+              devLog(`[Handicap Persist] Player ${newPlayer.name} (rpId: ${roundPlayerId}):`, updates);
               supabase
                 .from('round_players')
                 .update(updates)
                 .eq('id', roundPlayerId)
                 .then(({ error }) => {
                   if (error) {
-                    devError('Error persisting player changes:', error);
+                    devError(`Error persisting player changes for ${newPlayer.name}:`, error);
+                  } else {
+                    devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`);
                   }
                 });
+            }
+          } else {
+            // Log when mapping is missing so we can catch timing issues
+            if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
+              devWarn(`[Handicap Persist] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist until mapping exists.`);
             }
           }
         }
