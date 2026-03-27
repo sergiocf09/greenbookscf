@@ -17,7 +17,7 @@ import {
 } from '@/lib/betCalculations';
 import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
-import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair } from '@/lib/rayasCalculations';
+import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair, getAuthoritativeRayasBalance } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
@@ -1152,29 +1152,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       })
       .reduce((sum, s) => sum + s.amount, 0);
     
-    // Calculate correct Rayas total using getRayasDetailForPair
-    // BUT only if Rayas is not disabled for this pair (via Dashboard override OR bilateral RayasConfig)
+    // Calculate correct Rayas total using getAuthoritativeRayasBalance (SINGLE SOURCE OF TRUTH)
+    // This is the same function used by the header, eliminating any divergence.
     let rayasTotal = 0;
-    // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
     const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
     const isRayasActiveForThisPair = isRayasActiveForPair(resolvedPairConfig, playerId, rivalId);
     
     if (resolvedPairConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(resolvedPairConfig.rayas?.participantIds, playerId, rivalId, resolvedPairConfig.rayas)) {
-      const rayasResult = getRayasDetailForPair(
-        playerObj,
-        rivalObj,
-        confirmedScores,
-        effectiveBetConfig,
-        course,
-        effectiveBetConfig.bilateralHandicaps,
-        allPlayersForCalculations,
-        startingHole
-      );
-      
-      // Get Dashboard override amounts for this pair
+      // Resolve dashboard override amounts for this pair (same logic as header)
       const overrides = effectiveBetConfig.betOverrides || [];
-      // CRITICAL: Must match BilateralDetail's betTypeGroups override resolution exactly.
-      // Overrides may be stored with profileId instead of local id, so check both.
       const playerProfileId = playerObj?.profileId;
       const rivalProfileId = rivalObj?.profileId;
       const findOverride = (betType: string): number | undefined => {
@@ -1195,30 +1181,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
         return match?.amountOverride;
       };
-      const frontValue = findOverride('Rayas Front') ?? resolvedPairConfig.rayas?.frontValue ?? 0;
-      const backValue = findOverride('Rayas Back') ?? resolvedPairConfig.rayas?.backValue ?? 0;
-      const medalTotalValue = findOverride('Rayas Medal Total') ?? resolvedPairConfig.rayas?.medalTotalValue ?? 0;
       
-      // Count rayas per segment and calculate amounts using override values
-      let frontRayas = 0;
-      let backRayas = 0;
-      let medalTotalRayas = 0;
-      rayasResult.details.forEach((d) => {
-        if (d.appliedSegment === 'front') frontRayas += d.rayasCount || 0;
-        else if (d.appliedSegment === 'back') backRayas += d.rayasCount || 0;
-        else if (d.appliedSegment === 'total') medalTotalRayas += d.rayasCount || 0;
-      });
-      
-      rayasTotal = (frontRayas * frontValue) + (backRayas * backValue) + (medalTotalRayas * medalTotalValue);
-      
-      // CRITICAL: Also include Rayas Oyes from betSummaries.
-      // 'Rayas Oyes' entries are excluded from nonRayasNonMedalGeneralBalance (line filter
-      // !s.betType.startsWith('Rayas')), so they must be explicitly added here.
-      // betTypeGroups includes them in the Rayas total (rayasOyesTotal), ensuring consistency.
-      const rayasOyesFromSummaries = betSummaries
-        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId && s.betType === 'Rayas Oyes')
-        .reduce((sum, s) => sum + s.amount, 0);
-      rayasTotal += rayasOyesFromSummaries;
+      rayasTotal = getAuthoritativeRayasBalance(
+        playerObj,
+        rivalObj,
+        confirmedScores,
+        effectiveBetConfig,
+        course,
+        effectiveBetConfig.bilateralHandicaps,
+        allPlayersForCalculations,
+        startingHole,
+        {
+          frontValue: findOverride('Rayas Front') ?? resolvedPairConfig.rayas?.frontValue ?? 0,
+          backValue: findOverride('Rayas Back') ?? resolvedPairConfig.rayas?.backValue ?? 0,
+          medalTotalValue: findOverride('Rayas Medal Total') ?? resolvedPairConfig.rayas?.medalTotalValue ?? 0,
+        }
+      );
     }
     
     // Calculate Medal General using the same logic as the detail view
@@ -4615,7 +4593,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const frontAmount = rayasCounts.frontRayas * rayasAmountOverrides.frontValue;
       const backAmount = rayasCounts.backRayas * rayasAmountOverrides.backValue;
       const medalAmount = rayasCounts.medalTotalRayas * rayasAmountOverrides.medalTotalValue;
-      const rayasTotalFromDetails = frontAmount + backAmount + medalAmount;
+      // Use authoritative function for the total to guarantee avatar == header
+      const rayasTotalFromDetails = getAuthoritativeRayasBalance(
+        player, rival, confirmedScores, effectiveBetConfig, course,
+        effectiveBetConfig.bilateralHandicaps, allPlayers, startingHole,
+        rayasAmountOverrides
+      );
       
       groups.push({
         key: 'rayas',

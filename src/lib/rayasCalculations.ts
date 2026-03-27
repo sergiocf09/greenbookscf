@@ -1554,6 +1554,53 @@ export const getRayasDetailForPair = (
 };
 
 /**
+ * Authoritative Rayas balance for a pair.
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for the Rayas portion of any bilateral balance.
+ * All consumers (avatar, header, tabla general, getCorrectedBilateralBalance) MUST use this.
+ * 
+ * It calls getRayasDetailForPair (which already includes Oyes in its details),
+ * then applies dashboard override values for front/back/medalTotal, and returns
+ * a single total amount from playerA's perspective.
+ * 
+ * Previously, different call sites re-implemented this logic with subtle differences
+ * (e.g. double-counting Oyes from betSummaries), causing avatar ≠ header mismatches.
+ */
+export const getAuthoritativeRayasBalance = (
+  playerA: Player,
+  playerB: Player,
+  scores: Map<string, PlayerScore[]>,
+  config: BetConfig,
+  course: GolfCourse,
+  bilateralHandicaps: BilateralHandicap[] | undefined,
+  allPlayers: Player[],
+  startingHole: 1 | 10 = 1,
+  overrideValues?: { frontValue?: number; backValue?: number; medalTotalValue?: number }
+): number => {
+  const result = getRayasDetailForPair(
+    playerA, playerB, scores, config, course,
+    bilateralHandicaps, allPlayers, startingHole
+  );
+
+  // Determine effective values: explicit overrides > config defaults
+  const frontValue = overrideValues?.frontValue ?? config.rayas?.frontValue ?? 0;
+  const backValue = overrideValues?.backValue ?? config.rayas?.backValue ?? 0;
+  const medalTotalValue = overrideValues?.medalTotalValue ?? config.rayas?.medalTotalValue ?? 0;
+
+  // Count rayas per segment from the unified details (includes Oyes already)
+  let frontRayas = 0;
+  let backRayas = 0;
+  let medalTotalRayas = 0;
+  result.details.forEach(d => {
+    if (d.appliedSegment === 'front') frontRayas += d.rayasCount || 0;
+    else if (d.appliedSegment === 'back') backRayas += d.rayasCount || 0;
+    else if (d.appliedSegment === 'total') medalTotalRayas += d.rayasCount || 0;
+  });
+
+  return (frontRayas * frontValue) + (backRayas * backValue) + (medalTotalRayas * medalTotalValue);
+};
+
+/**
  * Get aggregated rayas count by source for display
  */
 export const getRayasSummaryBySource = (
