@@ -1329,8 +1329,42 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // SINGLE SOURCE OF TRUTH: BilateralDetail's betTypeGroups-based
+  // computedTotalBalance is the authoritative bilateral balance.
+  // All BilateralDetail components (visible or hidden via display:none)
+  // report their computed total back via onComputedBalance.
+  // Avatars and Tabla General read from this map, guaranteeing they
+  // always show the exact same value as the bilateral header.
+  // ═══════════════════════════════════════════════════════════════════
+  const bilateralBalanceMapRef = useRef<Map<string, number>>(new Map());
+  const [balanceMapVersion, setBalanceMapVersion] = useState(0);
+
+  // Callback from BilateralDetail — stores the authoritative bilateral balance
+  const handleComputedBalance = useCallback((playerId: string, rivalId: string, balance: number) => {
+    const key = `${playerId}→${rivalId}`;
+    const reverseKey = `${rivalId}→${playerId}`;
+    const prev = bilateralBalanceMapRef.current.get(key);
+    if (prev !== balance) {
+      bilateralBalanceMapRef.current.set(key, balance);
+      bilateralBalanceMapRef.current.set(reverseKey, -balance);
+      setBalanceMapVersion(v => v + 1);
+    }
+  }, []);
+
+  // Prefer the map (authoritative from BilateralDetail) over getCorrectedBilateralBalance (fallback)
+  const getBilateralBalanceFromMap = useCallback((playerId: string, rivalId: string): number => {
+    const key = `${playerId}→${rivalId}`;
+    const mapVal = bilateralBalanceMapRef.current.get(key);
+    if (mapVal !== undefined) return mapVal;
+    // Fallback for pairs not rendered by BilateralDetail (e.g. non-basePlayer pairs in Tabla General)
+    return getCorrectedBilateralBalance(playerId, rivalId);
+  }, [getCorrectedBilateralBalance, balanceMapVersion]);
+
   useEffect(() => {
     setSelectedRival(null);
+    // Clear the balance map so new BilateralDetails populate it fresh
+    bilateralBalanceMapRef.current.clear();
   }, [balanceBasePlayerId]);
   
   // Get grouped summaries for selected pair
@@ -1378,7 +1412,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
-  // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   // HISTORICAL: Use snapshotBalances (immutable source of truth). LIVE: Use calculated values.
   // getSortedPlayersForDisplay uses getCorrectedBilateralBalance inline to avoid TDZ
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
@@ -1387,11 +1420,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const snapB = isHistorical ? getSnapshotTotalBalance(b.id) : null;
       const balanceA = snapA !== null ? snapA : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
       })();
       const balanceB = snapB !== null ? snapB : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
       })();
       return balanceB - balanceA;
     });
@@ -1400,7 +1433,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // For verification calculation, still use all players from current group
   const sortedPlayers = useMemo(() => {
     return getSortedPlayersForDisplay(players);
-  }, [players, betSummaries, allCarritosResults]);
+  }, [players, betSummaries, allCarritosResults, balanceMapVersion]);
 
   // Get player abbreviation with disambiguation
   const disambiguatedAbbrs = useMemo(() => disambiguateInitials(allPlayersForCalculations), [allPlayersForCalculations]);
@@ -1581,22 +1614,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
-  // ═══════════════════════════════════════════════════════════════════
-  // SINGLE SOURCE OF TRUTH: getCorrectedBilateralBalance is used directly
-  // for avatars, Tabla General, and all balance displays. No render-dependent
-  // map or delayed callbacks — values are computed synchronously.
-  // ═══════════════════════════════════════════════════════════════════
-  const getBilateralBalanceFromMap = getCorrectedBilateralBalance;
-
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
   const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
     return rivalIds.reduce((sum, rivalId) => {
-      return sum + getCorrectedBilateralBalance(playerId, rivalId);
+      return sum + getBilateralBalanceFromMap(playerId, rivalId);
     }, 0);
   };
 
   const getRivalBalance = (rivalId: string): number => {
-    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+    return getBilateralBalanceFromMap(basePlayer?.id || '', rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
@@ -2116,6 +2142,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairBreakdowns={snapshotPairBreakdowns}
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
+              onComputedBalance={handleComputedBalance}
             />
           </div>
         );
@@ -3625,7 +3652,7 @@ interface BilateralDetailProps {
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
   /** Called with the computed bilateral total so the parent can use it for avatars/table. */
-  onComputedBalance?: (balance: number) => void;
+  onComputedBalance?: (playerId: string, rivalId: string, balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -4894,8 +4921,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // Report computedTotalBalance to parent synchronously (before paint)
   // so avatars and Tabla General always show the exact same value as the header.
   React.useLayoutEffect(() => {
-    onComputedBalance?.(computedTotalBalance);
-  }, [computedTotalBalance, onComputedBalance]);
+    onComputedBalance?.(player.id, rival.id, computedTotalBalance);
+  }, [computedTotalBalance, onComputedBalance, player.id, rival.id]);
 
 
   // Positive value = player gives strokes to rival, Negative = player receives from rival
