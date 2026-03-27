@@ -1109,6 +1109,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       if (betType.includes('Pingüino')) return 'pinguinos';
       if (betType === 'Coneja') return 'coneja';
       if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
+      if (betType.startsWith('Zoológico')) return 'zoologico';
+      if (betType === 'Side Bet') return 'sideBets';
       return null;
     };
 
