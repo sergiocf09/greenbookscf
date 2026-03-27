@@ -114,6 +114,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Map: rivalId → balance from the perspective of the CURRENT basePlayer
   // Reinitialized when basePlayer changes to avoid stale values
   const [rivalComputedBalances, setRivalComputedBalances] = useState<Map<string, number>>(new Map());
+
+  // Clear computed balances when basePlayer changes to avoid stale values from previous perspective
+  useEffect(() => {
+    setRivalComputedBalances(new Map());
+  }, [balanceBasePlayerId]);
+
+  const handleRivalComputedBalance = useCallback((rivalId: string, balance: number) => {
+    setRivalComputedBalances(prev => {
+      if (prev.get(rivalId) === balance) return prev;
+      const next = new Map(prev);
+      next.set(rivalId, balance);
+      return next;
+    });
+  }, []);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
