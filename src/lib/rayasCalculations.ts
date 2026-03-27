@@ -1505,6 +1505,12 @@ export const getRayasDetailForPair = (
     const pairKey = [playerA.id, playerB.id].sort().join('-');
     const oyesDetails = oyesDetailsByPair.get(pairKey) || [];
     
+    // DEBUG: Log oyes details for this pair to diagnose carry issue
+    if (oyesDetails.length > 0) {
+      console.log(`[RAYAS-OYES-DEBUG] Pair ${playerA.id.slice(0,6)}-${playerB.id.slice(0,6)} (key=${pairKey.slice(0,15)}): ${oyesDetails.length} oyes details:`, 
+        oyesDetails.map(d => `H${d.holeNumber} seg=${d.appliedSegment} rayas=${d.rayasCount} desc="${d.description}"`));
+    }
+    
     // Merge Oyes details into the result
     // Normalize rayasCount perspective to match playerA
     const normalizedOyesDetails: RayaDetail[] = oyesDetails.map(d => {
