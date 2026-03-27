@@ -1313,24 +1313,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
-  // Mapa rivalId → computedTotalBalance reportado por BilateralDetail.
-  // Persiste todos los rivales visitados para el basePlayer actual.
-  // Se limpia cuando cambia el basePlayer.
-  const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
-
   useEffect(() => {
-    setRivalBalanceCache(new Map());
     setSelectedRival(null);
   }, [balanceBasePlayerId]);
-
-  // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
-  // Uses the exact total computed by BilateralDetail when available, guaranteeing avatar == header == sum(rows).
-  const getRivalBalance = (rivalId: string): number => {
-    if (rivalBalanceCache.has(rivalId)) {
-      return rivalBalanceCache.get(rivalId)!;
-    }
-    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
-  };
   
   // Get grouped summaries for selected pair
   const getGroupedSummaries = (rivalId: string) =>
@@ -1578,6 +1563,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
+
+  // Single source of truth: precompute all bilateral balances for the current basePlayer.
+  // Both avatars and BilateralDetail header read from here — no callbacks, no clicks needed.
+  const pairBalanceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!basePlayer) return map;
+    for (const rival of rivals) {
+      map.set(rival.id, getCorrectedBilateralBalance(basePlayer.id, rival.id));
+    }
+    return map;
+  }, [basePlayer?.id, rivals, betSummaries, confirmedScores, effectiveBetConfig, course, displayGroupIndex]);
+
+  const getRivalBalance = (rivalId: string): number => {
+    return pairBalanceMap.get(rivalId) ?? 0;
+  };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
   if (isHistorical && players.length < 2) {
@@ -2093,15 +2093,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          onComputedBalance={(balance) => {
-            if (!selectedRival) return;
-            setRivalBalanceCache(prev => {
-              if (prev.get(selectedRival) === balance) return prev;
-              const next = new Map(prev);
-              next.set(selectedRival, balance);
-              return next;
-            });
-          }}
         />
 
       )}
@@ -3609,7 +3600,6 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
-  onComputedBalance?: (balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -3638,7 +3628,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4867,23 +4856,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // HISTORICAL MODE: Sum betTypeGroups directly — this is the single source of truth.
   // betTypeGroups already reads exclusively from the snapshot (pairBreakdowns or ledger
   // filtered by pair), and already excludes team bets (Carritos, Presiones Parejas).
-  // This guarantees the header == sum(rows) with NO discrepancy.
-  // LIVE MODE: compute from betTypeGroups which respect live betOverrides.
-  // Compute header total as the exact sum of what the detail rows show.
-  // Uses getBetOverride (same function the detail rows use) to skip disabled bets,
-  // guaranteeing header == sum(visible rows) in both historical and live modes.
-  const computedTotalBalance = useMemo(() => {
-    return betTypeGroups.reduce((sum, group) => {
-      const override = getBetOverride(group.key);
-      if (override?.enabled === false) return sum;
-      return sum + group.getTotal();
-    }, 0);
-  }, [betTypeGroups, betConfig.betOverrides, player, rival]);
+  // The header shows totalBalance directly — it comes from the parent's pairBalanceMap,
+  // which is the single source of truth. No local recalculation needed.
+  const computedTotalBalance = totalBalance;
 
-  // Propagate computed balance to parent so avatar stays in sync with the header
-  useEffect(() => {
-    onComputedBalance?.(computedTotalBalance);
-  }, [computedTotalBalance, onComputedBalance]);
+
 
 
   // Positive value = player gives strokes to rival, Negative = player receives from rival
