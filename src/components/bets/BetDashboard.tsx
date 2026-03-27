@@ -1380,17 +1380,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Sort players by total balance for leaderboard (computed in render based on displayPlayers)
   // HISTORICAL: Use snapshotBalances (immutable source of truth). LIVE: Use calculated values.
+  // getSortedPlayersForDisplay uses getCorrectedBilateralBalance inline to avoid TDZ
   const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
     return [...playersToSort].sort((a, b) => {
       const snapA = isHistorical ? getSnapshotTotalBalance(a.id) : null;
       const snapB = isHistorical ? getSnapshotTotalBalance(b.id) : null;
       const balanceA = snapA !== null ? snapA : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
-        return getCorrectedPlayerBalance(a.id, rivalIds) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
       })();
       const balanceB = snapB !== null ? snapB : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-        return getCorrectedPlayerBalance(b.id, rivalIds) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
       })();
       return balanceB - balanceA;
     });
