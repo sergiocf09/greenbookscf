@@ -1210,6 +1210,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       });
       
       rayasTotal = (frontRayas * frontValue) + (backRayas * backValue) + (medalTotalRayas * medalTotalValue);
+      
+      // CRITICAL: Also include Rayas Oyes from betSummaries.
+      // 'Rayas Oyes' entries are excluded from nonRayasNonMedalGeneralBalance (line filter
+      // !s.betType.startsWith('Rayas')), so they must be explicitly added here.
+      // betTypeGroups includes them in the Rayas total (rayasOyesTotal), ensuring consistency.
+      const rayasOyesFromSummaries = betSummaries
+        .filter(s => s.playerId === playerId && s.vsPlayer === rivalId && s.betType === 'Rayas Oyes')
+        .reduce((sum, s) => sum + s.amount, 0);
+      rayasTotal += rayasOyesFromSummaries;
     }
     
     // Calculate Medal General using the same logic as the detail view
