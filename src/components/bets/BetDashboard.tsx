@@ -1313,24 +1313,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
-  // Mapa rivalId → computedTotalBalance reportado por BilateralDetail.
-  // Persiste todos los rivales visitados para el basePlayer actual.
-  // Se limpia cuando cambia el basePlayer.
-  const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
-
   useEffect(() => {
-    setRivalBalanceCache(new Map());
     setSelectedRival(null);
   }, [balanceBasePlayerId]);
-
-  // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
-  // Uses the exact total computed by BilateralDetail when available, guaranteeing avatar == header == sum(rows).
-  const getRivalBalance = (rivalId: string): number => {
-    if (rivalBalanceCache.has(rivalId)) {
-      return rivalBalanceCache.get(rivalId)!;
-    }
-    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
-  };
   
   // Get grouped summaries for selected pair
   const getGroupedSummaries = (rivalId: string) =>
