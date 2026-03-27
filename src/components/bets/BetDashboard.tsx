@@ -1310,8 +1310,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Stores the computed balance from BilateralDetail (sum of visible betTypeGroups).
   // When the detail is open for a rival, this overrides the avatar balance to guarantee
-  // avatar == header == sum(rows). Cleared when selectedRival changes.
+  // avatar == header == sum(rows). Cleared when selectedRival or basePlayer changes.
   const [rivalComputedBalance, setRivalComputedBalance] = useState<{ rivalId: string; balance: number } | null>(null);
+
+  // Clear cached computed balance when base player or selected rival changes
+  useEffect(() => {
+    setRivalComputedBalance(null);
+  }, [balanceBasePlayerId, selectedRival]);
 
   // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
   // If BilateralDetail has reported a computed balance for this rival, use it (single source of truth).
