@@ -710,8 +710,27 @@ export const useRoundManagement = ({
 
       toast.success('Ronda creada');
 
-      // Auto-apply USGA handicap for the organizer if available (otherwise stays 0)
-      void applyMyUsgaHandicapIfAvailable(result.round_player_id);
+      // Persist the organizer's locally-set handicap from setup.
+      // The RPC always creates the organizer with handicap = 0, so we must sync
+      // the UI value immediately. Only fall back to USGA if the user hasn't set one.
+      const organizerPlayer = players.find(
+        p => p.profileId === result.organizer_profile_id || p.id === result.organizer_profile_id
+      );
+      const localHandicap = organizerPlayer?.handicap ?? 0;
+
+      if (localHandicap !== 0) {
+        // User already set a handicap in setup — persist it
+        supabase
+          .from('round_players')
+          .update({ handicap_for_round: localHandicap })
+          .eq('id', result.round_player_id)
+          .then(({ error }) => {
+            if (error) devError('Error persisting organizer handicap:', error);
+          });
+      } else {
+        // No manual handicap set — try USGA auto-apply
+        void applyMyUsgaHandicapIfAvailable(result.round_player_id);
+      }
       return result.round_id;
     } catch (error) {
       devError('Error creating round:', error);
