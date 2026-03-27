@@ -1112,6 +1112,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return null;
     };
 
+    // Resolve group-specific config for this pair so participantIds are correct for G2+
+    const pairGroupId = playerObj?.groupId || rivalObj?.groupId;
+    const resolvedPairConfig = resolveConfigForGroup(effectiveBetConfig, pairGroupId);
+
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -1132,7 +1136,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Check if both players participate in this bet type
         const configKey = betTypeToConfigKey(s.betType);
         if (!configKey) return true; // unknown type, include by default
-        const betCfg = effectiveBetConfig[configKey as keyof BetConfig] as any;
+        const betCfg = resolvedPairConfig[configKey as keyof BetConfig] as any;
         if (!betCfg?.participantIds) return true; // undefined = all participate
         if (betCfg.participantIds.length === 0) return false; // [] = nobody
         return bothParticipateGlobal(betCfg.participantIds, playerId, rivalId, betCfg);
@@ -1144,9 +1148,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let rayasTotal = 0;
     // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
     const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
-    const isRayasActiveForThisPair = isRayasActiveForPair(effectiveBetConfig, playerId, rivalId);
+    const isRayasActiveForThisPair = isRayasActiveForPair(resolvedPairConfig, playerId, rivalId);
     
-    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(effectiveBetConfig.rayas?.participantIds, playerId, rivalId, effectiveBetConfig.rayas)) {
+    if (resolvedPairConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(resolvedPairConfig.rayas?.participantIds, playerId, rivalId, resolvedPairConfig.rayas)) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
@@ -1170,9 +1174,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
         return match?.amountOverride;
       };
-      const frontValue = findOverride('Rayas Front') ?? effectiveBetConfig.rayas?.frontValue ?? 0;
-      const backValue = findOverride('Rayas Back') ?? effectiveBetConfig.rayas?.backValue ?? 0;
-      const medalTotalValue = findOverride('Rayas Medal Total') ?? effectiveBetConfig.rayas?.medalTotalValue ?? 0;
+      const frontValue = findOverride('Rayas Front') ?? resolvedPairConfig.rayas?.frontValue ?? 0;
+      const backValue = findOverride('Rayas Back') ?? resolvedPairConfig.rayas?.backValue ?? 0;
+      const medalTotalValue = findOverride('Rayas Medal Total') ?? resolvedPairConfig.rayas?.medalTotalValue ?? 0;
       
       // Count rayas per segment and calculate amounts using override values
       let frontRayas = 0;
@@ -1192,7 +1196,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let medalGeneralTotal = 0;
     const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
     
-    if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(betConfig.medalGeneral?.participantIds, playerId, rivalId)) {
+    if (resolvedPairConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(resolvedPairConfig.medalGeneral?.participantIds, playerId, rivalId)) {
       const medalResult = getMedalGeneralBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -1210,7 +1214,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let stablefordTotal = 0;
     const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
     
-    if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(betConfig.stableford?.participantIds, playerId, rivalId)) {
+    if (resolvedPairConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(resolvedPairConfig.stableford?.participantIds, playerId, rivalId)) {
       const stablefordResult = getStablefordBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -1227,7 +1231,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Calculate Skins Grupal from betSummaries (group bet, already pair-level)
     let skinsGrupalTotal = 0;
     const isSkinsGrupalDisabled = isBetDisabledForPair('Skins Grupal', ['skinsGrupal']);
-    if (betConfig.skinsGrupal?.enabled && !isSkinsGrupalDisabled) {
+    if (resolvedPairConfig.skinsGrupal?.enabled && !isSkinsGrupalDisabled) {
       skinsGrupalTotal = betSummaries
         .filter(s => s.playerId === playerId && s.vsPlayer === rivalId && s.betType.startsWith('Skins Grupal'))
         .reduce((sum, s) => sum + s.amount, 0);
