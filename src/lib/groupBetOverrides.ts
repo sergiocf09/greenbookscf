@@ -54,6 +54,24 @@ export const isBetEnabledForGroup = (
 };
 
 /**
+ * Check if a bet is enabled in the base config OR in any group override.
+ * Used by calculation engines to avoid early-return when G2+ enables a bet that G1 doesn't have.
+ */
+export const isBetEnabledAnywhere = (
+  config: BetConfig,
+  betKey: keyof BetConfig
+): boolean => {
+  const baseBet = config[betKey] as any;
+  if (baseBet?.enabled) return true;
+  const overrides = config.groupBetOverrides;
+  if (!overrides) return false;
+  return Object.values(overrides).some(groupOverride => {
+    const betOverride = (groupOverride as any)?.[betKey];
+    return betOverride?.enabled === true;
+  });
+};
+
+/**
  * Set a group-specific override for a bet type.
  * Returns a new BetConfig with the override applied.
  */
