@@ -1683,7 +1683,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 totalBalance = snapshotTotal;
               } else {
                 const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-                const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
+                const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getCachedBilateralBalance(player.id, rivalId), 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
                 totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
