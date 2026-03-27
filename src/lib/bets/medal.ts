@@ -33,11 +33,12 @@ export const calculateMedalBets = (
       const playerB = participatingPlayers[j];
 
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(resolvedPairConfig.medal, playerA.id, playerB.id)) continue;
       
       // Resolve group-specific amounts for this pair
       const pairGroupId = playerA.groupId || playerB.groupId;
       const resolvedPairConfig = resolveConfigForGroup(config, pairGroupId);
+      if (!resolvedPairConfig.medal.enabled) continue;
+      if (!shouldCalculatePair(resolvedPairConfig.medal, playerA.id, playerB.id)) continue;
       
       const segments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
         { key: 'front', amount: resolvedPairConfig.medal.frontAmount, label: 'Medal Front 9' },

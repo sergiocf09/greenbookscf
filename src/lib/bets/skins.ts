@@ -49,11 +49,12 @@ export const calculateSkinsBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(rc.skins, playerA.id, playerB.id)) continue;
 
       // Resolve group-specific amounts for this pair
       const pairGroupId = playerA.groupId || playerB.groupId;
       const rc = resolveConfigForGroup(config, pairGroupId);
+      if (!rc.skins.enabled) continue;
+      if (!shouldCalculatePair(rc.skins, playerA.id, playerB.id)) continue;
 
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id, rc.skins);
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
