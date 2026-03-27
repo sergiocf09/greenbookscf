@@ -1499,7 +1499,14 @@ export const getRayasDetailForPair = (
   
   // If we have all players and Oyes is enabled for this pair, calculate Oyes details
   if (allPlayers && allPlayers.length > 0 && oyesConfig.enabled) {
-    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(allPlayers, scores, config, course, startingHole);
+    // CRITICAL: Filter to same-group players only for Oyes winner determination.
+    // Without this, processOyesSingleWinner mixes players from different groups,
+    // causing a Group 2 winner to reset Group 1 carries (and vice versa).
+    const pairGroupId = playerA.groupId || playerB.groupId;
+    const sameGroupPlayers = pairGroupId
+      ? allPlayers.filter(p => p.groupId === pairGroupId || !p.groupId)
+      : allPlayers;
+    const { details: oyesDetailsByPair } = calculateOyesRayasForAll(sameGroupPlayers, scores, config, course, startingHole);
     
     // Get Oyes details for this specific pair
     const pairKey = [playerA.id, playerB.id].sort().join('-');
