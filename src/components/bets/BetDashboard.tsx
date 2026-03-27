@@ -2109,6 +2109,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
+          onComputedBalance={(balance) => {
+            if (!selectedRival) return;
+            setRivalBalanceCache(prev => {
+              if (prev.get(selectedRival) === balance) return prev;
+              const next = new Map(prev);
+              next.set(selectedRival, balance);
+              return next;
+            });
+          }}
         />
 
       )}
