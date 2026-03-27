@@ -1603,25 +1603,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     }
   }, []);
 
-  // Read bilateral balance: prefer the map (single source of truth from BilateralDetail),
-  // fall back to getCorrectedBilateralBalance for pairs not yet rendered.
-  const getBilateralBalanceFromMap = useCallback((playerId: string, rivalId: string): number => {
-    const key = `${playerId}:${rivalId}`;
-    const cached = bilateralBalanceMapRef.current.get(key);
-    if (cached !== undefined) return cached;
-    // Fallback for pairs whose BilateralDetail hasn't rendered yet
-    return getCorrectedBilateralBalance(playerId, rivalId);
-  }, [getCorrectedBilateralBalance, balanceMapVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Use getCorrectedBilateralBalance directly — no render-dependent map.
+  // This ensures avatars and Tabla General show correct values instantly.
+  const getBilateralBalanceFromMap = getCorrectedBilateralBalance;
 
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
   const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
     return rivalIds.reduce((sum, rivalId) => {
-      return sum + getBilateralBalanceFromMap(playerId, rivalId);
+      return sum + getCorrectedBilateralBalance(playerId, rivalId);
     }, 0);
   };
 
   const getRivalBalance = (rivalId: string): number => {
-    return getBilateralBalanceFromMap(basePlayer?.id || '', rivalId);
+    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
