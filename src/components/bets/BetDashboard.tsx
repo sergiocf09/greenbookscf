@@ -1192,9 +1192,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         allPlayersForCalculations,
         startingHole,
         {
-          frontValue: findOverride('Rayas Front') ?? resolvedPairConfig.rayas?.frontValue ?? 0,
-          backValue: findOverride('Rayas Back') ?? resolvedPairConfig.rayas?.backValue ?? 0,
-          medalTotalValue: findOverride('Rayas Medal Total') ?? resolvedPairConfig.rayas?.medalTotalValue ?? 0,
+          frontValue: findOverride('Rayas Front') ?? betConfig.rayas?.frontValue ?? 0,
+          backValue: findOverride('Rayas Back') ?? betConfig.rayas?.backValue ?? 0,
+          medalTotalValue: findOverride('Rayas Medal Total') ?? betConfig.rayas?.medalTotalValue ?? 0,
         }
       );
     }
