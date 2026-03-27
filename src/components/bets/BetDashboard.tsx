@@ -1296,12 +1296,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal + skinsGrupalTotal + conejaTotal;
   };
   
-  // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
-  const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
-    return rivalIds.reduce((sum, rivalId) => {
-      return sum + getBilateralBalanceFromMap(playerId, rivalId);
-    }, 0);
-  };
+  // getCorrectedPlayerBalance is defined after getBilateralBalanceFromMap below
 
   // Historical mode: break down the pair balance by category from the snapshot ledger.
   // Individual = all non-team bets; Carritos = carritos bets; Presiones = team pressures.
@@ -1616,6 +1611,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Fallback for pairs whose BilateralDetail hasn't rendered yet
     return getCorrectedBilateralBalance(playerId, rivalId);
   }, [getCorrectedBilateralBalance, balanceMapVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
+  const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
+    return rivalIds.reduce((sum, rivalId) => {
+      return sum + getBilateralBalanceFromMap(playerId, rivalId);
+    }, 0);
+  };
 
   const getRivalBalance = (rivalId: string): number => {
     return getBilateralBalanceFromMap(basePlayer?.id || '', rivalId);
