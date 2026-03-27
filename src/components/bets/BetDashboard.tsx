@@ -3612,7 +3612,8 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
-  
+  /** Called with the computed bilateral total so the parent can use it for avatars/table. */
+  onComputedBalance?: (balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
