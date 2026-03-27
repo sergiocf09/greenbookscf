@@ -79,7 +79,9 @@ export const calculatePressureBets = (
       const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
       const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
       const totalMatchAmount = resolvedPairConfig.pressures.totalAmount;
-      console.log(`[PRESSURES-DEBUG] pair=${playerA.name} vs ${playerB.name}, groupId=${pairGroupId}, totalMatchAmount=${totalMatchAmount}, frontAmount=${resolvedPairConfig.pressures.frontAmount}, backAmount=${resolvedPairConfig.pressures.backAmount}`);
+      if (typeof window !== 'undefined') {
+        console.log(`[PRESSURES-DEBUG] pair=${playerA.name} vs ${playerB.name}, groupId=${pairGroupId}, totalMatchAmount=${totalMatchAmount}, frontAmount=${resolvedPairConfig.pressures.frontAmount}, backAmount=${resolvedPairConfig.pressures.backAmount}`);
+      }
 
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0];
