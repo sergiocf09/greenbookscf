@@ -1299,7 +1299,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
   const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
     return rivalIds.reduce((sum, rivalId) => {
-      return sum + getCorrectedBilateralBalance(playerId, rivalId);
+      return sum + getBilateralBalanceFromMap(playerId, rivalId);
     }, 0);
   };
 
