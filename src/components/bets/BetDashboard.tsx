@@ -1564,26 +1564,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
-  // Single source of truth for all bilateral balances: populated by rendering
-  // ALL BilateralDetail components (hidden for non-selected rivals).
-  // Uses composite keys "baseId:rivalId" so the cache is NEVER cleared — switching
-  // basePlayer instantly shows cached values from a previous visit (no flash).
-  const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
-
-  const getCacheKey = (baseId: string, rivalId: string) => `${baseId}:${rivalId}`;
-
-  // Read bilateral balance from cache (exact betTypeGroups sum) with fallback
+  // Deterministic bilateral balance: always computed synchronously from the engine.
+  // NO async cache — guarantees avatars, headers, Tabla General, and snapshots
+  // all see the exact same values at every render.
   const getRivalBalance = (rivalId: string): number => {
-    const key = getCacheKey(basePlayer?.id || '', rivalId);
-    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
-  };
-
-  // Read bilateral balance from cache for ANY player pair (used by Tabla General)
-  const getCachedBilateralBalance = (playerId: string, rivalId: string): number => {
-    const key = getCacheKey(playerId, rivalId);
-    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
-    return getCorrectedBilateralBalance(playerId, rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
@@ -1683,7 +1668,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 totalBalance = snapshotTotal;
               } else {
                 const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-                const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getCachedBilateralBalance(player.id, rivalId), 0);
+                const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getCorrectedBilateralBalance(player.id, rivalId), 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
                 totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
@@ -1707,7 +1692,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               // For 'all' mode cross-group, still use corrected balance for rivals not in snapshot
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCachedBilateralBalance(player.id, rival.id)) : getCachedBilateralBalance(player.id, rival.id));
+                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCorrectedBilateralBalance(player.id, rival.id)) : getCorrectedBilateralBalance(player.id, rival.id));
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
@@ -1768,7 +1753,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
                         const vsIndividualBalance = isHistorical
                           ? (historicalBreakdown?.individual ?? 0)
-                          : getCachedBilateralBalance(player.id, other.id);
+                          : getCorrectedBilateralBalance(player.id, other.id);
                         const vsCarritosBalance = isHistorical
                           ? (historicalBreakdown?.carritos ?? 0)
                           : getCarritosBalanceVsPlayer(player.id, other.id);
@@ -1843,7 +1828,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getCachedBilateralBalance(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getCorrectedBilateralBalance(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
@@ -2056,26 +2041,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Bilateral Detail Views — render ALL rivals so betTypeGroups totals populate the cache.
-          Only the selected rival is visible; the rest compute in the background (hidden). */}
-      {basePlayer && rivals.map(rival => {
-        const isVisible = selectedRival === rival.id;
+      {/* Bilateral Detail View — only render the selected rival */}
+      {basePlayer && selectedRival && (() => {
+        const rival = rivals.find(r => r.id === selectedRival);
+        if (!rival) return null;
+        const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
         return (
-          <div key={rival.id} style={isVisible ? undefined : { display: 'none' }}>
-            {/* Cross-Group Handicap Widget */}
-            {isVisible && (() => {
-              const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
-              if (!isCrossGroupSelected) return null;
-              return (
-                <CrossGroupHandicapWidget
-                  basePlayer={basePlayer}
-                  rival={rival}
-                  getStrokesForLocalPair={getStrokesForLocalPair}
-                  setStrokesForLocalPair={setStrokesForLocalPair}
-                  isHistorical={isHistorical}
-                />
-              );
-            })()}
+          <>
+            {isCrossGroupSelected && (
+              <CrossGroupHandicapWidget
+                basePlayer={basePlayer}
+                rival={rival}
+                getStrokesForLocalPair={getStrokesForLocalPair}
+                setStrokesForLocalPair={setStrokesForLocalPair}
+                isHistorical={isHistorical}
+              />
+            )}
             <BilateralDetail
               players={players}
               groupPlayers={balanceVsPlayers}
@@ -2102,21 +2083,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairBreakdowns={snapshotPairBreakdowns}
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
-              onComputedBalance={(balance) => {
-                const keyAB = getCacheKey(basePlayer.id, rival.id);
-                const keyBA = getCacheKey(rival.id, basePlayer.id);
-                setRivalBalanceCache(prev => {
-                  if (prev.get(keyAB) === balance && prev.get(keyBA) === -balance) return prev;
-                  const next = new Map(prev);
-                  next.set(keyAB, balance);
-                  next.set(keyBA, -balance); // Reverse direction for Tabla General
-                  return next;
-                });
-              }}
             />
-          </div>
+          </>
         );
-      })}
+      })()}
 
       {/* All Carritos Results — only render cards that have actual data */}
       {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
@@ -3621,7 +3591,7 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
-  onComputedBalance?: (balance: number) => void;
+  
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -3650,7 +3620,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  onComputedBalance,
+  
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4887,10 +4857,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups]);
 
-  // Report computed total to parent so avatar can stay in sync with header
-  useEffect(() => {
-    onComputedBalance?.(computedTotalBalance);
-  }, [computedTotalBalance, onComputedBalance]);
 
 
 
