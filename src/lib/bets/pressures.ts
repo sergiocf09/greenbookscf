@@ -108,6 +108,8 @@ export const calculatePressureBets = (
       const match18Unit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Match 18') ?? totalMatchAmount;
       const backUnit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Back') ?? resolvedPairConfig.pressures.backAmount;
       
+      console.log(`[PRESSURE-DEBUG] ${playerA.name} vs ${playerB.name} | group=${pairGroupId} | frontUnit=${frontUnit} backUnit=${backUnit} match18Unit=${match18Unit} | configFront=${resolvedPairConfig.pressures.frontAmount} configBack=${resolvedPairConfig.pressures.backAmount} configTotal=${totalMatchAmount} | overrideFront=${getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Front')} overrideBack=${getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Back')} overrideMatch=${getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Match 18')}`);
+      
       const frontBetsWonA = frontBets.filter(b => b > 0).length;
       const frontBetsLostA = frontBets.filter(b => b < 0).length;
       const frontNetBets = frontBetsWonA - frontBetsLostA;
