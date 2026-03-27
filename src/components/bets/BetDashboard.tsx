@@ -3628,7 +3628,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4857,23 +4856,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // HISTORICAL MODE: Sum betTypeGroups directly — this is the single source of truth.
   // betTypeGroups already reads exclusively from the snapshot (pairBreakdowns or ledger
   // filtered by pair), and already excludes team bets (Carritos, Presiones Parejas).
-  // This guarantees the header == sum(rows) with NO discrepancy.
-  // LIVE MODE: compute from betTypeGroups which respect live betOverrides.
-  // Compute header total as the exact sum of what the detail rows show.
-  // Uses getBetOverride (same function the detail rows use) to skip disabled bets,
-  // guaranteeing header == sum(visible rows) in both historical and live modes.
-  const computedTotalBalance = useMemo(() => {
-    return betTypeGroups.reduce((sum, group) => {
-      const override = getBetOverride(group.key);
-      if (override?.enabled === false) return sum;
-      return sum + group.getTotal();
-    }, 0);
-  }, [betTypeGroups, betConfig.betOverrides, player, rival]);
+  // The header shows totalBalance directly — it comes from the parent's pairBalanceMap,
+  // which is the single source of truth. No local recalculation needed.
+  const computedTotalBalance = totalBalance;
 
-  // Propagate computed balance to parent so avatar stays in sync with the header
-  useEffect(() => {
-    onComputedBalance?.(computedTotalBalance);
-  }, [computedTotalBalance, onComputedBalance]);
+
 
 
   // Positive value = player gives strokes to rival, Negative = player receives from rival
