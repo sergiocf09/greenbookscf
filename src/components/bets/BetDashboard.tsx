@@ -1313,22 +1313,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
-  // Stores the computed balance from BilateralDetail (sum of visible betTypeGroups).
-  // When the detail is open for a rival, this overrides the avatar balance to guarantee
-  // avatar == header == sum(rows). Cleared when selectedRival or basePlayer changes.
-  const [rivalComputedBalance, setRivalComputedBalance] = useState<{ rivalId: string; balance: number } | null>(null);
+  // Mapa rivalId → computedTotalBalance reportado por BilateralDetail.
+  // Persiste todos los rivales visitados para el basePlayer actual.
+  // Se limpia cuando cambia el basePlayer.
+  const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
 
-  // Clear cached computed balance when base player or selected rival changes
   useEffect(() => {
-    setRivalComputedBalance(null);
-  }, [balanceBasePlayerId, selectedRival]);
+    setRivalBalanceCache(new Map());
+    setSelectedRival(null);
+  }, [balanceBasePlayerId]);
 
   // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
-  // If BilateralDetail has reported a computed balance for this rival, use it (single source of truth).
-  // Otherwise fall back to getCorrectedBilateralBalance.
+  // Uses the exact total computed by BilateralDetail when available, guaranteeing avatar == header == sum(rows).
   const getRivalBalance = (rivalId: string): number => {
-    if (rivalComputedBalance && rivalComputedBalance.rivalId === rivalId) {
-      return rivalComputedBalance.balance;
+    if (rivalBalanceCache.has(rivalId)) {
+      return rivalBalanceCache.get(rivalId)!;
     }
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
@@ -1912,7 +1911,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         onClick={() => {
                           const next = isSelected ? null : rival.id;
                           setSelectedRival(next);
-                          if (!next) setRivalComputedBalance(null);
                         }}
                         className={cn(
                           'flex flex-col items-center gap-1.5 transition-all relative',
@@ -2095,7 +2093,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          onComputedBalance={(balance) => setRivalComputedBalance({ rivalId: selectedRival, balance })}
+          onComputedBalance={(balance) => {
+            if (!selectedRival) return;
+            setRivalBalanceCache(prev => {
+              if (prev.get(selectedRival) === balance) return prev;
+              const next = new Map(prev);
+              next.set(selectedRival, balance);
+              return next;
+            });
+          }}
         />
 
       )}
