@@ -1127,6 +1127,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         s.betType !== 'Stableford' &&
         !s.betType.startsWith('Skins Grupal') &&
         s.betType !== 'Presiones Parejas' &&
+        s.betType !== 'Coneja' &&
         !carritosTypes.includes(s.betType)
       )
       .filter(s => {
@@ -1199,10 +1200,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
     
     if (resolvedPairConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(resolvedPairConfig.medalGeneral?.participantIds, playerId, rivalId)) {
+      const playerWithGroup = allPlayersForCalculations.find(p => p.id === playerId) || playerObj;
+      const rivalWithGroup = allPlayersForCalculations.find(p => p.id === rivalId) || rivalObj;
       const medalResult = getMedalGeneralBilateralResult(
         allPlayersForCalculations,
-        playerObj,
-        rivalObj,
+        playerWithGroup,
+        rivalWithGroup,
         confirmedScores,
         betConfig,
         course
@@ -1217,10 +1220,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
     
     if (resolvedPairConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(resolvedPairConfig.stableford?.participantIds, playerId, rivalId)) {
+      const playerWithGroup = allPlayersForCalculations.find(p => p.id === playerId) || playerObj;
+      const rivalWithGroup = allPlayersForCalculations.find(p => p.id === rivalId) || rivalObj;
       const stablefordResult = getStablefordBilateralResult(
         allPlayersForCalculations,
-        playerObj,
-        rivalObj,
+        playerWithGroup,
+        rivalWithGroup,
         confirmedScores,
         betConfig,
         course
@@ -1239,7 +1244,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         .reduce((sum, s) => sum + s.amount, 0);
     }
     
-    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal + skinsGrupalTotal;
+    // Calculate Coneja separately using the same recalculation as the detail view
+    // This avoids divergence between engine betSummaries and detail's calculateConejaBets
+    let conejaTotal = 0;
+    const isConejaDisabled = isBetDisabledForPair('Coneja', ['coneja']);
+    if (resolvedPairConfig.coneja?.enabled && playerObj && rivalObj && !isConejaDisabled && bothParticipateGlobal(resolvedPairConfig.coneja?.participantIds, playerId, rivalId)) {
+      const displayGroupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
+      const conejaParticipantIds = resolvedPairConfig.coneja?.participantIds;
+      const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
+        ? displayGroupPlayers.filter(p => conejaParticipantIds.includes(p.id))
+        : displayGroupPlayers;
+      if (conejaPlayers.length >= 2) {
+        const conejaBets = calculateConejaBets(conejaPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
+        const playerWins = conejaBets
+          .filter(b => b.winnerId === playerId && b.loserId === rivalId)
+          .reduce((sum, b) => sum + b.amount, 0);
+        const rivalWins = conejaBets
+          .filter(b => b.winnerId === rivalId && b.loserId === playerId)
+          .reduce((sum, b) => sum + b.amount, 0);
+        conejaTotal = playerWins - rivalWins;
+      }
+    }
+    
+    return nonRayasNonMedalGeneralBalance + rayasTotal + medalGeneralTotal + stablefordTotal + skinsGrupalTotal + conejaTotal;
   };
   
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
