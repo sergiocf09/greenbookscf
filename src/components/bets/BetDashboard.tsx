@@ -4879,8 +4879,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups]);
 
-
-
+  // Report computedTotalBalance to parent synchronously (before paint)
+  // so avatars and Tabla General always show the exact same value as the header.
+  React.useLayoutEffect(() => {
+    onComputedBalance?.(computedTotalBalance);
+  }, [computedTotalBalance, onComputedBalance]);
 
 
   // Positive value = player gives strokes to rival, Negative = player receives from rival
