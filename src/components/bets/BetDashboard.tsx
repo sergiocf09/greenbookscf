@@ -4841,54 +4841,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // filtered by pair), and already excludes team bets (Carritos, Presiones Parejas).
   // This guarantees the header == sum(rows) with NO discrepancy.
   // LIVE MODE: compute from betTypeGroups which respect live betOverrides.
+  // Compute header total as the exact sum of what the detail rows show.
+  // Uses getBetOverride (same function the detail rows use) to skip disabled bets,
+  // guaranteeing header == sum(visible rows) in both historical and live modes.
   const computedTotalBalance = useMemo(() => {
-    // Both historical and live modes derive the header from betTypeGroups to guarantee
-    // that header == sum(detail rows). snapshotVsBalance is intentionally ignored here
-    // because it may include Carritos/Presiones Parejas (team bets) in older snapshots
-    // that don't have the pairBreakdowns field.
-    if (isHistorical) {
-      // Sum all betTypeGroups directly (they already exclude team bets)
-      return betTypeGroups.reduce((sum, group) => sum + group.getTotal(), 0);
-    }
-    
     return betTypeGroups.reduce((sum, group) => {
-      const normalizeLabel = (label: string) => {
-        switch (label) {
-          case 'medal': return 'Medal';
-          case 'pressures': return 'Presiones';
-          case 'skins': return 'Skins';
-          case 'caros': return 'Caros';
-          case 'oyeses': return 'Oyes';
-          case 'units': return 'Unidades';
-          case 'manchas': return 'Manchas';
-          case 'culebras': return 'Culebras';
-          case 'pinguinos': return 'Pingüinos';
-          case 'rayas': return 'Rayas';
-          case 'medalGeneral': return 'Medal General';
-          case 'coneja': return 'Coneja';
-          case 'putts': return 'Putts';
-          case 'sideBets': return 'Side Bet';
-          case 'stableford': return 'Stableford';
-          case 'teamPressures': return 'Foursome';
-          default: return label;
-        }
-      };
-      
-      const matchesPlayer = (overrideId: string, p: Player) =>
-        overrideId === p.id || (p.profileId && overrideId === p.profileId);
-      
-      const override = betConfig.betOverrides?.find(
-        (o) =>
-          (o.betType === normalizeLabel(group.key) || o.betType === group.key) &&
-          ((matchesPlayer(o.playerAId, player) && matchesPlayer(o.playerBId, rival)) ||
-            (matchesPlayer(o.playerAId, rival) && matchesPlayer(o.playerBId, player)))
-      );
-      
+      const override = getBetOverride(group.key);
       if (override?.enabled === false) return sum;
-      
       return sum + group.getTotal();
     }, 0);
-  }, [isHistorical, snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
+  }, [betTypeGroups, betConfig.betOverrides, player, rival]);
 
   // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
