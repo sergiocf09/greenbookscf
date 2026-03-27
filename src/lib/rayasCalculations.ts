@@ -1177,6 +1177,8 @@ const processOyesSingleWinner = (
     devLog(`[OyesSingleWinner] H${holeNum} (${segment}): winner=${closestPlayerId}`);
 
     // Winner found — settle carry + current hole for each rival
+    // IMPORTANT: Settle carries BEFORE the global reset below
+    const settledPairs = new Set<string>();
     players.forEach(rival => {
       if (rival.id === closestPlayerId) return;
 
