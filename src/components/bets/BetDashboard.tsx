@@ -111,25 +111,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
-  // Map: rivalId → balance from the perspective of the CURRENT basePlayer
-  // Reinitialized when basePlayer changes to avoid stale values
-  const [rivalComputedBalances, setRivalComputedBalances] = useState<Map<string, number>>(new Map());
-
-  const handleRivalComputedBalance = useCallback((rivalId: string, balance: number) => {
-    setRivalComputedBalances(prev => {
-      if (prev.get(rivalId) === balance) return prev;
-      const next = new Map(prev);
-      next.set(rivalId, balance);
-      return next;
-    });
-  }, []);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
-
-  // Clear computed balances when basePlayer changes to avoid stale values from previous perspective
-  useEffect(() => {
-    setRivalComputedBalances(new Map());
-  }, [balanceBasePlayerId]);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
@@ -1903,10 +1886,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  // Use the balance computed by BilateralDetail if available (only for current basePlayer)
-                  const balance = rivalComputedBalances.has(rival.id)
-                    ? rivalComputedBalances.get(rival.id)!
-                    : getRivalBalance(rival.id);
+                  const balance = getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
                   const hasOverride = !!pairHandicap;
@@ -2096,7 +2076,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          onComputedBalance={handleRivalComputedBalance}
+          
         />
       )}
 
@@ -3602,8 +3582,7 @@ interface BilateralDetailProps {
   snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
   snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
   snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
-  isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
-  onComputedBalance?: (rivalId: string, balance: number) => void;
+  isHistorical?: boolean;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -3632,7 +3611,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4912,11 +4890,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [isHistorical, snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
 
-  // Notify parent of computed balance so avatar can use the same number
-  useEffect(() => {
-    onComputedBalance?.(rival.id, computedTotalBalance);
-  }, [computedTotalBalance, rival.id, onComputedBalance]);
-
   // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
   const strokesFromMatrix = useMemo(() => {
@@ -5005,11 +4978,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            computedTotalBalance > 0 ? 'text-green-600' : computedTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+            totalBalance > 0 ? 'text-green-600' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
-            {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${Math.abs(computedTotalBalance)}
+            {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
+            {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
+            ${Math.abs(totalBalance)}
           </div>
         </div>
         
