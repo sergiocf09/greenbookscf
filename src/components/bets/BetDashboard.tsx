@@ -1148,9 +1148,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let rayasTotal = 0;
     // Rayas can be stored as "rayas" (UI key) or "Rayas" (engine label)
     const isRayasDisabledByOverride = isBetDisabledForPair('Rayas', ['rayas']);
-    const isRayasActiveForThisPair = isRayasActiveForPair(effectiveBetConfig, playerId, rivalId);
+    const isRayasActiveForThisPair = isRayasActiveForPair(resolvedPairConfig, playerId, rivalId);
     
-    if (effectiveBetConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(effectiveBetConfig.rayas?.participantIds, playerId, rivalId, effectiveBetConfig.rayas)) {
+    if (resolvedPairConfig.rayas?.enabled && playerObj && rivalObj && !isRayasDisabledByOverride && isRayasActiveForThisPair && bothParticipateGlobal(resolvedPairConfig.rayas?.participantIds, playerId, rivalId, resolvedPairConfig.rayas)) {
       const rayasResult = getRayasDetailForPair(
         playerObj,
         rivalObj,
