@@ -2,7 +2,7 @@
  * Units Bet Calculator — Birdies/Eagles/Albatross bilateral comparison
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import {
   BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll, shouldCalculatePair,
 } from './shared';
@@ -13,7 +13,7 @@ export const calculateUnitsBets = (
   config: BetConfig,
   course: GolfCourse
 ): BetSummary[] => {
-  if (!config.units.enabled || config.units.valuePerPoint <= 0) return [];
+  if (!isBetEnabledAnywhere(config, 'units')) return [];
   
   const summaries: BetSummary[] = [];
   
@@ -47,6 +47,7 @@ export const calculateUnitsBets = (
     
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
+    if (!resolved.units.enabled || resolved.units.valuePerPoint <= 0) return;
     const participatingPlayers = resolveParticipantsWithOneVsAll(resolved.units, players, resolved.units.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
@@ -56,7 +57,7 @@ export const calculateUnitsBets = (
         const playerA = participatingPlayers[i];
         const playerB = participatingPlayers[j];
         if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-        if (!shouldCalculatePair(config.units, playerA.id, playerB.id)) continue;
+        if (!shouldCalculatePair(resolved.units, playerA.id, playerB.id)) continue;
         
         const unitsA = countUnits(playerA.id);
         const unitsB = countUnits(playerB.id);
@@ -68,7 +69,7 @@ export const calculateUnitsBets = (
         const hasAnyUnits = unitsA.positive > 0 || unitsA.negative > 0 || unitsB.positive > 0 || unitsB.negative > 0;
         
         if (diff !== 0 || hasAnyUnits) {
-          const amount = diff * config.units.valuePerPoint;
+          const amount = diff * resolved.units.valuePerPoint;
           summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount, segment: 'total', description: `${netA} vs ${netB} unidades (${unitsA.positive}+ ${unitsA.negative}- vs ${unitsB.positive}+ ${unitsB.negative}-)` });
           summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -amount, segment: 'total', description: `${netB} vs ${netA} unidades (${unitsB.positive}+ ${unitsB.negative}- vs ${unitsA.positive}+ ${unitsA.negative}-)` });
         }

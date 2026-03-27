@@ -2,7 +2,7 @@
  * Manchas Bet Calculator — differential bilateral comparison
  */
 import { Player, PlayerScore, BetConfig } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import {
   BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll, shouldCalculatePair,
 } from './shared';
@@ -12,7 +12,7 @@ export const calculateManchasBets = (
   scores: Map<string, PlayerScore[]>,
   config: BetConfig
 ): BetSummary[] => {
-  if (!config.manchas.enabled || config.manchas.valuePerPoint <= 0) return [];
+  if (!isBetEnabledAnywhere(config, 'manchas')) return [];
   
   const summaries: BetSummary[] = [];
   
@@ -38,6 +38,7 @@ export const calculateManchasBets = (
     
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
+    if (!resolved.manchas.enabled || resolved.manchas.valuePerPoint <= 0) return;
     const participatingPlayers = resolveParticipantsWithOneVsAll(resolved.manchas, players, resolved.manchas.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
@@ -46,16 +47,16 @@ export const calculateManchasBets = (
       for (let j = i + 1; j < participatingPlayers.length; j++) {
         const playerA = participatingPlayers[i];
         const playerB = participatingPlayers[j];
-        if (!shouldCalculatePair(config.manchas, playerA.id, playerB.id)) continue;
+        if (!shouldCalculatePair(resolved.manchas, playerA.id, playerB.id)) continue;
         
         const manchasA = countManchas(playerA.id);
         const manchasB = countManchas(playerB.id);
         const diff = manchasB - manchasA;
         
         if (diff !== 0) {
-          const amount = diff * config.manchas.valuePerPoint;
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Manchas', amount, segment: 'total', description: `${manchasA} vs ${manchasB} manchas`, units: Math.abs(diff), baseUnitAmount: config.manchas.valuePerPoint });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Manchas', amount: -amount, segment: 'total', description: `${manchasB} vs ${manchasA} manchas`, units: Math.abs(diff), baseUnitAmount: config.manchas.valuePerPoint });
+          const amount = diff * resolved.manchas.valuePerPoint;
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Manchas', amount, segment: 'total', description: `${manchasA} vs ${manchasB} manchas`, units: Math.abs(diff), baseUnitAmount: resolved.manchas.valuePerPoint });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Manchas', amount: -amount, segment: 'total', description: `${manchasB} vs ${manchasA} manchas`, units: Math.abs(diff), baseUnitAmount: resolved.manchas.valuePerPoint });
         }
       }
     }

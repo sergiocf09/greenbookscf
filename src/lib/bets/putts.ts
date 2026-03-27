@@ -3,7 +3,7 @@
  */
 import { Player, PlayerScore, BetConfig } from '@/types/golf';
 import { getSegmentHoleRanges } from '../handicapUtils';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll, shouldCalculatePair } from './shared';
 
 export const calculatePuttsBets = (
@@ -12,7 +12,7 @@ export const calculatePuttsBets = (
   config: BetConfig,
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
-  if (!config.putts?.enabled) return [];
+  if (!isBetEnabledAnywhere(config, 'putts')) return [];
   
   const playersByGroup = groupPlayersByGroup(players);
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
@@ -25,11 +25,7 @@ export const calculatePuttsBets = (
   const summaries: BetSummary[] = [];
   const ranges = getSegmentHoleRanges(startingHole);
   
-  const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
-    { key: 'front', holes: ranges.front, amount: config.putts.frontAmount || 0, label: 'Putts Front 9' },
-    { key: 'back', holes: ranges.back, amount: config.putts.backAmount || 0, label: 'Putts Back 9' },
-    { key: 'total', holes: [ranges.front[0], ranges.back[1]], amount: config.putts.totalAmount || 0, label: 'Putts Total' },
-  ];
+  // Note: segment amounts are resolved per-pair inside the loop below
 
   const getPairOverrideAmount = (playerAId: string, playerBId: string, label: string): number | undefined => {
     const overrides = config.betOverrides;
@@ -50,7 +46,18 @@ export const calculatePuttsBets = (
       const playerA = participatingPlayers[i];
       const playerB = participatingPlayers[j];
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
-      if (!shouldCalculatePair(config.putts, playerA.id, playerB.id)) continue;
+
+      // Resolve group-specific config for this pair
+      const pairGroupId = playerA.groupId || playerB.groupId;
+      const rc = resolveConfigForGroup(config, pairGroupId);
+      if (!rc.putts?.enabled) continue;
+      if (!shouldCalculatePair(rc.putts, playerA.id, playerB.id)) continue;
+
+      const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
+        { key: 'front', holes: ranges.front, amount: rc.putts.frontAmount || 0, label: 'Putts Front 9' },
+        { key: 'back', holes: ranges.back, amount: rc.putts.backAmount || 0, label: 'Putts Back 9' },
+        { key: 'total', holes: [ranges.front[0], ranges.back[1]], amount: rc.putts.totalAmount || 0, label: 'Putts Total' },
+      ];
       
       segments.forEach(({ key, holes, amount, label }) => {
         const effectiveAmount = getPairOverrideAmount(playerA.id, playerB.id, label) ?? amount;

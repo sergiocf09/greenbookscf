@@ -2,7 +2,7 @@
  * Zoológico Bet Calculator — last-player-pays animal bets
  */
 import { Player, BetConfig, ZooAnimalType, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
 
 export interface ZoologicoAnimalResult {
@@ -111,19 +111,20 @@ export const calculateZoologicoBets = (
   players: Player[],
   config: BetConfig,
 ): BetSummary[] => {
-  if (!config.zoologico?.enabled || players.length < 2) return [];
+  if (!isBetEnabledAnywhere(config, 'zoologico') || players.length < 2) return [];
   const allSummaries: BetSummary[] = [];
-  const enabledAnimals = config.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
   const playersByGroup = groupPlayersByGroup(players);
 
   playersByGroup.forEach(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
+    if (!resolved.zoologico?.enabled) return;
+    const enabledAnimals = resolved.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
     const participatingPlayers = resolveParticipantsForGroup(players, resolved.zoologico.participantIds, groupPlayers);
     if (participatingPlayers.length < 2) return;
 
     enabledAnimals.forEach(animalType => {
-      const result = calculateZoologicoAnimalResult(animalType, groupPlayers, config.zoologico);
+      const result = calculateZoologicoAnimalResult(animalType, groupPlayers, resolved.zoologico);
       if (!result || !result.loser || result.totalOccurrences === 0) return;
       groupPlayers.forEach(player => {
         if (player.id === result.loser!.playerId) return;

@@ -3,7 +3,7 @@
  */
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
 import { getSegmentHoleRanges } from '../handicapUtils';
-import { resolveConfigForGroup } from '../groupBetOverrides';
+import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import {
   BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll,
   shouldCalculatePair, getAdjustedScoresForPair, getHoleScore,
@@ -19,7 +19,7 @@ export const calculatePressureBets = (
   bilateralHandicaps?: BilateralHandicap[],
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
-  if (!config.pressures.enabled) return [];
+  if (!isBetEnabledAnywhere(config, 'pressures')) return [];
 
   const getPairOnlyMatch = (pA: string, pB: string): boolean => {
     const pairKey = [pA, pB].sort().join('_');
