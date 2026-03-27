@@ -1331,6 +1331,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   useEffect(() => {
     setSelectedRival(null);
+    // Clear the balance map so new BilateralDetails populate it fresh
+    bilateralBalanceMapRef.current.clear();
   }, [balanceBasePlayerId]);
   
   // Get grouped summaries for selected pair
