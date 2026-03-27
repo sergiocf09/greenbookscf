@@ -2049,62 +2049,64 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Cross-Group Handicap Widget — shown when a rival from another group is selected */}
-      {selectedRival && basePlayer && (() => {
-        const rivalObj = rivals.find(p => p.id === selectedRival);
-        const isCrossGroupSelected = rivalObj && selectedCrossGroupPlayers.some(p => p.id === selectedRival);
-        if (!isCrossGroupSelected || !rivalObj) return null;
+      {/* Bilateral Detail Views — render ALL rivals so betTypeGroups totals populate the cache.
+          Only the selected rival is visible; the rest compute in the background (hidden). */}
+      {basePlayer && rivals.map(rival => {
+        const isVisible = selectedRival === rival.id;
         return (
-          <CrossGroupHandicapWidget
-            basePlayer={basePlayer}
-            rival={rivalObj}
-            getStrokesForLocalPair={getStrokesForLocalPair}
-            setStrokesForLocalPair={setStrokesForLocalPair}
-            isHistorical={isHistorical}
-          />
+          <div key={rival.id} style={isVisible ? undefined : { display: 'none' }}>
+            {/* Cross-Group Handicap Widget */}
+            {isVisible && (() => {
+              const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
+              if (!isCrossGroupSelected) return null;
+              return (
+                <CrossGroupHandicapWidget
+                  basePlayer={basePlayer}
+                  rival={rival}
+                  getStrokesForLocalPair={getStrokesForLocalPair}
+                  setStrokesForLocalPair={setStrokesForLocalPair}
+                  isHistorical={isHistorical}
+                />
+              );
+            })()}
+            <BilateralDetail
+              players={players}
+              groupPlayers={balanceVsPlayers}
+              allPlayers={allPlayersForCalculations}
+              player={basePlayer}
+              rival={rival}
+              groupedSummaries={getGroupedSummaries(rival.id)}
+              totalBalance={getRivalBalance(rival.id)}
+              expandedTypes={expandedTypes}
+              onToggleExpand={toggleExpanded}
+              bilateralHandicap={getBilateralHandicap(basePlayer.id, rival.id)}
+              onUpdateBilateralHandicap={updateBilateralHandicap}
+              betConfig={betConfig}
+              effectiveBetConfig={effectiveBetConfig}
+              confirmedScores={confirmedScores}
+              course={course}
+              allScores={scores}
+              onBetConfigChange={onBetConfigChange}
+              basePlayerId={basePlayerId}
+              confirmedHoles={confirmedHoles}
+              startingHole={startingHole}
+              getStrokesForLocalPair={getStrokesForLocalPair}
+              snapshotVsBalance={snapshotBalances ? getRivalBalance(rival.id) : undefined}
+              snapshotPairBreakdowns={snapshotPairBreakdowns}
+              snapshotPairSegmentResults={snapshotPairSegmentResults}
+              isHistorical={isHistorical}
+              onComputedBalance={(balance) => {
+                setRivalBalanceCache(prev => {
+                  if (prev.get(rival.id) === balance) return prev;
+                  const next = new Map(prev);
+                  next.set(rival.id, balance);
+                  return next;
+                });
+              }}
+            />
+          </div>
         );
-      })()}
-      
-      {/* Bilateral Detail View */}
-      {selectedRival && basePlayer && rivals.find(p => p.id === selectedRival) && (
-        <BilateralDetail
-          players={players}
-          groupPlayers={balanceVsPlayers}
-          allPlayers={allPlayersForCalculations}
-          player={basePlayer}
-          rival={rivals.find(p => p.id === selectedRival)!}
-          groupedSummaries={getGroupedSummaries(selectedRival)}
-          totalBalance={getRivalBalance(selectedRival)}
-          expandedTypes={expandedTypes}
-          onToggleExpand={toggleExpanded}
-          bilateralHandicap={getBilateralHandicap(basePlayer.id, selectedRival)}
-          onUpdateBilateralHandicap={updateBilateralHandicap}
-          betConfig={betConfig}
-          effectiveBetConfig={effectiveBetConfig}
-          confirmedScores={confirmedScores}
-          course={course}
-          allScores={scores}
-          onBetConfigChange={onBetConfigChange}
-          basePlayerId={basePlayerId}
-          confirmedHoles={confirmedHoles}
-          startingHole={startingHole}
-          getStrokesForLocalPair={getStrokesForLocalPair}
-          snapshotVsBalance={snapshotBalances ? getRivalBalance(selectedRival) : undefined}
-          snapshotPairBreakdowns={snapshotPairBreakdowns}
-          snapshotPairSegmentResults={snapshotPairSegmentResults}
-          isHistorical={isHistorical}
-          onComputedBalance={(balance) => {
-            if (!selectedRival) return;
-            setRivalBalanceCache(prev => {
-              if (prev.get(selectedRival) === balance) return prev;
-              const next = new Map(prev);
-              next.set(selectedRival, balance);
-              return next;
-            });
-          }}
-        />
-
-      )}
+      })}
 
       {/* All Carritos Results — only render cards that have actual data */}
       {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
