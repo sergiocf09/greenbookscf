@@ -1707,7 +1707,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               // For 'all' mode cross-group, still use corrected balance for rivals not in snapshot
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCorrectedBilateralBalance(player.id, rival.id)) : getCorrectedBilateralBalance(player.id, rival.id));
+                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCachedBilateralBalance(player.id, rival.id)) : getCachedBilateralBalance(player.id, rival.id));
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
@@ -1843,7 +1843,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getCachedBilateralBalance(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
