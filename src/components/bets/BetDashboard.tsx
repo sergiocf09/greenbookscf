@@ -1173,13 +1173,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       
       // Get Dashboard override amounts for this pair
       const overrides = effectiveBetConfig.betOverrides || [];
+      // CRITICAL: Must match BilateralDetail's betTypeGroups override resolution exactly.
+      // Overrides may be stored with profileId instead of local id, so check both.
+      const playerProfileId = playerObj?.profileId;
+      const rivalProfileId = rivalObj?.profileId;
       const findOverride = (betType: string): number | undefined => {
         const match = overrides.find(o =>
           o.betType === betType &&
           o.enabled !== false &&
           o.amountOverride !== undefined &&
           ((o.playerAId === playerId && o.playerBId === rivalId) ||
-           (o.playerAId === rivalId && o.playerBId === playerId))
+           (o.playerAId === rivalId && o.playerBId === playerId) ||
+           (playerProfileId && (o.playerAId === playerProfileId || o.playerBId === playerProfileId) &&
+            (o.playerAId === rivalId || o.playerBId === rivalId)) ||
+           (rivalProfileId && (o.playerAId === rivalProfileId || o.playerBId === rivalProfileId) &&
+            (o.playerAId === playerId || o.playerBId === playerId)) ||
+           (playerProfileId && rivalProfileId && (
+             (o.playerAId === playerProfileId && o.playerBId === rivalProfileId) ||
+             (o.playerAId === rivalProfileId && o.playerBId === playerProfileId)
+           )))
         );
         return match?.amountOverride;
       };
