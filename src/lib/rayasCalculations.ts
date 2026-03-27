@@ -1410,13 +1410,39 @@ export const calculateRayasBets = (
       // Pass resolvedConfig so G2+ overrides are respected
       const result = getRayasDetailForPair(playerA, playerB, scores, resolvedConfig, course, bilateralHandicaps, sameGroupPlayers, startingHole);
       
+      // ── UNIFIED CALCULATION (mirrors getAuthoritativeRayasBalance exactly) ──
+      // Instead of using result.frontAmountA/backAmountA/medalTotalAmountA (which
+      // are calculated internally by calculateRayasForPair using getEffectiveSegmentConfig
+      // with different fallbacks and override resolution), we recalculate amounts
+      // from the rayas COUNTS × the same resolved override values that the live UI
+      // (getAuthoritativeRayasBalance) uses. This guarantees snapshot == live UI.
+      const pairAmountOverrides = getRayasAmountOverrides(resolvedConfig, playerA.id, playerB.id);
+      const unifiedFrontValue = pairAmountOverrides.frontValue ?? resolvedConfig.rayas?.frontValue ?? 0;
+      const unifiedBackValue = pairAmountOverrides.backValue ?? resolvedConfig.rayas?.backValue ?? 0;
+      const unifiedMedalTotalValue = pairAmountOverrides.medalTotalValue ?? resolvedConfig.rayas?.medalTotalValue ?? 0;
+
+      // Count rayas per segment from unified details (includes Oyes)
+      let unifiedFrontRayas = 0;
+      let unifiedBackRayas = 0;
+      let unifiedMedalTotalRayas = 0;
+      result.details.forEach(d => {
+        if (d.appliedSegment === 'front') unifiedFrontRayas += d.rayasCount || 0;
+        else if (d.appliedSegment === 'back') unifiedBackRayas += d.rayasCount || 0;
+        else if (d.appliedSegment === 'total') unifiedMedalTotalRayas += d.rayasCount || 0;
+      });
+
+      const unifiedFrontAmountA = unifiedFrontRayas * unifiedFrontValue;
+      const unifiedBackAmountA = unifiedBackRayas * unifiedBackValue;
+      const unifiedMedalTotalAmountA = unifiedMedalTotalRayas * unifiedMedalTotalValue;
+      // ── END UNIFIED CALCULATION ──
+      
       // Front rayas
-      if (result.frontAmountA !== 0) {
+      if (unifiedFrontAmountA !== 0) {
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Rayas Front',
-          amount: result.frontAmountA,
+          amount: unifiedFrontAmountA,
           segment: 'front',
           description: `${result.frontRayasA} vs ${result.frontRayasB} rayas`,
         });
@@ -1424,19 +1450,19 @@ export const calculateRayasBets = (
           playerId: playerB.id,
           vsPlayer: playerA.id,
           betType: 'Rayas Front',
-          amount: -result.frontAmountA,
+          amount: -unifiedFrontAmountA,
           segment: 'front',
           description: `${result.frontRayasB} vs ${result.frontRayasA} rayas`,
         });
       }
       
       // Back rayas
-      if (result.backAmountA !== 0) {
+      if (unifiedBackAmountA !== 0) {
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Rayas Back',
-          amount: result.backAmountA,
+          amount: unifiedBackAmountA,
           segment: 'back',
           description: `${result.backRayasA} vs ${result.backRayasB} rayas`,
         });
@@ -1444,19 +1470,19 @@ export const calculateRayasBets = (
           playerId: playerB.id,
           vsPlayer: playerA.id,
           betType: 'Rayas Back',
-          amount: -result.backAmountA,
+          amount: -unifiedBackAmountA,
           segment: 'back',
           description: `${result.backRayasB} vs ${result.backRayasA} rayas`,
         });
       }
       
       // Medal Total raya
-      if (result.medalTotalAmountA !== 0) {
+      if (unifiedMedalTotalAmountA !== 0) {
         summaries.push({
           playerId: playerA.id,
           vsPlayer: playerB.id,
           betType: 'Rayas Medal Total',
-          amount: result.medalTotalAmountA,
+          amount: unifiedMedalTotalAmountA,
           segment: 'total',
           description: result.medalTotalRayaWinner === playerA.id ? 'Ganador Medal Total' : '',
         });
@@ -1464,7 +1490,7 @@ export const calculateRayasBets = (
           playerId: playerB.id,
           vsPlayer: playerA.id,
           betType: 'Rayas Medal Total',
-          amount: -result.medalTotalAmountA,
+          amount: -unifiedMedalTotalAmountA,
           segment: 'total',
           description: result.medalTotalRayaWinner === playerB.id ? 'Ganador Medal Total' : '',
         });
