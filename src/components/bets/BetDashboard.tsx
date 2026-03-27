@@ -111,6 +111,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
+  const [computedRivalBalances, setComputedRivalBalances] = useState<Map<string, number>>(new Map());
+
+  const handleComputedBalance = useCallback((rivalId: string, balance: number) => {
+    setComputedRivalBalances(prev => {
+      if (prev.get(rivalId) === balance) return prev;
+      const next = new Map(prev);
+      next.set(rivalId, balance);
+      return next;
+    });
+  }, []);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
@@ -3582,6 +3592,7 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
   snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
   isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
+  onComputedBalance?: (rivalId: string, balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
