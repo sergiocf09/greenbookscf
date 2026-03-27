@@ -3591,7 +3591,7 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
-  onComputedBalance?: (balance: number) => void;
+  
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -3620,7 +3620,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  onComputedBalance,
+  
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4857,10 +4857,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups]);
 
-  // Report computed total to parent so avatar can stay in sync with header
-  useEffect(() => {
-    onComputedBalance?.(computedTotalBalance);
-  }, [computedTotalBalance, onComputedBalance]);
 
 
 
