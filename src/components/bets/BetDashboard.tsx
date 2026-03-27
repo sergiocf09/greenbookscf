@@ -2041,26 +2041,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Bilateral Detail Views — render ALL rivals so betTypeGroups totals populate the cache.
-          Only the selected rival is visible; the rest compute in the background (hidden). */}
-      {basePlayer && rivals.map(rival => {
-        const isVisible = selectedRival === rival.id;
+      {/* Bilateral Detail View — only render the selected rival */}
+      {basePlayer && selectedRival && (() => {
+        const rival = rivals.find(r => r.id === selectedRival);
+        if (!rival) return null;
+        const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
         return (
-          <div key={rival.id} style={isVisible ? undefined : { display: 'none' }}>
-            {/* Cross-Group Handicap Widget */}
-            {isVisible && (() => {
-              const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
-              if (!isCrossGroupSelected) return null;
-              return (
-                <CrossGroupHandicapWidget
-                  basePlayer={basePlayer}
-                  rival={rival}
-                  getStrokesForLocalPair={getStrokesForLocalPair}
-                  setStrokesForLocalPair={setStrokesForLocalPair}
-                  isHistorical={isHistorical}
-                />
-              );
-            })()}
+          <>
+            {isCrossGroupSelected && (
+              <CrossGroupHandicapWidget
+                basePlayer={basePlayer}
+                rival={rival}
+                getStrokesForLocalPair={getStrokesForLocalPair}
+                setStrokesForLocalPair={setStrokesForLocalPair}
+                isHistorical={isHistorical}
+              />
+            )}
             <BilateralDetail
               players={players}
               groupPlayers={balanceVsPlayers}
@@ -2087,21 +2083,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairBreakdowns={snapshotPairBreakdowns}
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
-              onComputedBalance={(balance) => {
-                const keyAB = getCacheKey(basePlayer.id, rival.id);
-                const keyBA = getCacheKey(rival.id, basePlayer.id);
-                setRivalBalanceCache(prev => {
-                  if (prev.get(keyAB) === balance && prev.get(keyBA) === -balance) return prev;
-                  const next = new Map(prev);
-                  next.set(keyAB, balance);
-                  next.set(keyBA, -balance); // Reverse direction for Tabla General
-                  return next;
-                });
-              }}
             />
-          </div>
+          </>
         );
-      })}
+      })()}
 
       {/* All Carritos Results — only render cards that have actual data */}
       {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
