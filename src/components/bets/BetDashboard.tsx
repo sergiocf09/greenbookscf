@@ -3584,7 +3584,6 @@ interface BilateralDetailProps {
   snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
   isHistorical?: boolean;
 }
-}
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
   players,
