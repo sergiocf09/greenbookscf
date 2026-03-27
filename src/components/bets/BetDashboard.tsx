@@ -1339,10 +1339,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return getCorrectedBilateralBalance(playerId, rivalId);
   }, [getCorrectedBilateralBalance, balanceMapVersion]);
 
-  useEffect(() => {
+  // Use useLayoutEffect to clear the map BEFORE children's useLayoutEffect fires.
+  // This prevents a race where useEffect (post-paint) clears values that children
+  // already populated via useLayoutEffect (pre-paint).
+  React.useLayoutEffect(() => {
     setSelectedRival(null);
     // Clear the balance map so new BilateralDetails populate it fresh
     bilateralBalanceMapRef.current.clear();
+    setBalanceMapVersion(v => v + 1);
   }, [balanceBasePlayerId]);
   
   // Get grouped summaries for selected pair
