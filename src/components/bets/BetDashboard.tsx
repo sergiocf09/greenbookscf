@@ -2085,8 +2085,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          
+          onComputedBalance={(balance) => setRivalComputedBalance({ rivalId: selectedRival, balance })}
         />
+
       )}
 
       {/* All Carritos Results — only render cards that have actual data */}
