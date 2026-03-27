@@ -1671,8 +1671,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               if (snapshotTotal !== null) {
                 totalBalance = snapshotTotal;
               } else {
+                // Sum of balances already computed by BilateralDetail (same source as avatars)
+                // plus team bets (carritos, team pressures) not included in bilateral individual
                 const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-                const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
+                const individualBalance = groupRivalIds.reduce((sum, rivalId) => {
+                  // Use the balance computed by BilateralDetail if available
+                  // to guarantee avatar + total use exactly the same number
+                  return sum + (computedRivalBalances.has(rivalId)
+                    ? computedRivalBalances.get(rivalId)!
+                    : getCorrectedBilateralBalance(player.id, rivalId));
+                }, 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
                 totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
