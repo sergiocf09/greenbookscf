@@ -1196,7 +1196,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let medalGeneralTotal = 0;
     const isMedalGeneralDisabled = isBetDisabledForPair('Medal General', ['medalGeneral']);
     
-    if (betConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(betConfig.medalGeneral?.participantIds, playerId, rivalId)) {
+    if (resolvedPairConfig.medalGeneral?.enabled && playerObj && rivalObj && !isMedalGeneralDisabled && bothParticipateGlobal(resolvedPairConfig.medalGeneral?.participantIds, playerId, rivalId)) {
       const medalResult = getMedalGeneralBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -1214,7 +1214,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     let stablefordTotal = 0;
     const isStablefordDisabled = isBetDisabledForPair('Stableford', ['stableford']);
     
-    if (betConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(betConfig.stableford?.participantIds, playerId, rivalId)) {
+    if (resolvedPairConfig.stableford?.enabled && playerObj && rivalObj && !isStablefordDisabled && bothParticipateGlobal(resolvedPairConfig.stableford?.participantIds, playerId, rivalId)) {
       const stablefordResult = getStablefordBilateralResult(
         allPlayersForCalculations,
         playerObj,
@@ -1231,7 +1231,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // Calculate Skins Grupal from betSummaries (group bet, already pair-level)
     let skinsGrupalTotal = 0;
     const isSkinsGrupalDisabled = isBetDisabledForPair('Skins Grupal', ['skinsGrupal']);
-    if (betConfig.skinsGrupal?.enabled && !isSkinsGrupalDisabled) {
+    if (resolvedPairConfig.skinsGrupal?.enabled && !isSkinsGrupalDisabled) {
       skinsGrupalTotal = betSummaries
         .filter(s => s.playerId === playerId && s.vsPlayer === rivalId && s.betType.startsWith('Skins Grupal'))
         .reduce((sum, s) => sum + s.amount, 0);
