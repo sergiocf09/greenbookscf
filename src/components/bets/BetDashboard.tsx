@@ -1308,13 +1308,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
+  // Stores the computed balance from BilateralDetail (sum of visible betTypeGroups).
+  // When the detail is open for a rival, this overrides the avatar balance to guarantee
+  // avatar == header == sum(rows). Cleared when selectedRival changes.
+  const [rivalComputedBalance, setRivalComputedBalance] = useState<{ rivalId: string; balance: number } | null>(null);
+
   // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
-  // HISTORICAL: Use getCorrectedBilateralBalance which filters the ledger per-pair and excludes team bets.
-  //   This ensures avatar balance == bilateral header == sum(detail rows) with NO discrepancy.
-  //   Note: snapshotBalances.vsBalances.netAmount is intentionally NOT used here because in older
-  //   snapshots (without pairBreakdowns) it may include team bets, causing inconsistency.
-  // LIVE: Use override-aware calculation.
+  // If BilateralDetail has reported a computed balance for this rival, use it (single source of truth).
+  // Otherwise fall back to getCorrectedBilateralBalance.
   const getRivalBalance = (rivalId: string): number => {
+    if (rivalComputedBalance && rivalComputedBalance.rivalId === rivalId) {
+      return rivalComputedBalance.balance;
+    }
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
   
