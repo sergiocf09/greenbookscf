@@ -1585,11 +1585,40 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
-  // Deterministic bilateral balance: always computed synchronously from the engine.
-  // NO async cache — guarantees avatars, headers, Tabla General, and snapshots
-  // all see the exact same values at every render.
+  // ═══════════════════════════════════════════════════════════════════
+  // SINGLE SOURCE OF TRUTH: bilateral balances from BilateralDetail.
+  // Each BilateralDetail computes its total (betTypeGroups sum) and
+  // reports it here via onComputedBalance. This map is the ONLY source
+  // used for avatars and Tabla General — no separate getCorrectedBilateralBalance.
+  // ═══════════════════════════════════════════════════════════════════
+  const bilateralBalanceMapRef = useRef<Map<string, number>>(new Map());
+  const [balanceMapVersion, setBalanceMapVersion] = useState(0);
+
+  const handleComputedBalance = useCallback((baseId: string, rivalId: string, balance: number) => {
+    const key = `${baseId}:${rivalId}`;
+    const reverseKey = `${rivalId}:${baseId}`;
+    const prev = bilateralBalanceMapRef.current;
+    const changed = prev.get(key) !== balance || prev.get(reverseKey) !== -balance;
+    if (changed) {
+      prev.set(key, balance);
+      prev.set(reverseKey, -balance);
+      // Trigger synchronous re-render so avatars update before paint
+      setBalanceMapVersion(v => v + 1);
+    }
+  }, []);
+
+  // Read bilateral balance: prefer the map (single source of truth from BilateralDetail),
+  // fall back to getCorrectedBilateralBalance for pairs not yet rendered.
+  const getBilateralBalanceFromMap = useCallback((playerId: string, rivalId: string): number => {
+    const key = `${playerId}:${rivalId}`;
+    const cached = bilateralBalanceMapRef.current.get(key);
+    if (cached !== undefined) return cached;
+    // Fallback for pairs whose BilateralDetail hasn't rendered yet
+    return getCorrectedBilateralBalance(playerId, rivalId);
+  }, [getCorrectedBilateralBalance, balanceMapVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const getRivalBalance = (rivalId: string): number => {
-    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+    return getBilateralBalanceFromMap(basePlayer?.id || '', rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
