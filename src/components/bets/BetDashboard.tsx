@@ -1768,7 +1768,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
                         const vsIndividualBalance = isHistorical
                           ? (historicalBreakdown?.individual ?? 0)
-                          : getCorrectedBilateralBalance(player.id, other.id);
+                          : getCachedBilateralBalance(player.id, other.id);
                         const vsCarritosBalance = isHistorical
                           ? (historicalBreakdown?.carritos ?? 0)
                           : getCarritosBalanceVsPlayer(player.id, other.id);
@@ -2103,10 +2103,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
               onComputedBalance={(balance) => {
+                const key = getCacheKey(basePlayer.id, rival.id);
                 setRivalBalanceCache(prev => {
-                  if (prev.get(rival.id) === balance) return prev;
+                  if (prev.get(key) === balance) return prev;
                   const next = new Map(prev);
-                  next.set(rival.id, balance);
+                  next.set(key, balance);
                   return next;
                 });
               }}
