@@ -1566,17 +1566,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Single source of truth for all bilateral balances: populated by rendering
   // ALL BilateralDetail components (hidden for non-selected rivals).
-  // Each BilateralDetail computes betTypeGroups (the same rows shown in the UI)
-  // and reports the sum via onComputedBalance. No clicks needed — all render at once.
+  // Uses composite keys "baseId:rivalId" so the cache is NEVER cleared — switching
+  // basePlayer instantly shows cached values from a previous visit (no flash).
   const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
 
-  useEffect(() => {
-    setRivalBalanceCache(new Map());
-    setSelectedRival(null);
-  }, [balanceBasePlayerId]);
+  const getCacheKey = (baseId: string, rivalId: string) => `${baseId}:${rivalId}`;
 
+  // Read bilateral balance from cache (exact betTypeGroups sum) with fallback
   const getRivalBalance = (rivalId: string): number => {
-    return rivalBalanceCache.get(rivalId) ?? getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+    const key = getCacheKey(basePlayer?.id || '', rivalId);
+    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
+    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+  };
+
+  // Read bilateral balance from cache for ANY player pair (used by Tabla General)
+  const getCachedBilateralBalance = (playerId: string, rivalId: string): number => {
+    const key = getCacheKey(playerId, rivalId);
+    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
+    return getCorrectedBilateralBalance(playerId, rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
@@ -1676,7 +1683,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 totalBalance = snapshotTotal;
               } else {
                 const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-                const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
+                const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getCachedBilateralBalance(player.id, rivalId), 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
                 totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
@@ -1700,7 +1707,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               // For 'all' mode cross-group, still use corrected balance for rivals not in snapshot
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCorrectedBilateralBalance(player.id, rival.id)) : getCorrectedBilateralBalance(player.id, rival.id));
+                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCachedBilateralBalance(player.id, rival.id)) : getCachedBilateralBalance(player.id, rival.id));
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
@@ -1761,7 +1768,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
                         const vsIndividualBalance = isHistorical
                           ? (historicalBreakdown?.individual ?? 0)
-                          : getCorrectedBilateralBalance(player.id, other.id);
+                          : getCachedBilateralBalance(player.id, other.id);
                         const vsCarritosBalance = isHistorical
                           ? (historicalBreakdown?.carritos ?? 0)
                           : getCarritosBalanceVsPlayer(player.id, other.id);
@@ -1836,7 +1843,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + getCorrectedPlayerBalance(p.id, rivalIds) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getCachedBilateralBalance(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
@@ -2096,10 +2103,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
               onComputedBalance={(balance) => {
+                const keyAB = getCacheKey(basePlayer.id, rival.id);
+                const keyBA = getCacheKey(rival.id, basePlayer.id);
                 setRivalBalanceCache(prev => {
-                  if (prev.get(rival.id) === balance) return prev;
+                  if (prev.get(keyAB) === balance && prev.get(keyBA) === -balance) return prev;
                   const next = new Map(prev);
-                  next.set(rival.id, balance);
+                  next.set(keyAB, balance);
+                  next.set(keyBA, -balance); // Reverse direction for Tabla General
                   return next;
                 });
               }}
