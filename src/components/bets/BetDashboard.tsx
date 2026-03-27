@@ -1742,7 +1742,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               // For 'all' mode cross-group, still use corrected balance for rivals not in snapshot
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
-                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getCorrectedBilateralBalance(player.id, rival.id)) : getCorrectedBilateralBalance(player.id, rival.id));
+                return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getBilateralBalanceFromMap(player.id, rival.id)) : getBilateralBalanceFromMap(player.id, rival.id));
               }, 0);
               const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
               
@@ -1803,7 +1803,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const historicalBreakdown = getHistoricalPairBreakdown(player.id, other.id);
                         const vsIndividualBalance = isHistorical
                           ? (historicalBreakdown?.individual ?? 0)
-                          : getCorrectedBilateralBalance(player.id, other.id);
+                          : getBilateralBalanceFromMap(player.id, other.id);
                         const vsCarritosBalance = isHistorical
                           ? (historicalBreakdown?.carritos ?? 0)
                           : getCarritosBalanceVsPlayer(player.id, other.id);
@@ -1878,7 +1878,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getCorrectedBilateralBalance(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
