@@ -4978,11 +4978,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           </div>
           <div className={cn(
             'text-2xl font-bold flex items-center gap-1',
-            computedTotalBalance > 0 ? 'text-green-600' : computedTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
+            totalBalance > 0 ? 'text-green-600' : totalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
-            {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${Math.abs(computedTotalBalance)}
+            {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
+            {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
+            ${Math.abs(totalBalance)}
           </div>
         </div>
         
