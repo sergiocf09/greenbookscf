@@ -3600,7 +3600,6 @@ interface BilateralDetailProps {
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
-  onComputedBalance?: (balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
