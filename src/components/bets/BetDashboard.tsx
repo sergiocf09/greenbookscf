@@ -2076,7 +2076,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          onComputedBalance={handleRivalComputedBalance}
+          
         />
       )}
 
