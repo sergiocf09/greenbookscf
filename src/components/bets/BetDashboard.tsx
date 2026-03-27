@@ -2091,14 +2091,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Bilateral Detail View — only render the selected rival */}
-      {basePlayer && selectedRival && (() => {
-        const rival = rivals.find(r => r.id === selectedRival);
-        if (!rival) return null;
+      {/* ═══════════════════════════════════════════════════════════════════
+          SINGLE SOURCE OF TRUTH: Render ALL rivals' BilateralDetails.
+          Each computes its own total via betTypeGroups and reports it back
+          via onComputedBalance. Only the selected rival is VISIBLE; the
+          rest are hidden but still compute so the balance map is populated
+          for avatars and Tabla General.
+          ═══════════════════════════════════════════════════════════════════ */}
+      {basePlayer && rivals.map(rival => {
+        const isVisible = selectedRival === rival.id;
         const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
         return (
-          <>
-            {isCrossGroupSelected && (
+          <div key={rival.id} style={isVisible ? undefined : { display: 'none' }}>
+            {isVisible && isCrossGroupSelected && (
               <CrossGroupHandicapWidget
                 basePlayer={basePlayer}
                 rival={rival}
@@ -2133,10 +2138,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairBreakdowns={snapshotPairBreakdowns}
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
+              onComputedBalance={(balance) => handleComputedBalance(basePlayer.id, rival.id, balance)}
             />
-          </>
+          </div>
         );
-      })()}
+      })}
 
       {/* All Carritos Results — only render cards that have actual data */}
       {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
