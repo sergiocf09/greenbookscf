@@ -3642,7 +3642,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
-  
+  onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
