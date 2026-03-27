@@ -1387,11 +1387,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const snapB = isHistorical ? getSnapshotTotalBalance(b.id) : null;
       const balanceA = snapA !== null ? snapA : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
       })();
       const balanceB = snapB !== null ? snapB : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getCorrectedBilateralBalance(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
       })();
       return balanceB - balanceA;
     });
@@ -1400,7 +1400,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // For verification calculation, still use all players from current group
   const sortedPlayers = useMemo(() => {
     return getSortedPlayersForDisplay(players);
-  }, [players, betSummaries, allCarritosResults]);
+  }, [players, betSummaries, allCarritosResults, balanceMapVersion]);
 
   // Get player abbreviation with disambiguation
   const disambiguatedAbbrs = useMemo(() => disambiguateInitials(allPlayersForCalculations), [allPlayersForCalculations]);
