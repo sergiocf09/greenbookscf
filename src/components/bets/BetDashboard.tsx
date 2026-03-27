@@ -1564,8 +1564,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
-  // Single source of truth: precompute all bilateral balances for the current basePlayer.
-  // Both avatars and BilateralDetail header read from here — no callbacks, no clicks needed.
+  // Precompute bilateral balances for avatars (fallback).
+  // getCorrectedBilateralBalance may diverge slightly from betTypeGroups sum
+  // due to different participation logic. The rivalBalanceCache below overrides
+  // this with the exact value once the rival detail is rendered.
   const pairBalanceMap = useMemo(() => {
     const map = new Map<string, number>();
     if (!basePlayer) return map;
@@ -1575,7 +1577,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return map;
   }, [basePlayer?.id, rivals, betSummaries, confirmedScores, effectiveBetConfig, course, displayGroupIndex]);
 
+  // Cache of exact bilateral totals reported by BilateralDetail (sum of visible rows).
+  // Once a rival's detail is rendered, the exact total overrides the pairBalanceMap estimate.
+  // Cleared when basePlayer changes.
+  const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    setRivalBalanceCache(new Map());
+    setSelectedRival(null);
+  }, [balanceBasePlayerId]);
+
   const getRivalBalance = (rivalId: string): number => {
+    // Prefer exact total from BilateralDetail if available
+    if (rivalBalanceCache.has(rivalId)) {
+      return rivalBalanceCache.get(rivalId)!;
+    }
     return pairBalanceMap.get(rivalId) ?? 0;
   };
 
