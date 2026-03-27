@@ -2103,11 +2103,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
               onComputedBalance={(balance) => {
-                const key = getCacheKey(basePlayer.id, rival.id);
+                const keyAB = getCacheKey(basePlayer.id, rival.id);
+                const keyBA = getCacheKey(rival.id, basePlayer.id);
                 setRivalBalanceCache(prev => {
-                  if (prev.get(key) === balance) return prev;
+                  if (prev.get(keyAB) === balance && prev.get(keyBA) === -balance) return prev;
                   const next = new Map(prev);
-                  next.set(key, balance);
+                  next.set(keyAB, balance);
+                  next.set(keyBA, -balance); // Reverse direction for Tabla General
                   return next;
                 });
               }}
