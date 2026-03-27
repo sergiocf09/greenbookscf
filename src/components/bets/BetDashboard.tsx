@@ -1564,22 +1564,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return allRivals;
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
-  // Precompute bilateral balances for avatars (fallback).
-  // getCorrectedBilateralBalance may diverge slightly from betTypeGroups sum
-  // due to different participation logic. The rivalBalanceCache below overrides
-  // this with the exact value once the rival detail is rendered.
-  const pairBalanceMap = useMemo(() => {
-    const map = new Map<string, number>();
-    if (!basePlayer) return map;
-    for (const rival of rivals) {
-      map.set(rival.id, getCorrectedBilateralBalance(basePlayer.id, rival.id));
-    }
-    return map;
-  }, [basePlayer?.id, rivals, betSummaries, confirmedScores, effectiveBetConfig, course, displayGroupIndex]);
-
-  // Cache of exact bilateral totals reported by BilateralDetail (sum of visible rows).
-  // Once a rival's detail is rendered, the exact total overrides the pairBalanceMap estimate.
-  // Cleared when basePlayer changes.
+  // Single source of truth for all bilateral balances: populated by rendering
+  // ALL BilateralDetail components (hidden for non-selected rivals).
+  // Each BilateralDetail computes betTypeGroups (the same rows shown in the UI)
+  // and reports the sum via onComputedBalance. No clicks needed — all render at once.
   const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -1588,11 +1576,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [balanceBasePlayerId]);
 
   const getRivalBalance = (rivalId: string): number => {
-    // Prefer exact total from BilateralDetail if available
-    if (rivalBalanceCache.has(rivalId)) {
-      return rivalBalanceCache.get(rivalId)!;
-    }
-    return pairBalanceMap.get(rivalId) ?? 0;
+    return rivalBalanceCache.get(rivalId) ?? getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
