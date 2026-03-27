@@ -923,6 +923,7 @@ const Index = () => {
               if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
                 devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
               }
+            }
           }
         }
       }
