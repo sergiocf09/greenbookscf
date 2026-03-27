@@ -22,7 +22,7 @@ export const calculateMedalBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsWithOneVsAll(config.medal, players, resolved.medal.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(resolved.medal, players, resolved.medal.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];

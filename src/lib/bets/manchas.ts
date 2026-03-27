@@ -38,7 +38,7 @@ export const calculateManchasBets = (
     
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    const participatingPlayers = resolveParticipantsWithOneVsAll(config.manchas, players, resolved.manchas.participantIds, groupPlayers);
+    const participatingPlayers = resolveParticipantsWithOneVsAll(resolved.manchas, players, resolved.manchas.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
   
