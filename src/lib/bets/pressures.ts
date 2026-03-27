@@ -147,6 +147,9 @@ export const calculatePressureBets = (
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: backLabel, amount: -backAmountA, segment: 'back', description: backDisplayStrB, units: -backNetBets, baseUnitAmount: effectiveBackValue, multiplier: 1 });
       }
       
+      if (typeof window !== 'undefined') {
+        console.log(`[PRESSURES-MATCH18] pair=${playerA.name} vs ${playerB.name}, frontIsTied=${frontIsTied}, totalMatchAmount=${totalMatchAmount}, match18Unit=${match18Unit}, frontBets=${JSON.stringify(frontBets)}, backBets=${JSON.stringify(backBets)}`);
+      }
       if (!frontIsTied && totalMatchAmount > 0) {
         const total18Balance = frontBets[0] + backBets[0];
         let matchWinner = 0;
