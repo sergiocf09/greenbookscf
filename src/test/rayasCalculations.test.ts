@@ -2,9 +2,12 @@
  * Tests for Rayas Calculations
  * 
  * These tests verify the logic for:
- * 1. Oyes rayas - absolute closest wins vs ALL rivals
+ * 1. Oyes rayas - absolute closest wins vs ALL rivals (included in Rayas Front/Back)
  * 2. Accumulated Oyes carry-over between holes
  * 3. Front Oyes accumulated pay at Front value when resolved in Back
+ * 
+ * NOTE: calculateRayasBets folds Oyes into 'Rayas Front' / 'Rayas Back' summaries.
+ * It does NOT generate separate 'Rayas Oyes' entries.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -89,6 +92,10 @@ const createRayasConfig = (frontValue = 100, backValue = 100, medalTotalValue = 
   },
 });
 
+// Helper: get rayas summaries (Oyes are folded into Rayas Front/Back)
+const getRayasSummaries = (summaries: ReturnType<typeof calculateRayasBets>) =>
+  summaries.filter(s => s.betType === 'Rayas Front' || s.betType === 'Rayas Back' || s.betType === 'Rayas Medal Total');
+
 // ============== TESTS ==============
 
 describe('Rayas Oyes Calculations - Absolute Closest', () => {
@@ -111,11 +118,12 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 100, 200);
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    // Filter only Oyes summaries
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    // Oyes are folded into Rayas Front. Since all players score par, the only
+    // Rayas Front contributions come from Oyes.
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
     // Player A (closest) should win against B, C, and D
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     expect(playerAWins.length).toBe(3); // Wins against 3 rivals
     
     // Each win should be 1 raya * 100 (front value)
@@ -125,9 +133,9 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     });
     
     // Verify B, C, D each lost 100 to A
-    const playerBLoss = oyesSummaries.find(s => s.playerId === 'player-b' && s.vsPlayer === 'player-a');
-    const playerCLoss = oyesSummaries.find(s => s.playerId === 'player-c' && s.vsPlayer === 'player-a');
-    const playerDLoss = oyesSummaries.find(s => s.playerId === 'player-d' && s.vsPlayer === 'player-a');
+    const playerBLoss = frontSummaries.find(s => s.playerId === 'player-b' && s.vsPlayer === 'player-a');
+    const playerCLoss = frontSummaries.find(s => s.playerId === 'player-c' && s.vsPlayer === 'player-a');
+    const playerDLoss = frontSummaries.find(s => s.playerId === 'player-d' && s.vsPlayer === 'player-a');
     
     expect(playerBLoss?.amount).toBe(-100);
     expect(playerCLoss?.amount).toBe(-100);
@@ -153,14 +161,14 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 100, 200);
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
-    // Player B (2nd) should NOT win anything
-    const playerBWins = oyesSummaries.filter(s => s.playerId === 'player-b' && s.amount > 0);
+    // Player B (2nd) should NOT win anything via Rayas Front
+    const playerBWins = frontSummaries.filter(s => s.playerId === 'player-b' && s.amount > 0);
     expect(playerBWins.length).toBe(0);
     
     // Player C (3rd) should NOT win anything
-    const playerCWins = oyesSummaries.filter(s => s.playerId === 'player-c' && s.amount > 0);
+    const playerCWins = frontSummaries.filter(s => s.playerId === 'player-c' && s.amount > 0);
     expect(playerCWins.length).toBe(0);
   });
 
@@ -193,14 +201,10 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 100, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
-    // In allVsAll mode, accumulation is PER PAIR
-    // Player A vs B: both had null on H3 (accumulate), A=1 B=2 on H6 -> A wins 2 rayas
-    // Player A vs C: both null on H3 (accum), A=1 C=null on H6 -> A wins 2 rayas  
-    // Player A vs D: both null on H3 (accum), A=1 D=null on H6 -> A wins 2 rayas
-    
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    // Player A wins against each rival: 2 rayas each (1 carry + 1 current) * 100
+    const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     expect(playerAWins.length).toBe(3);
     
     // Each win should be 2 rayas * 100 = 200
@@ -242,28 +246,20 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 150, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
-    
-    // Player A wins against each rival
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
-    
-    // In allVsAll with accumulation: 
-    // Front has 2 Par3s with no winner -> frontCarry = 2 per pair
-    // Back H12: A wins current (1 back) + carry (2 front at front value)
-    
-    // Should have front wins (carry paid at front value) + back wins (current at back value)
-    const frontWins = playerAWins.filter(w => w.segment === 'front');
-    const backWins = playerAWins.filter(w => w.segment === 'back');
+    // Front carry (2 rayas at front value) + Back current (1 raya at back value) are
+    // folded into a single Rayas Front and Rayas Back entry per pair.
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front' && s.playerId === 'player-a' && s.amount > 0);
+    const backSummaries = summaries.filter(s => s.betType === 'Rayas Back' && s.playerId === 'player-a' && s.amount > 0);
     
     // 3 rivals, front carry = 2 per rival at 100 = 200 per rival
-    expect(frontWins.length).toBe(3);
-    frontWins.forEach(win => {
+    expect(frontSummaries.length).toBe(3);
+    frontSummaries.forEach(win => {
       expect(win.amount).toBe(200); // 2 * 100
     });
     
     // 3 rivals, back current = 1 per rival at 150 = 150 per rival
-    expect(backWins.length).toBe(3);
-    backWins.forEach(win => {
+    expect(backSummaries.length).toBe(3);
+    backSummaries.forEach(win => {
       expect(win.amount).toBe(150); // 1 * 150
     });
   });
@@ -297,34 +293,35 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 100, 200);
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
     // Player A wins on hole 3 against B, C, D = 3 wins * 100 = 300 total
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     const playerATotalWon = playerAWins.reduce((sum, s) => sum + s.amount, 0);
     expect(playerATotalWon).toBe(300);
     
     // Player B wins on hole 6 against A, C, D = 3 wins * 100 = 300 total
-    const playerBWins = oyesSummaries.filter(s => s.playerId === 'player-b' && s.amount > 0);
+    const playerBWins = frontSummaries.filter(s => s.playerId === 'player-b' && s.amount > 0);
     const playerBTotalWon = playerBWins.reduce((sum, s) => sum + s.amount, 0);
     expect(playerBTotalWon).toBe(300);
     
-    // Net between A and B should be 0 (each won once against the other)
-    const aVsBWins = oyesSummaries.filter(
+    // Net between A and B: A won 1 from B on H3, B won 1 from A on H6 → net = 0
+    // But the entries are aggregated per pair, so A vs B Rayas Front = 0 (cancelled out)
+    // and B vs A Rayas Front = 0 (cancelled out). These entries won't appear (amount=0 is skipped).
+    const aVsBFront = frontSummaries.filter(
       s => s.playerId === 'player-a' && s.vsPlayer === 'player-b'
     );
-    const bVsAWins = oyesSummaries.filter(
+    const bVsAFront = frontSummaries.filter(
       s => s.playerId === 'player-b' && s.vsPlayer === 'player-a'
     );
-    
-    const netAvsB = aVsBWins.reduce((sum, s) => sum + s.amount, 0) +
-                    bVsAWins.reduce((sum, s) => sum + s.amount, 0);
+    const netAvsB = aVsBFront.reduce((sum, s) => sum + s.amount, 0) +
+                    bVsAFront.reduce((sum, s) => sum + s.amount, 0);
     expect(netAvsB).toBe(0);
   });
 
   it('should correctly sum all Oyes rayas in total bilateral balance', () => {
     const course = createTestCourse();
-    const players = createTestPlayers();
+    const players = createTestPlayers().slice(0, 2); // Just A and B
     
     // Player A wins all 4 Par 3s (holes 3, 6, 12, 15)
     const scores = createDefaultScores(players, course, {
@@ -345,22 +342,19 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     const config = createRayasConfig(100, 150, 200);
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    // Calculate total Oyes won by A vs B
-    const aVsBOyes = summaries.filter(
-      s => s.betType === 'Rayas Oyes' && s.playerId === 'player-a' && s.vsPlayer === 'player-b'
+    // A wins all Oyes: Front (H3, H6) = 2 * 100 = 200, Back (H12, H15) = 2 * 150 = 300
+    // Total = 500
+    const aVsB = summaries.filter(
+      s => (s.betType === 'Rayas Front' || s.betType === 'Rayas Back') && 
+           s.playerId === 'player-a' && s.vsPlayer === 'player-b'
     );
-    
-    const totalAmount = aVsBOyes.reduce((sum, s) => sum + s.amount, 0);
-    
-    // Front: 2 holes * 100 = 200
-    // Back: 2 holes * 150 = 300
-    // Total: 500
+    const totalAmount = aVsB.reduce((sum, s) => sum + s.amount, 0);
     expect(totalAmount).toBe(500);
   });
 });
 
 describe('Rayas Zero-Sum Verification', () => {
-  it('should maintain zero-sum property for all Oyes transactions', () => {
+  it('should maintain zero-sum property for all Rayas transactions', () => {
     const course = createTestCourse();
     const players = createTestPlayers();
     
@@ -386,10 +380,8 @@ describe('Rayas Zero-Sum Verification', () => {
     const config = createRayasConfig(100, 100, 200);
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    // Sum of all Oyes amounts should be zero
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
-    const totalSum = oyesSummaries.reduce((sum, s) => sum + s.amount, 0);
-    
+    // Sum of ALL rayas amounts should be zero
+    const totalSum = summaries.reduce((sum, s) => sum + s.amount, 0);
     expect(totalSum).toBe(0);
   });
 
@@ -418,7 +410,7 @@ describe('Rayas Zero-Sum Verification', () => {
   });
 });
 
-// ============== NEW QA TESTS ==============
+// ============== SANGRÓN MODE TESTS ==============
 
 describe('Rayas Oyes - Sangrón Mode (Todos vs Todos)', () => {
   it('should resolve each Par 3 immediately based on ranking comparison', () => {
@@ -433,7 +425,7 @@ describe('Rayas Oyes - Sangrón Mode (Todos vs Todos)', () => {
       'player-d': [{ holeNumber: 3, strokes: 3, netScore: 3 }],
     });
     
-    // Manually set Sangrón proximities (separate from Acumulado)
+    // Manually set Sangrón proximities
     const scoresA = scores.get('player-a')!;
     const h3a = scoresA.find(s => s.holeNumber === 3)!;
     (h3a as any).oyesProximitySangron = 1;
@@ -471,22 +463,10 @@ describe('Rayas Oyes - Sangrón Mode (Todos vs Todos)', () => {
     };
     
     const summaries = calculateRayasBets(players, scores, config, course);
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
-    // In Sangrón with this config:
-    // - A has sangron configured vs B, C, D
-    // - B, C, D do NOT have sangron configured with each other (use default acumulados)
-    // 
-    // For sangrón pairs (A vs B, A vs C, A vs D):
-    // A (1) beats B (2): A wins 1 raya vs B
-    // A (1) beats C (3): A wins 1 raya vs C
-    // A (1) beats D (4): A wins 1 raya vs D
-    // 
-    // For acumulados pairs (B vs C, B vs D, C vs D):
-    // These would use oyesProximity field (null for all), so no winner
-    
-    // Player A should win 3 rayas (vs B, C, D) in sangrón mode
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    // Player A should win 3 rayas front (vs B, C, D) in sangrón mode
+    const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     expect(playerAWins.length).toBe(3);
     expect(playerAWins.every(w => w.amount === 100)).toBe(true); // Front value
     
@@ -533,10 +513,10 @@ describe('Rayas Oyes - Sangrón Mode (Todos vs Todos)', () => {
     };
     
     const summaries = calculateRayasBets(players, scores, config, course);
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes');
+    const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
     // A should win vs B (has ranking vs no ranking)
-    const playerAWins = oyesSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
+    const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     expect(playerAWins.length).toBe(1);
     expect(playerAWins[0].amount).toBe(100);
     expect(playerAWins[0].vsPlayer).toBe('player-b');
@@ -567,11 +547,10 @@ describe('Rayas Oyes - Carry Front→Back Segmented Attribution', () => {
     const config = createRayasConfig(50, 100, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes' && s.playerId === 'player-a' && s.amount > 0);
-    
-    // Should have 2 entries: one for Front carry (2*50=100), one for Back current (1*100=100)
-    const frontEntry = oyesSummaries.find(s => s.segment === 'front');
-    const backEntry = oyesSummaries.find(s => s.segment === 'back');
+    // Front entry: 2 carried rayas * 50 = 100
+    const frontEntry = summaries.find(s => s.betType === 'Rayas Front' && s.playerId === 'player-a' && s.amount > 0);
+    // Back entry: 1 current raya * 100 = 100
+    const backEntry = summaries.find(s => s.betType === 'Rayas Back' && s.playerId === 'player-a' && s.amount > 0);
     
     expect(frontEntry).toBeDefined();
     expect(frontEntry?.amount).toBe(100); // 2 rayas * 50 front value
@@ -580,7 +559,7 @@ describe('Rayas Oyes - Carry Front→Back Segmented Attribution', () => {
     expect(backEntry?.amount).toBe(100); // 1 raya * 100 back value
     
     // Total A won vs B: 200
-    const totalWon = oyesSummaries.reduce((sum, s) => sum + s.amount, 0);
+    const totalWon = (frontEntry?.amount ?? 0) + (backEntry?.amount ?? 0);
     expect(totalWon).toBe(200);
   });
 
@@ -592,10 +571,10 @@ describe('Rayas Oyes - Carry Front→Back Segmented Attribution', () => {
     // Back Par 3s: H12 empty, H15 A wins
     const scores = createDefaultScores(players, course, {
       'player-a': [
-        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null }, // Front carry +1
-        { holeNumber: 6, strokes: 3, netScore: 3, oyesProximity: 1 },    // A wins front (1+1=2)
-        { holeNumber: 12, strokes: 4, netScore: 4, oyesProximity: null }, // Back carry +1
-        { holeNumber: 15, strokes: 3, netScore: 3, oyesProximity: 1 },   // A wins back (1+1=2)
+        { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 6, strokes: 3, netScore: 3, oyesProximity: 1 },
+        { holeNumber: 12, strokes: 4, netScore: 4, oyesProximity: null },
+        { holeNumber: 15, strokes: 3, netScore: 3, oyesProximity: 1 },
       ],
       'player-b': [
         { holeNumber: 3, strokes: 4, netScore: 4, oyesProximity: null },
@@ -608,16 +587,17 @@ describe('Rayas Oyes - Carry Front→Back Segmented Attribution', () => {
     const config = createRayasConfig(50, 100, 200, 'allVsAll');
     const summaries = calculateRayasBets(players, scores, config, course);
     
-    const oyesSummaries = summaries.filter(s => s.betType === 'Rayas Oyes' && s.playerId === 'player-a');
-    
-    // Front: 2 rayas at 50 = 100
-    const frontWins = oyesSummaries.filter(s => s.segment === 'front' && s.amount > 0);
+    // Front: H3 empty carry + H6 A wins = 2 rayas at 50 = 100
+    const frontWins = summaries.filter(s => s.betType === 'Rayas Front' && s.playerId === 'player-a' && s.amount > 0);
     const frontTotal = frontWins.reduce((sum, s) => sum + s.amount, 0);
     expect(frontTotal).toBe(100); // 2 * 50
     
-    // Back: 2 rayas at 100 = 200
-    const backWins = oyesSummaries.filter(s => s.segment === 'back' && s.amount > 0);
+    // Back: H12 empty carry + H15 A wins = 2 rayas at 100 = 200
+    const backWins = summaries.filter(s => s.betType === 'Rayas Back' && s.playerId === 'player-a' && s.amount > 0);
     const backTotal = backWins.reduce((sum, s) => sum + s.amount, 0);
     expect(backTotal).toBe(200); // 2 * 100
+    
+    // Total = 300
+    expect(frontTotal + backTotal).toBe(300);
   });
 });
