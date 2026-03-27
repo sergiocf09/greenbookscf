@@ -3582,8 +3582,8 @@ interface BilateralDetailProps {
   snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
   snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
   snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
-  isHistorical?: boolean; // When true, skip recalculation - use groupedSummaries directly
-  onComputedBalance?: (rivalId: string, balance: number) => void;
+  isHistorical?: boolean;
+}
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
