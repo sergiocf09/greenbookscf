@@ -1073,6 +1073,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       if (betType === 'Putts' || betType.startsWith('Putts')) return { label: 'Putts', aliases: ['putts'] };
       if (betType === 'Side Bet') return { label: 'Side Bet', aliases: ['sideBets', 'sidebets'] };
       if (betType === 'Stableford') return { label: 'Stableford', aliases: ['stableford'] };
+      if (betType.startsWith('Zoológico')) return { label: 'Zoológico', aliases: ['zoologico'] };
       return { label: betType, aliases: [] };
     };
 
