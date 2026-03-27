@@ -4853,12 +4853,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   }, [isHistorical, snapshotPairBreakdowns, snapshotPairSegmentResults, betConfig, effectiveBetConfig, groupedSummaries, confirmedScores, players, player.id, rival.id, allScores, course.holes, confirmedHoles, allPlayers, course]);
   
   // Compute the total balance for the bilateral detail header.
-  // HISTORICAL MODE: Sum betTypeGroups directly — this is the single source of truth.
-  // betTypeGroups already reads exclusively from the snapshot (pairBreakdowns or ledger
-  // filtered by pair), and already excludes team bets (Carritos, Presiones Parejas).
-  // The header shows totalBalance directly — it comes from the parent's pairBalanceMap,
-  // which is the single source of truth. No local recalculation needed.
-  const computedTotalBalance = totalBalance;
+  // This MUST equal the sum of the visible (non-disabled) betTypeGroups rows.
+  // Using betTypeGroups as the single source of truth guarantees header === sum(rows).
+  // Both live and historical modes benefit because betTypeGroups already handles both.
+  const computedTotalBalance = useMemo(() => {
+    return betTypeGroups.reduce((sum, group) => {
+      const override = getBetOverride(group.key);
+      if (override?.enabled === false) return sum;
+      return sum + group.getTotal();
+    }, 0);
+  }, [betTypeGroups]);
 
 
 
