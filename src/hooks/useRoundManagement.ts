@@ -739,7 +739,7 @@ export const useRoundManagement = ({
     } finally {
       setIsLoading(false);
     }
-  }, [profile, betConfig, applyMyUsgaHandicapIfAvailable]);
+  }, [profile, players, betConfig, applyMyUsgaHandicapIfAvailable]);
 
   // Start the round (change status to in_progress)
   const startRound = useCallback(async () => {
