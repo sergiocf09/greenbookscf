@@ -1566,17 +1566,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
   // Single source of truth for all bilateral balances: populated by rendering
   // ALL BilateralDetail components (hidden for non-selected rivals).
-  // Each BilateralDetail computes betTypeGroups (the same rows shown in the UI)
-  // and reports the sum via onComputedBalance. No clicks needed — all render at once.
+  // Uses composite keys "baseId:rivalId" so the cache is NEVER cleared — switching
+  // basePlayer instantly shows cached values from a previous visit (no flash).
   const [rivalBalanceCache, setRivalBalanceCache] = useState<Map<string, number>>(new Map());
 
-  useEffect(() => {
-    setRivalBalanceCache(new Map());
-    setSelectedRival(null);
-  }, [balanceBasePlayerId]);
+  const getCacheKey = (baseId: string, rivalId: string) => `${baseId}:${rivalId}`;
 
+  // Read bilateral balance from cache (exact betTypeGroups sum) with fallback
   const getRivalBalance = (rivalId: string): number => {
-    return rivalBalanceCache.get(rivalId) ?? getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+    const key = getCacheKey(basePlayer?.id || '', rivalId);
+    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
+    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+  };
+
+  // Read bilateral balance from cache for ANY player pair (used by Tabla General)
+  const getCachedBilateralBalance = (playerId: string, rivalId: string): number => {
+    const key = getCacheKey(playerId, rivalId);
+    if (rivalBalanceCache.has(key)) return rivalBalanceCache.get(key)!;
+    return getCorrectedBilateralBalance(playerId, rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
