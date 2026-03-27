@@ -4593,7 +4593,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const frontAmount = rayasCounts.frontRayas * rayasAmountOverrides.frontValue;
       const backAmount = rayasCounts.backRayas * rayasAmountOverrides.backValue;
       const medalAmount = rayasCounts.medalTotalRayas * rayasAmountOverrides.medalTotalValue;
-      const rayasTotalFromDetails = frontAmount + backAmount + medalAmount;
+      // Use authoritative function for the total to guarantee avatar == header
+      const rayasTotalFromDetails = getAuthoritativeRayasBalance(
+        player, rival, confirmedScores, effectiveBetConfig, course,
+        effectiveBetConfig.bilateralHandicaps, allPlayers, startingHole,
+        rayasAmountOverrides
+      );
       
       groups.push({
         key: 'rayas',
