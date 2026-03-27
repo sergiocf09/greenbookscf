@@ -21,6 +21,20 @@ export interface SkinsEvolution {
   hasZapato: boolean;
 }
 
+const getEffectiveSkinsModality = (
+  playerAId: string, playerBId: string, skins: BetConfig['skins']
+): 'acumulados' | 'sinAcumular' => {
+  const globalModality = skins.modality ?? 'acumulados';
+  const pairOverrides = skins.pairSkinVariantOverrides;
+  const playerVariants = skins.playerSkinVariants;
+  const pairKey = [playerAId, playerBId].sort().join('_');
+  if (pairOverrides?.[pairKey]) return pairOverrides[pairKey];
+  const variantA = playerVariants?.[playerAId] ?? globalModality;
+  const variantB = playerVariants?.[playerBId] ?? globalModality;
+  if (variantA === variantB) return variantA;
+  return globalModality;
+};
+
 export const getSkinsEvolution = (
   playerA: Player,
   playerB: Player,
@@ -35,7 +49,7 @@ export const getSkinsEvolution = (
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   
   const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
-  const isAccumulated = (config.skins.modality ?? 'acumulados') === 'acumulados';
+  const isAccumulated = getEffectiveSkinsModality(playerA.id, playerB.id, config.skins) === 'acumulados';
   
   const processNine = (holes: number[], segment: 'front' | 'back'): SkinsEvolution => {
     const states: SkinsHoleState[] = [];
