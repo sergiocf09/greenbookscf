@@ -295,15 +295,15 @@ describe('Rayas Oyes Calculations - Absolute Closest', () => {
     
     const frontSummaries = summaries.filter(s => s.betType === 'Rayas Front');
     
-    // Player A wins on hole 3 against B, C, D = 3 wins * 100 = 300 total
+    // Player A wins H3 vs B,C,D (+300) but loses H6 vs B (-100) → net positive = 200
     const playerAWins = frontSummaries.filter(s => s.playerId === 'player-a' && s.amount > 0);
     const playerATotalWon = playerAWins.reduce((sum, s) => sum + s.amount, 0);
-    expect(playerATotalWon).toBe(300);
+    expect(playerATotalWon).toBe(200);
     
-    // Player B wins on hole 6 against A, C, D = 3 wins * 100 = 300 total
+    // Player B wins H6 vs A,C,D (+300) but loses H3 vs A (-100) → net positive = 200
     const playerBWins = frontSummaries.filter(s => s.playerId === 'player-b' && s.amount > 0);
     const playerBTotalWon = playerBWins.reduce((sum, s) => sum + s.amount, 0);
-    expect(playerBTotalWon).toBe(300);
+    expect(playerBTotalWon).toBe(200);
     
     // Net between A and B: A won 1 from B on H3, B won 1 from A on H6 → net = 0
     // But the entries are aggregated per pair, so A vs B Rayas Front = 0 (cancelled out)
