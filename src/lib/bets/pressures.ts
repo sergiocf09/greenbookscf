@@ -144,7 +144,8 @@ export const calculatePressureBets = (
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: backLabel, amount: -backAmountA, segment: 'back', description: backDisplayStrB, units: -backNetBets, baseUnitAmount: effectiveBackValue, multiplier: 1 });
       }
       
-      if (!frontIsTied && totalMatchAmount > 0) {
+      // Always generate Match 18 summaries so the Total 18 row always displays
+      if (!frontIsTied) {
         const total18Balance = frontBets[0] + backBets[0];
         let matchWinner = 0;
         if (total18Balance > 0) matchWinner = 1;
@@ -160,7 +161,8 @@ export const calculatePressureBets = (
           summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
           summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
         }
-      } else if (frontIsTied && totalMatchAmount > 0) {
+      } else {
+        // Front tied = Carry (match absorbed into back)
         summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
       }

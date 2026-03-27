@@ -12,7 +12,7 @@ export interface PressureHoleState {
 }
 
 export interface PressureEvolution {
-  segment: 'front' | 'back';
+  segment: 'front' | 'back' | 'total';
   holes: PressureHoleState[];
   finalDisplay: string;
   hasCarry: boolean;
@@ -26,8 +26,14 @@ export const getPressureEvolution = (
   config: BetConfig,
   bilateralHandicaps?: BilateralHandicap[],
   startingHole: 1 | 10 = 1
-): { front: PressureEvolution; back: PressureEvolution } => {
-  const onlyMatch = config.pressures.onlyMatch === true;
+): { front: PressureEvolution; back: PressureEvolution; total: PressureEvolution } => {
+  // Resolve per-pair onlyMatch override
+  const pairKey = [playerA.id, playerB.id].sort().join('_');
+  const pairOverride = config.pressurePairOverrides?.[pairKey];
+  const onlyMatch = pairOverride?.onlyMatch !== undefined
+    ? pairOverride.onlyMatch
+    : config.pressures.onlyMatch === true;
+
   const ranges = getSegmentHoleRanges(startingHole);
   const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
@@ -71,5 +77,30 @@ export const getPressureEvolution = (
     return { segment, holes: states, finalDisplay, hasCarry };
   };
   
-  return { front: processNine(frontHoles, 'front'), back: processNine(backHoles, 'back') };
+  const front = processNine(frontHoles, 'front');
+  const back = processNine(backHoles, 'back');
+
+  // Compute Total 18 evolution (running cumulative across all 18 holes using main bet only)
+  const frontMainBalance = front.holes.length > 0 ? front.holes[front.holes.length - 1].bets[0] : 0;
+  const backMainBalance = back.holes.length > 0 ? back.holes[back.holes.length - 1].bets[0] : 0;
+  const total18Balance = frontMainBalance + backMainBalance;
+  const frontIsTied = frontMainBalance === 0;
+
+  let totalDisplay: string;
+  if (frontIsTied) {
+    totalDisplay = 'Carry';
+  } else if (total18Balance === 0) {
+    totalDisplay = 'Even';
+  } else {
+    totalDisplay = (total18Balance > 0 ? '+' : '') + total18Balance;
+  }
+
+  const total: PressureEvolution = {
+    segment: 'total',
+    holes: [],
+    finalDisplay: totalDisplay,
+    hasCarry: frontIsTied,
+  };
+
+  return { front, back, total };
 };
