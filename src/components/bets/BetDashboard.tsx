@@ -290,16 +290,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // - No betOverrides from other intra-group pairs (they would wrongly alter amounts)
         // - participantIds cleared so the engine always includes both cross-group players
         // - Group-scoped bets disabled (Culebras, Pinguinos, Manchas, Zoologico, Coneja)
+        // Filter betOverrides to only those relevant to this cross-group pair
+        const pairOverrides = (effectiveBetConfig.betOverrides || []).filter(o => {
+          const ids = [playerA.id, playerB.id];
+          return ids.includes(o.playerAId) && ids.includes(o.playerBId);
+        });
+
         const crossGroupConfig: BetConfig = {
           ...effectiveBetConfig,
           // CRITICAL: Only use THIS pair's bilateral handicap — exclude all intra-group
           // handicaps so the engine doesn't accidentally find another handicap record
           // for one of these players and compute wrong net scores.
           bilateralHandicaps: [crossGroupBilateral],
-          // CRITICAL: Clear all betOverrides — intra-group overrides from G1 must NOT
-          // be applied to cross-group calculations. They have different playerAId/playerBId
-          // but the betType matching can still produce wrong amount multiplications.
-          betOverrides: [],
+          // CRITICAL: Only include overrides for THIS pair — intra-group overrides from
+          // other pairs must NOT be applied. The close engine does the same filtering.
+          betOverrides: pairOverrides,
           // Clear groupBetOverrides so group-specific config doesn't interfere
           groupBetOverrides: {},
           // Clear participantIds so both cross-group players are always included.
