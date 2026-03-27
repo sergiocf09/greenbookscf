@@ -4101,7 +4101,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Putts - Individual bet (no handicap) - Show total putts for each player (after Medal)
-    if (betConfig.putts?.enabled && bothParticipate(betConfig.putts?.participantIds, 'putts')) {
+    if (bothParticipate(undefined, 'putts')) {
       const puttsFront = groupedSummaries['Putts Front 9']?.total || 0;
       const puttsBack = groupedSummaries['Putts Back 9']?.total || 0;
       const puttsTotal = groupedSummaries['Putts Total']?.total || 0;
@@ -4162,7 +4162,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Presiones
-    if (betConfig.pressures.enabled && bothParticipate(betConfig.pressures.participantIds, 'pressures')) {
+    if (bothParticipate(undefined, 'pressures')) {
       groups.push({
         key: 'pressures',
         label: 'Presiones',
@@ -4211,7 +4211,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Skins
-    if (betConfig.skins.enabled && bothParticipate(betConfig.skins.participantIds, 'skins')) {
+    if (bothParticipate(undefined, 'skins')) {
       groups.push({
         key: 'skins',
         label: 'Skins',
@@ -4241,7 +4241,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Caros
-    if (betConfig.caros.enabled && bothParticipate(betConfig.caros.participantIds, 'caros')) {
+    if (bothParticipate(undefined, 'caros')) {
       groups.push({
         key: 'caros',
         label: 'Caros',
@@ -4279,7 +4279,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Oyeses (before Units as per spec)
-    if (betConfig.oyeses.enabled && bothParticipate(betConfig.oyeses.participantIds, 'oyeses')) {
+    if (bothParticipate(undefined, 'oyeses')) {
       groups.push({
         key: 'oyeses',
         label: 'Oyes',
@@ -4301,7 +4301,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Unidades
-    if (betConfig.units.enabled && bothParticipate(betConfig.units.participantIds, 'units')) {
+    if (bothParticipate(undefined, 'units')) {
       groups.push({
         key: 'units',
         label: 'Unidades',
@@ -4321,7 +4321,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Manchas
-    if (betConfig.manchas.enabled && bothParticipate(betConfig.manchas.participantIds, 'manchas')) {
+    if (bothParticipate(undefined, 'manchas')) {
       groups.push({
         key: 'manchas',
         label: 'Manchas',
@@ -4341,7 +4341,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Culebras
-    if (betConfig.culebras?.enabled && bothParticipate(betConfig.culebras?.participantIds, 'culebras')) {
+    if (bothParticipate(undefined, 'culebras')) {
       groups.push({
         key: 'culebras',
         label: 'Culebras',
@@ -4353,7 +4353,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Pingüinos
-    if (betConfig.pinguinos?.enabled && bothParticipate(betConfig.pinguinos?.participantIds, 'pinguinos')) {
+    if (bothParticipate(undefined, 'pinguinos')) {
       groups.push({
         key: 'pinguinos',
         label: 'Pingüinos',
@@ -4365,9 +4365,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Zoológico - Show enabled animals with amounts for this pair
-    if (betConfig.zoologico?.enabled && bothParticipate(betConfig.zoologico?.participantIds, 'zoologico')) {
-      const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
-      const valuePerOccurrence = betConfig.zoologico.valuePerOccurrence || 10;
+    if (bothParticipate(undefined, 'zoologico')) {
+      const resolvedZoo = resolvedCfg.zoologico;
+      const enabledAnimals = resolvedZoo?.enabledAnimals || ['camello', 'pez', 'gorila'];
+      const valuePerOccurrence = resolvedZoo?.valuePerOccurrence || 10;
       
       // Calculate totals from zoo summaries for each animal
       // Note: betType uses singular labels ("Zoológico Camello", etc.)
@@ -4636,7 +4637,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Medal General (Group bet shown in bilateral view)
     // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
-    if (betConfig.medalGeneral?.enabled && bothParticipate(betConfig.medalGeneral?.participantIds, 'medalGeneral')) {
+    if (bothParticipate(undefined, 'medalGeneral')) {
       if (isHistorical) {
         const medalTotal = groupedSummaries['Medal General']?.total || 0;
         if (medalTotal !== 0) {
@@ -4724,7 +4725,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Stableford - Group bet shown in bilateral view (like Medal General)
     // HISTORICAL: Read from snapshot ledger. LIVE: Recalculate.
-    if (betConfig.stableford?.enabled && bothParticipate(betConfig.stableford?.participantIds, 'stableford')) {
+    if (bothParticipate(undefined, 'stableford')) {
       if (isHistorical) {
         const stablefordTotal = groupedSummaries['Stableford']?.total || 0;
         if (stablefordTotal !== 0) {
@@ -4774,7 +4775,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Skins Grupal - Group bet shown in bilateral view (like Medal General) — single row, no expandable segments
-    if (betConfig.skinsGrupal?.enabled) {
+    if (bothParticipate(undefined, 'skinsGrupal')) {
       const sgFrontTotal = groupedSummaries['Skins Grupal Front']?.total || 0;
       const sgBackTotal = groupedSummaries['Skins Grupal Back']?.total || 0;
       const sgTotal = sgFrontTotal + sgBackTotal;
