@@ -33,7 +33,7 @@ export const calculatePressureBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsWithOneVsAll(config.pressures, players, resolved.pressures.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(resolved.pressures, players, resolved.pressures.participantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];

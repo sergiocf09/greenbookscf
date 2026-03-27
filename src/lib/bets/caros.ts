@@ -26,7 +26,7 @@ export const calculateCarosBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsWithOneVsAll(config.caros, players, resolved.caros.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(resolved.caros, players, resolved.caros.participantIds, groupPlayers);
   });
 
   const summaries: BetSummary[] = [];

@@ -19,7 +19,7 @@ export const calculatePuttsBets = (
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
     const puttParticipantIds = resolved.putts?.participantIds;
-    return resolveParticipantsWithOneVsAll(config.putts, players, puttParticipantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(resolved.putts, players, puttParticipantIds, groupPlayers);
   });
   
   const summaries: BetSummary[] = [];

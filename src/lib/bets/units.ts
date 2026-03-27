@@ -47,7 +47,7 @@ export const calculateUnitsBets = (
     
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    const participatingPlayers = resolveParticipantsWithOneVsAll(config.units, players, resolved.units.participantIds, groupPlayers);
+    const participatingPlayers = resolveParticipantsWithOneVsAll(resolved.units, players, resolved.units.participantIds, groupPlayers);
     
     if (participatingPlayers.length < 2) return;
   

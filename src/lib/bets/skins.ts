@@ -27,7 +27,7 @@ export const calculateSkinsBets = (
   const participatingPlayers = playersByGroup.flatMap(groupPlayers => {
     const groupId = groupPlayers[0]?.groupId;
     const resolved = resolveConfigForGroup(config, groupId);
-    return resolveParticipantsWithOneVsAll(config.skins, players, resolved.skins.participantIds, groupPlayers);
+    return resolveParticipantsWithOneVsAll(resolved.skins, players, resolved.skins.participantIds, groupPlayers);
   });
 
   const summaries: BetSummary[] = [];
