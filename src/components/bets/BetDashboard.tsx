@@ -1582,29 +1582,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
   // ═══════════════════════════════════════════════════════════════════
-  // SINGLE SOURCE OF TRUTH: bilateral balances from BilateralDetail.
-  // Each BilateralDetail computes its total (betTypeGroups sum) and
-  // reports it here via onComputedBalance. This map is the ONLY source
-  // used for avatars and Tabla General — no separate getCorrectedBilateralBalance.
+  // SINGLE SOURCE OF TRUTH: getCorrectedBilateralBalance is used directly
+  // for avatars, Tabla General, and all balance displays. No render-dependent
+  // map or delayed callbacks — values are computed synchronously.
   // ═══════════════════════════════════════════════════════════════════
-  const bilateralBalanceMapRef = useRef<Map<string, number>>(new Map());
-  const [balanceMapVersion, setBalanceMapVersion] = useState(0);
-
-  const handleComputedBalance = useCallback((baseId: string, rivalId: string, balance: number) => {
-    const key = `${baseId}:${rivalId}`;
-    const reverseKey = `${rivalId}:${baseId}`;
-    const prev = bilateralBalanceMapRef.current;
-    const changed = prev.get(key) !== balance || prev.get(reverseKey) !== -balance;
-    if (changed) {
-      prev.set(key, balance);
-      prev.set(reverseKey, -balance);
-      // Trigger synchronous re-render so avatars update before paint
-      setBalanceMapVersion(v => v + 1);
-    }
-  }, []);
-
-  // Use getCorrectedBilateralBalance directly — no render-dependent map.
-  // This ensures avatars and Tabla General show correct values instantly.
   const getBilateralBalanceFromMap = getCorrectedBilateralBalance;
 
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
