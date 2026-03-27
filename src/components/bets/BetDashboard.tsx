@@ -1896,7 +1896,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  const balance = getRivalBalance(rival.id);
+                  // Use the balance computed by BilateralDetail if available
+                  // to guarantee avatar and header show exactly the same number
+                  const balance = computedRivalBalances.has(rival.id)
+                    ? computedRivalBalances.get(rival.id)!
+                    : getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
                   const hasOverride = !!pairHandicap;
@@ -2086,6 +2090,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
+          onComputedBalance={handleComputedBalance}
         />
       )}
 
