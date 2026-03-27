@@ -4899,7 +4899,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       return sum + group.getTotal();
     }, 0);
   }, [isHistorical, snapshotVsBalance, betTypeGroups, betConfig.betOverrides, player, rival]);
-  
+
+  // Notify parent of computed balance so avatar can use the same number
+  useEffect(() => {
+    onComputedBalance?.(rival.id, computedTotalBalance);
+  }, [computedTotalBalance, rival.id, onComputedBalance]);
+
   // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
   // Positive value = player gives strokes to rival, Negative = player receives from rival
   const strokesFromMatrix = useMemo(() => {
