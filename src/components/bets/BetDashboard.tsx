@@ -1582,21 +1582,52 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   }, [sameGroupRivals, selectedCrossGroupPlayers, isHistorical, snapshotBalances, playerGroups.length, basePlayer?.id]);
 
   // ═══════════════════════════════════════════════════════════════════
-  // SINGLE SOURCE OF TRUTH: getCorrectedBilateralBalance is used directly
-  // for avatars, Tabla General, and all balance displays. No render-dependent
-  // map or delayed callbacks — values are computed synchronously.
+  // SINGLE SOURCE OF TRUTH: BilateralDetail's betTypeGroups-based
+  // computedTotalBalance is the authoritative bilateral balance.
+  // All BilateralDetail components (visible or hidden via display:none)
+  // report their computed total back via onComputedBalance.
+  // Avatars and Tabla General read from this map, guaranteeing they
+  // always show the exact same value as the bilateral header.
   // ═══════════════════════════════════════════════════════════════════
-  const getBilateralBalanceFromMap = getCorrectedBilateralBalance;
+  const bilateralBalanceMapRef = useRef<Map<string, number>>(new Map());
+  const [balanceMapVersion, setBalanceMapVersion] = useState(0);
+
+  // Clear map when basePlayer changes (new set of BilateralDetails will report)
+  useEffect(() => {
+    bilateralBalanceMapRef.current.clear();
+    setBalanceMapVersion(v => v + 1);
+  }, [balanceBasePlayerId]);
+
+  // Callback from BilateralDetail — stores the authoritative bilateral balance
+  const handleComputedBalance = useCallback((playerId: string, rivalId: string, balance: number) => {
+    const key = `${playerId}→${rivalId}`;
+    const reverseKey = `${rivalId}→${playerId}`;
+    const prev = bilateralBalanceMapRef.current.get(key);
+    if (prev !== balance) {
+      bilateralBalanceMapRef.current.set(key, balance);
+      bilateralBalanceMapRef.current.set(reverseKey, -balance);
+      setBalanceMapVersion(v => v + 1);
+    }
+  }, []);
+
+  // Prefer the map (authoritative from BilateralDetail) over getCorrectedBilateralBalance (fallback)
+  const getBilateralBalanceFromMap = useCallback((playerId: string, rivalId: string): number => {
+    const key = `${playerId}→${rivalId}`;
+    const mapVal = bilateralBalanceMapRef.current.get(key);
+    if (mapVal !== undefined) return mapVal;
+    // Fallback for pairs not rendered by BilateralDetail (e.g. non-basePlayer pairs in Tabla General)
+    return getCorrectedBilateralBalance(playerId, rivalId);
+  }, [getCorrectedBilateralBalance, balanceMapVersion]);
 
   // Get corrected total player balance (sum of corrected bilateral balances vs all rivals)
   const getCorrectedPlayerBalance = (playerId: string, rivalIds: string[]): number => {
     return rivalIds.reduce((sum, rivalId) => {
-      return sum + getCorrectedBilateralBalance(playerId, rivalId);
+      return sum + getBilateralBalanceFromMap(playerId, rivalId);
     }, 0);
   };
 
   const getRivalBalance = (rivalId: string): number => {
-    return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
+    return getBilateralBalanceFromMap(basePlayer?.id || '', rivalId);
   };
 
   // If only 1 player in this context (e.g., historical Group 2 with solo player), show message
