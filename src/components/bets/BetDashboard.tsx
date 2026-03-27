@@ -1112,6 +1112,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       return null;
     };
 
+    // Resolve group-specific config for this pair so participantIds are correct for G2+
+    const pairGroupId = playerObj?.groupId || rivalObj?.groupId;
+    const resolvedPairConfig = resolveConfigForGroup(effectiveBetConfig, pairGroupId);
+
     const nonRayasNonMedalGeneralBalance = betSummaries
       .filter(s => 
         s.playerId === playerId && 
@@ -1132,7 +1136,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Check if both players participate in this bet type
         const configKey = betTypeToConfigKey(s.betType);
         if (!configKey) return true; // unknown type, include by default
-        const betCfg = effectiveBetConfig[configKey as keyof BetConfig] as any;
+        const betCfg = resolvedPairConfig[configKey as keyof BetConfig] as any;
         if (!betCfg?.participantIds) return true; // undefined = all participate
         if (betCfg.participantIds.length === 0) return false; // [] = nobody
         return bothParticipateGlobal(betCfg.participantIds, playerId, rivalId, betCfg);
