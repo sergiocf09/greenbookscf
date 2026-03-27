@@ -1308,13 +1308,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return b?.totalNet ?? null;
   };
 
+  // Stores the computed balance from BilateralDetail (sum of visible betTypeGroups).
+  // When the detail is open for a rival, this overrides the avatar balance to guarantee
+  // avatar == header == sum(rows). Cleared when selectedRival or basePlayer changes.
+  const [rivalComputedBalance, setRivalComputedBalance] = useState<{ rivalId: string; balance: number } | null>(null);
+
+  // Clear cached computed balance when base player or selected rival changes
+  useEffect(() => {
+    setRivalComputedBalance(null);
+  }, [balanceBasePlayerId, selectedRival]);
+
   // Get balance for base player vs each rival (Individual bets only — excludes Carritos/Presiones Parejas)
-  // HISTORICAL: Use getCorrectedBilateralBalance which filters the ledger per-pair and excludes team bets.
-  //   This ensures avatar balance == bilateral header == sum(detail rows) with NO discrepancy.
-  //   Note: snapshotBalances.vsBalances.netAmount is intentionally NOT used here because in older
-  //   snapshots (without pairBreakdowns) it may include team bets, causing inconsistency.
-  // LIVE: Use override-aware calculation.
+  // If BilateralDetail has reported a computed balance for this rival, use it (single source of truth).
+  // Otherwise fall back to getCorrectedBilateralBalance.
   const getRivalBalance = (rivalId: string): number => {
+    if (rivalComputedBalance && rivalComputedBalance.rivalId === rivalId) {
+      return rivalComputedBalance.balance;
+    }
     return getCorrectedBilateralBalance(basePlayer?.id || '', rivalId);
   };
   
@@ -1894,7 +1904,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   return (
                     <div key={rival.id} className="relative">
                       <button
-                        onClick={() => setSelectedRival(isSelected ? null : rival.id)}
+                        onClick={() => {
+                          const next = isSelected ? null : rival.id;
+                          setSelectedRival(next);
+                          if (!next) setRivalComputedBalance(null);
+                        }}
                         className={cn(
                           'flex flex-col items-center gap-1.5 transition-all relative',
                           isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background rounded-lg'
@@ -2076,8 +2090,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          
+          onComputedBalance={(balance) => setRivalComputedBalance({ rivalId: selectedRival, balance })}
         />
+
       )}
 
       {/* All Carritos Results — only render cards that have actual data */}
@@ -3579,10 +3594,11 @@ interface BilateralDetailProps {
   confirmedHoles: Set<number>;
   startingHole?: 1 | 10;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
-  snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
-  snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
-  snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
+  snapshotVsBalance?: number;
+  snapshotPairBreakdowns?: SnapshotPairBreakdowns;
+  snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
+  onComputedBalance?: (balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -3611,6 +3627,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
   isHistorical = false,
+  onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
@@ -4852,7 +4869,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }, 0);
   }, [betTypeGroups, betConfig.betOverrides, player, rival]);
 
-  // Get strokes from round_handicaps (centralized source of truth) or fallback to effectiveBetConfig
+  // Propagate computed balance to parent so avatar stays in sync with the header
+  useEffect(() => {
+    onComputedBalance?.(computedTotalBalance);
+  }, [computedTotalBalance, onComputedBalance]);
+
+
   // Positive value = player gives strokes to rival, Negative = player receives from rival
   const strokesFromMatrix = useMemo(() => {
     // First try the live matrix hook (for active rounds)
