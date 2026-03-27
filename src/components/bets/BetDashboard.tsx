@@ -4122,7 +4122,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       const rivalPuttsBack = getPlayerPutts(rival.id, 10, 18);
       const rivalPuttsTotal = rivalPuttsFront + rivalPuttsBack;
       
-      if (total !== 0 || (betConfig.putts.frontAmount > 0 || betConfig.putts.backAmount > 0)) {
+      if (total !== 0 || (resolvedCfg.putts?.frontAmount > 0 || resolvedCfg.putts?.backAmount > 0)) {
         groups.push({
           key: 'putts',
           label: 'Putts',
