@@ -1174,9 +1174,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
         return match?.amountOverride;
       };
-      const frontValue = findOverride('Rayas Front') ?? effectiveBetConfig.rayas?.frontValue ?? 0;
-      const backValue = findOverride('Rayas Back') ?? effectiveBetConfig.rayas?.backValue ?? 0;
-      const medalTotalValue = findOverride('Rayas Medal Total') ?? effectiveBetConfig.rayas?.medalTotalValue ?? 0;
+      const frontValue = findOverride('Rayas Front') ?? resolvedPairConfig.rayas?.frontValue ?? 0;
+      const backValue = findOverride('Rayas Back') ?? resolvedPairConfig.rayas?.backValue ?? 0;
+      const medalTotalValue = findOverride('Rayas Medal Total') ?? resolvedPairConfig.rayas?.medalTotalValue ?? 0;
       
       // Count rayas per segment and calculate amounts using override values
       let frontRayas = 0;
