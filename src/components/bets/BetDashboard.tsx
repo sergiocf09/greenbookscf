@@ -1899,7 +1899,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   return (
                     <div key={rival.id} className="relative">
                       <button
-                        onClick={() => setSelectedRival(isSelected ? null : rival.id)}
+                        onClick={() => {
+                          const next = isSelected ? null : rival.id;
+                          setSelectedRival(next);
+                          if (!next) setRivalComputedBalance(null);
+                        }}
                         className={cn(
                           'flex flex-col items-center gap-1.5 transition-all relative',
                           isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background rounded-lg'
@@ -3584,10 +3588,11 @@ interface BilateralDetailProps {
   confirmedHoles: Set<number>;
   startingHole?: 1 | 10;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
-  snapshotVsBalance?: number; // When set, this is the immutable snapshot balance for this pair
-  snapshotPairBreakdowns?: SnapshotPairBreakdowns; // When set (historical), use as source of truth for betTypeGroups
-  snapshotPairSegmentResults?: SnapshotPairSegmentResults; // Display-ready result text per pair+segment
+  snapshotVsBalance?: number;
+  snapshotPairBreakdowns?: SnapshotPairBreakdowns;
+  snapshotPairSegmentResults?: SnapshotPairSegmentResults;
   isHistorical?: boolean;
+  onComputedBalance?: (balance: number) => void;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
