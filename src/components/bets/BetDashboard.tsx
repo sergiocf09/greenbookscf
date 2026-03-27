@@ -4067,9 +4067,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
 
     // LIVE MODE: Build groups from betConfig and live engine calculations.
+    // Resolve group-specific config so G2+ overrides (enabled, amounts, participantIds) are respected.
+    const groupId = groupPlayers[0]?.groupId;
+    const resolvedCfg = groupId ? resolveConfigForGroup(betConfig, groupId) : betConfig;
 
     // Medal
-    if (betConfig.medal.enabled && bothParticipate(betConfig.medal.participantIds, 'medal')) {
+    if (bothParticipate(undefined, 'medal')) {
       groups.push({
         key: 'medal',
         label: 'Medal',
