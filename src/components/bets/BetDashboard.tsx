@@ -1886,10 +1886,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  // Use the balance computed by BilateralDetail if available (only for current basePlayer)
-                  const balance = rivalComputedBalances.has(rival.id)
-                    ? rivalComputedBalances.get(rival.id)!
-                    : getRivalBalance(rival.id);
+                  const balance = getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
                   const hasOverride = !!pairHandicap;
