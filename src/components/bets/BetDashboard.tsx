@@ -111,16 +111,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
-  const [computedRivalBalances, setComputedRivalBalances] = useState<Map<string, number>>(new Map());
-
-  const handleComputedBalance = useCallback((rivalId: string, balance: number) => {
-    setComputedRivalBalances(prev => {
-      if (prev.get(rivalId) === balance) return prev;
-      const next = new Map(prev);
-      next.set(rivalId, balance);
-      return next;
-    });
-  }, []);
+  // Map: rivalId → balance from the perspective of the CURRENT basePlayer
+  // Reinitialized when basePlayer changes to avoid stale values
+  const [rivalComputedBalances, setRivalComputedBalances] = useState<Map<string, number>>(new Map());
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
@@ -1671,16 +1664,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               if (snapshotTotal !== null) {
                 totalBalance = snapshotTotal;
               } else {
-                // Sum of balances already computed by BilateralDetail (same source as avatars)
-                // plus team bets (carritos, team pressures) not included in bilateral individual
                 const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
-                const individualBalance = groupRivalIds.reduce((sum, rivalId) => {
-                  // Use the balance computed by BilateralDetail if available
-                  // to guarantee avatar + total use exactly the same number
-                  return sum + (computedRivalBalances.has(rivalId)
-                    ? computedRivalBalances.get(rivalId)!
-                    : getCorrectedBilateralBalance(player.id, rivalId));
-                }, 0);
+                const individualBalance = getCorrectedPlayerBalance(player.id, groupRivalIds);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
                 totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
@@ -1904,10 +1889,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  // Use the balance computed by BilateralDetail if available
-                  // to guarantee avatar and header show exactly the same number
-                  const balance = computedRivalBalances.has(rival.id)
-                    ? computedRivalBalances.get(rival.id)!
+                  // Use the balance computed by BilateralDetail if available (only for current basePlayer)
+                  const balance = rivalComputedBalances.has(rival.id)
+                    ? rivalComputedBalances.get(rival.id)!
                     : getRivalBalance(rival.id);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
@@ -2098,7 +2082,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           snapshotPairBreakdowns={snapshotPairBreakdowns}
           snapshotPairSegmentResults={snapshotPairSegmentResults}
           isHistorical={isHistorical}
-          onComputedBalance={handleComputedBalance}
+          onComputedBalance={handleRivalComputedBalance}
         />
       )}
 
