@@ -2046,6 +2046,46 @@ export const useRoundManagement = ({
           return false;
         }
 
+        // Guard: check if a guest with the same name already exists in this round
+        const { data: existingGuest } = await supabase
+          .from('round_players')
+          .select('id')
+          .eq('round_id', roundState.id)
+          .is('profile_id', null)
+          .eq('guest_name', safeName)
+          .eq('group_id', groupId)
+          .maybeSingle();
+
+        if (existingGuest) {
+          devLog(`Guest "${safeName}" already exists in round, skipping insert. Mapping to ${existingGuest.id}`);
+          // Map existing guest instead of creating a duplicate
+          const oldId = player.id;
+          const newId = existingGuest.id as string;
+          if (oldId !== newId) {
+            setPlayers((prev) =>
+              prev.map((p) =>
+                p.id === oldId ? { ...p, id: newId } : p
+              )
+            );
+            setScores((prev) => {
+              const next = new Map(prev);
+              const oldScores = next.get(oldId);
+              if (oldScores) {
+                next.delete(oldId);
+                next.set(newId, oldScores.map((s) => ({ ...s, playerId: newId })));
+              }
+              return next;
+            });
+            setRoundPlayerIds((prev) => {
+              const next = new Map(prev);
+              next.delete(oldId);
+              next.set(newId, newId);
+              return next;
+            });
+          }
+          return true;
+        }
+
         const { data, error } = await supabase
           .from('round_players')
           .insert({
