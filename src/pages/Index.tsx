@@ -1631,17 +1631,20 @@ const Index = () => {
   const handleStartRound = async () => {
     if (!course || !selectedCourseId) return;
     
+    let activeRoundId = roundState.id;
+
     // Create round in database first if not exists
-    if (!roundState.id) {
+    if (!activeRoundId) {
       const roundId = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (!roundId) return;
+      activeRoundId = roundId;
       // Wait for useEffect to persist unmapped players
       await new Promise(resolve => setTimeout(resolve, 200));
     }
     
-    // Initialize scores and start
+    // Initialize scores and start — pass explicit roundId to avoid stale state
     initializeScores();
-    const success = await startRoundInDb();
+    const success = await startRoundInDb(activeRoundId);
     if (success) {
       setView('scoring');
     }

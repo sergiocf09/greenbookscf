@@ -742,8 +742,11 @@ export const useRoundManagement = ({
   }, [profile, players, betConfig, applyMyUsgaHandicapIfAvailable]);
 
   // Start the round (change status to in_progress)
-  const startRound = useCallback(async () => {
-    if (!roundState.id || !course) return false;
+  // Accepts an optional explicit roundId to avoid stale-state issues when
+  // createRound and startRound are called in the same event handler.
+  const startRound = useCallback(async (explicitRoundId?: string) => {
+    const effectiveRoundId = explicitRoundId || roundState.id;
+    if (!effectiveRoundId || !course) return false;
 
     setIsLoading(true);
     try {
@@ -751,7 +754,7 @@ export const useRoundManagement = ({
       const { error } = await supabase
         .from('rounds')
         .update({ status: 'in_progress' })
-        .eq('id', roundState.id);
+        .eq('id', effectiveRoundId);
 
       if (error) throw error;
 
