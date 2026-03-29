@@ -319,14 +319,15 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {allPlayers.map(row => {
+                {allPlayers.map((row, rowIndex) => {
                   const isBaseRow = row.id === basePlayerId || row.profileId === basePlayerId;
+                  const isEvenRow = rowIndex % 2 === 0;
                   return (
                     <tr
                       key={row.id}
                       className={cn(
-                        'border-t border-border/30',
-                        isBaseRow && 'bg-primary/5'
+                        'border-t-2 border-primary/25',
+                        isBaseRow ? 'bg-primary/5' : isEvenRow ? 'bg-muted/20' : 'bg-card'
                       )}
                     >
                       {/* Row header - name only, no avatar */}
