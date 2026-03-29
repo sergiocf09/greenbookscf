@@ -421,15 +421,26 @@ const Index = () => {
     if (persistedPlayersForRoundRef.current === roundState.id) return;
     
     const persistUnmappedPlayers = async () => {
+      // Mark as persisted IMMEDIATELY (synchronously) to prevent re-entrant
+      // executions when addPlayerToRound triggers setPlayers → re-render → re-effect.
+      persistedPlayersForRoundRef.current = roundState.id;
+
       for (const player of players) {
         // Skip if already mapped (already persisted)
         if (roundPlayerIds.has(player.id)) continue;
         if (player.profileId && roundPlayerIds.has(player.profileId)) continue;
-        
-        // Persist this player (addPlayerToRound handles both registered and guest players)
-        await addPlayerToRound(player, roundState.groupId!);
+
+        // Use the concurrency guard to avoid double-persisting the same player
+        if (persistingPlayerIdsRef.current.has(player.id)) continue;
+        persistingPlayerIdsRef.current.add(player.id);
+
+        try {
+          // Persist this player (addPlayerToRound handles both registered and guest players)
+          await addPlayerToRound(player, roundState.groupId!);
+        } finally {
+          persistingPlayerIdsRef.current.delete(player.id);
+        }
       }
-      persistedPlayersForRoundRef.current = roundState.id;
     };
     
     void persistUnmappedPlayers();
