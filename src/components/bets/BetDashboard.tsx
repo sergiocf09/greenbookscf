@@ -1848,7 +1848,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {vsTotalBalance >= 0 ? '+$' : '-$'}{Math.abs(vsTotalBalance)}
+                              {vsTotalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(vsTotalBalance))}
                             </span>
                           </div>
                       ))}
