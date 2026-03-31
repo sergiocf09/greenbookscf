@@ -229,7 +229,7 @@ function drawCanvas(
       cursorX += wonW + 8;
     }
     if (rivalStats && rivalStats.lost > 0) {
-      const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
+      const lostText = `▼ -$${fmtMoney(lostTo)} (${rivalStats.lost})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const lostW = ctx.measureText(lostText).width + 16;
       ctx.fillStyle = 'rgba(248,113,113,0.12)';
