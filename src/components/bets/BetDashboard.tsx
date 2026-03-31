@@ -2858,7 +2858,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             {(() => {
                               const frontMainTied = displayFrontBets[0] === 0;
                               const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${Math.abs(matchMoney)}` : (frontMainTied ? 'Carry' : '$0');
+                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}` : (frontMainTied ? 'Carry' : '$0');
                             })()}
                           </span>
                         </div>
