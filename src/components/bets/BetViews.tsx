@@ -132,7 +132,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
                 'text-sm font-semibold',
                 typeTotal > 0 ? 'text-green-600' : typeTotal < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {typeTotal >= 0 ? '+$' : '-$'}{Math.abs(typeTotal)}
+                {typeTotal >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(typeTotal))}
               </span>
             </div>
           );
