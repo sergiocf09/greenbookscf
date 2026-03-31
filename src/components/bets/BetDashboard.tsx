@@ -5004,7 +5004,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           )}>
             {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
             {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${Math.abs(computedTotalBalance)}
+            ${fmtMoney(Math.abs(computedTotalBalance))}
           </div>
         </div>
         
