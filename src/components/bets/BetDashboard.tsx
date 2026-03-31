@@ -5156,7 +5156,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         isDisabled ? 'text-muted-foreground' :
                         total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
+                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(total))}`}
                       </span>
                     )}
                   </div>
