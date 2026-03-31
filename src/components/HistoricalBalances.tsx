@@ -671,7 +671,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               )}>
                 {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
                 {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
+                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(totalNet))}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
