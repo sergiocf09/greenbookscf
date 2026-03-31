@@ -5478,7 +5478,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   oyesTotal < 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${Math.abs(oyesTotal)}
+                                  ${fmtMoney(Math.abs(oyesTotal))}
                                 </div>
                               </div>
                             </div>
