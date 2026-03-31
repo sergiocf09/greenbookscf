@@ -1,6 +1,7 @@
 // Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford, Skins Grupal consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
