@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import type { ShareHighlights, BadgeData } from '@/lib/shareHighlights';
 import {
   Dialog,
@@ -214,7 +215,7 @@ function drawCanvas(
     const lostTo = player.lostTo || 0;
     const rivalStats = player.rivalStats;
     if (rivalStats && rivalStats.won > 0) {
-      const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
+      const wonText = `▲ +$${fmtMoney(wonFrom)} (${rivalStats.won})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const wonW = ctx.measureText(wonText).width + 16;
       ctx.fillStyle = 'rgba(74,222,128,0.15)';
@@ -228,7 +229,7 @@ function drawCanvas(
       cursorX += wonW + 8;
     }
     if (rivalStats && rivalStats.lost > 0) {
-      const lostText = `▼ -$${lostTo.toLocaleString()} (${rivalStats.lost})`;
+      const lostText = `▼ -$${fmtMoney(lostTo)} (${rivalStats.lost})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const lostW = ctx.measureText(lostText).width + 16;
       ctx.fillStyle = 'rgba(248,113,113,0.12)';
@@ -243,9 +244,9 @@ function drawCanvas(
 
     // ── RIGHT COLUMN: Net amount ──
     const netLabel = player.totalNet > 0
-      ? `+$${player.totalNet.toLocaleString()}`
+      ? `+$${fmtMoney(player.totalNet)}`
       : player.totalNet < 0
-        ? `-$${Math.abs(player.totalNet).toLocaleString()}`
+        ? `-$${fmtMoney(Math.abs(player.totalNet))}`
         : '$0';
     ctx.textAlign = 'right';
     ctx.font = `bold ${isFirst ? 52 : 44}px Georgia, serif`;

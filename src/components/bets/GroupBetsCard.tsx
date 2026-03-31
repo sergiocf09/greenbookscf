@@ -1,6 +1,7 @@
 // Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford, Skins Grupal consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
@@ -351,7 +352,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                           {setDescriptions}
                         </span>
                       </div>
-                      <span className="text-green-600 font-bold">+${totalAmount}</span>
+                      <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
                     </div>
                   </div>
                 );
@@ -574,7 +575,7 @@ const MedalResultBlock: React.FC<{
           <span className="text-xs text-muted-foreground">$0</span>
         ) : (
           <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
-            {isConfirmed ? '+' : '~'}${amountWon}
+            {isConfirmed ? '+' : '~'}${fmtMoney(amountWon)}
           </span>
         )}
       </div>
@@ -723,7 +724,7 @@ const StablefordResultBlock: React.FC<{
             </div>
             {amount > 0 ? (
               <span className={cn("font-bold", winnerInSameGroup ? "text-green-600" : "text-amber-600")}>
-                +${amount * (results.length - 1)}
+                +${fmtMoney(amount * (results.length - 1))}
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">$0</span>
@@ -784,7 +785,7 @@ const SkinsGrupalPopover: React.FC<{
                     'p-1 text-center text-[12px] font-bold',
                     winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
                   )}>
-                    {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                    {winner ? (hole.skinValue > 0 ? `$${fmtMoney(hole.skinValue)}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
                   </td>
                 </tr>
               );
@@ -2397,7 +2398,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <span className="font-medium text-sm truncate">{formatPlayerNameTwoWords(p.name)}</span>
                           </div>
                           <div className="flex items-center gap-3 shrink-0 ml-2">
-                            <span className="text-sm font-bold text-green-600">+${displayAmount}</span>
+                            <span className="text-sm font-bold text-green-600">+${fmtMoney(displayAmount)}</span>
                             <span className="text-sm font-bold text-golf-dark bg-golf-gold/30 rounded-full w-6 h-6 flex items-center justify-center">
                               {skinCount}
                             </span>

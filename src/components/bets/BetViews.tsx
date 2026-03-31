@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { fmtMoney } from '@/lib/formatMoney';
 import { Player, BetConfig } from '@/types/golf';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -65,7 +66,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
               {balance !== 0 && (
                 balance > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />
               )}
-              ${Math.abs(balance)}
+              ${fmtMoney(Math.abs(balance))}
             </div>
           </button>
         );
@@ -116,7 +117,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
           {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
           {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
           <DollarSign className="h-4 w-4" />
-          {Math.abs(totalBalance)}
+          {fmtMoney(Math.abs(totalBalance))}
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
                 'text-sm font-semibold',
                 typeTotal > 0 ? 'text-green-600' : typeTotal < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {typeTotal >= 0 ? '+$' : '-$'}{Math.abs(typeTotal)}
+                {typeTotal >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(typeTotal))}
               </span>
             </div>
           );
@@ -188,7 +189,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
                 'text-lg font-bold flex items-center gap-1',
                 balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {balance >= 0 ? '+$' : '-$'}{Math.abs(balance)}
+                {balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(balance))}
               </div>
             </div>
           );

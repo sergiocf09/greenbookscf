@@ -1,5 +1,6 @@
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
@@ -1771,7 +1772,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {displayBalance >= 0 ? '+$' : '-$'}{Math.abs(displayBalance)}
+                        {displayBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(displayBalance))}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
@@ -1847,7 +1848,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {vsTotalBalance >= 0 ? '+$' : '-$'}{Math.abs(vsTotalBalance)}
+                              {vsTotalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(vsTotalBalance))}
                             </span>
                           </div>
                       ))}
@@ -1967,7 +1968,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {balance !== 0 && (
                             balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
                           )}
-                          ${Math.abs(balance)}
+                          ${fmtMoney(Math.abs(balance))}
                         </div>
                       </button>
                       {/* Remove cross-group rival button */}
@@ -2412,7 +2413,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
                   ) : (
                     <span className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      {baseTeamBalance >= 0 ? '+$' : '-$'}{Math.abs(baseTeamBalance)}
+                      {baseTeamBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamBalance))}
                     </span>
                   )}
                   {onBetConfigChange && (
@@ -2606,7 +2607,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       <p className="flex justify-between font-semibold">
                                         <span>Resultado</span>
                                         <span className={cn('tabular-nums', unitsDetail.money > 0 ? 'text-green-600' : unitsDetail.money < 0 ? 'text-destructive' : '')}>
-                                          {isBaseInTeamA ? (unitsDetail.money >= 0 ? '+' : '') : (unitsDetail.money <= 0 ? '+' : '-')}${Math.abs(unitsDetail.money)}
+                                          {isBaseInTeamA ? (unitsDetail.money >= 0 ? '+' : '') : (unitsDetail.money <= 0 ? '+' : '-')}${fmtMoney(Math.abs(unitsDetail.money))}
                                         </span>
                                       </p>
                                     </div>
@@ -2680,7 +2681,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       <p className="flex justify-between font-semibold">
                                         <span>Resultado</span>
                                         <span className={cn('tabular-nums', oyesesDetail.money > 0 ? 'text-green-600' : oyesesDetail.money < 0 ? 'text-destructive' : '')}>
-                                          {isBaseInTeamA ? (oyesesDetail.money >= 0 ? '+' : '') : (oyesesDetail.money <= 0 ? '+' : '-')}${Math.abs(oyesesDetail.money)}
+                                          {isBaseInTeamA ? (oyesesDetail.money >= 0 ? '+' : '') : (oyesesDetail.money <= 0 ? '+' : '-')}${fmtMoney(Math.abs(oyesesDetail.money))}
                                         </span>
                                       </p>
                                     </div>
@@ -2857,7 +2858,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             {(() => {
                               const frontMainTied = displayFrontBets[0] === 0;
                               const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${Math.abs(matchMoney)}` : (frontMainTied ? 'Carry' : '$0');
+                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}` : (frontMainTied ? 'Carry' : '$0');
                             })()}
                           </span>
                         </div>
@@ -3152,7 +3153,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
-                {baseTeamMoney >= 0 ? '+$' : '-$'}{Math.abs(baseTeamMoney)}
+                {baseTeamMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamMoney))}
               </span>
             )}
             {onToggleDisabled && (
@@ -5003,7 +5004,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           )}>
             {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
             {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${Math.abs(computedTotalBalance)}
+            ${fmtMoney(Math.abs(computedTotalBalance))}
           </div>
         </div>
         
@@ -5155,7 +5156,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         isDisabled ? 'text-muted-foreground' :
                         total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${Math.abs(total)}`}
+                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(total))}`}
                       </span>
                     )}
                   </div>
@@ -5477,7 +5478,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   oyesTotal < 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${Math.abs(oyesTotal)}
+                                  ${fmtMoney(Math.abs(oyesTotal))}
                                 </div>
                               </div>
                             </div>
@@ -5512,7 +5513,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   oyesTotal > 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${Math.abs(oyesTotal)}
+                                  ${fmtMoney(Math.abs(oyesTotal))}
                                 </div>
                               </div>
                             </div>
@@ -6236,7 +6237,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'text-muted-foreground'
                               )}
                             >
-                              {`${data.amount >= 0 ? '+$' : '-$'}${Math.abs(data.amount)}`}
+                              {`${data.amount >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(data.amount))}`}
                             </span>
 
                             {showSkinsShoe && (

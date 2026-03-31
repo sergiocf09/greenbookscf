@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -560,7 +561,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             {selectedRival.netAmount > 0 && <TrendingUp className="h-5 w-5" />}
             {selectedRival.netAmount < 0 && <TrendingDown className="h-5 w-5" />}
             {selectedRival.netAmount === 0 && <Minus className="h-5 w-5" />}
-            ${Math.abs(selectedRival.netAmount)}
+            ${fmtMoney(Math.abs(selectedRival.netAmount))}
           </div>
         </div>
 
@@ -606,7 +607,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {round.netAmount >= 0 ? '+' : ''}${round.netAmount}
+                        {round.netAmount >= 0 ? '+' : ''}${fmtMoney(round.netAmount)}
                       </span>
                     </div>
                     {/* Line 2: SLDG +N below date, Yo: XX vs YY left-aligned under club */}
@@ -670,7 +671,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               )}>
                 {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
                 {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
+                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(totalNet))}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -782,7 +783,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                       rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}>
-                      {rival.netAmount >= 0 ? '+' : '-'}${Math.abs(rival.netAmount)}
+                      {rival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(rival.netAmount))}
                     </span>
                     <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   </button>
@@ -807,7 +808,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               )}>
                 {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
                 {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${Math.abs(totalNet)}</span>
+                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(totalNet))}</span>
               </div>
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -847,7 +848,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' :
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {round.netAmount > 0 ? '+' : round.netAmount < 0 ? '-' : ''}${Math.abs(round.netAmount)}
+                        {round.netAmount > 0 ? '+' : round.netAmount < 0 ? '-' : ''}${fmtMoney(Math.abs(round.netAmount))}
                       </span>
                     </div>
                   </button>
