@@ -848,7 +848,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' :
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {round.netAmount > 0 ? '+' : round.netAmount < 0 ? '-' : ''}${Math.abs(round.netAmount)}
+                        {round.netAmount > 0 ? '+' : round.netAmount < 0 ? '-' : ''}${fmtMoney(Math.abs(round.netAmount))}
                       </span>
                     </div>
                   </button>
