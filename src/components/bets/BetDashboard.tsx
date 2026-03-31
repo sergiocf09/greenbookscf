@@ -6237,7 +6237,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'text-muted-foreground'
                               )}
                             >
-                              {`${data.amount >= 0 ? '+$' : '-$'}${Math.abs(data.amount)}`}
+                              {`${data.amount >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(data.amount))}`}
                             </span>
 
                             {showSkinsShoe && (

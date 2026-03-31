@@ -2398,7 +2398,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <span className="font-medium text-sm truncate">{formatPlayerNameTwoWords(p.name)}</span>
                           </div>
                           <div className="flex items-center gap-3 shrink-0 ml-2">
-                            <span className="text-sm font-bold text-green-600">+${displayAmount}</span>
+                            <span className="text-sm font-bold text-green-600">+${fmtMoney(displayAmount)}</span>
                             <span className="text-sm font-bold text-golf-dark bg-golf-gold/30 rounded-full w-6 h-6 flex items-center justify-center">
                               {skinCount}
                             </span>
