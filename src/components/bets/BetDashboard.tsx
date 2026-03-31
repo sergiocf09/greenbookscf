@@ -2607,7 +2607,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       <p className="flex justify-between font-semibold">
                                         <span>Resultado</span>
                                         <span className={cn('tabular-nums', unitsDetail.money > 0 ? 'text-green-600' : unitsDetail.money < 0 ? 'text-destructive' : '')}>
-                                          {isBaseInTeamA ? (unitsDetail.money >= 0 ? '+' : '') : (unitsDetail.money <= 0 ? '+' : '-')}${Math.abs(unitsDetail.money)}
+                                          {isBaseInTeamA ? (unitsDetail.money >= 0 ? '+' : '') : (unitsDetail.money <= 0 ? '+' : '-')}${fmtMoney(Math.abs(unitsDetail.money))}
                                         </span>
                                       </p>
                                     </div>
