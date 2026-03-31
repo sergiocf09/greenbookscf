@@ -117,7 +117,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
           {totalBalance > 0 && <TrendingUp className="h-5 w-5" />}
           {totalBalance < 0 && <TrendingDown className="h-5 w-5" />}
           <DollarSign className="h-4 w-4" />
-          {Math.abs(totalBalance)}
+          {fmtMoney(Math.abs(totalBalance))}
         </div>
       </div>
 
