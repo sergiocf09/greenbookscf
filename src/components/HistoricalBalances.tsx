@@ -561,7 +561,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             {selectedRival.netAmount > 0 && <TrendingUp className="h-5 w-5" />}
             {selectedRival.netAmount < 0 && <TrendingDown className="h-5 w-5" />}
             {selectedRival.netAmount === 0 && <Minus className="h-5 w-5" />}
-            ${Math.abs(selectedRival.netAmount)}
+            ${fmtMoney(Math.abs(selectedRival.netAmount))}
           </div>
         </div>
 
