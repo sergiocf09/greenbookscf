@@ -724,7 +724,7 @@ const StablefordResultBlock: React.FC<{
             </div>
             {amount > 0 ? (
               <span className={cn("font-bold", winnerInSameGroup ? "text-green-600" : "text-amber-600")}>
-                +${amount * (results.length - 1)}
+                +${fmtMoney(amount * (results.length - 1))}
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">$0</span>
