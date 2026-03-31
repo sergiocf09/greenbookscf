@@ -785,7 +785,7 @@ const SkinsGrupalPopover: React.FC<{
                     'p-1 text-center text-[12px] font-bold',
                     winner ? 'text-green-600' : hole.accumulated > 0 ? 'text-muted-foreground' : ''
                   )}>
-                    {winner ? (hole.skinValue > 0 ? `$${hole.skinValue}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
+                    {winner ? (hole.skinValue > 0 ? `$${fmtMoney(hole.skinValue)}` : '✓') : hole.accumulated > 0 ? `(${hole.accumulated})` : '·'}
                   </td>
                 </tr>
               );
