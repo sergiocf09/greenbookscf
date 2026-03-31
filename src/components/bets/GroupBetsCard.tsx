@@ -575,7 +575,7 @@ const MedalResultBlock: React.FC<{
           <span className="text-xs text-muted-foreground">$0</span>
         ) : (
           <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
-            {isConfirmed ? '+' : '~'}${amountWon}
+            {isConfirmed ? '+' : '~'}${fmtMoney(amountWon)}
           </span>
         )}
       </div>
