@@ -783,7 +783,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                       rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}>
-                      {rival.netAmount >= 0 ? '+' : '-'}${Math.abs(rival.netAmount)}
+                      {rival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(rival.netAmount))}
                     </span>
                     <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   </button>
