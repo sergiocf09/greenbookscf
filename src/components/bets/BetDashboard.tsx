@@ -3153,7 +3153,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
-                {baseTeamMoney >= 0 ? '+$' : '-$'}{Math.abs(baseTeamMoney)}
+                {baseTeamMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamMoney))}
               </span>
             )}
             {onToggleDisabled && (
