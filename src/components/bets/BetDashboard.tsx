@@ -1968,7 +1968,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           {balance !== 0 && (
                             balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
                           )}
-                          ${Math.abs(balance)}
+                          ${fmtMoney(Math.abs(balance))}
                         </div>
                       </button>
                       {/* Remove cross-group rival button */}
