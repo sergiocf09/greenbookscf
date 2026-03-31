@@ -215,7 +215,7 @@ function drawCanvas(
     const lostTo = player.lostTo || 0;
     const rivalStats = player.rivalStats;
     if (rivalStats && rivalStats.won > 0) {
-      const wonText = `▲ +$${wonFrom.toLocaleString()} (${rivalStats.won})`;
+      const wonText = `▲ +$${fmtMoney(wonFrom)} (${rivalStats.won})`;
       ctx.font = 'bold 20px Arial, sans-serif';
       const wonW = ctx.measureText(wonText).width + 16;
       ctx.fillStyle = 'rgba(74,222,128,0.15)';
