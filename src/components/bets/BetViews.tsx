@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { fmtMoney } from '@/lib/formatMoney';
 import { Player, BetConfig } from '@/types/golf';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
