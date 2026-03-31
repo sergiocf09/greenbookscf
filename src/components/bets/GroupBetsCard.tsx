@@ -352,7 +352,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                           {setDescriptions}
                         </span>
                       </div>
-                      <span className="text-green-600 font-bold">+${totalAmount}</span>
+                      <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
                     </div>
                   </div>
                 );
