@@ -1,5 +1,6 @@
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fmtMoney } from '@/lib/formatMoney';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
