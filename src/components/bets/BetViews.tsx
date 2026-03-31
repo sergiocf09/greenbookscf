@@ -66,7 +66,7 @@ export const PlayerBetIcons: React.FC<PlayerBetIconsProps> = ({
               {balance !== 0 && (
                 balance > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />
               )}
-              ${Math.abs(balance)}
+              ${fmtMoney(Math.abs(balance))}
             </div>
           </button>
         );
