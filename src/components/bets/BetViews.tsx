@@ -189,7 +189,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
                 'text-lg font-bold flex items-center gap-1',
                 balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {balance >= 0 ? '+$' : '-$'}{Math.abs(balance)}
+                {balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(balance))}
               </div>
             </div>
           );

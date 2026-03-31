@@ -244,9 +244,9 @@ function drawCanvas(
 
     // ── RIGHT COLUMN: Net amount ──
     const netLabel = player.totalNet > 0
-      ? `+$${player.totalNet.toLocaleString()}`
+      ? `+$${fmtMoney(player.totalNet)}`
       : player.totalNet < 0
-        ? `-$${Math.abs(player.totalNet).toLocaleString()}`
+        ? `-$${fmtMoney(Math.abs(player.totalNet))}`
         : '$0';
     ctx.textAlign = 'right';
     ctx.font = `bold ${isFirst ? 52 : 44}px Georgia, serif`;
