@@ -5,6 +5,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState } from '@/types
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
 import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
+import { fmtMoney } from '../formatMoney';
 import { BetSummary } from './shared';
 
 export const calculateTeamPressuresBets = (
