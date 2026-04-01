@@ -5842,7 +5842,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <span className="text-muted-foreground">× ${frontValue} =</span>
                               </div>
                               <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-600' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
-                                {frontTotalAmount >= 0 ? '+$' : '-$'}{Math.abs(frontTotalAmount)}
+                                {frontTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontTotalAmount))}
                               </span>
                             </div>
 
