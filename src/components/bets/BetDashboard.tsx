@@ -5916,7 +5916,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     </span>
                                   </div>
                                   <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                    {medalTotalAmount >= 0 ? '+$' : '-$'}{Math.abs(medalTotalAmount)}
+                                    {medalTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(medalTotalAmount))}
                                   </span>
                                 </div>
                               );
