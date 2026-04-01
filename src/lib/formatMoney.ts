@@ -9,9 +9,9 @@
  */
 export const fmtMoney = (value: number): string => {
   const rounded = Math.round(value * 100) / 100;
-  return rounded % 1 === 0
-    ? rounded.toFixed(0)
-    : parseFloat(rounded.toFixed(2)).toString();
+  if (rounded % 1 === 0) return rounded.toFixed(0);
+  const str = rounded.toFixed(2);
+  return str.endsWith('0') ? str.slice(0, -1) : str;
 };
 
 /** Formatea con signo y símbolo: +$125.5 / -$125.5 / $0 */

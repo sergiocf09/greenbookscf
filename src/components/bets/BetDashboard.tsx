@@ -5318,7 +5318,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <div className="flex items-center gap-2">
                                 {hasZapato && <span className="text-sm">🥾</span>}
                                 <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                  {data.amount >= 0 ? '+$' : '-$'}{Math.abs(data.amount)}
+                                  {data.amount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(data.amount))}
                                 </span>
                               </div>
                             </div>
@@ -5842,7 +5842,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <span className="text-muted-foreground">× ${frontValue} =</span>
                               </div>
                               <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-600' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
-                                {frontTotalAmount >= 0 ? '+$' : '-$'}{Math.abs(frontTotalAmount)}
+                                {frontTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontTotalAmount))}
                               </span>
                             </div>
 
@@ -5886,7 +5886,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <span className="text-muted-foreground">× ${backValue} =</span>
                               </div>
                               <span className={cn('font-bold', backTotalAmount > 0 ? 'text-green-600' : backTotalAmount < 0 ? 'text-destructive' : '')}>
-                                {backTotalAmount >= 0 ? '+$' : '-$'}{Math.abs(backTotalAmount)}
+                                {backTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backTotalAmount))}
                               </span>
                             </div>
 
@@ -5916,7 +5916,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     </span>
                                   </div>
                                   <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                    {medalTotalAmount >= 0 ? '+$' : '-$'}{Math.abs(medalTotalAmount)}
+                                    {medalTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(medalTotalAmount))}
                                   </span>
                                 </div>
                               );
@@ -5926,7 +5926,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
                               <span>TOTAL RAYAS</span>
                               <span className={cn(grandTotal > 0 ? 'text-green-600' : grandTotal < 0 ? 'text-destructive' : '')}>
-                                {grandTotal >= 0 ? '+$' : '-$'}{Math.abs(grandTotal)}
+                                {grandTotal >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(grandTotal))}
                               </span>
                             </div>
                             
