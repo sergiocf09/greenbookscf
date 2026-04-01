@@ -5926,7 +5926,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
                               <span>TOTAL RAYAS</span>
                               <span className={cn(grandTotal > 0 ? 'text-green-600' : grandTotal < 0 ? 'text-destructive' : '')}>
-                                {grandTotal >= 0 ? '+$' : '-$'}{Math.abs(grandTotal)}
+                                {grandTotal >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(grandTotal))}
                               </span>
                             </div>
                             
