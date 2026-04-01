@@ -5,6 +5,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState } from '@/types
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
 import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
+import { fmtMoney } from '../formatMoney';
 import { BetSummary } from './shared';
 
 export const calculateTeamPressuresBets = (
@@ -163,10 +164,10 @@ export const calculateTeamPressuresBets = (
     devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} totalMoney=${totalMoney}`);
 
     if (totalMoney !== 0) {
-      const perPairAmount = Math.round(totalMoney / 2);
-      const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${Math.abs(pressureMoney)}`];
-      if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${Math.abs(unitsMoney)}`);
-      if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${Math.abs(oyesesMoney)}`);
+      const perPairAmount = totalMoney / 2;
+      const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(pressureMoney))}`];
+      if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(unitsMoney))}`);
+      if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(oyesesMoney))}`);
       const descA = descParts.join(' | ');
       const descB = descParts.map(p => p.replace(/[+-]\$/g, (m) => m === '+$' ? '-$' : '+$')).join(' | ');
 
