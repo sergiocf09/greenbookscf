@@ -66,7 +66,7 @@ export const calculateCulebrasBets = (
     const totalCulebras = allCulebras.length;
     const amountPerPlayer = totalCulebras * resolved.culebras.valuePerOccurrence;
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
       allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Culebras', amount: -amountPerPlayer, segment: 'total', description: `Último en culebra - paga ${totalCulebras} culebras` });
       allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Culebras', amount: amountPerPlayer, segment: 'total', description: `Recibe de culebras x${totalCulebras}` });

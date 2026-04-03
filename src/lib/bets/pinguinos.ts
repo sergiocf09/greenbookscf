@@ -69,7 +69,7 @@ export const calculatePinguinosBets = (
     const totalPinguinos = allPinguinos.length;
     const amountPerPlayer = totalPinguinos * resolved.pinguinos.valuePerOccurrence;
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
       allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Pingüinos', amount: -amountPerPlayer, segment: 'total', description: `Último en pingüino - paga ${totalPinguinos} pingüinos` });
       allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Pingüinos', amount: amountPerPlayer, segment: 'total', description: `Recibe de pingüinos x${totalPinguinos}` });
