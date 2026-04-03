@@ -7,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
 import { Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { Separator } from '@/components/ui/separator';
 
 const Auth = () => {
   const { theme, setTheme } = useTheme();
