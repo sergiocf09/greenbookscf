@@ -1260,7 +1260,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
         ? displayGroupPlayers.filter(p => conejaParticipantIds.includes(p.id))
         : displayGroupPlayers;
-      if (conejaPlayers.length >= 2) {
+      if (conejaPlayers.length >= 2 && conejaPlayers.some(p => p.id === playerId) && conejaPlayers.some(p => p.id === rivalId)) {
         const conejaBets = calculateConejaBets(conejaPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
         const playerWins = conejaBets
           .filter(b => b.winnerId === playerId && b.loserId === rivalId)
@@ -4680,7 +4680,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
           ? groupPlayers.filter(p => conejaParticipantIds.includes(p.id))
           : groupPlayers;
-        const conejaBets = calculateConejaBets(conejaPlayers.length >= 2 ? conejaPlayers : groupPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
+        const conejaBets = calculateConejaBets(conejaPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
         
         const playerWinsFromRival = conejaBets
           .filter(b => b.winnerId === player.id && b.loserId === rival.id)

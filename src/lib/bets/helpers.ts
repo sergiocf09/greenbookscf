@@ -1,7 +1,7 @@
 /**
  * Balance and summary helpers for bet results
  */
-import { Player, PlayerScore, GolfCourse } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { BetSummary } from './shared';
 
 export const getPlayerBalance = (playerId: string, summaries: BetSummary[]): number => {
@@ -46,13 +46,20 @@ export interface TieResolution {
 export const detectTiesNeedingResolution = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  course: GolfCourse
+  course: GolfCourse,
+  config?: BetConfig
 ): TieResolution[] => {
   const ties: TieResolution[] = [];
 
+  // Resolve participating players for culebras
+  const culebraParticipantIds = config?.culebras?.participantIds;
+  const culebraPlayers = culebraParticipantIds && culebraParticipantIds.length > 0
+    ? players.filter(p => culebraParticipantIds.includes(p.id))
+    : players;
+
   // Check culebras
   const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
-  players.forEach(player => {
+  culebraPlayers.forEach(player => {
     const playerScores = scores.get(player.id) || [];
     playerScores.forEach(score => {
       if (score.putts >= 3) allCulebras.push({ playerId: player.id, holeNumber: score.holeNumber, putts: score.putts });
@@ -66,9 +73,15 @@ export const detectTiesNeedingResolution = (
     if (tied.length > 1) ties.push({ type: 'culebra', holeNumber: maxHole, players: tied.map(t => t.playerId) });
   }
 
+  // Resolve participating players for pinguinos
+  const pinguinoParticipantIds = config?.pinguinos?.participantIds;
+  const pinguinoPlayers = pinguinoParticipantIds && pinguinoParticipantIds.length > 0
+    ? players.filter(p => pinguinoParticipantIds.includes(p.id))
+    : players;
+
   // Check pinguinos
   const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
-  players.forEach(player => {
+  pinguinoPlayers.forEach(player => {
     const playerScores = scores.get(player.id) || [];
     playerScores.forEach(score => {
       const holePar = course.holes[score.holeNumber - 1]?.par || 4;
