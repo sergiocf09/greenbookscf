@@ -47,7 +47,6 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-lg">Cálculo de Handicap</h3>
           {profile?.display_name && (
             <p className="text-sm text-muted-foreground">{profile.display_name}</p>
           )}
