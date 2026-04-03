@@ -23,13 +23,13 @@ export const calculateCulebrasBets = (
     
     if (participatingPlayers.length < 2) return;
     
-    const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
+    const participantIds = new Set(participatingPlayers.map(p => p.id));
     const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       playerScores.forEach(score => {
-        if (groupPlayerIds.has(player.id) && score.putts >= 3) {
+        if (score.putts >= 3) {
           allCulebras.push({ playerId: player.id, holeNumber: score.holeNumber, putts: score.putts });
         }
       });
