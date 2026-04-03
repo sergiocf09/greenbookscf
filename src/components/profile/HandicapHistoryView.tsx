@@ -90,6 +90,9 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       {/* Header card */}
       <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
         <div className="flex-1">
+          {playerName && (
+            <p className="text-sm font-medium text-foreground mb-0.5">{playerName}</p>
+          )}
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Índice USGA</p>
           <p className="text-3xl font-bold text-foreground">
             {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
