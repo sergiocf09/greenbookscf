@@ -25,7 +25,34 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
   const returnTo = (location.state as any)?.returnTo as string | undefined;
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+
+      if (result.error) {
+        toast.error('Error al iniciar con Google', { description: String(result.error) });
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      if (result.redirected) {
+        return; // Browser will redirect
+      }
+
+      toast.success('¡Bienvenido!');
+      navigate(returnTo || '/');
+    } catch (err) {
+      toast.error('Error al iniciar con Google');
+    }
+    setIsGoogleLoading(false);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
