@@ -4680,7 +4680,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
           ? groupPlayers.filter(p => conejaParticipantIds.includes(p.id))
           : groupPlayers;
-        const conejaBets = calculateConejaBets(conejaPlayers.length >= 2 ? conejaPlayers : groupPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
+        const conejaBets = calculateConejaBets(conejaPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
         
         const playerWinsFromRival = conejaBets
           .filter(b => b.winnerId === player.id && b.loserId === rival.id)
