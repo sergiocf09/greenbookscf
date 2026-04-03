@@ -27,12 +27,12 @@ export const calculatePinguinosBets = (
     const groupPlayerIds = new Set(participatingPlayers.map(p => p.id));
     const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       playerScores.forEach(score => {
         const holePar = course.holes[score.holeNumber - 1]?.par || 4;
         const overPar = score.strokes - holePar;
-        if (groupPlayerIds.has(player.id) && overPar >= 3) {
+        if (overPar >= 3) {
           allPinguinos.push({ playerId: player.id, holeNumber: score.holeNumber, overPar });
         }
       });
