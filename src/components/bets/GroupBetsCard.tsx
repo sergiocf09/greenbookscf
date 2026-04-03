@@ -853,14 +853,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return groupPlayersInList;
   };
 
-  // Calculate Coneja results (scoped to same group, filtered by participantIds)
+  // Calculate Coneja results (scoped to same group, using the same participant resolution as other group bets)
   const conejaParticipants = useMemo((): Player[] => {
     if (!betConfig.coneja?.enabled) return [];
-    const conejaParticipantIds = betConfig.coneja.participantIds;
-    if (conejaParticipantIds && conejaParticipantIds.length > 0) {
-      return sameGroupPlayers.filter(p => conejaParticipantIds.includes(p.id));
-    }
-    return sameGroupPlayers;
+    return resolveGroupParticipants(betConfig.coneja.participantIds);
   }, [sameGroupPlayers, betConfig.coneja]);
 
   const conejaResult = useMemo(() => {
@@ -870,7 +866,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const holeDisplays = getConejaHoleDisplays(conejaParticipants, scores, course, betConfig, confirmedHoles);
     const amount = betConfig.coneja.amount || 50;
     
-    // Get winners for display — use conejaParticipants for correct loser count
     const winners = setResults
       .filter(sr => sr.winnerId)
       .map(sr => {
