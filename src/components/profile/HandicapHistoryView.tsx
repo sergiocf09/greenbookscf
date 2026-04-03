@@ -19,7 +19,7 @@ const TEE_COLORS: Record<string, string> = {
   red: 'bg-red-600',
 };
 
-export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profileId }) => {
+export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profileId, playerName }) => {
   const {
     handicapIndex,
     entries,
