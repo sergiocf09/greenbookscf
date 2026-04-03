@@ -9,6 +9,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceL
 
 interface HandicapHistoryViewProps {
   profileId: string | null;
+  playerName?: string;
 }
 
 const TEE_COLORS: Record<string, string> = {
