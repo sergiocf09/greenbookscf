@@ -46,7 +46,12 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg">Cálculo de Handicap</h3>
+        <div>
+          <h3 className="font-semibold text-lg">Cálculo de Handicap</h3>
+          {profile?.display_name && (
+            <p className="text-sm text-muted-foreground">{profile.display_name}</p>
+          )}
+        </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Info className="h-3 w-3" />
           Reglas USGA

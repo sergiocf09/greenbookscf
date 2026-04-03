@@ -3041,7 +3041,7 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Historial de Handicap</DialogTitle>
           </DialogHeader>
-          <HandicapHistoryView profileId={profile?.id ?? null} />
+          <HandicapHistoryView profileId={profile?.id ?? null} playerName={profile?.display_name} />
         </DialogContent>
       </Dialog>
 

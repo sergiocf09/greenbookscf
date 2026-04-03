@@ -9,6 +9,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceL
 
 interface HandicapHistoryViewProps {
   profileId: string | null;
+  playerName?: string;
 }
 
 const TEE_COLORS: Record<string, string> = {
@@ -18,7 +19,7 @@ const TEE_COLORS: Record<string, string> = {
   red: 'bg-red-600',
 };
 
-export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profileId }) => {
+export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profileId, playerName }) => {
   const {
     handicapIndex,
     entries,
@@ -89,6 +90,9 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       {/* Header card */}
       <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/50">
         <div className="flex-1">
+          {playerName && (
+            <p className="text-sm font-medium text-foreground mb-0.5">{playerName}</p>
+          )}
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Índice USGA</p>
           <p className="text-3xl font-bold text-foreground">
             {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
