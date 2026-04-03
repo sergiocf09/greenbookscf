@@ -24,7 +24,6 @@ export const calculatePinguinosBets = (
     
     if (participatingPlayers.length < 2) return;
     
-    const groupPlayerIds = new Set(participatingPlayers.map(p => p.id));
     const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
     
     participatingPlayers.forEach(player => {
