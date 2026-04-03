@@ -23,13 +23,13 @@ export const calculateCulebrasBets = (
     
     if (participatingPlayers.length < 2) return;
     
-    const groupPlayerIds = new Set(groupPlayers.map(p => p.id));
+    const participantIds = new Set(participatingPlayers.map(p => p.id));
     const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       playerScores.forEach(score => {
-        if (groupPlayerIds.has(player.id) && score.putts >= 3) {
+        if (score.putts >= 3) {
           allCulebras.push({ playerId: player.id, holeNumber: score.holeNumber, putts: score.putts });
         }
       });
@@ -66,7 +66,7 @@ export const calculateCulebrasBets = (
     const totalCulebras = allCulebras.length;
     const amountPerPlayer = totalCulebras * resolved.culebras.valuePerOccurrence;
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
       allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Culebras', amount: -amountPerPlayer, segment: 'total', description: `Último en culebra - paga ${totalCulebras} culebras` });
       allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Culebras', amount: amountPerPlayer, segment: 'total', description: `Recibe de culebras x${totalCulebras}` });

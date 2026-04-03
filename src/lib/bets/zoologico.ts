@@ -124,9 +124,9 @@ export const calculateZoologicoBets = (
     if (participatingPlayers.length < 2) return;
 
     enabledAnimals.forEach(animalType => {
-      const result = calculateZoologicoAnimalResult(animalType, groupPlayers, resolved.zoologico);
+      const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, resolved.zoologico);
       if (!result || !result.loser || result.totalOccurrences === 0) return;
-      groupPlayers.forEach(player => {
+      participatingPlayers.forEach(player => {
         if (player.id === result.loser!.playerId) return;
         allSummaries.push({ playerId: player.id, vsPlayer: result.loser!.playerId, betType: `Zoológico ${result.label}`, amount: result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias` });
         allSummaries.push({ playerId: result.loser!.playerId, vsPlayer: player.id, betType: `Zoológico ${result.label}`, amount: -result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias` });

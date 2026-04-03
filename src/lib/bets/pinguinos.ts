@@ -24,15 +24,14 @@ export const calculatePinguinosBets = (
     
     if (participatingPlayers.length < 2) return;
     
-    const groupPlayerIds = new Set(participatingPlayers.map(p => p.id));
     const allPinguinos: { playerId: string; holeNumber: number; overPar: number }[] = [];
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       const playerScores = scores.get(player.id) || [];
       playerScores.forEach(score => {
         const holePar = course.holes[score.holeNumber - 1]?.par || 4;
         const overPar = score.strokes - holePar;
-        if (groupPlayerIds.has(player.id) && overPar >= 3) {
+        if (overPar >= 3) {
           allPinguinos.push({ playerId: player.id, holeNumber: score.holeNumber, overPar });
         }
       });
@@ -69,7 +68,7 @@ export const calculatePinguinosBets = (
     const totalPinguinos = allPinguinos.length;
     const amountPerPlayer = totalPinguinos * resolved.pinguinos.valuePerOccurrence;
     
-    groupPlayers.forEach(player => {
+    participatingPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
       allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Pingüinos', amount: -amountPerPlayer, segment: 'total', description: `Último en pingüino - paga ${totalPinguinos} pingüinos` });
       allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Pingüinos', amount: amountPerPlayer, segment: 'total', description: `Recibe de pingüinos x${totalPinguinos}` });
