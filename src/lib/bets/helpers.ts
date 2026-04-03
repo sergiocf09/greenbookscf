@@ -1,7 +1,7 @@
 /**
  * Balance and summary helpers for bet results
  */
-import { Player, PlayerScore, GolfCourse } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { BetSummary } from './shared';
 
 export const getPlayerBalance = (playerId: string, summaries: BetSummary[]): number => {
