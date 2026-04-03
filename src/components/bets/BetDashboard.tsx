@@ -1260,7 +1260,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
         ? displayGroupPlayers.filter(p => conejaParticipantIds.includes(p.id))
         : displayGroupPlayers;
-      if (conejaPlayers.length >= 2) {
+      if (conejaPlayers.length >= 2 && conejaPlayers.some(p => p.id === playerId) && conejaPlayers.some(p => p.id === rivalId)) {
         const conejaBets = calculateConejaBets(conejaPlayers, confirmedScores, course, effectiveBetConfig, confirmedHoles);
         const playerWins = conejaBets
           .filter(b => b.winnerId === playerId && b.loserId === rivalId)
