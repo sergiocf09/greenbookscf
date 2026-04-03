@@ -853,39 +853,41 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return groupPlayersInList;
   };
 
-  // Calculate Coneja results (scoped to same group)
-  const conejaResult = useMemo(() => {
-    if (!betConfig.coneja?.enabled || sameGroupPlayers.length < 2) return null;
-
-    // Filter by participantIds to respect participation setup
+  // Calculate Coneja results (scoped to same group, filtered by participantIds)
+  const conejaParticipants = useMemo((): Player[] => {
+    if (!betConfig.coneja?.enabled) return [];
     const conejaParticipantIds = betConfig.coneja.participantIds;
-    const conejaPlayers = (conejaParticipantIds && conejaParticipantIds.length > 0)
-      ? sameGroupPlayers.filter(p => conejaParticipantIds.includes(p.id))
-      : sameGroupPlayers;
-    const effectiveConejaPlayers = conejaPlayers.length >= 2 ? conejaPlayers : sameGroupPlayers;
+    if (conejaParticipantIds && conejaParticipantIds.length > 0) {
+      return sameGroupPlayers.filter(p => conejaParticipantIds.includes(p.id));
+    }
+    return sameGroupPlayers;
+  }, [sameGroupPlayers, betConfig.coneja]);
 
-    const setResults = calculateConejaSetResults(effectiveConejaPlayers, scores, course, betConfig, confirmedHoles);
-    const holeDisplays = getConejaHoleDisplays(effectiveConejaPlayers, scores, course, betConfig, confirmedHoles);
+  const conejaResult = useMemo(() => {
+    if (!betConfig.coneja?.enabled || conejaParticipants.length < 2) return null;
+
+    const setResults = calculateConejaSetResults(conejaParticipants, scores, course, betConfig, confirmedHoles);
+    const holeDisplays = getConejaHoleDisplays(conejaParticipants, scores, course, betConfig, confirmedHoles);
     const amount = betConfig.coneja.amount || 50;
     
-    // Get winners for display
+    // Get winners for display — use conejaParticipants for correct loser count
     const winners = setResults
       .filter(sr => sr.winnerId)
       .map(sr => {
-        const winner = sameGroupPlayers.find(p => p.id === sr.winnerId);
+        const winner = conejaParticipants.find(p => p.id === sr.winnerId);
         const numConejas = sr.isAccumulated && sr.accumulatedSets.length > 0 ? sr.accumulatedSets.length : 1;
         return {
           setNumber: sr.setNumber,
           player: winner,
           accumulatedSets: sr.accumulatedSets,
-          amount: amount * numConejas * (sameGroupPlayers.length - 1),
+          amount: amount * numConejas * (conejaParticipants.length - 1),
           isAccumulated: sr.isAccumulated,
           wonOnHole: sr.wonOnHole,
         };
       });
     
     return { setResults, holeDisplays, winners, amount };
-  }, [sameGroupPlayers, scores, course, betConfig, confirmedHoles]);
+  }, [conejaParticipants, scores, course, betConfig, confirmedHoles]);
 
   // Helper to calculate Medal General for a given player pool
   const calculateMedalForPool = (pool: Player[]): MedalGeneralResult | null => {
