@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, MapPin, Calendar, Users, CheckCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, MapPin, Calendar, Users, CheckCircle, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -57,6 +58,11 @@ const JoinRound = () => {
   const [alreadyJoined, setAlreadyJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  
+  // Guest mode state
+  const [showGuestMode, setShowGuestMode] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [joiningAsGuest, setJoiningAsGuest] = useState(false);
 
   useEffect(() => {
     if (!roundId) {
@@ -67,7 +73,6 @@ const JoinRound = () => {
 
     const fetchRoundInfo = async () => {
       try {
-        // Fetch invite-safe info via backend function (works even before you join)
         const { data, error: rpcError } = await supabase
           .rpc('get_round_invite_info', { p_round_id: roundId });
 
@@ -82,7 +87,6 @@ const JoinRound = () => {
           setAlreadyJoined(false);
         }
 
-        // Auto-select first group if only one exists
         if (groups.length === 1) {
           setSelectedGroupId(groups[0].id);
         }
@@ -114,7 +118,6 @@ const JoinRound = () => {
       return;
     }
 
-    // Require group selection if multiple groups exist
     if (roundInfo && roundInfo.groups.length > 1 && !selectedGroupId) {
       toast.error('Selecciona un grupo para unirte');
       return;
@@ -122,7 +125,6 @@ const JoinRound = () => {
 
     setJoining(true);
     try {
-      // Join via backend function with optional group_id
       const { data: rpId, error: joinError } = await supabase
         .rpc('join_round', { 
           p_round_id: roundId,
@@ -138,6 +140,49 @@ const JoinRound = () => {
       toast.error('Error al unirse a la ronda');
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleJoinAsGuest = async () => {
+    if (!roundId || !guestName.trim()) {
+      toast.error('Ingresa tu nombre');
+      return;
+    }
+
+    if (roundInfo && roundInfo.groups.length > 1 && !selectedGroupId) {
+      toast.error('Selecciona un grupo para unirte');
+      return;
+    }
+
+    setJoiningAsGuest(true);
+    try {
+      const { data, error: guestError } = await supabase
+        .rpc('join_round_as_guest', {
+          p_round_id: roundId,
+          p_display_name: guestName.trim(),
+          p_group_id: selectedGroupId || null
+        });
+
+      if (guestError) throw guestError;
+      if (!data) throw new Error('No se pudo unir como invitado');
+
+      const result = data as any;
+      
+      // Save guest session to localStorage
+      localStorage.setItem(`guest_session_${roundId}`, JSON.stringify({
+        session_id: result.session_id,
+        ghost_profile_id: result.ghost_profile_id,
+        round_player_id: result.round_player_id,
+        display_name: guestName.trim(),
+      }));
+
+      toast.success('Te has unido a la ronda como invitado');
+      navigate('/');
+    } catch (err: any) {
+      console.error('Error joining as guest:', err);
+      toast.error(err?.message || 'Error al unirse como invitado');
+    } finally {
+      setJoiningAsGuest(false);
     }
   };
 
@@ -264,7 +309,6 @@ const JoinRound = () => {
                 </div>
               </div>
             ) : (
-              /* Single group - show players directly */
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
@@ -301,27 +345,77 @@ const JoinRound = () => {
               </div>
             )}
 
-            {/* Action Button */}
+            {/* Action Buttons */}
             {alreadyJoined ? (
               <Button className="w-full" variant="secondary" disabled>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Ya estás en esta ronda
               </Button>
             ) : roundInfo.status !== 'completed' ? (
-              <Button
-                onClick={handleJoin}
-                className="w-full"
-                disabled={joining || (hasMultipleGroups && !selectedGroupId)}
-              >
-                {joining ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                {user ? (
-                  hasMultipleGroups && !selectedGroupId 
-                    ? 'Selecciona un grupo' 
-                    : 'Unirme a la Ronda'
-                ) : 'Iniciar Sesión para Unirme'}
-              </Button>
+              <div className="space-y-3">
+                {/* Guest mode form */}
+                {showGuestMode ? (
+                  <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+                    <div className="text-sm font-medium text-center">¿Cómo te llamas?</div>
+                    <Input
+                      placeholder="Tu nombre"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      maxLength={40}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => { setShowGuestMode(false); setGuestName(''); }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        onClick={handleJoinAsGuest}
+                        disabled={joiningAsGuest || !guestName.trim() || (hasMultipleGroups && !selectedGroupId)}
+                      >
+                        {joiningAsGuest ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : null}
+                        Unirme
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Primary: registered user join */}
+                    <Button
+                      onClick={handleJoin}
+                      className="w-full"
+                      disabled={joining || (hasMultipleGroups && !selectedGroupId)}
+                    >
+                      {joining ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : null}
+                      {user ? (
+                        hasMultipleGroups && !selectedGroupId 
+                          ? 'Selecciona un grupo' 
+                          : 'Unirme a la Ronda'
+                      ) : 'Iniciar Sesión para Unirme'}
+                    </Button>
+
+                    {/* Secondary: guest join (only show if not logged in) */}
+                    {!user && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowGuestMode(true)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Entrar sin cuenta
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             ) : (
               <Button onClick={() => navigate('/')} className="w-full">
                 Volver al Inicio
