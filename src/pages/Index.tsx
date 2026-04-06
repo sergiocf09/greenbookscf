@@ -246,11 +246,13 @@ const Index = () => {
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
   useEffect(() => {
     if (!profile) return;
-    if (isRestoring) return;
+
+    const hasRoundContext = Boolean(roundState.id) || Boolean(selectedCourseId) || isRoundStarted;
+    if (isRestoring && !hasRoundContext) return;
 
     const shouldBlockForPending = showPendingRoundDialog && pendingRounds.length > 0 && !isRoundStarted;
-    setEnableCourseCatalog(!shouldBlockForPending);
-  }, [profile, isRestoring, showPendingRoundDialog, pendingRounds.length, isRoundStarted]);
+    setEnableCourseCatalog(hasRoundContext || !shouldBlockForPending);
+  }, [profile, isRestoring, showPendingRoundDialog, pendingRounds.length, isRoundStarted, roundState.id, selectedCourseId]);
 
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
   const { loadBetConfig, saveBetConfig, isLoaded: isBetConfigLoaded } = useBetConfigPersistence({
@@ -547,8 +549,7 @@ const Index = () => {
     if (hasInitialNavigated) return;
     if (isRestoring) return;
 
-    const hasHydratedScores = scores.size > 0 && Array.from(scores.values()).some((arr) => (arr?.length ?? 0) > 0);
-    const isHydrated = Boolean(roundState.id) && Boolean(course) && players.length > 0 && hasHydratedScores;
+    const isHydrated = Boolean(roundState.id) && Boolean(course) && players.length > 0;
 
     if (isHydrated) {
       setView('bets');
@@ -558,7 +559,7 @@ const Index = () => {
 
     // If there isn't enough data yet (e.g., course still loading), don't force a view.
     // We'll re-run until hydrated, then lock navigation.
-  }, [hasInitialNavigated, isRestoring, roundState.id, course, players.length, scores]);
+  }, [hasInitialNavigated, isRestoring, roundState.id, course, players.length]);
 
   // Function to start a new round (reset everything)
   const startNewRound = useCallback(() => {
