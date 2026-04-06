@@ -29,112 +29,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const hasHydratedSessionRef = useRef(false);
+  const fetchingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser?.is_anonymous) {
-      setProfile(null);
-      setLoading(false);
-      return;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const fetchProfile = useCallback(async (userId: string): Promise<void> => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, display_name, initials, avatar_color, current_handicap')
+        .eq('user_id', userId)
+        .eq('is_ghost', false)
+        .maybeSingle();
+
+      if (!mountedRef.current) return;
+
+      if (error || !data) {
+        setProfile(null);
+      } else {
+        setProfile({
+          ...data,
+          current_handicap: Number(data.current_handicap) || 0,
+        });
+      }
+    } catch {
+      if (mountedRef.current) setProfile(null);
+    } finally {
+      fetchingRef.current = false;
+      if (mountedRef.current) setLoading(false);
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_ghost', false)
-      .maybeSingle();
-
-    if (error || !data) {
-      setProfile(null);
-    } else {
-      setProfile({
-        ...data,
-        current_handicap: Number(data.current_handicap) || 0,
-      });
-    }
-
-    setLoading(false);
   }, []);
 
   const handlePendingGuestConversion = useCallback(async (currentUser: User) => {
     const guestSessionId = currentUser.user_metadata?.guest_session_id;
     if (!guestSessionId || currentUser.is_anonymous) return;
     if (!currentUser.email_confirmed_at) return;
-
-    console.log('[Auth] Detected pending guest conversion, executing...');
     try {
       const { error } = await supabase.rpc('convert_ghost_to_profile', {
         p_session_id: guestSessionId,
         p_auth_uid: currentUser.id,
       });
-
-      if (error) {
-        console.error('[Auth] Guest conversion error:', error);
-        return;
-      }
-
-      await supabase.auth.updateUser({
-        data: {
-          guest_session_id: null,
-          guest_round_id: null,
-        },
-      });
-
+      if (error) { console.error('[Auth] Guest conversion error:', error); return; }
+      await supabase.auth.updateUser({ data: { guest_session_id: null, guest_round_id: null } });
       const roundId = currentUser.user_metadata?.guest_round_id;
-      if (roundId) {
-        localStorage.removeItem(`pending_conversion_${roundId}`);
-      }
-
-      console.log('[Auth] Guest conversion completed successfully');
-      await fetchProfile(currentUser.id);
+      if (roundId) localStorage.removeItem(`pending_conversion_${roundId}`);
     } catch (err) {
       console.error('[Auth] Unexpected error during guest conversion:', err);
     }
-  }, [fetchProfile]);
+  }, []);
 
-  const syncAuthState = useCallback((nextSession: Session | null) => {
-    setSession(nextSession);
-    setUser(nextSession?.user ?? null);
+  useEffect(() => {
+    let initialized = false;
 
-    if (nextSession?.user) {
-      if (nextSession.user.is_anonymous) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!initialized) return; // esperar a getSession primero
+
+      setSession(nextSession);
+      const nextUser = nextSession?.user ?? null;
+      setUser(nextUser);
+
+      if (!nextUser || nextUser.is_anonymous) {
         setProfile(null);
         setLoading(false);
         return;
       }
-      // DO NOT call setLoading(false) here — fetchProfile will do it
-      void fetchProfile(nextSession.user.id);
-      void handlePendingGuestConversion(nextSession.user);
-      return;
-    }
 
-    setProfile(null);
-    setLoading(false);
-  }, [fetchProfile, handlePendingGuestConversion]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') {
-        return;
-      }
-      syncAuthState(nextSession);
+      // Usuario real: mantener loading=true hasta que fetchProfile resuelva
+      setLoading(true);
+      void fetchProfile(nextUser.id);
+      void handlePendingGuestConversion(nextUser);
     });
 
-    supabase.auth.getSession()
-      .then(({ data: { session: restoredSession } }) => {
-        hasHydratedSessionRef.current = true;
-        syncAuthState(restoredSession);
-      })
-      .catch((error) => {
-        console.error('[Auth] Error restoring session:', error);
-        hasHydratedSessionRef.current = true;
+    // Hidratación inicial
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      initialized = true;
+      setSession(s);
+      const u = s?.user ?? null;
+      setUser(u);
+
+      if (!u || u.is_anonymous) {
+        setProfile(null);
         setLoading(false);
-      });
+        return;
+      }
+
+      // loading sigue true — fetchProfile lo resolverá
+      void fetchProfile(u.id);
+      void handlePendingGuestConversion(u);
+    }).catch(() => {
+      initialized = true;
+      setProfile(null);
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
-  }, [syncAuthState]);
+  }, [fetchProfile, handlePendingGuestConversion]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -147,8 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { display_name: displayName }
-      }
+        data: { display_name: displayName },
+      },
     });
     return { error: error as Error | null };
   };
@@ -158,34 +154,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setProfile(null);
     setSession(null);
+    setLoading(false);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!profile) return;
-    
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', profile.id);
-
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     setProfile({ ...profile, ...updates });
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      profile,
-      session,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      updateProfile
-    }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, signIn, signUp, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -193,8 +176,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

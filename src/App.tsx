@@ -20,42 +20,26 @@ import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
+
+// Ruta protegida: requiere usuario real autenticado CON profile cargado
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Anonymous users (guests) and users without a profile cannot access protected routes
-  if (!user || user.is_anonymous || !profile) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  if (loading) return <Spinner />;
+  if (!user || user.is_anonymous || !profile) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
 
-// Public route wrapper (redirects to home if already logged in)
+// Ruta pública: redirige a / solo si hay usuario real con profile
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
-
+  const { user, profile, loading } = useAuth();
+  if (loading) return <Spinner />;
+  // Solo redirigir si el usuario está completamente autenticado (no anónimo, con profile)
+  if (user && !user.is_anonymous && profile) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
