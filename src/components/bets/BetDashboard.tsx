@@ -1561,7 +1561,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const currentBaseInGroup = groupPlayers.some(p => p.id === balanceBasePlayerId);
     // Only reset if the current base player is NOT in the new group
     if (groupPlayers.length > 0 && !currentBaseInGroup) {
-      setBalanceBasePlayerId(groupPlayers[0].id);
+      // Prefer logged-in user if they're in this group
+      const loggedInPlayer = groupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+      setBalanceBasePlayerId(loggedInPlayer?.id ?? groupPlayers[0].id);
       setSelectedRival(null);
     }
   }, [activeBalanceGroupIndex, players, playerGroups]);
@@ -1655,7 +1657,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     // Update Balance vs section to show players from this group
                     const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
                     if (groupPlayers.length > 0) {
-                      setBalanceBasePlayerId(groupPlayers[0].id);
+                      // Prefer logged-in user if they're in this group
+                      const loggedInPlayer = groupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+                      setBalanceBasePlayerId(loggedInPlayer?.id ?? groupPlayers[0].id);
                       setSelectedRival(null);
                     }
                   }}
@@ -2878,6 +2882,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
+      {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales */}
+      <GroupBetsCard
+        players={allPlayersForCalculations}
+        scores={scores}
+        betConfig={hasMultipleGroups
+          ? resolveConfigForGroup(effectiveBetConfig, displayPlayers[0]?.groupId)
+          : effectiveBetConfig}
+        course={course}
+        basePlayerId={basePlayer?.id || basePlayer?.profileId}
+        confirmedHoles={confirmedHoles}
+        onBetConfigChange={onBetConfigChange}
+        renderSection="indicators"
+      />
+
       {/* Grupales (Culebras/Pingüinos/Coneja/etc.)
           IMPORTANT: Use the same `scores` map as the rest of the dashboard (not `confirmedScores`)
           so the tie-breaker UI can trigger consistently even when confirmation state is inconsistent.
@@ -2892,6 +2910,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
         confirmedHoles={confirmedHoles}
         onBetConfigChange={onBetConfigChange}
+        renderSection="grupales"
       />
     </div>
   );

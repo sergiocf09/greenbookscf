@@ -33,6 +33,8 @@ interface GroupBetsCardProps {
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
   onBetConfigChange?: (config: BetConfig) => void;
+  /** Controls which sections to render: 'all' (default), 'indicators' (only Oyes/Unidades/Manchas), 'grupales' (everything except indicators) */
+  renderSection?: 'all' | 'indicators' | 'grupales';
 }
 
 // Tie-break storage helper
@@ -805,6 +807,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   basePlayerId,
   confirmedHoles = new Set(),
   onBetConfigChange,
+  renderSection = 'all',
 }) => {
   // Check if all 18 holes are confirmed for all players
   const all18HolesConfirmed = useMemo(() => {
@@ -1509,24 +1512,43 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Check if any group bet is enabled
   const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult;
 
-  if (!hasAnyBet) {
-    return null;
+  const hasIndicators = !!(manchasSummary || unidadesSummary || oyesesSummary);
+  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult);
+
+  if (renderSection === 'indicators') {
+    if (!hasIndicators) return null;
+  } else if (renderSection === 'grupales') {
+    if (!hasGrupales) return null;
+  } else {
+    if (!hasAnyBet) return null;
   }
 
   // Get player by ID helper
   const getPlayer = (id: string) => players.find(p => p.id === id);
 
+  const showIndicators = renderSection === 'all' || renderSection === 'indicators';
+  const showGrupales = renderSection === 'all' || renderSection === 'grupales';
+
+  // When rendering only indicators, skip the Card wrapper
+  if (renderSection === 'indicators') {
+    if (!hasIndicators) return null;
+    // We still need to render the full component to keep hooks stable,
+    // but we only show the indicators section below via showIndicators/showGrupales flags
+  }
+
   return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Apuestas Grupales
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-4">
+    <Card className={renderSection === 'indicators' ? 'border-0 shadow-none bg-transparent' : ''}>
+      {renderSection !== 'indicators' && (
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Apuestas Grupales
+          </CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className={cn('pt-0 space-y-4', renderSection === 'indicators' && 'p-0')}>
         {/* Culebras - Simplified view with collapsible detail */}
-        {culebrasResult && (
+        {showGrupales && culebrasResult && (
           <div className="space-y-2">
             <div 
               className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
@@ -1612,7 +1634,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Pinguinos - Simplified view with collapsible detail */}
-        {pinguinosResult && (
+        {showGrupales && pinguinosResult && (
           <>
             {culebrasResult && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
@@ -1701,7 +1723,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Zoologico - Camellos, Peces, Gorilas (after Pingüinos, before Coneja) */}
-        {zoologicoResults.map((result, idx) => (
+        {showGrupales && zoologicoResults.map((result, idx) => (
           <React.Fragment key={result.animalType}>
             {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t-2 border-primary/40" />}
             {idx > 0 && <div className="border-t-2 border-primary/25" />}
@@ -1791,7 +1813,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         ))}
 
         {/* Manchas & Unidades toggle buttons - Informational */}
-        {(manchasSummary || unidadesSummary || oyesesSummary) && (
+        {showIndicators && (manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t-2 border-primary/40" />}
             {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
@@ -2143,7 +2165,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Coneja - Patas system (before Medal General) */}
-        {conejaResult && (
+        {showGrupales && conejaResult && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t-2 border-primary/40" />}
             <ConejaSection
@@ -2161,7 +2183,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Medal General - Scope-aware rendering */}
-        {(medalGeneralGroupResult || medalGeneralGlobalResult) && (
+        {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
@@ -2204,7 +2226,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
         
         {/* Stableford - Scope-aware rendering */}
-        {betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
+        {showGrupales && betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
             <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
@@ -2249,7 +2271,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Skins Grupal */}
-        {skinsGrupalResult && (
+        {showGrupales && skinsGrupalResult && (
           <>
             <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
