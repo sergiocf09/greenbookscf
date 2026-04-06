@@ -69,9 +69,10 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+           <BrowserRouter>
+             <AppRoutes />
+             <PWAInstallBanner />
+           </BrowserRouter>
         </TooltipProvider>
         </RoundProvider>
       </AuthProvider>
