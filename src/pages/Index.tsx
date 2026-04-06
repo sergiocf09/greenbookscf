@@ -2239,7 +2239,7 @@ const Index = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/rankings')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
-                  Rankings de Dinero
+                  Rankings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
                   <History className="h-4 w-4 mr-2" />

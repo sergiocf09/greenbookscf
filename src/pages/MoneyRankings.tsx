@@ -87,7 +87,7 @@ const MoneyRankings = () => {
           </div>
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-sm">Rankings de Dinero</span>
+            <span className="font-semibold text-sm">Rankings</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

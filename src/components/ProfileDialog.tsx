@@ -315,7 +315,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         >
           <span className="flex items-center gap-2.5">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Rankings de Dinero</span>
+            <span className="text-sm">Rankings</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>

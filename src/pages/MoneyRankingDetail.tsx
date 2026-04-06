@@ -21,6 +21,9 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { supabase } from '@/integrations/supabase/client';
 
+const toTitleCase = (name: string) =>
+  name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
 const PERIOD_LABELS: Record<RankingPeriod, string> = {
   all: 'Todos',
   year: 'Este año',
@@ -224,20 +227,24 @@ const MoneyRankingDetail = () => {
                 return (
                   <React.Fragment key={entry.profile_id}>
                     {idx > 0 && <Separator className="my-1" />}
-                    <div className="flex items-center gap-2 py-2">
+                    <div className="flex items-center gap-1.5 py-2">
+                      {isCreator && entry.profile_id !== profile?.id && memberRow && (
+                        <button
+                          className="shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
+                          onClick={() => handleRemoveMember(memberRow.id)}
+                          title="Remover del ranking"
+                        >
+                          <UserMinus className="h-3.5 w-3.5 text-destructive" />
+                        </button>
+                      )}
                       <button
                         className="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md p-1 -m-1 transition-colors"
                         onClick={() => handleMemberTap(entry)}
                       >
                         <PositionBadge rank={entry.rank ?? idx + 1} />
-                        <PlayerAvatar
-                          initials={entry.initials}
-                          background={entry.avatar_color}
-                          size="sm"
-                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {entry.display_name}
+                            {toTitleCase(entry.display_name)}
                             {entry.profile_id === profile?.id && (
                               <span className="text-xs text-muted-foreground ml-1">(tú)</span>
                             )}
@@ -249,15 +256,6 @@ const MoneyRankingDetail = () => {
                         <NetBadge amount={entry.net_balance} />
                         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                       </button>
-                      {isCreator && entry.profile_id !== profile?.id && memberRow && (
-                        <button
-                          className="shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
-                          onClick={() => handleRemoveMember(memberRow.id)}
-                          title="Remover del ranking"
-                        >
-                          <UserMinus className="h-4 w-4 text-destructive" />
-                        </button>
-                      )}
                     </div>
                   </React.Fragment>
                 );
@@ -294,9 +292,8 @@ const MoneyRankingDetail = () => {
           <div className="mt-3 space-y-2">
             {searchResults.map((p: any) => (
               <div key={p.id} className="flex items-center gap-3 py-2">
-                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{p.display_name}</p>
+                  <p className="text-sm font-medium truncate">{toTitleCase(p.display_name)}</p>
                   <p className="text-xs text-muted-foreground">HCP {p.current_handicap}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>
@@ -335,9 +332,8 @@ const MoneyRankingDetail = () => {
             <div className="mt-4 space-y-2">
               {bilateral.map((b) => (
                 <div key={b.rival_profile_id} className="flex items-center gap-3 py-2">
-                  <PlayerAvatar initials={b.initials} background={b.avatar_color} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{b.display_name}</p>
+                    <p className="text-sm font-medium truncate">{toTitleCase(b.display_name)}</p>
                     <p className="text-[11px] text-muted-foreground">
                       {b.rounds_together} {b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos'}
                     </p>
