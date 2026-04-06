@@ -2736,6 +2736,7 @@ const Index = () => {
 
         {view === 'bets' && course && (
           <>
+            <ErrorBoundary context="BetDashboard">
             <BetDashboard
               players={players}
               scores={scores}
