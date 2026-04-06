@@ -3394,7 +3394,7 @@ const Index = () => {
           }}
         />
       )}
-      <GuestConversionScreen />
+      {(!user || user.is_anonymous) && <GuestConversionScreen />}
     </div>
   );
 };

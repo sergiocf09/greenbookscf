@@ -43,6 +43,20 @@ export const GuestConversionScreen: React.FC = () => {
   const [roundCompleted, setRoundCompleted] = useState(false);
   const [checking, setChecking] = useState(true);
 
+  // Clean up residual guest localStorage if user is already a real authenticated user
+  useEffect(() => {
+    if (user && !user.is_anonymous) {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('guest_session_') || key?.startsWith('pending_conversion_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!guestSession) {
       setChecking(false);
