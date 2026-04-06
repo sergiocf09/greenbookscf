@@ -292,9 +292,8 @@ const MoneyRankingDetail = () => {
           <div className="mt-3 space-y-2">
             {searchResults.map((p: any) => (
               <div key={p.id} className="flex items-center gap-3 py-2">
-                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{p.display_name}</p>
+                  <p className="text-sm font-medium truncate">{toTitleCase(p.display_name)}</p>
                   <p className="text-xs text-muted-foreground">HCP {p.current_handicap}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>
