@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { formatPlayerName } from '@/lib/playerInput';
+import { GuestConversionModal } from '@/components/guest/GuestConversionModal';
 
 interface GroupInfo {
   id: string;
