@@ -1727,14 +1727,24 @@ export type Database = {
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
-      join_round_as_guest: {
-        Args: {
-          p_display_name: string
-          p_group_id?: string
-          p_round_id: string
-        }
-        Returns: Json
-      }
+      join_round_as_guest:
+        | {
+            Args: {
+              p_display_name: string
+              p_group_id?: string
+              p_round_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_auth_uid?: string
+              p_display_name: string
+              p_group_id?: string
+              p_round_id: string
+            }
+            Returns: Json
+          }
       rebuild_all_missing_sliding_history: { Args: never; Returns: Json }
       rebuild_all_pvp_from_snapshots: { Args: never; Returns: Json }
       rebuild_round_financials_from_snapshot: {
