@@ -1,5 +1,7 @@
 import React from 'react';
-import circleSrc from '@/assets/greenbook-icon-circle.png';
+import circleLightSrc from '@/assets/greenbook-icon-circle-light.png';
+import circleDarkSrc from '@/assets/greenbook-icon-circle-dark.png';
+import { useTheme } from 'next-themes';
 
 interface GreenBookLogoProps {
   className?: string;
@@ -12,6 +14,10 @@ interface GreenBookLogoProps {
 }
 
 const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 64, variant = 'header' }) => {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const circleSrc = isDark ? circleDarkSrc : circleLightSrc;
   const circleSize = variant === 'auth' ? height * 0.65 : height * 0.7;
   const textSize = variant === 'auth' ? height * 0.1 : height * 0.15;
   const subTextSize = variant === 'auth' ? height * 0.065 : 0;
@@ -27,7 +33,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       <span
         className={
           variant === 'auth'
-            ? 'font-bold tracking-wide dark:text-[hsl(43,75%,55%)] text-primary mt-2'
+            ? 'font-serif italic tracking-wide dark:text-[hsl(43,75%,55%)] text-primary mt-2'
             : 'font-bold tracking-wide text-primary-foreground dark:text-primary-foreground mt-1'
         }
         style={{ fontSize: textSize, lineHeight: 1.1 }}
@@ -36,7 +42,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       </span>
       {variant === 'auth' && (
         <span
-          className="font-semibold tracking-widest dark:text-[hsl(43,75%,55%)] text-primary mt-0.5"
+          className="font-serif italic tracking-widest dark:text-[hsl(43,75%,55%)] text-primary mt-0.5"
           style={{ fontSize: subTextSize, lineHeight: 1.2 }}
         >
           by SCF
