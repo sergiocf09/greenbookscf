@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,45 +29,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasHydratedSessionRef = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    
-    if (data && !error) {
-      // Try to get the handicap from the last completed round
-      const { data: lastRoundData } = await supabase
-        .from('round_players')
-        .select(`
-          handicap_for_round,
-          rounds!inner(status, date)
-        `)
-        .eq('profile_id', data.id)
-        .eq('rounds.status', 'completed')
-        .order('rounds(date)', { ascending: false })
-        .limit(1)
-        .maybeSingle();
 
-      // Use last round handicap if available, otherwise use profile's current_handicap
-      const effectiveHandicap = lastRoundData?.handicap_for_round ?? data.current_handicap;
-      
-      setProfile({
-        ...data,
-        current_handicap: Number(effectiveHandicap) || Number(data.current_handicap) || 0,
-      });
+    if (error || !data) {
+      setProfile(null);
+      return;
     }
-  };
 
-  // Detect and execute pending guest-to-user conversion after email confirmation
-  const handlePendingGuestConversion = async (currentUser: User) => {
-    // Only for non-anonymous users with a pending guest_session_id in metadata
+    const { data: lastRoundData } = await supabase
+      .from('round_players')
+      .select(`
+        handicap_for_round,
+        rounds!inner(status, date)
+      `)
+      .eq('profile_id', data.id)
+      .eq('rounds.status', 'completed')
+      .order('rounds(date)', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const effectiveHandicap = lastRoundData?.handicap_for_round ?? data.current_handicap;
+
+    setProfile({
+      ...data,
+      current_handicap: Number(effectiveHandicap) || Number(data.current_handicap) || 0,
+    });
+  }, []);
+
+  const handlePendingGuestConversion = useCallback(async (currentUser: User) => {
     const guestSessionId = currentUser.user_metadata?.guest_session_id;
     if (!guestSessionId || currentUser.is_anonymous) return;
-    
-    // Email must be confirmed
     if (!currentUser.email_confirmed_at) return;
 
     console.log('[Auth] Detected pending guest conversion, executing...');
@@ -82,7 +80,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Clear the guest metadata now that conversion is complete
       await supabase.auth.updateUser({
         data: {
           guest_session_id: null,
@@ -90,54 +87,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-      // Clean up any pending_conversion localStorage entries
       const roundId = currentUser.user_metadata?.guest_round_id;
       if (roundId) {
         localStorage.removeItem(`pending_conversion_${roundId}`);
       }
 
       console.log('[Auth] Guest conversion completed successfully');
-      
-      // Re-fetch profile to get the converted one
       await fetchProfile(currentUser.id);
     } catch (err) {
       console.error('[Auth] Unexpected error during guest conversion:', err);
     }
-  };
+  }, [fetchProfile]);
+
+  const syncAuthState = useCallback((nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (nextSession?.user) {
+      setTimeout(() => {
+        void fetchProfile(nextSession.user.id);
+        void handlePendingGuestConversion(nextSession.user);
+      }, 0);
+      return;
+    }
+
+    setProfile(null);
+  }, [fetchProfile, handlePendingGuestConversion]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to avoid potential deadlocks
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            handlePendingGuestConversion(session.user);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') {
+        return;
       }
-    );
 
-    // THEN get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        handlePendingGuestConversion(session.user);
-      }
+      syncAuthState(nextSession);
       setLoading(false);
     });
 
+    supabase.auth.getSession()
+      .then(({ data: { session: restoredSession } }) => {
+        hasHydratedSessionRef.current = true;
+        syncAuthState(restoredSession);
+      })
+      .catch((error) => {
+        console.error('[Auth] Error restoring session:', error);
+        hasHydratedSessionRef.current = true;
+        syncAuthState(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
     return () => subscription.unsubscribe();
-  }, []);
+  }, [syncAuthState]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
