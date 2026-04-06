@@ -202,6 +202,18 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </div>
       )}
 
+      {/* Creator actions */}
+      {isCreator && (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+          </Button>
+          <Button variant="destructive" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
+          </Button>
+        </div>
+      )}
+
       {/* Leaderboard table */}
       <Card>
         <CardHeader className="pb-1 pt-3 px-4">
