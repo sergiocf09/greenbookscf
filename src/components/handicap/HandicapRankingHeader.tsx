@@ -10,9 +10,9 @@ interface Props {
 }
 
 const options: Array<{ key: HandicapRankingSortKey; label: string; width: string }> = [
-  { key: 'handicap', label: 'HCP', width: 'w-[52px]' },
-  { key: 'average', label: 'Prom', width: 'w-[36px]' },
-  { key: 'best', label: 'Mejor', width: 'w-[36px]' },
+  { key: 'handicap', label: 'HCP', width: 'w-[44px]' },
+  { key: 'average', label: 'Prom', width: 'w-[40px]' },
+  { key: 'best', label: 'Mejor', width: 'w-[40px]' },
 ];
 
 export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, title = 'Jugador' }: Props) => (

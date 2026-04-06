@@ -20,6 +20,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
+import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
@@ -121,6 +122,7 @@ const Index = () => {
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
@@ -159,6 +161,7 @@ const Index = () => {
   const swipeHandlers = useSwipeNavigation(TAB_ORDER, view as AppView, (v) => {
     setView(v);
     if (v !== 'leaderboards') setLeaderboardDetailId(null);
+    if (v !== 'rankings') setRankingDetailId(null);
   });
 
   // Round management hook with restoration
@@ -2307,7 +2310,7 @@ const Index = () => {
       {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
           <div className="max-w-md mx-auto">
-            <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); }}>
+            <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); if (v !== 'rankings') setRankingDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-14">
                 <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
                 <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
@@ -2931,9 +2934,16 @@ const Index = () => {
 
         {/* Rankings View */}
         {view === 'rankings' && (
-          <RankingsInlineView
-            onNavigateToDetail={(id) => navigate(`/rankings/${id}`)}
-          />
+          rankingDetailId ? (
+            <MoneyRankingDetail
+              inlineId={rankingDetailId}
+              onBack={() => setRankingDetailId(null)}
+            />
+          ) : (
+            <RankingsInlineView
+              onNavigateToDetail={(id) => setRankingDetailId(id)}
+            />
+          )
         )}
       </main>
 
