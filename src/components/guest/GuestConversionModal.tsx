@@ -45,20 +45,41 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
 
     setLoading(true);
     try {
-      // Update the anonymous user with email + password
-      // This sends a confirmation email (same as regular signup)
-      // Store guest_session_id in metadata for post-confirmation conversion
-      const { error: updateError } = await supabase.auth.updateUser({
-        email: email.trim(),
-        password,
-        data: {
-          display_name: displayName,
-          guest_session_id: guestSessionId,
-          guest_round_id: roundId,
-        },
-      });
+      const metadata = {
+        display_name: displayName,
+        guest_session_id: guestSessionId,
+        guest_round_id: roundId,
+      };
 
-      if (updateError) throw updateError;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      let authError: Error | null = null;
+
+      if (session?.user?.is_anonymous) {
+        // Upgrade the existing anonymous guest if the session is still alive.
+        const { error } = await supabase.auth.updateUser({
+          email: email.trim(),
+          password,
+          data: metadata,
+        });
+        authError = error as Error | null;
+      } else {
+        // If the guest reopened the link later and the anonymous session is gone,
+        // create a regular account and keep the guest session metadata for conversion.
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: metadata,
+          },
+        });
+        authError = error as Error | null;
+      }
+
+      if (authError) throw authError;
 
       // Mark conversion as pending in localStorage (survives browser close)
       localStorage.setItem(`pending_conversion_${roundId}`, JSON.stringify({
