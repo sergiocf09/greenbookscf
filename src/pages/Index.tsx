@@ -117,6 +117,19 @@ function dialogsReducer(state: DialogState, action: { name: DialogName; open: bo
 const Index = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, updateProfile } = useAuth();
+  const {
+    players, setPlayers,
+    selectedCourseId, setSelectedCourseId,
+    betConfig, setBetConfig,
+    currentHole, setCurrentHole,
+    scores, setScores,
+    confirmedHoles, setConfirmedHoles,
+    currentBetSummaries, setCurrentBetSummaries,
+    teeColor, setTeeColor,
+    startingHole, setStartingHole,
+    playerGroups, setPlayerGroups,
+    quickScorePlayer, setQuickScorePlayer,
+  } = useRound();
   const { theme, setTheme } = useTheme();
 
   const [dialogs, dispatchDialog] = useReducer(dialogsReducer, DIALOGS_INITIAL);
@@ -125,13 +138,6 @@ const Index = () => {
   const setDialog = (name: DialogName, open: boolean) => dispatchDialog({ name, open });
 
   const [view, setView] = useState<AppView>('setup');
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
-  const [currentHole, setCurrentHole] = useState(1);
-  const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
-  const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
-  const [currentBetSummaries, setCurrentBetSummaries] = useState<any[]>([]);
 
   // Keep an always-fresh reference to scores to avoid stale closures when persisting confirmations.
   const scoresRef = useRef<Map<string, PlayerScore[]>>(new Map());
