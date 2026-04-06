@@ -64,6 +64,7 @@ const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="gbcf-theme">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <RoundProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
