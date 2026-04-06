@@ -315,40 +315,47 @@ const MoneyRankingDetail = () => {
                     Posiciones · {members.length} miembros
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 px-3">
                   {balances.map((entry, idx) => {
                     const memberRow = members.find(m => m.profile_id === entry.profile_id);
+                    const canRemove = isCreator && entry.profile_id !== profile?.id && memberRow;
                     return (
                       <React.Fragment key={entry.profile_id}>
-                        {idx > 0 && <Separator className="my-1" />}
-                        <div className="flex items-center gap-1.5 py-1">
-                          {isCreator && entry.profile_id !== profile?.id && memberRow && (
-                            <button
-                              className="shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
-                              onClick={() => handleRemoveMember(memberRow.id)}
-                              title="Remover del ranking"
-                            >
-                              <UserMinus className="h-3.5 w-3.5 text-destructive" />
-                            </button>
+                        {idx > 0 && <Separator className="my-0.5" />}
+                        <div className="flex items-center gap-1 py-0.5">
+                          {isCreator && (
+                            canRemove ? (
+                              <button
+                                className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+                                onClick={() => handleRemoveMember(memberRow!.id)}
+                                title="Remover del ranking"
+                              >
+                                <UserMinus className="h-3 w-3 text-destructive" />
+                              </button>
+                            ) : (
+                              <span className="w-4 shrink-0" />
+                            )
                           )}
                           <button
-                            className="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md p-1 -m-1 transition-colors"
+                            className="flex items-center gap-1 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md py-0.5 transition-colors"
                             onClick={() => handleMemberTap(entry)}
                           >
-                            <PositionBadge rank={entry.rank ?? idx + 1} />
+                            <span className="text-[11px] font-bold text-muted-foreground w-5 text-center shrink-0">
+                              {entry.rank ?? idx + 1}
+                            </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate leading-tight">
+                              <p className="text-xs font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
                                 {entry.profile_id === profile?.id && (
-                                  <span className="text-xs text-muted-foreground ml-1">(tú)</span>
+                                  <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>
                                 )}
                               </p>
-                              <p className="text-[11px] text-muted-foreground">
+                              <p className="text-[10px] text-muted-foreground">
                                 {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
                               </p>
                             </div>
                             <NetBadge amount={entry.net_balance} />
-                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           </button>
                         </div>
                       </React.Fragment>
