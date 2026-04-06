@@ -205,6 +205,10 @@ const Index = () => {
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
+    // Mark this round as closed so auto-restore won't resurrect it
+    if (roundState.id) {
+      localStorage.setItem(`round_closed_${roundState.id}`, '1');
+    }
     setRoundState({
       id: null,
       status: 'setup',
@@ -229,9 +233,7 @@ const Index = () => {
     setLinkedLeaderboardInfo(null);
     setLeaderboardDetailId(null);
     setIsRoundLinkedToLeaderboard(false);
-    // Reset restoration guard so a new pending round can be auto-restored
-    // (the ref lives inside useRoundManagement, but setting roundState.id = null achieves the same)
-  }, [setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
+  }, [roundState.id, setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
 
   // Onboarding check – first time user
   useEffect(() => {
