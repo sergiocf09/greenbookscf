@@ -479,8 +479,8 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               <p className="text-sm text-muted-foreground text-center py-4">Sin resultados</p>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={showBilateral} onOpenChange={setShowBilateral}>
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
