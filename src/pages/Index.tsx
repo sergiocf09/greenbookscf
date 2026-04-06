@@ -2683,11 +2683,13 @@ const Index = () => {
             }}
             
           />
+          </ErrorBoundary>
         )}
 
 
         {view === 'scorecard' && course && (
           <>
+            <ErrorBoundary context="Scorecard">
             <Scorecard 
               players={players} 
               course={course} 
