@@ -1,0 +1,18 @@
+<svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="50" height="50" rx="10" fill="#006747"/>
+  <!-- Outer circle -->
+  <circle cx="25" cy="25" r="18" stroke="white" stroke-width="2" fill="none"/>
+  <!-- Inner green -->
+  <circle cx="25" cy="25" r="14" fill="#008C5E"/>
+  <!-- Hole -->
+  <ellipse cx="25" cy="27" rx="4.5" ry="2.5" fill="#003D2B"/>
+  <!-- Flag pole -->
+  <line x1="25" y1="11" x2="25" y2="27" stroke="white" stroke-width="1.2"/>
+  <!-- Red flag -->
+  <path d="M25 11 L32 14 L25 17 Z" fill="#CC2200"/>
+  <!-- G bar - gold -->
+  <rect x="25" y="22" width="14" height="3" rx="1.2" fill="#FCE300"/>
+  <!-- G cutout top-right -->
+  <path d="M35 7 L45 7 L45 22 L35 22 Z" fill="#006747"/>
+</svg>
