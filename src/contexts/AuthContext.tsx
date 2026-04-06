@@ -119,9 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') {
         return;
       }
-
       syncAuthState(nextSession);
-      setLoading(false);
     });
 
     supabase.auth.getSession()
@@ -132,9 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch((error) => {
         console.error('[Auth] Error restoring session:', error);
         hasHydratedSessionRef.current = true;
-        syncAuthState(null);
-      })
-      .finally(() => {
         setLoading(false);
       });
 
