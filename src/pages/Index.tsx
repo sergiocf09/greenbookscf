@@ -83,6 +83,7 @@ import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
+import { GuestRoundClosedListener } from '@/components/guest/GuestRoundClosedListener';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
