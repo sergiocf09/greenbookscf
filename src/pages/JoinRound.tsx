@@ -219,11 +219,20 @@ const JoinRound = () => {
 
     setJoiningAsGuest(true);
     try {
+      // 1. Sign in anonymously to get a Supabase session
+      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+      if (anonError) throw anonError;
+      if (!anonData.user) throw new Error('No se pudo crear sesión anónima');
+
+      const anonUid = anonData.user.id;
+
+      // 2. Join round as guest, linking ghost profile to anon auth user
       const { data, error: guestError } = await supabase
         .rpc('join_round_as_guest', {
           p_round_id: roundId,
           p_display_name: guestName.trim(),
-          p_group_id: selectedGroupId || null
+          p_group_id: selectedGroupId || null,
+          p_auth_uid: anonUid
         });
 
       if (guestError) throw guestError;
@@ -240,10 +249,10 @@ const JoinRound = () => {
 
       // Save guest session to localStorage
       localStorage.setItem(`guest_session_${roundId}`, JSON.stringify(sessionData));
-      setGuestSession(sessionData);
-      setGuestJoined(true);
 
       toast.success('Te has unido a la ronda como invitado');
+      // Navigate to main app — anon session passes ProtectedRoute
+      navigate('/');
     } catch (err: any) {
       console.error('Error joining as guest:', err);
       toast.error(err?.message || 'Error al unirse como invitado');
