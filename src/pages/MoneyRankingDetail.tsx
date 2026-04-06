@@ -81,6 +81,12 @@ const MoneyRankingDetail = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [handicapSortKey, setHandicapSortKey] = useState<HandicapRankingSortKey>('handicap');
+  const [handicapSortDir, setHandicapSortDir] = useState<HandicapRankingSortDirection>('asc');
+
+  const handleHcpSort = (key: HandicapRankingSortKey) => {
+    if (key === handicapSortKey) setHandicapSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setHandicapSortKey(key); setHandicapSortDir('asc'); }
+  };
 
   const {
     ranking, members, balances, bilateral, selectedMemberId,
