@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Loader2, TrendingUp, TrendingDown, UserPlus, UserMinus, Trash2, ChevronRight, Search, Minus, DollarSign, Award, CalendarRange, CalendarIcon, Pencil,
+  ArrowLeft, Loader2, TrendingUp, UserPlus, UserMinus, Trash2, ChevronRight, Search, DollarSign, Award, CalendarRange, CalendarIcon, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fmtMoney } from '@/lib/formatMoney';
@@ -26,7 +26,8 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
-import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
+import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey, type HandicapRankingSortDirection } from '@/lib/handicapRankingUtils';
+import { HandicapRankingRows } from '@/components/handicap/HandicapRankingRows';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -34,7 +35,7 @@ const toTitleCase = (name: string) =>
 type RankingView = 'money' | 'handicap';
 
 const PERIOD_LABELS: Record<RankingPeriod, string> = {
-  all: 'Todos',
+  all: 'Histórico',
   year: 'Este año',
   custom: 'Período',
 };
@@ -45,16 +46,8 @@ const NetBadge = ({ amount }: { amount: number }) => {
   return <span className="text-muted-foreground font-semibold text-sm">$0</span>;
 };
 
-const PositionBadge = ({ rank }: { rank: number }) => (
-  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
-);
 
-const TrendIcon = ({ trend }: { trend: number | null }) => {
-  if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
-  if (trend < -0.4) return <TrendingDown className="h-3 w-3 text-green-500" />;
-  if (trend > 0.4) return <TrendingUp className="h-3 w-3 text-red-500" />;
-  return <Minus className="h-3 w-3 text-muted-foreground" />;
-};
+
 
 const MoneyRankingDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -80,6 +73,12 @@ const MoneyRankingDetail = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [handicapSortKey, setHandicapSortKey] = useState<HandicapRankingSortKey>('handicap');
+  const [handicapSortDir, setHandicapSortDir] = useState<HandicapRankingSortDirection>('asc');
+
+  const handleHcpSort = (key: HandicapRankingSortKey) => {
+    if (key === handicapSortKey) setHandicapSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setHandicapSortKey(key); setHandicapSortDir('asc'); }
+  };
 
   const {
     ranking, members, balances, bilateral, selectedMemberId,
@@ -103,9 +102,9 @@ const MoneyRankingDetail = () => {
   const displayHandicapEntries = useMemo(
     () => sortHandicapRankingEntries(
       withLiveHandicapOverride(handicapEntries, profile?.id ?? null, liveHandicapIndex),
-      handicapSortKey,
+      handicapSortKey, handicapSortDir,
     ),
-    [handicapEntries, handicapSortKey, liveHandicapIndex, profile?.id],
+    [handicapEntries, handicapSortKey, handicapSortDir, liveHandicapIndex, profile?.id],
   );
 
   const handleMemberTap = (entry: RankingBalanceEntry) => {
@@ -222,33 +221,33 @@ const MoneyRankingDetail = () => {
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {isCreator && (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => {
                 setRenameValue(ranking?.name ?? '');
                 setShowRenameDialog(true);
               }}
             >
-              <Pencil className="h-4 w-4 mr-1" /> Editar
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}
             >
-              <UserPlus className="h-4 w-4 mr-1" /> Agregar jugador
+              <UserPlus className="h-3.5 w-3.5 mr-1" /> Agregar
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
             >
-              <Trash2 className="h-4 w-4 mr-1" /> Eliminar ranking
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
             </Button>
           </div>
         )}
@@ -257,26 +256,6 @@ const MoneyRankingDetail = () => {
           <Button variant="outline" size="sm" className="w-full" onClick={handleLeave}>
             <UserMinus className="h-4 w-4 mr-1" /> Salir del ranking
           </Button>
-        )}
-
-        <Tabs value={period} onValueChange={handlePeriodChange}>
-          <TabsList className="w-full">
-            {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
-              <TabsTrigger key={p} value={p} className="flex-1 gap-1">
-                {p === 'custom' && <CalendarRange className="h-3 w-3" />}
-                {PERIOD_LABELS[p]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        {period === 'custom' && customDateFrom && (
-          <button
-            className="text-xs text-muted-foreground text-center w-full hover:underline"
-            onClick={() => setShowCustomPeriod(true)}
-          >
-            {customDateFrom} → {customDateTo || 'hoy'} · Editar
-          </button>
         )}
 
         <Tabs value={rankingView} onValueChange={(v) => setRankingView(v as RankingView)}>
@@ -292,6 +271,25 @@ const MoneyRankingDetail = () => {
 
         {rankingView === 'money' && (
           <>
+            <Tabs value={period} onValueChange={handlePeriodChange}>
+              <TabsList className="w-full">
+                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
+                  <TabsTrigger key={p} value={p} className="flex-1 gap-1 text-xs">
+                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
+                    {PERIOD_LABELS[p]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {period === 'custom' && customDateFrom && (
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
+            )}
             {loadingBalances ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -309,40 +307,47 @@ const MoneyRankingDetail = () => {
                     Posiciones · {members.length} miembros
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 px-3">
                   {balances.map((entry, idx) => {
                     const memberRow = members.find(m => m.profile_id === entry.profile_id);
+                    const canRemove = isCreator && entry.profile_id !== profile?.id && memberRow;
                     return (
                       <React.Fragment key={entry.profile_id}>
-                        {idx > 0 && <Separator className="my-1" />}
-                        <div className="flex items-center gap-1.5 py-1">
-                          {isCreator && entry.profile_id !== profile?.id && memberRow && (
-                            <button
-                              className="shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
-                              onClick={() => handleRemoveMember(memberRow.id)}
-                              title="Remover del ranking"
-                            >
-                              <UserMinus className="h-3.5 w-3.5 text-destructive" />
-                            </button>
+                        {idx > 0 && <Separator className="my-0.5" />}
+                        <div className="flex items-center gap-1 py-0.5">
+                          {isCreator && (
+                            canRemove ? (
+                              <button
+                                className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
+                                onClick={() => handleRemoveMember(memberRow!.id)}
+                                title="Remover del ranking"
+                              >
+                                <UserMinus className="h-3 w-3 text-destructive" />
+                              </button>
+                            ) : (
+                              <span className="w-4 shrink-0" />
+                            )
                           )}
                           <button
-                            className="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md p-1 -m-1 transition-colors"
+                            className="flex items-center gap-1 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md py-0.5 transition-colors"
                             onClick={() => handleMemberTap(entry)}
                           >
-                            <PositionBadge rank={entry.rank ?? idx + 1} />
+                            <span className="text-[11px] font-bold text-muted-foreground w-5 text-center shrink-0">
+                              {entry.rank ?? idx + 1}
+                            </span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate leading-tight">
+                              <p className="text-xs font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
                                 {entry.profile_id === profile?.id && (
-                                  <span className="text-xs text-muted-foreground ml-1">(tú)</span>
+                                  <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>
                                 )}
                               </p>
-                              <p className="text-[11px] text-muted-foreground">
+                              <p className="text-[10px] text-muted-foreground">
                                 {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
                               </p>
                             </div>
                             <NetBadge amount={entry.net_balance} />
-                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           </button>
                         </div>
                       </React.Fragment>
@@ -357,7 +362,6 @@ const MoneyRankingDetail = () => {
             </p>
           </>
         )}
-
         {rankingView === 'handicap' && (
           <>
             {loadingHandicap ? (
@@ -371,43 +375,13 @@ const MoneyRankingDetail = () => {
               </div>
             ) : (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-1 px-3">
                   <CardTitle className="text-sm">
-                    <HandicapRankingHeader sortKey={handicapSortKey} onSortChange={setHandicapSortKey} />
+                    <HandicapRankingHeader sortKey={handicapSortKey} sortDirection={handicapSortDir} onSortChange={handleHcpSort} />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  {displayHandicapEntries.map((entry, idx) => (
-                    <React.Fragment key={entry.profile_id}>
-                      {idx > 0 && <Separator className="my-1" />}
-                      <div className="flex items-center gap-2 py-1">
-                        <PositionBadge rank={entry.rank ?? idx + 1} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate leading-tight">
-                            {toTitleCase(entry.display_name)}
-                            {entry.profile_id === profile?.id && (
-                              <span className="text-xs text-muted-foreground ml-1">(tú)</span>
-                            )}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground leading-tight">
-                            {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1 w-12 justify-center">
-                            <TrendIcon trend={entry.handicap_trend} />
-                            <span className="text-sm font-semibold">{entry.current_handicap.toFixed(1)}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground w-10 text-center">
-                            {entry.avg_gross_score ?? '—'}
-                          </span>
-                          <span className="text-xs text-muted-foreground w-10 text-center">
-                            {entry.best_gross_score ?? '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  ))}
+                <CardContent className="pt-0 px-3">
+                  <HandicapRankingRows entries={displayHandicapEntries} currentProfileId={profile?.id} />
                 </CardContent>
               </Card>
             )}

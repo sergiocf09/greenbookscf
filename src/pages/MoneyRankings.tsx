@@ -12,31 +12,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Loader2, Users, TrendingUp, TrendingDown, Crown, LogOut, User, Minus, Award } from 'lucide-react';
+import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
-import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
+import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey, type HandicapRankingSortDirection } from '@/lib/handicapRankingUtils';
+import { HandicapRankingRows } from '@/components/handicap/HandicapRankingRows';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
-const PositionBadge = ({ rank }: { rank: number }) => (
-  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
-);
-
-const TrendIcon = ({ trend }: { trend: number | null }) => {
-  if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
-  if (trend < -0.4) return <TrendingDown className="h-3 w-3 text-green-500" />;
-  if (trend > 0.4) return <TrendingUp className="h-3 w-3 text-red-500" />;
-  return <Minus className="h-3 w-3 text-muted-foreground" />;
-};
 
 const MoneyRankings = () => {
   const navigate = useNavigate();
@@ -47,6 +37,12 @@ const MoneyRankings = () => {
   const [formName, setFormName] = useState('');
   const [creating, setCreating] = useState(false);
   const [globalSortKey, setGlobalSortKey] = useState<HandicapRankingSortKey>('handicap');
+  const [globalSortDir, setGlobalSortDir] = useState<HandicapRankingSortDirection>('asc');
+
+  const handleGlobalSort = (key: HandicapRankingSortKey) => {
+    if (key === globalSortKey) setGlobalSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setGlobalSortKey(key); setGlobalSortDir('asc'); }
+  };
 
   const { entries: globalHcpEntries, loading: loadingGlobalHcp } = useHandicapRanking(null, 'global');
   const { liveHandicapIndex } = useLiveHandicap(profile?.id ?? null, profile?.current_handicap ?? null);
@@ -55,9 +51,9 @@ const MoneyRankings = () => {
   const displayGlobalHcpEntries = useMemo(
     () => sortHandicapRankingEntries(
       withLiveHandicapOverride(globalHcpEntries, profile?.id ?? null, liveHandicapIndex),
-      globalSortKey,
+      globalSortKey, globalSortDir,
     ),
-    [globalHcpEntries, globalSortKey, liveHandicapIndex, profile?.id],
+    [globalHcpEntries, globalSortKey, globalSortDir, liveHandicapIndex, profile?.id],
   );
 
   const handleCreate = async () => {
@@ -199,47 +195,17 @@ const MoneyRankings = () => {
                 </div>
               ) : (
                 <Card>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-1 px-3">
                     <CardTitle className="text-sm">
-                      <span className="inline-flex items-center mb-2">
+                      <span className="inline-flex items-center mb-1">
                         <Award className="h-4 w-4 inline mr-1" />
                         Ranking de Hándicap · Amigos
                       </span>
-                      <HandicapRankingHeader sortKey={globalSortKey} onSortChange={setGlobalSortKey} />
+                      <HandicapRankingHeader sortKey={globalSortKey} sortDirection={globalSortDir} onSortChange={handleGlobalSort} />
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    {displayGlobalHcpEntries.map((entry, idx) => (
-                      <React.Fragment key={entry.profile_id}>
-                        {idx > 0 && <Separator className="my-1" />}
-                        <div className="flex items-center gap-2 py-1">
-                          <PositionBadge rank={entry.rank ?? idx + 1} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate leading-tight">
-                              {toTitleCase(entry.display_name)}
-                              {entry.profile_id === profile?.id && (
-                                <span className="text-xs text-muted-foreground ml-1">(tú)</span>
-                              )}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground leading-tight">
-                              {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1 w-12 justify-center">
-                              <TrendIcon trend={entry.handicap_trend} />
-                              <span className="text-sm font-semibold">{entry.current_handicap.toFixed(1)}</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground w-10 text-center">
-                              {entry.avg_gross_score ?? '—'}
-                            </span>
-                            <span className="text-xs text-muted-foreground w-10 text-center">
-                              {entry.best_gross_score ?? '—'}
-                            </span>
-                          </div>
-                        </div>
-                      </React.Fragment>
-                    ))}
+                  <CardContent className="pt-0 px-3">
+                    <HandicapRankingRows entries={displayGlobalHcpEntries} currentProfileId={profile?.id} />
                   </CardContent>
                 </Card>
               )}

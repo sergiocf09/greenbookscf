@@ -1,6 +1,7 @@
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
 
 export type HandicapRankingSortKey = 'handicap' | 'average' | 'best';
+export type HandicapRankingSortDirection = 'asc' | 'desc';
 
 const getSortValue = (entry: HandicapRankingEntry, sortKey: HandicapRankingSortKey) => {
   if (sortKey === 'handicap') return entry.current_handicap;
@@ -24,14 +25,16 @@ export const withLiveHandicapOverride = (
 
 export const sortHandicapRankingEntries = (
   entries: HandicapRankingEntry[],
-  sortKey: HandicapRankingSortKey
+  sortKey: HandicapRankingSortKey,
+  direction: HandicapRankingSortDirection = 'asc'
 ) => [...entries]
   .sort((a, b) => {
     const diff = getSortValue(a, sortKey) - getSortValue(b, sortKey);
-    if (diff !== 0) return diff;
+    const dirMul = direction === 'asc' ? 1 : -1;
+    if (diff !== 0) return diff * dirMul;
 
     if (a.current_handicap !== b.current_handicap) {
-      return a.current_handicap - b.current_handicap;
+      return (a.current_handicap - b.current_handicap) * dirMul;
     }
 
     return a.display_name.localeCompare(b.display_name, 'es', { sensitivity: 'base' });
