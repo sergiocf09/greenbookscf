@@ -2592,9 +2592,9 @@ const Index = () => {
               setStrokesForLocalPair={setStrokesForLocalPair}
               isLoading={isLoadingHandicaps}
             />
-            <Separator className="my-4" />
+            <div className="border-t border-border my-4" />
             <h3 className="text-sm font-semibold mb-2">Ranking de Hándicap</h3>
-            <HandicapRankingView roundId={roundId} />
+            <HandicapRankingView roundId={roundState.id} />
           </>
         )}
 
