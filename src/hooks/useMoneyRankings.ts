@@ -235,10 +235,12 @@ export function useMoneyRankingDetail(rankingId: string | null, period: RankingP
     if (!rankingId) return;
     setLoadingBalances(true);
     try {
-      const { data, error } = await supabase.rpc('get_money_ranking_balances', {
-        p_ranking_id: rankingId,
-        p_period: period,
-      });
+      const params: any = { p_ranking_id: rankingId, p_period: period };
+      if (period === 'custom' && customDateFrom) {
+        params.p_date_from = new Date(customDateFrom).toISOString();
+        params.p_date_to = customDateTo ? new Date(customDateTo + 'T23:59:59').toISOString() : new Date().toISOString();
+      }
+      const { data, error } = await supabase.rpc('get_money_ranking_balances', params);
       if (error) throw error;
       setBalances((data || []).map((e: any, idx: number) => ({
         ...e,
@@ -251,17 +253,18 @@ export function useMoneyRankingDetail(rankingId: string | null, period: RankingP
     } finally {
       setLoadingBalances(false);
     }
-  }, [rankingId, period]);
+  }, [rankingId, period, customDateFrom, customDateTo]);
 
   const fetchBilateral = useCallback(async (targetProfileId: string) => {
     if (!rankingId) return;
     setLoadingBilateral(true);
     try {
-      const { data, error } = await supabase.rpc('get_money_ranking_bilateral', {
-        p_ranking_id: rankingId,
-        p_profile_id: targetProfileId,
-        p_period: period,
-      });
+      const params: any = { p_ranking_id: rankingId, p_profile_id: targetProfileId, p_period: period };
+      if (period === 'custom' && customDateFrom) {
+        params.p_date_from = new Date(customDateFrom).toISOString();
+        params.p_date_to = customDateTo ? new Date(customDateTo + 'T23:59:59').toISOString() : new Date().toISOString();
+      }
+      const { data, error } = await supabase.rpc('get_money_ranking_bilateral', params);
       if (error) throw error;
       setBilateral((data || []).map((e: any) => ({
         ...e,
@@ -273,7 +276,7 @@ export function useMoneyRankingDetail(rankingId: string | null, period: RankingP
     } finally {
       setLoadingBilateral(false);
     }
-  }, [rankingId, period]);
+  }, [rankingId, period, customDateFrom, customDateTo]);
 
   useEffect(() => {
     fetchDetail();
