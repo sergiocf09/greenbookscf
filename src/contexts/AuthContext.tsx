@@ -32,10 +32,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasHydratedSessionRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    // Ignore anonymous users — they don't have a real profile
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser?.is_anonymous) {
       setProfile(null);
+      setLoading(false);
       return;
     }
 
@@ -48,13 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (error || !data) {
       setProfile(null);
-      return;
+    } else {
+      setProfile({
+        ...data,
+        current_handicap: Number(data.current_handicap) || 0,
+      });
     }
 
-    setProfile({
-      ...data,
-      current_handicap: Number(data.current_handicap) || 0,
-    });
+    setLoading(false);
   }, []);
 
   const handlePendingGuestConversion = useCallback(async (currentUser: User) => {
