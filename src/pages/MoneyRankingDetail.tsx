@@ -10,12 +10,10 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-  ArrowLeft, Loader2, TrendingUp, TrendingDown, Users, UserPlus, UserMinus, Trash2, ChevronRight, Search, X, Minus, DollarSign, Award,
+  ArrowLeft, Loader2, TrendingUp, TrendingDown, Users, UserPlus, UserMinus, Trash2, ChevronRight, Search, X, Minus, DollarSign, Award, CalendarRange,
 } from 'lucide-react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -30,7 +28,7 @@ type RankingView = 'money' | 'handicap';
 const PERIOD_LABELS: Record<RankingPeriod, string> = {
   all: 'Todos',
   year: 'Este año',
-  '90d': '90 días',
+  custom: 'Período',
 };
 
 const NetBadge = ({ amount }: { amount: number }) => {
@@ -58,9 +56,14 @@ const MoneyRankingDetail = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [period, setPeriod] = useState<RankingPeriod>('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
+  const [showCustomPeriod, setShowCustomPeriod] = useState(false);
   const [rankingView, setRankingView] = useState<RankingView>('money');
   const [showBilateral, setShowBilateral] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -69,7 +72,7 @@ const MoneyRankingDetail = () => {
     ranking, members, balances, bilateral, selectedMemberId,
     loadingDetail, loadingBalances, loadingBilateral,
     isCreator, fetchDetail, fetchBalances, selectMember,
-  } = useMoneyRankingDetail(id ?? null, period);
+  } = useMoneyRankingDetail(id ?? null, period, customDateFrom, customDateTo);
 
   const { addMember, leaveRanking, removeMember, deleteRanking } = useMoneyRankings();
 
@@ -117,9 +120,26 @@ const MoneyRankingDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!id) return;
+    if (!id || deleteConfirmText.toLowerCase() !== 'eliminar') return;
     await deleteRanking(id);
     navigate('/rankings');
+  };
+
+  const handlePeriodChange = (v: string) => {
+    const val = v as RankingPeriod;
+    if (val === 'custom') {
+      setShowCustomPeriod(true);
+    } else {
+      setPeriod(val);
+      setCustomDateFrom('');
+      setCustomDateTo('');
+    }
+  };
+
+  const applyCustomPeriod = () => {
+    if (!customDateFrom) return;
+    setPeriod('custom');
+    setShowCustomPeriod(false);
   };
 
   if (loadingDetail) {
@@ -132,7 +152,7 @@ const MoneyRankingDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - matching app's green/gold theme */}
+      {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => navigate('/rankings')}>
@@ -147,7 +167,7 @@ const MoneyRankingDetail = () => {
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Acciones del creador */}
+        {/* Creator actions */}
         {isCreator && (
           <div className="flex gap-2">
             <Button
@@ -158,51 +178,21 @@ const MoneyRankingDetail = () => {
             >
               <UserPlus className="h-4 w-4 mr-1" /> Agregar jugador
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 mr-1" /> Eliminar ranking
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Eliminar ranking?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Se eliminarán el ranking y todos sus miembros.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                    Eliminar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Eliminar ranking
+            </Button>
           </div>
         )}
 
-        {/* Botón salir (solo miembro no creador) */}
+        {/* Leave button (non-creator) */}
         {!isCreator && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full">
-                <UserMinus className="h-4 w-4 mr-1" /> Salir del ranking
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Salir del ranking?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Ya no aparecerás en este ranking. El organizador puede volverte a agregar cuando quieras.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleLeave}>Salir</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button variant="outline" size="sm" className="w-full" onClick={handleLeave}>
+            <UserMinus className="h-4 w-4 mr-1" /> Salir del ranking
+          </Button>
         )}
 
         {/* Toggle: Dinero / Hándicap */}
@@ -220,18 +210,25 @@ const MoneyRankingDetail = () => {
         {/* === MONEY VIEW === */}
         {rankingView === 'money' && (
           <>
-            {/* Filtros de período */}
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as RankingPeriod)}>
+            {/* Period filters */}
+            <Tabs value={period} onValueChange={handlePeriodChange}>
               <TabsList className="w-full">
                 {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
-                  <TabsTrigger key={p} value={p} className="flex-1">
+                  <TabsTrigger key={p} value={p} className="flex-1 gap-1">
+                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
                     {PERIOD_LABELS[p]}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
 
-            {/* Tabla de posiciones dinero */}
+            {period === 'custom' && customDateFrom && (
+              <p className="text-xs text-muted-foreground text-center">
+                {customDateFrom} → {customDateTo || 'hoy'}
+              </p>
+            )}
+
+            {/* Money positions */}
             {loadingBalances ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -240,9 +237,6 @@ const MoneyRankingDetail = () => {
               <div className="text-center py-10 space-y-2">
                 <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Sin saldos registrados en este período</p>
-                <p className="text-xs text-muted-foreground">
-                  Los saldos se calculan solo de rondas donde ambos jugadores son miembros del ranking
-                </p>
               </div>
             ) : (
               <Card>
@@ -360,11 +354,64 @@ const MoneyRankingDetail = () => {
             )}
 
             <p className="text-xs text-muted-foreground text-center">
-              Basado en las últimas 20 rondas de cada jugador
+              Promedio y mejor score basados en las últimas 20 rondas · Total de rondas jugadas
             </p>
           </>
         )}
       </div>
+
+      {/* Dialog: Confirm delete ranking */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar ranking?</DialogTitle>
+            <DialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán el ranking y todos sus miembros.
+              Escribe <strong>ELIMINAR</strong> para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Escribe ELIMINAR"
+            className="uppercase"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmText.toLowerCase() !== 'eliminar'}
+              onClick={handleDelete}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Custom period picker */}
+      <Dialog open={showCustomPeriod} onOpenChange={setShowCustomPeriod}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Período personalizado</DialogTitle>
+            <DialogDescription>Selecciona las fechas de inicio y fin del período.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">Desde</Label>
+              <Input type="date" value={customDateFrom} onChange={(e) => setCustomDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm">Hasta</Label>
+              <Input type="date" value={customDateTo} onChange={(e) => setCustomDateTo(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>Cancelar</Button>
+            <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>Aplicar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Sheet: Agregar miembro */}
       <Sheet open={showAddMember} onOpenChange={setShowAddMember}>
