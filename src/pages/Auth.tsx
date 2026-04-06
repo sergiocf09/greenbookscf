@@ -35,19 +35,14 @@ const Auth = () => {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-
       if (result.error) {
         toast.error('Error al iniciar con Google', { description: String(result.error) });
         setIsGoogleLoading(false);
         return;
       }
-
-      if (result.redirected) {
-        return; // Browser will redirect
+      if (!result.redirected) {
+        toast.success('¡Bienvenido!');
       }
-
-      toast.success('¡Bienvenido!');
-      navigate(returnTo || '/');
     } catch (err) {
       toast.error('Error al iniciar con Google');
     }
