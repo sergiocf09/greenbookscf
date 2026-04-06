@@ -33,6 +33,8 @@ interface GroupBetsCardProps {
   basePlayerId?: string;
   confirmedHoles?: Set<number>;
   onBetConfigChange?: (config: BetConfig) => void;
+  /** Controls which sections to render: 'all' (default), 'indicators' (only Oyes/Unidades/Manchas), 'grupales' (everything except indicators) */
+  renderSection?: 'all' | 'indicators' | 'grupales';
 }
 
 // Tie-break storage helper
