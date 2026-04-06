@@ -457,12 +457,12 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         </DialogContent>
       </Dialog>
 
-      <Sheet open={showAddMember} onOpenChange={setShowAddMember}>
-        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>Agregar jugador al ranking</SheetTitle></SheetHeader>
-          <div className="relative mt-4">
+      <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Agregar jugador al ranking</DialogTitle></DialogHeader>
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre..." className="pl-9" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
+            <Input placeholder="Buscar por nombre..." className="pl-9" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoFocus />
           </div>
           {searching && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
           <div className="mt-3 space-y-2">
@@ -479,8 +479,8 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               <p className="text-sm text-muted-foreground text-center py-4">Sin resultados</p>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={showBilateral} onOpenChange={setShowBilateral}>
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">

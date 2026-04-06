@@ -1,11 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -29,9 +33,14 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   isRoundLinked,
 }) => {
   const { profile } = useAuth();
-  const { event, participants, standings, loading, fetchDetail } = useLeaderboardDetail(leaderboardId);
+  const { event, participants, standings, loading, fetchDetail, isCreator } = useLeaderboardDetail(leaderboardId);
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -75,6 +84,41 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       const url = `${window.location.origin}/leaderboards/join/${event.code}`;
       navigator.clipboard.writeText(url);
       toast.success('Link copiado');
+    }
+  };
+
+  const handleRename = async () => {
+    if (!renameValue.trim() || !event) return;
+    setRenaming(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_events')
+        .update({ name: renameValue.trim() })
+        .eq('id', event.id);
+      if (error) throw error;
+      toast.success('Nombre actualizado');
+      setShowRenameDialog(false);
+      fetchDetail();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!event) return;
+    try {
+      // Delete in order: scores, rounds, participants, event
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_rounds').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
+      const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
+      if (error) throw error;
+      toast.success('Leaderboard eliminado');
+      onBack();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
     }
   };
 
@@ -155,6 +199,18 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               Desvincular ronda
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Creator actions */}
+      {isCreator && (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+          </Button>
+          <Button variant="destructive" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
+          </Button>
         </div>
       )}
 
@@ -261,6 +317,45 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
         </CardContent>
       </Card>
+
+      {/* Rename dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nombre del leaderboard</DialogTitle>
+            <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rename-lb">Nombre</Label>
+            <Input id="rename-lb" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
+            <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
+              {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+            <DialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán el leaderboard y todos sus participantes.
+              Escribe <strong>ELIMINAR</strong> para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="Escribe ELIMINAR" className="uppercase" />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
+            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
