@@ -37,6 +37,17 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const [expandedSections, setExpandedSections] = useState<string[]>(() => {
     // Auto-expand sections that have active/configured bets
     const initial: string[] = [];
+    // Individual bets
+    if (config.medal?.enabled) initial.push('medal');
+    if (config.pressures?.enabled) initial.push('pressures');
+    if (config.skins?.enabled) initial.push('skins');
+    if (config.caros?.enabled) initial.push('caros');
+    if (config.oyeses?.enabled) initial.push('oyeses');
+    if (config.units?.enabled) initial.push('units');
+    if (config.manchas?.enabled) initial.push('manchas');
+    if (config.putts?.enabled) initial.push('putts');
+    if (config.rayas?.enabled) initial.push('rayas');
+    // Parejas bets
     if (config.teamPressures?.enabled && config.teamPressures.bets.length > 0) initial.push('teamPressures');
     if (config.carritos?.enabled) initial.push('carritos');
     return initial;
