@@ -2752,6 +2752,7 @@ const Index = () => {
               setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
             />
+            </ErrorBoundary>
             
             {/* Close Scorecard Button - only visible to organizer */}
             {isRoundStarted && roundState.status !== 'completed' && (
