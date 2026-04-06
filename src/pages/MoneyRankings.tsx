@@ -62,9 +62,9 @@ const MoneyRankings = () => {
   const displayGlobalHcpEntries = useMemo(
     () => sortHandicapRankingEntries(
       withLiveHandicapOverride(globalHcpEntries, profile?.id ?? null, liveHandicapIndex),
-      globalSortKey,
+      globalSortKey, globalSortDir,
     ),
-    [globalHcpEntries, globalSortKey, liveHandicapIndex, profile?.id],
+    [globalHcpEntries, globalSortKey, globalSortDir, liveHandicapIndex, profile?.id],
   );
 
   const handleCreate = async () => {
