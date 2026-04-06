@@ -35,7 +35,7 @@ const toTitleCase = (name: string) =>
 type RankingView = 'money' | 'handicap';
 
 const PERIOD_LABELS: Record<RankingPeriod, string> = {
-  all: 'Todos',
+  all: 'Histórico',
   year: 'Este año',
   custom: 'Período',
 };
