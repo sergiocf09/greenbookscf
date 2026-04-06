@@ -19,6 +19,7 @@ import { LeaderboardDialog } from '@/components/LeaderboardDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
+import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
@@ -82,7 +83,7 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 
-type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards';
+type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
 
 const Index = () => {
@@ -2164,7 +2165,7 @@ const Index = () => {
           {/* Right: Friends (only in setup) + Profile Menu */}
           <div className="flex items-center flex-shrink-0 gap-1">
             {/* Help Button - show on main tab views */}
-            {view !== 'leaderboards' && (
+            {view !== 'leaderboards' && view !== 'rankings' && (
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -2237,7 +2238,7 @@ const Index = () => {
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboards
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/rankings')}>
+                <DropdownMenuItem onClick={() => setView('rankings')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
                   Rankings
                 </DropdownMenuItem>
@@ -2926,6 +2927,13 @@ const Index = () => {
               onNavigateToDetail={(id) => setLeaderboardDetailId(id)}
             />
           )
+        )}
+
+        {/* Rankings View */}
+        {view === 'rankings' && (
+          <RankingsInlineView
+            onNavigateToDetail={(id) => navigate(`/rankings/${id}`)}
+          />
         )}
       </main>
 
