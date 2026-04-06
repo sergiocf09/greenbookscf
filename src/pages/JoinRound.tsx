@@ -64,6 +64,16 @@ const JoinRound = () => {
   const [showGuestMode, setShowGuestMode] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [joiningAsGuest, setJoiningAsGuest] = useState(false);
+  const [guestJoined, setGuestJoined] = useState(false);
+
+  // Conversion modal state
+  const [showConversionModal, setShowConversionModal] = useState(false);
+  const [guestSession, setGuestSession] = useState<{
+    session_id: string;
+    ghost_profile_id: string;
+    round_player_id: string;
+    display_name: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!roundId) {
