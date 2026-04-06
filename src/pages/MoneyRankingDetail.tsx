@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMoneyRankingDetail, useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { RankingBalanceEntry, RankingPeriod } from '@/hooks/useMoneyRankings';
 import { useHandicapRankingByIds } from '@/hooks/useHandicapRanking';
+import { useLiveHandicap } from '@/hooks/useLiveHandicap';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,12 +18,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Loader2, TrendingUp, TrendingDown, Users, UserPlus, UserMinus, Trash2, ChevronRight, Search, X, Minus, DollarSign, Award, CalendarRange, CalendarIcon,
+  ArrowLeft, Loader2, TrendingUp, TrendingDown, UserPlus, UserMinus, Trash2, ChevronRight, Search, Minus, DollarSign, Award, CalendarRange, CalendarIcon, Pencil,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { fmtMoney } from '@/lib/formatMoney';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { supabase } from '@/integrations/supabase/client';
+import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
+import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -41,12 +45,9 @@ const NetBadge = ({ amount }: { amount: number }) => {
   return <span className="text-muted-foreground font-semibold text-sm">$0</span>;
 };
 
-const PositionBadge = ({ rank }: { rank: number }) => {
-  if (rank === 1) return <span className="text-lg">🥇</span>;
-  if (rank === 2) return <span className="text-lg">🥈</span>;
-  if (rank === 3) return <span className="text-lg">🥉</span>;
-  return <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>;
-};
+const PositionBadge = ({ rank }: { rank: number }) => (
+  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
+);
 
 const TrendIcon = ({ trend }: { trend: number | null }) => {
   if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
@@ -71,10 +72,14 @@ const MoneyRankingDetail = () => {
   const [showBilateral, setShowBilateral] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [handicapSortKey, setHandicapSortKey] = useState<HandicapRankingSortKey>('handicap');
 
   const {
     ranking, members, balances, bilateral, selectedMemberId,
@@ -83,8 +88,8 @@ const MoneyRankingDetail = () => {
   } = useMoneyRankingDetail(id ?? null, period, customDateFrom, customDateTo);
 
   const { addMember, leaveRanking, removeMember, deleteRanking } = useMoneyRankings();
+  const { liveHandicapIndex } = useLiveHandicap(profile?.id ?? null, profile?.current_handicap ?? null);
 
-  // Handicap ranking for this ranking's members — uses same period filters
   const { entries: handicapEntries, loading: loadingHandicap } = useHandicapRankingByIds(
     id ?? null,
     period,
@@ -94,7 +99,14 @@ const MoneyRankingDetail = () => {
 
   const selectedEntry = balances.find(b => b.profile_id === selectedMemberId);
   const memberProfileIds = useMemo(() => members.map(m => m.profile_id), [members]);
-  const memberProfileIdSet = new Set(memberProfileIds);
+  const memberProfileIdSet = useMemo(() => new Set(memberProfileIds), [memberProfileIds]);
+  const displayHandicapEntries = useMemo(
+    () => sortHandicapRankingEntries(
+      withLiveHandicapOverride(handicapEntries, profile?.id ?? null, liveHandicapIndex),
+      handicapSortKey,
+    ),
+    [handicapEntries, handicapSortKey, liveHandicapIndex, profile?.id],
+  );
 
   const handleMemberTap = (entry: RankingBalanceEntry) => {
     selectMember(entry.profile_id);
@@ -103,7 +115,10 @@ const MoneyRankingDetail = () => {
 
   const handleSearch = async (q: string) => {
     setSearchQuery(q);
-    if (q.trim().length < 2) { setSearchResults([]); return; }
+    if (q.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
     setSearching(true);
     const { data } = await supabase.rpc('search_profiles', { p_query: q.trim() });
     setSearchResults((data || []).filter((p: any) => !memberProfileIdSet.has(p.id)));
@@ -136,6 +151,27 @@ const MoneyRankingDetail = () => {
     if (!id || deleteConfirmText.toLowerCase() !== 'eliminar') return;
     await deleteRanking(id);
     navigate('/rankings');
+  };
+
+  const handleRename = async () => {
+    if (!id || !profile || !renameValue.trim()) return;
+
+    setRenaming(true);
+    const { error } = await supabase
+      .from('money_rankings')
+      .update({ name: renameValue.trim() })
+      .eq('id', id)
+      .eq('creator_id', profile.id);
+    setRenaming(false);
+
+    if (error) {
+      toast.error(`No se pudo actualizar el nombre: ${error.message}`);
+      return;
+    }
+
+    toast.success('Nombre del ranking actualizado');
+    setShowRenameDialog(false);
+    await fetchDetail();
   };
 
   const handlePeriodChange = (v: string) => {
@@ -171,7 +207,6 @@ const MoneyRankingDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => navigate('/rankings')}>
@@ -186,13 +221,23 @@ const MoneyRankingDetail = () => {
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Creator actions */}
         {isCreator && (
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="w-full"
+              onClick={() => {
+                setRenameValue(ranking?.name ?? '');
+                setShowRenameDialog(true);
+              }}
+            >
+              <Pencil className="h-4 w-4 mr-1" /> Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
               onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}
             >
               <UserPlus className="h-4 w-4 mr-1" /> Agregar jugador
@@ -200,6 +245,7 @@ const MoneyRankingDetail = () => {
             <Button
               variant="destructive"
               size="sm"
+              className="w-full"
               onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
             >
               <Trash2 className="h-4 w-4 mr-1" /> Eliminar ranking
@@ -207,14 +253,32 @@ const MoneyRankingDetail = () => {
           </div>
         )}
 
-        {/* Leave button (non-creator) */}
         {!isCreator && (
           <Button variant="outline" size="sm" className="w-full" onClick={handleLeave}>
             <UserMinus className="h-4 w-4 mr-1" /> Salir del ranking
           </Button>
         )}
 
-        {/* Toggle: Dinero / Hándicap */}
+        <Tabs value={period} onValueChange={handlePeriodChange}>
+          <TabsList className="w-full">
+            {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
+              <TabsTrigger key={p} value={p} className="flex-1 gap-1">
+                {p === 'custom' && <CalendarRange className="h-3 w-3" />}
+                {PERIOD_LABELS[p]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {period === 'custom' && customDateFrom && (
+          <button
+            className="text-xs text-muted-foreground text-center w-full hover:underline"
+            onClick={() => setShowCustomPeriod(true)}
+          >
+            {customDateFrom} → {customDateTo || 'hoy'} · Editar
+          </button>
+        )}
+
         <Tabs value={rankingView} onValueChange={(v) => setRankingView(v as RankingView)}>
           <TabsList className="w-full">
             <TabsTrigger value="money" className="flex-1 gap-1">
@@ -226,31 +290,8 @@ const MoneyRankingDetail = () => {
           </TabsList>
         </Tabs>
 
-        {/* === MONEY VIEW === */}
         {rankingView === 'money' && (
           <>
-            {/* Period filters */}
-            <Tabs value={period} onValueChange={handlePeriodChange}>
-              <TabsList className="w-full">
-                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
-                  <TabsTrigger key={p} value={p} className="flex-1 gap-1">
-                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
-                    {PERIOD_LABELS[p]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            {period === 'custom' && customDateFrom && (
-              <button
-                className="text-xs text-muted-foreground text-center w-full hover:underline"
-                onClick={() => setShowCustomPeriod(true)}
-              >
-                {customDateFrom} → {customDateTo || 'hoy'} · Editar
-              </button>
-            )}
-
-            {/* Money positions */}
             {loadingBalances ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -274,7 +315,7 @@ const MoneyRankingDetail = () => {
                     return (
                       <React.Fragment key={entry.profile_id}>
                         {idx > 0 && <Separator className="my-1" />}
-                        <div className="flex items-center gap-1.5 py-2">
+                        <div className="flex items-center gap-1.5 py-1">
                           {isCreator && entry.profile_id !== profile?.id && memberRow && (
                             <button
                               className="shrink-0 p-1 rounded hover:bg-destructive/10 transition-colors"
@@ -290,7 +331,7 @@ const MoneyRankingDetail = () => {
                           >
                             <PositionBadge rank={entry.rank ?? idx + 1} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-sm font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
                                 {entry.profile_id === profile?.id && (
                                   <span className="text-xs text-muted-foreground ml-1">(tú)</span>
@@ -317,35 +358,13 @@ const MoneyRankingDetail = () => {
           </>
         )}
 
-        {/* === HANDICAP VIEW === */}
         {rankingView === 'handicap' && (
           <>
-            {/* Period filters (shared with money) */}
-            <Tabs value={period} onValueChange={handlePeriodChange}>
-              <TabsList className="w-full">
-                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
-                  <TabsTrigger key={p} value={p} className="flex-1 gap-1">
-                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
-                    {PERIOD_LABELS[p]}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            {period === 'custom' && customDateFrom && (
-              <button
-                className="text-xs text-muted-foreground text-center w-full hover:underline"
-                onClick={() => setShowCustomPeriod(true)}
-              >
-                {customDateFrom} → {customDateTo || 'hoy'} · Editar
-              </button>
-            )}
-
             {loadingHandicap ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-            ) : handicapEntries.length === 0 ? (
+            ) : displayHandicapEntries.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <Award className="h-10 w-10 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
@@ -353,29 +372,26 @@ const MoneyRankingDetail = () => {
             ) : (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Jugador</span>
-                    <span className="flex gap-4 text-xs text-muted-foreground">
-                      <span className="w-12 text-center">HCP</span>
-                      <span className="w-10 text-center">Prom</span>
-                      <span className="w-10 text-center">Mejor</span>
-                    </span>
+                  <CardTitle className="text-sm">
+                    <HandicapRankingHeader sortKey={handicapSortKey} onSortChange={setHandicapSortKey} />
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  {handicapEntries.map((entry, idx) => (
+                  {displayHandicapEntries.map((entry, idx) => (
                     <React.Fragment key={entry.profile_id}>
-                      {idx > 0 && <Separator className="my-1.5" />}
-                      <div className="flex items-center gap-2 py-1.5">
+                      {idx > 0 && <Separator className="my-1" />}
+                      <div className="flex items-center gap-2 py-1">
                         <PositionBadge rank={entry.rank ?? idx + 1} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
+                          <p className="text-sm font-medium truncate leading-tight">
                             {toTitleCase(entry.display_name)}
                             {entry.profile_id === profile?.id && (
                               <span className="text-xs text-muted-foreground ml-1">(tú)</span>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
+                          <p className="text-[11px] text-muted-foreground leading-tight">
+                            {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
+                          </p>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1 w-12 justify-center">
@@ -403,7 +419,31 @@ const MoneyRankingDetail = () => {
         )}
       </div>
 
-      {/* Dialog: Confirm delete ranking */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nombre del ranking</DialogTitle>
+            <DialogDescription>Actualiza el nombre visible del ranking.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rename-ranking">Nombre</Label>
+            <Input
+              id="rename-ranking"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
+            <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
+              {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
@@ -432,13 +472,7 @@ const MoneyRankingDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Custom period picker */}
-      <Dialog open={showCustomPeriod} onOpenChange={(open) => {
-        if (!open && period !== 'custom') {
-          // user cancelled — don't change period
-        }
-        setShowCustomPeriod(open);
-      }}>
+      <Dialog open={showCustomPeriod} onOpenChange={setShowCustomPeriod}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Período personalizado</DialogTitle>
@@ -449,10 +483,7 @@ const MoneyRankingDetail = () => {
               <Label className="text-sm">Desde</Label>
               <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !customDateFrom && "text-muted-foreground")}
-                  >
+                  <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateFrom && 'text-muted-foreground')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {customDateFrom ? format(new Date(customDateFrom + 'T12:00:00'), 'dd/MM/yyyy') : 'Seleccionar fecha'}
                   </Button>
@@ -470,7 +501,7 @@ const MoneyRankingDetail = () => {
                     }}
                     disabled={(date) => date > new Date()}
                     initialFocus
-                    className={cn("p-3 pointer-events-auto")}
+                    className={cn('p-3 pointer-events-auto')}
                   />
                 </PopoverContent>
               </Popover>
@@ -479,10 +510,7 @@ const MoneyRankingDetail = () => {
               <Label className="text-sm">Hasta</Label>
               <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !customDateTo && "text-muted-foreground")}
-                  >
+                  <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateTo && 'text-muted-foreground')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {customDateTo ? format(new Date(customDateTo + 'T12:00:00'), 'dd/MM/yyyy') : 'Hoy'}
                   </Button>
@@ -500,15 +528,13 @@ const MoneyRankingDetail = () => {
                     }}
                     disabled={(date) => date > new Date() || (customDateFrom ? date < new Date(customDateFrom + 'T12:00:00') : false)}
                     initialFocus
-                    className={cn("p-3 pointer-events-auto")}
+                    className={cn('p-3 pointer-events-auto')}
                   />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Deja «Hasta» vacío para que sea hasta hoy.
-          </p>
+          <p className="text-xs text-muted-foreground">Deja «Hasta» vacío para que sea hasta hoy.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>Cancelar</Button>
             <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>Aplicar</Button>
@@ -516,7 +542,6 @@ const MoneyRankingDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Sheet: Agregar miembro */}
       <Sheet open={showAddMember} onOpenChange={setShowAddMember}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
           <SheetHeader>
@@ -555,7 +580,6 @@ const MoneyRankingDetail = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Sheet: Bilateral */}
       <Sheet open={showBilateral} onOpenChange={setShowBilateral}>
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
           <SheetHeader>
