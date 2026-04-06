@@ -1,16 +1,16 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
-const TrendIcon = ({ trend }: { trend: number | null }) => {
-  if (trend === null) return <Minus className="h-2.5 w-2.5 text-muted-foreground" />;
-  if (trend < -0.4) return <TrendingDown className="h-2.5 w-2.5 text-green-500" />;
-  if (trend > 0.4) return <TrendingUp className="h-2.5 w-2.5 text-red-500" />;
-  return <Minus className="h-2.5 w-2.5 text-muted-foreground" />;
+const getHcpColor = (trend: number | null) => {
+  if (trend === null) return 'text-foreground';
+  if (trend < -0.4) return 'text-green-600 dark:text-green-400';
+  if (trend > 0.4) return 'text-red-600 dark:text-red-400';
+  return 'text-foreground';
 };
 
 interface Props {
@@ -28,7 +28,7 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             {entry.rank ?? idx + 1}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium truncate leading-tight">
+            <p className="text-[11px] font-medium truncate leading-tight">
               {toTitleCase(entry.display_name)}
               {entry.profile_id === currentProfileId && (
                 <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>
@@ -39,14 +39,13 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </p>
           </div>
           <div className="flex items-center shrink-0">
-            <div className="flex items-center gap-0.5 w-[52px] justify-end">
-              <TrendIcon trend={entry.handicap_trend} />
-              <span className="text-xs font-semibold">{entry.current_handicap.toFixed(1)}</span>
-            </div>
-            <span className="text-[11px] text-muted-foreground w-[36px] text-center">
+            <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
+              {entry.current_handicap.toFixed(1)}
+            </span>
+            <span className="text-[11px] text-muted-foreground w-[40px] text-center">
               {entry.avg_gross_score ?? '—'}
             </span>
-            <span className="text-[11px] text-muted-foreground w-[36px] text-center">
+            <span className="text-[11px] text-muted-foreground w-[40px] text-center">
               {entry.best_gross_score ?? '—'}
             </span>
           </div>
