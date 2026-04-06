@@ -2183,7 +2183,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Medal General - Scope-aware rendering */}
-        {(medalGeneralGroupResult || medalGeneralGlobalResult) && (
+        {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
