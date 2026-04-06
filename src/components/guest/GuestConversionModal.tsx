@@ -44,27 +44,25 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
 
     setLoading(true);
     try {
-      // Upgrade anonymous session to permanent account
-      // Supabase supports linking email/password to an anonymous user via updateUser
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
-        email: email.trim(),
-        password,
-        data: { display_name: displayName },
+      // Call edge function that handles conversion with admin privileges
+      // This auto-confirms the email so the user can log in immediately
+      const { data, error } = await supabase.functions.invoke('convert-guest', {
+        body: {
+          email: email.trim(),
+          password,
+          display_name: displayName,
+          session_id: guestSessionId,
+        },
       });
 
-      if (updateError) throw updateError;
-      if (!updateData.user) throw new Error('No se pudo crear la cuenta');
-
-      // Convert ghost profile to real profile
-      const { error: convertError } = await supabase.rpc('convert_ghost_to_profile', {
-        p_session_id: guestSessionId,
-        p_auth_uid: updateData.user.id,
-      });
-
-      if (convertError) throw convertError;
+      if (error) throw new Error(error.message || 'Error al crear la cuenta');
+      if (data?.error) throw new Error(data.error);
 
       // Clean up localStorage
       localStorage.removeItem(`guest_session_${roundId}`);
+
+      // Re-authenticate with the new credentials so the session is fully updated
+      await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
       toast.success('¡Cuenta creada! Tu historial ha sido vinculado.');
       onConverted();
