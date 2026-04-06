@@ -16,10 +16,6 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
     ],
     beforeSend(event) {
       if (import.meta.env.DEV) return null;
