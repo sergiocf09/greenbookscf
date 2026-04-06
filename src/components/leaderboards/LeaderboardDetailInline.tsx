@@ -1,11 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

@@ -154,13 +154,13 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
                 <p className="text-xs text-muted-foreground">Agrega amigos para ver el ranking global</p>
               </div>
             ) : (
-              <Card>
+               <Card>
                 <CardHeader className="pb-1 px-3">
+                  <CardTitle className="text-sm text-center">
+                    Scoring Ranking - Amigos</CardTitle>
+                </CardHeader>
+                <CardHeader className="pb-1 px-3 pt-0">
                   <CardTitle className="text-sm">
-                    <span className="inline-flex items-center mb-1">
-                      <Award className="h-4 w-4 inline mr-1" />
-                      Ranking de Hándicap · Amigos
-                    </span>
                     <HandicapRankingHeader sortKey={globalSortKey} sortDirection={globalSortDir} onSortChange={handleGlobalSort} />
                   </CardTitle>
                 </CardHeader>
