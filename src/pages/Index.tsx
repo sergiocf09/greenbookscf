@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
@@ -2236,6 +2237,10 @@ const Index = () => {
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboards
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/rankings')}>
+                  <TrendingDown className="h-4 w-4 mr-2" />
+                  Rankings de Dinero
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
@@ -2576,16 +2581,21 @@ const Index = () => {
           );
         })()}
 
-        {view === 'handicaps' && (
-          <HandicapMatrix
-            players={players}
-            playerGroups={playerGroups}
-            basePlayerId={profile?.id || ''}
-            roundPlayerIds={roundPlayerIds}
-            getStrokesForLocalPair={getStrokesForLocalPair}
-            setStrokesForLocalPair={setStrokesForLocalPair}
-            isLoading={isLoadingHandicaps}
-          />
+         {view === 'handicaps' && (
+          <>
+            <HandicapMatrix
+              players={players}
+              playerGroups={playerGroups}
+              basePlayerId={profile?.id || ''}
+              roundPlayerIds={roundPlayerIds}
+              getStrokesForLocalPair={getStrokesForLocalPair}
+              setStrokesForLocalPair={setStrokesForLocalPair}
+              isLoading={isLoadingHandicaps}
+            />
+            <div className="border-t border-border my-4" />
+            <h3 className="text-sm font-semibold mb-2">Ranking de Hándicap</h3>
+            <HandicapRankingView roundId={roundState.id} />
+          </>
         )}
 
         {view === 'scoring' && course && (

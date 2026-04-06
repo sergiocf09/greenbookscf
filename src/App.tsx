@@ -13,6 +13,8 @@ import JoinByCode from "./pages/JoinByCode";
 import Leaderboards from "./pages/Leaderboards";
 import LeaderboardDetail from "./pages/LeaderboardDetail";
 import JoinLeaderboard from "./pages/JoinLeaderboard";
+import MoneyRankings from "./pages/MoneyRankings";
+import MoneyRankingDetail from "./pages/MoneyRankingDetail";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -65,6 +67,8 @@ const AppRoutes = () => (
     <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
     <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
     <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
+    <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
+    <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
