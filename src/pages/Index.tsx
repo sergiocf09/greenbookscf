@@ -3018,7 +3018,12 @@ const Index = () => {
             : async () => {
                 setShowCloseAttemptDialog(false);
                 const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
-                if (!success) setShowCloseAttemptDialog(true);
+                if (success) {
+                  // Reset immediately — share image not available from this path
+                  resetToNewRound();
+                } else {
+                  setShowCloseAttemptDialog(true);
+                }
               }
         }
       />
@@ -3029,6 +3034,11 @@ const Index = () => {
         isLoading={isClosing}
         onConfirm={async () => {
           setShowCloseConfirmDialog(false);
+          // Capture roundId before close clears state
+          const closingRoundId = roundState.id;
+          const closingDate = roundState.date;
+          const closingCourseName = course?.name || 'Campo';
+          const closingCoursePar = course?.holes.reduce((s, h) => s + h.par, 0) || 72;
           const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
           if (success) {
             // Fetch snapshot from DB after a short delay to get real balances
@@ -3037,14 +3047,14 @@ const Index = () => {
                 const { data } = await supabase
                   .from('round_snapshots')
                   .select('snapshot_json')
-                  .eq('round_id', roundState.id)
+                  .eq('round_id', closingRoundId)
                   .single();
                 if (data?.snapshot_json) {
                   const snap = data.snapshot_json as any;
 
                   setRoundShareData({
-                    courseName: snap.courseName || course?.name || 'Campo',
-                    date: snap.date || format(roundState.date, "d 'de' MMMM yyyy", { locale: es }),
+                    courseName: snap.courseName || closingCourseName,
+                    date: snap.date || format(closingDate, "d 'de' MMMM yyyy", { locale: es }),
                     players: (snap.balances || []).map((b: any) => {
                       const p = (snap.players || []).find((pl: any) => pl.id === b.playerId);
                       const vsBalances = b.vsBalances || [];
@@ -3069,13 +3079,17 @@ const Index = () => {
                       };
                     }),
                     betTypes: [],
-                    coursePar: snap.coursePar || 72,
+                    coursePar: snap.coursePar || closingCoursePar,
                     highlights: calcHighlightsFromSnapshot(snap),
                   });
                   setShowRoundShare(true);
+                } else {
+                  // No snapshot — just reset
+                  resetToNewRound();
                 }
               } catch (e) {
                 console.error('Failed to load snapshot for share image', e);
+                resetToNewRound();
               }
             }, 1500);
           } else {
