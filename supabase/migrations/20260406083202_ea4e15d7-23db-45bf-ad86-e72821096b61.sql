@@ -1,0 +1,1 @@
+DELETE FROM auth.users WHERE id = '1491f176-ec3c-49f8-a3c4-6b75635b3855' AND is_anonymous = true;
