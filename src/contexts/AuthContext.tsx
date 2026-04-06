@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const hasHydratedSessionRef = useRef(false);
+  const hasAuthEventRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -116,18 +117,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mountedRef.current) return;
       if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') return;
+
+      hasAuthEventRef.current = true;
+      hasHydratedSessionRef.current = true;
       syncAuthState(nextSession);
     });
 
     supabase.auth
       .getSession()
       .then(({ data: { session: restoredSession } }) => {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || hasAuthEventRef.current) return;
         hasHydratedSessionRef.current = true;
         syncAuthState(restoredSession);
       })
       .catch(() => {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || hasAuthEventRef.current) return;
         hasHydratedSessionRef.current = true;
         setSession(null);
         setUser(null);
