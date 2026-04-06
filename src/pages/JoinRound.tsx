@@ -139,7 +139,16 @@ const JoinRound = () => {
       return;
     }
 
-    // Validate that the ghost profile is still a player in this round
+    // For completed rounds, skip DB validation (RLS blocks unauthenticated reads)
+    // and show the conversion UI directly from localStorage data
+    if (roundInfo.status === 'completed') {
+      setGuestSession(session);
+      setGuestJoined(true);
+      setShowConversionModal(true);
+      return;
+    }
+
+    // For active rounds, validate that the ghost profile is still a player
     const validate = async () => {
       const { data } = await supabase
         .from('round_players')
@@ -160,10 +169,6 @@ const JoinRound = () => {
 
       setGuestSession(session);
       setGuestJoined(true);
-
-      if (roundInfo.status === 'completed') {
-        setShowConversionModal(true);
-      }
     };
     validate();
   }, [roundId, roundInfo, user]);
