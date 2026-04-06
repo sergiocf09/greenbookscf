@@ -412,7 +412,31 @@ const JoinRound = () => {
             )}
 
             {/* Action Buttons */}
-            {alreadyJoined ? (
+            {guestJoined && !user ? (
+              /* Guest already joined — show status */
+              <div className="space-y-3">
+                <div className="bg-primary/10 rounded-lg p-4 text-center space-y-1">
+                  <CheckCircle className="h-6 w-6 text-primary mx-auto" />
+                  <div className="font-medium text-sm">
+                    Estás en la ronda como {guestSession?.display_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {roundInfo.status === 'completed' 
+                      ? 'La ronda ha finalizado' 
+                      : 'Esperando a que el organizador cierre la ronda...'}
+                  </div>
+                </div>
+                {roundInfo.status === 'completed' && (
+                  <Button
+                    className="w-full"
+                    onClick={() => setShowConversionModal(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Crear cuenta y conservar historial
+                  </Button>
+                )}
+              </div>
+            ) : alreadyJoined ? (
               <Button className="w-full" variant="secondary" disabled>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Ya estás en esta ronda
@@ -490,6 +514,27 @@ const JoinRound = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Guest Conversion Modal */}
+      {guestSession && roundId && (
+        <GuestConversionModal
+          open={showConversionModal}
+          onOpenChange={setShowConversionModal}
+          roundId={roundId}
+          guestSessionId={guestSession.session_id}
+          ghostProfileId={guestSession.ghost_profile_id}
+          displayName={guestSession.display_name}
+          onConverted={() => {
+            setShowConversionModal(false);
+            toast.success('¡Bienvenido! Tu historial está vinculado.');
+            navigate('/');
+          }}
+          onDismissed={() => {
+            setGuestJoined(false);
+            setGuestSession(null);
+          }}
+        />
+      )}
     </div>
   );
 };
