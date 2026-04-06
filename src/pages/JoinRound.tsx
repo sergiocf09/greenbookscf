@@ -123,6 +123,58 @@ const JoinRound = () => {
     fetchRoundInfo();
   }, [roundId, profile]);
 
+  // Case B: Guest returns to the link after round is completed
+  // Check localStorage for a valid guest session with the round completed
+  useEffect(() => {
+    if (!roundId || !roundInfo) return;
+    // Don't show if user is already authenticated
+    if (user) return;
+
+    const stored = localStorage.getItem(`guest_session_${roundId}`);
+    if (!stored) return;
+
+    try {
+      const session = JSON.parse(stored);
+      setGuestSession(session);
+      setGuestJoined(true);
+
+      if (roundInfo.status === 'completed') {
+        // Round is completed — show conversion modal
+        setShowConversionModal(true);
+      }
+    } catch {
+      // Invalid JSON, ignore
+    }
+  }, [roundId, roundInfo, user]);
+
+  // Case A: Guest is connected when round closes — listen for Realtime changes
+  useEffect(() => {
+    if (!roundId || !guestSession || user) return;
+
+    const channel = supabase
+      .channel(`round-status-${roundId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rounds',
+          filter: `id=eq.${roundId}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).status === 'completed') {
+            setRoundInfo(prev => prev ? { ...prev, status: 'completed' } : prev);
+            setShowConversionModal(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roundId, guestSession, user]);
+
   const handleJoin = async () => {
     if (!user || !profile || !roundId) {
       navigate('/auth', { state: { returnTo: `/join/${roundId}` } });
