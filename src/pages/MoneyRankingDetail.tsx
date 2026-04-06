@@ -376,43 +376,13 @@ const MoneyRankingDetail = () => {
               </div>
             ) : (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-1 px-3">
                   <CardTitle className="text-sm">
-                    <HandicapRankingHeader sortKey={handicapSortKey} onSortChange={setHandicapSortKey} />
+                    <HandicapRankingHeader sortKey={handicapSortKey} sortDirection={handicapSortDir} onSortChange={handleHcpSort} />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  {displayHandicapEntries.map((entry, idx) => (
-                    <React.Fragment key={entry.profile_id}>
-                      {idx > 0 && <Separator className="my-1" />}
-                      <div className="flex items-center gap-2 py-1">
-                        <PositionBadge rank={entry.rank ?? idx + 1} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate leading-tight">
-                            {toTitleCase(entry.display_name)}
-                            {entry.profile_id === profile?.id && (
-                              <span className="text-xs text-muted-foreground ml-1">(tú)</span>
-                            )}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground leading-tight">
-                            {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1 w-12 justify-center">
-                            <TrendIcon trend={entry.handicap_trend} />
-                            <span className="text-sm font-semibold">{entry.current_handicap.toFixed(1)}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground w-10 text-center">
-                            {entry.avg_gross_score ?? '—'}
-                          </span>
-                          <span className="text-xs text-muted-foreground w-10 text-center">
-                            {entry.best_gross_score ?? '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  ))}
+                <CardContent className="pt-0 px-3">
+                  <HandicapRankingRows entries={displayHandicapEntries} currentProfileId={profile?.id} />
                 </CardContent>
               </Card>
             )}
