@@ -30,10 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const hasHydratedSessionRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<void> => {
@@ -46,10 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (!mountedRef.current) return;
-      setProfile(error || !data ? null : {
-        ...data,
-        current_handicap: Number(data.current_handicap) || 0,
-      });
+
+      setProfile(
+        error || !data
+          ? null
+          : {
+              ...data,
+              current_handicap: Number(data.current_handicap) || 0,
+            },
+      );
     } catch {
       if (mountedRef.current) setProfile(null);
     } finally {
@@ -61,12 +69,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const guestSessionId = currentUser.user_metadata?.guest_session_id;
     if (!guestSessionId || currentUser.is_anonymous) return;
     if (!currentUser.email_confirmed_at) return;
+
     try {
       const { error } = await supabase.rpc('convert_ghost_to_profile', {
         p_session_id: guestSessionId,
         p_auth_uid: currentUser.id,
       });
-      if (error) { console.error('[Auth] Guest conversion error:', error); return; }
+
+      if (error) {
+        console.error('[Auth] Guest conversion error:', error);
+        return;
+      }
+
       await supabase.auth.updateUser({ data: { guest_session_id: null, guest_round_id: null } });
       const roundId = currentUser.user_metadata?.guest_round_id;
       if (roundId) localStorage.removeItem(`pending_conversion_${roundId}`);
@@ -75,31 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  useEffect(() => {
-    // Hidratación inicial — fuente de verdad
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+  const syncAuthState = useCallback(
+    (nextSession: Session | null) => {
       if (!mountedRef.current) return;
-      setSession(s);
-      const u = s?.user ?? null;
-      setUser(u);
 
-      if (!u || u.is_anonymous) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-      // fetchProfile llama setLoading(false) al terminar
-      void fetchProfile(u.id);
-      void handlePendingGuestConversion(u);
-    }).catch(() => {
-      if (!mountedRef.current) return;
-      setProfile(null);
-      setLoading(false);
-    });
-
-    // Listener de cambios posteriores (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!mountedRef.current) return;
       setSession(nextSession);
       const nextUser = nextSession?.user ?? null;
       setUser(nextUser);
@@ -110,14 +103,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Nuevo usuario real: recargar profile
       setLoading(true);
       void fetchProfile(nextUser.id);
       void handlePendingGuestConversion(nextUser);
+    },
+    [fetchProfile, handlePendingGuestConversion],
+  );
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mountedRef.current) return;
+      if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') return;
+      syncAuthState(nextSession);
     });
 
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: restoredSession } }) => {
+        if (!mountedRef.current) return;
+        hasHydratedSessionRef.current = true;
+        syncAuthState(restoredSession);
+      })
+      .catch(() => {
+        if (!mountedRef.current) return;
+        hasHydratedSessionRef.current = true;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+      });
+
     return () => subscription.unsubscribe();
-  }, [fetchProfile, handlePendingGuestConversion]);
+  }, [syncAuthState]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -146,11 +165,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!profile) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', profile.id);
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', profile.id);
     if (error) throw error;
+
     setProfile({ ...profile, ...updates });
   };
 
