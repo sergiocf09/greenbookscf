@@ -48,6 +48,12 @@ const MoneyRankings = () => {
   const [formName, setFormName] = useState('');
   const [creating, setCreating] = useState(false);
   const [globalSortKey, setGlobalSortKey] = useState<HandicapRankingSortKey>('handicap');
+  const [globalSortDir, setGlobalSortDir] = useState<HandicapRankingSortDirection>('asc');
+
+  const handleGlobalSort = (key: HandicapRankingSortKey) => {
+    if (key === globalSortKey) setGlobalSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setGlobalSortKey(key); setGlobalSortDir('asc'); }
+  };
 
   const { entries: globalHcpEntries, loading: loadingGlobalHcp } = useHandicapRanking(null, 'global');
   const { liveHandicapIndex } = useLiveHandicap(profile?.id ?? null, profile?.current_handicap ?? null);
