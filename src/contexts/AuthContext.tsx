@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getAuthRedirectOrigin } from '@/lib/authRedirect';
 
 interface Profile {
   id: string;
@@ -40,8 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const fetchProfile = useCallback(async (userId: string): Promise<void> => {
-    try {
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    const loadOnce = async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, user_id, display_name, initials, avatar_color, current_handicap')
@@ -49,20 +50,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('is_ghost', false)
         .maybeSingle();
 
-      if (!mountedRef.current) return;
+      if (error || !data) return null;
 
-      setProfile(
-        error || !data
-          ? null
-          : {
-              ...data,
-              current_handicap: Number(data.current_handicap) || 0,
-            },
-      );
+      return {
+        ...data,
+        current_handicap: Number(data.current_handicap) || 0,
+      };
+    };
+
+    try {
+      const immediateProfile = await loadOnce();
+      if (immediateProfile) return immediateProfile;
+
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+      return await loadOnce();
     } catch {
-      if (mountedRef.current) setProfile(null);
-    } finally {
-      if (mountedRef.current) setLoading(false);
+      return null;
     }
   }, []);
 
@@ -105,11 +108,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setLoading(true);
-      void fetchProfile(nextUser.id);
-      void handlePendingGuestConversion(nextUser);
     },
-    [fetchProfile, handlePendingGuestConversion],
+    [],
   );
+
+  useEffect(() => {
+    if (!user || user.is_anonymous) {
+      if (mountedRef.current) {
+        setProfile(null);
+        setLoading(false);
+      }
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    void (async () => {
+      const nextProfile = await fetchProfile(user.id);
+      if (cancelled || !mountedRef.current) return;
+
+      setProfile(nextProfile);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.is_anonymous, fetchProfile]);
+
+  useEffect(() => {
+    if (!user || user.is_anonymous) return;
+    void handlePendingGuestConversion(user);
+  }, [
+    user?.id,
+    user?.is_anonymous,
+    user?.email_confirmed_at,
+    user?.user_metadata?.guest_session_id,
+    user?.user_metadata?.guest_round_id,
+    handlePendingGuestConversion,
+  ]);
 
   useEffect(() => {
     const {
@@ -143,7 +181,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [syncAuthState]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.session) syncAuthState(data.session);
     return { error: error as Error | null };
   };
 
@@ -152,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getAuthRedirectOrigin(),
         data: { display_name: displayName },
       },
     });

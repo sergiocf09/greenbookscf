@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
+import { getAuthRedirectOrigin, getAuthRedirectUrl } from '@/lib/authRedirect';
 
 const Auth = () => {
   const { theme, setTheme } = useTheme();
@@ -33,7 +34,7 @@ const Auth = () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getAuthRedirectOrigin(),
       });
       if (result.error) {
         toast.error('Error al iniciar con Google', { description: String(result.error) });
@@ -59,6 +60,7 @@ const Auth = () => {
     } else {
       toast.success('¡Bienvenido!');
       setIsLoading(false);
+      navigate(returnTo ?? '/', { replace: true });
     }
   };
 
@@ -70,7 +72,7 @@ const Auth = () => {
     }
     setIsLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getAuthRedirectUrl('/reset-password'),
     });
     if (error) {
       toast.error('Error al enviar correo', { description: error.message });
