@@ -1948,6 +1948,18 @@ export const useRoundManagement = ({
         devError('Failed to finish close attempt as succeeded:', e);
       }
 
+      // Set conversion deadline for guest sessions (72h window)
+      try {
+        const { error: guestErr } = await supabase
+          .from('guest_sessions')
+          .update({ conversion_deadline: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() })
+          .eq('round_id', roundState.id)
+          .is('converted_profile_id', null);
+        if (guestErr) devError('Error setting guest conversion deadline:', guestErr);
+      } catch (e) {
+        devError('Error updating guest sessions on close:', e);
+      }
+
       setRoundState(prev => ({ ...prev, status: 'completed' }));
       toast.success('Tarjeta cerrada y guardada');
       setLastCloseReport({ ...report });

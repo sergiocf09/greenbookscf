@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { formatPlayerName } from '@/lib/playerInput';
+import { GuestConversionModal } from '@/components/guest/GuestConversionModal';
 
 interface GroupInfo {
   id: string;
@@ -63,6 +64,16 @@ const JoinRound = () => {
   const [showGuestMode, setShowGuestMode] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [joiningAsGuest, setJoiningAsGuest] = useState(false);
+  const [guestJoined, setGuestJoined] = useState(false);
+
+  // Conversion modal state
+  const [showConversionModal, setShowConversionModal] = useState(false);
+  const [guestSession, setGuestSession] = useState<{
+    session_id: string;
+    ghost_profile_id: string;
+    round_player_id: string;
+    display_name: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!roundId) {
@@ -111,6 +122,58 @@ const JoinRound = () => {
 
     fetchRoundInfo();
   }, [roundId, profile]);
+
+  // Case B: Guest returns to the link after round is completed
+  // Check localStorage for a valid guest session with the round completed
+  useEffect(() => {
+    if (!roundId || !roundInfo) return;
+    // Don't show if user is already authenticated
+    if (user) return;
+
+    const stored = localStorage.getItem(`guest_session_${roundId}`);
+    if (!stored) return;
+
+    try {
+      const session = JSON.parse(stored);
+      setGuestSession(session);
+      setGuestJoined(true);
+
+      if (roundInfo.status === 'completed') {
+        // Round is completed — show conversion modal
+        setShowConversionModal(true);
+      }
+    } catch {
+      // Invalid JSON, ignore
+    }
+  }, [roundId, roundInfo, user]);
+
+  // Case A: Guest is connected when round closes — listen for Realtime changes
+  useEffect(() => {
+    if (!roundId || !guestSession || user) return;
+
+    const channel = supabase
+      .channel(`round-status-${roundId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rounds',
+          filter: `id=eq.${roundId}`,
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).status === 'completed') {
+            setRoundInfo(prev => prev ? { ...prev, status: 'completed' } : prev);
+            setShowConversionModal(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roundId, guestSession, user]);
 
   const handleJoin = async () => {
     if (!user || !profile || !roundId) {
@@ -168,16 +231,19 @@ const JoinRound = () => {
 
       const result = data as any;
       
-      // Save guest session to localStorage
-      localStorage.setItem(`guest_session_${roundId}`, JSON.stringify({
+      const sessionData = {
         session_id: result.session_id,
         ghost_profile_id: result.ghost_profile_id,
         round_player_id: result.round_player_id,
         display_name: guestName.trim(),
-      }));
+      };
+
+      // Save guest session to localStorage
+      localStorage.setItem(`guest_session_${roundId}`, JSON.stringify(sessionData));
+      setGuestSession(sessionData);
+      setGuestJoined(true);
 
       toast.success('Te has unido a la ronda como invitado');
-      navigate('/');
     } catch (err: any) {
       console.error('Error joining as guest:', err);
       toast.error(err?.message || 'Error al unirse como invitado');
@@ -346,7 +412,31 @@ const JoinRound = () => {
             )}
 
             {/* Action Buttons */}
-            {alreadyJoined ? (
+            {guestJoined && !user ? (
+              /* Guest already joined — show status */
+              <div className="space-y-3">
+                <div className="bg-primary/10 rounded-lg p-4 text-center space-y-1">
+                  <CheckCircle className="h-6 w-6 text-primary mx-auto" />
+                  <div className="font-medium text-sm">
+                    Estás en la ronda como {guestSession?.display_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {roundInfo.status === 'completed' 
+                      ? 'La ronda ha finalizado' 
+                      : 'Esperando a que el organizador cierre la ronda...'}
+                  </div>
+                </div>
+                {roundInfo.status === 'completed' && (
+                  <Button
+                    className="w-full"
+                    onClick={() => setShowConversionModal(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Crear cuenta y conservar historial
+                  </Button>
+                )}
+              </div>
+            ) : alreadyJoined ? (
               <Button className="w-full" variant="secondary" disabled>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Ya estás en esta ronda
@@ -424,6 +514,27 @@ const JoinRound = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Guest Conversion Modal */}
+      {guestSession && roundId && (
+        <GuestConversionModal
+          open={showConversionModal}
+          onOpenChange={setShowConversionModal}
+          roundId={roundId}
+          guestSessionId={guestSession.session_id}
+          ghostProfileId={guestSession.ghost_profile_id}
+          displayName={guestSession.display_name}
+          onConverted={() => {
+            setShowConversionModal(false);
+            toast.success('¡Bienvenido! Tu historial está vinculado.');
+            navigate('/');
+          }}
+          onDismissed={() => {
+            setGuestJoined(false);
+            setGuestSession(null);
+          }}
+        />
+      )}
     </div>
   );
 };
