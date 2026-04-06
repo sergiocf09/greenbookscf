@@ -93,6 +93,7 @@ const MoneyRankingDetail = () => {
   );
 
   const selectedEntry = balances.find(b => b.profile_id === selectedMemberId);
+  const memberProfileIds = useMemo(() => members.map(m => m.profile_id), [members]);
   const memberProfileIdSet = new Set(memberProfileIds);
 
   const handleMemberTap = (entry: RankingBalanceEntry) => {
