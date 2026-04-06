@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
 import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { ScoringView } from '@/components/scoring/ScoringView';
@@ -89,12 +89,40 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
 
+// --- Dialog state reducer ---
+type DialogName =
+  | 'profile' | 'history' | 'balances' | 'handicap' | 'handicapHistory'
+  | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
+  | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
+  | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
+  | 'roundShare';
+
+type DialogState = Record<DialogName, boolean>;
+
+const DIALOGS_INITIAL: DialogState = {
+  profile: false, history: false, balances: false, handicap: false,
+  handicapHistory: false, scorecard: false, share: false, addPlayer: false,
+  leaderboard: false, linkLeaderboard: false, handicapMatrix: false,
+  closeAttempt: false, closeConfirm: false, pendingRound: false,
+  friends: false, addFromFriends: false, onboarding: false, help: false,
+  profileMenuHelp: false, roundShare: false,
+};
+
+function dialogsReducer(state: DialogState, action: { name: DialogName; open: boolean }): DialogState {
+  if (state[action.name] === action.open) return state;
+  return { ...state, [action.name]: action.open };
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, updateProfile } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [dialogs, dispatchDialog] = useReducer(dialogsReducer, DIALOGS_INITIAL);
+  const openDialog = (name: DialogName) => dispatchDialog({ name, open: true });
+  const closeDialog = (name: DialogName) => dispatchDialog({ name, open: false });
+  const setDialog = (name: DialogName, open: boolean) => dispatchDialog({ name, open });
+
   const [view, setView] = useState<AppView>('setup');
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -111,31 +139,12 @@ const Index = () => {
   useEffect(() => {
     scoresRef.current = scores;
   }, [scores]);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [showBalancesDialog, setShowBalancesDialog] = useState(false);
-  const [showHandicapDialog, setShowHandicapDialog] = useState(false);
-  const [showHandicapHistoryDialog, setShowHandicapHistoryDialog] = useState(false);
-  const [showScorecardDialog, setShowScorecardDialog] = useState(false);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
-  const [showLeaderboardDialog, setShowLeaderboardDialog] = useState(false);
-  const [showLinkLeaderboardDialog, setShowLinkLeaderboardDialog] = useState(false);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string } | null>(null);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
-  const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
-  const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
-  const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
-  const [showPendingRoundDialog, setShowPendingRoundDialog] = useState(false);
-  const [showFriendsDialog, setShowFriendsDialog] = useState(false);
-  const [showAddFromFriendsDialog, setShowAddFromFriendsDialog] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showProfileMenuHelp, setShowProfileMenuHelp] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [showRoundShare, setShowRoundShare] = useState(false);
   const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
   const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
@@ -240,7 +249,7 @@ const Index = () => {
   useEffect(() => {
     if (!profile) return;
     if (!localStorage.getItem('gbcf_onboarding_done')) {
-      setShowOnboarding(true);
+      openDialog('onboarding');
     }
   }, [profile]);
 
@@ -251,9 +260,9 @@ const Index = () => {
     const hasRoundContext = Boolean(roundState.id) || Boolean(selectedCourseId) || isRoundStarted;
     if (isRestoring && !hasRoundContext) return;
 
-    const shouldBlockForPending = showPendingRoundDialog && pendingRounds.length > 0 && !isRoundStarted;
+    const shouldBlockForPending = dialogs.pendingRound && pendingRounds.length > 0 && !isRoundStarted;
     setEnableCourseCatalog(hasRoundContext || !shouldBlockForPending);
-  }, [profile, isRestoring, showPendingRoundDialog, pendingRounds.length, isRoundStarted, roundState.id, selectedCourseId]);
+  }, [profile, isRestoring, dialogs.pendingRound, pendingRounds.length, isRoundStarted, roundState.id, selectedCourseId]);
 
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
   const { loadBetConfig, saveBetConfig, isLoaded: isBetConfigLoaded } = useBetConfigPersistence({
@@ -582,7 +591,7 @@ const Index = () => {
   // Clone round: pre-populate setup with historical data
   const handleCloneRound = useCallback((data: CloneRoundData) => {
     // Close history dialog
-    setShowHistoryDialog(false);
+    closeDialog('history');
     
     // Pre-populate course
     setSelectedCourseId(data.courseId);
@@ -633,7 +642,7 @@ const Index = () => {
   // Clone full round: copy everything including scores and create a new in_progress round
   const handleCloneFullRound = useCallback(async (data: FullCloneRoundData) => {
     // Close history dialog
-    setShowHistoryDialog(false);
+    closeDialog('history');
     
     try {
       toast.info('Creando ronda con scores precargados...');
@@ -1646,7 +1655,7 @@ const Index = () => {
       const result = await createRound(selectedCourseId, teeColor, roundState.date, startingHole);
       if (result) {
         // The useEffect will automatically persist any unmapped players
-        setShowShareDialog(true);
+        openDialog('share');
       }
     }
   };
@@ -2078,7 +2087,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AlertDialog open={showPendingRoundDialog && pendingRounds.length > 0 && !isRestoring} onOpenChange={setShowPendingRoundDialog}>
+      <AlertDialog open={dialogs.pendingRound && pendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
@@ -2110,7 +2119,7 @@ const Index = () => {
                             variant="secondary"
                             size="sm"
                             onClick={() => {
-                              setShowPendingRoundDialog(false);
+                              closeDialog('pendingRound');
                               handleRestorePendingRound(r.roundId);
                             }}
                           >
@@ -2121,7 +2130,7 @@ const Index = () => {
                             variant="destructive"
                             size="sm"
                             onClick={() => {
-                              setShowPendingRoundDialog(false);
+                              closeDialog('pendingRound');
                               void handleClosePendingRoundPermanently(r.roundId);
                             }}
                           >
@@ -2141,7 +2150,7 @@ const Index = () => {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setShowPendingRoundDialog(false);
+                  closeDialog('pendingRound');
                   handleDiscardPendingRoundAndStartNew();
                 }}
               >
@@ -2181,7 +2190,7 @@ const Index = () => {
                 variant="ghost" 
                 size="icon" 
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-                onClick={() => setShowHelp(true)}
+                onClick={() => openDialog('help')}
               >
                 <HelpCircle className="h-7 w-7" />
               </Button>
@@ -2192,7 +2201,7 @@ const Index = () => {
                 variant="ghost" 
                 size="icon" 
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-                onClick={() => setShowFriendsDialog(true)}
+                onClick={() => openDialog('friends')}
               >
                 <Users className="h-5 w-5" />
               </Button>
@@ -2221,7 +2230,7 @@ const Index = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowProfileMenuHelp(true)}>
+                <DropdownMenuItem onClick={() => openDialog('profileMenuHelp')}>
                   <HelpCircle className="h-4 w-4 mr-2" />
                   ¿Qué hay en este menú?
                 </DropdownMenuItem>
@@ -2237,7 +2246,7 @@ const Index = () => {
                   <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                <DropdownMenuItem onClick={() => openDialog('profile')}>
                   <Settings className="h-4 w-4 mr-2" />
                   Perfil
                 </DropdownMenuItem>
@@ -2253,7 +2262,7 @@ const Index = () => {
                   <TrendingDown className="h-4 w-4 mr-2" />
                   Rankings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
+                <DropdownMenuItem onClick={() => openDialog('history')}>
                   <History className="h-4 w-4 mr-2" />
                   Historial de Rondas
                 </DropdownMenuItem>
@@ -2280,24 +2289,24 @@ const Index = () => {
                       devError('Balances repair attempt failed:', e);
                     }
 
-                    setShowBalancesDialog(true);
+                    openDialog('balances');
                   }}
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
                   Balances Históricos
                 </DropdownMenuItem>
                 {pendingRounds && pendingRounds.length > 0 && (
-                  <DropdownMenuItem onClick={() => setShowPendingRoundDialog(true)}>
+                  <DropdownMenuItem onClick={() => openDialog('pendingRound')}>
                     <Play className="h-4 w-4 mr-2 text-destructive" />
                     <span>Rondas Pendientes</span>
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowHandicapDialog(true)}>
+                <DropdownMenuItem onClick={() => openDialog('handicap')}>
                   <Calculator className="h-4 w-4 mr-2" />
                   Calcular Handicap
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowHandicapHistoryDialog(true)}>
+                <DropdownMenuItem onClick={() => openDialog('handicapHistory')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
                   Historial de Handicap
                 </DropdownMenuItem>
@@ -2310,7 +2319,7 @@ const Index = () => {
             </DropdownMenu>
           </div>
 
-          <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
+          <ProfileDialog open={dialogs.profile} onOpenChange={(v: boolean) => setDialog('profile', v)} />
         </div>
       </header>
 
@@ -2403,7 +2412,7 @@ const Index = () => {
               defaultTeeColor={teeColor}
               onAddFromFriendsClick={() => {
                 setAddFriendsTargetGroupId(null); // null = main group
-                setShowAddFromFriendsDialog(true);
+                openDialog('addFromFriends');
               }}
               organizerProfileId={roundState.organizerProfileId}
             />
@@ -2491,7 +2500,7 @@ const Index = () => {
                   defaultTeeColor={teeColor}
                   onAddFromFriendsClick={() => {
                     setAddFriendsTargetGroupId(group.id);
-                    setShowAddFromFriendsDialog(true);
+                    openDialog('addFromFriends');
                   }}
                   organizerProfileId={roundState.organizerProfileId}
                 />
@@ -2502,7 +2511,7 @@ const Index = () => {
             {roundState.id && (
               <Button 
                 variant="outline" 
-                onClick={() => setShowShareDialog(true)}
+                onClick={() => openDialog('share')}
                 className="w-full"
               >
                 <Share2 className="h-4 w-4 mr-2" />
@@ -2699,16 +2708,16 @@ const Index = () => {
               basePlayerId={profile?.id}
               getStrokeIndicators={getStrokeIndicators}
               confirmedHoles={confirmedHoles}
-              onAddPlayerClick={() => setShowAddPlayerDialog(true)}
+              onAddPlayerClick={() => openDialog('addPlayer')}
               startingHole={startingHole}
-              onLeaderboardClick={() => setShowLeaderboardDialog(true)}
+              onLeaderboardClick={() => openDialog('leaderboard')}
               playerGroups={playerGroups}
               onQuickScoreClick={(player) => setQuickScorePlayer(player)}
             />
             
             <LeaderboardDialog
-              open={showLeaderboardDialog}
-              onOpenChange={setShowLeaderboardDialog}
+              open={dialogs.leaderboard}
+              onOpenChange={(v: boolean) => setDialog('leaderboard', v)}
               players={players}
               playerGroups={playerGroups}
               scores={scores}
@@ -2723,8 +2732,8 @@ const Index = () => {
 
 {roundState.id && (
           <AddPlayerFromScorecardDialog
-            open={showAddPlayerDialog}
-            onOpenChange={setShowAddPlayerDialog}
+            open={dialogs.addPlayer}
+            onOpenChange={(v: boolean) => setDialog('addPlayer', v)}
             roundId={roundState.id}
             onAddGuest={handleAddGuestFromScorecard}
             onAddFromFriends={handleAddPlayersFromFriends}
@@ -2760,7 +2769,7 @@ const Index = () => {
                 {profile?.id === roundState.organizerProfileId ? (
                   <Button 
                     variant="destructive"
-                    onClick={() => setShowCloseConfirmDialog(true)}
+                    onClick={() => openDialog('closeConfirm')}
                     disabled={isLoading || isClosing}
                     className="w-full mt-4"
                   >
@@ -2827,7 +2836,7 @@ const Index = () => {
               isRoundLinked={isRoundLinkedToLeaderboard}
               onLinkRound={() => {
                 setPreselectedLeaderboardId(leaderboardDetailId);
-                setShowLinkLeaderboardDialog(true);
+                openDialog('linkLeaderboard');
               }}
               onUnlinkRound={async () => {
                 if (!roundState.id || !leaderboardDetailId) return;
@@ -2973,17 +2982,17 @@ const Index = () => {
       )}
 
       {/* History Dialog */}
-      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+      <Dialog open={dialogs.history} onOpenChange={(v: boolean) => setDialog('history', v)}>
         <DialogContent className="max-w-md px-3 sm:px-6">
           <DialogHeader>
             <DialogTitle>Historial de Rondas</DialogTitle>
           </DialogHeader>
           <RoundHistory 
-            onClose={() => setShowHistoryDialog(false)} 
+            onClose={() => closeDialog('history')} 
             onViewRound={(data) => {
               setHistoricalScorecardData(data);
-              setShowHistoryDialog(false);
-              setShowScorecardDialog(true);
+              closeDialog('history');
+              openDialog('scorecard');
             }}
             onCloneRound={handleCloneRound}
             onCloneFullRound={handleCloneFullRound}
@@ -2992,31 +3001,31 @@ const Index = () => {
       </Dialog>
 
       <CloseAttemptDialog
-        open={showCloseAttemptDialog}
-        onOpenChange={setShowCloseAttemptDialog}
+        open={dialogs.closeAttempt}
+        onOpenChange={(v: boolean) => setDialog('closeAttempt', v)}
         report={lastCloseReport}
         onRetry={
           isClosing
             ? undefined
             : async () => {
-                setShowCloseAttemptDialog(false);
+                closeDialog('closeAttempt');
                 const success = await closeScorecard(currentBetSummaries, getStrokesForLocalPair);
                 if (success) {
                   // Reset immediately — share image not available from this path
                   resetToNewRound();
                 } else {
-                  setShowCloseAttemptDialog(true);
+                  openDialog('closeAttempt');
                 }
               }
         }
       />
 
       <CloseRoundConfirmDialog
-        open={showCloseConfirmDialog}
-        onOpenChange={setShowCloseConfirmDialog}
+        open={dialogs.closeConfirm}
+        onOpenChange={(v: boolean) => setDialog('closeConfirm', v)}
         isLoading={isClosing}
         onConfirm={async () => {
-          setShowCloseConfirmDialog(false);
+          closeDialog('closeConfirm');
           // Capture roundId before close clears state
           const closingRoundId = roundState.id;
           const closingDate = roundState.date;
@@ -3065,7 +3074,7 @@ const Index = () => {
                     coursePar: snap.coursePar || closingCoursePar,
                     highlights: calcHighlightsFromSnapshot(snap),
                   });
-                  setShowRoundShare(true);
+                  openDialog('roundShare');
                 } else {
                   // No snapshot — just reset
                   resetToNewRound();
@@ -3076,23 +3085,23 @@ const Index = () => {
               }
             }, 1500);
           } else {
-            setShowCloseAttemptDialog(true);
+            openDialog('closeAttempt');
           }
         }}
       />
 
       {/* Handicap Calculator Dialog */}
-      <Dialog open={showHandicapDialog} onOpenChange={setShowHandicapDialog}>
+      <Dialog open={dialogs.handicap} onOpenChange={(v: boolean) => setDialog('handicap', v)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Calculadora de Handicap</DialogTitle>
           </DialogHeader>
-          <HandicapCalculator onClose={() => setShowHandicapDialog(false)} />
+          <HandicapCalculator onClose={() => closeDialog('handicap')} />
         </DialogContent>
       </Dialog>
 
       {/* Handicap History Dialog */}
-      <Dialog open={showHandicapHistoryDialog} onOpenChange={setShowHandicapHistoryDialog}>
+      <Dialog open={dialogs.handicapHistory} onOpenChange={(v: boolean) => setDialog('handicapHistory', v)}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Historial de Handicap</DialogTitle>
@@ -3102,7 +3111,7 @@ const Index = () => {
       </Dialog>
 
 
-      <Dialog open={showScorecardDialog} onOpenChange={setShowScorecardDialog}>
+      <Dialog open={dialogs.scorecard} onOpenChange={(v: boolean) => setDialog('scorecard', v)}>
         <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
           <div className="overflow-y-auto overflow-x-hidden max-h-[90vh] p-6">
           <DialogHeader>
@@ -3123,7 +3132,7 @@ const Index = () => {
       </Dialog>
 
       {/* Share Round Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+      <Dialog open={dialogs.share} onOpenChange={(v: boolean) => setDialog('share', v)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Invitar Jugadores</DialogTitle>
@@ -3131,20 +3140,20 @@ const Index = () => {
           {roundState.id && (
             <ShareRoundDialog 
               roundId={roundState.id} 
-              onClose={() => setShowShareDialog(false)} 
+              onClose={() => closeDialog('share')} 
             />
           )}
         </DialogContent>
       </Dialog>
 
       {/* Historical Balances Dialog */}
-      <Dialog open={showBalancesDialog} onOpenChange={setShowBalancesDialog}>
+      <Dialog open={dialogs.balances} onOpenChange={(v: boolean) => setDialog('balances', v)}>
         <DialogContent className="max-w-md px-2 sm:px-6">
           <DialogHeader>
             <DialogTitle>Balances Históricos</DialogTitle>
           </DialogHeader>
           <HistoricalBalances 
-            onClose={() => setShowBalancesDialog(false)}
+            onClose={() => closeDialog('balances')}
             onViewRound={async (roundId: string) => {
               try {
                 // Load round players and scores to navigate to historical view
@@ -3199,8 +3208,8 @@ const Index = () => {
                   teeColor: roundData.tee_color,
                   date: roundData.date,
                 });
-                setShowBalancesDialog(false);
-                setShowScorecardDialog(true);
+                closeDialog('balances');
+                openDialog('scorecard');
               } catch (err) {
                 console.error('Error loading round:', err);
               }
@@ -3211,15 +3220,15 @@ const Index = () => {
 
       {/* Friends Dialog */}
       <FriendsDialog
-        open={showFriendsDialog}
-        onOpenChange={setShowFriendsDialog}
+        open={dialogs.friends}
+        onOpenChange={(v: boolean) => setDialog('friends', v)}
         onAddToRound={handleAddFriendToRound}
         hasActiveRound={Boolean(roundState.id)}
       />
 
       {/* Add From Friends Dialog (for setup/scorecard) */}
       <AddFromFriendsDialog
-        open={showAddFromFriendsDialog}
+        open={dialogs.addFromFriends}
         onOpenChange={(open) => {
           setShowAddFromFriendsDialog(open);
           if (!open) setAddFriendsTargetGroupId(null);
@@ -3242,7 +3251,7 @@ const Index = () => {
 
       {/* Link Round to Leaderboard Dialog */}
       <LinkRoundToLeaderboardDialog
-        open={showLinkLeaderboardDialog}
+        open={dialogs.linkLeaderboard}
         onOpenChange={async (open) => {
           setShowLinkLeaderboardDialog(open);
           if (!open) {
@@ -3356,11 +3365,11 @@ const Index = () => {
         />
         );
       })()}
-      <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
-      <ContextualHelp view={view} open={showHelp} onClose={() => setShowHelp(false)} />
+      <OnboardingWizard open={dialogs.onboarding} onClose={() => closeDialog('onboarding')} />
+      <ContextualHelp view={view} open={dialogs.help} onClose={() => closeDialog('help')} />
 
       {/* Profile Menu Help Dialog */}
-      <Dialog open={showProfileMenuHelp} onOpenChange={(open) => {
+      <Dialog open={dialogs.profileMenuHelp} onOpenChange={(open) => {
         setShowProfileMenuHelp(open);
         if (!open) {
           // Reabrir el menú de perfil al cerrar el help
@@ -3384,7 +3393,7 @@ const Index = () => {
             <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>Cerrar Sesión</strong></span></li>
           </ul>
           <div className="pt-3 border-t border-border">
-            <Button variant="outline" className="w-full" onClick={() => setShowProfileMenuHelp(false)}>
+            <Button variant="outline" className="w-full" onClick={() => closeDialog('profileMenuHelp')}>
               Cerrar
             </Button>
           </div>
@@ -3393,9 +3402,9 @@ const Index = () => {
       {roundShareData && (
         <RoundShareImage
           {...roundShareData}
-          open={showRoundShare}
+          open={dialogs.roundShare}
           onClose={() => {
-            setShowRoundShare(false);
+            closeDialog('roundShare');
             // After viewing/dismissing the share image, reset to a clean setup
             resetToNewRound();
           }}
