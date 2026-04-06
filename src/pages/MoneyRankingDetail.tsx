@@ -229,33 +229,33 @@ const MoneyRankingDetail = () => {
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {isCreator && (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => {
                 setRenameValue(ranking?.name ?? '');
                 setShowRenameDialog(true);
               }}
             >
-              <Pencil className="h-4 w-4 mr-1" /> Editar
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}
             >
-              <UserPlus className="h-4 w-4 mr-1" /> Agregar jugador
+              <UserPlus className="h-3.5 w-3.5 mr-1" /> Agregar
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              className="w-full"
+              className="flex-1 text-xs h-8"
               onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
             >
-              <Trash2 className="h-4 w-4 mr-1" /> Eliminar ranking
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
             </Button>
           </div>
         )}
