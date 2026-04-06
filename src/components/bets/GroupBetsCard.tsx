@@ -1536,15 +1536,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     // but we only show the indicators section below via showIndicators/showGrupales flags
   }
 
-  return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Apuestas Grupales
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-4">
+  // When rendering only indicators, return without Card wrapper
+  if (renderSection === 'indicators') {
+    if (!hasIndicators) return null;
+    return (
+      <div className="space-y-4">
+        {/* Indicators section rendered standalone */}
         {/* Culebras - Simplified view with collapsible detail */}
         {culebrasResult && (
           <div className="space-y-2">
