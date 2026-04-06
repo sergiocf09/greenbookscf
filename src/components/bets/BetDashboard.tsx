@@ -1657,7 +1657,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     // Update Balance vs section to show players from this group
                     const groupPlayers = getPlayersForGroup(idx, players, playerGroups);
                     if (groupPlayers.length > 0) {
-                      setBalanceBasePlayerId(groupPlayers[0].id);
+                      // Prefer logged-in user if they're in this group
+                      const loggedInPlayer = groupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+                      setBalanceBasePlayerId(loggedInPlayer?.id ?? groupPlayers[0].id);
                       setSelectedRival(null);
                     }
                   }}
