@@ -363,7 +363,6 @@ const MoneyRankingDetail = () => {
             </p>
           </>
         )}
-
         {rankingView === 'handicap' && (
           <>
             {loadingHandicap ? (
