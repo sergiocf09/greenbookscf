@@ -121,6 +121,7 @@ const Index = () => {
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
   const [showHandicapMatrixDialog, setShowHandicapMatrixDialog] = useState(false);
   const [showCloseAttemptDialog, setShowCloseAttemptDialog] = useState(false);
   const [showCloseConfirmDialog, setShowCloseConfirmDialog] = useState(false);
