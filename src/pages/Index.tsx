@@ -167,6 +167,7 @@ const Index = () => {
   // Round management hook with restoration
   const {
     roundState,
+    setRoundState,
     isLoading,
     isClosing,
     isRestoring,
@@ -200,6 +201,36 @@ const Index = () => {
     getCourseById,
     setPlayerGroups,
   });
+
+  // Reset all round state to prepare for a new round (called after successful close)
+  const resetToNewRound = useCallback(() => {
+    setRoundState({
+      id: null,
+      status: 'setup',
+      date: new Date(),
+      courseId: null,
+      teeColor: 'white',
+      startingHole: 1,
+      groupId: null,
+      organizerProfileId: null,
+    });
+    setPlayers([]);
+    setScores(new Map());
+    setConfirmedHoles(new Set());
+    setSelectedCourseId(null);
+    setBetConfig(defaultBetConfig);
+    setPlayerGroups([]);
+    setRoundPlayerIds(new Map());
+    setCurrentBetSummaries([]);
+    setView('setup');
+    setCurrentHole(1);
+    setRoundShareData(null);
+    setLinkedLeaderboardInfo(null);
+    setLeaderboardDetailId(null);
+    setIsRoundLinkedToLeaderboard(false);
+    // Reset restoration guard so a new pending round can be auto-restored
+    // (the ref lives inside useRoundManagement, but setting roundState.id = null achieves the same)
+  }, [setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
 
   // Onboarding check – first time user
   useEffect(() => {
