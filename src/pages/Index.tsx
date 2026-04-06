@@ -161,6 +161,7 @@ const Index = () => {
   const swipeHandlers = useSwipeNavigation(TAB_ORDER, view as AppView, (v) => {
     setView(v);
     if (v !== 'leaderboards') setLeaderboardDetailId(null);
+    if (v !== 'rankings') setRankingDetailId(null);
   });
 
   // Round management hook with restoration
