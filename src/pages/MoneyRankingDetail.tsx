@@ -26,7 +26,8 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
-import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
+import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey, type HandicapRankingSortDirection } from '@/lib/handicapRankingUtils';
+import { HandicapRankingRows } from '@/components/handicap/HandicapRankingRows';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
