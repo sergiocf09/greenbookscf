@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, LogOut } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleCreateAccount = async () => {
     if (!email.trim() || !password.trim()) {
@@ -44,42 +45,93 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
 
     setLoading(true);
     try {
-      // Call edge function that handles conversion with admin privileges
-      // This auto-confirms the email so the user can log in immediately
-      const { data, error } = await supabase.functions.invoke('convert-guest', {
-        body: {
-          email: email.trim(),
-          password,
+      // Update the anonymous user with email + password
+      // This sends a confirmation email (same as regular signup)
+      // Store guest_session_id in metadata for post-confirmation conversion
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: email.trim(),
+        password,
+        data: {
           display_name: displayName,
-          session_id: guestSessionId,
+          guest_session_id: guestSessionId,
+          guest_round_id: roundId,
         },
       });
 
-      if (error) throw new Error(error.message || 'Error al crear la cuenta');
-      if (data?.error) throw new Error(data.error);
+      if (updateError) throw updateError;
 
-      // Clean up localStorage
+      // Mark conversion as pending in localStorage (survives browser close)
+      localStorage.setItem(`pending_conversion_${roundId}`, JSON.stringify({
+        sessionId: guestSessionId,
+        ghostProfileId,
+        email: email.trim(),
+      }));
+
+      // Clean up the guest session key (no longer needed for round access)
       localStorage.removeItem(`guest_session_${roundId}`);
 
-      // Re-authenticate with the new credentials so the session is fully updated
-      await supabase.auth.signInWithPassword({ email: email.trim(), password });
-
-      toast.success('¡Cuenta creada! Tu historial ha sido vinculado.');
-      onConverted();
+      setEmailSent(true);
     } catch (err: any) {
-      console.error('Error converting guest:', err);
-      toast.error(err?.message || 'Error al crear la cuenta');
+      console.error('Error initiating guest conversion:', err);
+      if (err?.message?.includes('already') || err?.message?.includes('duplicate')) {
+        toast.error('Este email ya está registrado. Intenta con otro.');
+      } else {
+        toast.error(err?.message || 'Error al crear la cuenta');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleDismiss = () => {
-    // Remove guest session from localStorage (loses future access)
     localStorage.removeItem(`guest_session_${roundId}`);
     onDismissed();
     onOpenChange(false);
   };
+
+  if (emailSent) {
+    return (
+      <Dialog open={open} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <div className="flex justify-center mb-2">
+              <Mail className="h-12 w-12 text-primary" />
+            </div>
+            <DialogTitle className="text-center">Confirma tu correo</DialogTitle>
+            <DialogDescription className="text-center">
+              Hemos enviado un enlace de confirmación a:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="bg-muted rounded-lg p-3 text-center">
+              <span className="font-medium text-sm">{email}</span>
+            </div>
+
+            <p className="text-sm text-muted-foreground text-center">
+              Haz clic en el enlace del correo para activar tu cuenta.
+              Una vez confirmado, podrás iniciar sesión y acceder a tu historial.
+            </p>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Si no ves el correo, revisa tu carpeta de spam.
+            </p>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                onConverted();
+                onOpenChange(false);
+              }}
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
