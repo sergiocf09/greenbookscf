@@ -123,28 +123,49 @@ const JoinRound = () => {
     fetchRoundInfo();
   }, [roundId, profile]);
 
-  // Case B: Guest returns to the link after round is completed
-  // Check localStorage for a valid guest session with the round completed
+  // Case B: Guest returns to the link — validate session against DB
   useEffect(() => {
     if (!roundId || !roundInfo) return;
-    // Don't show for real (non-anonymous) authenticated users
     if (user && !user.is_anonymous) return;
 
     const stored = localStorage.getItem(`guest_session_${roundId}`);
     if (!stored) return;
 
+    let session: any;
     try {
-      const session = JSON.parse(stored);
+      session = JSON.parse(stored);
+    } catch {
+      localStorage.removeItem(`guest_session_${roundId}`);
+      return;
+    }
+
+    // Validate that the ghost profile is still a player in this round
+    const validate = async () => {
+      const { data } = await supabase
+        .from('round_players')
+        .select('id')
+        .eq('id', session.round_player_id)
+        .eq('round_id', roundId)
+        .maybeSingle();
+
+      if (!data) {
+        // Player was removed — clear stale session
+        localStorage.removeItem(`guest_session_${roundId}`);
+        // Sign out the anonymous session so the user sees a clean join page
+        if (user?.is_anonymous) {
+          await supabase.auth.signOut();
+        }
+        return;
+      }
+
       setGuestSession(session);
       setGuestJoined(true);
 
       if (roundInfo.status === 'completed') {
-        // Round is completed — show conversion modal
         setShowConversionModal(true);
       }
-    } catch {
-      // Invalid JSON, ignore
-    }
+    };
+    validate();
   }, [roundId, roundInfo, user]);
 
   // Case A: Guest is connected when round closes — listen for Realtime changes
