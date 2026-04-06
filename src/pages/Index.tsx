@@ -3419,6 +3419,7 @@ const Index = () => {
           }}
         />
       )}
+      <GuestRoundClosedListener />
     </div>
   );
 };
