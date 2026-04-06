@@ -42,10 +42,10 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
               {entry.current_handicap.toFixed(1)}
             </span>
-            <span className="text-[11px] text-muted-foreground w-[40px] text-center">
+            <span className="text-[11px] font-bold text-green-700 dark:text-green-400 w-[40px] text-center">
               {entry.avg_gross_score ?? '—'}
             </span>
-            <span className="text-[11px] text-muted-foreground w-[40px] text-center">
+            <span className="text-[11px] font-bold text-green-700 dark:text-green-400 w-[40px] text-center">
               {entry.best_gross_score ?? '—'}
             </span>
           </div>
