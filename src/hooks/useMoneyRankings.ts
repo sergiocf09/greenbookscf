@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -46,13 +47,13 @@ export type RankingPeriod = 'all' | 'year' | 'custom';
 
 export function useMoneyRankings() {
   const { profile } = useAuth();
-  const [rankings, setRankings] = useState<MoneyRanking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchRankings = useCallback(async () => {
-    if (!profile) return;
-    setLoading(true);
-    try {
+  const { data: rankings = [], isLoading: loading } = useQuery({
+    queryKey: ['money_rankings', profile?.id],
+    enabled: !!profile,
+    staleTime: 30_000,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('money_rankings')
         .select('*')
@@ -66,7 +67,9 @@ export function useMoneyRankings() {
           .from('profiles')
           .select('id, display_name')
           .in('id', creatorIds);
-        creatorMap = Object.fromEntries((creators || []).map(p => [p.id, p.display_name]));
+        creatorMap = Object.fromEntries(
+          (creators || []).map(p => [p.id, p.display_name])
+        );
       }
 
       const enriched = await Promise.all((data || []).map(async (r) => {
@@ -79,27 +82,25 @@ export function useMoneyRankings() {
           .from('money_ranking_members')
           .select('id')
           .eq('ranking_id', r.id)
-          .eq('profile_id', profile.id)
+          .eq('profile_id', profile!.id)
           .maybeSingle();
 
         return {
           ...r,
           member_count: count ?? 0,
           is_member: !!myMembership,
-          is_creator: r.creator_id === profile.id,
+          is_creator: r.creator_id === profile!.id,
           creator_name: creatorMap[r.creator_id] ?? 'Organizador',
-        };
+        } as MoneyRanking;
       }));
 
-      setRankings(enriched);
-    } catch (err: any) {
-      console.error('Error fetching rankings:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [profile]);
+      return enriched;
+    },
+  });
 
-  useEffect(() => { fetchRankings(); }, [fetchRankings]);
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['money_rankings'] });
+  }, [queryClient]);
 
   const createRanking = useCallback(async (name: string) => {
     if (!profile) return null;
@@ -114,13 +115,13 @@ export function useMoneyRankings() {
         .from('money_ranking_members')
         .insert({ ranking_id: data.id, profile_id: profile.id, added_by: profile.id });
       toast.success('Ranking creado');
-      await fetchRankings();
+      invalidate();
       return data;
     } catch (err: any) {
       toast.error('Error al crear ranking: ' + err.message);
       return null;
     }
-  }, [profile, fetchRankings]);
+  }, [profile, invalidate]);
 
   const addMember = useCallback(async (rankingId: string, profileId: string) => {
     if (!profile) return false;
@@ -130,12 +131,13 @@ export function useMoneyRankings() {
         .insert({ ranking_id: rankingId, profile_id: profileId, added_by: profile.id });
       if (error) throw error;
       toast.success('Jugador agregado al ranking');
+      invalidate();
       return true;
     } catch (err: any) {
       toast.error('Error al agregar jugador: ' + err.message);
       return false;
     }
-  }, [profile]);
+  }, [profile, invalidate]);
 
   const leaveRanking = useCallback(async (rankingId: string) => {
     if (!profile) return;
@@ -147,11 +149,11 @@ export function useMoneyRankings() {
         .eq('profile_id', profile.id);
       if (error) throw error;
       toast.success('Te desvinculaste del ranking');
-      await fetchRankings();
+      invalidate();
     } catch (err: any) {
       toast.error('Error: ' + err.message);
     }
-  }, [profile, fetchRankings]);
+  }, [profile, invalidate]);
 
   const removeMember = useCallback(async (memberRowId: string) => {
     try {
@@ -161,10 +163,11 @@ export function useMoneyRankings() {
         .eq('id', memberRowId);
       if (error) throw error;
       toast.success('Jugador removido');
+      invalidate();
     } catch (err: any) {
       toast.error('Error: ' + err.message);
     }
-  }, []);
+  }, [invalidate]);
 
   const deleteRanking = useCallback(async (rankingId: string) => {
     try {
@@ -174,13 +177,22 @@ export function useMoneyRankings() {
         .eq('id', rankingId);
       if (error) throw error;
       toast.success('Ranking eliminado');
-      await fetchRankings();
+      invalidate();
     } catch (err: any) {
       toast.error('Error al eliminar: ' + err.message);
     }
-  }, [fetchRankings]);
+  }, [invalidate]);
 
-  return { rankings, loading, fetchRankings, createRanking, addMember, leaveRanking, removeMember, deleteRanking };
+  return {
+    rankings,
+    loading,
+    fetchRankings: invalidate,
+    createRanking,
+    addMember,
+    leaveRanking,
+    removeMember,
+    deleteRanking,
+  };
 }
 
 export function useMoneyRankingDetail(rankingId: string | null, period: RankingPeriod = 'all', customDateFrom?: string, customDateTo?: string) {
