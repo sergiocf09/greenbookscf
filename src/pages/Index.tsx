@@ -2580,16 +2580,21 @@ const Index = () => {
           );
         })()}
 
-        {view === 'handicaps' && (
-          <HandicapMatrix
-            players={players}
-            playerGroups={playerGroups}
-            basePlayerId={profile?.id || ''}
-            roundPlayerIds={roundPlayerIds}
-            getStrokesForLocalPair={getStrokesForLocalPair}
-            setStrokesForLocalPair={setStrokesForLocalPair}
-            isLoading={isLoadingHandicaps}
-          />
+         {view === 'handicaps' && (
+          <>
+            <HandicapMatrix
+              players={players}
+              playerGroups={playerGroups}
+              basePlayerId={profile?.id || ''}
+              roundPlayerIds={roundPlayerIds}
+              getStrokesForLocalPair={getStrokesForLocalPair}
+              setStrokesForLocalPair={setStrokesForLocalPair}
+              isLoading={isLoadingHandicaps}
+            />
+            <Separator className="my-4" />
+            <h3 className="text-sm font-semibold mb-2">Ranking de Hándicap</h3>
+            <HandicapRankingView roundId={roundId} />
+          </>
         )}
 
         {view === 'scoring' && course && (
