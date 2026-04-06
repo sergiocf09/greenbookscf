@@ -306,6 +306,20 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         </div>
         <p className="text-[10px] text-muted-foreground">Sobreescribe el índice calculado por USGA.</p>
       </div>
+
+      <div className="border-t border-border pt-4 space-y-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Rankings</p>
+        <button
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+          onClick={() => { onOpenChange(false); navigate('/rankings'); }}
+        >
+          <span className="flex items-center gap-2.5">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Rankings de Dinero</span>
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
     </div>
   );
 
