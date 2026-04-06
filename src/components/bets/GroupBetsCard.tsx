@@ -807,6 +807,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   basePlayerId,
   confirmedHoles = new Set(),
   onBetConfigChange,
+  renderSection = 'all',
 }) => {
   // Check if all 18 holes are confirmed for all players
   const all18HolesConfirmed = useMemo(() => {
