@@ -149,7 +149,7 @@ const JoinRound = () => {
 
   // Case A: Guest is connected when round closes — listen for Realtime changes
   useEffect(() => {
-    if (!roundId || !guestSession || user) return;
+    if (!roundId || !guestSession || (user && !user.is_anonymous)) return;
 
     const channel = supabase
       .channel(`round-status-${roundId}`)
