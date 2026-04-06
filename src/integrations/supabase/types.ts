@@ -359,6 +359,55 @@ export type Database = {
           },
         ]
       }
+      guest_sessions: {
+        Row: {
+          conversion_deadline: string | null
+          converted_profile_id: string | null
+          created_at: string
+          ghost_profile_id: string
+          id: string
+          round_id: string
+        }
+        Insert: {
+          conversion_deadline?: string | null
+          converted_profile_id?: string | null
+          created_at?: string
+          ghost_profile_id: string
+          id?: string
+          round_id: string
+        }
+        Update: {
+          conversion_deadline?: string | null
+          converted_profile_id?: string | null
+          created_at?: string
+          ghost_profile_id?: string
+          id?: string
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_sessions_converted_profile_id_fkey"
+            columns: ["converted_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_sessions_ghost_profile_id_fkey"
+            columns: ["ghost_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_sessions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handicap_history: {
         Row: {
           adjusted_gross_score: number | null
@@ -995,8 +1044,9 @@ export type Database = {
           display_name: string
           id: string
           initials: string
+          is_ghost: boolean
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           avatar_color?: string
@@ -1005,8 +1055,9 @@ export type Database = {
           display_name: string
           id?: string
           initials: string
+          is_ghost?: boolean
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           avatar_color?: string
@@ -1015,8 +1066,9 @@ export type Database = {
           display_name?: string
           id?: string
           initials?: string
+          is_ghost?: boolean
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1510,6 +1562,11 @@ export type Database = {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
       }
+      cleanup_expired_guest_sessions: { Args: never; Returns: undefined }
+      convert_ghost_to_profile: {
+        Args: { p_auth_uid: string; p_session_id: string }
+        Returns: string
+      }
       create_round:
         | {
             Args: {
@@ -1670,6 +1727,14 @@ export type Database = {
       join_round:
         | { Args: { p_round_id: string }; Returns: string }
         | { Args: { p_group_id?: string; p_round_id: string }; Returns: string }
+      join_round_as_guest: {
+        Args: {
+          p_display_name: string
+          p_group_id?: string
+          p_round_id: string
+        }
+        Returns: Json
+      }
       rebuild_all_missing_sliding_history: { Args: never; Returns: Json }
       rebuild_all_pvp_from_snapshots: { Args: never; Returns: Json }
       rebuild_round_financials_from_snapshot: {
