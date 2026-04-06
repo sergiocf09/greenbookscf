@@ -216,8 +216,8 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     );
   }
 
-  const content = (
-    <>
+  return (
+    <div className={isInline ? 'space-y-4' : 'min-h-screen bg-background'}>
       {!isInline && (
         <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
           <div className="flex items-center gap-3 max-w-lg mx-auto">
@@ -233,44 +233,28 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         </header>
       )}
 
-      {isInline && (
-        <div className="flex items-center gap-2 mb-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold truncate">{ranking?.name ?? 'Ranking'}</h2>
-            <p className="text-[11px] text-muted-foreground">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+      <div className={isInline ? 'space-y-4' : 'max-w-lg mx-auto px-4 py-4 space-y-4'}>
+        {isInline && (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-semibold truncate">{ranking?.name ?? 'Ranking'}</h2>
+              <p className="text-[11px] text-muted-foreground">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
         {isCreator && (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs h-8"
-              onClick={() => {
-                setRenameValue(ranking?.name ?? '');
-                setShowRenameDialog(true);
-              }}
-            >
+            <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setRenameValue(ranking?.name ?? ''); setShowRenameDialog(true); }}>
               <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs h-8"
-              onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}
-            >
+            <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}>
               <UserPlus className="h-3.5 w-3.5 mr-1" /> Agregar
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="flex-1 text-xs h-8"
-              onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
-            >
+            <Button variant="destructive" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}>
               <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
             </Button>
           </div>
@@ -307,17 +291,12 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             </Tabs>
 
             {period === 'custom' && customDateFrom && (
-              <button
-                className="text-xs text-muted-foreground text-center w-full hover:underline"
-                onClick={() => setShowCustomPeriod(true)}
-              >
+              <button className="text-xs text-muted-foreground text-center w-full hover:underline" onClick={() => setShowCustomPeriod(true)}>
                 {customDateFrom} → {customDateTo || 'hoy'} · Editar
               </button>
             )}
             {loadingBalances ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : balances.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -341,34 +320,21 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                         <div className="flex items-center gap-1 py-0.5">
                           {isCreator && (
                             canRemove ? (
-                              <button
-                                className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors"
-                                onClick={() => handleRemoveMember(memberRow!.id)}
-                                title="Remover del ranking"
-                              >
+                              <button className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors" onClick={() => handleRemoveMember(memberRow!.id)} title="Remover del ranking">
                                 <UserMinus className="h-3 w-3 text-destructive" />
                               </button>
                             ) : (
                               <span className="w-4 shrink-0" />
                             )
                           )}
-                          <button
-                            className="flex items-center gap-1 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md py-0.5 transition-colors"
-                            onClick={() => handleMemberTap(entry)}
-                          >
-                            <span className="text-[11px] font-bold text-muted-foreground w-5 text-center shrink-0">
-                              {entry.rank ?? idx + 1}
-                            </span>
+                          <button className="flex items-center gap-1 flex-1 min-w-0 text-left hover:bg-accent/50 rounded-md py-0.5 transition-colors" onClick={() => handleMemberTap(entry)}>
+                            <span className="text-[11px] font-bold text-muted-foreground w-5 text-center shrink-0">{entry.rank ?? idx + 1}</span>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
-                                {entry.profile_id === profile?.id && (
-                                  <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>
-                                )}
+                                {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>}
                               </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
-                              </p>
+                              <p className="text-[10px] text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
                             </div>
                             <NetBadge amount={entry.net_balance} />
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -380,18 +346,14 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 </CardContent>
               </Card>
             )}
-
-            <p className="text-xs text-muted-foreground text-center">
-              Toca cualquier jugador para ver sus saldos bilaterales
-            </p>
+            <p className="text-xs text-muted-foreground text-center">Toca cualquier jugador para ver sus saldos bilaterales</p>
           </>
         )}
+
         {rankingView === 'handicap' && (
           <>
             {loadingHandicap ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : displayHandicapEntries.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <Award className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -409,10 +371,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 </CardContent>
               </Card>
             )}
-
-            <p className="text-xs text-muted-foreground text-center">
-              HCP Index, promedio y mejor score basados en las últimas 20 rondas
-            </p>
+            <p className="text-xs text-muted-foreground text-center">HCP Index, promedio y mejor score basados en las últimas 20 rondas</p>
           </>
         )}
       </div>
@@ -425,12 +384,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="rename-ranking">Nombre</Label>
-            <Input
-              id="rename-ranking"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-            />
+            <Input id="rename-ranking" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
@@ -451,21 +405,10 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               Escribe <strong>ELIMINAR</strong> para confirmar.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            value={deleteConfirmText}
-            onChange={(e) => setDeleteConfirmText(e.target.value)}
-            placeholder="Escribe ELIMINAR"
-            className="uppercase"
-          />
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="Escribe ELIMINAR" className="uppercase" />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-            <Button
-              variant="destructive"
-              disabled={deleteConfirmText.toLowerCase() !== 'eliminar'}
-              onClick={handleDelete}
-            >
-              Eliminar
-            </Button>
+            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -487,20 +430,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={customDateFrom ? new Date(customDateFrom + 'T12:00:00') : undefined}
-                    onSelect={(d) => {
-                      if (d) {
-                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        setCustomDateFrom(iso);
-                      }
-                      setDateFromOpen(false);
-                    }}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className={cn('p-3 pointer-events-auto')}
-                  />
+                  <Calendar mode="single" selected={customDateFrom ? new Date(customDateFrom + 'T12:00:00') : undefined} onSelect={(d) => { if (d) { const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; setCustomDateFrom(iso); } setDateFromOpen(false); }} disabled={(date) => date > new Date()} initialFocus className={cn('p-3 pointer-events-auto')} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -514,20 +444,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={customDateTo ? new Date(customDateTo + 'T12:00:00') : undefined}
-                    onSelect={(d) => {
-                      if (d) {
-                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        setCustomDateTo(iso);
-                      }
-                      setDateToOpen(false);
-                    }}
-                    disabled={(date) => date > new Date() || (customDateFrom ? date < new Date(customDateFrom + 'T12:00:00') : false)}
-                    initialFocus
-                    className={cn('p-3 pointer-events-auto')}
-                  />
+                  <Calendar mode="single" selected={customDateTo ? new Date(customDateTo + 'T12:00:00') : undefined} onSelect={(d) => { if (d) { const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; setCustomDateTo(iso); } setDateToOpen(false); }} disabled={(date) => date > new Date() || (customDateFrom ? date < new Date(customDateFrom + 'T12:00:00') : false)} initialFocus className={cn('p-3 pointer-events-auto')} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -542,23 +459,12 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
 
       <Sheet open={showAddMember} onOpenChange={setShowAddMember}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Agregar jugador al ranking</SheetTitle>
-          </SheetHeader>
+          <SheetHeader><SheetTitle>Agregar jugador al ranking</SheetTitle></SheetHeader>
           <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
+            <Input placeholder="Buscar por nombre..." className="pl-9" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
           </div>
-          {searching && (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            </div>
-          )}
+          {searching && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
           <div className="mt-3 space-y-2">
             {searchResults.map((p: any) => (
               <div key={p.id} className="flex items-center gap-3 py-2">
@@ -566,9 +472,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                   <p className="text-sm font-medium truncate">{toTitleCase(p.display_name)}</p>
                   <p className="text-xs text-muted-foreground">HCP {p.current_handicap}</p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>
-                  Agregar
-                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>Agregar</Button>
               </div>
             ))}
             {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
@@ -582,30 +486,22 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              {selectedEntry && (
-                <PlayerAvatar initials={selectedEntry.initials} background={selectedEntry.avatar_color} size="sm" />
-              )}
+              {selectedEntry && <PlayerAvatar initials={selectedEntry.initials} background={selectedEntry.avatar_color} size="sm" />}
               {selectedEntry?.display_name ? toTitleCase(selectedEntry.display_name) : 'Jugador'}
               <NetBadge amount={selectedEntry?.net_balance ?? 0} />
             </SheetTitle>
           </SheetHeader>
           {loadingBilateral ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : bilateral.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Sin saldos bilaterales en este período
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-8">Sin saldos bilaterales en este período</p>
           ) : (
             <div className="mt-4 space-y-2">
               {bilateral.map((b) => (
                 <div key={b.rival_profile_id} className="flex items-center gap-3 py-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{toTitleCase(b.display_name)}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {b.rounds_together} {b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos'}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{b.rounds_together} {b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos'}</p>
                   </div>
                   <NetBadge amount={b.net_balance} />
                 </div>
