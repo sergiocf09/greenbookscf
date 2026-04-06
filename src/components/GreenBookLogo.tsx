@@ -18,14 +18,18 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Golf hole "G" symbol */}
+      {/* Golf hole "G" symbol - using arc path for proper G shape */}
       <g>
-        {/* Outer circle - dark green */}
-        <circle cx="25" cy="25" r="23" stroke="#006747" strokeWidth="4" fill="none" />
-        {/* Inner green fill */}
-        <circle cx="25" cy="25" r="19" fill="#006747" />
-        {/* Green surface - lighter */}
-        <circle cx="25" cy="25" r="15" fill="#008C5E" />
+        {/* G shape as arc (open circle) - dark green stroke */}
+        <path
+          d="M40 8 A20 20 0 1 0 40 25"
+          stroke="#006747"
+          strokeWidth="5"
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* Inner green surface */}
+        <circle cx="25" cy="25" r="14" fill="#008C5E" />
         {/* Hole */}
         <ellipse cx="25" cy="27" rx="5" ry="3" fill="#003D2B" />
         {/* Flag pole */}
@@ -33,20 +37,12 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
         {/* Red flag */}
         <path d="M25 10 L33 13.5 L25 17 Z" fill="#CC2200" />
         {/* G horizontal bar - gold */}
-        <rect x="25" y="22" width="16" height="3.5" rx="1.5" fill="#FCE300" />
-        {/* G opening gap (cut into circle) */}
-        <rect x="37" y="8" width="12" height="14" fill="none" />
-        {/* Cut the top-right of circle to form G shape */}
-        <path
-          d="M38 4 L50 4 L50 22 L38 22 Z"
-          fill="currentColor"
-          className="fill-background"
-        />
+        <line x1="25" y1="25" x2="42" y2="25" stroke="#FCE300" strokeWidth="3.5" strokeLinecap="round" />
       </g>
 
       {/* GreenBook text */}
       <text
-        x="58"
+        x="52"
         y="30"
         fontFamily="'Arial Black', 'Helvetica Neue', sans-serif"
         fontSize="22"
@@ -59,7 +55,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
 
       {/* by SCF subtitle */}
       <text
-        x="58"
+        x="52"
         y="43"
         fontFamily="Arial, 'Helvetica Neue', sans-serif"
         fontSize="9"
