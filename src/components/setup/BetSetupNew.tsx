@@ -34,7 +34,13 @@ export const BetSetup: React.FC<BetSetupProps> = ({
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(() => {
+    // Auto-expand sections that have active/configured bets
+    const initial: string[] = [];
+    if (config.teamPressures?.enabled && config.teamPressures.bets.length > 0) initial.push('teamPressures');
+    if (config.carritos?.enabled) initial.push('carritos');
+    return initial;
+  });
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   const [groupTab, setGroupTab] = useState<GroupTab>('mygroup');
 
