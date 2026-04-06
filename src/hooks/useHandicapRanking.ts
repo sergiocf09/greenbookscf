@@ -23,14 +23,20 @@ export function useHandicapRanking(roundId: string | null, scope: HandicapRankin
   const [loading, setLoading] = useState(false);
 
   const buildEntry = async (p: { id: string; display_name: string; initials: string; avatar_color: string; current_handicap: number }) => {
-    // Use last 20 rounds max to be consistent with handicap index calculation
+    // Fetch last 20 handicap_history records for avg/best (consistent with USGA index)
     const { data: history } = await supabase
       .from('handicap_history')
       .select('handicap, gross_score, recorded_at')
       .eq('profile_id', p.id)
-      .not('gross_score', 'is', null)
       .order('recorded_at', { ascending: false })
       .limit(20);
+
+    // Total completed rounds for this player (all-time)
+    const { count: totalRounds } = await supabase
+      .from('round_players')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', p.id)
+      .not('round_id', 'is', null);
 
     const rounds = history || [];
     const grossScores = rounds.map(r => r.gross_score).filter((s): s is number => s !== null);
@@ -54,7 +60,7 @@ export function useHandicapRanking(roundId: string | null, scope: HandicapRankin
       current_handicap: p.current_handicap,
       avg_gross_score: avgGross,
       best_gross_score: bestGross,
-      rounds_played: grossScores.length,
+      rounds_played: totalRounds ?? 0,
       handicap_trend: trend,
     };
   };
