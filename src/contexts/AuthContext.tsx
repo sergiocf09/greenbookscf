@@ -99,15 +99,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setSession(nextSession);
       const nextUser = nextSession?.user ?? null;
-      setUser(nextUser);
 
       if (!nextUser || nextUser.is_anonymous) {
+        setUser(nextUser);
         setProfile(null);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      // Only set loading=true when user actually changes to avoid
+      // re-setting loading after profile was already fetched
+      setUser((prev) => {
+        if (prev?.id === nextUser.id) return prev; // no change → no re-render → useEffect won't re-fire
+        return nextUser;
+      });
     },
     [],
   );
