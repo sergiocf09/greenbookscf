@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { RoundProvider } from "@/contexts/RoundContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -63,6 +64,7 @@ const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="gbcf-theme">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <RoundProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -70,6 +72,7 @@ const App = () => (
             <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>
+        </RoundProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ThemeProvider>

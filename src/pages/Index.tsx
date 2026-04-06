@@ -53,6 +53,7 @@ import { useTheme } from 'next-themes';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRound } from '@/contexts/RoundContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -116,6 +117,19 @@ function dialogsReducer(state: DialogState, action: { name: DialogName; open: bo
 const Index = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, updateProfile } = useAuth();
+  const {
+    players, setPlayers,
+    selectedCourseId, setSelectedCourseId,
+    betConfig, setBetConfig,
+    currentHole, setCurrentHole,
+    scores, setScores,
+    confirmedHoles, setConfirmedHoles,
+    currentBetSummaries, setCurrentBetSummaries,
+    teeColor, setTeeColor,
+    startingHole, setStartingHole,
+    playerGroups, setPlayerGroups,
+    quickScorePlayer, setQuickScorePlayer,
+  } = useRound();
   const { theme, setTheme } = useTheme();
 
   const [dialogs, dispatchDialog] = useReducer(dialogsReducer, DIALOGS_INITIAL);
@@ -124,13 +138,6 @@ const Index = () => {
   const setDialog = (name: DialogName, open: boolean) => dispatchDialog({ name, open });
 
   const [view, setView] = useState<AppView>('setup');
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
-  const [currentHole, setCurrentHole] = useState(1);
-  const [scores, setScores] = useState<Map<string, PlayerScore[]>>(new Map());
-  const [confirmedHoles, setConfirmedHoles] = useState<Set<number>>(new Set());
-  const [currentBetSummaries, setCurrentBetSummaries] = useState<any[]>([]);
 
   // Keep an always-fresh reference to scores to avoid stale closures when persisting confirmations.
   const scoresRef = useRef<Map<string, PlayerScore[]>>(new Map());
@@ -147,8 +154,6 @@ const Index = () => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
-  const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
-  const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
     Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>
   >(new Map());
@@ -160,8 +165,6 @@ const Index = () => {
     date: string;
   } | null>(null);
   
-  const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
-  const [startingHole, setStartingHole] = useState<1 | 10>(1);
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
@@ -3230,7 +3233,7 @@ const Index = () => {
       <AddFromFriendsDialog
         open={dialogs.addFromFriends}
         onOpenChange={(open) => {
-          setShowAddFromFriendsDialog(open);
+          setDialog('addFromFriends', open);
           if (!open) setAddFriendsTargetGroupId(null);
         }}
         onAddPlayers={(selectedPlayers) => {
@@ -3253,7 +3256,7 @@ const Index = () => {
       <LinkRoundToLeaderboardDialog
         open={dialogs.linkLeaderboard}
         onOpenChange={async (open) => {
-          setShowLinkLeaderboardDialog(open);
+          setDialog('linkLeaderboard', open);
           if (!open) {
             setPreselectedLeaderboardId(null);
             // Recheck link status after dialog closes
@@ -3370,7 +3373,7 @@ const Index = () => {
 
       {/* Profile Menu Help Dialog */}
       <Dialog open={dialogs.profileMenuHelp} onOpenChange={(open) => {
-        setShowProfileMenuHelp(open);
+        setDialog('profileMenuHelp', open);
         if (!open) {
           // Reabrir el menú de perfil al cerrar el help
           setProfileMenuOpen(true);

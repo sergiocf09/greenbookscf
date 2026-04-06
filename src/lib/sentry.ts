@@ -13,7 +13,6 @@ export function initSentry() {
     environment: import.meta.env.MODE,
     release: import.meta.env.VITE_APP_VERSION,
     tracesSampleRate: 0.2,
-    replaysOnErrorSampleRate: 1.0,
     integrations: [
       Sentry.browserTracingIntegration(),
     ],
