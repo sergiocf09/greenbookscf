@@ -2928,6 +2928,13 @@ const Index = () => {
             />
           )
         )}
+
+        {/* Rankings View */}
+        {view === 'rankings' && (
+          <RankingsInlineView
+            onNavigateToDetail={(id) => navigate(`/rankings/${id}`)}
+          />
+        )}
       </main>
 
       {/* Floating Action Button for Score Capture */}
