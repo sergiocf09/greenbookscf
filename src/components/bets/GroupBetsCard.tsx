@@ -2165,7 +2165,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Coneja - Patas system (before Medal General) */}
-        {conejaResult && (
+        {showGrupales && conejaResult && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || manchasSummary) && <div className="border-t-2 border-primary/40" />}
             <ConejaSection
