@@ -46,16 +46,8 @@ const NetBadge = ({ amount }: { amount: number }) => {
   return <span className="text-muted-foreground font-semibold text-sm">$0</span>;
 };
 
-const PositionBadge = ({ rank }: { rank: number }) => (
-  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
-);
 
-const TrendIcon = ({ trend }: { trend: number | null }) => {
-  if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
-  if (trend < -0.4) return <TrendingDown className="h-3 w-3 text-green-500" />;
-  if (trend > 0.4) return <TrendingUp className="h-3 w-3 text-red-500" />;
-  return <Minus className="h-3 w-3 text-muted-foreground" />;
-};
+
 
 const MoneyRankingDetail = () => {
   const { id } = useParams<{ id: string }>();
