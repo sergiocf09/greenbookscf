@@ -1,9 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMoneyRankingDetail, useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { RankingBalanceEntry, RankingPeriod } from '@/hooks/useMoneyRankings';
 import { useHandicapRankingByIds } from '@/hooks/useHandicapRanking';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Loader2, TrendingUp, TrendingDown, Users, UserPlus, UserMinus, Trash2, ChevronRight, Search, X, Minus, DollarSign, Award, CalendarRange,
+  ArrowLeft, Loader2, TrendingUp, TrendingDown, Users, UserPlus, UserMinus, Trash2, ChevronRight, Search, X, Minus, DollarSign, Award, CalendarRange, CalendarIcon,
 } from 'lucide-react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -55,10 +59,14 @@ const MoneyRankingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [period, setPeriod] = useState<RankingPeriod>('all');
+  const [period, setPeriod] = useState<RankingPeriod>('year');
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
   const [showCustomPeriod, setShowCustomPeriod] = useState(false);
+  const lastCustomFrom = useRef('');
+  const lastCustomTo = useRef('');
   const [rankingView, setRankingView] = useState<RankingView>('money');
   const [showBilateral, setShowBilateral] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
@@ -76,11 +84,16 @@ const MoneyRankingDetail = () => {
 
   const { addMember, leaveRanking, removeMember, deleteRanking } = useMoneyRankings();
 
-  // Handicap ranking for this group's members
-  const memberProfileIds = useMemo(() => members.map(m => m.profile_id), [members]);
-  const { entries: handicapEntries, loading: loadingHandicap } = useHandicapRankingByIds(memberProfileIds);
+  // Handicap ranking for this ranking's members — uses same period filters
+  const { entries: handicapEntries, loading: loadingHandicap } = useHandicapRankingByIds(
+    id ?? null,
+    period,
+    customDateFrom,
+    customDateTo,
+  );
 
   const selectedEntry = balances.find(b => b.profile_id === selectedMemberId);
+  const memberProfileIds = useMemo(() => members.map(m => m.profile_id), [members]);
   const memberProfileIdSet = new Set(memberProfileIds);
 
   const handleMemberTap = (entry: RankingBalanceEntry) => {
@@ -128,16 +141,22 @@ const MoneyRankingDetail = () => {
   const handlePeriodChange = (v: string) => {
     const val = v as RankingPeriod;
     if (val === 'custom') {
-      setShowCustomPeriod(true);
+      if (lastCustomFrom.current) {
+        setCustomDateFrom(lastCustomFrom.current);
+        setCustomDateTo(lastCustomTo.current);
+        setPeriod('custom');
+      } else {
+        setShowCustomPeriod(true);
+      }
     } else {
       setPeriod(val);
-      setCustomDateFrom('');
-      setCustomDateTo('');
     }
   };
 
   const applyCustomPeriod = () => {
     if (!customDateFrom) return;
+    lastCustomFrom.current = customDateFrom;
+    lastCustomTo.current = customDateTo;
     setPeriod('custom');
     setShowCustomPeriod(false);
   };
@@ -223,9 +242,12 @@ const MoneyRankingDetail = () => {
             </Tabs>
 
             {period === 'custom' && customDateFrom && (
-              <p className="text-xs text-muted-foreground text-center">
-                {customDateFrom} → {customDateTo || 'hoy'}
-              </p>
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
             )}
 
             {/* Money positions */}
@@ -298,6 +320,27 @@ const MoneyRankingDetail = () => {
         {/* === HANDICAP VIEW === */}
         {rankingView === 'handicap' && (
           <>
+            {/* Period filters (shared with money) */}
+            <Tabs value={period} onValueChange={handlePeriodChange}>
+              <TabsList className="w-full">
+                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
+                  <TabsTrigger key={p} value={p} className="flex-1 gap-1">
+                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
+                    {PERIOD_LABELS[p]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {period === 'custom' && customDateFrom && (
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
+            )}
+
             {loadingHandicap ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -354,7 +397,7 @@ const MoneyRankingDetail = () => {
             )}
 
             <p className="text-xs text-muted-foreground text-center">
-              Promedio y mejor score basados en las últimas 20 rondas · Total de rondas jugadas
+              Promedio y mejor score de las últimas 20 rondas · Rondas del período seleccionado
             </p>
           </>
         )}
@@ -390,7 +433,12 @@ const MoneyRankingDetail = () => {
       </Dialog>
 
       {/* Dialog: Custom period picker */}
-      <Dialog open={showCustomPeriod} onOpenChange={setShowCustomPeriod}>
+      <Dialog open={showCustomPeriod} onOpenChange={(open) => {
+        if (!open && period !== 'custom') {
+          // user cancelled — don't change period
+        }
+        setShowCustomPeriod(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Período personalizado</DialogTitle>
@@ -399,13 +447,68 @@ const MoneyRankingDetail = () => {
           <div className="space-y-3">
             <div>
               <Label className="text-sm">Desde</Label>
-              <Input type="date" value={customDateFrom} onChange={(e) => setCustomDateFrom(e.target.value)} />
+              <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !customDateFrom && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customDateFrom ? format(new Date(customDateFrom + 'T12:00:00'), 'dd/MM/yyyy') : 'Seleccionar fecha'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customDateFrom ? new Date(customDateFrom + 'T12:00:00') : undefined}
+                    onSelect={(d) => {
+                      if (d) {
+                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        setCustomDateFrom(iso);
+                      }
+                      setDateFromOpen(false);
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label className="text-sm">Hasta</Label>
-              <Input type="date" value={customDateTo} onChange={(e) => setCustomDateTo(e.target.value)} />
+              <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !customDateTo && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customDateTo ? format(new Date(customDateTo + 'T12:00:00'), 'dd/MM/yyyy') : 'Hoy'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customDateTo ? new Date(customDateTo + 'T12:00:00') : undefined}
+                    onSelect={(d) => {
+                      if (d) {
+                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        setCustomDateTo(iso);
+                      }
+                      setDateToOpen(false);
+                    }}
+                    disabled={(date) => date > new Date() || (customDateFrom ? date < new Date(customDateFrom + 'T12:00:00') : false)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Deja «Hasta» vacío para que sea hasta hoy.
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>Cancelar</Button>
             <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>Aplicar</Button>
