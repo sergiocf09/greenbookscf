@@ -12,11 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Loader2, Users, TrendingUp, TrendingDown, Crown, LogOut, User, Minus, Award } from 'lucide-react';
+import { Plus, ArrowLeft, Loader2, Users, Crown, LogOut, User, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -28,16 +27,6 @@ import { HandicapRankingRows } from '@/components/handicap/HandicapRankingRows';
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
-const PositionBadge = ({ rank }: { rank: number }) => (
-  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
-);
-
-const TrendIcon = ({ trend }: { trend: number | null }) => {
-  if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
-  if (trend < -0.4) return <TrendingDown className="h-3 w-3 text-green-500" />;
-  if (trend > 0.4) return <TrendingUp className="h-3 w-3 text-red-500" />;
-  return <Minus className="h-3 w-3 text-muted-foreground" />;
-};
 
 const MoneyRankings = () => {
   const navigate = useNavigate();
