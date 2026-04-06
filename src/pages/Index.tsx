@@ -2169,7 +2169,7 @@ const Index = () => {
         <div className="max-w-md mx-auto flex items-center">
           {/* Left: Logo */}
           <div className="flex items-center flex-shrink-0">
-            <GreenBookLogo height={36} />
+            <GreenBookLogo height={72} />
           </div>
           
           {/* Center: Hole Info - takes remaining space */}

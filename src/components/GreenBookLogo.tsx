@@ -6,7 +6,7 @@ interface GreenBookLogoProps {
   height?: number;
 }
 
-const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 32 }) => {
+const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 64 }) => {
   return (
     <img
       src={logoSrc}
