@@ -1495,6 +1495,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _calc_handicap_index: { Args: { diffs: number[] }; Returns: number }
       _calc_pair_net_with_overrides: {
         Args: {
           p_ledger: Json
