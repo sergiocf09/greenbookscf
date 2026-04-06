@@ -21,6 +21,9 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { supabase } from '@/integrations/supabase/client';
 
+const toTitleCase = (name: string) =>
+  name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
 const PERIOD_LABELS: Record<RankingPeriod, string> = {
   all: 'Todos',
   year: 'Este año',
