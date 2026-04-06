@@ -317,6 +317,45 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
         </CardContent>
       </Card>
+
+      {/* Rename dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nombre del leaderboard</DialogTitle>
+            <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rename-lb">Nombre</Label>
+            <Input id="rename-lb" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
+            <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
+              {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+            <DialogDescription>
+              Esta acción no se puede deshacer. Se eliminarán el leaderboard y todos sus participantes.
+              Escribe <strong>ELIMINAR</strong> para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="Escribe ELIMINAR" className="uppercase" />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
+            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
