@@ -21,6 +21,7 @@ interface ProfileDialogProps {
 
 export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => {
   const { profile, user, updateProfile } = useAuth();
+  const navigate = useNavigate();
 
   const [section, setSection] = useState<EditSection>('menu');
   const [saving, setSaving] = useState(false);
