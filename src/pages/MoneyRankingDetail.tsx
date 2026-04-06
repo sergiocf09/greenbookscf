@@ -147,16 +147,21 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     await fetchBalances();
   };
 
+  const goBack = () => {
+    if (isInline && onBack) onBack();
+    else navigate('/rankings');
+  };
+
   const handleLeave = async () => {
     if (!id) return;
     await leaveRanking(id);
-    navigate('/rankings');
+    goBack();
   };
 
   const handleDelete = async () => {
     if (!id || deleteConfirmText.toLowerCase() !== 'eliminar') return;
     await deleteRanking(id);
-    navigate('/rankings');
+    goBack();
   };
 
   const handleRename = async () => {
