@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { MoneyRanking } from '@/hooks/useMoneyRankings';
+import { useHandicapRanking } from '@/hooks/useHandicapRanking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,14 +11,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User } from 'lucide-react';
+import { Plus, ArrowLeft, Loader2, Users, TrendingUp, TrendingDown, Crown, LogOut, User, Minus, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
+
+const toTitleCase = (name: string) =>
+  name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
+const PositionBadge = ({ rank }: { rank: number }) => {
+  if (rank === 1) return <span className="text-lg">🥇</span>;
+  if (rank === 2) return <span className="text-lg">🥈</span>;
+  if (rank === 3) return <span className="text-lg">🥉</span>;
+  return <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>;
+};
+
+const TrendIcon = ({ trend }: { trend: number | null }) => {
+  if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
+  if (trend < -0.4) return <TrendingDown className="h-3 w-3 text-green-500" />;
+  if (trend > 0.4) return <TrendingUp className="h-3 w-3 text-red-500" />;
+  return <Minus className="h-3 w-3 text-muted-foreground" />;
+};
 
 const MoneyRankings = () => {
   const navigate = useNavigate();
@@ -27,6 +47,9 @@ const MoneyRankings = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [formName, setFormName] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Global handicap ranking (friends)
+  const { entries: globalHcpEntries, loading: loadingGlobalHcp } = useHandicapRanking(null, 'global');
 
   const myRankings = rankings.filter(r => r.is_creator);
   const participating = rankings.filter(r => r.is_member && !r.is_creator);
@@ -76,7 +99,7 @@ const MoneyRankings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - matching app's green/gold theme */}
+      {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
@@ -149,8 +172,9 @@ const MoneyRankings = () => {
         ) : (
           <Tabs defaultValue="mine">
             <TabsList className="w-full">
-              <TabsTrigger value="mine" className="flex-1">Mis Rankings ({myRankings.length})</TabsTrigger>
-              <TabsTrigger value="participating" className="flex-1">Participo ({participating.length})</TabsTrigger>
+              <TabsTrigger value="mine" className="flex-1">Mis Rankings</TabsTrigger>
+              <TabsTrigger value="participating" className="flex-1">Participo</TabsTrigger>
+              <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
             </TabsList>
             <TabsContent value="mine" className="space-y-3 mt-3">
               {myRankings.length === 0 ? (
@@ -168,6 +192,69 @@ const MoneyRankings = () => {
                   <p className="text-xs text-muted-foreground mt-1">Pide al organizador que te agregue</p>
                 </div>
               ) : participating.map(r => <RankingCard key={r.id} r={r} />)}
+            </TabsContent>
+            <TabsContent value="global" className="space-y-3 mt-3">
+              {loadingGlobalHcp ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : globalHcpEntries.length === 0 ? (
+                <div className="text-center py-10 space-y-2">
+                  <Award className="h-10 w-10 mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
+                  <p className="text-xs text-muted-foreground">Agrega amigos para ver el ranking global</p>
+                </div>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span>
+                        <Award className="h-4 w-4 inline mr-1" />
+                        Ranking de Hándicap · Amigos
+                      </span>
+                      <span className="flex gap-4 text-xs text-muted-foreground">
+                        <span className="w-12 text-center">HCP</span>
+                        <span className="w-10 text-center">Prom</span>
+                        <span className="w-10 text-center">Mejor</span>
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {globalHcpEntries.map((entry, idx) => (
+                      <React.Fragment key={entry.profile_id}>
+                        {idx > 0 && <Separator className="my-1.5" />}
+                        <div className="flex items-center gap-2 py-1.5">
+                          <PositionBadge rank={entry.rank ?? idx + 1} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {toTitleCase(entry.display_name)}
+                              {entry.profile_id === profile?.id && (
+                                <span className="text-xs text-muted-foreground ml-1">(tú)</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1 w-12 justify-center">
+                              <TrendIcon trend={entry.handicap_trend} />
+                              <span className="text-sm font-semibold">{entry.current_handicap.toFixed(1)}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground w-10 text-center">
+                              {entry.avg_gross_score ?? '—'}
+                            </span>
+                            <span className="text-xs text-muted-foreground w-10 text-center">
+                              {entry.best_gross_score ?? '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+              <p className="text-xs text-muted-foreground text-center">
+                Ranking basado en todos tus amigos · HCP actual, promedio y mejor de últimas 20 rondas
+              </p>
             </TabsContent>
           </Tabs>
         )}
