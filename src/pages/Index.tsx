@@ -2237,7 +2237,7 @@ const Index = () => {
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboards
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/rankings')}>
+                <DropdownMenuItem onClick={() => setView('rankings')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
                   Rankings
                 </DropdownMenuItem>
