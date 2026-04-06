@@ -2256,7 +2256,8 @@ export const useRoundManagement = ({
 
       return true;
     } catch (err) {
-      console.error('Error in addPlayerToRound:', err);
+      console.error('[addPlayerToRound] Error inesperado:', err);
+      toast.error('Error al agregar jugador. Intenta de nuevo.');
       return false;
     }
   }, [roundState.id, roundState.groupId, roundPlayerIds, setPlayers, setScores, setBetConfig]);
