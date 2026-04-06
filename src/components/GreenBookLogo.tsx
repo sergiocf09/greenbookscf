@@ -34,7 +34,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
         className={
           variant === 'auth'
             ? 'font-serif italic tracking-wide dark:text-[hsl(43,75%,55%)] text-primary mt-2'
-            : 'font-bold tracking-wide text-primary-foreground dark:text-primary-foreground mt-1'
+            : 'font-serif italic tracking-wide text-primary-foreground dark:text-primary-foreground mt-1'
         }
         style={{ fontSize: textSize, lineHeight: 1.1 }}
       >
