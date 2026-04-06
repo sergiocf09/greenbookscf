@@ -2165,7 +2165,7 @@ const Index = () => {
           {/* Right: Friends (only in setup) + Profile Menu */}
           <div className="flex items-center flex-shrink-0 gap-1">
             {/* Help Button - show on main tab views */}
-            {view !== 'leaderboards' && (
+            {view !== 'leaderboards' && view !== 'rankings' && (
               <Button 
                 variant="ghost" 
                 size="icon" 
