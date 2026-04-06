@@ -127,8 +127,8 @@ const JoinRound = () => {
   // Check localStorage for a valid guest session with the round completed
   useEffect(() => {
     if (!roundId || !roundInfo) return;
-    // Don't show if user is already authenticated
-    if (user) return;
+    // Don't show for real (non-anonymous) authenticated users
+    if (user && !user.is_anonymous) return;
 
     const stored = localStorage.getItem(`guest_session_${roundId}`);
     if (!stored) return;
