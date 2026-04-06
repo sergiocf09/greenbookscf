@@ -1723,7 +1723,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Zoologico - Camellos, Peces, Gorilas (after Pingüinos, before Coneja) */}
-        {zoologicoResults.map((result, idx) => (
+        {showGrupales && zoologicoResults.map((result, idx) => (
           <React.Fragment key={result.animalType}>
             {(idx === 0 && (culebrasResult || pinguinosResult)) && <div className="border-t-2 border-primary/40" />}
             {idx > 0 && <div className="border-t-2 border-primary/25" />}
