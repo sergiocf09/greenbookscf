@@ -42,7 +42,7 @@ export interface BilateralEntry {
   rounds_together: number;
 }
 
-export type RankingPeriod = 'all' | 'year' | '90d';
+export type RankingPeriod = 'all' | 'year' | 'custom';
 
 export function useMoneyRankings() {
   const { profile } = useAuth();

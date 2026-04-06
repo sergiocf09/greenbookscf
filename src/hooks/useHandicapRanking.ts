@@ -163,9 +163,14 @@ export function useHandicapRankingByIds(profileIds: string[]) {
           .from('handicap_history')
           .select('handicap, gross_score, recorded_at')
           .eq('profile_id', p.id)
-          .not('gross_score', 'is', null)
           .order('recorded_at', { ascending: false })
           .limit(20);
+
+        const { count: totalRounds } = await supabase
+          .from('round_players')
+          .select('id', { count: 'exact', head: true })
+          .eq('profile_id', p.id)
+          .not('round_id', 'is', null);
 
         const rounds = history || [];
         const grossScores = rounds.map(r => r.gross_score).filter((s): s is number => s !== null);
@@ -189,7 +194,7 @@ export function useHandicapRankingByIds(profileIds: string[]) {
           current_handicap: p.current_handicap,
           avg_gross_score: avgGross,
           best_gross_score: bestGross,
-          rounds_played: grossScores.length,
+          rounds_played: totalRounds ?? 0,
           handicap_trend: trend,
         };
       }));
