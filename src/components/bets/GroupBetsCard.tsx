@@ -1536,11 +1536,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     // but we only show the indicators section below via showIndicators/showGrupales flags
   }
 
-  const Wrapper = renderSection === 'indicators' ? React.Fragment : Card;
-  const wrapperProps = renderSection === 'indicators' ? {} : {};
-
   return (
-    <Wrapper>
+    <Card className={renderSection === 'indicators' ? 'border-0 shadow-none bg-transparent' : ''}>
       {renderSection !== 'indicators' && (
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -1549,13 +1546,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </CardTitle>
         </CardHeader>
       )}
-      {renderSection === 'indicators' ? (
-        <div className="space-y-4">
-      ) : (
-        <CardContent className="pt-0 space-y-4">
-      )}
+      <CardContent className={cn('pt-0 space-y-4', renderSection === 'indicators' && 'p-0')}>
         {/* Culebras - Simplified view with collapsible detail */}
-        {culebrasResult && (
+        {showGrupales && culebrasResult && (
           <div className="space-y-2">
             <div 
               className="flex items-start justify-between cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
