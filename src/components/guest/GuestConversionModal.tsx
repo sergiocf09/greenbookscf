@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, LogOut, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getAuthRedirectOrigin } from '@/lib/authRedirect';
 
 interface GuestConversionModalProps {
   open: boolean;
@@ -72,7 +73,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getAuthRedirectOrigin(),
             data: metadata,
           },
         });
