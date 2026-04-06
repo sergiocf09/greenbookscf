@@ -32,10 +32,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasHydratedSessionRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    // Ignore anonymous users — they don't have a real profile
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser?.is_anonymous) {
       setProfile(null);
+      setLoading(false);
       return;
     }
 
@@ -48,13 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (error || !data) {
       setProfile(null);
-      return;
+    } else {
+      setProfile({
+        ...data,
+        current_handicap: Number(data.current_handicap) || 0,
+      });
     }
 
-    setProfile({
-      ...data,
-      current_handicap: Number(data.current_handicap) || 0,
-    });
+    setLoading(false);
   }, []);
 
   const handlePendingGuestConversion = useCallback(async (currentUser: User) => {
@@ -98,20 +99,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(nextSession?.user ?? null);
 
     if (nextSession?.user) {
-      // Anonymous users (guests) don't have a profile — skip fetchProfile
       if (nextSession.user.is_anonymous) {
         setProfile(null);
         setLoading(false);
         return;
       }
-      setTimeout(() => {
-        void fetchProfile(nextSession.user.id);
-        void handlePendingGuestConversion(nextSession.user);
-      }, 0);
+      // DO NOT call setLoading(false) here — fetchProfile will do it
+      void fetchProfile(nextSession.user.id);
+      void handlePendingGuestConversion(nextSession.user);
       return;
     }
 
     setProfile(null);
+    setLoading(false);
   }, [fetchProfile, handlePendingGuestConversion]);
 
   useEffect(() => {
@@ -119,9 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!hasHydratedSessionRef.current && event === 'INITIAL_SESSION') {
         return;
       }
-
       syncAuthState(nextSession);
-      setLoading(false);
     });
 
     supabase.auth.getSession()
@@ -132,9 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch((error) => {
         console.error('[Auth] Error restoring session:', error);
         hasHydratedSessionRef.current = true;
-        syncAuthState(null);
-      })
-      .finally(() => {
         setLoading(false);
       });
 
