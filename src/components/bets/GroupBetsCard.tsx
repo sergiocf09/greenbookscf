@@ -1813,7 +1813,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         ))}
 
         {/* Manchas & Unidades toggle buttons - Informational */}
-        {(manchasSummary || unidadesSummary || oyesesSummary) && (
+        {showIndicators && (manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t-2 border-primary/40" />}
             {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
