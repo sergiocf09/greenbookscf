@@ -83,7 +83,7 @@ import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
-import { GuestRoundClosedListener } from '@/components/guest/GuestRoundClosedListener';
+import { GuestConversionScreen } from '@/components/guest/GuestRoundClosedListener';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
@@ -205,6 +205,10 @@ const Index = () => {
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
+    // Mark this round as closed so auto-restore won't resurrect it
+    if (roundState.id) {
+      localStorage.setItem(`round_closed_${roundState.id}`, '1');
+    }
     setRoundState({
       id: null,
       status: 'setup',
@@ -229,9 +233,7 @@ const Index = () => {
     setLinkedLeaderboardInfo(null);
     setLeaderboardDetailId(null);
     setIsRoundLinkedToLeaderboard(false);
-    // Reset restoration guard so a new pending round can be auto-restored
-    // (the ref lives inside useRoundManagement, but setting roundState.id = null achieves the same)
-  }, [setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
+  }, [roundState.id, setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
 
   // Onboarding check – first time user
   useEffect(() => {
@@ -442,8 +444,10 @@ const Index = () => {
       return;
     }
 
-    // Auto-restore the most recent pending round (first in the list, sorted by date desc)
-    const mostRecentRound = pendingRounds[0];
+    // Auto-restore the most recent pending round that hasn't been closed
+    const mostRecentRound = pendingRounds.find(
+      (r) => !localStorage.getItem(`round_closed_${r.roundId}`)
+    );
     if (mostRecentRound) {
       sessionStorage.setItem('restore_round_id', mostRecentRound.roundId);
       window.location.reload();
@@ -3419,7 +3423,7 @@ const Index = () => {
           }}
         />
       )}
-      <GuestRoundClosedListener />
+      <GuestConversionScreen />
     </div>
   );
 };

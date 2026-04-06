@@ -6,78 +6,75 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 /**
- * Global listener mounted inside Index.tsx.
- * Detects when a guest (anonymous user) is participating in a round
- * and shows the conversion modal when the round is closed.
- * Covers "Case A": guest is connected when the organizer closes the round.
+ * Checks localStorage for a guest session pointing at a completed round.
+ * Returns the session data or null.
  */
-export const GuestRoundClosedListener: React.FC = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [showModal, setShowModal] = useState(false);
-  const [guestSession, setGuestSession] = useState<{
-    roundId: string;
-    session_id: string;
-    ghost_profile_id: string;
-    round_player_id: string;
-    display_name: string;
-  } | null>(null);
-
-  useEffect(() => {
-    // Only run for anonymous users
-    if (!user?.is_anonymous) return;
-
-    // Find the guest session from localStorage
-    const prefix = 'guest_session_';
-    let foundSession: typeof guestSession = null;
-    let foundRoundId: string | null = null;
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(prefix)) {
-        const roundId = key.slice(prefix.length);
-        try {
-          const data = JSON.parse(localStorage.getItem(key) || '');
-          foundSession = { roundId, ...data };
-          foundRoundId = roundId;
-          break; // Only one active guest session expected
-        } catch {
-          // skip invalid
-        }
+export function getCompletedGuestSession(): {
+  roundId: string;
+  session_id: string;
+  ghost_profile_id: string;
+  round_player_id: string;
+  display_name: string;
+} | null {
+  const prefix = 'guest_session_';
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(prefix)) {
+      const roundId = key.slice(prefix.length);
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || '');
+        return { roundId, ...data };
+      } catch {
+        // skip invalid
       }
     }
+  }
+  return null;
+}
 
-    if (!foundSession || !foundRoundId) return;
+/**
+ * Full-screen blocking component for guests with a completed round.
+ * Renders INSTEAD of the main app — the guest must choose to register or dismiss.
+ */
+export const GuestConversionScreen: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [guestSession, setGuestSession] = useState(getCompletedGuestSession);
+  const [roundCompleted, setRoundCompleted] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-    setGuestSession(foundSession);
+  useEffect(() => {
+    if (!guestSession) {
+      setChecking(false);
+      return;
+    }
 
-    // Check current round status first
-    const checkStatus = async () => {
+    // Verify the round is actually completed
+    const check = async () => {
       const { data } = await supabase
         .from('rounds')
         .select('status')
-        .eq('id', foundRoundId!)
+        .eq('id', guestSession.roundId)
         .single();
-      if (data?.status === 'completed') {
-        setShowModal(true);
-      }
+      setRoundCompleted(data?.status === 'completed');
+      setChecking(false);
     };
-    checkStatus();
+    check();
 
-    // Listen for real-time changes
+    // Also listen for real-time changes (organizer closes while guest is on the app)
     const channel = supabase
-      .channel(`guest-round-status-${foundRoundId}`)
+      .channel(`guest-round-status-${guestSession.roundId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'rounds',
-          filter: `id=eq.${foundRoundId}`,
+          filter: `id=eq.${guestSession.roundId}`,
         },
         (payload) => {
           if (payload.new && (payload.new as any).status === 'completed') {
-            setShowModal(true);
+            setRoundCompleted(true);
           }
         }
       )
@@ -86,20 +83,26 @@ export const GuestRoundClosedListener: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [guestSession]);
 
-  if (!guestSession) return null;
+  // Not a guest or no session — render nothing (parent will render the app)
+  if (!user?.is_anonymous || !guestSession || checking) return null;
 
+  // Round not completed yet — don't block
+  if (!roundCompleted) return null;
+
+  // Block the entire screen with the conversion modal
   return (
     <GuestConversionModal
-      open={showModal}
-      onOpenChange={setShowModal}
+      open={true}
+      onOpenChange={() => {
+        // Prevent closing without a decision
+      }}
       roundId={guestSession.roundId}
       guestSessionId={guestSession.session_id}
       ghostProfileId={guestSession.ghost_profile_id}
       displayName={guestSession.display_name}
       onConverted={() => {
-        setShowModal(false);
         toast.success('¡Bienvenido! Tu historial está vinculado.');
         navigate('/');
       }}
