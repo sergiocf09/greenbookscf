@@ -32,10 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasHydratedSessionRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    // Ignore anonymous users — they don't have a real profile
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser?.is_anonymous) {
+      setProfile(null);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
+      .eq('is_ghost', false)
       .maybeSingle();
 
     if (error || !data) {
@@ -43,23 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const { data: lastRoundData } = await supabase
-      .from('round_players')
-      .select(`
-        handicap_for_round,
-        rounds!inner(status, date)
-      `)
-      .eq('profile_id', data.id)
-      .eq('rounds.status', 'completed')
-      .order('rounds(date)', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const effectiveHandicap = lastRoundData?.handicap_for_round ?? data.current_handicap;
-
     setProfile({
       ...data,
-      current_handicap: Number(effectiveHandicap) || Number(data.current_handicap) || 0,
+      current_handicap: Number(data.current_handicap) || 0,
     });
   }, []);
 
