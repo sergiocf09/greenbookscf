@@ -1512,12 +1512,128 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Check if any group bet is enabled
   const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult;
 
-  if (!hasAnyBet) {
-    return null;
+  const hasIndicators = !!(manchasSummary || unidadesSummary || oyesesSummary);
+  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult);
+
+  if (renderSection === 'indicators') {
+    if (!hasIndicators) return null;
+  } else if (renderSection === 'grupales') {
+    if (!hasGrupales) return null;
+  } else {
+    if (!hasAnyBet) return null;
   }
 
   // Get player by ID helper
   const getPlayer = (id: string) => players.find(p => p.id === id);
+
+  // Render only the indicators section (Oyes/Unidades/Manchas)
+  if (renderSection === 'indicators') {
+    return (
+      <div className="space-y-4">
+        {(manchasSummary || unidadesSummary || oyesesSummary) && (
+          <>
+            {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
+            <div className="flex justify-center gap-6">
+              {oyesesSummary && (
+                <button
+                  onClick={() => setShowOyesesPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
+                    showOyesesPanel
+                      ? 'bg-blue-500/10 border-blue-500/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
+                  )}
+                >
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showOyesesPanel || oyesesSummary.holesWithData > 0
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  )}>
+                    <Target className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
+                  {oyesesSummary.totalPar3 > 0 && (
+                    <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holesWithData}/{oyesesSummary.totalPar3}</span>
+                  )}
+                </button>
+              )}
+              {unidadesSummary && (
+                <button
+                  onClick={() => setShowUnidadesPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
+                    showUnidadesPanel
+                      ? 'bg-green-500/10 border-green-500/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
+                  )}
+                >
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showUnidadesPanel || unidadesSummary.totalUnidades > 0
+                      ? 'bg-green-500 text-white'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  )}>
+                    <Check className="h-5 w-5" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
+                  {unidadesSummary.totalUnidades > 0 && (
+                    <span className="text-lg font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
+                  )}
+                </button>
+              )}
+              {manchasSummary && (
+                <button
+                  onClick={() => setShowManchasPanel(v => !v)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 rounded-xl px-5 py-2 transition-colors border',
+                    showManchasPanel
+                      ? 'bg-destructive/10 border-destructive/40'
+                      : 'bg-muted/40 border-transparent hover:bg-muted/70'
+                  )}
+                >
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center transition-all',
+                    showManchasPanel || manchasSummary.totalManchas > 0
+                      ? 'bg-destructive text-destructive-foreground'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                  )}>
+                    <X className="h-5 w-5" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
+                  {manchasSummary.totalManchas > 0 && (
+                    <span className="text-lg font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Manchas panel */}
+            {showManchasPanel && manchasSummary && (
+              <IndicatorPanel type="manchas" summary={manchasSummary} sameGroupPlayers={sameGroupPlayers} getPlayerAbbr={getPlayerAbbr} />
+            )}
+
+            {/* Unidades panel */}
+            {showUnidadesPanel && unidadesSummary && (
+              <IndicatorPanel type="unidades" summary={unidadesSummary} sameGroupPlayers={sameGroupPlayers} getPlayerAbbr={getPlayerAbbr} />
+            )}
+
+            {/* Oyeses panel */}
+            {showOyesesPanel && oyesesSummary && (
+              <OyesesPanel
+                oyesesSummary={oyesesSummary}
+                sameGroupPlayers={sameGroupPlayers}
+                scores={scores}
+                getPlayerAbbr={getPlayerAbbr}
+                oyesesPanelTab={oyesesPanelTab}
+                setOyesesPanelTab={setOyesesPanelTab}
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <Card>
