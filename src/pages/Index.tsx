@@ -2933,9 +2933,16 @@ const Index = () => {
 
         {/* Rankings View */}
         {view === 'rankings' && (
-          <RankingsInlineView
-            onNavigateToDetail={(id) => navigate(`/rankings/${id}`)}
-          />
+          rankingDetailId ? (
+            <MoneyRankingDetail
+              inlineId={rankingDetailId}
+              onBack={() => setRankingDetailId(null)}
+            />
+          ) : (
+            <RankingsInlineView
+              onNavigateToDetail={(id) => setRankingDetailId(id)}
+            />
+          )
         )}
       </main>
 
