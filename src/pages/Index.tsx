@@ -2717,6 +2717,7 @@ const Index = () => {
               betConfig={betConfig}
               basePlayerId={profile?.id}
             />
+          </ErrorBoundary>
           </>
         )}
 
