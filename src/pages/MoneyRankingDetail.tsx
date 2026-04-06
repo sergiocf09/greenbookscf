@@ -242,9 +242,12 @@ const MoneyRankingDetail = () => {
             </Tabs>
 
             {period === 'custom' && customDateFrom && (
-              <p className="text-xs text-muted-foreground text-center">
-                {customDateFrom} → {customDateTo || 'hoy'}
-              </p>
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
             )}
 
             {/* Money positions */}
