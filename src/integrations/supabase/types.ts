@@ -789,6 +789,84 @@ export type Database = {
           },
         ]
       }
+      money_ranking_members: {
+        Row: {
+          added_by: string
+          id: string
+          joined_at: string
+          profile_id: string
+          ranking_id: string
+        }
+        Insert: {
+          added_by: string
+          id?: string
+          joined_at?: string
+          profile_id: string
+          ranking_id: string
+        }
+        Update: {
+          added_by?: string
+          id?: string
+          joined_at?: string
+          profile_id?: string
+          ranking_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "money_ranking_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_ranking_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "money_ranking_members_ranking_id_fkey"
+            columns: ["ranking_id"]
+            isOneToOne: false
+            referencedRelation: "money_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      money_rankings: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "money_rankings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_statistics: {
         Row: {
           average_putts: number | null
@@ -1478,6 +1556,28 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      get_money_ranking_balances: {
+        Args: { p_period?: string; p_ranking_id: string }
+        Returns: {
+          avatar_color: string
+          display_name: string
+          initials: string
+          net_balance: number
+          profile_id: string
+          rounds_played: number
+        }[]
+      }
+      get_money_ranking_bilateral: {
+        Args: { p_period?: string; p_profile_id: string; p_ranking_id: string }
+        Returns: {
+          avatar_color: string
+          display_name: string
+          initials: string
+          net_balance: number
+          rival_profile_id: string
+          rounds_together: number
+        }[]
       }
       get_my_friends: {
         Args: never
