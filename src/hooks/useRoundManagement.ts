@@ -276,25 +276,87 @@ export const useRoundManagement = ({
         const skipRestoreOnce = sessionStorage.getItem('skip_restore_once');
         if (skipRestoreOnce) {
           sessionStorage.removeItem('skip_restore_once');
+        }
+
+        // ── STEP 1: Always fetch pending rounds (for badge + auto-restore) ──
+        const { data: roundPlayers, error: rpError } = await supabase
+          .from('round_players')
+          .select(`
+            id,
+            round_id,
+            profile_id,
+            handicap_for_round,
+            group_id,
+            is_organizer,
+            profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color, current_handicap)
+          `)
+          .eq('profile_id', profile.id)
+          .order('joined_at', { ascending: false });
+
+        if (rpError || !roundPlayers?.length) {
+          setIsRestoring(false);
+          hasRestoredRef.current = true;
           return;
         }
 
-        const explicitRestoreRoundId = sessionStorage.getItem('restore_round_id');
-        if (explicitRestoreRoundId) {
-          // IMPORTANT: do NOT clear this until restore succeeds.
-          // If network fails mid-restore, we want the user to be able to retry without losing selection.
+        const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
+        const { data: rounds, error: roundsError } = await supabase
+          .from('rounds')
+          .select('id, status, date, course_id, tee_color, starting_hole, updated_at, golf_courses(name)')
+          .in('id', roundIds)
+          .in('status', ['setup', 'in_progress'])
+          .order('updated_at', { ascending: false })
+          .limit(20);
 
-          // Restore THIS round directly
+        if (roundsError || !rounds?.length) {
+          setIsRestoring(false);
+          hasRestoredRef.current = true;
+          return;
+        }
+
+        const mappedPending: PendingRoundInfo[] = (rounds || []).map((r: any) => ({
+          roundId: r.id,
+          status: r.status as 'setup' | 'in_progress',
+          date: parseLocalDate(r.date),
+          courseId: r.course_id,
+          courseName: r.golf_courses?.name ?? undefined,
+          teeColor: r.tee_color as any,
+          startingHole: (r.starting_hole === 10 ? 10 : 1) as 1 | 10,
+        }));
+
+        setPendingRounds(mappedPending);
+        setPendingRound(mappedPending[0] ?? null);
+
+        // If skip was requested, don't auto-restore — just show pending badge
+        if (skipRestoreOnce) {
+          return;
+        }
+
+        // ── STEP 2: Determine which round to restore ──
+        const explicitRestoreRoundId = sessionStorage.getItem('restore_round_id');
+        const autoRestoreRoundId = !explicitRestoreRoundId
+          ? mappedPending.find(r => !localStorage.getItem(`round_closed_${r.roundId}`))?.roundId ?? null
+          : null;
+        const restoreRoundId = explicitRestoreRoundId || autoRestoreRoundId;
+
+        if (!restoreRoundId) {
+          // Nothing to restore
+          return;
+        }
+
+        // ── STEP 3: Restore the selected round ──
+        {
           const activeRound = await retry<any>(() =>
-            supabase.from('rounds').select('*').eq('id', explicitRestoreRoundId).single() as any
+            supabase.from('rounds').select('*').eq('id', restoreRoundId).single() as any
           );
 
           if (!activeRound) {
             toast.error('No se pudo cargar la ronda (intenta de nuevo)');
+            sessionStorage.removeItem('restore_round_id');
             return;
           }
 
-          devLog('Restoring selected pending round:', activeRound.id);
+          devLog('Restoring round:', activeRound.id);
 
           // Get all groups for this round (sorted by group_number to identify main group)
           const { data: allGroupsData, error: groupsError } = await supabase
@@ -330,6 +392,7 @@ export const useRoundManagement = ({
 
           if (!allRoundPlayers?.length) {
             toast.error('No se pudieron cargar los jugadores de la ronda');
+            sessionStorage.removeItem('restore_round_id');
             return;
           }
           
@@ -457,11 +520,6 @@ export const useRoundManagement = ({
           setPlayers(mainGroupPlayers);
           if (setPlayerGroups) setPlayerGroups(additionalGroups);
 
-          // NEVER auto-apply USGA handicap on restore.
-          // The handicap_for_round value persisted in the DB is the source of truth.
-          // If the user wants to recalculate, they can use the USGA dialog manually.
-          // This prevents overwriting handicaps that were manually agreed upon in setup.
-
           // Restore course selection
           if (setSelectedCourseId) setSelectedCourseId(activeRound.course_id);
           if (setTeeColor) setTeeColor(activeRound.tee_color as 'blue' | 'white' | 'yellow' | 'red');
@@ -499,8 +557,6 @@ export const useRoundManagement = ({
           }
 
            // Get course to restore scores
-           // NOTE: getCourseById depends on initial course list load; on a fresh session it
-           // might not be ready yet. Fallback to fetching the course+holes from backend.
            const courseData =
              getCourseById?.(activeRound.course_id) ?? (await fetchCourseForRestore(activeRound.course_id));
           const holeScores = await retry<any[]>(() =>
@@ -583,62 +639,8 @@ export const useRoundManagement = ({
           }
 
           toast.success('Ronda restaurada');
-           sessionStorage.removeItem('restore_round_id');
+          sessionStorage.removeItem('restore_round_id');
         }
-
-        // ALWAYS fetch pending rounds (even after a restore) so the badge can show
-        const { data: roundPlayers, error: rpError } = await supabase
-          .from('round_players')
-          .select(`
-            id,
-            round_id,
-            profile_id,
-            handicap_for_round,
-            group_id,
-            is_organizer,
-            profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color, current_handicap)
-          `)
-          .eq('profile_id', profile.id)
-          .order('joined_at', { ascending: false });
-
-        if (rpError || !roundPlayers?.length) {
-          setIsRestoring(false);
-          hasRestoredRef.current = true;
-          return;
-        }
-
-        // Get rounds for these participations
-        const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
-        const { data: rounds, error: roundsError } = await supabase
-          .from('rounds')
-          .select('id, status, date, course_id, tee_color, starting_hole, updated_at, golf_courses(name)')
-          .in('id', roundIds)
-          // Restore both draft (setup) and active (in_progress) rounds.
-          // This prevents losing guests when the app reloads before scoring starts.
-          .in('status', ['setup', 'in_progress'])
-          .order('updated_at', { ascending: false })
-          .limit(20);
-
-        if (roundsError || !rounds?.length) {
-          setIsRestoring(false);
-          hasRestoredRef.current = true;
-          return;
-        }
-
-        // Expose *all* open rounds so the UI can let the user choose.
-        const mappedPending: PendingRoundInfo[] = (rounds || []).map((r: any) => ({
-          roundId: r.id,
-          status: r.status as 'setup' | 'in_progress',
-          date: parseLocalDate(r.date),
-          courseId: r.course_id,
-          courseName: r.golf_courses?.name ?? undefined,
-          teeColor: r.tee_color as any,
-          startingHole: (r.starting_hole === 10 ? 10 : 1) as 1 | 10,
-        }));
-
-        setPendingRounds(mappedPending);
-        setPendingRound(mappedPending[0] ?? null); // back-compat
-        return;
       } catch (err) {
         devError('Error restoring round:', err);
         // Allow retry on failure
