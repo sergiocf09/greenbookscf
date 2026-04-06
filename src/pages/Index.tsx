@@ -3370,7 +3370,7 @@ const Index = () => {
 
       {/* Profile Menu Help Dialog */}
       <Dialog open={dialogs.profileMenuHelp} onOpenChange={(open) => {
-        setShowProfileMenuHelp(open);
+        setDialog('profileMenuHelp', open);
         if (!open) {
           // Reabrir el menú de perfil al cerrar el help
           setProfileMenuOpen(true);
