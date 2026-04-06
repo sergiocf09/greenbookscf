@@ -1557,28 +1557,67 @@ export type Database = {
         }
         Returns: undefined
       }
-      get_money_ranking_balances: {
-        Args: { p_period?: string; p_ranking_id: string }
-        Returns: {
-          avatar_color: string
-          display_name: string
-          initials: string
-          net_balance: number
-          profile_id: string
-          rounds_played: number
-        }[]
-      }
-      get_money_ranking_bilateral: {
-        Args: { p_period?: string; p_profile_id: string; p_ranking_id: string }
-        Returns: {
-          avatar_color: string
-          display_name: string
-          initials: string
-          net_balance: number
-          rival_profile_id: string
-          rounds_together: number
-        }[]
-      }
+      get_money_ranking_balances:
+        | {
+            Args: { p_period?: string; p_ranking_id: string }
+            Returns: {
+              avatar_color: string
+              display_name: string
+              initials: string
+              net_balance: number
+              profile_id: string
+              rounds_played: number
+            }[]
+          }
+        | {
+            Args: {
+              p_date_from?: string
+              p_date_to?: string
+              p_period?: string
+              p_ranking_id: string
+            }
+            Returns: {
+              avatar_color: string
+              display_name: string
+              initials: string
+              net_balance: number
+              profile_id: string
+              rounds_played: number
+            }[]
+          }
+      get_money_ranking_bilateral:
+        | {
+            Args: {
+              p_period?: string
+              p_profile_id: string
+              p_ranking_id: string
+            }
+            Returns: {
+              avatar_color: string
+              display_name: string
+              initials: string
+              net_balance: number
+              rival_profile_id: string
+              rounds_together: number
+            }[]
+          }
+        | {
+            Args: {
+              p_date_from?: string
+              p_date_to?: string
+              p_period?: string
+              p_profile_id: string
+              p_ranking_id: string
+            }
+            Returns: {
+              avatar_color: string
+              display_name: string
+              initials: string
+              net_balance: number
+              rival_profile_id: string
+              rounds_together: number
+            }[]
+          }
       get_my_friends: {
         Args: never
         Returns: {
