@@ -266,26 +266,6 @@ const MoneyRankingDetail = () => {
           </Button>
         )}
 
-        <Tabs value={period} onValueChange={handlePeriodChange}>
-          <TabsList className="w-full">
-            {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
-              <TabsTrigger key={p} value={p} className="flex-1 gap-1">
-                {p === 'custom' && <CalendarRange className="h-3 w-3" />}
-                {PERIOD_LABELS[p]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        {period === 'custom' && customDateFrom && (
-          <button
-            className="text-xs text-muted-foreground text-center w-full hover:underline"
-            onClick={() => setShowCustomPeriod(true)}
-          >
-            {customDateFrom} → {customDateTo || 'hoy'} · Editar
-          </button>
-        )}
-
         <Tabs value={rankingView} onValueChange={(v) => setRankingView(v as RankingView)}>
           <TabsList className="w-full">
             <TabsTrigger value="money" className="flex-1 gap-1">
@@ -298,6 +278,26 @@ const MoneyRankingDetail = () => {
         </Tabs>
 
         {rankingView === 'money' && (
+          <>
+            <Tabs value={period} onValueChange={handlePeriodChange}>
+              <TabsList className="w-full">
+                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
+                  <TabsTrigger key={p} value={p} className="flex-1 gap-1 text-xs">
+                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
+                    {PERIOD_LABELS[p]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {period === 'custom' && customDateFrom && (
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
+            )}
           <>
             {loadingBalances ? (
               <div className="flex justify-center py-8">
