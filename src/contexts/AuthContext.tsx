@@ -99,20 +99,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(nextSession?.user ?? null);
 
     if (nextSession?.user) {
-      // Anonymous users (guests) don't have a profile — skip fetchProfile
       if (nextSession.user.is_anonymous) {
         setProfile(null);
         setLoading(false);
         return;
       }
-      setTimeout(() => {
-        void fetchProfile(nextSession.user.id);
-        void handlePendingGuestConversion(nextSession.user);
-      }, 0);
+      // DO NOT call setLoading(false) here — fetchProfile will do it
+      void fetchProfile(nextSession.user.id);
+      void handlePendingGuestConversion(nextSession.user);
       return;
     }
 
     setProfile(null);
+    setLoading(false);
   }, [fetchProfile, handlePendingGuestConversion]);
 
   useEffect(() => {
