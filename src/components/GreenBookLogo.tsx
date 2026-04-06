@@ -12,8 +12,8 @@ interface GreenBookLogoProps {
 }
 
 const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 64, variant = 'header' }) => {
-  const circleSize = variant === 'auth' ? height * 0.72 : height * 0.75;
-  const textSize = variant === 'auth' ? height * 0.09 : height * 0.14;
+  const circleSize = variant === 'auth' ? height * 0.65 : height * 0.7;
+  const textSize = variant === 'auth' ? height * 0.1 : height * 0.15;
   const subTextSize = variant === 'auth' ? height * 0.065 : 0;
 
   return (
@@ -27,8 +27,8 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       <span
         className={
           variant === 'auth'
-            ? 'font-bold tracking-wide dark:text-[hsl(43,75%,55%)] text-primary mt-1'
-            : 'font-bold tracking-wide text-primary-foreground dark:text-primary mt-0.5'
+            ? 'font-bold tracking-wide dark:text-[hsl(43,75%,55%)] text-primary mt-2'
+            : 'font-bold tracking-wide text-primary-foreground dark:text-primary-foreground mt-1'
         }
         style={{ fontSize: textSize, lineHeight: 1.1 }}
       >
@@ -36,7 +36,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
       </span>
       {variant === 'auth' && (
         <span
-          className="font-semibold tracking-widest dark:text-[hsl(43,75%,55%)] text-primary"
+          className="font-semibold tracking-widest dark:text-[hsl(43,75%,55%)] text-primary mt-0.5"
           style={{ fontSize: subTextSize, lineHeight: 1.2 }}
         >
           by SCF
