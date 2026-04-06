@@ -187,7 +187,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.session) syncAuthState(data.session);
+    if (!error && data.session) {
+      syncAuthState(data.session);
+      if (data.user) {
+        import('@/lib/sentry').then(({ setSentryUser }) =>
+          setSentryUser(data.user!.id, data.user!.email ?? undefined)
+        );
+      }
+    }
     return { error: error as Error | null };
   };
 
@@ -205,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    import('@/lib/sentry').then(({ clearSentryUser }) => clearSentryUser());
     setUser(null);
     setProfile(null);
     setSession(null);

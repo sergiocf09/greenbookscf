@@ -84,6 +84,7 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 import { GuestConversionScreen } from '@/components/guest/GuestRoundClosedListener';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
@@ -2610,6 +2611,7 @@ const Index = () => {
         )}
 
         {view === 'scoring' && course && (
+          <ErrorBoundary context="ScoringView">
           <ScoringView
             players={players}
             playerGroups={playerGroups}
@@ -2681,11 +2683,13 @@ const Index = () => {
             }}
             
           />
+          </ErrorBoundary>
         )}
 
 
         {view === 'scorecard' && course && (
           <>
+            <ErrorBoundary context="Scorecard">
             <Scorecard 
               players={players} 
               course={course} 
@@ -2713,6 +2717,7 @@ const Index = () => {
               betConfig={betConfig}
               basePlayerId={profile?.id}
             />
+          </ErrorBoundary>
           </>
         )}
 
@@ -2731,6 +2736,7 @@ const Index = () => {
 
         {view === 'bets' && course && (
           <>
+            <ErrorBoundary context="BetDashboard">
             <BetDashboard
               players={players}
               scores={scores}
@@ -2746,6 +2752,7 @@ const Index = () => {
               setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
             />
+            </ErrorBoundary>
             
             {/* Close Scorecard Button - only visible to organizer */}
             {isRoundStarted && roundState.status !== 'completed' && (

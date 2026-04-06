@@ -1,5 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initSentry } from "./lib/sentry";
+import { RouteErrorBoundary } from "./components/ErrorBoundary";
 
-createRoot(document.getElementById("root")!).render(<App />);
+initSentry();
+
+createRoot(document.getElementById("root")!).render(
+  <RouteErrorBoundary>
+    <App />
+  </RouteErrorBoundary>
+);
