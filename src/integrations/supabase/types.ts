@@ -1593,6 +1593,14 @@ export type Database = {
       }
       get_my_profile_id: { Args: never; Returns: string }
       get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
+      is_money_ranking_creator: {
+        Args: { p_ranking_id: string }
+        Returns: boolean
+      }
+      is_money_ranking_member: {
+        Args: { p_ranking_id: string }
+        Returns: boolean
+      }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
