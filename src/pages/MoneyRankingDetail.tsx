@@ -216,22 +216,34 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-        <div className="flex items-center gap-3 max-w-lg mx-auto">
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => navigate('/rankings')}>
-            <ArrowLeft className="h-5 w-5" />
+  const content = (
+    <>
+      {!isInline && (
+        <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
+          <div className="flex items-center gap-3 max-w-lg mx-auto">
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={goBack}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-semibold truncate text-accent">{ranking?.name ?? 'Ranking'}</h1>
+              <p className="text-xs text-primary-foreground/70">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+            </div>
+            <GreenBookLogo />
+          </div>
+        </header>
+      )}
+
+      {isInline && (
+        <div className="flex items-center gap-2 mb-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold truncate text-accent">{ranking?.name ?? 'Ranking'}</h1>
-            <p className="text-xs text-primary-foreground/70">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+            <h2 className="text-sm font-semibold truncate">{ranking?.name ?? 'Ranking'}</h2>
+            <p className="text-[11px] text-muted-foreground">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
           </div>
-          <GreenBookLogo />
         </div>
-      </header>
-
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      )}
         {isCreator && (
           <div className="flex gap-2">
             <Button
