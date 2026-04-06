@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { MoneyRanking } from '@/hooks/useMoneyRankings';
 import { useHandicapRanking } from '@/hooks/useHandicapRanking';
+import { useLiveHandicap } from '@/hooks/useLiveHandicap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,17 +21,15 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
+import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
-const PositionBadge = ({ rank }: { rank: number }) => {
-  if (rank === 1) return <span className="text-lg">🥇</span>;
-  if (rank === 2) return <span className="text-lg">🥈</span>;
-  if (rank === 3) return <span className="text-lg">🥉</span>;
-  return <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>;
-};
+const PositionBadge = ({ rank }: { rank: number }) => (
+  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{rank}</span>
+);
 
 const TrendIcon = ({ trend }: { trend: number | null }) => {
   if (trend === null) return <Minus className="h-3 w-3 text-muted-foreground" />;
@@ -47,12 +46,19 @@ const MoneyRankings = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [formName, setFormName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [globalSortKey, setGlobalSortKey] = useState<HandicapRankingSortKey>('handicap');
 
-  // Global handicap ranking (friends)
   const { entries: globalHcpEntries, loading: loadingGlobalHcp } = useHandicapRanking(null, 'global');
+  const { liveHandicapIndex } = useLiveHandicap(profile?.id ?? null, profile?.current_handicap ?? null);
 
-  const myRankings = rankings.filter(r => r.is_creator);
-  const participating = rankings.filter(r => r.is_member && !r.is_creator);
+  const visibleRankings = useMemo(() => rankings, [rankings]);
+  const displayGlobalHcpEntries = useMemo(
+    () => sortHandicapRankingEntries(
+      withLiveHandicapOverride(globalHcpEntries, profile?.id ?? null, liveHandicapIndex),
+      globalSortKey,
+    ),
+    [globalHcpEntries, globalSortKey, liveHandicapIndex, profile?.id],
+  );
 
   const handleCreate = async () => {
     if (!formName.trim()) return;
@@ -72,16 +78,16 @@ const MoneyRankings = () => {
       onClick={() => navigate(`/rankings/${r.id}`)}
     >
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-base">{r.name}</CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-base truncate">{r.name}</CardTitle>
             <CardDescription className="text-xs">
               {r.is_creator ? 'Creado por ti' : `Creado por ${r.creator_name}`}
-              {' · '}{format(new Date(r.created_at), "d MMM yyyy", { locale: es })}
+              {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: es })}
             </CardDescription>
           </div>
           {r.is_creator && (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-[10px] shrink-0">
               <Crown className="h-3 w-3 mr-1" />
               Tuyo
             </Badge>
@@ -99,7 +105,6 @@ const MoneyRankings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
@@ -131,7 +136,6 @@ const MoneyRankings = () => {
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Crear ranking */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="w-full" size="lg">
@@ -164,7 +168,6 @@ const MoneyRankings = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Listado */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -173,32 +176,22 @@ const MoneyRankings = () => {
           <Tabs defaultValue="mine">
             <TabsList className="w-full">
               <TabsTrigger value="mine" className="flex-1">Mis Rankings</TabsTrigger>
-              <TabsTrigger value="participating" className="flex-1">Participo</TabsTrigger>
               <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
             </TabsList>
             <TabsContent value="mine" className="space-y-3 mt-3">
-              {myRankings.length === 0 ? (
+              {visibleRankings.length === 0 ? (
                 <div className="text-center py-12">
                   <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No has creado ningún ranking</p>
+                  <p className="text-sm text-muted-foreground">No tienes rankings todavía</p>
                 </div>
-              ) : myRankings.map(r => <RankingCard key={r.id} r={r} />)}
-            </TabsContent>
-            <TabsContent value="participating" className="space-y-3 mt-3">
-              {participating.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No participas en ningún ranking</p>
-                  <p className="text-xs text-muted-foreground mt-1">Pide al organizador que te agregue</p>
-                </div>
-              ) : participating.map(r => <RankingCard key={r.id} r={r} />)}
+              ) : visibleRankings.map(r => <RankingCard key={r.id} r={r} />)}
             </TabsContent>
             <TabsContent value="global" className="space-y-3 mt-3">
               {loadingGlobalHcp ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              ) : globalHcpEntries.length === 0 ? (
+              ) : displayGlobalHcpEntries.length === 0 ? (
                 <div className="text-center py-10 space-y-2">
                   <Award className="h-10 w-10 mx-auto text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
@@ -207,32 +200,30 @@ const MoneyRankings = () => {
               ) : (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center justify-between">
-                      <span>
+                    <CardTitle className="text-sm">
+                      <span className="inline-flex items-center mb-2">
                         <Award className="h-4 w-4 inline mr-1" />
                         Ranking de Hándicap · Amigos
                       </span>
-                      <span className="flex gap-4 text-xs text-muted-foreground">
-                        <span className="w-12 text-center">HCP</span>
-                        <span className="w-10 text-center">Prom</span>
-                        <span className="w-10 text-center">Mejor</span>
-                      </span>
+                      <HandicapRankingHeader sortKey={globalSortKey} onSortChange={setGlobalSortKey} />
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {globalHcpEntries.map((entry, idx) => (
+                    {displayGlobalHcpEntries.map((entry, idx) => (
                       <React.Fragment key={entry.profile_id}>
-                        {idx > 0 && <Separator className="my-1.5" />}
-                        <div className="flex items-center gap-2 py-1.5">
+                        {idx > 0 && <Separator className="my-1" />}
+                        <div className="flex items-center gap-2 py-1">
                           <PositionBadge rank={entry.rank ?? idx + 1} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
+                            <p className="text-sm font-medium truncate leading-tight">
                               {toTitleCase(entry.display_name)}
                               {entry.profile_id === profile?.id && (
                                 <span className="text-xs text-muted-foreground ml-1">(tú)</span>
                               )}
                             </p>
-                            <p className="text-xs text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
+                            <p className="text-[11px] text-muted-foreground leading-tight">
+                              {entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}
+                            </p>
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1 w-12 justify-center">
