@@ -49,9 +49,16 @@ const NetBadge = ({ amount }: { amount: number }) => {
 
 
 
-const MoneyRankingDetail = () => {
-  const { id } = useParams<{ id: string }>();
+interface MoneyRankingDetailProps {
+  inlineId?: string;
+  onBack?: () => void;
+}
+
+const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBack }) => {
+  const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const id = inlineId ?? routeId;
+  const isInline = !!inlineId;
   const { profile } = useAuth();
   const [period, setPeriod] = useState<RankingPeriod>('year');
   const [customDateFrom, setCustomDateFrom] = useState('');
