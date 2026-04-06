@@ -33,9 +33,14 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   isRoundLinked,
 }) => {
   const { profile } = useAuth();
-  const { event, participants, standings, loading, fetchDetail } = useLeaderboardDetail(leaderboardId);
+  const { event, participants, standings, loading, fetchDetail, isCreator } = useLeaderboardDetail(leaderboardId);
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
