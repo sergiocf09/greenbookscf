@@ -1,0 +1,1 @@
+DELETE FROM auth.users WHERE id IN ('c9aaa8fc-1544-49ee-9589-af2d8be61aae', '09053d53-6694-4502-8d7a-85b4c0e53140') AND is_anonymous = true;
