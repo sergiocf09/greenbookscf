@@ -2878,6 +2878,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
+      {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales */}
+      <GroupBetsCard
+        players={allPlayersForCalculations}
+        scores={scores}
+        betConfig={hasMultipleGroups
+          ? resolveConfigForGroup(effectiveBetConfig, displayPlayers[0]?.groupId)
+          : effectiveBetConfig}
+        course={course}
+        basePlayerId={basePlayer?.id || basePlayer?.profileId}
+        confirmedHoles={confirmedHoles}
+        onBetConfigChange={onBetConfigChange}
+        renderSection="indicators"
+      />
+
       {/* Grupales (Culebras/Pingüinos/Coneja/etc.)
           IMPORTANT: Use the same `scores` map as the rest of the dashboard (not `confirmedScores`)
           so the tie-breaker UI can trigger consistently even when confirmation state is inconsistent.
@@ -2892,6 +2906,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         basePlayerId={basePlayer?.id || basePlayer?.profileId}
         confirmedHoles={confirmedHoles}
         onBetConfigChange={onBetConfigChange}
+        renderSection="grupales"
       />
     </div>
   );
