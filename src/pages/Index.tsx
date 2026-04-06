@@ -3253,7 +3253,7 @@ const Index = () => {
       <LinkRoundToLeaderboardDialog
         open={dialogs.linkLeaderboard}
         onOpenChange={async (open) => {
-          setShowLinkLeaderboardDialog(open);
+          setDialog('linkLeaderboard', open);
           if (!open) {
             setPreselectedLeaderboardId(null);
             // Recheck link status after dialog closes
