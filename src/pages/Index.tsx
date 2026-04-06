@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { ScoringView } from '@/components/scoring/ScoringView';
 import { PlayerSetup } from '@/components/setup/PlayerSetup';
