@@ -29,7 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const fetchingRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -38,9 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<void> => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -50,19 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (!mountedRef.current) return;
-
-      if (error || !data) {
-        setProfile(null);
-      } else {
-        setProfile({
-          ...data,
-          current_handicap: Number(data.current_handicap) || 0,
-        });
-      }
+      setProfile(error || !data ? null : {
+        ...data,
+        current_handicap: Number(data.current_handicap) || 0,
+      });
     } catch {
       if (mountedRef.current) setProfile(null);
     } finally {
-      fetchingRef.current = false;
       if (mountedRef.current) setLoading(false);
     }
   }, []);
@@ -86,11 +76,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    let initialized = false;
+    // Hidratación inicial — fuente de verdad
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!mountedRef.current) return;
+      setSession(s);
+      const u = s?.user ?? null;
+      setUser(u);
 
+      if (!u || u.is_anonymous) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      // fetchProfile llama setLoading(false) al terminar
+      void fetchProfile(u.id);
+      void handlePendingGuestConversion(u);
+    }).catch(() => {
+      if (!mountedRef.current) return;
+      setProfile(null);
+      setLoading(false);
+    });
+
+    // Listener de cambios posteriores (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!initialized) return; // esperar a getSession primero
-
+      if (!mountedRef.current) return;
       setSession(nextSession);
       const nextUser = nextSession?.user ?? null;
       setUser(nextUser);
@@ -101,32 +110,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Usuario real: mantener loading=true hasta que fetchProfile resuelva
+      // Nuevo usuario real: recargar profile
       setLoading(true);
       void fetchProfile(nextUser.id);
       void handlePendingGuestConversion(nextUser);
-    });
-
-    // Hidratación inicial
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      initialized = true;
-      setSession(s);
-      const u = s?.user ?? null;
-      setUser(u);
-
-      if (!u || u.is_anonymous) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      // loading sigue true — fetchProfile lo resolverá
-      void fetchProfile(u.id);
-      void handlePendingGuestConversion(u);
-    }).catch(() => {
-      initialized = true;
-      setProfile(null);
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

@@ -35,19 +35,14 @@ const Auth = () => {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-
       if (result.error) {
         toast.error('Error al iniciar con Google', { description: String(result.error) });
         setIsGoogleLoading(false);
         return;
       }
-
-      if (result.redirected) {
-        return; // Browser will redirect
+      if (!result.redirected) {
+        toast.success('¡Bienvenido!');
       }
-
-      toast.success('¡Bienvenido!');
-      navigate(returnTo || '/');
     } catch (err) {
       toast.error('Error al iniciar con Google');
     }
@@ -57,16 +52,14 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(email, password);
-    
     if (error) {
       toast.error('Error al iniciar sesión', { description: error.message });
+      setIsLoading(false);
     } else {
       toast.success('¡Bienvenido!');
-      navigate(returnTo || '/');
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -95,14 +88,11 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    
     const { error } = await signUp(email, password, displayName);
-    
     if (error) {
       toast.error('Error al registrarse', { description: error.message });
     } else {
-      toast.success('¡Cuenta creada exitosamente!');
-      navigate(returnTo || '/');
+      toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
     }
     setIsLoading(false);
   };
