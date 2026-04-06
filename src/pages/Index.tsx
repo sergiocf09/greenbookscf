@@ -444,8 +444,10 @@ const Index = () => {
       return;
     }
 
-    // Auto-restore the most recent pending round (first in the list, sorted by date desc)
-    const mostRecentRound = pendingRounds[0];
+    // Auto-restore the most recent pending round that hasn't been closed
+    const mostRecentRound = pendingRounds.find(
+      (r) => !localStorage.getItem(`round_closed_${r.roundId}`)
+    );
     if (mostRecentRound) {
       sessionStorage.setItem('restore_round_id', mostRecentRound.roundId);
       window.location.reload();
