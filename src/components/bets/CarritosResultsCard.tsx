@@ -1,0 +1,564 @@
+import React, { useState, useMemo } from 'react';
+import { Player } from '@/types/golf';
+import { fmtMoney } from '@/lib/formatMoney';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
+import { Users, XCircle, CheckCircle, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+const TeamHoleGrid: React.FC<{
+  teamAPlayers: { name: string }[];
+  teamBPlayers: { name: string }[];
+  detail: {
+    netA1: number; hcpA1: number;
+    netA2: number; hcpA2: number;
+    netB1: number; hcpB1: number;
+    netB2: number; hcpB2: number;
+  };
+}> = ({ teamAPlayers, teamBPlayers, detail }) => (
+  <div className="space-y-0.5">
+    <div className="flex justify-between text-[10px] text-muted-foreground">
+      <span>Tu equipo</span>
+      <span>Rival</span>
+    </div>
+    {/* Player row 1 */}
+    <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+      <span className="truncate text-left">{teamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="font-medium text-right px-1">{detail.netA1}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span />
+      <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="font-medium text-left px-1">{detail.netB1}</span>
+      <span className="truncate text-right">{teamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+    </div>
+    {/* Player row 2 */}
+    <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+      <span className="truncate text-left">{teamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="font-medium text-right px-1">{detail.netA2}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span />
+      <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="font-medium text-left px-1">{detail.netB2}</span>
+      <span className="truncate text-right">{teamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+    </div>
+  </div>
+);
+
+// Carritos Results Card - Updated for point-based scoring
+interface CarritosResultsCardProps {
+  results: {
+    teamA: [string, string];
+    teamB: [string, string];
+    scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
+    netByHoleFront: Array<number | null>;
+    netByHoleBack: Array<number | null>;
+    holeDetailsFront: Array<{
+      holeNumber: number;
+      grossA1: number;
+      hcpA1: number;
+      netA1: number;
+      grossA2: number;
+      hcpA2: number;
+      netA2: number;
+      grossB1: number;
+      hcpB1: number;
+      netB1: number;
+      grossB2: number;
+      hcpB2: number;
+      netB2: number;
+      lowBallWinner?: 'A' | 'B' | 'tie';
+      highBallWinner?: 'A' | 'B' | 'tie';
+      combinedWinner?: 'A' | 'B' | 'tie';
+      pointsA: number;
+      pointsB: number;
+    } | null>;
+    holeDetailsBack: Array<{
+      holeNumber: number;
+      grossA1: number;
+      hcpA1: number;
+      netA1: number;
+      grossA2: number;
+      hcpA2: number;
+      netA2: number;
+      grossB1: number;
+      hcpB1: number;
+      netB1: number;
+      grossB2: number;
+      hcpB2: number;
+      netB2: number;
+      lowBallWinner?: 'A' | 'B' | 'tie';
+      highBallWinner?: 'A' | 'B' | 'tie';
+      combinedWinner?: 'A' | 'B' | 'tie';
+      pointsA: number;
+      pointsB: number;
+    } | null>;
+    pointsAFront: number;
+    pointsBFront: number;
+    pointsABack: number;
+    pointsBBack: number;
+    pointsATotal: number;
+    pointsBTotal: number;
+    pointsAAccumulated: number;
+    pointsBAccumulated: number;
+    moneyA: number;
+    moneyB: number;
+    amount: number;
+    id?: string;
+  };
+  players: Player[];
+  basePlayerId?: string;
+  title?: string;
+  onCancel?: () => void;
+  isDisabled?: boolean;
+  onToggleDisabled?: () => void;
+}
+
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel, isDisabled, onToggleDisabled }) => {
+  const isMobile = useIsMobile();
+  const [holeDialogOpen, setHoleDialogOpen] = useState(false);
+  const [selectedHole, setSelectedHole] = useState<{
+    holeNumber: number;
+    net: number | null;
+    detail:
+      | CarritosResultsCardProps['results']['holeDetailsFront'][number]
+      | CarritosResultsCardProps['results']['holeDetailsBack'][number];
+  } | null>(null);
+
+  const getPlayer = (id: string) => players.find(p => p.id === id);
+  const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
+  const getPlayerAbbr = (player: Player) => disambiguatedAbbrsCarritos.get(player.id) || player.initials;
+  const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
+  const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
+
+  type Winner = 'A' | 'B' | 'tie';
+  const invertWinner = (w?: Winner): Winner | undefined => {
+    if (!w) return undefined;
+    if (w === 'tie') return 'tie';
+    return w === 'A' ? 'B' : 'A';
+  };
+  
+  const isBaseInTeamA = results.teamA.includes(basePlayerId || '');
+  const displayTeamAPlayers = isBaseInTeamA ? teamAPlayers : teamBPlayers;
+  const displayTeamBPlayers = isBaseInTeamA ? teamBPlayers : teamAPlayers;
+
+  const baseTeamMoney = isBaseInTeamA ? results.moneyA : results.moneyB;
+  const baseTeamNetFront = isBaseInTeamA ? (results.pointsAFront - results.pointsBFront) : (results.pointsBFront - results.pointsAFront);
+  const baseTeamNetBack = isBaseInTeamA ? (results.pointsABack - results.pointsBBack) : (results.pointsBBack - results.pointsABack);
+  const baseTeamNetTotal = isBaseInTeamA ? (results.pointsATotal - results.pointsBTotal) : (results.pointsBTotal - results.pointsATotal);
+
+  const baseNetByHoleFront = isBaseInTeamA ? results.netByHoleFront : results.netByHoleFront.map(v => (v === null ? null : -v));
+  const baseNetByHoleBack = isBaseInTeamA ? results.netByHoleBack : results.netByHoleBack.map(v => (v === null ? null : -v));
+
+  const baseHoleDetailsFront = isBaseInTeamA
+    ? results.holeDetailsFront
+    : results.holeDetailsFront.map((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          // swap teams for display
+          grossA1: d.grossB1,
+          hcpA1: d.hcpB1,
+          netA1: d.netB1,
+          grossA2: d.grossB2,
+          hcpA2: d.hcpB2,
+          netA2: d.netB2,
+          grossB1: d.grossA1,
+          hcpB1: d.hcpA1,
+          netB1: d.netA1,
+          grossB2: d.grossA2,
+          hcpB2: d.hcpA2,
+          netB2: d.netA2,
+          lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
+          highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
+          combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
+          pointsA: d.pointsB,
+          pointsB: d.pointsA,
+        };
+      });
+
+  const baseHoleDetailsBack = isBaseInTeamA
+    ? results.holeDetailsBack
+    : results.holeDetailsBack.map((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          grossA1: d.grossB1,
+          hcpA1: d.hcpB1,
+          netA1: d.netB1,
+          grossA2: d.grossB2,
+          hcpA2: d.hcpB2,
+          netA2: d.netB2,
+          grossB1: d.grossA1,
+          hcpB1: d.hcpA1,
+          netB1: d.netA1,
+          grossB2: d.grossA2,
+          hcpB2: d.hcpA2,
+          netB2: d.netA2,
+          lowBallWinner: invertWinner(d.lowBallWinner as Winner | undefined),
+          highBallWinner: invertWinner(d.highBallWinner as Winner | undefined),
+          combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
+          pointsA: d.pointsB,
+          pointsB: d.pointsA,
+        };
+      });
+
+  const openHoleDetail = (
+    holeNumber: number,
+    net: number | null,
+    detail: CarritosResultsCardProps['results']['holeDetailsFront'][number] | CarritosResultsCardProps['results']['holeDetailsBack'][number]
+  ) => {
+    setSelectedHole({ holeNumber, net, detail });
+    setHoleDialogOpen(true);
+  };
+
+  // Unused legacy ScoreLine - replaced by TeamHoleGrid below
+
+  const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
+  const getNetPill = (n: number) => (n > 0 ? 'border-green-600/40 text-green-600' : n < 0 ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground');
+
+  const getWinnerText = (w?: Winner) => {
+    if (!w) return '—';
+    if (w === 'tie') return 'Empate';
+    return w === 'A' ? 'Tu equipo' : 'Rival';
+  };
+
+  const scoringLabel = results.scoringType === 'all'
+    ? 'LowBall + HighBall + Suma'
+    : results.scoringType === 'lowBall'
+      ? 'LowBall'
+      : results.scoringType === 'highBall'
+        ? 'HighBall'
+        : 'Suma';
+  
+  // Payment: Each loser pays 50% of their share to EACH winner
+  // Total loss is split between 2 losers, then each loser splits their half between 2 winners
+  // Example: Team loses $100 total -> each loser pays $50 total -> $25 to each winner
+  const getPaymentBreakdown = () => {
+    if (results.moneyA === 0) return null;
+    
+    const winningTeam = results.moneyA > 0 ? teamAPlayers : teamBPlayers;
+    const losingTeam = results.moneyA > 0 ? teamBPlayers : teamAPlayers;
+    const totalLost = Math.abs(results.moneyA);
+    
+    // Each loser pays 50% of total to EACH winner
+    // Example: Total lost = $100
+    // - Loser A pays $50 to Winner C and $50 to Winner D (total $100)
+    // - Loser B pays $50 to Winner C and $50 to Winner D (total $100)
+    // Each winner receives: $50 from A + $50 from B = $100
+    const perLoserPayToEachWinner = totalLost / 2;
+    
+    return { winningTeam, losingTeam, perLoserPayToEachWinner, totalWon: totalLost };
+  };
+  
+  const payment = getPaymentBreakdown();
+  
+  return (
+    <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {title}
+          </div>
+          <div className="flex items-center gap-2">
+            {isDisabled ? (
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
+                {baseTeamMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamMoney))}
+              </span>
+            )}
+            {onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                onClick={onToggleDisabled}
+                title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
+              >
+                {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              </Button>
+            )}
+            {onCancel && !onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                onClick={onCancel}
+                title="Cancelar Carritos"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <Collapsible>
+          <div className="space-y-1">
+            {/* Names row */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium truncate">
+                {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+              </span>
+              <span className="text-muted-foreground text-xs mx-2">vs</span>
+              <span className="font-medium truncate text-right">
+                {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+              </span>
+            </div>
+            {/* Results row */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>
+                  F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}
+                </span>
+                <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>
+                  B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}
+                </span>
+                <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>
+                  T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}
+                </span>
+              </div>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                  <ChevronDown className="h-4 w-4" />
+                  <span className="sr-only">Ver detalle</span>
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {scoringLabel}
+            </p>
+          </div>
+
+          <CollapsibleContent className="mt-3 space-y-3">
+            
+            {/* Puntos por hoyo */}
+            <div className="bg-muted/30 rounded-lg p-2 space-y-2">
+              <div className="text-[10px] text-muted-foreground text-center">
+                Toca en un hoyo para ver el desglose (• = stroke aplicado).
+              </div>
+
+          {/* Front 9 */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Front 9</span>
+              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetFront))}>
+                {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
+              </span>
+            </div>
+            <div className="grid grid-cols-9 gap-1">
+                {baseNetByHoleFront.map((net, idx) => {
+                const hole = idx + 1;
+                const detail = baseHoleDetailsFront[idx];
+
+                const pill = (
+                  <div
+                    className={cn(
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
+                      net === null ? 'border-border text-muted-foreground' : getNetPill(net),
+                    )}
+                  >
+                    <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
+                    <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
+                      {net === null ? '–' : net > 0 ? `+${net}` : `${net}`}
+                    </span>
+                  </div>
+                );
+
+                if (net === null || !detail) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                if (isMobile) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                return (
+                  <Popover key={hole}>
+                    <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                    <PopoverContent side="top" className="w-72 p-3">
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <TeamHoleGrid
+                          teamAPlayers={displayTeamAPlayers}
+                          teamBPlayers={displayTeamBPlayers}
+                          detail={detail}
+                        />
+                        <div className="pt-1 border-t border-border/50">
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                          )}
+                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })}
+              </div>
+          </div>
+
+          {/* Back 9 */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Back 9</span>
+              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetBack))}>
+                {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
+              </span>
+            </div>
+            <div className="grid grid-cols-9 gap-1">
+                {baseNetByHoleBack.map((net, idx) => {
+                const hole = idx + 10;
+                const detail = baseHoleDetailsBack[idx];
+
+                const pill = (
+                  <div
+                    className={cn(
+                      'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
+                      net === null ? 'border-border text-muted-foreground' : getNetPill(net),
+                    )}
+                  >
+                    <span className={cn('text-[9px] opacity-80', net === null && 'text-muted-foreground')}>{hole}</span>
+                    <span className={cn('text-[11px] font-semibold tabular-nums', net === null && 'text-muted-foreground')}>
+                      {net === null ? '–' : net > 0 ? `+${net}` : `${net}`}
+                    </span>
+                  </div>
+                );
+
+                if (net === null || !detail) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                if (isMobile) {
+                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                }
+
+                return (
+                  <Popover key={hole}>
+                    <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                    <PopoverContent side="top" className="w-72 p-3">
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <TeamHoleGrid
+                          teamAPlayers={displayTeamAPlayers}
+                          teamBPlayers={displayTeamBPlayers}
+                          detail={detail}
+                        />
+                        <div className="pt-1 border-t border-border/50">
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                          )}
+                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                          )}
+                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })}
+              </div>
+          </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                <span className="text-xs font-medium">Total 18</span>
+                <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
+                  {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+                </span>
+              </div>
+            </div>
+
+            {/* Modal en móvil para detalle por hoyo */}
+            {isMobile && (
+              <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  {!selectedHole ? null : !selectedHole.detail ? (
+                    <div className="text-sm text-muted-foreground">
+                      Sin scores confirmados de los 4 jugadores.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-xs text-muted-foreground">
+                        Hoyo:{' '}
+                        {selectedHole.net === null
+                          ? '–'
+                          : selectedHole.net > 0
+                            ? `+${selectedHole.net}`
+                            : `${selectedHole.net}`}{' '}
+                        pts
+                      </div>
+
+                      <TeamHoleGrid
+                        teamAPlayers={displayTeamAPlayers}
+                        teamBPlayers={displayTeamBPlayers}
+                        detail={selectedHole.detail}
+                      />
+
+                  <div className="pt-2 border-t border-border/50 text-sm">
+                    {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>Bola Baja</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.lowBallWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>Bola Alta</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.highBallWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                      <p className="flex justify-between">
+                        <span>Suma</span>
+                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.combinedWinner as Winner | undefined)}</span>
+                      </p>
+                    )}
+                    <p className="flex justify-between font-medium pt-1">
+                      <span>Puntos</span>
+                      <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
+                    </p>
+                  </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            )}
+
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ─── Cross-Group Handicap Widget ─────────────────────────────────────────────
+// Shown inside BetDashboard when a rival from another group is selected.
+// Allows the base player to set strokes (+/-) that are persisted in round_handicaps,
+// exactly like the intra-group HandicapMatrix.
+
+export { TeamHoleGrid, CarritosResultsCard };
+export type { CarritosResultsCardProps };
