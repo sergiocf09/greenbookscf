@@ -333,9 +333,8 @@ const MoneyRankingDetail = () => {
             <div className="mt-4 space-y-2">
               {bilateral.map((b) => (
                 <div key={b.rival_profile_id} className="flex items-center gap-3 py-2">
-                  <PlayerAvatar initials={b.initials} background={b.avatar_color} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{b.display_name}</p>
+                    <p className="text-sm font-medium truncate">{toTitleCase(b.display_name)}</p>
                     <p className="text-[11px] text-muted-foreground">
                       {b.rounds_together} {b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos'}
                     </p>
