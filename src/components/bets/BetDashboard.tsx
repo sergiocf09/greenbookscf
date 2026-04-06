@@ -1561,7 +1561,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const currentBaseInGroup = groupPlayers.some(p => p.id === balanceBasePlayerId);
     // Only reset if the current base player is NOT in the new group
     if (groupPlayers.length > 0 && !currentBaseInGroup) {
-      setBalanceBasePlayerId(groupPlayers[0].id);
+      // Prefer logged-in user if they're in this group
+      const loggedInPlayer = groupPlayers.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+      setBalanceBasePlayerId(loggedInPlayer?.id ?? groupPlayers[0].id);
       setSelectedRival(null);
     }
   }, [activeBalanceGroupIndex, players, playerGroups]);
