@@ -52,16 +52,14 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(email, password);
-    
     if (error) {
       toast.error('Error al iniciar sesión', { description: error.message });
+      setIsLoading(false);
     } else {
       toast.success('¡Bienvenido!');
-      navigate(returnTo || '/');
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
