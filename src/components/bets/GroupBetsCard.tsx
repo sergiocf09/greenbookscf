@@ -2271,7 +2271,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Skins Grupal */}
-        {skinsGrupalResult && (
+        {showGrupales && skinsGrupalResult && (
           <>
             <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
