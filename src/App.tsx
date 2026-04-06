@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -32,7 +32,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user) {
+  // Anonymous users (guests) and users without a profile cannot access protected routes
+  if (!user || user.is_anonymous || !profile) {
     return <Navigate to="/auth" replace />;
   }
 
