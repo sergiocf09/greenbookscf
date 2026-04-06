@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Loader2, Users, Crown, LogOut, User, Award } from 'lucide-react';
+import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
