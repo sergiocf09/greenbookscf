@@ -61,6 +61,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Detect and execute pending guest-to-user conversion after email confirmation
+  const handlePendingGuestConversion = async (currentUser: User) => {
+    // Only for non-anonymous users with a pending guest_session_id in metadata
+    const guestSessionId = currentUser.user_metadata?.guest_session_id;
+    if (!guestSessionId || currentUser.is_anonymous) return;
+    
+    // Email must be confirmed
+    if (!currentUser.email_confirmed_at) return;
+
+    console.log('[Auth] Detected pending guest conversion, executing...');
+    try {
+      const { error } = await supabase.rpc('convert_ghost_to_profile', {
+        p_session_id: guestSessionId,
+        p_auth_uid: currentUser.id,
+      });
+
+      if (error) {
+        console.error('[Auth] Guest conversion error:', error);
+        return;
+      }
+
+      // Clear the guest metadata now that conversion is complete
+      await supabase.auth.updateUser({
+        data: {
+          guest_session_id: null,
+          guest_round_id: null,
+        },
+      });
+
+      // Clean up any pending_conversion localStorage entries
+      const roundId = currentUser.user_metadata?.guest_round_id;
+      if (roundId) {
+        localStorage.removeItem(`pending_conversion_${roundId}`);
+      }
+
+      console.log('[Auth] Guest conversion completed successfully');
+      
+      // Re-fetch profile to get the converted one
+      await fetchProfile(currentUser.id);
+    } catch (err) {
+      console.error('[Auth] Unexpected error during guest conversion:', err);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -70,7 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           // Use setTimeout to avoid potential deadlocks
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+            handlePendingGuestConversion(session.user);
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -84,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        handlePendingGuestConversion(session.user);
       }
       setLoading(false);
     });
