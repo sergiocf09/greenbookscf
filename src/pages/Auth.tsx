@@ -59,6 +59,7 @@ const Auth = () => {
     } else {
       toast.success('¡Bienvenido!');
       setIsLoading(false);
+      navigate(returnTo ?? '/', { replace: true });
     }
   };
 
