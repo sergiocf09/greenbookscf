@@ -317,6 +317,27 @@ const MoneyRankingDetail = () => {
         {/* === HANDICAP VIEW === */}
         {rankingView === 'handicap' && (
           <>
+            {/* Period filters (shared with money) */}
+            <Tabs value={period} onValueChange={handlePeriodChange}>
+              <TabsList className="w-full">
+                {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
+                  <TabsTrigger key={p} value={p} className="flex-1 gap-1">
+                    {p === 'custom' && <CalendarRange className="h-3 w-3" />}
+                    {PERIOD_LABELS[p]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {period === 'custom' && customDateFrom && (
+              <button
+                className="text-xs text-muted-foreground text-center w-full hover:underline"
+                onClick={() => setShowCustomPeriod(true)}
+              >
+                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+              </button>
+            )}
+
             {loadingHandicap ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -373,7 +394,7 @@ const MoneyRankingDetail = () => {
             )}
 
             <p className="text-xs text-muted-foreground text-center">
-              Promedio y mejor score basados en las últimas 20 rondas · Total de rondas jugadas
+              Promedio y mejor score de las últimas 20 rondas · Rondas del período seleccionado
             </p>
           </>
         )}
