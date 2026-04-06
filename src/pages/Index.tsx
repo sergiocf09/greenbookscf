@@ -165,8 +165,6 @@ const Index = () => {
     date: string;
   } | null>(null);
   
-  const [teeColor, setTeeColor] = useState<'blue' | 'white' | 'yellow' | 'red'>('white');
-  const [startingHole, setStartingHole] = useState<1 | 10>(1);
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
