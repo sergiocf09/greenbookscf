@@ -183,7 +183,7 @@ export function useMoneyRankings() {
   return { rankings, loading, fetchRankings, createRanking, addMember, leaveRanking, removeMember, deleteRanking };
 }
 
-export function useMoneyRankingDetail(rankingId: string | null, period: RankingPeriod = 'all') {
+export function useMoneyRankingDetail(rankingId: string | null, period: RankingPeriod = 'all', customDateFrom?: string, customDateTo?: string) {
   const { profile } = useAuth();
   const [ranking, setRanking] = useState<MoneyRanking | null>(null);
   const [members, setMembers] = useState<RankingMember[]>([]);
