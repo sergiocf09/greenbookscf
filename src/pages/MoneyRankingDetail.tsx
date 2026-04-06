@@ -387,7 +387,7 @@ const MoneyRankingDetail = () => {
             )}
 
             <p className="text-xs text-muted-foreground text-center">
-              Promedio y mejor score de las últimas 20 rondas · Rondas del período seleccionado
+              HCP Index, promedio y mejor score basados en las últimas 20 rondas
             </p>
           </>
         )}

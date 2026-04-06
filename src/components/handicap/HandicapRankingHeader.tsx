@@ -9,16 +9,16 @@ interface Props {
   title?: string;
 }
 
-const options: Array<{ key: HandicapRankingSortKey; label: string }> = [
-  { key: 'handicap', label: 'HCP' },
-  { key: 'average', label: 'Prom' },
-  { key: 'best', label: 'Mejor' },
+const options: Array<{ key: HandicapRankingSortKey; label: string; width: string }> = [
+  { key: 'handicap', label: 'HCP', width: 'w-[52px]' },
+  { key: 'average', label: 'Prom', width: 'w-[36px]' },
+  { key: 'best', label: 'Mejor', width: 'w-[36px]' },
 ];
 
 export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, title = 'Jugador' }: Props) => (
   <div className="flex items-center justify-between">
     <span className="text-xs font-medium text-muted-foreground">{title}</span>
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center shrink-0">
       {options.map((option) => {
         const isActive = sortKey === option.key;
         return (
@@ -26,15 +26,16 @@ export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, ti
             key={option.key}
             type="button"
             className={cn(
-              'flex flex-col items-center px-2 py-0.5 rounded transition-colors min-w-[36px]',
-              isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'
+              'flex flex-col items-center justify-center py-0.5 transition-colors',
+              option.width,
+              isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
             )}
             onClick={() => onSortChange(option.key)}
           >
-            <span className="text-[10px] font-semibold leading-tight">{option.label}</span>
-            <div className="flex gap-0">
-              <ChevronUp className={cn('h-2.5 w-2.5', isActive && sortDirection === 'asc' ? 'text-foreground' : 'text-muted-foreground/40')} />
-              <ChevronDown className={cn('h-2.5 w-2.5', isActive && sortDirection === 'desc' ? 'text-foreground' : 'text-muted-foreground/40')} />
+            <span className={cn('text-[10px] font-semibold leading-tight', isActive && 'text-foreground')}>{option.label}</span>
+            <div className="flex">
+              <ChevronUp className={cn('h-2 w-2', isActive && sortDirection === 'asc' ? 'text-foreground' : 'text-muted-foreground/30')} />
+              <ChevronDown className={cn('h-2 w-2', isActive && sortDirection === 'desc' ? 'text-foreground' : 'text-muted-foreground/30')} />
             </div>
           </button>
         );
