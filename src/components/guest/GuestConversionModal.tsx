@@ -44,28 +44,26 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
 
     setLoading(true);
     try {
-      // 1. Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Upgrade anonymous session to permanent account
+      // Supabase supports linking email/password to an anonymous user via updateUser
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         email: email.trim(),
         password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { display_name: displayName },
-        },
+        data: { display_name: displayName },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('No se pudo crear la cuenta');
+      if (updateError) throw updateError;
+      if (!updateData.user) throw new Error('No se pudo crear la cuenta');
 
-      // 2. Convert ghost profile to real profile
+      // Convert ghost profile to real profile
       const { error: convertError } = await supabase.rpc('convert_ghost_to_profile', {
         p_session_id: guestSessionId,
-        p_auth_uid: authData.user.id,
+        p_auth_uid: updateData.user.id,
       });
 
       if (convertError) throw convertError;
 
-      // 3. Clean up localStorage
+      // Clean up localStorage
       localStorage.removeItem(`guest_session_${roundId}`);
 
       toast.success('¡Cuenta creada! Tu historial ha sido vinculado.');
