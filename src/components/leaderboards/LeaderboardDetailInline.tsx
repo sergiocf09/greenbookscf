@@ -87,6 +87,41 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     }
   };
 
+  const handleRename = async () => {
+    if (!renameValue.trim() || !event) return;
+    setRenaming(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_events')
+        .update({ name: renameValue.trim() })
+        .eq('id', event.id);
+      if (error) throw error;
+      toast.success('Nombre actualizado');
+      setShowRenameDialog(false);
+      fetchDetail();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!event) return;
+    try {
+      // Delete in order: scores, rounds, participants, event
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_rounds').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
+      const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
+      if (error) throw error;
+      toast.success('Leaderboard eliminado');
+      onBack();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
