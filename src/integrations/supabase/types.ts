@@ -1557,6 +1557,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_friend_handicap_ranking_stats: {
+        Args: never
+        Returns: {
+          avatar_color: string
+          avg_gross_score: number
+          best_gross_score: number
+          current_handicap: number
+          display_name: string
+          handicap_trend: number
+          initials: string
+          profile_id: string
+          rounds_played: number
+        }[]
+      }
       get_money_ranking_balances:
         | {
             Args: { p_period?: string; p_ranking_id: string }
@@ -1618,6 +1632,25 @@ export type Database = {
               rounds_together: number
             }[]
           }
+      get_money_ranking_handicap_stats: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_period?: string
+          p_ranking_id: string
+        }
+        Returns: {
+          avatar_color: string
+          avg_gross_score: number
+          best_gross_score: number
+          current_handicap: number
+          display_name: string
+          handicap_trend: number
+          initials: string
+          profile_id: string
+          rounds_played: number
+        }[]
+      }
       get_my_friends: {
         Args: never
         Returns: {
@@ -1631,6 +1664,20 @@ export type Database = {
         }[]
       }
       get_my_profile_id: { Args: never; Returns: string }
+      get_round_handicap_ranking_stats: {
+        Args: { p_round_id: string }
+        Returns: {
+          avatar_color: string
+          avg_gross_score: number
+          best_gross_score: number
+          current_handicap: number
+          display_name: string
+          handicap_trend: number
+          initials: string
+          profile_id: string
+          rounds_played: number
+        }[]
+      }
       get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
       is_money_ranking_creator: {
         Args: { p_ranking_id: string }
