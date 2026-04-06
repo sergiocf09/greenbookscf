@@ -3397,7 +3397,11 @@ const Index = () => {
         <RoundShareImage
           {...roundShareData}
           open={showRoundShare}
-          onClose={() => setShowRoundShare(false)}
+          onClose={() => {
+            setShowRoundShare(false);
+            // After viewing/dismissing the share image, reset to a clean setup
+            resetToNewRound();
+          }}
         />
       )}
     </div>
