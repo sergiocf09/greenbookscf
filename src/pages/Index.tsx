@@ -421,38 +421,8 @@ const Index = () => {
     void saveBetConfig(next);
   }, [roundState.id, isRestoring, isBetConfigLoaded, players, playerGroups, betConfig, saveBetConfig, setBetConfig]);
 
-  // Auto-restore the most recent pending round without showing the dialog
-  useEffect(() => {
-    // Skip if already processing a restore (prevent infinite loops)
-    const restoreInProgress = sessionStorage.getItem('restore_round_id');
-    if (restoreInProgress) return;
-    
-    // Skip if no pending rounds or already restoring/closing
-    if (!pendingRounds?.length) return;
-    if (isRestoring) return;
-    if (isLoading || isClosing) return;
-    if (roundState.id && pendingRounds.some((r) => r.roundId === roundState.id)) return;
-    if (isRoundStarted) return;
-    
-    // Don't auto-restore if user is actively configuring a new round
-    if (players.length > 0 || selectedCourseId) return;
-
-    // Check if user explicitly skipped restore
-    const skipOnce = sessionStorage.getItem('skip_restore_once');
-    if (skipOnce) {
-      sessionStorage.removeItem('skip_restore_once');
-      return;
-    }
-
-    // Auto-restore the most recent pending round that hasn't been closed
-    const mostRecentRound = pendingRounds.find(
-      (r) => !localStorage.getItem(`round_closed_${r.roundId}`)
-    );
-    if (mostRecentRound) {
-      sessionStorage.setItem('restore_round_id', mostRecentRound.roundId);
-      window.location.reload();
-    }
-  }, [pendingRounds, isRestoring, isLoading, isClosing, roundState.id, isRoundStarted, players.length, selectedCourseId]);
+  // Auto-restore is now handled directly by useRoundManagement (no page reload needed).
+  // The old window.location.reload() pattern was fragile and caused intermittent failures.
 
   // Persist players when round is created (players added before round creation)
   const persistedPlayersForRoundRef = useRef<string | null>(null);
