@@ -2611,6 +2611,7 @@ const Index = () => {
         )}
 
         {view === 'scoring' && course && (
+          <ErrorBoundary context="ScoringView">
           <ScoringView
             players={players}
             playerGroups={playerGroups}
