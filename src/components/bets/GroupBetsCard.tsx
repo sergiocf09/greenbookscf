@@ -1634,7 +1634,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
 
         {/* Pinguinos - Simplified view with collapsible detail */}
-        {pinguinosResult && (
+        {showGrupales && pinguinosResult && (
           <>
             {culebrasResult && <div className="border-t-2 border-primary/40" />}
             <div className="space-y-2">
