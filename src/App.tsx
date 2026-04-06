@@ -72,6 +72,7 @@ const App = () => (
             <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>
+        </RoundProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ThemeProvider>
