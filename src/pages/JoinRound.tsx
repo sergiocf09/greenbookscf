@@ -231,16 +231,19 @@ const JoinRound = () => {
 
       const result = data as any;
       
-      // Save guest session to localStorage
-      localStorage.setItem(`guest_session_${roundId}`, JSON.stringify({
+      const sessionData = {
         session_id: result.session_id,
         ghost_profile_id: result.ghost_profile_id,
         round_player_id: result.round_player_id,
         display_name: guestName.trim(),
-      }));
+      };
+
+      // Save guest session to localStorage
+      localStorage.setItem(`guest_session_${roundId}`, JSON.stringify(sessionData));
+      setGuestSession(sessionData);
+      setGuestJoined(true);
 
       toast.success('Te has unido a la ronda como invitado');
-      navigate('/');
     } catch (err: any) {
       console.error('Error joining as guest:', err);
       toast.error(err?.message || 'Error al unirse como invitado');
