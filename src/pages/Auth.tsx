@@ -88,14 +88,11 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    
     const { error } = await signUp(email, password, displayName);
-    
     if (error) {
       toast.error('Error al registrarse', { description: error.message });
     } else {
-      toast.success('¡Cuenta creada exitosamente!');
-      navigate(returnTo || '/');
+      toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
     }
     setIsLoading(false);
   };
