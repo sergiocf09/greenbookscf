@@ -17,6 +17,7 @@ import JoinLeaderboard from "./pages/JoinLeaderboard";
 import MoneyRankings from "./pages/MoneyRankings";
 import MoneyRankingDetail from "./pages/MoneyRankingDetail";
 import NotFound from "./pages/NotFound";
+import { PWAInstallBanner } from "./components/PWAInstallBanner";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
