@@ -76,22 +76,22 @@ const MoneyRankings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
+      {/* Header - matching app's green/gold theme */}
+      <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => navigate('/')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <GreenBookLogo />
           </div>
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-sm">Rankings</span>
+            <TrendingUp className="h-5 w-5 text-accent" />
+            <span className="font-semibold text-sm text-accent">Rankings</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80">
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -105,7 +105,7 @@ const MoneyRankings = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Crear ranking */}
@@ -117,7 +117,7 @@ const MoneyRankings = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nuevo ranking de dinero</DialogTitle>
+              <DialogTitle>Nuevo ranking</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
