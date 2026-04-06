@@ -6,77 +6,66 @@ interface GreenBookLogoProps {
 }
 
 const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 32 }) => {
-  const aspectRatio = 100 / 50;
+  const aspectRatio = 180 / 50;
   const width = height * aspectRatio;
 
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 100 50"
+      viewBox="0 0 180 50"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Wavy green with flag */}
+      {/* Golf hole "G" symbol */}
       <g>
-        {/* Wavy green surface */}
-        <path
-          d="M2 32 Q8 28, 14 30 Q20 32, 26 29 Q32 26, 38 30 L38 40 Q32 38, 26 40 Q20 42, 14 40 Q8 38, 2 40 Z"
-          fill="hsl(150, 50%, 45%)"
-        />
+        {/* Outer circle - dark green */}
+        <circle cx="25" cy="25" r="23" stroke="#006747" strokeWidth="4" fill="none" />
+        {/* Inner green fill */}
+        <circle cx="25" cy="25" r="19" fill="#006747" />
+        {/* Green surface - lighter */}
+        <circle cx="25" cy="25" r="15" fill="#008C5E" />
+        {/* Hole */}
+        <ellipse cx="25" cy="27" rx="5" ry="3" fill="#003D2B" />
         {/* Flag pole */}
-        <line
-          x1="28"
-          y1="10"
-          x2="28"
-          y2="30"
-          stroke="white"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
+        <line x1="25" y1="10" x2="25" y2="27" stroke="white" strokeWidth="1.2" />
         {/* Red flag */}
+        <path d="M25 10 L33 13.5 L25 17 Z" fill="#CC2200" />
+        {/* G horizontal bar - gold */}
+        <rect x="25" y="22" width="16" height="3.5" rx="1.5" fill="#FCE300" />
+        {/* G opening gap (cut into circle) */}
+        <rect x="37" y="8" width="12" height="14" fill="none" />
+        {/* Cut the top-right of circle to form G shape */}
         <path
-          d="M28 10 L38 14 L28 18 Z"
-          fill="hsl(0, 72%, 51%)"
+          d="M38 4 L50 4 L50 22 L38 22 Z"
+          fill="currentColor"
+          className="fill-background"
         />
       </g>
 
-      {/* Green text - first line */}
+      {/* GreenBook text */}
       <text
-        x="46"
-        y="16"
-        fontFamily="Georgia, serif"
-        fontSize="14"
-        fontWeight="bold"
-        fill="white"
-        letterSpacing="0.5"
-      >
-        Green
-      </text>
-
-      {/* Book text - second line */}
-      <text
-        x="46"
+        x="58"
         y="30"
-        fontFamily="Georgia, serif"
-        fontSize="14"
-        fontWeight="bold"
+        fontFamily="'Arial Black', 'Helvetica Neue', sans-serif"
+        fontSize="22"
+        fontWeight="800"
         fill="white"
-        letterSpacing="0.5"
+        letterSpacing="0.3"
       >
-        Book
+        GreenBook
       </text>
 
-      {/* by SCF text - third line, bold, accent gold color */}
+      {/* by SCF subtitle */}
       <text
-        x="46"
-        y="42"
-        fontFamily="Arial, sans-serif"
+        x="58"
+        y="43"
+        fontFamily="Arial, 'Helvetica Neue', sans-serif"
         fontSize="9"
-        fontWeight="bold"
-        fill="hsl(43, 90%, 50%)"
-        letterSpacing="0.5"
+        fontWeight="700"
+        fill="#FCE300"
+        letterSpacing="1"
       >
         by SCF
       </text>
