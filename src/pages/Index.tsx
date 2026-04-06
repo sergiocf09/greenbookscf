@@ -3230,7 +3230,7 @@ const Index = () => {
       <AddFromFriendsDialog
         open={dialogs.addFromFriends}
         onOpenChange={(open) => {
-          setShowAddFromFriendsDialog(open);
+          setDialog('addFromFriends', open);
           if (!open) setAddFriendsTargetGroupId(null);
         }}
         onAddPlayers={(selectedPlayers) => {
