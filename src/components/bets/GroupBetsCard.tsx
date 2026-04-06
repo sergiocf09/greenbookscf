@@ -2226,7 +2226,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         )}
         
         {/* Stableford - Scope-aware rendering */}
-        {betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
+        {showGrupales && betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
             <div className="border-t-2 border-primary/40" />
             <div className="space-y-2">
