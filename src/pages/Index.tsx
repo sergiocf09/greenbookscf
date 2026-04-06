@@ -154,8 +154,6 @@ const Index = () => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
   const [addFriendsTargetGroupId, setAddFriendsTargetGroupId] = useState<string | null>(null);
-  const [quickScorePlayer, setQuickScorePlayer] = useState<Player | null>(null);
-  const [playerGroups, setPlayerGroups] = useState<PlayerGroup[]>([]);
   const [pendingRoundSummaries, setPendingRoundSummaries] = useState<
     Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>
   >(new Map());
