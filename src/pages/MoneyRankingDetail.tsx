@@ -110,9 +110,9 @@ const MoneyRankingDetail = () => {
   const displayHandicapEntries = useMemo(
     () => sortHandicapRankingEntries(
       withLiveHandicapOverride(handicapEntries, profile?.id ?? null, liveHandicapIndex),
-      handicapSortKey,
+      handicapSortKey, handicapSortDir,
     ),
-    [handicapEntries, handicapSortKey, liveHandicapIndex, profile?.id],
+    [handicapEntries, handicapSortKey, handicapSortDir, liveHandicapIndex, profile?.id],
   );
 
   const handleMemberTap = (entry: RankingBalanceEntry) => {
