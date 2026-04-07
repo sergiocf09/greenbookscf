@@ -198,14 +198,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         };
       });
 
-  const openHoleDetail = (
-    holeNumber: number,
-    net: number | null,
-    detail: CarritosResultsCardProps['results']['holeDetailsFront'][number] | CarritosResultsCardProps['results']['holeDetailsBack'][number]
-  ) => {
-    setSelectedHole({ holeNumber, net, detail });
-    setHoleDialogOpen(true);
-  };
 
   // Unused legacy ScoreLine - replaced by TeamHoleGrid below
 
