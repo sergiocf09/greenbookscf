@@ -1,16 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Player } from '@/types/golf';
 import { fmtMoney } from '@/lib/formatMoney';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { Users, XCircle, CheckCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 
 const TeamHoleGrid: React.FC<{
   teamAPlayers: { name: string }[];
@@ -120,15 +119,6 @@ interface CarritosResultsCardProps {
 }
 
 const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel, isDisabled, onToggleDisabled }) => {
-  const isMobile = useIsMobile();
-  const [holeDialogOpen, setHoleDialogOpen] = useState(false);
-  const [selectedHole, setSelectedHole] = useState<{
-    holeNumber: number;
-    net: number | null;
-    detail:
-      | CarritosResultsCardProps['results']['holeDetailsFront'][number]
-      | CarritosResultsCardProps['results']['holeDetailsBack'][number];
-  } | null>(null);
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
@@ -208,14 +198,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
         };
       });
 
-  const openHoleDetail = (
-    holeNumber: number,
-    net: number | null,
-    detail: CarritosResultsCardProps['results']['holeDetailsFront'][number] | CarritosResultsCardProps['results']['holeDetailsBack'][number]
-  ) => {
-    setSelectedHole({ holeNumber, net, detail });
-    setHoleDialogOpen(true);
-  };
 
   // Unused legacy ScoreLine - replaced by TeamHoleGrid below
 
@@ -373,17 +355,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 );
 
                 if (net === null || !detail) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
-                }
-
-                if (isMobile) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                  return <div key={hole}>{pill}</div>;
                 }
 
                 return (
                   <Popover key={hole}>
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                    <PopoverContent side="top" className="w-72 p-3">
+                    <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
                         <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                         <TeamHoleGrid
@@ -439,17 +417,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 );
 
                 if (net === null || !detail) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
-                }
-
-                if (isMobile) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                  return <div key={hole}>{pill}</div>;
                 }
 
                 return (
                   <Popover key={hole}>
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                    <PopoverContent side="top" className="w-72 p-3">
+                    <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
                         <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                         <TeamHoleGrid
@@ -486,67 +460,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               </div>
             </div>
 
-            {/* Modal en móvil para detalle por hoyo */}
-            {isMobile && (
-              <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
-                    </DialogTitle>
-                  </DialogHeader>
-
-                  {!selectedHole ? null : !selectedHole.detail ? (
-                    <div className="text-sm text-muted-foreground">
-                      Sin scores confirmados de los 4 jugadores.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="text-xs text-muted-foreground">
-                        Hoyo:{' '}
-                        {selectedHole.net === null
-                          ? '–'
-                          : selectedHole.net > 0
-                            ? `+${selectedHole.net}`
-                            : `${selectedHole.net}`}{' '}
-                        pts
-                      </div>
-
-                      <TeamHoleGrid
-                        teamAPlayers={displayTeamAPlayers}
-                        teamBPlayers={displayTeamBPlayers}
-                        detail={selectedHole.detail}
-                      />
-
-                  <div className="pt-2 border-t border-border/50 text-sm">
-                    {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Bola Baja</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.lowBallWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Bola Alta</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.highBallWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Suma</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.combinedWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    <p className="flex justify-between font-medium pt-1">
-                      <span>Puntos</span>
-                      <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
-                    </p>
-                  </div>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            )}
 
           </CollapsibleContent>
         </Collapsible>
