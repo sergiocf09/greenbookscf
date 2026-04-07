@@ -324,6 +324,82 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
+
+      <button
+        onClick={() => setSection('deleteAccount')}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors mt-2 border border-destructive/20"
+      >
+        <Trash2 className="h-4 w-4" />
+        Eliminar mi cuenta
+      </button>
+    </div>
+  );
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmEmail !== user?.email || deleting) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc('delete_user_account');
+      if (error) throw error;
+      toast.success('Cuenta eliminada. ¡Hasta pronto!');
+      onOpenChange(false);
+      await supabase.auth.signOut();
+    } catch (err: any) {
+      toast.error('Error al eliminar la cuenta: ' + (err.message ?? 'intenta de nuevo'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const renderDeleteAccountSection = () => (
+    <div className="space-y-4">
+      {renderBackButton()}
+
+      <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-2">
+        <p className="text-sm font-medium text-destructive">
+          ⚠️ Esta acción eliminará tus credenciales de acceso
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Tu email y contraseña serán eliminados permanentemente. Tu historial
+          de rondas y apuestas se conserva de forma anonimizada para no afectar
+          a los demás jugadores involucrados.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="delete-confirm-email">
+          Escribe tu email para confirmar
+        </Label>
+        <Input
+          id="delete-confirm-email"
+          type="email"
+          placeholder={user?.email ?? 'tu@email.com'}
+          value={deleteConfirmEmail}
+          onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+          className="mt-1"
+          autoComplete="off"
+        />
+      </div>
+
+      <Button
+        variant="destructive"
+        className="w-full"
+        disabled={deleteConfirmEmail !== user?.email || deleting}
+        onClick={handleDeleteAccount}
+      >
+        {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+        Eliminar mi cuenta
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          setSection('menu');
+          setDeleteConfirmEmail('');
+        }}
+        className="w-full text-muted-foreground"
+      >
+        Cancelar
+      </Button>
     </div>
   );
 
