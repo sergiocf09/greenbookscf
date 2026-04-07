@@ -1775,17 +1775,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <span className="font-medium text-sm">{formatPlayerName(player.name).split(' ')[0]}</span>
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
-                          {player.isFounder && (
-                            <>
-                              <span className="text-[10px] text-muted-foreground">·</span>
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-primary">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                                </svg>
-                                Fundador
-                              </span>
-                            </>
-                          )}
                         </div>
                         {tablaGeneralMode === 'all' && hasMultipleGroups && crossGroupOthers.length > 0 && (
                           <span className="text-[9px] text-muted-foreground/70">
@@ -1794,7 +1783,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {player.isFounder && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-golf-gold shrink-0">
+                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+                        </svg>
+                      )}
                       <div className={cn(
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -1896,6 +1890,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
+          {tablaGeneralPlayers.some(p => p.isFounder) && (
+            <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-golf-gold">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+              </svg>
+              <span className="font-medium">Miembro Fundador</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
