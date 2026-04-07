@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Settings, Dices, Trophy } from 'lucide-react';
+import { Settings, Dices, BookOpen, Pencil } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import GreenBookLogo from '@/components/GreenBookLogo';
 
