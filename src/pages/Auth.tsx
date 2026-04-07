@@ -28,6 +28,7 @@ const Auth = () => {
   const location = useLocation();
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
