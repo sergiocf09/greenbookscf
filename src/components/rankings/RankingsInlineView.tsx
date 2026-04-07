@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { MoneyRanking } from '@/hooks/useMoneyRankings';
 import { useHandicapRanking } from '@/hooks/useHandicapRanking';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Loader2, Users, TrendingUp, Crown, Award } from 'lucide-react';
+import { Plus, Loader2, Users, TrendingUp, Crown, Award, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
