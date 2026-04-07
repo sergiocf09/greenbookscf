@@ -164,24 +164,37 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 
       {/* Native Share Button (mobile) */}
       {typeof navigator.share === 'function' && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={async () => {
-            try {
-              await navigator.share({
-                title: 'Únete a mi ronda de golf',
-                text: `Únete a mi ronda de golf. Código: ${shortCode}`,
-                url: shareLink,
-              });
-            } catch (err) {
-              // User cancelled or error
-            }
-          }}
-        >
-          <Share2 className="h-4 w-4 mr-2" />
-          Compartir vía...
-        </Button>
+        canShare ? (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              try {
+                await navigator.share({
+                  title: 'Únete a mi ronda de golf',
+                  text: `Únete a mi ronda de golf. Código: ${shortCode}`,
+                  url: shareLink,
+                });
+              } catch (err) {
+                // User cancelled or error
+              }
+            }}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Compartir vía...
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+              detail: { reason: 'share' }
+            }))}
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Compartir disponible en Pro
+          </Button>
+        )
       )}
     </div>
   );

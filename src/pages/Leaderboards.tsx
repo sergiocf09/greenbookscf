@@ -26,6 +26,7 @@ import {
 const Leaderboards = () => {
   const navigate = useNavigate();
   const { profile, signOut, updateProfile } = useAuth();
+  const { canCreateLeaderboard } = useSubscription();
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
