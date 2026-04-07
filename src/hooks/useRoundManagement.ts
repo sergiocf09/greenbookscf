@@ -481,6 +481,7 @@ export const useRoundManagement = ({
               profileId: rp.profile_id || undefined,
               teeColor: rp.tee_color || undefined,
               groupId: rp.group_id || undefined,
+              isFounder: profileData?.is_founder ?? false,
             };
             
             // Add to restoredPlayers for score restoration
