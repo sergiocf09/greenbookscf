@@ -58,12 +58,11 @@ const Auth = () => {
     const { error } = await signIn(email, password);
     if (error) {
       toast.error('Error al iniciar sesión', { description: error.message });
-      setIsLoading(false);
     } else {
       toast.success('¡Bienvenido!');
-      setIsLoading(false);
-      navigate(returnTo ?? '/', { replace: true });
+      // No navigate manually — PublicRoute will redirect once profile loads
     }
+    setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
