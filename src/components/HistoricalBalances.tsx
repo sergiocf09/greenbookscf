@@ -188,6 +188,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   onClose 
 }, ref) => {
   const { profile } = useAuth();
+  const { canAccessHistory } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [rivals, setRivals] = useState<RivalBalance[]>([]);
   const [totalNet, setTotalNet] = useState(0);
