@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -84,6 +85,7 @@ interface RoundHistoryProps {
 
 export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound, onCloneFullRound }) => {
   const { profile } = useAuth();
+  const { canAccessHistory } = useSubscription();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRound, setExpandedRound] = useState<string | null>(null);
@@ -462,6 +464,28 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       setRoundToReopen(null);
     }
   };
+
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+          <Lock className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold">Historial bloqueado</p>
+          <p className="text-sm text-muted-foreground">
+            Has completado tus 4 rondas de acceso gratuito al historial.
+            Suscríbete para ver todas tus rondas anteriores.
+          </p>
+        </div>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Ver planes
+        </Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

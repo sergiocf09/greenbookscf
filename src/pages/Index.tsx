@@ -78,6 +78,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
 import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
@@ -164,6 +165,10 @@ const Index = () => {
     teeColor: string;
     date: string;
   } | null>(null);
+
+  // Upgrade modal state
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'create_round' | 'history' | 'share' | 'leaderboard'>('create_round');
   
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
@@ -255,6 +260,28 @@ const Index = () => {
       openDialog('onboarding');
     }
   }, [profile]);
+
+  // Upgrade modal via custom event
+  useEffect(() => {
+    const upgradeHandler = (e: Event) => {
+      const reason = (e as CustomEvent).detail?.reason ?? 'create_round';
+      setUpgradeReason(reason);
+      setShowUpgrade(true);
+    };
+    window.addEventListener('greenbook:show-upgrade', upgradeHandler);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      toast.success('¡Bienvenido a GreenBook Pro! Tu suscripción está activa.');
+      window.history.replaceState({}, '', '/');
+    }
+    if (params.get('payment') === 'cancelled') {
+      toast.info('Pago cancelado. Puedes suscribirte cuando quieras.');
+      window.history.replaceState({}, '', '/');
+    }
+
+    return () => window.removeEventListener('greenbook:show-upgrade', upgradeHandler);
+  }, []);
 
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
   useEffect(() => {
@@ -3420,6 +3447,11 @@ const Index = () => {
         />
       )}
       {(!user || user.is_anonymous) && <GuestConversionScreen />}
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        reason={upgradeReason}
+      />
     </div>
   );
 };

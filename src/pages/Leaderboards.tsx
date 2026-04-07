@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import {
 const Leaderboards = () => {
   const navigate = useNavigate();
   const { profile, signOut, updateProfile } = useAuth();
+  const { canCreateLeaderboard } = useSubscription();
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
@@ -109,7 +111,17 @@ const Leaderboards = () => {
         <div className="flex gap-2">
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="flex-1 gap-2">
+              <Button
+                className="flex-1 gap-2"
+                onClick={(e) => {
+                  if (!canCreateLeaderboard) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+                      detail: { reason: 'leaderboard' }
+                    }));
+                  }
+                }}
+              >
                 <Plus className="h-4 w-4" /> Crear Leaderboard
               </Button>
             </DialogTrigger>

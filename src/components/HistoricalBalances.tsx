@@ -13,6 +13,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -31,6 +32,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -186,6 +188,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   onClose 
 }, ref) => {
   const { profile } = useAuth();
+  const { canAccessHistory } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [rivals, setRivals] = useState<RivalBalance[]>([]);
   const [totalNet, setTotalNet] = useState(0);
@@ -514,6 +517,23 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     rows.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
     return rows;
   }, [allSnapshots, profile]);
+
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
+        <p className="font-semibold">Balances históricos bloqueados</p>
+        <p className="text-sm text-muted-foreground">
+          Suscríbete para acceder a tu historial completo de balances con cada jugador.
+        </p>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Ver planes
+        </Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1773,7 +1773,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       />
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">{formatPlayerName(player.name).split(' ')[0]}</span>
-                        <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground">HCP {player.handicap}</span>
+                          {player.isFounder && (
+                            <>
+                              <span className="text-[10px] text-muted-foreground">·</span>
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-primary">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+                                </svg>
+                                Fundador
+                              </span>
+                            </>
+                          )}
+                        </div>
                         {tablaGeneralMode === 'all' && hasMultipleGroups && crossGroupOthers.length > 0 && (
                           <span className="text-[9px] text-muted-foreground/70">
                             +{crossGroupOthers.length} de otros grupos

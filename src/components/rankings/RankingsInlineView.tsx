@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useMoneyRankings } from '@/hooks/useMoneyRankings';
 import type { MoneyRanking } from '@/hooks/useMoneyRankings';
 import { useHandicapRanking } from '@/hooks/useHandicapRanking';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Loader2, Users, TrendingUp, Crown, Award } from 'lucide-react';
+import { Plus, Loader2, Users, TrendingUp, Crown, Award, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
@@ -24,6 +25,7 @@ interface RankingsInlineViewProps {
 
 export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNavigateToDetail }) => {
   const { profile } = useAuth();
+  const { canAccessHistory } = useSubscription();
   const { rankings, loading, createRanking } = useMoneyRankings();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formName, setFormName] = useState('');
@@ -89,6 +91,23 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
       </CardContent>
     </Card>
   );
+
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Trophy className="h-10 w-10 mx-auto text-muted-foreground" />
+        <p className="font-semibold">Rankings grupales</p>
+        <p className="text-sm text-muted-foreground">
+          Consulta quién va ganando en dinero y hándicap en tu grupo. Disponible con GreenBook Pro.
+        </p>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Suscribirse para ver rankings
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

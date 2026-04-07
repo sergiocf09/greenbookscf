@@ -10,6 +10,9 @@ interface Profile {
   initials: string;
   avatar_color: string;
   current_handicap: number;
+  subscription_tier?: string;
+  subscription_expires_at?: string | null;
+  is_founder?: boolean;
 }
 
 interface AuthContextType {
@@ -45,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loadOnce = async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, display_name, initials, avatar_color, current_handicap')
+        .select('id, user_id, display_name, initials, avatar_color, current_handicap, subscription_tier, subscription_expires_at, is_founder')
         .eq('user_id', userId)
         .eq('is_ghost', false)
         .maybeSingle();

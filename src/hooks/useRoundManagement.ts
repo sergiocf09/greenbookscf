@@ -438,10 +438,10 @@ export const useRoundManagement = ({
             )
           ) as string[];
 
-          const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string }>();
+          const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string; is_founder: boolean }>();
           if (profileIds.length) {
             const profilesData = await retry<any[]>(() =>
-              supabase.from('profiles').select('id, display_name, initials, avatar_color').in('id', profileIds) as any
+              supabase.from('profiles').select('id, display_name, initials, avatar_color, is_founder').in('id', profileIds) as any
             );
 
             (profilesData || []).forEach((p: any) => {
@@ -449,6 +449,7 @@ export const useRoundManagement = ({
                 display_name: p.display_name,
                 initials: p.initials,
                 avatar_color: p.avatar_color,
+                is_founder: p.is_founder ?? false,
               });
             });
           }
@@ -480,6 +481,7 @@ export const useRoundManagement = ({
               profileId: rp.profile_id || undefined,
               teeColor: rp.tee_color || undefined,
               groupId: rp.group_id || undefined,
+              isFounder: profileData?.is_founder ?? false,
             };
             
             // Add to restoredPlayers for score restoration
@@ -674,6 +676,16 @@ export const useRoundManagement = ({
     }
 
     setIsLoading(true);
+    // Paywall check: can user create rounds?
+    const { data: canCreate } = await supabase.rpc('can_create_round_as_organizer');
+    if (canCreate === false) {
+      window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+        detail: { reason: 'create_round' }
+      }));
+      setIsLoading(false);
+      return null;
+    }
+
     try {
       // Use the security-definer RPC to create round atomically
       const { data, error } = await supabase.rpc('create_round', {

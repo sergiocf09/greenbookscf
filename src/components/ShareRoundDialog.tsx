@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Copy, Check, Link2, QrCode, Hash, Share2 } from 'lucide-react';
+import { Copy, Check, Link2, QrCode, Hash, Share2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const isPreviewHost = () => {
   const { hostname } = window.location;
@@ -25,6 +26,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
   const [copiedType, setCopiedType] = useState<'link' | 'code' | null>(null);
   const [showQR, setShowQR] = useState(false);
   const isPreview = useMemo(() => isPreviewHost(), []);
+  const { canShare } = useSubscription();
 
   // Generate share link
   const shareLink = useMemo(() => {
@@ -162,24 +164,37 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
 
       {/* Native Share Button (mobile) */}
       {typeof navigator.share === 'function' && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={async () => {
-            try {
-              await navigator.share({
-                title: 'Únete a mi ronda de golf',
-                text: `Únete a mi ronda de golf. Código: ${shortCode}`,
-                url: shareLink,
-              });
-            } catch (err) {
-              // User cancelled or error
-            }
-          }}
-        >
-          <Share2 className="h-4 w-4 mr-2" />
-          Compartir vía...
-        </Button>
+        canShare ? (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              try {
+                await navigator.share({
+                  title: 'Únete a mi ronda de golf',
+                  text: `Únete a mi ronda de golf. Código: ${shortCode}`,
+                  url: shareLink,
+                });
+              } catch (err) {
+                // User cancelled or error
+              }
+            }}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Compartir vía...
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+              detail: { reason: 'share' }
+            }))}
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Compartir disponible en Pro
+          </Button>
+        )
       )}
     </div>
   );
