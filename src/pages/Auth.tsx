@@ -28,6 +28,7 @@ const Auth = () => {
   const location = useLocation();
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
@@ -256,7 +257,26 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 accent-primary shrink-0"
+                  />
+                  <span>
+                    Acepto los{' '}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                      Términos de Servicio
+                    </a>
+                    {' '}y la{' '}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                      Política de Privacidad
+                    </a>
+                  </span>
+                </label>
+
+                <Button type="submit" className="w-full" disabled={isLoading || !acceptedTerms}>
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear Cuenta'}
                 </Button>
 

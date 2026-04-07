@@ -1601,6 +1601,7 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      delete_user_account: { Args: never; Returns: undefined }
       finalize_round_bets: {
         Args: { p_ledger: Json; p_round_id: string }
         Returns: undefined
