@@ -10,6 +10,9 @@ interface Profile {
   initials: string;
   avatar_color: string;
   current_handicap: number;
+  subscription_tier?: string;
+  subscription_expires_at?: string | null;
+  is_founder?: boolean;
 }
 
 interface AuthContextType {
