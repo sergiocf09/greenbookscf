@@ -27,8 +27,6 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
   const [showQR, setShowQR] = useState(false);
   const isPreview = useMemo(() => isPreviewHost(), []);
   const { canShare } = useSubscription();
-  const [showQR, setShowQR] = useState(false);
-  const isPreview = useMemo(() => isPreviewHost(), []);
 
   // Generate share link
   const shareLink = useMemo(() => {
