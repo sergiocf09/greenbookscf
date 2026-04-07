@@ -3447,6 +3447,11 @@ const Index = () => {
         />
       )}
       {(!user || user.is_anonymous) && <GuestConversionScreen />}
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        reason={upgradeReason}
+      />
     </div>
   );
 };
