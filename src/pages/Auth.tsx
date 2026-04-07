@@ -154,7 +154,7 @@ const Auth = () => {
       </Button>
       <Card className="w-full max-w-md border-primary/20 shadow-lg">
         <CardHeader className="text-center">
-          <GreenBookLogo height={144} className="mx-auto" variant="auth" />
+          <GreenBookLogo height={216} className="mx-auto" variant="auth" />
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
