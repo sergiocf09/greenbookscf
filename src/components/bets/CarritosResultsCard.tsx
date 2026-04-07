@@ -460,67 +460,6 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               </div>
             </div>
 
-            {/* Modal en móvil para detalle por hoyo */}
-            {isMobile && (
-              <Dialog open={holeDialogOpen} onOpenChange={setHoleDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {selectedHole ? `Hoyo ${selectedHole.holeNumber}` : 'Detalle de hoyo'}
-                    </DialogTitle>
-                  </DialogHeader>
-
-                  {!selectedHole ? null : !selectedHole.detail ? (
-                    <div className="text-sm text-muted-foreground">
-                      Sin scores confirmados de los 4 jugadores.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="text-xs text-muted-foreground">
-                        Hoyo:{' '}
-                        {selectedHole.net === null
-                          ? '–'
-                          : selectedHole.net > 0
-                            ? `+${selectedHole.net}`
-                            : `${selectedHole.net}`}{' '}
-                        pts
-                      </div>
-
-                      <TeamHoleGrid
-                        teamAPlayers={displayTeamAPlayers}
-                        teamBPlayers={displayTeamBPlayers}
-                        detail={selectedHole.detail}
-                      />
-
-                  <div className="pt-2 border-t border-border/50 text-sm">
-                    {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Bola Baja</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.lowBallWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Bola Alta</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.highBallWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                      <p className="flex justify-between">
-                        <span>Suma</span>
-                        <span className="tabular-nums">{getWinnerText(selectedHole.detail.combinedWinner as Winner | undefined)}</span>
-                      </p>
-                    )}
-                    <p className="flex justify-between font-medium pt-1">
-                      <span>Puntos</span>
-                      <span className="tabular-nums">{selectedHole.detail.pointsA} - {selectedHole.detail.pointsB}</span>
-                    </p>
-                  </div>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            )}
 
           </CollapsibleContent>
         </Collapsible>
