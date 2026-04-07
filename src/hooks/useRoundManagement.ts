@@ -438,10 +438,10 @@ export const useRoundManagement = ({
             )
           ) as string[];
 
-          const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string }>();
+          const profilesById = new Map<string, { display_name: string; initials: string; avatar_color: string; is_founder: boolean }>();
           if (profileIds.length) {
             const profilesData = await retry<any[]>(() =>
-              supabase.from('profiles').select('id, display_name, initials, avatar_color').in('id', profileIds) as any
+              supabase.from('profiles').select('id, display_name, initials, avatar_color, is_founder').in('id', profileIds) as any
             );
 
             (profilesData || []).forEach((p: any) => {
@@ -449,6 +449,7 @@ export const useRoundManagement = ({
                 display_name: p.display_name,
                 initials: p.initials,
                 avatar_color: p.avatar_color,
+                is_founder: p.is_founder ?? false,
               });
             });
           }
