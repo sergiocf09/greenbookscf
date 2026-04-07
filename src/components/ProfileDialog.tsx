@@ -37,6 +37,10 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Delete account
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   // Handicap
   const [manualHandicap, setManualHandicap] = useState('');
 
