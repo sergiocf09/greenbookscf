@@ -261,6 +261,28 @@ const Index = () => {
     }
   }, [profile]);
 
+  // Upgrade modal via custom event
+  useEffect(() => {
+    const upgradeHandler = (e: Event) => {
+      const reason = (e as CustomEvent).detail?.reason ?? 'create_round';
+      setUpgradeReason(reason);
+      setShowUpgrade(true);
+    };
+    window.addEventListener('greenbook:show-upgrade', upgradeHandler);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      toast.success('¡Bienvenido a GreenBook Pro! Tu suscripción está activa.');
+      window.history.replaceState({}, '', '/');
+    }
+    if (params.get('payment') === 'cancelled') {
+      toast.info('Pago cancelado. Puedes suscribirte cuando quieras.');
+      window.history.replaceState({}, '', '/');
+    }
+
+    return () => window.removeEventListener('greenbook:show-upgrade', upgradeHandler);
+  }, []);
+
   // Habilita la carga del catálogo de campos sólo después de resolver el flujo de rondas pendientes.
   useEffect(() => {
     if (!profile) return;
