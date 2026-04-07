@@ -22,9 +22,15 @@ const steps = [
     description: 'Hay tres categorías: Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Culebras, Pingüinos). Activa las que quieras y ajusta los montos.',
   },
   {
-    icon: <Trophy className="h-12 w-12 text-primary" />,
+    icon: (
+      <div className="relative inline-flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground">
+        <BookOpen className="h-7 w-7" />
+        <Pencil className="absolute -bottom-0.5 -right-1 h-3.5 w-3.5" />
+        <div className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-[8px] font-bold flex items-center justify-center border-2 border-primary-foreground/30">1</div>
+      </div>
+    ),
     title: 'Scorecard y Captura',
-    description: 'El botón flotante 📓 siempre visible lleva a capturar golpes y putts de todos los jugadores. El ícono ⚡ junto a cada jugador es carga rápida. En hoyos par 3 con Oyeses activos aparece un ícono especial para registrar proximidad al pin.',
+    description: 'El botón flotante siempre visible (esquina inferior derecha) lleva a capturar golpes y putts de todos los jugadores. El ícono ⚡ junto a cada jugador es carga rápida. En hoyos par 3 con Oyeses activos aparece un ícono especial para registrar proximidad al pin.',
   },
   {
     icon: <CoinDollarIcon className="h-12 w-12 text-primary" />,
