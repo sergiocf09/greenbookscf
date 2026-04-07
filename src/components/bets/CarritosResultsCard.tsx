@@ -9,7 +9,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { Users, XCircle, CheckCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 
 const TeamHoleGrid: React.FC<{
   teamAPlayers: { name: string }[];
