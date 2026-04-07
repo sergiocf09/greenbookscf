@@ -165,6 +165,10 @@ const Index = () => {
     teeColor: string;
     date: string;
   } | null>(null);
+
+  // Upgrade modal state
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'create_round' | 'history' | 'share' | 'leaderboard'>('create_round');
   
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
