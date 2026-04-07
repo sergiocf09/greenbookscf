@@ -674,6 +674,16 @@ export const useRoundManagement = ({
     }
 
     setIsLoading(true);
+    // Paywall check: can user create rounds?
+    const { data: canCreate } = await supabase.rpc('can_create_round_as_organizer');
+    if (canCreate === false) {
+      window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+        detail: { reason: 'create_round' }
+      }));
+      setIsLoading(false);
+      return null;
+    }
+
     try {
       // Use the security-definer RPC to create round atomically
       const { data, error } = await supabase.rpc('create_round', {
