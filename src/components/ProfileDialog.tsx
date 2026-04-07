@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { validatePlayerName, initialsFromPlayerName, formatPlayerName } from '@/lib/playerInput';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 
-type EditSection = 'menu' | 'name' | 'email' | 'password';
+type EditSection = 'menu' | 'name' | 'email' | 'password' | 'deleteAccount';
 
 interface ProfileDialogProps {
   open: boolean;
