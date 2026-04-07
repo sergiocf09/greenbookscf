@@ -92,6 +92,23 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
     </Card>
   );
 
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Trophy className="h-10 w-10 mx-auto text-muted-foreground" />
+        <p className="font-semibold">Rankings grupales</p>
+        <p className="text-sm text-muted-foreground">
+          Consulta quién va ganando en dinero y hándicap en tu grupo. Disponible con GreenBook Pro.
+        </p>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Suscribirse para ver rankings
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
