@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { Users, XCircle, CheckCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
