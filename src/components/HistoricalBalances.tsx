@@ -13,6 +13,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
