@@ -4,7 +4,7 @@
   "description": "Lleva tus rondas de golf y apuestas con amigos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
+  "background_color": "#006747",
   "theme_color": "#006747",
   "orientation": "portrait",
   "icons": [
