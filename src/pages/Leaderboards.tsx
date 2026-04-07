@@ -111,7 +111,17 @@ const Leaderboards = () => {
         <div className="flex gap-2">
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="flex-1 gap-2">
+              <Button
+                className="flex-1 gap-2"
+                onClick={(e) => {
+                  if (!canCreateLeaderboard) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+                      detail: { reason: 'leaderboard' }
+                    }));
+                  }
+                }}
+              >
                 <Plus className="h-4 w-4" /> Crear Leaderboard
               </Button>
             </DialogTrigger>
