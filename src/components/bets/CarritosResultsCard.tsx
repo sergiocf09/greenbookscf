@@ -120,15 +120,6 @@ interface CarritosResultsCardProps {
 }
 
 const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel, isDisabled, onToggleDisabled }) => {
-  const isMobile = useIsMobile();
-  const [holeDialogOpen, setHoleDialogOpen] = useState(false);
-  const [selectedHole, setSelectedHole] = useState<{
-    holeNumber: number;
-    net: number | null;
-    detail:
-      | CarritosResultsCardProps['results']['holeDetailsFront'][number]
-      | CarritosResultsCardProps['results']['holeDetailsBack'][number];
-  } | null>(null);
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
