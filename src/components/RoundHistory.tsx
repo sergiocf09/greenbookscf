@@ -465,6 +465,28 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     }
   };
 
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+          <Lock className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold">Historial bloqueado</p>
+          <p className="text-sm text-muted-foreground">
+            Has completado tus 4 rondas de acceso gratuito al historial.
+            Suscríbete para ver todas tus rondas anteriores.
+          </p>
+        </div>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Ver planes
+        </Button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
