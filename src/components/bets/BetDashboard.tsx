@@ -1783,6 +1783,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         )}
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
                       <div className={cn(
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
