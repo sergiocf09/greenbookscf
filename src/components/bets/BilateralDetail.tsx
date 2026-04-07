@@ -2499,7 +2499,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     {segmentContent}
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-3" side="top">
+                                <PopoverContent className="w-[95vw] max-w-sm p-3" side="top">
                                   {isPressures && pressureSegmentData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
