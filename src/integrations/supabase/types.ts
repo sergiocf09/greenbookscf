@@ -1044,7 +1044,10 @@ export type Database = {
           display_name: string
           id: string
           initials: string
+          is_founder: boolean
           is_ghost: boolean
+          subscription_expires_at: string | null
+          subscription_tier: string
           updated_at: string
           user_id: string | null
         }
@@ -1055,7 +1058,10 @@ export type Database = {
           display_name: string
           id?: string
           initials: string
+          is_founder?: boolean
           is_ghost?: boolean
+          subscription_expires_at?: string | null
+          subscription_tier?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -1066,7 +1072,10 @@ export type Database = {
           display_name?: string
           id?: string
           initials?: string
+          is_founder?: boolean
           is_ghost?: boolean
+          subscription_expires_at?: string | null
+          subscription_tier?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -1455,6 +1464,47 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          amount_paid: number | null
+          created_at: string
+          expires_at: string
+          id: string
+          plan: string
+          profile_id: string
+          starts_at: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          plan: string
+          profile_id: string
+          starts_at?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan?: string
+          profile_id?: string
+          starts_at?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_bets: {
         Row: {
           amount: number
@@ -1562,6 +1612,8 @@ export type Database = {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
       }
+      can_access_full_history: { Args: never; Returns: boolean }
+      can_create_round_as_organizer: { Args: never; Returns: boolean }
       cleanup_expired_guest_sessions: { Args: never; Returns: undefined }
       convert_ghost_to_profile: {
         Args: { p_auth_uid: string; p_session_id: string }
@@ -1695,6 +1747,8 @@ export type Database = {
         }[]
       }
       get_my_profile_id: { Args: never; Returns: string }
+      get_organizer_rounds_closed_count: { Args: never; Returns: number }
+      get_participated_rounds_closed_count: { Args: never; Returns: number }
       get_round_handicap_ranking_stats: {
         Args: { p_round_id: string }
         Returns: {
