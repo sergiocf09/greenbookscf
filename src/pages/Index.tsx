@@ -78,6 +78,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
 import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
