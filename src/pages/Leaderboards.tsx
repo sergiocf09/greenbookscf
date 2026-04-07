@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
