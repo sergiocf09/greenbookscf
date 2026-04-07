@@ -532,6 +532,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     name: 'Cambiar nombre',
     email: 'Cambiar correo',
     password: 'Cambiar contraseña',
+    deleteAccount: 'Eliminar cuenta',
   };
 
   return (
