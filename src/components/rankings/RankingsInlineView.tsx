@@ -25,6 +25,7 @@ interface RankingsInlineViewProps {
 
 export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNavigateToDetail }) => {
   const { profile } = useAuth();
+  const { canAccessHistory } = useSubscription();
   const { rankings, loading, createRanking } = useMoneyRankings();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [formName, setFormName] = useState('');

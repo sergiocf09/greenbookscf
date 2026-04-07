@@ -518,6 +518,23 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     return rows;
   }, [allSnapshots, profile]);
 
+  if (!canAccessHistory) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
+        <p className="font-semibold">Balances históricos bloqueados</p>
+        <p className="text-sm text-muted-foreground">
+          Suscríbete para acceder a tu historial completo de balances con cada jugador.
+        </p>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
+          detail: { reason: 'history' }
+        }))}>
+          Ver planes
+        </Button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
