@@ -435,17 +435,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 );
 
                 if (net === null || !detail) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
-                }
-
-                if (isMobile) {
-                  return <div key={hole} onClick={() => openHoleDetail(hole, net, detail)}>{pill}</div>;
+                  return <div key={hole}>{pill}</div>;
                 }
 
                 return (
                   <Popover key={hole}>
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                    <PopoverContent side="top" className="w-72 p-3">
+                    <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
                         <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                         <TeamHoleGrid
