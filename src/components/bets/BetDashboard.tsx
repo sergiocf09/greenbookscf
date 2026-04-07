@@ -1893,7 +1893,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <span className="ml-1">(debe ser $0)</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
-            <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-golf-gold">
+            <div className="flex items-center justify-center gap-1.5 py-1 text-xs text-golf-gold">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
               </svg>
