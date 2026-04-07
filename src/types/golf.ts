@@ -28,6 +28,7 @@ export interface Player {
   profileId?: string; // Link to database profile
   teeColor?: string; // Player's selected tee (white, blue, yellow, red). NULL = use round default.
   groupId?: string; // Group ID for multi-group rounds (used to scope per-group bets)
+  isFounder?: boolean; // Whether this player is a GreenBook Founder
 }
 
 export interface PlayerScore {
