@@ -2318,6 +2318,12 @@ const Index = () => {
                   <LogOut className="h-4 w-4 mr-2" />
                   Cerrar Sesión
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground">
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:underline">Términos</a>
+                  <span>·</span>
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacidad</a>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

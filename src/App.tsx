@@ -58,6 +58,8 @@ const AppRoutes = () => (
     <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
     <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
     <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
+    <Route path="/terms" element={<TermsOfService />} />
+    <Route path="/privacy" element={<PrivacyPolicy />} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
