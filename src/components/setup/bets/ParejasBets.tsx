@@ -286,7 +286,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 scoringType={config.carritos.scoringType}
                 teamHandicaps={config.carritos.teamHandicaps || {}}
                 players={players}
-                playerOptions={playerOptions}
+                playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
               />
             )}
