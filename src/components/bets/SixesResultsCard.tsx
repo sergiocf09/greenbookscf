@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ChevronDown, AlertTriangle } from 'lucide-react';
 
 interface SixesResultsCardProps {
@@ -20,14 +19,12 @@ interface SixesResultsCardProps {
 }
 
 export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
-  players, sixesConfig, scores, course, basePlayerId, onConfigureSets,
+  players, sixesConfig, scores, course, basePlayerId,
 }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const [paymentsOpen, setPaymentsOpen] = useState(false);
 
   const needsConfig = !sixesConfig.sets || sixesConfig.sets.length < 3;
 
-  // Check for empty player IDs (not yet assigned)
   const hasEmptyPlayerIds = useMemo(() => {
     if (!sixesConfig.sets) return true;
     return sixesConfig.sets.some(s =>
@@ -75,6 +72,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     );
   }
 
+  const SET_LABELS: Record<number, string> = { 1: '1–6', 2: '7–12', 3: '13–18' };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -91,63 +90,108 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {needsConfig && onConfigureSets && (
-          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <p className="text-xs text-amber-700 flex-1">Las parejas no están configuradas</p>
-            <Button size="sm" variant="outline" className="text-xs h-7" onClick={onConfigureSets}>
-              Configurar
-            </Button>
-          </div>
-        )}
-
         {setResults.map(sr => {
           const side = getTeamSide(sr);
           const key = `set${sr.setNumber}`;
-          const winnerLabel = sr.setWinner === 'team1' ? `${getName(sr.team1[0])}+${getName(sr.team1[1])} ganó`
-            : sr.setWinner === 'team2' ? `${getName(sr.team2[0])}+${getName(sr.team2[1])} ganó`
-            : sr.setWinner === 'tied' ? 'Empate' : 'En juego';
+          const myTeam = side === 'team1' ? sr.team1 : sr.team2;
+          const rivalTeam = side === 'team1' ? sr.team2 : sr.team1;
+          const myPoints = sr.holeDetails.reduce((s, h) => s + (side === 'team1' ? h.pointsTeam1 : h.pointsTeam2), 0);
+          const rivalPoints = sr.holeDetails.reduce((s, h) => s + (side === 'team1' ? h.pointsTeam2 : h.pointsTeam1), 0);
 
           return (
             <Collapsible key={key} open={openSection === key} onOpenChange={o => setOpenSection(o ? key : null)}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1">
-                <span className="truncate">
-                  Set {sr.setNumber} · {getName(sr.team1[0])}+{getName(sr.team1[1])} vs {getName(sr.team2[0])}+{getName(sr.team2[1])} · {winnerLabel}
-                </span>
-                <ChevronDown className={cn('h-3 w-3 shrink-0 transition-transform', openSection === key && 'rotate-180')} />
+              <CollapsibleTrigger className="flex items-center justify-between w-full py-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{SET_LABELS[sr.setNumber] ?? sr.setNumber}</Badge>
+                  <span className="text-xs font-medium truncate">
+                    {getName(myTeam[0])} / {getName(myTeam[1])}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">vs</span>
+                  <span className="text-xs font-medium truncate">
+                    {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  <span className={cn('text-xs font-bold tabular-nums',
+                    myPoints > rivalPoints ? 'text-green-600' :
+                    myPoints < rivalPoints ? 'text-destructive' : 'text-muted-foreground'
+                  )}>
+                    {myPoints}–{rivalPoints}
+                  </span>
+                  <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === key && 'rotate-180')} />
+                </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="grid grid-cols-6 gap-1 mt-1">
                   {sr.holeDetails.map(hd => {
                     const myTeamWon = side && hd.holeWinner === side;
                     const myTeamLost = side && hd.holeWinner && hd.holeWinner !== 'tied' && hd.holeWinner !== side;
+
+                    const pill = (
+                      <div className={cn(
+                        'flex flex-col items-center justify-center rounded-lg p-1 h-10 text-xs border cursor-pointer',
+                        myTeamWon && 'bg-green-500/15 border-green-500/30 text-green-700',
+                        myTeamLost && 'bg-red-500/15 border-red-500/30 text-red-700',
+                        hd.holeWinner === 'tied' && 'bg-muted border-border text-muted-foreground',
+                        !hd.holeWinner && 'bg-muted/50 border-border/50 text-muted-foreground',
+                      )}>
+                        <span className="font-semibold">{hd.holeNumber}</span>
+                        <span className="text-[9px]">{myTeamWon ? '✅' : myTeamLost ? '❌' : '='}</span>
+                      </div>
+                    );
+
+                    if (!hd.holeWinner) return <div key={hd.holeNumber}>{pill}</div>;
+
+                    // Side-by-side popover like Carritos
+                    const myScores = hd.scoresByPlayer.filter(s => myTeam.includes(s.playerId));
+                    const rivalScores = hd.scoresByPlayer.filter(s => rivalTeam.includes(s.playerId));
+
                     return (
                       <Popover key={hd.holeNumber}>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            'flex flex-col items-center justify-center rounded-lg p-1 h-10 text-xs border',
-                            myTeamWon && 'bg-green-500/15 border-green-500/30 text-green-700',
-                            myTeamLost && 'bg-red-500/15 border-red-500/30 text-red-700',
-                            hd.holeWinner === 'tied' && 'bg-muted border-border text-muted-foreground',
-                            !hd.holeWinner && 'bg-muted/50 border-border/50 text-muted-foreground',
-                          )}>
-                            <span className="font-semibold">{hd.holeNumber}</span>
-                            <span className="text-[9px]">{myTeamWon ? '✅' : myTeamLost ? '❌' : '='}</span>
-                          </button>
-                        </PopoverTrigger>
+                        <PopoverTrigger asChild>{pill}</PopoverTrigger>
                         <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
-                          <div className="space-y-1.5">
-                            <p className="font-semibold">Hoyo {hd.holeNumber}</p>
-                            {hd.scoresByPlayer.map(s => (
-                              <div key={s.playerId} className="flex items-center gap-1">
-                                <Badge variant="outline" className="text-[9px] px-1">{s.teamSide === 'team1' ? 'E1' : 'E2'}</Badge>
-                                <span>{s.playerName.split(' ')[0]}</span>
-                                <span className="ml-auto font-mono">{s.gross}{s.strokes > 0 && ` •${s.strokes}`} → {s.net}</span>
-                              </div>
-                            ))}
-                            {hd.lowBallWinner && <p className="text-[10px]">BB: {hd.lowBallWinner === 'team1' ? 'Equipo 1' : hd.lowBallWinner === 'team2' ? 'Equipo 2' : 'Empate'}</p>}
-                            {hd.highBallWinner && <p className="text-[10px]">BA: {hd.highBallWinner === 'team1' ? 'Equipo 1' : hd.highBallWinner === 'team2' ? 'Equipo 2' : 'Empate'}</p>}
-                            <p className="text-[10px]">Pts: {hd.pointsTeam1}–{hd.pointsTeam2}</p>
+                          <p className="font-semibold mb-2">Hoyo {hd.holeNumber}</p>
+                          <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-1 items-center">
+                            {/* Header */}
+                            <span className="text-[10px] text-muted-foreground font-medium">Tu equipo</span>
+                            <span></span>
+                            <span className="text-[10px] text-muted-foreground font-medium text-right">Rival</span>
+                            {/* Players */}
+                            {[0, 1].map(i => {
+                              const my = myScores[i];
+                              const rv = rivalScores[i];
+                              if (!my || !rv) return null;
+                              const myDisplay = my.strokes > 0 ? (my.net !== my.gross ? my.net : my.gross) : '–';
+                              const rvDisplay = rv.strokes > 0 ? (rv.net !== rv.gross ? rv.net : rv.gross) : '–';
+                              const myWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && myDisplay < rvDisplay;
+                              const rvWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && rvDisplay < myDisplay;
+                              return (
+                                <React.Fragment key={i}>
+                                  <div className="flex items-center gap-1">
+                                    <span className="truncate">{my.playerName.split(' ')[0]}</span>
+                                    {my.strokes > 0 && <span className="text-[9px] text-muted-foreground">({my.gross})</span>}
+                                  </div>
+                                  <div className="flex items-center gap-1 justify-center">
+                                    <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myWins && 'bg-foreground text-background')}>
+                                      {myDisplay}
+                                    </span>
+                                    <span className="text-muted-foreground">–</span>
+                                    <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', rvWins && 'bg-foreground text-background')}>
+                                      {rvDisplay}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 justify-end">
+                                    {rv.strokes > 0 && <span className="text-[9px] text-muted-foreground">({rv.gross})</span>}
+                                    <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
+                                  </div>
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-2 pt-1 border-t border-border/50 flex justify-between text-[10px]">
+                            {hd.lowBallWinner && <span>BB: {hd.lowBallWinner === side ? 'Tu equipo' : hd.lowBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
+                            {hd.highBallWinner && <span>BA: {hd.highBallWinner === side ? 'Tu equipo' : hd.highBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
+                            <span className="font-medium">Pts: {side === 'team1' ? hd.pointsTeam1 : hd.pointsTeam2}–{side === 'team1' ? hd.pointsTeam2 : hd.pointsTeam1}</span>
                           </div>
                         </PopoverContent>
                       </Popover>
@@ -158,23 +202,6 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
             </Collapsible>
           );
         })}
-
-        {/* Pagos */}
-        {bets.filter(b => b.amount > 0).length > 0 && (
-          <Collapsible open={paymentsOpen} onOpenChange={setPaymentsOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1 text-muted-foreground">
-              <span>Pagos</span>
-              <ChevronDown className={cn('h-3 w-3 transition-transform', paymentsOpen && 'rotate-180')} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0.5 mt-1">
-                {bets.filter(b => b.amount > 0).map((b, i) => (
-                  <p key={i} className="text-[11px]">{getName(b.playerId)} cobra ${fmtMoney(b.amount)} de {getName(b.vsPlayer!)}</p>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
       </CardContent>
     </Card>
   );
