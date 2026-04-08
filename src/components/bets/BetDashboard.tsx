@@ -73,10 +73,6 @@ import { BilateralDetail } from './BilateralDetail';
 import { CarritosResultsCard, TeamHoleGrid } from './CarritosResultsCard';
 import { CrossGroupHandicapWidget } from './CrossGroupHandicapWidget';
 import { BetAmountEditor, BilateralHandicapEditor } from './BetEditors';
-import { SixesResultsCard } from './SixesResultsCard';
-import { NinesResultsCard } from './NinesResultsCard';
-import { useSixes } from '@/hooks/useSixes';
-import { useNines } from '@/hooks/useNines';
 // BilateralHandicap is now imported from types/golf.ts
 
 interface BetDashboardProps {
@@ -97,7 +93,6 @@ interface BetDashboardProps {
   snapshotLedger?: SnapshotLedgerEntry[];
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
-  roundId?: string | null;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -118,17 +113,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   snapshotLedger,
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
-  roundId,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
-
-  // Sprint 3 hooks: Sixes & Nines
-  const { sixesConfig, isActive: sixesActive } = useSixes(roundId ?? null, players);
-  const { ninesConfig, isActive: ninesActive } = useNines(roundId ?? null, players);
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
@@ -2913,11 +2903,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
-      {/* Sixes Results */}
-      {sixesActive && sixesConfig && course && (
-        <SixesResultsCard players={allPlayersForCalculations} scores={scores} config={sixesConfig} course={course} />
-      )}
-
       {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales */}
       <GroupBetsCard
         players={allPlayersForCalculations}
@@ -2948,11 +2933,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         onBetConfigChange={onBetConfigChange}
         renderSection="grupales"
       />
-
-      {/* Nines Results */}
-      {ninesActive && ninesConfig && course && (
-        <NinesResultsCard players={allPlayersForCalculations} scores={scores} config={ninesConfig} course={course} />
-      )}
     </div>
   );
 };

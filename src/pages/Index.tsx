@@ -804,18 +804,15 @@ const Index = () => {
             const holeScoreId = scoreIdByHole.get(score.holeNumber);
             if (!holeScoreId) continue;
             
-            for (const [markerKey, val] of Object.entries(score.markers)) {
-              if (!val) continue;
+            for (const [markerKey, isActive] of Object.entries(score.markers)) {
+              if (!isActive) continue;
               const dbMarkerType = markerKeyToDb[markerKey as keyof typeof markerKeyToDb];
               if (!dbMarkerType) continue;
-              const count = typeof val === 'number' ? val : 1;
-              for (let i = 0; i < count; i++) {
-                markerInserts.push({
-                  hole_score_id: holeScoreId,
-                  marker_type: dbMarkerType as any,
-                  is_auto_detected: false,
-                });
-              }
+              markerInserts.push({
+                hole_score_id: holeScoreId,
+                marker_type: dbMarkerType as any,
+                is_auto_detected: false,
+              });
             }
           }
 
@@ -1891,35 +1888,31 @@ const Index = () => {
         const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
         if (holeScoreId) {
            const activeKeys = (Object.keys(score.markers) as (keyof typeof score.markers)[])
-              .filter((k) => !!(score.markers as any)[k])
-              .filter((k) => !isAutoDetectedMarker(k as any));
+             .filter((k) => !!(score.markers as any)[k])
+             .filter((k) => !isAutoDetectedMarker(k as any));
 
-           // Replace manual markers for this hole_score_id
-           const { error: delErr } = await supabase
-             .from('hole_markers')
-             .delete()
-             .eq('hole_score_id', holeScoreId)
-             .eq('is_auto_detected', false);
+          // Replace manual markers for this hole_score_id
+          const { error: delErr } = await supabase
+            .from('hole_markers')
+            .delete()
+            .eq('hole_score_id', holeScoreId)
+            .eq('is_auto_detected', false);
 
-           if (delErr) {
-             console.error('Error clearing hole markers:', delErr);
-             return;
-           }
+          if (delErr) {
+            console.error('Error clearing hole markers:', delErr);
+            return;
+          }
 
-           if (activeKeys.length) {
-             // For numeric markers (manchaGenerica, unidadGenerica), insert N rows
-             const markerRows: { hole_score_id: string; marker_type: any; is_auto_detected: boolean }[] = [];
-             for (const markerKey of activeKeys) {
-               const dbType = markerKeyToDb[markerKey as any] as any;
-               const val = (score.markers as any)[markerKey];
-               const count = typeof val === 'number' ? val : 1;
-               for (let i = 0; i < count; i++) {
-                 markerRows.push({ hole_score_id: holeScoreId, marker_type: dbType, is_auto_detected: false });
-               }
-             }
-             const { error: insErr } = await supabase
-               .from('hole_markers')
-               .insert(markerRows);
+          if (activeKeys.length) {
+            const { error: insErr } = await supabase
+              .from('hole_markers')
+              .insert(
+                activeKeys.map((markerKey) => ({
+                  hole_score_id: holeScoreId,
+                  marker_type: markerKeyToDb[markerKey as any] as any,
+                  is_auto_detected: false,
+                }))
+              );
 
             if (insErr) {
               console.error('Error inserting hole markers:', insErr);
@@ -2803,7 +2796,6 @@ const Index = () => {
               getStrokesForLocalPair={getStrokesForLocalPair}
               setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
-              roundId={roundState.id}
             />
             </ErrorBoundary>
             

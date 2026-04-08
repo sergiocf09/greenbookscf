@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope, SkinsGrupalBetConfig } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Minus, Check, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
@@ -349,112 +349,6 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           <p className="text-[9px] text-muted-foreground mt-2">El ganador con más puntos Stableford cobra a los demás.</p>
         </BetSection>
       )}
-
-      {/* Nines / 5-3-1 */}
-      {players.length >= 3 && (
-        <NinesSetupSection
-          config={config}
-          players={players}
-          expandedSections={expandedSections}
-          onToggleSection={onToggleSection}
-          onUpdateBet={onUpdateBet}
-          onUpdateConfig={onUpdateConfig}
-        />
-      )}
     </div>
-  );
-};
-
-/* ─── Nines Setup Section ─── */
-interface NinesSetupSectionProps {
-  config: BetConfig;
-  players: Player[];
-  expandedSections: string[];
-  onToggleSection: (section: string, open: boolean) => void;
-  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
-  onUpdateConfig?: (config: BetConfig) => void;
-}
-
-const NinesSetupSection: React.FC<NinesSetupSectionProps> = ({
-  config, players, expandedSections, onToggleSection, onUpdateBet, onUpdateConfig,
-}) => {
-  const selectedIds: string[] = useMemo(() => (config as any).ninesPlayerIds ?? [], [config]);
-  const isEnabled = config.ninesSetup?.enabled ?? false;
-  const isValid = selectedIds.length >= 3 && selectedIds.length <= 4;
-
-  const togglePlayer = (id: string) => {
-    if (!onUpdateConfig) return;
-    const current = [...selectedIds];
-    const idx = current.indexOf(id);
-    if (idx >= 0) {
-      current.splice(idx, 1);
-    } else {
-      if (current.length >= 4) return; // max 4
-      current.push(id);
-    }
-    onUpdateConfig({ ...config, ninesPlayerIds: current } as any);
-  };
-
-  return (
-    <BetSection
-      id="ninesSetup"
-      title="Nines / 5-3-1 🎯"
-      description="3 jugadores: 9 puntos por hoyo (5-3-1)"
-      enabled={isEnabled}
-      onToggle={(enabled) => {
-        onUpdateBet('ninesSetup', { enabled } as any);
-        if (enabled) onToggleSection('ninesSetup', true);
-      }}
-      isExpanded={expandedSections.includes('ninesSetup')}
-      onExpandChange={(open) => onToggleSection('ninesSetup', open)}
-      color="gold"
-      helpText="Cada hoyo reparte 9 puntos entre 3 jugadores: 5 al mejor, 3 al segundo, 1 al peor. En empate top: 4-4-1. Todos empatan: 3-3-3. Con 4 jugadores, uno descansa por hoyo (rotación) y recibe 3 pts."
-    >
-      <AmountInput
-        label="Valor por punto"
-        value={config.ninesSetup?.valuePerPoint ?? 10}
-        onChange={(v) => onUpdateBet('ninesSetup', { valuePerPoint: v } as any)}
-        step={5}
-      />
-
-      {isEnabled && (
-        <div className="space-y-2 mt-2">
-          <Label className="text-xs text-muted-foreground">Jugadores (3 ó 4)</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {players.map(p => {
-              const selected = selectedIds.includes(p.id);
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlayer(p.id); }}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border',
-                    selected
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
-                  )}
-                >
-                  <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: p.color }}>
-                    {p.initials}
-                  </div>
-                  {formatPlayerName(p.name)}
-                  {selected && <Check className="h-3 w-3" />}
-                </button>
-              );
-            })}
-          </div>
-          {isEnabled && !isValid && selectedIds.length > 0 && (
-            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-[10px]">
-              <AlertTriangle className="h-3 w-3" />
-              Selecciona entre 3 y 4 jugadores
-            </div>
-          )}
-          {isEnabled && selectedIds.length === 0 && (
-            <p className="text-[10px] text-muted-foreground">Selecciona 3 jugadores. Con 4, rota quien descansa por hoyo (recibe 3 pts).</p>
-          )}
-        </div>
-      )}
-    </BetSection>
   );
 };
