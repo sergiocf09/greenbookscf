@@ -66,6 +66,8 @@ export interface MarkerState {
   dobleDigito: boolean;
   moreliana: boolean;
   culebra: boolean; // 3+ putts (for cumulative bet)
+  manchaGenerica: number;
+  unidadGenerica: number;
 }
 
 export const defaultMarkerState: MarkerState = {
