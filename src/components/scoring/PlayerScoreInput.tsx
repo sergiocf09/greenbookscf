@@ -78,9 +78,20 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
     handleMarkersChange({ ...markers, [key]: !markers[key] });
   };
 
+  const incrementMarker = (key: 'manchaGenerica' | 'unidadGenerica', delta: number) => {
+    const current = (markers[key] as number) ?? 0;
+    handleMarkersChange({ ...markers, [key]: Math.max(0, current + delta) });
+  };
+
   // Get active manual markers for display
-  const activeUnits = manualUnitMarkers.filter(m => markers[m.key]);
-  const activeStains = manualStainMarkers.filter(m => markers[m.key]);
+  const activeUnits = manualUnitMarkers.filter(m => {
+    const val = markers[m.key as keyof MarkerState];
+    return typeof val === 'number' ? val > 0 : !!val;
+  });
+  const activeStains = manualStainMarkers.filter(m => {
+    const val = markers[m.key as keyof MarkerState];
+    return typeof val === 'number' ? val > 0 : !!val;
+  });
 
   return (
     <div className={cn(
