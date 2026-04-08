@@ -473,6 +473,12 @@ export const useBetConfigPersistence = ({
         zoologico: config.zoologico,
         skinsGrupal: config.skinsGrupal,
         pressurePairOverrides: config.pressurePairOverrides,
+        // Sprint 3 new bet types
+        wolfSetup: config.wolfSetup,
+        sixesBets: config.sixesBets,
+        vegasBets: config.vegasBets,
+        ninesBets: config.ninesBets,
+        parejasExcluded: config.parejasExcluded,
       };
 
       // Concurrency guard: check updated_at before writing
