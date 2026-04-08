@@ -47,7 +47,7 @@ export interface SnapshotHoleScore {
   strokesReceived: number;
   oyesProximity?: number | null;
   oyesProximitySangron?: number | null;
-  markers: Record<string, boolean>;
+  markers: Record<string, boolean | number>;
 }
 
 // Structure of a ledger entry in the snapshot
