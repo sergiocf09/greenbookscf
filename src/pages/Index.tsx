@@ -224,6 +224,12 @@ const Index = () => {
     setPlayerGroups,
   });
 
+  // Sprint 3 bet hooks
+  const wolf  = useWolf(roundState?.id ?? null, players);
+  const sixes = useSixes(roundState?.id ?? null, players);
+  const vegas = useVegas(roundState?.id ?? null);
+  const nines = useNines(roundState?.id ?? null, players);
+
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
     // Mark this round as closed so auto-restore won't resurrect it
