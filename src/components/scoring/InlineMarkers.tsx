@@ -52,7 +52,6 @@ export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', emoji: '🎯', points: 1 },
   { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', emoji: '💧', points: 1 },
-  { key: 'oyesUni', icon: MapPin, label: 'Oyes Uni', description: 'Unidad de oyes', type: 'unidad', emoji: '📍', points: 1 },
   { key: 'unidadGenerica', icon: Star, label: 'Unidad', description: 'Unidad genérica', type: 'unidad', emoji: '⭐' },
 ];
 
