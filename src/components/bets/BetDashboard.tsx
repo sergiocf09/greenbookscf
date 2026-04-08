@@ -2540,17 +2540,54 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   </div>
                   {/* Results row */}
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
-                      <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                        F9 {frontBetsDisplay}
-                      </span>
-                      <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                        B9 {backBetsDisplay}
-                      </span>
-                      <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                        T {total18 >= 0 ? '+' : ''}{total18}
-                      </span>
-                    </div>
+                    {bet.continua && bet.scoringType === 'matchOnly' ? (() => {
+                      // Match-play 18-hole cumulative status
+                      const allDetails = [...displayFrontDetails, ...displayBackDetails];
+                      let cumBal = 0;
+                      let matchOver = false;
+                      let matchResult = '';
+                      for (let i = 0; i < allDetails.length; i++) {
+                        const d = allDetails[i];
+                        if (d) cumBal += d.net;
+                        const remaining = allDetails.length - (i + 1);
+                        if (Math.abs(cumBal) > remaining && remaining > 0) {
+                          matchOver = true;
+                          matchResult = `${Math.abs(cumBal)} & ${remaining}`;
+                          break;
+                        }
+                      }
+                      if (!matchOver && allDetails.every(d => d !== null)) {
+                        matchResult = cumBal === 0 ? 'E' : `${Math.abs(cumBal)} Up`;
+                      }
+                      const statusLabel = matchOver ? matchResult :
+                        cumBal === 0 ? 'E' :
+                        cumBal > 0 ? `${cumBal} Up` : `${Math.abs(cumBal)} Dn`;
+                      const statusColor = cumBal > 0 ? 'text-green-600' : cumBal < 0 ? 'text-destructive' : 'text-muted-foreground';
+                      return (
+                        <div className="flex-1 text-center">
+                          <span className={cn('text-sm font-bold', statusColor)}>
+                            {matchOver ? `🏁 ${matchResult}` : statusLabel}
+                          </span>
+                          {matchOver && (
+                            <span className={cn('ml-2 text-xs', cumBal > 0 ? 'text-green-600' : 'text-destructive')}>
+                              {cumBal > 0 ? 'Ganaste' : 'Perdiste'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })() : (
+                      <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                        <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          F9 {frontBetsDisplay}
+                        </span>
+                        <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          B9 {backBetsDisplay}
+                        </span>
+                        <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          T {total18 >= 0 ? '+' : ''}{total18}
+                        </span>
+                      </div>
+                    )}
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                         <ChevronDown className="h-4 w-4" />
