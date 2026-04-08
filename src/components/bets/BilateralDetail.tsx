@@ -1377,26 +1377,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const rivalDetails = getMarkerDetails(rival.id, type);
     const allDetails = [...playerDetails, ...rivalDetails].sort((a, b) => a.holeNumber - b.holeNumber);
     
+    const configKey = type === 'units' ? 'units' : 'manchas';
+    const standardValue = betConfig[configKey].valuePerPoint;
+    const genericValue = type === 'units'
+      ? (betConfig.units.valuePerGenericUnit ?? standardValue)
+      : (betConfig.manchas.valuePerGenericMancha ?? standardValue);
+    
     return (
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
         {allDetails.length > 0 ? (
           <div className="flex flex-wrap gap-1">
-            {allDetails.map((d, i) => (
-              <span 
-                key={i} 
-                className={cn(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
-                  d.isPositive 
-                    ? 'bg-green-500/20 text-green-600' 
-                    : 'bg-destructive/20 text-destructive'
-                )}
-              >
-                <span className="font-medium">H{d.holeNumber}</span>
-                <span>{d.emoji}</span>
-                <span className="hidden sm:inline">{d.marker}</span>
-                <span className="font-bold">{d.isPositive ? '+' : '-'}${betConfig[type === 'units' ? 'units' : 'manchas'].valuePerPoint}</span>
-              </span>
-            ))}
+            {allDetails.map((d, i) => {
+              const value = d.isGeneric ? genericValue : standardValue;
+              return (
+                <span 
+                  key={i} 
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
+                    d.isPositive 
+                      ? 'bg-green-500/20 text-green-600' 
+                      : 'bg-destructive/20 text-destructive'
+                  )}
+                >
+                  <span className="font-medium">H{d.holeNumber}</span>
+                  <span>{d.emoji}</span>
+                  <span className="hidden sm:inline">{d.marker}</span>
+                  <span className="font-bold">{d.isPositive ? '+' : '-'}${value}</span>
+                </span>
+              );
+            })}
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">Sin {type === 'units' ? 'unidades' : 'manchas'} registradas</span>

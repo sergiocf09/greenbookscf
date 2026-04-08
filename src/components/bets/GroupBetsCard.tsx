@@ -1989,13 +1989,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <div className="grid gap-2 mt-1" style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0,1fr))` }}>
                         {allPlayerData.map(({ player, unidades }) => {
                           const sorted = [...unidades].sort((a, b) => a.holeNumber - b.holeNumber);
-                          const unique = sorted.filter((u, i) => !sorted.slice(0, i).find(prev => prev.holeNumber === u.holeNumber && prev.label === u.label));
+                          // Group by hole+label to show count for generics
+                          const grouped: { holeNumber: number; short: string; count: number }[] = [];
+                          sorted.forEach(u => {
+                            const existing = grouped.find(g => g.holeNumber === u.holeNumber && g.short === u.short);
+                            if (existing) { existing.count += 1; }
+                            else { grouped.push({ holeNumber: u.holeNumber, short: u.short, count: 1 }); }
+                          });
                           return (
                             <div key={player.id} className="flex flex-col items-center px-0.5">
-                              {unique.map((u, i) => (
+                              {grouped.map((u, i) => (
                                 <div key={i} className="flex items-baseline gap-0.5 leading-tight">
                                   <span className="text-[9px] text-green-600 font-mono w-[18px] text-right shrink-0">H{u.holeNumber}</span>
-                                   <span className="text-[9px] text-green-600 font-medium">{u.short}</span>
+                                  <span className="text-[9px] text-green-600 font-medium">{u.short}{u.count > 1 ? ` (×${u.count})` : ''}</span>
                                 </div>
                               ))}
                             </div>
