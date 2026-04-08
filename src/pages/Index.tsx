@@ -2862,6 +2862,10 @@ const Index = () => {
               getStrokesForLocalPair={getStrokesForLocalPair}
               setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
+              wolfHook={wolf}
+              sixesHook={sixes}
+              vegasHook={vegas}
+              ninesHook={nines}
             />
             </ErrorBoundary>
             
