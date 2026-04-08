@@ -354,7 +354,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Nines — multi-instance */}
       {players.length >= 3 && (
         <BetSection
-          id="nines" title="🎯 5-3-1 (Nines)"
+          id="nines" title="Nines (5-3-1)"
           description="Distribución de 9 puntos por hoyo entre 3 jugadores"
           enabled={(config.ninesBets?.length ?? 0) > 0}
           onToggle={(enabled) => {
