@@ -764,6 +764,37 @@ export interface NinesSetupConfig {
   enabled: boolean; valuePerPoint: number;
 }
 
+// =====================================================
+// MULTI-INSTANCE BET TYPES
+// =====================================================
+
+export interface SixesBetInstance {
+  id: string;
+  scoringMode: SixesScoringMode;
+  cobro: SixesCobro;
+  amount: number;
+  useHandicap: boolean;
+  sets: SixesSetAssignment[];
+}
+
+export interface VegasBetInstance {
+  id: string;
+  valuePerPoint: number;
+  useHandicap: boolean;
+  birdieMultiplier: boolean;
+  variant: VegasVariant;
+  playerAId: string;
+  playerBId: string;
+  playerCId: string;
+  playerDId: string;
+}
+
+export interface NinesBetInstance {
+  id: string;
+  valuePerPoint: number;
+  playerIds: string[];
+}
+
 // Default Stableford point values (flexible)
 export const DEFAULT_STABLEFORD_POINTS: StablefordPointConfig = {
   albatross: 5,
