@@ -173,6 +173,12 @@ const Index = () => {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'create_round' | 'history' | 'share' | 'leaderboard'>('create_round');
 
+  // Sprint 3 bet hooks
+  const wolf  = useWolf(roundState?.id ?? null, players);
+  const sixes = useSixes(roundState?.id ?? null, players);
+  const vegas = useVegas(roundState?.id ?? null);
+  const nines = useNines(roundState?.id ?? null, players);
+
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
