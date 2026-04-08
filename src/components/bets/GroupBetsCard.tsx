@@ -47,6 +47,10 @@ interface GroupBetsCardProps {
   onBetConfigChange?: (config: BetConfig) => void;
   /** Controls which sections to render: 'all' (default), 'indicators' (only Oyes/Unidades/Manchas), 'grupales' (everything except indicators) */
   renderSection?: 'all' | 'indicators' | 'grupales';
+  wolfHook?: ReturnType<typeof useWolf>;
+  sixesHook?: ReturnType<typeof useSixes>;
+  vegasHook?: ReturnType<typeof useVegas>;
+  ninesHook?: ReturnType<typeof useNines>;
 }
 
 // Tie-break storage helper
