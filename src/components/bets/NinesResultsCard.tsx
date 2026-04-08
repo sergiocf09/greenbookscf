@@ -146,7 +146,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">🎯 5-3-1</CardTitle>
+          <CardTitle className="text-sm">Nines (5-3-1)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
