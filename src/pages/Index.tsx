@@ -230,6 +230,15 @@ const Index = () => {
   const vegas = useVegas(roundState?.id ?? null);
   const nines = useNines(roundState?.id ?? null, players);
 
+  // Sprint 3: sync betConfig setup → dedicated hooks
+  useEffect(() => {
+    if (!roundState?.id) return;
+    if (betConfig.wolfSetup?.enabled && !wolf.isActive) wolf.saveConfig({ amountPerHole: betConfig.wolfSetup.amountPerHole ?? 10, scoringMode: betConfig.wolfSetup.scoringMode ?? 'lowBall', useHandicap: betConfig.wolfSetup.useHandicap ?? true, timing: betConfig.wolfSetup.timing ?? 'B', carryover: betConfig.wolfSetup.carryover ?? true });
+    if (betConfig.sixesSetup?.enabled && !sixes.isActive) sixes.saveConfig({ scoringMode: betConfig.sixesSetup.scoringMode ?? 'lowBall', cobro: betConfig.sixesSetup.cobro ?? 'per_hole', amount: betConfig.sixesSetup.amount ?? 10, useHandicap: betConfig.sixesSetup.useHandicap ?? true });
+    if (betConfig.vegasSetup?.enabled && !vegas.isActive) vegas.saveConfig({ valuePerPoint: betConfig.vegasSetup.valuePerPoint ?? 1, useHandicap: betConfig.vegasSetup.useHandicap ?? true, birdieMultiplier: betConfig.vegasSetup.birdieMultiplier ?? false, variant: betConfig.vegasSetup.variant ?? 'fixed', playerAId: '', playerBId: '', playerCId: '', playerDId: '' });
+    if (betConfig.ninesSetup?.enabled && !nines.isActive) nines.saveConfig({ valuePerPoint: betConfig.ninesSetup.valuePerPoint ?? 1, playerIds: players.map(p => p.id).slice(0, 3) });
+  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesSetup?.enabled, betConfig.vegasSetup?.enabled, betConfig.ninesSetup?.enabled]);
+
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
     // Mark this round as closed so auto-restore won't resurrect it
