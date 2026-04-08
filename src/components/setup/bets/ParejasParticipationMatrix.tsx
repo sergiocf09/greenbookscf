@@ -108,6 +108,90 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
 
   if (players.length < 4) return null;
 
+  /** Count how many players are currently participating in a bet */
+  const getActiveCount = (betKey: ParejasBetKey): number => {
+    if (!isBetEnabled(config, betKey)) return 0;
+    return getParticipantIds(config, betKey, players).length;
+  };
+
+  /** Toggle a single player's participation in a bet */
+  const handleCellToggle = (betKey: ParejasBetKey, playerId: string) => {
+    if (!isBetEnabled(config, betKey)) return; // bet not enabled, do nothing
+
+    const currentIds = getParticipantIds(config, betKey, players);
+    const isIn = currentIds.includes(playerId);
+
+    // Minimum 4 players — don't allow deselect if at limit
+    if (isIn && currentIds.length <= 4) return;
+
+    const newIds = isIn
+      ? currentIds.filter(id => id !== playerId)
+      : [...currentIds, playerId];
+
+    // Apply the new participant set based on bet type
+    switch (betKey) {
+      case 'teamPressures': {
+        // Store as disabledTeamBetIds concept — or better, we track via removing from team assignments
+        // For team pressures, we filter out the player from all team assignments
+        const allIds = players.map(p => p.id);
+        const excluded = allIds.filter(id => !newIds.includes(id));
+        const updatedBets = config.teamPressures.bets.map(b => ({
+          ...b,
+          teamA: b.teamA.map(id => excluded.includes(id) ? '' : id) as [string, string],
+          teamB: b.teamB.map(id => excluded.includes(id) ? '' : id) as [string, string],
+        }));
+        onUpdateConfig({ ...config, teamPressures: { ...config.teamPressures, bets: updatedBets } });
+        break;
+      }
+      case 'carritos': {
+        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
+        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
+        const updatedCarritos = {
+          ...config.carritos,
+          teamA: [cleanId(config.carritos.teamA[0]), cleanId(config.carritos.teamA[1])] as [string, string],
+          teamB: [cleanId(config.carritos.teamB[0]), cleanId(config.carritos.teamB[1])] as [string, string],
+        };
+        const updatedTeams = config.carritosTeams?.map(t => ({
+          ...t,
+          teamA: [cleanId(t.teamA[0]), cleanId(t.teamA[1])] as [string, string],
+          teamB: [cleanId(t.teamB[0]), cleanId(t.teamB[1])] as [string, string],
+        }));
+        onUpdateConfig({ ...config, carritos: updatedCarritos, carritosTeams: updatedTeams });
+        break;
+      }
+      case 'wolf':
+        // Wolf uses all players, no per-player toggle currently
+        break;
+      case 'sixes': {
+        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
+        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
+        const updatedSixes = config.sixesBets?.map(bet => ({
+          ...bet,
+          sets: bet.sets.map(s => ({
+            ...s,
+            team1: s.team1.map(cleanId) as [string, string],
+            team2: s.team2.map(cleanId) as [string, string],
+          })),
+        }));
+        onUpdateConfig({ ...config, sixesBets: updatedSixes });
+        break;
+      }
+      case 'vegas': {
+        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
+        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
+        const updatedVegas = config.vegasBets?.map(bet => ({
+          ...bet,
+          playerAId: cleanId(bet.playerAId),
+          playerBId: cleanId(bet.playerBId),
+          playerCId: cleanId(bet.playerCId),
+          playerDId: cleanId(bet.playerDId),
+        }));
+        onUpdateConfig({ ...config, vegasBets: updatedVegas });
+        break;
+      }
+    }
+  };
+
   const handleRowToggle = (betKey: ParejasBetKey) => {
     const enabled = isBetEnabled(config, betKey);
     switch (betKey) {
@@ -224,6 +308,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
           <tbody>
             {visibleBets.map(bet => {
               const rowState = getRowState(bet.key);
+              const activeCount = getActiveCount(bet.key);
               return (
                 <tr key={bet.key} className={cn(
                   "border-t border-border/30",
@@ -241,18 +326,24 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                   </td>
                   {players.map(player => {
                     const cellOn = isPlayerParticipating(config, bet.key, player.id, players);
+                    const canToggle = isBetEnabled(config, bet.key) && bet.key !== 'wolf' && (cellOn ? activeCount > 4 : true);
                     return (
                       <td key={player.id} className="p-1 text-center">
-                        <div
+                        <button
+                          type="button"
+                          disabled={!canToggle}
+                          onClick={() => handleCellToggle(bet.key, player.id)}
                           className={cn(
                             "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-all text-[10px]",
                             cellOn
                               ? "bg-primary/20 text-primary border border-primary/40"
-                              : "bg-muted/40 text-muted-foreground/40 border border-transparent"
+                              : "bg-muted/40 text-muted-foreground/40 border border-transparent",
+                            canToggle && "cursor-pointer hover:border-border",
+                            !canToggle && "cursor-default"
                           )}
                         >
                           {cellOn ? '✓' : '—'}
-                        </div>
+                        </button>
                       </td>
                     );
                   })}
