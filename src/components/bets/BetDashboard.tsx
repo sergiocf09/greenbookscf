@@ -2843,6 +2843,94 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       Toca en un hoyo para ver el desglose
                     </div>
                     
+                    {bet.continua && bet.scoringType === 'matchOnly' ? (() => {
+                      // Match Play 18-hole cumulative view
+                      const allDetails = [...displayFrontDetails, ...displayBackDetails];
+                      let cumBal = 0;
+                      let matchConcludedAt = -1;
+                      const cumBalances: number[] = [];
+                      
+                      for (let i = 0; i < allDetails.length; i++) {
+                        const d = allDetails[i];
+                        if (d && matchConcludedAt < 0) cumBal += d.net;
+                        cumBalances.push(cumBal);
+                        if (matchConcludedAt < 0) {
+                          const remaining = allDetails.length - (i + 1);
+                          if (Math.abs(cumBal) > remaining && remaining > 0) {
+                            matchConcludedAt = i;
+                          }
+                        }
+                      }
+                      
+                      const renderMatchPill = (detail: typeof allDetails[0], idx: number) => {
+                        const holeNum = idx + 1;
+                        const bal = cumBalances[idx];
+                        const isAfterMatch = matchConcludedAt >= 0 && idx > matchConcludedAt;
+                        const matchLabel = isAfterMatch ? '–' : bal === 0 ? 'E' : bal > 0 ? `${bal}Up` : `${Math.abs(bal)}Dn`;
+                        
+                        const pill = (
+                          <div
+                            className={cn(
+                              'h-8 rounded border bg-background/60 flex flex-col items-center justify-center cursor-pointer',
+                              isAfterMatch ? 'border-border/30 text-muted-foreground/40 opacity-50' :
+                              detail === null ? 'border-border text-muted-foreground' :
+                              bal > 0 ? 'border-green-600/40 text-green-600' :
+                              bal < 0 ? 'border-destructive/40 text-destructive' :
+                              'border-border text-muted-foreground'
+                            )}
+                          >
+                            <span className={cn('text-[9px] opacity-80')}>{holeNum}</span>
+                            <span className="text-[9px] font-semibold tabular-nums leading-tight">
+                              {detail === null ? '–' : matchLabel}
+                            </span>
+                          </div>
+                        );
+                        
+                        if (!detail || isAfterMatch) return <div key={holeNum}>{pill}</div>;
+                        
+                        const isFront = idx < 9;
+                        const subIdx = isFront ? idx : idx - 9;
+                        const rawDetail = isFront ? displayFrontDetails[subIdx] : displayBackDetails[subIdx];
+                        if (!rawDetail) return <div key={holeNum}>{pill}</div>;
+                        
+                        return (
+                          <Popover key={holeNum}>
+                            <PopoverTrigger asChild>{pill}</PopoverTrigger>
+                            <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
+                              <div className="text-xs space-y-1">
+                                <p className="font-medium">Hoyo {holeNum} • {rawDetail.net > 0 ? 'Tu equipo' : rawDetail.net < 0 ? 'Rival' : 'Empate'}</p>
+                                <TeamHoleGrid
+                                  teamAPlayers={displayTeamAPlayers}
+                                  teamBPlayers={displayTeamBPlayers}
+                                  detail={{ netA1: rawDetail.a1.net, hcpA1: rawDetail.a1.hcp, netA2: rawDetail.a2.net, hcpA2: rawDetail.a2.hcp, netB1: rawDetail.b1.net, hcpB1: rawDetail.b1.hcp, netB2: rawDetail.b2.net, hcpB2: rawDetail.b2.hcp }}
+                                />
+                                <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
+                                  Estado: {matchLabel}
+                                </p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        );
+                      };
+                      
+                      return (
+                        <>
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium">1–9</span>
+                            <div className="grid grid-cols-9 gap-1">
+                              {allDetails.slice(0, 9).map((d, i) => renderMatchPill(d, i))}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium">10–18</span>
+                            <div className="grid grid-cols-9 gap-1">
+                              {allDetails.slice(9, 18).map((d, i) => renderMatchPill(d, i + 9))}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })() : (
+                      <>
                     {/* Front 9 */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
@@ -2997,6 +3085,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         </div>
                       </div>
                     </div>
+                      </>
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
