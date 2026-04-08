@@ -265,7 +265,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // IMPORTANT: Use confirmedScores to match the calculation engine, not allScores
   const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
     const playerScores = confirmedScores.get(playerId) || [];
-    const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean }[] = [];
+    const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean; isGeneric?: boolean }[] = [];
     const isBasePlayer = playerId === player.id;
     
     playerScores.forEach(score => {
@@ -284,11 +284,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers?.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
         if (score.markers?.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
         if (score.markers?.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
-        if (score.markers?.oyesUni) details.push({ holeNumber: score.holeNumber, marker: 'Oyes Uni', emoji: '📍', isPositive: isBasePlayer });
         // Unidades genéricas — una entrada por ocurrencia
         const unidadGenCount = score.markers.unidadGenerica ?? 0;
         for (let ug = 0; ug < unidadGenCount; ug++) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer, isGeneric: true });
         }
       } else {
         // Manchas - negative for the player who commits them
@@ -309,7 +308,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // Manchas genéricas
         const manchaGenCount = score.markers.manchaGenerica ?? 0;
         for (let mg = 0; mg < manchaGenCount; mg++) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer, isGeneric: true });
         }
       }
     });
@@ -1378,26 +1377,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const rivalDetails = getMarkerDetails(rival.id, type);
     const allDetails = [...playerDetails, ...rivalDetails].sort((a, b) => a.holeNumber - b.holeNumber);
     
+    const configKey = type === 'units' ? 'units' : 'manchas';
+    const standardValue = betConfig[configKey].valuePerPoint;
+    const genericValue = type === 'units'
+      ? (betConfig.units.valuePerGenericUnit ?? standardValue)
+      : (betConfig.manchas.valuePerGenericMancha ?? standardValue);
+    
     return (
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
         {allDetails.length > 0 ? (
           <div className="flex flex-wrap gap-1">
-            {allDetails.map((d, i) => (
-              <span 
-                key={i} 
-                className={cn(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
-                  d.isPositive 
-                    ? 'bg-green-500/20 text-green-600' 
-                    : 'bg-destructive/20 text-destructive'
-                )}
-              >
-                <span className="font-medium">H{d.holeNumber}</span>
-                <span>{d.emoji}</span>
-                <span className="hidden sm:inline">{d.marker}</span>
-                <span className="font-bold">{d.isPositive ? '+' : '-'}${betConfig[type === 'units' ? 'units' : 'manchas'].valuePerPoint}</span>
-              </span>
-            ))}
+            {allDetails.map((d, i) => {
+              const value = d.isGeneric ? genericValue : standardValue;
+              return (
+                <span 
+                  key={i} 
+                  className={cn(
+                    'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
+                    d.isPositive 
+                      ? 'bg-green-500/20 text-green-600' 
+                      : 'bg-destructive/20 text-destructive'
+                  )}
+                >
+                  <span className="font-medium">H{d.holeNumber}</span>
+                  <span>{d.emoji}</span>
+                  <span className="hidden sm:inline">{d.marker}</span>
+                  <span className="font-bold">{d.isPositive ? '+' : '-'}${value}</span>
+                </span>
+              );
+            })}
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">Sin {type === 'units' ? 'unidades' : 'manchas'} registradas</span>
