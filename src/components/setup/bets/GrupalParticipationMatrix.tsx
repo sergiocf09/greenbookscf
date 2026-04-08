@@ -20,7 +20,7 @@ const GRUPAL_BETS = [
   { key: 'medalGeneral' as const, label: 'Medal Gral' },
   { key: 'stableford' as const, label: 'Stableford' },
   { key: 'skinsGrupal' as const, label: 'Skins Grl' },
-  { key: 'nines' as const, label: '5-3-1' },
+  { key: 'nines' as const, label: 'Nines' },
 ] as const;
 
 type GrupalBetKey = typeof GRUPAL_BETS[number]['key'];
