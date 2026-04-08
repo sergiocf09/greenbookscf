@@ -139,10 +139,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
-  const [sixesSheetOpen, setSixesSheetOpen] = useState(false);
-  const [vegasSheetOpen, setVegasSheetOpen] = useState(false);
-  const [sixesSetsLocal, setSixesSetsLocal] = useState<string[][]>([['', '', '', ''], ['', '', '', ''], ['', '', '', '']]);
-  const [vegasPlayersLocal, setVegasPlayersLocal] = useState({ playerAId: '', playerBId: '', playerCId: '', playerDId: '' });
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
