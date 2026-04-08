@@ -1581,6 +1581,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   }
 
   return (
+    <>
     <Card className={renderSection === 'indicators' ? 'border-0 shadow-none bg-transparent' : ''}>
       {renderSection !== 'indicators' && (
         <CardHeader className="py-3">
