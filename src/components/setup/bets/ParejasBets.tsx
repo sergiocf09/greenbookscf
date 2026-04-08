@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
+import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
@@ -51,6 +52,27 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     () => players.map((p) => ({ value: p.id, label: p.name })),
     [players]
   );
+
+  // Filtered player options per bet type (exclude players deselected in matrix)
+  const foursomesOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'teamPressures', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const carritosOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'carritos', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const sixesOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'sixes', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const vegasOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'vegas', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
 
   // Team Pressures management
   const addTeamPressure = () => {
@@ -202,7 +224,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bet={bet}
                 index={idx}
                 players={players}
-                playerOptions={playerOptions}
+                playerOptions={foursomesOptions}
                 onUpdate={(updates) => updateTeamPressure(bet.id, updates)}
                 onRemove={() => removeTeamPressure(bet.id)}
               />
@@ -264,7 +286,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 scoringType={config.carritos.scoringType}
                 teamHandicaps={config.carritos.teamHandicaps || {}}
                 players={players}
-                playerOptions={playerOptions}
+                playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
               />
             )}
@@ -282,7 +304,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 scoringType={team.scoringType}
                 teamHandicaps={team.teamHandicaps || {}}
                 players={players}
-                playerOptions={playerOptions}
+                playerOptions={carritosOptions}
                 onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
                 onRemove={() => removeCarritosTeam(team.id)}
               />
@@ -340,7 +362,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         ) : (
           <>
             {config.sixesBets!.map((bet, idx) => (
-              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
+              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={sixesOptions}
                 onUpdate={(updates) => {
                   const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, sixesBets: next });
@@ -402,7 +424,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         ) : (
           <>
             {config.vegasBets!.map((bet, idx) => (
-              <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
+              <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={vegasOptions}
                 onUpdate={(updates) => {
                   const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, vegasBets: next });
@@ -823,8 +845,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {bet.scoringType === 'matchOnly'
           ? '💡 Solo Match: sin apertura de presiones'
           : bet.scoringType === 'combined'
-          ? '💡 Combinado: no apuesta cuando diferencia > 2'
-          : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: no apuesta cuando diferencia = 2`}
+          ? '💡 Combinado: abre presión cuando diferencia > 2'
+          : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: abre presión cuando diferencia = 2`}
       </div>
     </div>
   );

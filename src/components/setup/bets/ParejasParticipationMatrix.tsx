@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, SixesBetInstance, VegasBetInstance, NinesBetInstance } from '@/types/golf';
+import { BetConfig, Player, SixesBetInstance, VegasBetInstance } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { disambiguateInitials } from '@/lib/playerInput';
@@ -32,64 +32,12 @@ const isBetEnabled = (config: BetConfig, betKey: ParejasBetKey): boolean => {
   }
 };
 
-/** Get participating player IDs for a parejas bet */
+/** Get active (non-excluded) participant IDs for a parejas bet */
 const getParticipantIds = (config: BetConfig, betKey: ParejasBetKey, players: Player[]): string[] => {
   const allIds = players.map(p => p.id);
-  switch (betKey) {
-    case 'teamPressures': {
-      if (!config.teamPressures.enabled) return [];
-      const ids = new Set<string>();
-      config.teamPressures.bets.forEach(b => {
-        b.teamA.forEach(id => id && ids.add(id));
-        b.teamB.forEach(id => id && ids.add(id));
-      });
-      // If no players assigned yet but enabled, all are available
-      return ids.size > 0 ? Array.from(ids) : allIds;
-    }
-    case 'carritos': {
-      if (!config.carritos.enabled) return [];
-      const ids = new Set<string>();
-      // Primary
-      config.carritos.teamA.forEach(id => id && ids.add(id));
-      config.carritos.teamB.forEach(id => id && ids.add(id));
-      // Additional
-      config.carritosTeams?.forEach(t => {
-        t.teamA.forEach(id => id && ids.add(id));
-        t.teamB.forEach(id => id && ids.add(id));
-      });
-      return ids.size > 0 ? Array.from(ids) : allIds;
-    }
-    case 'wolf': {
-      if (!(config.wolfSetup?.enabled)) return [];
-      return allIds; // Wolf always uses all players
-    }
-    case 'sixes': {
-      if ((config.sixesBets?.length ?? 0) === 0) return [];
-      const ids = new Set<string>();
-      config.sixesBets?.forEach(bet => {
-        bet.sets.forEach(s => {
-          s.team1.forEach(id => id && ids.add(id));
-          s.team2.forEach(id => id && ids.add(id));
-        });
-      });
-      return ids.size > 0 ? Array.from(ids) : allIds;
-    }
-    case 'vegas': {
-      if ((config.vegasBets?.length ?? 0) === 0) return [];
-      const ids = new Set<string>();
-      config.vegasBets?.forEach(bet => {
-        [bet.playerAId, bet.playerBId, bet.playerCId, bet.playerDId].forEach(id => id && ids.add(id));
-      });
-      return ids.size > 0 ? Array.from(ids) : allIds;
-    }
-  }
-};
-
-/** Check if a player is participating in a specific bet */
-const isPlayerParticipating = (config: BetConfig, betKey: ParejasBetKey, playerId: string, players: Player[]): boolean => {
-  if (!isBetEnabled(config, betKey)) return false;
-  const pIds = getParticipantIds(config, betKey, players);
-  return pIds.includes(playerId);
+  if (!isBetEnabled(config, betKey)) return [];
+  const excluded = config.parejasExcluded?.[betKey] ?? [];
+  return allIds.filter(id => !excluded.includes(id));
 };
 
 /** Get active participant IDs for a parejas bet (for external filtering) */
@@ -108,88 +56,59 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
 
   if (players.length < 4) return null;
 
-  /** Count how many players are currently participating in a bet */
   const getActiveCount = (betKey: ParejasBetKey): number => {
-    if (!isBetEnabled(config, betKey)) return 0;
     return getParticipantIds(config, betKey, players).length;
   };
 
-  /** Toggle a single player's participation in a bet */
+  /** Toggle a single player's participation in a bet via exclusion list */
   const handleCellToggle = (betKey: ParejasBetKey, playerId: string) => {
-    if (!isBetEnabled(config, betKey)) return; // bet not enabled, do nothing
+    if (!isBetEnabled(config, betKey)) return;
+    if (betKey === 'wolf') return; // Wolf uses all players
 
-    const currentIds = getParticipantIds(config, betKey, players);
-    const isIn = currentIds.includes(playerId);
+    const currentActive = getParticipantIds(config, betKey, players);
+    const isIn = currentActive.includes(playerId);
 
-    // Minimum 4 players — don't allow deselect if at limit
-    if (isIn && currentIds.length <= 4) return;
+    // Min 4 players — don't allow deselect if at limit
+    if (isIn && currentActive.length <= 4) return;
 
-    const newIds = isIn
-      ? currentIds.filter(id => id !== playerId)
-      : [...currentIds, playerId];
+    const excluded = config.parejasExcluded?.[betKey] ?? [];
+    const newExcluded = isIn
+      ? [...excluded, playerId]
+      : excluded.filter(id => id !== playerId);
 
-    // Apply the new participant set based on bet type
-    switch (betKey) {
-      case 'teamPressures': {
-        // Store as disabledTeamBetIds concept — or better, we track via removing from team assignments
-        // For team pressures, we filter out the player from all team assignments
-        const allIds = players.map(p => p.id);
-        const excluded = allIds.filter(id => !newIds.includes(id));
-        const updatedBets = config.teamPressures.bets.map(b => ({
-          ...b,
-          teamA: b.teamA.map(id => excluded.includes(id) ? '' : id) as [string, string],
-          teamB: b.teamB.map(id => excluded.includes(id) ? '' : id) as [string, string],
-        }));
-        onUpdateConfig({ ...config, teamPressures: { ...config.teamPressures, bets: updatedBets } });
-        break;
+    onUpdateConfig({
+      ...config,
+      parejasExcluded: {
+        ...config.parejasExcluded,
+        [betKey]: newExcluded,
+      },
+    });
+  };
+
+  /** Toggle a player across all enabled bets */
+  const handleColumnToggle = (playerId: string) => {
+    const enabledBets = PAREJAS_BETS.filter(b => isBetEnabled(config, b.key) && b.key !== 'wolf');
+    if (enabledBets.length === 0) return;
+
+    // If player is active in all enabled bets, exclude from all; otherwise include in all
+    const allActive = enabledBets.every(b => getParticipantIds(config, b.key, players).includes(playerId));
+
+    const newExcluded = { ...config.parejasExcluded };
+    enabledBets.forEach(b => {
+      const currentExcluded = newExcluded[b.key] ?? [];
+      const currentActive = getParticipantIds(config, b.key, players);
+      if (allActive) {
+        // Exclude — but only if more than 4 would remain
+        if (currentActive.length > 4) {
+          newExcluded[b.key] = [...currentExcluded, playerId];
+        }
+      } else {
+        // Include — remove from excluded
+        newExcluded[b.key] = currentExcluded.filter(id => id !== playerId);
       }
-      case 'carritos': {
-        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
-        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
-        const updatedCarritos = {
-          ...config.carritos,
-          teamA: [cleanId(config.carritos.teamA[0]), cleanId(config.carritos.teamA[1])] as [string, string],
-          teamB: [cleanId(config.carritos.teamB[0]), cleanId(config.carritos.teamB[1])] as [string, string],
-        };
-        const updatedTeams = config.carritosTeams?.map(t => ({
-          ...t,
-          teamA: [cleanId(t.teamA[0]), cleanId(t.teamA[1])] as [string, string],
-          teamB: [cleanId(t.teamB[0]), cleanId(t.teamB[1])] as [string, string],
-        }));
-        onUpdateConfig({ ...config, carritos: updatedCarritos, carritosTeams: updatedTeams });
-        break;
-      }
-      case 'wolf':
-        // Wolf uses all players, no per-player toggle currently
-        break;
-      case 'sixes': {
-        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
-        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
-        const updatedSixes = config.sixesBets?.map(bet => ({
-          ...bet,
-          sets: bet.sets.map(s => ({
-            ...s,
-            team1: s.team1.map(cleanId) as [string, string],
-            team2: s.team2.map(cleanId) as [string, string],
-          })),
-        }));
-        onUpdateConfig({ ...config, sixesBets: updatedSixes });
-        break;
-      }
-      case 'vegas': {
-        const excluded = players.map(p => p.id).filter(id => !newIds.includes(id));
-        const cleanId = (id: string) => excluded.includes(id) ? '' : id;
-        const updatedVegas = config.vegasBets?.map(bet => ({
-          ...bet,
-          playerAId: cleanId(bet.playerAId),
-          playerBId: cleanId(bet.playerBId),
-          playerCId: cleanId(bet.playerCId),
-          playerDId: cleanId(bet.playerDId),
-        }));
-        onUpdateConfig({ ...config, vegasBets: updatedVegas });
-        break;
-      }
-    }
+    });
+
+    onUpdateConfig({ ...config, parejasExcluded: newExcluded });
   };
 
   const handleRowToggle = (betKey: ParejasBetKey) => {
@@ -265,7 +184,9 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
   };
 
   const getColumnState = (playerId: string): 'all' | 'none' | 'partial' => {
-    const states = PAREJAS_BETS.map(b => isPlayerParticipating(config, b.key, playerId, players));
+    const enabledBets = visibleBets.filter(b => isBetEnabled(config, b.key));
+    if (enabledBets.length === 0) return 'none';
+    const states = enabledBets.map(b => getParticipantIds(config, b.key, players).includes(playerId));
     if (states.every(Boolean)) return 'all';
     if (states.every(s => !s)) return 'none';
     return 'partial';
@@ -290,16 +211,18 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                 const colState = getColumnState(player.id);
                 return (
                   <th key={player.id} className="p-1 text-center min-w-[36px]">
-                    <div
+                    <button
+                      type="button"
+                      onClick={() => handleColumnToggle(player.id)}
                       className={cn(
-                        "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-opacity border",
+                        "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-opacity border cursor-pointer hover:border-border",
                         colState === 'none'
                           ? "opacity-35 border-transparent"
                           : "border-border/40"
                       )}
                     >
                       <span className="text-[10px] font-bold text-foreground">{disambiguatedMap.get(player.id) || player.initials}</span>
-                    </div>
+                    </button>
                   </th>
                 );
               })}
@@ -325,7 +248,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                     </div>
                   </td>
                   {players.map(player => {
-                    const cellOn = isPlayerParticipating(config, bet.key, player.id, players);
+                    const cellOn = getParticipantIds(config, bet.key, players).includes(player.id);
                     const canToggle = isBetEnabled(config, bet.key) && bet.key !== 'wolf' && (cellOn ? activeCount > 4 : true);
                     return (
                       <td key={player.id} className="p-1 text-center">

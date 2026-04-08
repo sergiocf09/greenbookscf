@@ -464,6 +464,7 @@ export interface BetConfig {
   sixesBets?: SixesBetInstance[];
   vegasBets?: VegasBetInstance[];
   ninesBets?: NinesBetInstance[];
+  parejasExcluded?: Record<string, string[]>; // betKey -> excluded player IDs
 }
 
 export interface MedalBetConfig {
