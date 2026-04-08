@@ -388,6 +388,12 @@ export const useBetConfigPersistence = ({
           ...dbConfig.skinsGrupal,
         };
       }
+      // Sprint 3 new bet types
+      if (dbConfig.wolfSetup) newConfig.wolfSetup = dbConfig.wolfSetup;
+      if ('sixesBets' in dbConfig) newConfig.sixesBets = dbConfig.sixesBets;
+      if ('vegasBets' in dbConfig) newConfig.vegasBets = dbConfig.vegasBets;
+      if ('ninesBets' in dbConfig) newConfig.ninesBets = dbConfig.ninesBets;
+      if ('parejasExcluded' in dbConfig) newConfig.parejasExcluded = dbConfig.parejasExcluded;
       
       return newConfig;
     });
