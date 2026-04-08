@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player } from '@/types/golf';
+import { BetConfig, Player, NinesBetInstance } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { disambiguateInitials } from '@/lib/playerInput';
