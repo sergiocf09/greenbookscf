@@ -1,138 +1,126 @@
-Plan: Wolf Conditional Display, Continúa Cumulative Fix, Labels & Dashboard Redesign
+## Plan: Dashboard Fixes — Early Win, Individual Match-Play Grid, Sixes Scores, Visual Consistency
 
-### 1. Hide Wolf panel in Scoring when not enabled
+### 1. Fix Foursomes early-win detection (premature "3 & 2")
 
-**Problem**: Once `wolf.saveConfig()` is called, `wolf.wolfConfig` stays non-null forever, so the Wolf decision panel always shows in ScoringView even if `wolfSetup.enabled` is later toggled off or was never enabled in the matrix.
+**Problem**: In `BetDashboard.tsx` lines 2549-2557, the early-win check uses `Math.abs(cumBal) > remaining` but also requires `remaining > 0`. When 4 holes remain and cumBal is 3, `3 > 4` is false so the match is NOT over — but the *summary status* section (lines 2559-2561) treats `allDetails.every(d => d !== null)` as match over (all 14 played holes have data), incorrectly showing "3 Up" as a final result. The real bug: holes without data (null) are included in the loop but don't contribute. The check `allDetails.every(d => d !== null)` is true when all 18 slots have been scored — but 4 holes remain *unplayed* (they're null). The loop iterates 18 slots total, but some are null.
 
-**Fix**: In `ScoringView.tsx` (line 240), add `betConfig.wolfSetup?.enabled` to the condition:
+Actually, re-reading: `allDetails` has 18 entries (front 9 + back 9). Null entries = no score yet. The early-win loop checks `remaining = 18 - (i+1)` which counts ALL remaining slots including null. So if 14 are played and cumBal=3, at i=13 (last played), remaining=4, `3 > 4` is false — correct, match is not over. But `allDetails.every(d => d !== null)` is false too (4 nulls). So the summary shows `3 Up` — this seems correct behavior?
 
+The user says "3 y 2 ganaste" is showing. Let me re-check: the condition `Math.abs(cumBal) > remaining && remaining > 0` — if the loop encounters nulls after the last scored hole, it still increments `i`. At i=14 (null), cumBal stays 3, remaining=3, `3 > 3` is false. At i=15, remaining=2, `3 > 2` is TRUE → matchOver = true, matchResult = "3 & 2". **This is the bug!** Null holes still advance the loop, and since cumBal doesn't change but remaining decreases, it eventually triggers early-win on null holes.
+
+**Fix**: Only check early-win on holes that have data. Skip null holes in the early-win check, or count remaining as only the remaining *played* holes. Better: only trigger when `d !== null` (actual scored hole):
+
+```typescript
+if (matchConcludedAt < 0 && d) {  // Only check on scored holes
+  const remainingPlayable = allDetails.slice(i + 1).filter(x => x !== null).length;
+  // But we also need total remaining holes (not just scored)
+}
 ```
-{wolfConfig && betConfig.wolfSetup?.enabled && players.length >= 4 && (
+
+Actually the correct approach: count remaining as `18 - (i+1)` only for holes that have been scored or are yet to be played. The issue is that unscored holes shouldn't advance the pointer. Better approach: **stop iterating at the last scored hole**. After the loop, if match wasn't concluded, show "X Up" / "X Dn" / "E":
+
+```typescript
+for (let i = 0; i < allDetails.length; i++) {
+  const d = allDetails[i];
+  if (!d) continue; // skip unscored — don't advance balance or check early-win
+  cumBal += d.net;
+  const holesPlayed = i + 1;
+  const remaining = 18 - holesPlayed;
+  if (Math.abs(cumBal) > remaining && remaining > 0) {
+    matchConcludedAt = i;
+    break;
+  }
+}
 ```
 
-Same for `wolfNeedsDecision` (line 203) — gate it with `betConfig.wolfSetup?.enabled`.
+Wait, but hole numbering matters — hole 1 at index 0. If holes 1-14 are scored (indices 0-13 have data, 14-17 are null), after scoring hole 14, remaining = 18-14 = 4. cumBal=3, 3 > 4 = false. Correct. But the current code doesn't skip nulls, so it continues to indices 14,15,16,17 where cumBal stays 3 but remaining keeps decreasing. Fix: **add `if (!d) continue;`** before the early-win check AND don't push cumBalances for skipped holes (or rather, just stop checking after null).
 
-Also gate the confirm button's wolf-blocking text (line 329).
+Better: break out of the loop when we hit the first null hole (no more scored holes).
 
-**File**: `src/components/scoring/ScoringView.tsx`
-
----
-
-### 2. Fix Foursomes "Continúa" dashboard — cumulative 18-hole display
-
-**Problem**: The BetDashboard processes Front 9 and Back 9 independently via `processNine()` (lines 2375-2408), so the Back 9 balance resets to 0 instead of continuing from the Front 9 cumulative total. The display shows F9/B9/T18 as three separate sections, but in continúa mode it should be a single running tally across all 18 holes.
-
-**Fix**: In `BetDashboard.tsx`, when `bet.continua && bet.scoringType === 'matchOnly'`:
-
-- Process all 18 holes as one sequence (single `processNine` call with all 18 details) instead of separate front/back
-- Display a single "Match Play" grid of 18 holes (2 rows of 9) with running cumulative balance using match-play notation (1 Up, 2 Up, E, etc.)
-- Replace the F9/B9/T18 summary row with a single match-play status line showing current state or final result (e.g., "3 & 2", "1 Up", "E")
-- Implement early-win detection: stop showing results after the match is decided
-- When match concluded, show "X & Y" in the summary; otherwise show "X Up" / "X Down" / "E"
-
-**File**: `src/components/bets/BetDashboard.tsx` (foursomes rendering block ~lines 2498-2940)
+**File**: `src/components/bets/BetDashboard.tsx` — two places: summary block (~line 2543) and hole grid block (~line 2846)
 
 ---
 
-### 3. Fix Individual Pressures "Continúa" dashboard display
+### 2. Add match-play 18-hole grid for Individual Pressures
 
-**Problem**: Same issue — the individual pressures dashboard likely shows Front/Back split even for continúa mode. The `pressures.ts` calculation engine already handles it correctly, but the dashboard visualization needs to match.
+**Problem**: When individual pressures are set to "Sin presiones + Match Play 18", the BilateralDetail still shows the standard F9/B9/T18 split with "+7 / +3" format. It should show a single cumulative 18-hole grid with match-play notation (1 Up, 2 Up, E, etc.) like the Foursomes grid.
 
-**Fix**: In the pressures display section of BetDashboard (individual pressures rendering), detect when `config.pressures.continua && config.pressures.onlyMatch` and show:
+**Fix**: 
+- In `pressureEvolution.ts`: when `onlyMatch && config.pressures.continua`, process all 18 holes as one sequence instead of two nines. Return a special `continua` evolution with match-play notation (E, 1Up, 2Dn, X&Y when concluded).
+- In `BilateralDetail.tsx`: when pressures are `continua + onlyMatch`, replace the F9/B9 segments with a single popover showing two rows of 9 holes each, using match-play cumulative notation.
 
-- Match-play notation: "1 Up", "2 Up", "E" instead of "+1", "+2", "0"
-- Single running cumulative across 18 holes
-- This is largely handled by the calculation engine already returning "X Up" / "X Down" / "Even" descriptions — verify the dashboard uses these descriptions properly.
-
-**File**: `src/components/bets/BetDashboard.tsx`
+**Files**: `src/lib/bets/pressureEvolution.ts`, `src/components/bets/BilateralDetail.tsx`
 
 ---
 
-### 4. Rename labels: "Solo Match" → "Sin presiones", "Continúa" → "Match Play por 18 hoyos"
+### 3. Fix Sixes hole popover — missing net scores
 
-**Changes**:
+**Problem**: In `SixesResultsCard.tsx` lines 164-165, the display logic checks `my.strokes > 0` but the `scoresByPlayer` entries have `gross` (the raw stroke count from holeDetail). When `useHandicap` is false, `strokes` (handicap strokes) = 0 and `net = gross`. The condition `my.strokes > 0` fails, showing "–" instead of the score.
 
-**IndividualBets.tsx** (lines 88-101):
-
-- "Sólo match" → "Sin presiones"
-- "Continúa (18 hoyos)" → "Match Play por 18 hoyos"
-- Update info notes accordingly
-
-**ParejasBets.tsx** (Foursomes scoring dropdown, lines 719-731):
-
-- `<SelectItem value="matchOnly">Solo Match</SelectItem>` → `Sin presiones`
-- "Continúa (18 hoyos)" → "Match Play por 18 hoyos"
-- Update info notes
-
-**BetDashboard.tsx** (line 2797):
-
-- "Solo Match" → "Sin presiones"
-
-**Files**: `IndividualBets.tsx`, `ParejasBets.tsx`, `BetDashboard.tsx`
-
----
-
-### 5. Match-play notation in dashboard hole pills
-
-For both Individual and Foursomes continúa mode, each hole pill should show:
-
-- **"E"** when cumulative balance = 0 (Even)
-- **"1 Up"** / **"2 Up"** etc. when winning
-- **"1 Dn"** / **"2 Dn"** etc. when losing
-- After match concluded: grayed out pills for remaining holes
-- Final result badge: "4 & 3", "2 & 1", "1 Up" with green/red styling
-
-**File**: `src/components/bets/BetDashboard.tsx`
-
----
-
-### 6. Sixes dashboard redesign
-
-**Current**: Collapsible sections with "Set 1 · Name+Name vs Name+Name · ganó" text, expanding to a 6-col grid of small pills.
-
-**New design**:
-
-- Header row showing team names like Foursomes: "Name / Name vs Name / Name"
-- Three compact set cards with labels "1–6", "7–12", "13–18" (instead of "Set 1")
-- Each set shows the team pairing and a 6-cell hole grid with win/loss/tie indicators
-- Clicking a hole opens a popover with side-by-side team comparison (like Carritos `TeamHoleGrid`):
-  - Left: "Tu equipo" with player scores
-  - Right: "Rival" with player scores
-  - Center: score comparison with black badge for advantage
-- Remove the separate "Pagos" section — let the bilateral balance handle payment display
+**Fix**: Change display logic to use `my.gross > 0` instead of `my.strokes > 0` for both display and the comparison. Show `my.net` always (it equals `gross - strokes`), and show `(gross)` in small text only when there's a handicap difference.
 
 **File**: `src/components/bets/SixesResultsCard.tsx`
 
 ---
 
-### 7. Vegas dashboard redesign
+### 4. Vegas card — match Foursomes/Carritos styling
 
-**Current**: Collapsible sections with set labels, expanding to hole grids showing diff numbers, popovers showing raw text.
+**Current**: Total balance is in a Badge; team names share the same line with the total; no cancel (X) button.
 
-**New design**:
-
-- Header showing team pairing: "Name / Name vs Name / Name" (like Foursomes)
-- Summary row: Front (accumulated diff), Back (accumulated diff), Total
-- Hole grid with cells showing the diff per hole
-- Clicking a hole opens a popover with side-by-side layout:
-  - Left: "Tu equipo" with player gross scores
-  - Right: "Rival" with player gross scores
-  - Below: the two Vegas numbers formed, then the diff and peso amount
-  - If birdie multiplier applied, show indicator
-- Remove the separate "Pagos" section
+**New layout** (matching CarritosResultsCard pattern):
+- Header: "Las Vegas" title left, large total amount number right + X cancel button
+- Below: Team A name (left) vs Team B name (right) — full width, larger text
+- Collapsible: F9/B9/Total summary + hole grid
+- Hole pills: small hole number on top, diff number below (matching foursomes pattern)
 
 **File**: `src/components/bets/VegasResultsCard.tsx`
 
 ---
 
+### 5. Sixes card — column layout + cancel button + per-player ranking
+
+**Current**: Vertical stack of 3 sets, Badge for total, no cancel button.
+
+**New layout**:
+- Header: "Sixes" title + cancel (X) button
+- Three columns (one per set): each shows team names, point differential
+- Click a set column → expands to show hole grid + popovers
+- Below sets: player ranking (sorted by net balance, like Coneja) showing each player's total Sixes P&L
+- No single grand total number at top (since results vary by player perspective)
+
+**File**: `src/components/bets/SixesResultsCard.tsx`
+
+---
+
+### 6. Wolf card — match styling + cancel button + per-player ranking
+
+**Current**: Badge total, F9/B9 collapsibles, Pagos section.
+
+**New layout**:
+- Header: "🐺 Loba" title + cancel (X) button  
+- Remove "Pagos" section
+- After hole grids: per-player ranking (sorted by net balance) showing each player's total Wolf P&L
+- Match Foursomes/Carritos header style for the total amount
+
+**File**: `src/components/bets/WolfResultsCard.tsx`
+
+---
+
+### 7. Wire cancel/disable functionality for Sixes, Vegas, Wolf
+
+The Carritos and Foursomes cards already have `onToggleDisabled` and `isDisabled` props connected to `betOverrides`. Need to add the same pattern for these three bet types so the X button actually excludes them from balance calculations.
+
+**File**: `src/components/bets/BetDashboard.tsx` (pass handlers to the cards)
+
+---
+
 ### Files to Modify
 
-
-| File                                           | Changes                                                                                                                      |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/scoring/ScoringView.tsx`       | Gate Wolf panel/blocking on `betConfig.wolfSetup?.enabled`                                                                   |
-| `src/components/setup/bets/IndividualBets.tsx` | Rename "Sólo match" → "Sin presiones", "Continúa" → "Match Play por 18 hoyos"                                                |
-| `src/components/setup/bets/ParejasBets.tsx`    | Same label renames for Foursomes                                                                                             |
-| `src/components/bets/BetDashboard.tsx`         | Foursomes continúa: single 18-hole cumulative with match-play notation; label updates; individual pressures continúa display |
-| `src/components/bets/SixesResultsCard.tsx`     | Full redesign with Carritos-style team layout and side-by-side popovers                                                      |
-| `src/components/bets/VegasResultsCard.tsx`     | Full redesign with team header, side-by-side popovers, remove Pagos                                                          |
+| File | Changes |
+|------|---------|
+| `src/components/bets/BetDashboard.tsx` | Fix early-win null-hole bug (2 locations); wire disable handlers for Sixes/Vegas/Wolf |
+| `src/lib/bets/pressureEvolution.ts` | Add continua 18-hole match-play evolution |
+| `src/components/bets/BilateralDetail.tsx` | Show match-play grid when continua+onlyMatch |
+| `src/components/bets/SixesResultsCard.tsx` | Fix score display in popovers; column layout; per-player ranking; cancel button |
+| `src/components/bets/VegasResultsCard.tsx` | Restyle to match Foursomes/Carritos pattern; cancel button; pill layout |
+| `src/components/bets/WolfResultsCard.tsx` | Restyle header; cancel button; per-player ranking; remove Pagos |
