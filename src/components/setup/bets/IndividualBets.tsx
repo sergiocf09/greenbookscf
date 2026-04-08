@@ -82,10 +82,20 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
           <div className="flex items-center justify-between pt-1">
             <Label className="text-xs text-muted-foreground">Sólo match</Label>
-            <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v })} />
+            <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v, ...(v ? {} : { continua: false }) })} />
           </div>
           {config.pressures.onlyMatch && (
-            <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+            <>
+              <div className="flex items-center justify-between pt-1">
+                <Label className="text-xs text-muted-foreground">Continúa (18 hoyos)</Label>
+                <Switch checked={config.pressures.continua ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { continua: v })} />
+              </div>
+              {config.pressures.continua ? (
+                <p className="text-[9px] text-muted-foreground">Match continuo del 1 al 18 sin corte. Se define cuando un jugador lleva más hoyos de ventaja que hoyos restantes (ej: 4&3).</p>
+              ) : (
+                <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+              )}
+            </>
           )}
         </BetSection>
       )}
