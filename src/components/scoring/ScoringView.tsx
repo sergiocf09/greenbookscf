@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
-import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig, NinesConfig } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
@@ -9,7 +9,7 @@ import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { WolfDecisionPanel } from '@/components/bets/WolfDecisionPanel';
 import { SixesActiveBadge } from '@/components/bets/SixesActiveBadge';
-import { NinesLiveTable } from '@/components/bets/NinesLiveTable';
+
 import { resolveWolfHole } from '@/lib/bets/wolf';
 import { Button } from '@/components/ui/button';
 import { Check, CheckCircle2, DollarSign, Target, AlertTriangle } from 'lucide-react';
@@ -41,7 +41,6 @@ interface ScoringViewProps {
   onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean) => Promise<void>;
   onWolfResolve?: (holeNumber: number, result: 'won' | 'lost' | 'tied') => Promise<void>;
   sixesConfig?: SixesConfig;
-  ninesConfig?: NinesConfig;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
@@ -111,7 +110,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onWolfDecision,
   onWolfResolve,
   sixesConfig,
-  ninesConfig,
+  
 }) => {
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
@@ -237,6 +236,22 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         />
       )}
 
+      {/* Wolf Decision Panel — prominent at top */}
+      {wolfConfig && players.length >= 4 && (
+        <WolfDecisionPanel
+          holeNumber={currentHole}
+          players={displayPlayers}
+          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
+          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
+          wolfConfig={wolfConfig}
+          isOrganizer={isOrganizer ?? false}
+          currentUserId={currentUserId ?? null}
+          onDecision={async (partnerIds, wentSolo) => {
+            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
+          }}
+        />
+      )}
+
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
         {displayPlayers.map(player => {
@@ -304,33 +319,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           </div>
         )}
       </div>
-
-      {/* Wolf Decision Panel */}
-      {wolfConfig && players.length >= 4 && (
-        <WolfDecisionPanel
-          holeNumber={currentHole}
-          players={displayPlayers}
-          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
-          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
-          wolfConfig={wolfConfig}
-          isOrganizer={isOrganizer ?? false}
-          currentUserId={currentUserId ?? null}
-          onDecision={async (partnerIds, wentSolo) => {
-            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
-          }}
-        />
-      )}
-
-      {/* Nines Live Table */}
-      {ninesConfig && ninesConfig.playerIds.length >= 3 && (
-        <NinesLiveTable
-          players={players}
-          scores={scores}
-          ninesConfig={ninesConfig}
-          course={course}
-          confirmedHoles={confirmedHoles}
-        />
-      )}
 
       {/* Confirm Button */}
       <Button 
