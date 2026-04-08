@@ -229,6 +229,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
         >
           <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
+          <AmountInput
+            label="Valor por Unidad genérica"
+            value={config.units.valuePerGenericUnit ?? config.units.valuePerPoint}
+            onChange={(v) => onUpdateBet('units', { valuePerGenericUnit: v })}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Para cualquier unidad no contemplada en el set estándar
+          </p>
         </BetSection>
       )}
 
@@ -241,6 +249,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia."
         >
           <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
+          <AmountInput
+            label="Valor por Mancha genérica"
+            value={config.manchas.valuePerGenericMancha ?? config.manchas.valuePerPoint}
+            onChange={(v) => onUpdateBet('manchas', { valuePerGenericMancha: v })}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Para cualquier mancha no contemplada en el set estándar
+          </p>
         </BetSection>
       )}
 

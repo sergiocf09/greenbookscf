@@ -11,6 +11,8 @@ import {
   Hourglass,
   XCircle,
   MapPin,
+  Square,
+  Star,
 } from 'lucide-react';
 import { highHeel } from '@lucide/lab';
 import { cn } from '@/lib/utils';
@@ -51,6 +53,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', emoji: '🎯', points: 1 },
   { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', emoji: '💧', points: 1 },
   { key: 'oyesUni', icon: MapPin, label: 'Oyes Uni', description: 'Unidad de oyes', type: 'unidad', emoji: '📍', points: 1 },
+  { key: 'unidadGenerica', icon: Star, label: 'Unidad', description: 'Unidad genérica', type: 'unidad', emoji: '⭐' },
 ];
 
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
@@ -64,6 +67,7 @@ export const manualStainMarkers: MarkerConfig[] = [
   { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha', emoji: '🕊️' },
   { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces fuera de límites', type: 'mancha', emoji: '🚫' },
   { key: 'moreliana', icon: MorelianaIcon, label: 'Moreliana', description: 'Se salió del green poteando', type: 'mancha', emoji: '🎭' },
+  { key: 'manchaGenerica', icon: Square, label: 'Mancha', description: 'Mancha genérica', type: 'mancha', emoji: '⬛' },
 ];
 
 // Export marker labels for external use (short versions)
@@ -80,6 +84,74 @@ export const markerLabels: Record<string, string> = {
   swingBlanco: 'Paloma',
   dobleOB: 'Doble OB',
   moreliana: 'Moreliana',
+  manchaGenerica: 'Mancha',
+  unidadGenerica: 'Unidad',
+};
+
+// Counter marker component for numeric markers (manchaGenerica, unidadGenerica)
+const CounterMarker: React.FC<{
+  value: number;
+  onChange: (newValue: number) => void;
+  icon: React.ElementType;
+  label: string;
+  type: 'unidad' | 'mancha';
+  compact?: boolean;
+}> = ({ value, onChange, icon: IconComp, label, type, compact = true }) => {
+  const isUnidad = type === 'unidad';
+  const isActive = value > 0;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => onChange(Math.max(0, value - 1))}
+              disabled={value === 0}
+              className={cn(
+                'rounded-full transition-all duration-150 p-1',
+                'text-xs font-bold leading-none',
+                value === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 active:scale-95',
+                isUnidad ? 'text-primary' : 'text-destructive'
+              )}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange(value + 1)}
+              className={cn(
+                'rounded-full transition-all duration-150 relative',
+                compact ? 'p-2' : 'p-2.5',
+                isActive
+                  ? isUnidad
+                    ? 'bg-primary text-primary-foreground ring-2 ring-primary/40 shadow-sm'
+                    : 'bg-destructive text-destructive-foreground ring-2 ring-destructive/40 shadow-sm'
+                  : isUnidad
+                    ? 'bg-primary/5 text-primary/60 ring-1 ring-primary/10 hover:bg-primary/10 hover:text-primary'
+                    : 'bg-destructive/5 text-destructive/60 ring-1 ring-destructive/10 hover:bg-destructive/10 hover:text-destructive',
+                'hover:scale-110 active:scale-95'
+              )}
+            >
+              <IconComp className="h-4 w-4" />
+              {isActive && (
+                <span className={cn(
+                  'absolute -top-1 -right-1 rounded-full text-[9px] font-bold leading-none px-1 min-w-[14px] text-center',
+                  isUnidad ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'
+                )}>
+                  {value}
+                </span>
+              )}
+            </button>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p className="text-xs font-medium">{label}</p>
+          {value > 0 && <p className="text-xs text-muted-foreground">{value} registrada{value > 1 ? 's' : ''}</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 };
 
 interface InlineMarkersProps {
@@ -104,7 +176,23 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
   return (
     <div className={cn('flex items-center gap-1', wrap ? 'flex-wrap' : 'flex-nowrap')}>
       {markers.map(marker => {
-        const Icon = marker.icon;
+        // Numeric counter markers
+        if (marker.key === 'manchaGenerica' || marker.key === 'unidadGenerica') {
+          const numericValue = (state[marker.key] as number) ?? 0;
+          return (
+            <CounterMarker
+              key={marker.key}
+              value={numericValue}
+              onChange={(newValue) => onChange({ ...state, [marker.key]: newValue })}
+              icon={marker.icon}
+              label={marker.label}
+              type={marker.type}
+              compact={compact}
+            />
+          );
+        }
+
+        const IconEl = marker.icon;
         const isActive = state[marker.key];
         const isUnidad = marker.type === 'unidad';
 
@@ -118,7 +206,6 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                   className={cn(
                     'rounded-full transition-all duration-150',
                     'hover:scale-110 active:scale-95',
-                    // LARGER SIZE for mobile - p-2 instead of p-1
                     compact ? 'p-2' : 'p-2.5',
                     isActive
                       ? isUnidad
@@ -129,8 +216,7 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                         : 'bg-destructive/5 text-destructive/60 ring-1 ring-destructive/10 hover:bg-destructive/10 hover:text-destructive'
                   )}
                 >
-                  {/* LARGER ICONS - h-5 w-5 instead of h-3 w-3 */}
-                  <Icon className={cn(compact ? 'h-5 w-5' : 'h-6 w-6')} />
+                  <IconEl className={cn(compact ? 'h-5 w-5' : 'h-6 w-6')} />
                 </button>
               </TooltipTrigger>
               <TooltipContent 
