@@ -38,7 +38,8 @@ export const calculateTeamPressuresBets = (
     const teamB: [string, string] = [resolvePlayerId(bet.teamB[0]), resolvePlayerId(bet.teamB[1])];
     const { scoringType, teamHandicaps } = bet;
 
-    const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+    const isMatchOnly = scoringType === 'matchOnly';
+    const openingThreshold = isMatchOnly ? Infinity : (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
 
     const getHandicap = (playerId: string): number => {
       if (teamHandicaps) {

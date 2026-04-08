@@ -361,7 +361,7 @@ export interface TeamPressuresBet {
   totalAmount: number;
   openingThreshold: 3 | 4; // Opens new pressure when diff reaches this
   teamHandicaps: Record<string, number>; // Per-player handicaps for this bet
-  scoringType: 'lowBall' | 'highBall' | 'combined';
+  scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
   enabled: boolean;
   // Optional sub-modalities
   unitsConfig?: TeamPressureUnitsConfig;
