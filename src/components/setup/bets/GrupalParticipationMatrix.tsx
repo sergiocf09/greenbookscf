@@ -20,7 +20,7 @@ const GRUPAL_BETS = [
   { key: 'medalGeneral' as const, label: 'Medal Gral' },
   { key: 'stableford' as const, label: 'Stableford' },
   { key: 'skinsGrupal' as const, label: 'Skins Grl' },
-  { key: 'nines' as const, label: '5-3-1' },
+  { key: 'nines' as const, label: 'Nines' },
 ] as const;
 
 type GrupalBetKey = typeof GRUPAL_BETS[number]['key'];
@@ -315,6 +315,21 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
           </tbody>
         </table>
       </div>
+      {/* Nines validation: exactly 3 players */}
+      {(() => {
+        const ninesBet = GRUPAL_BETS.find(b => b.key === 'nines');
+        if (!ninesBet) return null;
+        const ninesIds = getParticipantIds(config, 'nines');
+        const isEnabled = ninesIds === undefined || ninesIds.length > 0;
+        if (!isEnabled) return null;
+        const activeCount = getActiveIds(ninesIds, players).length;
+        if (activeCount === 3) return null;
+        return (
+          <p className="text-[10px] text-amber-500 px-2 mt-1">
+            Selecciona exactamente 3 jugadores para Nines
+          </p>
+        );
+      })()}
     </div>
   );
 };

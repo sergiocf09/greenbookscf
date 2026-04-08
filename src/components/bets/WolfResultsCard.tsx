@@ -47,7 +47,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">🐺 La Loba</CardTitle>
+          <CardTitle className="text-sm">🐺 Loba</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -138,7 +138,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">🐺 La Loba</CardTitle>
+          <CardTitle className="text-sm">🐺 Loba</CardTitle>
           <Badge className={cn(
             'text-xs',
             totalBalance > 0 && 'bg-green-500/15 text-green-700 border-green-500/30',

@@ -354,7 +354,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Nines — multi-instance */}
       {players.length >= 3 && (
         <BetSection
-          id="nines" title="🎯 5-3-1 (Nines)"
+          id="nines" title="Nines (5-3-1)"
           description="Distribución de 9 puntos por hoyo entre 3 jugadores"
           enabled={(config.ninesBets?.length ?? 0) > 0}
           onToggle={(enabled) => {
@@ -373,13 +373,13 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         >
           {(config.ninesBets?.length ?? 0) === 0 ? (
             <div className="text-center py-4">
-              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de 5-3-1 configuradas</p>
+              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Nines configuradas</p>
               <Button variant="outline" size="sm" onClick={() => {
                 if (!onUpdateConfig) return;
                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
                 onUpdateConfig({ ...config, ninesBets: [nueva] });
               }} className="gap-1">
-                <Plus className="h-3.5 w-3.5" /> Agregar apuesta 5-3-1
+                <Plus className="h-3.5 w-3.5" /> Agregar apuesta Nines
               </Button>
             </div>
           ) : (
@@ -402,7 +402,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
                 onUpdateConfig({ ...config, ninesBets: [...(config.ninesBets ?? []), nueva] });
               }}>
-                <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta 5-3-1
+                <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta Nines
               </Button>
             </>
           )}

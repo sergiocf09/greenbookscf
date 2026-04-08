@@ -301,7 +301,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Wolf — 4-6 players */}
       {players.length >= 4 && players.length <= 6 && (
         <BetSection
-          id="wolf" title="🐺 La Loba"
+          id="wolf" title="🐺 Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
           enabled={config.wolfSetup?.enabled ?? false}
           onToggle={(enabled) => {
@@ -314,7 +314,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('wolf')}
           onExpandChange={(open) => onToggleSection('wolf', open)}
-          helpText="En cada hoyo un jugador (La Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
+          helpText="En cada hoyo un jugador (Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
         >
           <AmountInput label="Monto por hoyo" value={config.wolfSetup?.amountPerHole ?? 10}
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
@@ -365,7 +365,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
       {/* Sixes — multi-instance */}
       <BetSection
-        id="sixes" title="⛳ Sixes"
+        id="sixes" title="Sixes"
         description="3 sets de 6 hoyos con cambio de parejas"
         enabled={(config.sixesBets?.length ?? 0) > 0}
         onToggle={(enabled) => {
@@ -423,7 +423,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
       {/* Vegas — multi-instance */}
       <BetSection
-        id="vegas" title="🎲 Las Vegas"
+        id="vegas" title="Las Vegas"
         description="Combina scores en números de 2 dígitos"
         enabled={(config.vegasBets?.length ?? 0) > 0}
         onToggle={(enabled) => {
@@ -939,14 +939,14 @@ const SixesBetCard: React.FC<{
 }> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
-      <Label className="text-xs font-medium">Seises {index + 1}</Label>
+      <Label className="text-xs font-medium">Sixes {index + 1}</Label>
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar Seises {index + 1}?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar Sixes {index + 1}?</AlertDialogTitle>
             <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
