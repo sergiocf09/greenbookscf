@@ -461,9 +461,9 @@ export interface BetConfig {
   skinsGrupal?: SkinsGrupalBetConfig; // NEW: Group skins
   // Sprint 3 new bets
   wolfSetup?: WolfSetupConfig;
-  sixesSetup?: SixesSetupConfig;
-  vegasSetup?: VegasSetupConfig;
-  ninesSetup?: NinesSetupConfig;
+  sixesBets?: SixesBetInstance[];
+  vegasBets?: VegasBetInstance[];
+  ninesBets?: NinesBetInstance[];
 }
 
 export interface MedalBetConfig {
