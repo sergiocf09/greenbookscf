@@ -314,7 +314,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('wolf')}
           onExpandChange={(open) => onToggleSection('wolf', open)}
-          helpText="En cada hoyo un jugador (La Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
+          helpText="En cada hoyo un jugador (Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
         >
           <AmountInput label="Monto por hoyo" value={config.wolfSetup?.amountPerHole ?? 10}
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
