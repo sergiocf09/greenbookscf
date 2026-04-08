@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player } from '@/types/golf';
+import { BetConfig, Player, NinesBetInstance } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { disambiguateInitials } from '@/lib/playerInput';
@@ -20,6 +20,7 @@ const GRUPAL_BETS = [
   { key: 'medalGeneral' as const, label: 'Medal Gral' },
   { key: 'stableford' as const, label: 'Stableford' },
   { key: 'skinsGrupal' as const, label: 'Skins Grl' },
+  { key: 'nines' as const, label: '5-3-1' },
 ] as const;
 
 type GrupalBetKey = typeof GRUPAL_BETS[number]['key'];
@@ -36,6 +37,13 @@ const getActiveIds = (
 };
 
 const getParticipantIds = (config: BetConfig, betKey: GrupalBetKey): string[] | undefined => {
+  if (betKey === 'nines') {
+    const ninesBets = config.ninesBets ?? [];
+    if (ninesBets.length === 0) return [];
+    const ids = new Set<string>();
+    ninesBets.forEach(b => b.playerIds.forEach(id => ids.add(id)));
+    return ids.size > 0 ? Array.from(ids) : undefined;
+  }
   const betConfig = config[betKey] as any;
   if (!betConfig?.enabled && betConfig?.participantIds === undefined) return [];
   return betConfig?.participantIds;
@@ -53,13 +61,47 @@ const isEffectivelyParticipating = (
 
 /** Check if a grupal bet has at least one participant */
 export const grupalBetHasParticipants = (config: BetConfig, betKey: string, players: Player[]): boolean => {
+  if (betKey === 'nines') {
+    return (config.ninesBets?.length ?? 0) > 0 && config.ninesBets!.some(b => b.playerIds.length > 0);
+  }
   const betConfig = config[betKey as keyof BetConfig] as any;
   if (!betConfig) return false;
-  // If bet is disabled and no explicit participantIds, treat as no participants
   if (!betConfig.enabled && betConfig.participantIds === undefined) return false;
   const pIds = betConfig.participantIds;
   if (Array.isArray(pIds) && pIds.length === 0) return false;
   return true;
+};
+
+/** Helper to update a bet, handling nines specially via onUpdateConfig */
+const updateBet = (
+  betKey: GrupalBetKey,
+  updates: any,
+  config: BetConfig,
+  players: Player[],
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void,
+  onUpdateConfig?: (config: BetConfig) => void,
+) => {
+  if (betKey === 'nines') {
+    if (!onUpdateConfig) return;
+    // For nines, 'enabled' maps to having instances, 'participantIds' maps to playerIds across instances
+    if (updates.enabled === false) {
+      onUpdateConfig({ ...config, ninesBets: [] });
+    } else if (updates.participantIds !== undefined || updates.enabled === true) {
+      const newPlayerIds: string[] = updates.participantIds ?? players.map(p => p.id);
+      const existing = config.ninesBets ?? [];
+      if (existing.length === 0) {
+        // Create first instance with the given players
+        const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: newPlayerIds };
+        onUpdateConfig({ ...config, ninesBets: [nueva] });
+      } else {
+        // Update playerIds across all instances
+        const updated = existing.map(b => ({ ...b, playerIds: newPlayerIds }));
+        onUpdateConfig({ ...config, ninesBets: updated });
+      }
+    }
+  } else {
+    onUpdateBet(betKey as keyof BetConfig, updates);
+  }
 };
 
 export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps> = ({
@@ -72,12 +114,15 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
   if (players.length === 0) return null;
 
+  const doUpdate = (betKey: GrupalBetKey, updates: any) =>
+    updateBet(betKey, updates, config, players, onUpdateBet, onUpdateConfig);
+
   const handleCellToggle = (betKey: GrupalBetKey, playerId: string) => {
     const pIds = getParticipantIds(config, betKey);
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
     if (isExplicitlyEmpty) {
-      onUpdateBet(betKey, { participantIds: [playerId], enabled: true } as any);
+      doUpdate(betKey, { participantIds: [playerId], enabled: true });
       return;
     }
 
@@ -90,10 +135,10 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const allIds = players.map(p => p.id);
     const isAll = allIds.every(id => newIds.includes(id));
     const isEmpty = newIds.length === 0;
-    onUpdateBet(betKey, { 
+    doUpdate(betKey, { 
       participantIds: isAll ? undefined : newIds,
       enabled: !isEmpty,
-    } as any);
+    });
   };
 
   const handleRowToggle = (betKey: GrupalBetKey) => {
@@ -104,9 +149,9 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const allActive = !isExplicitlyEmpty && allIds.every(id => currentIds.includes(id));
 
     if (allActive) {
-      onUpdateBet(betKey, { participantIds: [], enabled: false } as any);
+      doUpdate(betKey, { participantIds: [], enabled: false });
     } else {
-      onUpdateBet(betKey, { participantIds: undefined, enabled: true } as any);
+      doUpdate(betKey, { participantIds: undefined, enabled: true });
     }
   };
 
@@ -116,6 +161,31 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
     let newConfig = { ...config };
     GRUPAL_BETS.forEach(b => {
+      if (b.key === 'nines') {
+        // Handle nines specially — mutate newConfig.ninesBets
+        const ninesBets = newConfig.ninesBets ?? [];
+        if (colState === 'all') {
+          if (ninesBets.length === 0) return;
+          const updated = ninesBets.map(nb => ({
+            ...nb,
+            playerIds: nb.playerIds.filter(id => id !== playerId),
+          })).filter(nb => nb.playerIds.length > 0);
+          newConfig = { ...newConfig, ninesBets: updated };
+        } else {
+          if (ninesBets.length === 0) {
+            const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [playerId] };
+            newConfig = { ...newConfig, ninesBets: [nueva] };
+          } else {
+            const updated = ninesBets.map(nb => ({
+              ...nb,
+              playerIds: nb.playerIds.includes(playerId) ? nb.playerIds : [...nb.playerIds, playerId],
+            }));
+            newConfig = { ...newConfig, ninesBets: updated };
+          }
+        }
+        return;
+      }
+
       const pIds = getParticipantIds(config, b.key);
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
@@ -177,7 +247,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
               {players.map(player => {
                 const colState = getColumnState(player.id);
                 return (
-                  <th key={player.id} className="p-1 text-center min-w-[40px]">
+                  <th key={player.id} className="p-1 text-center min-w-[36px]">
                     <button
                       type="button"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleColumnToggle(player.id); }}

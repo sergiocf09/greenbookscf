@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ParejasParticipationMatrix } from './ParejasParticipationMatrix';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,6 +157,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       <p className="text-xs text-muted-foreground mb-2">
         Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.
       </p>
+
+      {/* Parejas Participation Matrix */}
+      <ParejasParticipationMatrix
+        config={config}
+        players={players}
+        onUpdateConfig={onUpdateConfig}
+        onUpdateBet={onUpdateBet}
+      />
 
       {/* Team Pressures */}
       <BetSection
