@@ -7,8 +7,6 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
-import { markerDbToKey } from '@/lib/markerTypeMapping';
-import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from '@/types/golf';
-import { isAutoDetectedMarker } from '@/lib/scoreDetection';
-import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
 import { devError, devLog, devWarn } from '@/lib/logger';
