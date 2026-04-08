@@ -406,7 +406,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [...(config.sixesBets ?? []), nueva] });
             }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Seises
+              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Sixes
             </Button>
           </>
         )}

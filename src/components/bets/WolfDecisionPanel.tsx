@@ -18,8 +18,8 @@ interface WolfDecisionPanelProps {
 }
 
 const timingLabels: Record<string, string> = {
-  A: 'Antes del drive',
-  B: 'Después del drive',
+  A: 'Antes del driver',
+  B: 'Al pegar el driver',
   C: 'Antes del 2° golpe',
 };
 
