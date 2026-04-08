@@ -2847,7 +2847,7 @@ const Index = () => {
               await wolf.resolveHole(holeNumber, result);
             }}
             sixesConfig={sixes.sixesConfig ?? undefined}
-            ninesConfig={nines.ninesConfig ?? undefined}
+            
           />
           </ErrorBoundary>
         )}
