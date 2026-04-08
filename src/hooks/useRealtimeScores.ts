@@ -5,6 +5,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { toast } from 'sonner';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerDbToKey } from '@/lib/markerTypeMapping';
+import { isNumericMarkerKey } from '@/lib/markerPersistence';
 import { devError, devLog } from '@/lib/logger';
 
 interface UseRealtimeScoresProps {
@@ -186,10 +187,16 @@ export const useRealtimeScores = ({
                 if (idx < 0) return prev;
 
                 const currentMarkers = playerScores[idx].markers || { ...defaultMarkerState };
-                const updatedMarkers = {
-                  ...currentMarkers,
-                  [key]: eventType !== 'DELETE',
-                } as any;
+                const updatedMarkers = { ...currentMarkers } as any;
+
+                if (isNumericMarkerKey(key)) {
+                  const currentValue = Number(updatedMarkers[key] ?? 0);
+                  updatedMarkers[key] = eventType === 'DELETE'
+                    ? Math.max(0, currentValue - 1)
+                    : currentValue + 1;
+                } else {
+                  updatedMarkers[key] = eventType !== 'DELETE';
+                }
 
                 playerScores[idx] = { ...playerScores[idx], markers: updatedMarkers };
                 next.set(playerId, playerScores);

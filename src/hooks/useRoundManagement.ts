@@ -7,8 +7,7 @@ import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
-import { markerDbToKey } from '@/lib/markerTypeMapping';
-import { isAutoDetectedMarker } from '@/lib/scoreDetection';
+import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
@@ -578,14 +577,14 @@ export const useRoundManagement = ({
 
              if (holeMarkers?.length) {
                markersByHoleScoreId = new Map();
+               const rowsByHoleScoreId = new Map<string, any[]>();
                for (const m of holeMarkers as any[]) {
-                 if (m.is_auto_detected) continue;
-                 const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
-                 const key = markerDbToKey(m.marker_type);
-                 if (key && key in prev && !isAutoDetectedMarker(key as any)) {
-                   (prev as any)[key] = true;
-                 }
-                 markersByHoleScoreId.set(m.hole_score_id, prev);
+                 const bucket = rowsByHoleScoreId.get(m.hole_score_id) ?? [];
+                 bucket.push(m);
+                 rowsByHoleScoreId.set(m.hole_score_id, bucket);
+               }
+               for (const [holeScoreId, rows] of rowsByHoleScoreId.entries()) {
+                 markersByHoleScoreId.set(holeScoreId, restoreMarkerStateFromRows(rows));
                }
              }
            }

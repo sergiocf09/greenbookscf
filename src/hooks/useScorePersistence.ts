@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PlayerScore, Player, GolfCourse, defaultMarkerState, MarkerState } from '@/types/golf';
-import { isAutoDetectedMarker } from '@/lib/scoreDetection';
-import { markerDbToKey } from '@/lib/markerTypeMapping';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
 import { devError, devLog, devWarn } from '@/lib/logger';
 
 interface UseScorePersistenceProps {
@@ -64,15 +63,14 @@ export const useScorePersistence = ({
 
         if (!markersErr && holeMarkers?.length) {
           markersByHoleScoreId = new Map();
+          const rowsByHoleScoreId = new Map<string, any[]>();
           for (const m of holeMarkers as any[]) {
-            const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
-            const key = markerDbToKey(m.marker_type);
-            // Restore any non-auto marker that exists in the state shape.
-            // This avoids silent drops when the manual marker list changes over time.
-            if (key && key in prev && !isAutoDetectedMarker(key as any)) {
-              (prev as any)[key] = true;
-            }
-            markersByHoleScoreId.set(m.hole_score_id, prev);
+            const bucket = rowsByHoleScoreId.get(m.hole_score_id) ?? [];
+            bucket.push(m);
+            rowsByHoleScoreId.set(m.hole_score_id, bucket);
+          }
+          for (const [holeScoreId, rows] of rowsByHoleScoreId.entries()) {
+            markersByHoleScoreId.set(holeScoreId, restoreMarkerStateFromRows(rows));
           }
         }
       }
