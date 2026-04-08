@@ -576,14 +576,12 @@ export const useRoundManagement = ({
                  .in('hole_score_id', holeScoreIds) as any
              );
 
-              devLog('[MARKERS-DEBUG] holeMarkers raw count:', holeMarkers?.length ?? 0, 'data:', JSON.stringify(holeMarkers?.slice(0, 5)));
                if (holeMarkers?.length) {
                  markersByHoleScoreId = new Map();
                  for (const m of holeMarkers as any[]) {
                    if (m.is_auto_detected) continue;
                    const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
                    const key = markerDbToKey(m.marker_type);
-                   devLog('[MARKERS-DEBUG] Processing marker:', m.marker_type, '-> key:', key, 'isAuto:', key ? isAutoDetectedMarker(key as any) : 'N/A');
                    if (key && key in prev && !isAutoDetectedMarker(key as any)) {
                      // Numeric markers: increment count; boolean markers: set true
                      if (key === 'manchaGenerica' || key === 'unidadGenerica') {
@@ -594,7 +592,6 @@ export const useRoundManagement = ({
                    }
                    markersByHoleScoreId.set(m.hole_score_id, prev);
                  }
-                 devLog('[MARKERS-DEBUG] markersByHoleScoreId size:', markersByHoleScoreId.size, 'entries:', JSON.stringify(Array.from(markersByHoleScoreId.entries()).map(([k, v]) => ({ id: k, markers: Object.entries(v).filter(([_, val]) => !!val).map(([mk]) => mk) }))));
               }
             }
 
