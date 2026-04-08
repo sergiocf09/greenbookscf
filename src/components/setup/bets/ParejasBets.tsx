@@ -939,7 +939,7 @@ const SixesBetCard: React.FC<{
 }> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
-      <Label className="text-xs font-medium">Seises {index + 1}</Label>
+      <Label className="text-xs font-medium">Sixes {index + 1}</Label>
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
