@@ -41,7 +41,6 @@ interface ScoringViewProps {
   onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean) => Promise<void>;
   onWolfResolve?: (holeNumber: number, result: 'won' | 'lost' | 'tied') => Promise<void>;
   sixesConfig?: SixesConfig;
-  ninesConfig?: NinesConfig;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
