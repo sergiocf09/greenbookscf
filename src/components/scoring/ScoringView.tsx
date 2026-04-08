@@ -239,7 +239,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Wolf Decision Panel — prominent at top */}
-      {wolfConfig && players.length >= 4 && (
+      {wolfEnabled && wolfConfig && players.length >= 4 && (
         <WolfDecisionPanel
           holeNumber={currentHole}
           players={displayPlayers}
