@@ -335,8 +335,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, timing: v as WolfTiming } as any)}>
               <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="A">Antes del drive</SelectItem>
-                <SelectItem value="B">Después del drive</SelectItem>
+                <SelectItem value="A">Antes del driver</SelectItem>
+                <SelectItem value="B">Al pegar el driver</SelectItem>
                 <SelectItem value="C">Antes del 2° golpe</SelectItem>
               </SelectContent>
             </Select>
