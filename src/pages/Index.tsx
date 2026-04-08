@@ -1849,13 +1849,25 @@ const Index = () => {
     [roundState.id, roundState.groupId, course, setRoundPlayerIds, players, playerGroups, roundPlayerIds, initializeHandicapsForNewPlayer]
   );
 
-  // Save score to database when updated
-  const saveScoreToDb = useCallback(async (playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
-    const rpId = roundPlayerIds.get(playerId);
-    if (!rpId || !roundState.id) return;
+  // ---------------------------------------------------------------------------
+  // Serialized save queue per player+hole to prevent concurrent delete+insert
+  // race conditions that lose generic marker counts.
+  // ---------------------------------------------------------------------------
+  const saveQueueRef = useRef<Map<string, { pending: Partial<PlayerScore> | null; saving: boolean }>>(new Map());
+
+  const flushSave = useCallback(async (key: string, rpId: string, holeNumber: number) => {
+    const entry = saveQueueRef.current.get(key);
+    if (!entry) return;
+
+    // Nothing pending or already saving — bail out
+    if (!entry.pending || entry.saving) return;
+
+    // Grab the latest pending payload and clear it
+    const score = entry.pending;
+    entry.pending = null;
+    entry.saving = true;
 
     try {
-      // Persist score row and retrieve its id (needed to persist markers)
       const { data: upserted, error } = await supabase
         .from('hole_scores')
         .upsert({
@@ -1876,17 +1888,16 @@ const Index = () => {
 
       if (error) {
         console.error('Error saving score:', error);
+        entry.saving = false;
         return;
       }
 
-       // Persist manual markers (unidades + manchas). We intentionally do NOT persist
-       // auto-detected markers (birdie/eagle/culebra/etc.) since they can be derived.
-       if (score.markers) {
+      // Persist manual markers
+      if (score.markers) {
         const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
         if (holeScoreId) {
-           const markerRows = expandMarkerStateToRows(score.markers);
+          const markerRows = expandMarkerStateToRows(score.markers);
 
-          // Replace manual markers for this hole_score_id
           const { error: delErr } = await supabase
             .from('hole_markers')
             .delete()
@@ -1895,17 +1906,18 @@ const Index = () => {
 
           if (delErr) {
             console.error('Error clearing hole markers:', delErr);
+            entry.saving = false;
             return;
           }
 
-           if (markerRows.length) {
+          if (markerRows.length) {
             const { error: insErr } = await supabase
               .from('hole_markers')
               .insert(
-                 markerRows.map((marker) => ({
+                markerRows.map((marker) => ({
                   hole_score_id: holeScoreId,
-                   marker_type: marker.marker_type as any,
-                   is_auto_detected: marker.is_auto_detected,
+                  marker_type: marker.marker_type as any,
+                  is_auto_detected: marker.is_auto_detected,
                 }))
               );
 
@@ -1917,8 +1929,36 @@ const Index = () => {
       }
     } catch (err) {
       console.error('Error in saveScoreToDb:', err);
+    } finally {
+      entry.saving = false;
     }
-  }, [roundPlayerIds, roundState.id]);
+
+    // If another update arrived while we were saving, flush again
+    if (entry.pending) {
+      flushSave(key, rpId, holeNumber);
+    }
+  }, []);
+
+  // Save score to database when updated (serialized per player+hole)
+  const saveScoreToDb = useCallback((playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
+    const rpId = roundPlayerIds.get(playerId);
+    if (!rpId || !roundState.id) return;
+
+    const key = `${playerId}:${holeNumber}`;
+    let entry = saveQueueRef.current.get(key);
+    if (!entry) {
+      entry = { pending: null, saving: false };
+      saveQueueRef.current.set(key, entry);
+    }
+
+    // Always overwrite pending with the LATEST full score state
+    entry.pending = score;
+
+    // Kick off a flush if not already saving
+    if (!entry.saving) {
+      flushSave(key, rpId, holeNumber);
+    }
+  }, [roundPlayerIds, roundState.id, flushSave]);
 
   const updateScore = useCallback(
     (playerId: string, holeNumber: number, updates: Partial<PlayerScore>) => {
