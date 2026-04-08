@@ -5,7 +5,7 @@ import { AmountInput, PointInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Minus, Check } from 'lucide-react';
+import { Plus, Minus, Check, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CollapsibleSubSection } from './CollapsibleSubSection';
 import { formatPlayerName } from '@/lib/playerInput';
