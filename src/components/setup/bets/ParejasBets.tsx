@@ -279,6 +279,159 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </>
         )}
       </BetSection>
+
+      {/* Wolf — 4-6 players */}
+      {players.length >= 4 && players.length <= 6 && (
+        <BetSection
+          id="wolf" title="🐺 La Loba"
+          description="Cada hoyo un jugador elige pareja o va solo"
+          enabled={config.wolfSetup?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any)}
+          isExpanded={expandedSections.includes('wolf')}
+          onExpandChange={(open) => onToggleSection('wolf', open)}
+          helpText="En cada hoyo un jugador (La Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
+        >
+          <AmountInput label="Monto por hoyo" value={config.wolfSetup?.amountPerHole ?? 10}
+            onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
+
+          <div className="flex items-center justify-between mt-2">
+            <Label className="text-[10px] font-semibold text-primary">Modo de scoring</Label>
+            <Select value={config.wolfSetup?.scoringMode ?? 'lowBall'}
+              onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, scoringMode: v as WolfScoringMode } as any)}>
+              <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lowBall">Bola Baja</SelectItem>
+                <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
+                <SelectItem value="stroke">Score Neto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.wolfSetup?.useHandicap ?? true}
+              onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, useHandicap: v } as any)} />
+            <Label className="text-xs">Jugar con hándicap</Label>
+          </div>
+
+          <div className="flex items-center justify-between mt-2">
+            <Label className="text-[10px] font-semibold text-primary">Timing de decisión</Label>
+            <Select value={config.wolfSetup?.timing ?? 'B'}
+              onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, timing: v as WolfTiming } as any)}>
+              <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="A">Antes del drive</SelectItem>
+                <SelectItem value="B">Después del drive</SelectItem>
+                <SelectItem value="C">Antes del 2° golpe</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.wolfSetup?.carryover ?? true}
+              onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, carryover: v } as any)} />
+            <Label className="text-xs">Carryover en empates</Label>
+          </div>
+
+          <p className="text-[9px] text-muted-foreground mt-2">
+            Rotación: {players.slice(0, 6).map((p, i) => `H${i + 1}: ${p.name.split(' ')[0]}`).join(' · ')}
+          </p>
+        </BetSection>
+      )}
+
+      {/* Sixes — exactly 4 players */}
+      {players.length === 4 && (
+        <BetSection
+          id="sixes" title="⛳ Seises"
+          description="3 sets de 6 hoyos con cambio de parejas"
+          enabled={config.sixesSetup?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled } as any)}
+          isExpanded={expandedSections.includes('sixes')}
+          onExpandChange={(open) => onToggleSection('sixes', open)}
+          helpText="Se juegan 3 sets de 6 hoyos con diferentes parejas. Al final de cada set se cobra según la modalidad seleccionada."
+        >
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] font-semibold text-primary">Modo de scoring</Label>
+            <Select value={config.sixesSetup?.scoringMode ?? 'lowBall'}
+              onValueChange={(v) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, scoringMode: v as SixesScoringMode } as any)}>
+              <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lowBall">Bola Baja</SelectItem>
+                <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
+                <SelectItem value="stroke">Score Neto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between mt-2">
+            <Label className="text-[10px] font-semibold text-primary">Cobro</Label>
+            <Select value={config.sixesSetup?.cobro ?? 'per_hole'}
+              onValueChange={(v) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, cobro: v as SixesCobro } as any)}>
+              <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="per_hole">Por hoyo ganado</SelectItem>
+                <SelectItem value="per_set">Por set ganado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.sixesSetup?.useHandicap ?? true}
+              onCheckedChange={(v) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, useHandicap: v } as any)} />
+            <Label className="text-xs">Jugar con hándicap</Label>
+          </div>
+
+          <AmountInput label="Monto" value={config.sixesSetup?.amount ?? 10}
+            onChange={(v) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, amount: v } as any)} />
+
+          <p className="text-[9px] text-muted-foreground mt-2">
+            Las parejas de cada set se configuran desde el dashboard de la ronda activa.
+          </p>
+        </BetSection>
+      )}
+
+      {/* Vegas — exactly 4 players */}
+      {players.length === 4 && (
+        <BetSection
+          id="vegas" title="🎲 Las Vegas"
+          description="Combina scores en números de 2 dígitos"
+          enabled={config.vegasSetup?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled } as any)}
+          isExpanded={expandedSections.includes('vegas')}
+          onExpandChange={(open) => onToggleSection('vegas', open)}
+          helpText="Cada equipo forma un número de 2 dígitos con los scores de sus jugadores (menor primero). La diferencia se multiplica por el valor por punto."
+        >
+          <AmountInput label="Valor por punto" value={config.vegasSetup?.valuePerPoint ?? 1}
+            onChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, valuePerPoint: v } as any)} />
+
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.vegasSetup?.useHandicap ?? true}
+              onCheckedChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, useHandicap: v } as any)} />
+            <Label className="text-xs">Jugar con hándicap</Label>
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.vegasSetup?.birdieMultiplier ?? false}
+              onCheckedChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, birdieMultiplier: v } as any)} />
+            <Label className="text-xs">Multiplicador Birdie (×2)</Label>
+          </div>
+
+          <div className="flex items-center justify-between mt-2">
+            <Label className="text-[10px] font-semibold text-primary">Variante</Label>
+            <Select value={config.vegasSetup?.variant ?? 'fixed'}
+              onValueChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, variant: v as VegasVariant } as any)}>
+              <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
+                <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p className="text-[9px] text-muted-foreground mt-2">
+            Los jugadores A/B/C/D se asignan desde el dashboard de la ronda activa.
+          </p>
+        </BetSection>
+      )}
     </div>
   );
 };
