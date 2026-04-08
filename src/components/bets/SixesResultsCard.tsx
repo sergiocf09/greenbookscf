@@ -25,6 +25,16 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({ players, sco
 
   const results = useMemo(() => buildSixesSetResults(players, scores, config, course), [players, scores, config, course]);
 
+  // Compute per-player totals across all sets
+  const playerTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    results.forEach(sr => {
+      sr.team1.forEach(id => totals.set(id, (totals.get(id) ?? 0) + sr.amountTeam1 / 2));
+      sr.team2.forEach(id => totals.set(id, (totals.get(id) ?? 0) + sr.amountTeam2 / 2));
+    });
+    return totals;
+  }, [results]);
+
   if (!results.length) return null;
 
   const getName = (id: string) => {
