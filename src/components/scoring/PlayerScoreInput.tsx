@@ -51,6 +51,11 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const isLoggedInUser = playerId && basePlayerId ? playerId === basePlayerId : false;
+  const latestMarkersRef = React.useRef(markers);
+
+  React.useEffect(() => {
+    latestMarkersRef.current = markers;
+  }, [markers]);
   
   // Auto-detect score-based markers
   const autoDetected = strokes > 0 ? detectScoreBasedMarkers(strokes, putts, par) : {};
@@ -69,18 +74,27 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
     return 'text-destructive';
   };
 
-  const handleMarkersChange = (newMarkers: MarkerState) => {
-    // Only update manual markers, auto-detected ones are computed
-    onMarkersChange(newMarkers);
+  const handleMarkersChange = (nextMarkers: MarkerState | ((current: MarkerState) => MarkerState)) => {
+    const resolvedMarkers = typeof nextMarkers === 'function'
+      ? nextMarkers(latestMarkersRef.current)
+      : nextMarkers;
+
+    latestMarkersRef.current = resolvedMarkers;
+    onMarkersChange(resolvedMarkers);
   };
 
   const toggleMarker = (key: keyof MarkerState) => {
-    handleMarkersChange({ ...markers, [key]: !markers[key] });
+    handleMarkersChange((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
   };
 
   const incrementMarker = (key: 'manchaGenerica' | 'unidadGenerica', delta: number) => {
-    const current = (markers[key] as number) ?? 0;
-    handleMarkersChange({ ...markers, [key]: Math.max(0, current + delta) });
+    handleMarkersChange((current) => ({
+      ...current,
+      [key]: Math.max(0, ((current[key] as number) ?? 0) + delta),
+    }));
   };
 
   // Get active manual markers for display
