@@ -56,18 +56,20 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return null;
   };
 
-  if (missingPlayerIds.length > 0) {
+  if (missingPlayerIds.length > 0 || hasEmptyPlayerIds || needsConfig) {
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">⛳ Seises</CardTitle>
+          <CardTitle className="text-sm">⛳ Sixes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-              <p className="font-medium">Participación incompleta</p>
-              <p>Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.</p>
+              <p className="font-medium">{missingPlayerIds.length > 0 ? 'Participación incompleta' : 'Falta configurar jugadores'}</p>
+              <p>{missingPlayerIds.length > 0
+                ? 'Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.'
+                : 'Revisa la configuración de esta apuesta en la sección de Apuestas.'}</p>
             </div>
           </div>
         </CardContent>
