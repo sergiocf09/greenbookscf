@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
@@ -347,7 +347,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled } as any)}
           isExpanded={expandedSections.includes('sixes')}
           onExpandChange={(open) => onToggleSection('sixes', open)}
-          helpText="Se juegan 3 sets de 6 hoyos con diferentes parejas. Al final de cada set se cobra según la modalidad seleccionada."
+          helpText="La ronda se divide en 3 sets de 6 hoyos. En cada set juegan parejas distintas. Gana el equipo con mejor resultado en cada set."
         >
           <div className="flex items-center justify-between">
             <Label className="text-[10px] font-semibold text-primary">Modo de scoring</Label>
@@ -380,12 +380,42 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             <Label className="text-xs">Jugar con hándicap</Label>
           </div>
 
-          <AmountInput label="Monto" value={config.sixesSetup?.amount ?? 10}
+          <AmountInput label="Monto" value={config.sixesSetup?.amount ?? 100}
             onChange={(v) => onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, amount: v } as any)} />
 
-          <p className="text-[9px] text-muted-foreground mt-2">
-            Las parejas de cada set se configuran desde el dashboard de la ronda activa.
-          </p>
+          <div className="space-y-3 mt-3">
+            {([1, 2, 3] as const).map(setNum => {
+              const ranges: Record<number, string> = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' };
+              const currentSets = config.sixesSetup?.sets ?? [];
+              const assignment = currentSets.find(s => s.setNumber === setNum);
+              const team1: [string, string] = assignment?.team1 ?? ['', ''];
+              const team2: [string, string] = assignment?.team2 ?? ['', ''];
+
+              const updateSet = (t1: [string, string], t2: [string, string]) => {
+                const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
+                  if (n === setNum) return { setNumber: n, team1: t1, team2: t2 };
+                  return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+                });
+                onUpdateBet('sixesSetup', { ...config.sixesSetup, enabled: true, sets: newSets } as any);
+              };
+
+              return (
+                <div key={setNum} className="space-y-2 p-2 rounded-lg bg-muted/30">
+                  <Label className="text-[10px] font-semibold text-primary">Set {setNum} · {ranges[setNum]}</Label>
+                  <TeamColumns
+                    teamA={team1}
+                    teamB={team2}
+                    teamHandicaps={{}}
+                    players={players}
+                    playerOptions={playerOptions}
+                    onUpdateTeamA={(t) => updateSet(t, team2)}
+                    onUpdateTeamB={(t) => updateSet(team1, t)}
+                    onUpdateHandicaps={() => {}}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </BetSection>
       )}
 
@@ -398,13 +428,13 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled } as any)}
           isExpanded={expandedSections.includes('vegas')}
           onExpandChange={(open) => onToggleSection('vegas', open)}
-          helpText="Cada equipo forma un número de 2 dígitos con los scores de sus jugadores (menor primero). La diferencia se multiplica por el valor por punto."
+          helpText="Cada equipo forma un número de 2 dígitos con sus scores netos. La diferencia entre los números determina el pago. Si hay birdie, el número del equipo se duplica."
         >
-          <AmountInput label="Valor por punto" value={config.vegasSetup?.valuePerPoint ?? 1}
+          <AmountInput label="Valor por punto" value={config.vegasSetup?.valuePerPoint ?? 10}
             onChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, valuePerPoint: v } as any)} />
 
           <div className="flex items-center gap-2 mt-2">
-            <Switch checked={config.vegasSetup?.useHandicap ?? true}
+            <Switch checked={config.vegasSetup?.useHandicap ?? false}
               onCheckedChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, useHandicap: v } as any)} />
             <Label className="text-xs">Jugar con hándicap</Label>
           </div>
@@ -412,7 +442,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <div className="flex items-center gap-2 mt-2">
             <Switch checked={config.vegasSetup?.birdieMultiplier ?? false}
               onCheckedChange={(v) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, birdieMultiplier: v } as any)} />
-            <Label className="text-xs">Multiplicador Birdie (×2)</Label>
+            <Label className="text-xs">Multiplicador Birdie (×2 si birdie en el hoyo)</Label>
           </div>
 
           <div className="flex items-center justify-between mt-2">
@@ -427,9 +457,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             </Select>
           </div>
 
-          <p className="text-[9px] text-muted-foreground mt-2">
-            Los jugadores A/B/C/D se asignan desde el dashboard de la ronda activa.
-          </p>
+          <div className="space-y-2 mt-3">
+            <Label className="text-[10px] font-semibold text-primary">Asignación de jugadores</Label>
+            <TeamColumns
+              teamA={[config.vegasSetup?.playerAId ?? '', config.vegasSetup?.playerBId ?? '']}
+              teamB={[config.vegasSetup?.playerCId ?? '', config.vegasSetup?.playerDId ?? '']}
+              teamHandicaps={{}}
+              players={players}
+              playerOptions={playerOptions}
+              onUpdateTeamA={([a, b]) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, playerAId: a, playerBId: b } as any)}
+              onUpdateTeamB={([c, d]) => onUpdateBet('vegasSetup', { ...config.vegasSetup, enabled: true, playerCId: c, playerDId: d } as any)}
+              onUpdateHandicaps={() => {}}
+            />
+            <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
+          </div>
         </BetSection>
       )}
     </div>

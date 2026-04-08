@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 import {
   Collapsible,
   CollapsibleContent,
@@ -56,6 +57,14 @@ export const BetSection: React.FC<BetSectionProps> = ({
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             )}
           </CollapsibleTrigger>
+          {onToggle && (
+            <Switch
+              checked={enabled}
+              onCheckedChange={(checked) => onToggle(checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="ml-2 shrink-0"
+            />
+          )}
           {helpText && (
             <button
               type="button"

@@ -698,6 +698,7 @@ export interface SixesSetResult {
 export interface SixesSetupConfig {
   enabled: boolean; scoringMode: SixesScoringMode;
   cobro: SixesCobro; amount: number; useHandicap: boolean;
+  sets: SixesSetAssignment[];
 }
 
 // =====================================================
@@ -738,6 +739,7 @@ export interface VegasSetResult {
 export interface VegasSetupConfig {
   enabled: boolean; valuePerPoint: number; useHandicap: boolean;
   birdieMultiplier: boolean; variant: VegasVariant;
+  playerAId: string; playerBId: string; playerCId: string; playerDId: string;
 }
 
 // =====================================================
