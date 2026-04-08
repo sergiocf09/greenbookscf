@@ -308,7 +308,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // Manchas genéricas
         const manchaGenCount = score.markers.manchaGenerica ?? 0;
         for (let mg = 0; mg < manchaGenCount; mg++) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer, isGeneric: true });
         }
       }
     });
