@@ -236,6 +236,22 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         />
       )}
 
+      {/* Wolf Decision Panel — prominent at top */}
+      {wolfConfig && players.length >= 4 && (
+        <WolfDecisionPanel
+          holeNumber={currentHole}
+          players={displayPlayers}
+          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
+          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
+          wolfConfig={wolfConfig}
+          isOrganizer={isOrganizer ?? false}
+          currentUserId={currentUserId ?? null}
+          onDecision={async (partnerIds, wentSolo) => {
+            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
+          }}
+        />
+      )}
+
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
         {displayPlayers.map(player => {
@@ -303,22 +319,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           </div>
         )}
       </div>
-
-      {/* Wolf Decision Panel */}
-      {wolfConfig && players.length >= 4 && (
-        <WolfDecisionPanel
-          holeNumber={currentHole}
-          players={displayPlayers}
-          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
-          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
-          wolfConfig={wolfConfig}
-          isOrganizer={isOrganizer ?? false}
-          currentUserId={currentUserId ?? null}
-          onDecision={async (partnerIds, wentSolo) => {
-            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
-          }}
-        />
-      )}
 
       {/* Confirm Button */}
       <Button 
