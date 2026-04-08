@@ -373,7 +373,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         >
           {(config.ninesBets?.length ?? 0) === 0 ? (
             <div className="text-center py-4">
-              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de 5-3-1 configuradas</p>
+              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Nines configuradas</p>
               <Button variant="outline" size="sm" onClick={() => {
                 if (!onUpdateConfig) return;
                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
