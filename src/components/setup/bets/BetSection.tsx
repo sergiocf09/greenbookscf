@@ -37,7 +37,7 @@ export const BetSection: React.FC<BetSectionProps> = ({
 
   return (
     <Collapsible 
-      open={isExpanded} 
+      open={enabled === false ? false : isExpanded} 
       onOpenChange={onExpandChange}
     >
       <div className="border rounded-lg overflow-hidden transition-colors border-border bg-card">

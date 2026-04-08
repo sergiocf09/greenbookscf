@@ -165,7 +165,12 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => {
           onUpdateBet('teamPressures', { enabled });
-          if (enabled) onToggleSection('teamPressures', true);
+          if (enabled) {
+            if (config.teamPressures.bets.length === 0) addTeamPressure();
+            onToggleSection('teamPressures', true);
+          } else {
+            onToggleSection('teamPressures', false);
+          }
         }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
@@ -213,8 +218,12 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         enabled={config.carritos.enabled}
         onToggle={(enabled) => {
           onUpdateBet('carritos', { enabled });
-          // Auto-open section when enabling so user sees configuration
-          if (enabled) onToggleSection('carritos', true);
+          if (enabled) {
+            if ((config.carritosTeams || []).length === 0 && !hasPrimaryCarritos) addCarritosTeam();
+            onToggleSection('carritos', true);
+          } else {
+            onToggleSection('carritos', false);
+          }
         }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
@@ -286,7 +295,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           id="wolf" title="🐺 La Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
           enabled={config.wolfSetup?.enabled ?? false}
-          onToggle={(enabled) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any)}
+          onToggle={(enabled) => {
+            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any);
+            if (enabled) {
+              onToggleSection('wolf', true);
+            } else {
+              onToggleSection('wolf', false);
+            }
+          }}
           isExpanded={expandedSections.includes('wolf')}
           onExpandChange={(open) => onToggleSection('wolf', open)}
           helpText="En cada hoyo un jugador (La Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
@@ -319,8 +335,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, timing: v as WolfTiming } as any)}>
               <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="A">Antes del drive</SelectItem>
-                <SelectItem value="B">Después del drive</SelectItem>
+                <SelectItem value="A">Antes del driver</SelectItem>
+                <SelectItem value="B">Al pegar el driver</SelectItem>
                 <SelectItem value="C">Antes del 2° golpe</SelectItem>
               </SelectContent>
             </Select>
@@ -340,7 +356,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
       {/* Sixes — multi-instance */}
       <BetSection
-        id="sixes" title="⛳ Seises"
+        id="sixes" title="⛳ Sixes"
         description="3 sets de 6 hoyos con cambio de parejas"
         enabled={(config.sixesBets?.length ?? 0) > 0}
         onToggle={(enabled) => {
@@ -361,7 +377,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       >
         {(config.sixesBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Seises configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Sixes configuradas</p>
             <Button variant="outline" size="sm" onClick={() => {
               const nueva: SixesBetInstance = {
                 id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
@@ -369,7 +385,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [nueva] });
             }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Seises
+              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Sixes
             </Button>
           </div>
         ) : (
@@ -390,7 +406,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [...(config.sixesBets ?? []), nueva] });
             }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Seises
+              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Sixes
             </Button>
           </>
         )}
