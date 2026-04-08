@@ -2976,7 +2976,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).some(b => b.enabled !== false) && (
+      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).length > 0 && (
         <VegasResultsCard
           players={allPlayersForCalculations}
           vegasConfig={vegasHook.vegasConfig}
