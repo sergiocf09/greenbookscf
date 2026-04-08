@@ -698,6 +698,7 @@ export interface SixesSetResult {
 export interface SixesSetupConfig {
   enabled: boolean; scoringMode: SixesScoringMode;
   cobro: SixesCobro; amount: number; useHandicap: boolean;
+  sets: SixesSetAssignment[];
 }
 
 // =====================================================
