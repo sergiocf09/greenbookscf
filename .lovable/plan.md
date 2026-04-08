@@ -1,47 +1,62 @@
 
 
-## Fixes: Parejas Matrix Interaction, Foursomes Notes & Column Headers
+## Fixes: Foursomes Dashboard, Sixes/Vegas Guards, Matrix Alignment
 
-### Problems Identified
+### Issues Found
 
-1. **Parejas matrix column headers are `<div>` not `<button>`** — clicking player initials does nothing (Individual & Grupal use `<button>` with `handleColumnToggle`)
-2. **Cell toggle broken for all bet types** — `getParticipantIds` falls back to "all players" when no team assignments exist, so toggling a player off (blanking their slot) still returns all IDs. The toggle is a no-op loop.
-3. **Foursomes info note wording** — currently says "no apuesta cuando diferencia = 2" (negative). Should be positive: "Abre presión cuando diferencia = 2"
-4. **No `handleColumnToggle` function exists** in `ParejasParticipationMatrix.tsx`
+1. **Foursomes hole grid shows no results** — `getHoleDetail()` in BetDashboard (line 2339) only handles `lowBall`, `highBall`, and `combined` scoring types. `matchOnly` matches none, so every hole returns 0 points. Also `openingThreshold` (line 2372) doesn't account for `matchOnly`.
 
-### Solution
+2. **Sixes/Vegas show "missing players" warning** — `SixesResultsCard` and `VegasResultsCard` read player assignments from `sixesHook.sixesConfig` / `vegasHook.vegasConfig` (DB tables), but the setup UI saves to `betConfig.sixesBets` / `betConfig.vegasBets` (local state). The DB-backed hooks never receive the player assignments configured in setup. The results cards need to also check `betConfig` as a fallback source for player data, or the setup needs to sync to the DB hooks.
 
-#### 1. Add explicit exclusion tracking per parejas bet (`ParejasParticipationMatrix.tsx`)
+3. **Individual/Grupal matrix cell misalignment** — Cell buttons in `ParticipationMatrix.tsx` (line 345) and `GrupalParticipationMatrix.tsx` (line 301) are missing `mx-auto` class, causing them not to center under the column headers.
 
-Instead of deriving participation solely from team assignments (which are empty initially), add an `excludedParejasPlayers` map on `BetConfig` (or handle it locally):
+### Plan
 
-**Simpler approach**: Track excluded players per bet type via a new field `parejasExcluded?: Record<string, string[]>` on `BetConfig` in `golf.ts`. This maps bet key → array of excluded player IDs. Then:
-- `getParticipantIds` returns `allIds.filter(id => !excluded.includes(id))` when bet is enabled
-- `handleCellToggle` adds/removes from the exclusion list
-- Min 4 players enforced (can't exclude if only 4 remain)
-- Downstream: `ParejasBets.tsx` filters `playerOptions` based on non-excluded players
+#### 1. Fix Foursomes `matchOnly` in BetDashboard hole detail (lines 2339-2372)
 
-#### 2. Make column headers clickable (`ParejasParticipationMatrix.tsx`)
+Add `matchOnly` handling — treat it like `lowBall` for scoring (compare low balls) but set `openingThreshold = Infinity` so no pressures open:
 
-Change `<div>` → `<button>` in thead, add `handleColumnToggle` that toggles a player across all enabled bets (same pattern as Individual/Grupal matrices).
+```text
+if (scoringType === 'lowBall' || scoringType === 'combined' || scoringType === 'matchOnly') {
+  // lowBall comparison...
+}
+```
 
-#### 3. Fix Foursomes info note (`ParejasBets.tsx`, line 822-828)
+And on line 2372:
+```text
+const openingThreshold = scoringType === 'matchOnly' ? Infinity 
+  : (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+```
 
-Change text to positive framing:
-- `lowBall` → "Bola Baja: abre presión cuando diferencia = 2"
-- `highBall` → "Bola Alta: abre presión cuando diferencia = 2"
-- `combined` → "Combinado: abre presión cuando diferencia > 2"
-- `matchOnly` → "Solo Match: sin apertura de presiones" (unchanged)
+Also update the label on line 2795 to include `matchOnly`:
+```text
+{bet.scoringType === 'matchOnly' ? 'Solo Match' : ...}
+```
 
-#### 4. Filter `playerOptions` in `ParejasBets.tsx`
+#### 2. Fix Sixes/Vegas "missing players" guard
 
-For each bet section (Foursomes, Carritos, Sixes, Vegas, Loba), filter `playerOptions` to exclude players marked as excluded in the matrix, so deselected players don't appear in the team Select dropdowns.
+The simplest fix: in `BetDashboard.tsx` where `SixesResultsCard` and `VegasResultsCard` are rendered, construct the config from `betConfig.sixesBets` / `betConfig.vegasBets` when the hook config has empty player IDs. This way, player assignments from setup flow through to the results cards.
+
+For **Sixes** (line 3013-3021): Build `sixesConfig` from `effectiveBetConfig.sixesBets[0]` if `sixesHook.sixesConfig` has empty player IDs in sets.
+
+For **Vegas** (line 3023-3031): Build `vegasConfig` from `effectiveBetConfig.vegasBets[0]` if `vegasHook.vegasConfig` has empty player IDs.
+
+Alternatively, update `SixesResultsCard` and `VegasResultsCard` to accept an optional `betConfigFallback` prop and merge player assignments.
+
+**Chosen approach**: Pass the `betConfig` instance data directly to the results cards as a fallback. Modify `SixesResultsCard` to accept optional `sixesBetInstance` and use its `sets` if the hook config has empties. Same for `VegasResultsCard` with `vegasBetInstance`.
+
+#### 3. Add `mx-auto` to cell buttons in Individual and Grupal matrices
+
+**ParticipationMatrix.tsx** line 345: Add `mx-auto` to button class.
+**GrupalParticipationMatrix.tsx** line 301: Add `mx-auto` to button class.
 
 ### Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/types/golf.ts` | Add `parejasExcluded?: Record<string, string[]>` to `BetConfig` |
-| `src/components/setup/bets/ParejasParticipationMatrix.tsx` | Rewrite `getParticipantIds` to use exclusion list; change header `<div>` → `<button>`; add `handleColumnToggle`; update `handleCellToggle` to write to `parejasExcluded` |
-| `src/components/setup/bets/ParejasBets.tsx` | Fix info note wording (positive framing); filter `playerOptions` per bet type using `getParejasActivePlayerIds` |
+| File | Change |
+|------|--------|
+| `src/components/bets/BetDashboard.tsx` | Fix `matchOnly` in `getHoleDetail`, `openingThreshold`, label; pass betConfig instance to Sixes/Vegas cards |
+| `src/components/bets/SixesResultsCard.tsx` | Accept optional `sixesBetInstance` prop for player fallback |
+| `src/components/bets/VegasResultsCard.tsx` | Accept optional `vegasBetInstance` prop for player fallback |
+| `src/components/setup/bets/ParticipationMatrix.tsx` | Add `mx-auto` to cell buttons |
+| `src/components/setup/bets/GrupalParticipationMatrix.tsx` | Add `mx-auto` to cell buttons |
 
