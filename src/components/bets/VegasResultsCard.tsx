@@ -27,6 +27,30 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const needsConfig = !vegasConfig.playerAId;
 
+  const missingPlayerIds = useMemo(() => {
+    const ids = [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId].filter(Boolean) as string[];
+    return ids.filter(id => !players.find(p => p.id === id));
+  }, [players, vegasConfig]);
+
+  if (missingPlayerIds.length > 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">🎲 Las Vegas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-700 space-y-1">
+              <p className="font-medium">Participación incompleta</p>
+              <p>Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const setResults = useMemo(() => buildVegasSetResults(players, scores, vegasConfig, course), [players, scores, vegasConfig, course]);
   const bets = useMemo(() => calculateVegasBets(players, scores, vegasConfig, course), [players, scores, vegasConfig, course]);
 

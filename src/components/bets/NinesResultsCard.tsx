@@ -34,7 +34,31 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
     [players, ninesConfig.playerIds]
   );
 
+  const missingIds = useMemo(() =>
+    ninesConfig.playerIds.filter(id => !players.find(p => p.id === id)),
+    [players, ninesConfig.playerIds]
+  );
+
   const is4Player = activePlayers.length === 4;
+
+  if (activePlayers.length < 3 || missingIds.length > 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">🎯 5-3-1</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-700 space-y-1">
+              <p className="font-medium">Participación incompleta</p>
+              <p>Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // For 3 players, use the standard engine
   // For 4 players, implement rotation locally

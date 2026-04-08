@@ -25,6 +25,34 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
 
+  const missingPlayerIds = useMemo(() => {
+    const referencedIds = new Set<string>();
+    for (const hs of holeStates) {
+      referencedIds.add(hs.wolfPlayerId);
+      hs.partnerIds.forEach(id => referencedIds.add(id));
+    }
+    return [...referencedIds].filter(id => !players.find(p => p.id === id));
+  }, [players, holeStates]);
+
+  if (missingPlayerIds.length > 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">🐺 La Loba</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-700 space-y-1">
+              <p className="font-medium">Participación incompleta</p>
+              <p>Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const bets = useMemo(() => calculateWolfBets(players, wolfConfig, holeStates), [players, wolfConfig, holeStates]);
   const details = useMemo(() => buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course]);
 

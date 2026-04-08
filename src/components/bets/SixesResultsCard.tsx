@@ -25,13 +25,41 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
 
+  const needsConfig = !sixesConfig.sets || sixesConfig.sets.length < 3;
+
+  const missingPlayerIds = useMemo(() => {
+    if (!sixesConfig.sets) return [];
+    const referencedIds = new Set<string>();
+    for (const s of sixesConfig.sets) {
+      [s.team1Player1Id, s.team1Player2Id, s.team2Player1Id, s.team2Player2Id].forEach(id => { if (id) referencedIds.add(id); });
+    }
+    return [...referencedIds].filter(id => !players.find(p => p.id === id));
+  }, [players, sixesConfig.sets]);
+
+  if (missingPlayerIds.length > 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">⛳ Seises</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-700 space-y-1">
+              <p className="font-medium">Participación incompleta</p>
+              <p>Un jugador fue eliminado de la ronda. Agrega un reemplazo o desactiva esta apuesta.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const setResults = useMemo(() => buildSixesSetResults(players, scores, sixesConfig, course), [players, scores, sixesConfig, course]);
   const bets = useMemo(() => calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
-
-  const needsConfig = !sixesConfig.sets || sixesConfig.sets.length < 3;
 
   const getTeamSide = (setResult: typeof setResults[0]) => {
     if (setResult.team1.includes(basePlayerId)) return 'team1';
