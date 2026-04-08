@@ -2788,7 +2788,19 @@ const Index = () => {
                 },
               }));
             }}
-            
+            wolfConfig={wolf.wolfConfig ?? undefined}
+            wolfHoleStates={wolf.holeStates}
+            currentUserId={profile?.id ?? undefined}
+            isOrganizer={profile?.id === roundState.organizerProfileId}
+            onWolfDecision={async (holeNumber, partnerIds, wentSolo) => {
+              const wolfId = wolf.getCurrentWolfId(holeNumber) ?? '';
+              await wolf.saveDecision(holeNumber, wolfId, partnerIds, wentSolo);
+            }}
+            onWolfResolve={async (holeNumber, result) => {
+              await wolf.resolveHole(holeNumber, result);
+            }}
+            sixesConfig={sixes.sixesConfig ?? undefined}
+            ninesConfig={nines.ninesConfig ?? undefined}
           />
           </ErrorBoundary>
         )}
