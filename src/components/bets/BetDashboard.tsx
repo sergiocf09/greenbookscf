@@ -2953,6 +2953,156 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         onBetConfigChange={onBetConfigChange}
         renderSection="grupales"
       />
+
+      {/* Sprint 3 — Wolf / Sixes / Vegas / Nines Results Cards */}
+      {wolfHook?.isActive && wolfHook.wolfConfig && (
+        <WolfResultsCard
+          players={allPlayersForCalculations}
+          wolfConfig={wolfHook.wolfConfig}
+          holeStates={wolfHook.holeStates}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+        />
+      )}
+
+      {sixesHook?.isActive && sixesHook.sixesConfig && (
+        <SixesResultsCard
+          players={allPlayersForCalculations}
+          sixesConfig={sixesHook.sixesConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          onConfigureSets={sixesHook.sixesConfig.sets?.length < 3
+            ? () => setSixesSheetOpen(true)
+            : undefined
+          }
+        />
+      )}
+
+      {vegasHook?.isActive && vegasHook.vegasConfig && (
+        <VegasResultsCard
+          players={allPlayersForCalculations}
+          vegasConfig={vegasHook.vegasConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          onConfigurePlayers={!vegasHook.vegasConfig.playerAId
+            ? () => setVegasSheetOpen(true)
+            : undefined
+          }
+        />
+      )}
+
+      {ninesHook?.isActive && ninesHook.ninesConfig && (
+        <NinesResultsCard
+          players={allPlayersForCalculations}
+          ninesConfig={ninesHook.ninesConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+        />
+      )}
+
+      {/* Sheet: Configurar parejas Sixes */}
+      <Sheet open={sixesSheetOpen} onOpenChange={setSixesSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Configurar parejas · Seises</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            {([1, 2, 3] as const).map(setNum => {
+              const ranges = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' } as const;
+              return (
+                <div key={setNum} className="space-y-2">
+                  <p className="text-sm font-medium">Set {setNum} · {ranges[setNum]}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['t1p1', 't1p2', 't2p1', 't2p2'] as const).map((slot, idx) => (
+                      <Select
+                        key={slot}
+                        value={sixesSetsLocal[setNum - 1]?.[idx] || ''}
+                        onValueChange={v => {
+                          setSixesSetsLocal(prev => {
+                            const next = [...prev];
+                            if (!next[setNum - 1]) next[setNum - 1] = ['', '', '', ''];
+                            next[setNum - 1][idx] = v;
+                            return next;
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="text-xs">
+                          <SelectValue placeholder={idx < 2 ? `Eq1 J${idx + 1}` : `Eq2 J${idx - 1}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allPlayersForCalculations.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <Button className="w-full" onClick={async () => {
+              if (!sixesHook) return;
+              const sets = sixesSetsLocal.map((s, i) => ({
+                setNumber: (i + 1) as 1 | 2 | 3,
+                team1: [s[0], s[1]] as [string, string],
+                team2: [s[2], s[3]] as [string, string],
+              })).filter(s => s.team1[0] && s.team1[1] && s.team2[0] && s.team2[1]);
+              await sixesHook.saveSets(sets);
+              setSixesSheetOpen(false);
+            }}>
+              Guardar parejas
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sheet: Asignar jugadores Vegas */}
+      <Sheet open={vegasSheetOpen} onOpenChange={setVegasSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Asignar jugadores · Las Vegas</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            {(['A', 'B', 'C', 'D'] as const).map(letter => (
+              <div key={letter} className="space-y-1">
+                <p className="text-sm font-medium">Jugador {letter}</p>
+                <Select
+                  value={vegasPlayersLocal[`player${letter}Id` as keyof typeof vegasPlayersLocal]}
+                  onValueChange={v => setVegasPlayersLocal(prev => ({
+                    ...prev, [`player${letter}Id`]: v
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPlayersForCalculations.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+            <Button className="w-full" onClick={async () => {
+              if (!vegasHook?.vegasConfig) return;
+              await vegasHook.saveConfig({
+                ...vegasHook.vegasConfig,
+                playerAId: vegasPlayersLocal.playerAId,
+                playerBId: vegasPlayersLocal.playerBId,
+                playerCId: vegasPlayersLocal.playerCId,
+                playerDId: vegasPlayersLocal.playerDId,
+              });
+              setVegasSheetOpen(false);
+            }}>
+              Guardar
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
