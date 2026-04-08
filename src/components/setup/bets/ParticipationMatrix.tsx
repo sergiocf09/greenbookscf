@@ -342,7 +342,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
                             handleCellToggle(bet.key, player.id);
                           }}
                           className={cn(
-                            "w-7 h-7 rounded-md flex items-center justify-center transition-all text-[10px]",
+                            "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-all text-[10px]",
                             isAnchor
                               ? "bg-primary text-primary-foreground border border-primary font-bold"
                               : isVsTarget

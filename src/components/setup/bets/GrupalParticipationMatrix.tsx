@@ -298,7 +298,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
                             handleCellToggle(bet.key, player.id);
                           }}
                           className={cn(
-                            "w-7 h-7 rounded-md flex items-center justify-center transition-all text-[10px]",
+                            "w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-all text-[10px]",
                             cellOn
                               ? "bg-primary/20 text-primary border border-primary/40"
                               : "bg-muted/40 text-muted-foreground/40 border border-transparent hover:border-border"
