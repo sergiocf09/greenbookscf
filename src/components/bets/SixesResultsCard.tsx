@@ -27,6 +27,14 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
 
   const needsConfig = !sixesConfig.sets || sixesConfig.sets.length < 3;
 
+  // Check for empty player IDs (not yet assigned)
+  const hasEmptyPlayerIds = useMemo(() => {
+    if (!sixesConfig.sets) return true;
+    return sixesConfig.sets.some(s =>
+      [...s.team1, ...s.team2].some(id => !id || id === '')
+    );
+  }, [sixesConfig.sets]);
+
   const missingPlayerIds = useMemo(() => {
     if (!sixesConfig.sets) return [];
     const referencedIds = new Set<string>();
