@@ -823,8 +823,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {bet.scoringType === 'matchOnly'
           ? '💡 Solo Match: sin apertura de presiones'
           : bet.scoringType === 'combined'
-          ? '💡 Combinado: no apuesta cuando diferencia > 2'
-          : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: no apuesta cuando diferencia = 2`}
+          ? '💡 Combinado: abre presión cuando diferencia > 2'
+          : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: abre presión cuando diferencia = 2`}
       </div>
     </div>
   );
