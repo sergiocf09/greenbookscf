@@ -1,4 +1,4 @@
-import { BetConfig, DEFAULT_STABLEFORD_POINTS, SkinsGrupalBetConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant } from '@/types/golf';
+import { BetConfig, DEFAULT_STABLEFORD_POINTS, SkinsGrupalBetConfig, WolfScoringMode, WolfTiming } from '@/types/golf';
 
 export const defaultBetConfig: BetConfig = {
   medal: { enabled: false, frontAmount: 50, backAmount: 100, totalAmount: 100 },
@@ -62,15 +62,7 @@ export const defaultBetConfig: BetConfig = {
     scoringMode: 'lowBall' as WolfScoringMode,
     useHandicap: true, timing: 'B' as WolfTiming, carryover: true,
   },
-  sixesSetup: {
-    enabled: false, scoringMode: 'lowBall' as SixesScoringMode,
-    cobro: 'per_hole' as SixesCobro, amount: 100, useHandicap: true,
-    sets: [],
-  },
-  vegasSetup: {
-    enabled: false, valuePerPoint: 10, useHandicap: false,
-    birdieMultiplier: false, variant: 'fixed' as VegasVariant,
-    playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-  },
-  ninesSetup: { enabled: false, valuePerPoint: 10 },
+  sixesBets: [],
+  vegasBets: [],
+  ninesBets: [],
 };

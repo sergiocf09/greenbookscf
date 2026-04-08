@@ -242,40 +242,39 @@ const Index = () => {
         carryover:     betConfig.wolfSetup.carryover ?? true,
       });
     }
-    if (betConfig.sixesSetup?.enabled && !sixes.isActive) {
+    const firstSixes = betConfig.sixesBets?.[0];
+    if (firstSixes && !sixes.isActive) {
       sixes.saveConfig({
-        scoringMode: betConfig.sixesSetup.scoringMode ?? 'lowBall',
-        cobro:       betConfig.sixesSetup.cobro ?? 'per_hole',
-        amount:      betConfig.sixesSetup.amount ?? 100,
-        useHandicap: betConfig.sixesSetup.useHandicap ?? true,
+        scoringMode: firstSixes.scoringMode ?? 'lowBall',
+        cobro:       firstSixes.cobro ?? 'per_hole',
+        amount:      firstSixes.amount ?? 100,
+        useHandicap: firstSixes.useHandicap ?? true,
       });
-      if ((betConfig.sixesSetup.sets?.length ?? 0) > 0) {
-        sixes.saveSets(betConfig.sixesSetup.sets);
+      if ((firstSixes.sets?.length ?? 0) > 0) {
+        sixes.saveSets(firstSixes.sets);
       }
     }
-    if (betConfig.vegasSetup?.enabled && !vegas.isActive) {
+    const firstVegas = betConfig.vegasBets?.[0];
+    if (firstVegas && !vegas.isActive) {
       vegas.saveConfig({
-        valuePerPoint:    betConfig.vegasSetup.valuePerPoint ?? 10,
-        useHandicap:      betConfig.vegasSetup.useHandicap ?? false,
-        birdieMultiplier: betConfig.vegasSetup.birdieMultiplier ?? false,
-        variant:          betConfig.vegasSetup.variant ?? 'fixed',
-        playerAId: betConfig.vegasSetup.playerAId ?? '',
-        playerBId: betConfig.vegasSetup.playerBId ?? '',
-        playerCId: betConfig.vegasSetup.playerCId ?? '',
-        playerDId: betConfig.vegasSetup.playerDId ?? '',
+        valuePerPoint:    firstVegas.valuePerPoint ?? 10,
+        useHandicap:      firstVegas.useHandicap ?? false,
+        birdieMultiplier: firstVegas.birdieMultiplier ?? false,
+        variant:          firstVegas.variant ?? 'fixed',
+        playerAId: firstVegas.playerAId ?? '',
+        playerBId: firstVegas.playerBId ?? '',
+        playerCId: firstVegas.playerCId ?? '',
+        playerDId: firstVegas.playerDId ?? '',
       });
     }
-    if (betConfig.ninesSetup?.enabled && !nines.isActive) {
-      const playerIds =
-        (betConfig.ninesSetup as any)?.playerIds?.length === 3
-          ? (betConfig.ninesSetup as any).playerIds
-          : players.map(p => p.id).slice(0, 3);
+    const firstNines = betConfig.ninesBets?.[0];
+    if (firstNines && firstNines.playerIds.length >= 3 && !nines.isActive) {
       nines.saveConfig({
-        valuePerPoint: betConfig.ninesSetup.valuePerPoint ?? 10,
-        playerIds,
+        valuePerPoint: firstNines.valuePerPoint ?? 10,
+        playerIds:     firstNines.playerIds.slice(0, 3),
       });
     }
-  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesSetup?.enabled, betConfig.vegasSetup?.enabled, betConfig.ninesSetup?.enabled]);
+  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesBets?.length, betConfig.vegasBets?.length, betConfig.ninesBets?.length]);
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
