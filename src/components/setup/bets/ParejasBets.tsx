@@ -723,21 +723,34 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         </Select>
       </div>
 
-      {/* Amounts - 3 columns */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
-          <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+      {/* Amounts - conditional on continua */}
+      {bet.scoringType === 'matchOnly' && (
+        <div className="flex items-center justify-between pt-1">
+          <Label className="text-xs text-muted-foreground">Continúa (18 hoyos)</Label>
+          <Switch checked={bet.continua ?? false} onCheckedChange={(v) => onUpdate({ continua: v })} />
         </div>
+      )}
+      {bet.scoringType === 'matchOnly' && bet.continua ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
-          <AmountInput label="" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">Match 18 (único)</Label>
           <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <AmountInput label="" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+            <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+          </div>
+        </div>
+      )}
 
       {/* Modalidades Adicionales */}
       <div className="space-y-2 pt-2 border-t border-border/30">
@@ -842,7 +855,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
-        {bet.scoringType === 'matchOnly'
+        {bet.scoringType === 'matchOnly' && bet.continua
+          ? '💡 Solo Match Continuo: corre del 1 al 18, se define cuando la ventaja supera los hoyos restantes'
+          : bet.scoringType === 'matchOnly'
           ? '💡 Solo Match: sin apertura de presiones'
           : bet.scoringType === 'combined'
           ? '💡 Combinado: abre presión cuando diferencia > 2'
@@ -1027,10 +1042,26 @@ const SixesBetCard: React.FC<{
         const team1: [string, string] = assignment?.team1 ?? ['', ''];
         const team2: [string, string] = assignment?.team2 ?? ['', ''];
         const updateSet = (t1: [string, string], t2: [string, string]) => {
+          const currentSets = bet.sets ?? [];
           const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
             if (n === setNum) return { setNumber: n, team1: t1, team2: t2 };
-            return (bet.sets ?? []).find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+            return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
           });
+
+          // Auto-rotate: when Set 1 is fully assigned and Sets 2/3 are empty, auto-generate
+          if (setNum === 1 && t1[0] && t1[1] && t2[0] && t2[1]) {
+            const set2 = newSets.find(s => s.setNumber === 2)!;
+            const set3 = newSets.find(s => s.setNumber === 3)!;
+            const set2Empty = !set2.team1[0] && !set2.team1[1] && !set2.team2[0] && !set2.team2[1];
+            const set3Empty = !set3.team1[0] && !set3.team1[1] && !set3.team2[0] && !set3.team2[1];
+            if (set2Empty && set3Empty) {
+              const [a, b] = t1;
+              const [c, d] = t2;
+              newSets[1] = { setNumber: 2, team1: [a, c], team2: [b, d] };
+              newSets[2] = { setNumber: 3, team1: [a, d], team2: [b, c] };
+            }
+          }
+
           onUpdate({ sets: newSets });
         };
         return (

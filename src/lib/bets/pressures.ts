@@ -75,11 +75,63 @@ export const calculatePressureBets = (
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
+      const pairContinua = config.pressures.continua === true && onlyMatch;
 
       const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
       const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
       const totalMatchAmount = resolvedPairConfig.pressures.totalAmount;
 
+      // ── Continúa mode: single 18-hole match with early-win detection ──
+      if (pairContinua) {
+        const allHoles = [...frontHoles, ...backHoles];
+        const match18Unit = getPairOverrideAmount(playerA.id, playerB.id, 'Presiones Match 18') ?? totalMatchAmount;
+        let balance = 0;
+        let matchConcluded = false;
+        let concludedOnHole = 0;
+        let holesPlayed = 0;
+
+        for (let i = 0; i < allHoles.length; i++) {
+          const holeNum = allHoles[i];
+          const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+          const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
+          if (scoreA === null || scoreB === null) continue;
+          holesPlayed++;
+          if (scoreA < scoreB) balance++;
+          else if (scoreB < scoreA) balance--;
+          const holesRemaining = allHoles.length - (i + 1);
+          if (Math.abs(balance) > holesRemaining && holesRemaining >= 0) {
+            matchConcluded = true;
+            concludedOnHole = holeNum;
+            break;
+          }
+        }
+
+        let descA: string;
+        let descB: string;
+        if (matchConcluded) {
+          const lead = Math.abs(balance);
+          const remaining = allHoles.length - holesPlayed;
+          const remaining18 = 18 - holesPlayed;
+          const remDisplay = remaining18 > 0 ? remaining18 : remaining;
+          descA = balance > 0 ? `${lead} & ${remDisplay}` : `${lead} & ${remDisplay}`;
+          descB = descA;
+        } else if (balance === 0) {
+          descA = 'Even';
+          descB = 'Even';
+        } else {
+          descA = balance > 0 ? `${Math.abs(balance)} Up` : `${Math.abs(balance)} Down`;
+          descB = balance < 0 ? `${Math.abs(balance)} Up` : `${Math.abs(balance)} Down`;
+        }
+
+        const matchWinner = balance > 0 ? 1 : balance < 0 ? -1 : 0;
+        const amountA = matchWinner * match18Unit;
+
+        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: amountA, segment: 'total', description: descA, units: matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
+        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: -amountA, segment: 'total', description: descB, units: -matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
+        continue; // Skip normal front/back/match processing
+      }
+
+      // ── Normal mode (existing logic) ──
       const processNine = (holes: number[]): number[] => {
         let bets: number[] = [0];
         let lastBetCanTrigger = true;

@@ -76,16 +76,30 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onExpandChange={(open) => onToggleSection('pressures', open)}
           helpText="Match play hoyo a hoyo. Se abre una nueva apuesta cada vez que un jugador va arriba por 2 hoyos. Al final del Front y del Back se suma la apuesta principal más todas las secundarias que se abrieron."
         >
-          <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
-          <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
-          <AmountInput label="Match 18" value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
+          {!(config.pressures.onlyMatch && config.pressures.continua) && (
+            <>
+              <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
+              <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
+            </>
+          )}
+          <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
 
           <div className="flex items-center justify-between pt-1">
             <Label className="text-xs text-muted-foreground">Sólo match</Label>
-            <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v })} />
+            <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v, ...(v ? {} : { continua: false }) })} />
           </div>
           {config.pressures.onlyMatch && (
-            <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+            <>
+              <div className="flex items-center justify-between pt-1">
+                <Label className="text-xs text-muted-foreground">Continúa (18 hoyos)</Label>
+                <Switch checked={config.pressures.continua ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { continua: v })} />
+              </div>
+              {config.pressures.continua ? (
+                <p className="text-[9px] text-muted-foreground">Match continuo del 1 al 18 sin corte. Se define cuando un jugador lleva más hoyos de ventaja que hoyos restantes (ej: 4&3).</p>
+              ) : (
+                <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+              )}
+            </>
           )}
         </BetSection>
       )}

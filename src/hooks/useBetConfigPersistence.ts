@@ -154,6 +154,7 @@ interface RoundBetConfig {
       teamHandicaps: Record<string, number>;
       scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
       enabled: boolean;
+      continua?: boolean;
     }>;
   };
   zoologico?: ZoologicoBetConfig;
@@ -165,6 +166,12 @@ interface RoundBetConfig {
     playerHandicaps: { playerId: string; handicap: number }[];
     participantIds?: string[];
   };
+  // Sprint 3 new bet types
+  wolfSetup?: any;
+  sixesBets?: any[];
+  vegasBets?: any[];
+  ninesBets?: any[];
+  parejasExcluded?: Record<string, string[]>;
 }
 
 export const useBetConfigPersistence = ({
@@ -381,6 +388,12 @@ export const useBetConfigPersistence = ({
           ...dbConfig.skinsGrupal,
         };
       }
+      // Sprint 3 new bet types
+      if (dbConfig.wolfSetup) newConfig.wolfSetup = dbConfig.wolfSetup;
+      if ('sixesBets' in dbConfig) newConfig.sixesBets = dbConfig.sixesBets;
+      if ('vegasBets' in dbConfig) newConfig.vegasBets = dbConfig.vegasBets;
+      if ('ninesBets' in dbConfig) newConfig.ninesBets = dbConfig.ninesBets;
+      if ('parejasExcluded' in dbConfig) newConfig.parejasExcluded = dbConfig.parejasExcluded;
       
       return newConfig;
     });
@@ -473,6 +486,12 @@ export const useBetConfigPersistence = ({
         zoologico: config.zoologico,
         skinsGrupal: config.skinsGrupal,
         pressurePairOverrides: config.pressurePairOverrides,
+        // Sprint 3 new bet types
+        wolfSetup: config.wolfSetup,
+        sixesBets: config.sixesBets,
+        vegasBets: config.vegasBets,
+        ninesBets: config.ninesBets,
+        parejasExcluded: config.parejasExcluded,
       };
 
       // Concurrency guard: check updated_at before writing

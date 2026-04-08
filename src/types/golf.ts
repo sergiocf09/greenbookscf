@@ -363,6 +363,7 @@ export interface TeamPressuresBet {
   teamHandicaps: Record<string, number>; // Per-player handicaps for this bet
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
   enabled: boolean;
+  continua?: boolean; // When true + matchOnly: single 18-hole match, early-win detection
   // Optional sub-modalities
   unitsConfig?: TeamPressureUnitsConfig;
   oyesesConfig?: TeamPressureOyesesConfig;
@@ -483,6 +484,7 @@ export interface PressureBetConfig {
   backAmount: number;
   totalAmount: number; // Match 18 bet amount
   onlyMatch?: boolean; // When true, no secondary pressures open (only main bet per nine)
+  continua?: boolean; // When true + onlyMatch: single 18-hole match (no 9-hole split), early-win detection
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
