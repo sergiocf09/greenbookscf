@@ -2182,34 +2182,78 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
-      {/* All Carritos Results — only render cards that have actual data */}
-      {/* FILTER: Only show Carritos where at least one team member is in the current display group */}
-      {allCarritosResults.length > 0 && allCarritosResults.map((result, idx) => {
-        const carritosId = result.id || `carritos-primary-${idx}`;
-        const disabled = isTeamBetDisabled(carritosId);
-        // In historical mode, skip rendering if all hole data is null/empty
-        const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
-        if (isHistorical && !hasAnyData) return null;
-        // Skip if none of the team members belong to the currently displayed group
-        const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
-        const allTeamMembers = [...result.teamA, ...result.teamB];
-        const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
-        if (hasMultipleGroups && !hasGroupMember) return null;
-        return (
-          <CarritosResultsCard 
-            key={carritosId}
-            results={result} 
-            players={players}
-            basePlayerId={basePlayer?.id}
-            title={`Carritos ${idx + 1}`}
-            isDisabled={disabled}
-            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
-          />
-        );
-      })}
+      {/* All Carritos Results — only render if carritos is enabled */}
+      {effectiveBetConfig.carritos.enabled && (() => {
+        const hasCarritosTeams = (effectiveBetConfig.carritosTeams?.length ?? 0) > 0;
+        const hasLegacyCarritos = effectiveBetConfig.carritos.teamA[0] && effectiveBetConfig.carritos.teamA[1] && effectiveBetConfig.carritos.teamB[0] && effectiveBetConfig.carritos.teamB[1];
+        const hasAnyConfigured = allCarritosResults.length > 0;
+        // Show incomplete warning if enabled but no results (no players configured)
+        if (!hasAnyConfigured && !hasLegacyCarritos && (!hasCarritosTeams || effectiveBetConfig.carritosTeams!.every(t => !t.teamA[0] || !t.teamA[1] || !t.teamB[0] || !t.teamB[1]))) {
+          return (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">🏎️ Carritos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-700 space-y-1">
+                    <p className="font-medium">Falta configurar jugadores</p>
+                    <p>Revisa la configuración de esta apuesta en la sección de Apuestas.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        return allCarritosResults.map((result, idx) => {
+          const carritosId = result.id || `carritos-primary-${idx}`;
+          const disabled = isTeamBetDisabled(carritosId);
+          const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
+          if (isHistorical && !hasAnyData) return null;
+          const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
+          const allTeamMembers = [...result.teamA, ...result.teamB];
+          const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
+          if (hasMultipleGroups && !hasGroupMember) return null;
+          return (
+            <CarritosResultsCard 
+              key={carritosId}
+              results={result} 
+              players={players}
+              basePlayerId={basePlayer?.id}
+              title={`Carritos ${idx + 1}`}
+              isDisabled={disabled}
+              onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
+            />
+          );
+        });
+      })()}
 
-      {/* Team Pressures Results - displayed like Carritos (NOT in bilateral view) */}
-      {betConfig.teamPressures?.bets?.filter(b => b.enabled).map((bet, idx) => {
+      {/* Team Pressures Results - only render if teamPressures is enabled */}
+      {effectiveBetConfig.teamPressures?.enabled && (() => {
+        const enabledBets = effectiveBetConfig.teamPressures?.bets?.filter(b => b.enabled) ?? [];
+        const hasAnyConfigured = enabledBets.some(b => b.teamA[0] && b.teamA[1] && b.teamB[0] && b.teamB[1]);
+        if (enabledBets.length === 0 || !hasAnyConfigured) {
+          return (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">⛳ Foursomes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-700 space-y-1">
+                    <p className="font-medium">Falta configurar jugadores</p>
+                    <p>Revisa la configuración de esta apuesta en la sección de Apuestas.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+      {effectiveBetConfig.teamPressures?.enabled && betConfig.teamPressures?.bets?.filter(b => b.enabled).map((bet, idx) => {
         // Resolve config IDs (may be profileId) to actual player.id
         // IMPORTANT: Search allPlayersForCalculations (all groups) not just `players` (current group)
         const resolvePId = (pid: string): string => {
