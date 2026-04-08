@@ -804,15 +804,18 @@ const Index = () => {
             const holeScoreId = scoreIdByHole.get(score.holeNumber);
             if (!holeScoreId) continue;
             
-            for (const [markerKey, isActive] of Object.entries(score.markers)) {
-              if (!isActive) continue;
+            for (const [markerKey, val] of Object.entries(score.markers)) {
+              if (!val) continue;
               const dbMarkerType = markerKeyToDb[markerKey as keyof typeof markerKeyToDb];
               if (!dbMarkerType) continue;
-              markerInserts.push({
-                hole_score_id: holeScoreId,
-                marker_type: dbMarkerType as any,
-                is_auto_detected: false,
-              });
+              const count = typeof val === 'number' ? val : 1;
+              for (let i = 0; i < count; i++) {
+                markerInserts.push({
+                  hole_score_id: holeScoreId,
+                  marker_type: dbMarkerType as any,
+                  is_auto_detected: false,
+                });
+              }
             }
           }
 
