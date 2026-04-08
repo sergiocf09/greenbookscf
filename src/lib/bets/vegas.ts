@@ -1,0 +1,127 @@
+import { Player, PlayerScore, GolfCourse, VegasConfig, VegasHoleDetail, VegasSetResult } from '@/types/golf';
+import { BetSummary } from './shared';
+import { calculateStrokesPerHole } from '../handicapUtils';
+import { detectScoreBasedMarkers } from '../scoreDetection';
+
+// Número de 2 dígitos Las Vegas: menor primero.
+// Si alguno >= 10: el mayor va primero (regla del 10+)
+export const formVegasNumber = (s1: number, s2: number): number => {
+  const lo = Math.min(s1, s2), hi = Math.max(s1, s2);
+  if (hi >= 10) return parseInt(`${hi}${lo}`, 10);
+  return lo * 10 + hi;
+};
+
+const getScore = (
+  playerId: string, holeNumber: number, players: Player[],
+  scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+): number => {
+  const player = players.find(p => p.id === playerId);
+  if (!player) return 0;
+  const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
+  if (!hs?.strokes) return 0;
+  if (!useHandicap) return hs.strokes;
+  const sp = calculateStrokesPerHole(player.handicap, course);
+  return hs.strokes - (sp[holeNumber - 1] ?? 0);
+};
+
+const hasBirdie = (
+  playerIds: string[], holeNumber: number,
+  players: Player[], scores: Map<string,PlayerScore[]>, course: GolfCourse
+): boolean =>
+  playerIds.some(id => {
+    const hs = (scores.get(id) ?? []).find(s => s.holeNumber === holeNumber);
+    if (!hs?.strokes) return false;
+    const par = course.holes[holeNumber - 1]?.par ?? 4;
+    const d = detectScoreBasedMarkers(hs.strokes, hs.putts ?? 0, par);
+    return !!(d.birdie || d.eagle || d.albatross);
+  });
+
+const resolveVegasHole = (
+  team1: [string,string], team2: [string,string],
+  holeNumber: number, setNumber: 1|2|3|null,
+  players: Player[], scores: Map<string,PlayerScore[]>,
+  course: GolfCourse, config: VegasConfig
+): VegasHoleDetail => {
+  const [pA, pB] = team1, [pC, pD] = team2;
+  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap);
+  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap);
+  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap);
+  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap);
+
+  const pd = (id: string, gross: number) => {
+    const p = players.find(x => x.id === id);
+    const sp = calculateStrokesPerHole(p?.handicap ?? 0, course);
+    const strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    return { gross, strokes, net: gross - strokes };
+  };
+  const dA = pd(pA, sA), dB = pd(pB, sB), dC = pd(pC, sC), dD = pd(pD, sD);
+
+  const n1 = formVegasNumber(sA, sB), n2 = formVegasNumber(sC, sD);
+  const bT1 = config.birdieMultiplier && hasBirdie([pA,pB], holeNumber, players, scores, course);
+  const bT2 = config.birdieMultiplier && hasBirdie([pC,pD], holeNumber, players, scores, course);
+
+  let n1e = n1, n2e = n2;
+  let multiplierApplied: 'team1'|'team2'|'none' = 'none';
+  if (bT1 && !bT2) { n2e = n2 * 2; multiplierApplied = 'team2'; }
+  else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
+
+  const diff = n2e - n1e;
+  const amountThisHole = Math.abs(diff) * config.valuePerPoint;
+  const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
+
+  return {
+    holeNumber, setNumber, team1, team2,
+    grossA: dA.gross, strokesA: dA.strokes, netA: dA.net,
+    grossB: dB.gross, strokesB: dB.strokes, netB: dB.net,
+    grossC: dC.gross, strokesC: dC.strokes, netC: dC.net,
+    grossD: dD.gross, strokesD: dD.strokes, netD: dD.net,
+    numberTeam1: n1, numberTeam2: n2,
+    numberTeam1Effective: n1e, numberTeam2Effective: n2e,
+    birdieTeam1: bT1, birdieTeam2: bT2, multiplierApplied,
+    diff, amountThisHole, winner,
+  };
+};
+
+export const buildVegasSetResults = (
+  players: Player[], scores: Map<string,PlayerScore[]>,
+  config: VegasConfig, course: GolfCourse
+): VegasSetResult[] => {
+  const { playerAId: A, playerBId: B, playerCId: C, playerDId: D } = config;
+  if (!A || !B || !C || !D) return [];
+
+  const sets = config.variant === 'fixed'
+    ? [{ setNumber: null as null, start: 1, end: 18, t1: [A,B] as [string,string], t2: [C,D] as [string,string] }]
+    : [
+        { setNumber: 1 as const, start: 1,  end: 6,  t1: [A,B] as [string,string], t2: [C,D] as [string,string] },
+        { setNumber: 2 as const, start: 7,  end: 12, t1: [A,C] as [string,string], t2: [B,D] as [string,string] },
+        { setNumber: 3 as const, start: 13, end: 18, t1: [A,D] as [string,string], t2: [B,C] as [string,string] },
+      ];
+
+  return sets.map(s => {
+    const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
+    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
+    const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
+    const totalAmount = Math.abs(totalDiff) * config.valuePerPoint;
+    const winner: 'team1'|'team2'|'tied' = totalDiff > 0 ? 'team1' : totalDiff < 0 ? 'team2' : 'tied';
+    return { setNumber: s.setNumber, startHole: s.start, endHole: s.end, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
+  });
+};
+
+export const calculateVegasBets = (
+  players: Player[], scores: Map<string,PlayerScore[]>,
+  config: VegasConfig, course: GolfCourse
+): BetSummary[] => {
+  const summaries: BetSummary[] = [];
+  buildVegasSetResults(players, scores, config, course).forEach(sr => {
+    if (sr.winner === 'tied' || sr.totalAmount === 0) return;
+    const winners = [...(sr.winner === 'team1' ? sr.team1 : sr.team2)];
+    const losers  = [...(sr.winner === 'team1' ? sr.team2 : sr.team1)];
+    const splitAmount = sr.totalAmount / 2;
+    const desc = sr.setNumber ? `Vegas Set${sr.setNumber}` : 'Las Vegas';
+    losers.forEach(lId => winners.forEach(wId => {
+      summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Vegas', amount: splitAmount, segment: 'total', description: desc });
+      summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Vegas', amount: -splitAmount, segment: 'total', description: desc });
+    }));
+  });
+  return summaries;
+};
