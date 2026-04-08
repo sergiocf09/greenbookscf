@@ -1220,6 +1220,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       dobleDigito:  { label: 'Doble Dígito',emoji: '💀', short: '10+' },
       moreliana:    { label: 'Moreliana',    emoji: '🎭', short: 'Morel' },
       cuatriput:    { label: 'Cuatriput',    emoji: '😱', short: '4+Putt' },
+      manchaGenerica: { label: 'Mancha',    emoji: '⬛', short: 'Mancha' },
     };
     const participatingPlayers = resolveGroupParticipants(betConfig.manchas.participantIds);
     if (participatingPlayers.length < 2) return null;
@@ -1248,6 +1249,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         const hasCuatriput = (score.putts != null && score.putts >= 4) || !!(score.markers as any)?.cuatriput;
         if (hasCuatriput) {
           manchas.push({ marker: 'cuatriput', ...MANCHA_LABELS.cuatriput, holeNumber: score.holeNumber });
+        }
+        // Manchas genéricas (numeric counter)
+        const manchaGenCount = (score.markers as any)?.manchaGenerica ?? 0;
+        for (let i = 0; i < manchaGenCount; i++) {
+          manchas.push({ marker: 'manchaGenerica', ...MANCHA_LABELS.manchaGenerica, holeNumber: score.holeNumber });
         }
       });
       return { player, manchas, total: manchas.length };
