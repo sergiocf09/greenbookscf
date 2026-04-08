@@ -229,6 +229,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
         >
           <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
+          <AmountInput
+            label="Valor por Unidad genérica"
+            value={config.units.valuePerGenericUnit ?? config.units.valuePerPoint}
+            onChange={(v) => onUpdateBet('units', { valuePerGenericUnit: v })}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Para cualquier unidad no contemplada en el set estándar
+          </p>
         </BetSection>
       )}
 
