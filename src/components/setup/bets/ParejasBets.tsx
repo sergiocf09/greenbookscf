@@ -365,7 +365,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
       {/* Sixes — multi-instance */}
       <BetSection
-        id="sixes" title="⛳ Sixes"
+        id="sixes" title="Sixes"
         description="3 sets de 6 hoyos con cambio de parejas"
         enabled={(config.sixesBets?.length ?? 0) > 0}
         onToggle={(enabled) => {
