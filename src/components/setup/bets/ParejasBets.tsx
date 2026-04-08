@@ -165,7 +165,12 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => {
           onUpdateBet('teamPressures', { enabled });
-          if (enabled) onToggleSection('teamPressures', true);
+          if (enabled) {
+            if (config.teamPressures.bets.length === 0) addTeamPressure();
+            onToggleSection('teamPressures', true);
+          } else {
+            onToggleSection('teamPressures', false);
+          }
         }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
