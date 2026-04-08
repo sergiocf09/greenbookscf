@@ -295,7 +295,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           id="wolf" title="🐺 La Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
           enabled={config.wolfSetup?.enabled ?? false}
-          onToggle={(enabled) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any)}
+          onToggle={(enabled) => {
+            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any);
+            if (enabled) {
+              onToggleSection('wolf', true);
+            } else {
+              onToggleSection('wolf', false);
+            }
+          }}
           isExpanded={expandedSections.includes('wolf')}
           onExpandChange={(open) => onToggleSection('wolf', open)}
           helpText="En cada hoyo un jugador (La Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
