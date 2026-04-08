@@ -118,12 +118,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   snapshotLedger,
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
+  roundId,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
+
+  // Sprint 3 hooks: Sixes & Nines
+  const { sixesConfig, isActive: sixesActive } = useSixes(roundId ?? null, players);
+  const { ninesConfig, isActive: ninesActive } = useNines(roundId ?? null, players);
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
