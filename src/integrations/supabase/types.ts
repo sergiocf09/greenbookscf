@@ -2126,6 +2126,8 @@ export type Database = {
         | "moreliana"
         | "culebra"
         | "oyes_uni"
+        | "mancha_generica"
+        | "unidad_generica"
       round_status: "setup" | "in_progress" | "completed"
     }
     CompositeTypes: {
@@ -2295,6 +2297,8 @@ export const Constants = {
         "moreliana",
         "culebra",
         "oyes_uni",
+        "mancha_generica",
+        "unidad_generica",
       ],
       round_status: ["setup", "in_progress", "completed"],
     },
