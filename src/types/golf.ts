@@ -520,6 +520,7 @@ export interface UnitsBetConfig {
 export interface ManchasBetConfig {
   enabled: boolean;
   valuePerPoint: number;
+  valuePerGenericMancha?: number;
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
