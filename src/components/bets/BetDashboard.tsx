@@ -73,6 +73,18 @@ import { BilateralDetail } from './BilateralDetail';
 import { CarritosResultsCard, TeamHoleGrid } from './CarritosResultsCard';
 import { CrossGroupHandicapWidget } from './CrossGroupHandicapWidget';
 import { BetAmountEditor, BilateralHandicapEditor } from './BetEditors';
+import { WolfResultsCard } from './WolfResultsCard';
+import { SixesResultsCard } from './SixesResultsCard';
+import { VegasResultsCard } from './VegasResultsCard';
+import { NinesResultsCard } from './NinesResultsCard';
+import { useWolf } from '@/hooks/useWolf';
+import { useSixes } from '@/hooks/useSixes';
+import { useVegas } from '@/hooks/useVegas';
+import { useNines } from '@/hooks/useNines';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 // BilateralHandicap is now imported from types/golf.ts
 
 interface BetDashboardProps {
@@ -93,6 +105,10 @@ interface BetDashboardProps {
   snapshotLedger?: SnapshotLedgerEntry[];
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
+  wolfHook?: ReturnType<typeof useWolf>;
+  sixesHook?: ReturnType<typeof useSixes>;
+  vegasHook?: ReturnType<typeof useVegas>;
+  ninesHook?: ReturnType<typeof useNines>;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
