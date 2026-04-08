@@ -2913,6 +2913,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
+      {/* Sixes Results */}
+      {sixesActive && sixesConfig && course && (
+        <SixesResultsCard players={allPlayersForCalculations} scores={scores} config={sixesConfig} course={course} />
+      )}
+
       {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales */}
       <GroupBetsCard
         players={allPlayersForCalculations}
