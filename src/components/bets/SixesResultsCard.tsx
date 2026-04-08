@@ -60,7 +60,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">⛳ Sixes</CardTitle>
+          <CardTitle className="text-sm">Sixes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
