@@ -829,6 +829,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   vegasHook,
   ninesHook,
 }) => {
+  const [sixesSheetOpen, setSixesSheetOpen] = useState(false);
+  const [vegasSheetOpen, setVegasSheetOpen] = useState(false);
+  const [sixesSets, setSixesSets] = useState<{
+    [setNum: number]: { t1p1: string; t1p2: string; t2p1: string; t2p2: string }
+  }>({
+    1: { t1p1:'', t1p2:'', t2p1:'', t2p2:'' },
+    2: { t1p1:'', t1p2:'', t2p1:'', t2p2:'' },
+    3: { t1p1:'', t1p2:'', t2p1:'', t2p2:'' },
+  });
+  const [vegasPlayers, setVegasPlayers] = useState({
+    playerAId: '', playerBId: '', playerCId: '', playerDId: ''
+  });
+
   // Check if all 18 holes are confirmed for all players
   const all18HolesConfirmed = useMemo(() => {
     return Array.from({ length: 18 }, (_, i) => i + 1).every(holeNum =>
