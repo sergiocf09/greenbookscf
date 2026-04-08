@@ -350,19 +350,90 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         </BetSection>
       )}
 
-      {/* Nines — 3 players */}
-      {players.length === 3 && (
+      {/* Nines — 3 or 4 players */}
+      {players.length >= 3 && (
         <BetSection
           id="nines" title="🎯 5-3-1 (Nines)"
           description="Distribución de 9 puntos por hoyo entre 3 jugadores"
           enabled={config.ninesSetup?.enabled ?? false}
-          onToggle={(enabled) => onUpdateBet('ninesSetup', { enabled, valuePerPoint: config.ninesSetup?.valuePerPoint ?? 1 } as any)}
+          onToggle={(enabled) => onUpdateBet('ninesSetup', { enabled, valuePerPoint: config.ninesSetup?.valuePerPoint ?? 10 } as any)}
           isExpanded={expandedSections.includes('nines')}
           onExpandChange={(open) => onToggleSection('nines', open)}
           helpText="Cada hoyo se reparten 9 puntos: 5 al mejor score neto, 3 al segundo, 1 al tercero. En caso de empate: empate arriba 4-4-1, todos empatan 3-3-3."
         >
-          <AmountInput label="Valor por punto" value={config.ninesSetup?.valuePerPoint ?? 1}
+          <AmountInput label="Valor por punto" value={config.ninesSetup?.valuePerPoint ?? 10}
             onChange={(v) => onUpdateBet('ninesSetup', { enabled: true, valuePerPoint: v } as any)} />
+
+          {players.length === 4 && (
+            <div className="space-y-3 mt-3">
+              <Label className="text-[10px] font-semibold text-primary">
+                Selecciona los 3 jugadores que participan
+              </Label>
+              <p className="text-[9px] text-muted-foreground">
+                El 4° jugador rota como descansante hoyo a hoyo (recibe 3 pts).
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {players.map(p => {
+                  const currentIds: string[] =
+                    (config.ninesSetup as any)?.playerIds?.length > 0
+                      ? (config.ninesSetup as any).playerIds
+                      : players.slice(0, 3).map(x => x.id);
+                  const isSelected = currentIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        let next: string[];
+                        if (isSelected) {
+                          if (currentIds.length <= 3) return;
+                          next = currentIds.filter(id => id !== p.id);
+                        } else {
+                          if (currentIds.length >= 4) return;
+                          next = [...currentIds, p.id];
+                        }
+                        onUpdateBet('ninesSetup', {
+                          ...config.ninesSetup,
+                          enabled: true,
+                          playerIds: next,
+                        } as any);
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-left transition-colors border',
+                        isSelected
+                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                          : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted'
+                      )}
+                    >
+                      <span className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0">
+                        {isSelected && <Check className="h-3 w-3" />}
+                      </span>
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {(() => {
+                const currentIds: string[] =
+                  (config.ninesSetup as any)?.playerIds?.length > 0
+                    ? (config.ninesSetup as any).playerIds
+                    : players.slice(0, 3).map(x => x.id);
+                if (currentIds.length !== 3) {
+                  return (
+                    <p className="text-[9px] text-amber-600">
+                      Selecciona exactamente 3 jugadores ({currentIds.length}/3)
+                    </p>
+                  );
+                }
+                const resting = players.find(p => !currentIds.includes(p.id));
+                return (
+                  <p className="text-[9px] text-muted-foreground">
+                    Descansante rotativo: {resting?.name.split(' ')[0]}
+                  </p>
+                );
+              })()}
+            </div>
+          )}
 
           <p className="text-[9px] text-muted-foreground mt-2">
             Distribución: 5 primero · 3 segundo · 1 tercero · Empate arriba: 4-4-1 · Todos empatan: 3-3-3
