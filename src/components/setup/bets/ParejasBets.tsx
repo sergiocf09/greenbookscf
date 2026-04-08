@@ -218,8 +218,12 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         enabled={config.carritos.enabled}
         onToggle={(enabled) => {
           onUpdateBet('carritos', { enabled });
-          // Auto-open section when enabling so user sees configuration
-          if (enabled) onToggleSection('carritos', true);
+          if (enabled) {
+            if ((config.carritosTeams || []).length === 0 && !hasPrimaryCarritos) addCarritosTeam();
+            onToggleSection('carritos', true);
+          } else {
+            onToggleSection('carritos', false);
+          }
         }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
