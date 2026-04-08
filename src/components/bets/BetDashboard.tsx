@@ -129,6 +129,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   snapshotLedger,
   snapshotPairBreakdowns,
   snapshotPairSegmentResults,
+  wolfHook,
+  sixesHook,
+  vegasHook,
+  ninesHook,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
