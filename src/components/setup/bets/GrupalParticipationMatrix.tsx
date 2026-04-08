@@ -114,12 +114,15 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
   if (players.length === 0) return null;
 
+  const doUpdate = (betKey: GrupalBetKey, updates: any) =>
+    updateBet(betKey, updates, config, players, onUpdateBet, onUpdateConfig);
+
   const handleCellToggle = (betKey: GrupalBetKey, playerId: string) => {
     const pIds = getParticipantIds(config, betKey);
     const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
     if (isExplicitlyEmpty) {
-      onUpdateBet(betKey, { participantIds: [playerId], enabled: true } as any);
+      doUpdate(betKey, { participantIds: [playerId], enabled: true });
       return;
     }
 
@@ -132,10 +135,10 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const allIds = players.map(p => p.id);
     const isAll = allIds.every(id => newIds.includes(id));
     const isEmpty = newIds.length === 0;
-    onUpdateBet(betKey, { 
+    doUpdate(betKey, { 
       participantIds: isAll ? undefined : newIds,
       enabled: !isEmpty,
-    } as any);
+    });
   };
 
   const handleRowToggle = (betKey: GrupalBetKey) => {
@@ -146,9 +149,9 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
     const allActive = !isExplicitlyEmpty && allIds.every(id => currentIds.includes(id));
 
     if (allActive) {
-      onUpdateBet(betKey, { participantIds: [], enabled: false } as any);
+      doUpdate(betKey, { participantIds: [], enabled: false });
     } else {
-      onUpdateBet(betKey, { participantIds: undefined, enabled: true } as any);
+      doUpdate(betKey, { participantIds: undefined, enabled: true });
     }
   };
 
@@ -158,6 +161,31 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
     let newConfig = { ...config };
     GRUPAL_BETS.forEach(b => {
+      if (b.key === 'nines') {
+        // Handle nines specially — mutate newConfig.ninesBets
+        const ninesBets = newConfig.ninesBets ?? [];
+        if (colState === 'all') {
+          if (ninesBets.length === 0) return;
+          const updated = ninesBets.map(nb => ({
+            ...nb,
+            playerIds: nb.playerIds.filter(id => id !== playerId),
+          })).filter(nb => nb.playerIds.length > 0);
+          newConfig = { ...newConfig, ninesBets: updated };
+        } else {
+          if (ninesBets.length === 0) {
+            const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [playerId] };
+            newConfig = { ...newConfig, ninesBets: [nueva] };
+          } else {
+            const updated = ninesBets.map(nb => ({
+              ...nb,
+              playerIds: nb.playerIds.includes(playerId) ? nb.playerIds : [...nb.playerIds, playerId],
+            }));
+            newConfig = { ...newConfig, ninesBets: updated };
+          }
+        }
+        return;
+      }
+
       const pIds = getParticipantIds(config, b.key);
       const isExplicitlyEmpty = Array.isArray(pIds) && pIds.length === 0;
 
