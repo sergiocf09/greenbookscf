@@ -38,7 +38,8 @@ export const calculateTeamPressuresBets = (
     const teamB: [string, string] = [resolvePlayerId(bet.teamB[0]), resolvePlayerId(bet.teamB[1])];
     const { scoringType, teamHandicaps } = bet;
 
-    const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+    const isMatchOnly = scoringType === 'matchOnly';
+    const openingThreshold = isMatchOnly ? Infinity : (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
 
     const getHandicap = (playerId: string): number => {
       if (teamHandicaps) {
@@ -65,7 +66,7 @@ export const calculateTeamPressuresBets = (
       const netB1 = getNet(teamB[0], holeNum), netB2 = getNet(teamB[1], holeNum);
       if (netA1 === null || netA2 === null || netB1 === null || netB2 === null) return null;
       let teamAPoints = 0, teamBPoints = 0;
-      if (scoringType === 'lowBall' || scoringType === 'combined') {
+      if (scoringType === 'lowBall' || scoringType === 'combined' || scoringType === 'matchOnly') {
         const lowA = Math.min(netA1, netA2), lowB = Math.min(netB1, netB2);
         if (lowA < lowB) teamAPoints++; else if (lowB < lowA) teamBPoints++;
       }

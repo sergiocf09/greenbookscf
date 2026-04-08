@@ -166,7 +166,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         onUpdateBet={onUpdateBet}
       />
 
-      {/* Team Pressures */}
+      {/* Team Pressures — only if enabled */}
+      {config.teamPressures.enabled && (
       <BetSection
         id="teamPressures"
          title="Foursomes"
@@ -218,8 +219,10 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </>
         )}
       </BetSection>
+      )}
 
-      {/* Carritos */}
+      {/* Carritos — only if enabled */}
+      {config.carritos.enabled && (
       <BetSection
         id="carritos"
         title="Carritos (Medal Parejas)"
@@ -297,9 +300,133 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </>
         )}
       </BetSection>
+      )}
 
-      {/* Wolf — 4-6 players */}
-      {players.length >= 4 && players.length <= 6 && (
+      {/* Sixes — only if enabled */}
+      {(config.sixesBets?.length ?? 0) > 0 && (
+      <BetSection
+        id="sixes" title="Sixes"
+        description="3 sets de 6 hoyos con cambio de parejas"
+        enabled={(config.sixesBets?.length ?? 0) > 0}
+        onToggle={(enabled) => {
+          if (enabled) {
+            const primera: SixesBetInstance = {
+              id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
+              amount: 100, useHandicap: true, sets: [],
+            };
+            onUpdateConfig({ ...config, sixesBets: [primera] });
+          } else {
+            onUpdateConfig({ ...config, sixesBets: [] });
+          }
+          onToggleSection('sixes', enabled);
+        }}
+        isExpanded={expandedSections.includes('sixes')}
+        onExpandChange={(open) => onToggleSection('sixes', open)}
+        helpText="Se juegan 3 sets de 6 hoyos con parejas distintas. Cada instancia es una apuesta independiente de 4 jugadores."
+      >
+        {(config.sixesBets?.length ?? 0) === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Sixes configuradas</p>
+            <Button variant="outline" size="sm" onClick={() => {
+              const nueva: SixesBetInstance = {
+                id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
+                amount: 100, useHandicap: true, sets: [],
+              };
+              onUpdateConfig({ ...config, sixesBets: [nueva] });
+            }} className="gap-1">
+              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Sixes
+            </Button>
+          </div>
+        ) : (
+          <>
+            {config.sixesBets!.map((bet, idx) => (
+              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
+                onUpdate={(updates) => {
+                  const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
+                  onUpdateConfig({ ...config, sixesBets: next });
+                }}
+                onRemove={() => onUpdateConfig({ ...config, sixesBets: config.sixesBets!.filter(b => b.id !== bet.id) })}
+              />
+            ))}
+            <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
+              const nueva: SixesBetInstance = {
+                id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
+                amount: 100, useHandicap: true, sets: [],
+              };
+              onUpdateConfig({ ...config, sixesBets: [...(config.sixesBets ?? []), nueva] });
+            }}>
+              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Sixes
+            </Button>
+          </>
+        )}
+      </BetSection>
+      )}
+
+      {/* Vegas — only if enabled */}
+      {(config.vegasBets?.length ?? 0) > 0 && (
+      <BetSection
+        id="vegas" title="Las Vegas"
+        description="Combina scores en números de 2 dígitos"
+        enabled={(config.vegasBets?.length ?? 0) > 0}
+        onToggle={(enabled) => {
+          if (enabled) {
+            const primera: VegasBetInstance = {
+              id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+              birdieMultiplier: false, variant: 'fixed',
+              playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+            };
+            onUpdateConfig({ ...config, vegasBets: [primera] });
+          } else {
+            onUpdateConfig({ ...config, vegasBets: [] });
+          }
+          onToggleSection('vegas', enabled);
+        }}
+        isExpanded={expandedSections.includes('vegas')}
+        onExpandChange={(open) => onToggleSection('vegas', open)}
+        helpText="Cada equipo forma un número de 2 dígitos con sus scores netos. La diferencia entre los números determina el pago. Múltiples instancias permiten diferentes configuraciones de parejas."
+      >
+        {(config.vegasBets?.length ?? 0) === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Vegas configuradas</p>
+            <Button variant="outline" size="sm" onClick={() => {
+              const nueva: VegasBetInstance = {
+                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+                birdieMultiplier: false, variant: 'fixed',
+                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+              };
+              onUpdateConfig({ ...config, vegasBets: [nueva] });
+            }} className="gap-1">
+              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Vegas
+            </Button>
+          </div>
+        ) : (
+          <>
+            {config.vegasBets!.map((bet, idx) => (
+              <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
+                onUpdate={(updates) => {
+                  const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
+                  onUpdateConfig({ ...config, vegasBets: next });
+                }}
+                onRemove={() => onUpdateConfig({ ...config, vegasBets: config.vegasBets!.filter(b => b.id !== bet.id) })}
+              />
+            ))}
+            <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
+              const nueva: VegasBetInstance = {
+                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+                birdieMultiplier: false, variant: 'fixed',
+                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+              };
+              onUpdateConfig({ ...config, vegasBets: [...(config.vegasBets ?? []), nueva] });
+            }}>
+              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Vegas
+            </Button>
+          </>
+        )}
+      </BetSection>
+      )}
+
+      {/* Wolf — 4-6 players, only if enabled, LAST in order */}
+      {players.length >= 4 && players.length <= 6 && (config.wolfSetup?.enabled ?? false) && (
         <BetSection
           id="wolf" title="🐺 Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
@@ -362,125 +489,6 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </p>
         </BetSection>
       )}
-
-      {/* Sixes — multi-instance */}
-      <BetSection
-        id="sixes" title="Sixes"
-        description="3 sets de 6 hoyos con cambio de parejas"
-        enabled={(config.sixesBets?.length ?? 0) > 0}
-        onToggle={(enabled) => {
-          if (enabled) {
-            const primera: SixesBetInstance = {
-              id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
-              amount: 100, useHandicap: true, sets: [],
-            };
-            onUpdateConfig({ ...config, sixesBets: [primera] });
-          } else {
-            onUpdateConfig({ ...config, sixesBets: [] });
-          }
-          onToggleSection('sixes', enabled);
-        }}
-        isExpanded={expandedSections.includes('sixes')}
-        onExpandChange={(open) => onToggleSection('sixes', open)}
-        helpText="Se juegan 3 sets de 6 hoyos con parejas distintas. Cada instancia es una apuesta independiente de 4 jugadores."
-      >
-        {(config.sixesBets?.length ?? 0) === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Sixes configuradas</p>
-            <Button variant="outline" size="sm" onClick={() => {
-              const nueva: SixesBetInstance = {
-                id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
-                amount: 100, useHandicap: true, sets: [],
-              };
-              onUpdateConfig({ ...config, sixesBets: [nueva] });
-            }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Sixes
-            </Button>
-          </div>
-        ) : (
-          <>
-            {config.sixesBets!.map((bet, idx) => (
-              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
-                onUpdate={(updates) => {
-                  const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
-                  onUpdateConfig({ ...config, sixesBets: next });
-                }}
-                onRemove={() => onUpdateConfig({ ...config, sixesBets: config.sixesBets!.filter(b => b.id !== bet.id) })}
-              />
-            ))}
-            <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
-              const nueva: SixesBetInstance = {
-                id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
-                amount: 100, useHandicap: true, sets: [],
-              };
-              onUpdateConfig({ ...config, sixesBets: [...(config.sixesBets ?? []), nueva] });
-            }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Sixes
-            </Button>
-          </>
-        )}
-      </BetSection>
-
-      {/* Vegas — multi-instance */}
-      <BetSection
-        id="vegas" title="Las Vegas"
-        description="Combina scores en números de 2 dígitos"
-        enabled={(config.vegasBets?.length ?? 0) > 0}
-        onToggle={(enabled) => {
-          if (enabled) {
-            const primera: VegasBetInstance = {
-              id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-              birdieMultiplier: false, variant: 'fixed',
-              playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-            };
-            onUpdateConfig({ ...config, vegasBets: [primera] });
-          } else {
-            onUpdateConfig({ ...config, vegasBets: [] });
-          }
-          onToggleSection('vegas', enabled);
-        }}
-        isExpanded={expandedSections.includes('vegas')}
-        onExpandChange={(open) => onToggleSection('vegas', open)}
-        helpText="Cada equipo forma un número de 2 dígitos con sus scores netos. La diferencia entre los números determina el pago. Múltiples instancias permiten diferentes configuraciones de parejas."
-      >
-        {(config.vegasBets?.length ?? 0) === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Vegas configuradas</p>
-            <Button variant="outline" size="sm" onClick={() => {
-              const nueva: VegasBetInstance = {
-                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-                birdieMultiplier: false, variant: 'fixed',
-                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-              };
-              onUpdateConfig({ ...config, vegasBets: [nueva] });
-            }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Vegas
-            </Button>
-          </div>
-        ) : (
-          <>
-            {config.vegasBets!.map((bet, idx) => (
-              <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
-                onUpdate={(updates) => {
-                  const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
-                  onUpdateConfig({ ...config, vegasBets: next });
-                }}
-                onRemove={() => onUpdateConfig({ ...config, vegasBets: config.vegasBets!.filter(b => b.id !== bet.id) })}
-              />
-            ))}
-            <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
-              const nueva: VegasBetInstance = {
-                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-                birdieMultiplier: false, variant: 'fixed',
-                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-              };
-              onUpdateConfig({ ...config, vegasBets: [...(config.vegasBets ?? []), nueva] });
-            }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Vegas
-            </Button>
-          </>
-        )}
-      </BetSection>
     </div>
   );
 };
@@ -679,15 +687,16 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
         <Select
           value={bet.scoringType}
-          onValueChange={(v: 'lowBall' | 'highBall' | 'combined') => onUpdate({ scoringType: v })}
+          onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'matchOnly') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-[11px]">
+          <SelectTrigger className="h-7 w-32 text-[11px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="lowBall">Bola Baja</SelectItem>
             <SelectItem value="highBall">Bola Alta</SelectItem>
             <SelectItem value="combined">Combinado</SelectItem>
+            <SelectItem value="matchOnly">Solo Match</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -811,9 +820,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
-        {bet.scoringType === 'combined'
-          ? '💡 Combinado: nuevas apuestas cuando diferencia > 2'
-          : '💡 Individual: nuevas apuestas cuando diferencia = 2'}
+        {bet.scoringType === 'matchOnly'
+          ? '💡 Solo Match: sin apertura de presiones'
+          : bet.scoringType === 'combined'
+          ? '💡 Combinado: no apuesta cuando diferencia > 2'
+          : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: no apuesta cuando diferencia = 2`}
       </div>
     </div>
   );

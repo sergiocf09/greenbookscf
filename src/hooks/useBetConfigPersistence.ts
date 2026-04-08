@@ -152,7 +152,7 @@ interface RoundBetConfig {
       totalAmount: number;
       openingThreshold: 3 | 4;
       teamHandicaps: Record<string, number>;
-      scoringType: 'lowBall' | 'highBall' | 'combined';
+      scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
       enabled: boolean;
     }>;
   };

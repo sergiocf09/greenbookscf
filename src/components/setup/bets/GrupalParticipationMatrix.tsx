@@ -315,18 +315,33 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
           </tbody>
         </table>
       </div>
-      {/* Nines validation: exactly 3 players */}
+      {/* Nines validation: smart multi-group messaging */}
       {(() => {
-        const ninesBet = GRUPAL_BETS.find(b => b.key === 'nines');
-        if (!ninesBet) return null;
-        const ninesIds = getParticipantIds(config, 'nines');
-        const isEnabled = ninesIds === undefined || ninesIds.length > 0;
-        if (!isEnabled) return null;
-        const activeCount = getActiveIds(ninesIds, players).length;
-        if (activeCount === 3) return null;
+        const ninesBets = config.ninesBets ?? [];
+        if (ninesBets.length === 0) return null;
+        const allNinesIds = new Set<string>();
+        ninesBets.forEach(b => b.playerIds.forEach(id => allNinesIds.add(id)));
+        if (allNinesIds.size === 0) return null;
+        if (ninesBets.length === 1) {
+          const count = ninesBets[0].playerIds.length;
+          if (count === 3 || count === 4) return null;
+          return (
+            <p className="text-[10px] text-amber-500 px-2 mt-1">
+              Selecciona exactamente 3 jugadores para Nines
+            </p>
+          );
+        }
+        const allGroupsValid = ninesBets.every(b => b.playerIds.length === 3 || b.playerIds.length === 4);
+        if (allGroupsValid) {
+          return (
+            <p className="text-[10px] text-blue-500 px-2 mt-1">
+              Múltiples grupos de Nines activos
+            </p>
+          );
+        }
         return (
           <p className="text-[10px] text-amber-500 px-2 mt-1">
-            Selecciona exactamente 3 jugadores para Nines
+            Selecciona exactamente 3 jugadores por cada grupo de Nines
           </p>
         );
       })()}
