@@ -68,9 +68,13 @@ export const useScorePersistence = ({
             const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
             const key = markerDbToKey(m.marker_type);
             // Restore any non-auto marker that exists in the state shape.
-            // This avoids silent drops when the manual marker list changes over time.
             if (key && key in prev && !isAutoDetectedMarker(key as any)) {
-              (prev as any)[key] = true;
+              // Numeric markers: increment count; boolean markers: set true
+              if (key === 'manchaGenerica' || key === 'unidadGenerica') {
+                (prev as any)[key] = ((prev as any)[key] ?? 0) + 1;
+              } else {
+                (prev as any)[key] = true;
+              }
             }
             markersByHoleScoreId.set(m.hole_score_id, prev);
           }
