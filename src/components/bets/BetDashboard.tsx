@@ -2369,7 +2369,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           const backDetails = Array.from({ length: 9 }, (_, i) => getHoleDetail(i + 10));
           
           // Opening threshold is auto-determined by scoring type
-          const openingThreshold = (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
+          const openingThreshold = scoringType === 'matchOnly' ? Infinity : (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
           
           // Process a nine and return array of individual bet balances AND running snapshots per hole
           const processNine = (details: typeof frontDetails): { bets: number[]; snapshots: number[][] } => {
