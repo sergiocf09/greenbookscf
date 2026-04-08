@@ -377,7 +377,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       >
         {(config.sixesBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Seises configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Sixes configuradas</p>
             <Button variant="outline" size="sm" onClick={() => {
               const nueva: SixesBetInstance = {
                 id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
@@ -385,7 +385,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [nueva] });
             }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Seises
+              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Sixes
             </Button>
           </div>
         ) : (
