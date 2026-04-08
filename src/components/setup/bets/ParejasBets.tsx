@@ -423,7 +423,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
       {/* Vegas — multi-instance */}
       <BetSection
-        id="vegas" title="🎲 Las Vegas"
+        id="vegas" title="Las Vegas"
         description="Combina scores en números de 2 dígitos"
         enabled={(config.vegasBets?.length ?? 0) > 0}
         onToggle={(enabled) => {
