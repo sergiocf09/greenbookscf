@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, AlertTriangle } from 'lucide-react';
 
 interface NinesResultsCardProps {
   players: Player[];
