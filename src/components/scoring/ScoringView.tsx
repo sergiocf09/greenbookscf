@@ -320,17 +320,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         />
       )}
 
-      {/* Nines Live Table */}
-      {ninesConfig && ninesConfig.playerIds.length >= 3 && (
-        <NinesLiveTable
-          players={players}
-          scores={scores}
-          ninesConfig={ninesConfig}
-          course={course}
-          confirmedHoles={confirmedHoles}
-        />
-      )}
-
       {/* Confirm Button */}
       <Button 
         onClick={() => handleConfirmHole(currentHole)}
