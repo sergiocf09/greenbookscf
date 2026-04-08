@@ -453,6 +453,11 @@ export interface BetConfig {
   teamPressures: TeamPressuresBetConfig;
   zoologico: ZoologicoBetConfig; // NEW: Zoo bet
   skinsGrupal?: SkinsGrupalBetConfig; // NEW: Group skins
+  // Sprint 3 new bets
+  wolfSetup?: WolfSetupConfig;
+  sixesSetup?: SixesSetupConfig;
+  vegasSetup?: VegasSetupConfig;
+  ninesSetup?: NinesSetupConfig;
 }
 
 export interface MedalBetConfig {
@@ -604,7 +609,150 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   medalGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
+  // Sprint 3
+  wolf: 'parejas',
+  sixes: 'parejas',
+  vegas: 'parejas',
+  nines: 'grupal',
 };
+
+// =====================================================
+// WOLF BET (PAREJAS)
+// =====================================================
+
+export type WolfScoringMode = 'lowBall' | 'lowHighBall' | 'stroke';
+export type WolfTiming = 'A' | 'B' | 'C';
+
+export interface WolfConfig {
+  roundId: string; amountPerHole: number; scoringMode: WolfScoringMode;
+  useHandicap: boolean; timing: WolfTiming; carryover: boolean;
+}
+
+export interface WolfHoleState {
+  roundId: string; holeNumber: number; wolfPlayerId: string;
+  partnerIds: string[]; wentSolo: boolean;
+  result: 'won' | 'lost' | 'tied' | null;
+  effectiveAmount: number | null; carryoverHoles: number;
+}
+
+export interface WolfHoleDetail {
+  holeNumber: number; wolfPlayerId: string; wolfPlayerName: string;
+  partnerIds: string[]; partnerNames: string[]; wentSolo: boolean;
+  result: 'won' | 'lost' | 'tied' | null;
+  effectiveAmount: number; carryoverHoles: number;
+  scoresByPlayer: { playerId: string; playerName: string; gross: number; strokes: number; net: number; teamSide: 'wolf' | 'rival'; }[];
+  teamWolfScore: number | null; teamRivalScore: number | null;
+  lowBallWinner: 'wolf' | 'rival' | 'tied' | null;
+  highBallWinner: 'wolf' | 'rival' | 'tied' | null;
+  pointsWolf: number; pointsRival: number;
+}
+
+export interface WolfSetupConfig {
+  enabled: boolean; amountPerHole: number; scoringMode: WolfScoringMode;
+  useHandicap: boolean; timing: WolfTiming; carryover: boolean;
+}
+
+// =====================================================
+// SIXES BET (PAREJAS)
+// =====================================================
+
+export type SixesScoringMode = 'lowBall' | 'lowHighBall' | 'stroke';
+export type SixesCobro = 'per_hole' | 'per_set';
+
+export interface SixesSetAssignment {
+  setNumber: 1 | 2 | 3; team1: [string, string]; team2: [string, string];
+}
+
+export interface SixesConfig {
+  roundId: string; scoringMode: SixesScoringMode; cobro: SixesCobro;
+  amount: number; useHandicap: boolean; sets: SixesSetAssignment[];
+}
+
+export interface SixesHoleDetail {
+  holeNumber: number;
+  scoresByPlayer: { playerId: string; playerName: string; gross: number; strokes: number; net: number; teamSide: 'team1' | 'team2'; }[];
+  team1Score: number | null; team2Score: number | null;
+  lowBallWinner: 'team1' | 'team2' | 'tied' | null;
+  highBallWinner: 'team1' | 'team2' | 'tied' | null;
+  pointsTeam1: number; pointsTeam2: number;
+  holeWinner: 'team1' | 'team2' | 'tied' | null;
+}
+
+export interface SixesSetResult {
+  setNumber: 1 | 2 | 3; startHole: number; endHole: number;
+  team1: [string, string]; team2: [string, string];
+  holeDetails: SixesHoleDetail[];
+  pointsTeam1: number; pointsTeam2: number;
+  setWinner: 'team1' | 'team2' | 'tied' | null;
+  amountTeam1: number; amountTeam2: number;
+}
+
+export interface SixesSetupConfig {
+  enabled: boolean; scoringMode: SixesScoringMode;
+  cobro: SixesCobro; amount: number; useHandicap: boolean;
+}
+
+// =====================================================
+// LAS VEGAS BET (PAREJAS)
+// =====================================================
+
+export type VegasVariant = 'fixed' | 'rotating';
+
+export interface VegasConfig {
+  roundId: string; valuePerPoint: number; useHandicap: boolean;
+  birdieMultiplier: boolean; variant: VegasVariant;
+  playerAId: string; playerBId: string; playerCId: string; playerDId: string;
+}
+
+export interface VegasHoleDetail {
+  holeNumber: number; setNumber: 1 | 2 | 3 | null;
+  team1: [string, string]; team2: [string, string];
+  grossA: number; strokesA: number; netA: number;
+  grossB: number; strokesB: number; netB: number;
+  grossC: number; strokesC: number; netC: number;
+  grossD: number; strokesD: number; netD: number;
+  numberTeam1: number; numberTeam2: number;
+  numberTeam1Effective: number; numberTeam2Effective: number;
+  birdieTeam1: boolean; birdieTeam2: boolean;
+  multiplierApplied: 'team1' | 'team2' | 'none';
+  diff: number; amountThisHole: number;
+  winner: 'team1' | 'team2' | 'tied';
+}
+
+export interface VegasSetResult {
+  setNumber: 1 | 2 | 3 | null; startHole: number; endHole: number;
+  team1: [string, string]; team2: [string, string];
+  holeDetails: VegasHoleDetail[];
+  totalDiff: number; totalAmount: number;
+  winner: 'team1' | 'team2' | 'tied';
+}
+
+export interface VegasSetupConfig {
+  enabled: boolean; valuePerPoint: number; useHandicap: boolean;
+  birdieMultiplier: boolean; variant: VegasVariant;
+}
+
+// =====================================================
+// NINES BET (GRUPAL)
+// =====================================================
+
+export interface NinesConfig {
+  roundId: string; valuePerPoint: number; playerIds: string[];
+}
+
+export interface NinesHoleDetail {
+  holeNumber: number;
+  playerScores: { playerId: string; playerName: string; gross: number; strokes: number; net: number; points: 1|2|3|4|5; position: 1|2|3; }[];
+}
+
+export interface NinesPlayerSummary {
+  playerId: string; playerName: string;
+  playerInitials: string; playerColor: string; totalPoints: number;
+}
+
+export interface NinesSetupConfig {
+  enabled: boolean; valuePerPoint: number;
+}
 
 // Default Stableford point values (flexible)
 export const DEFAULT_STABLEFORD_POINTS: StablefordPointConfig = {

@@ -916,6 +916,38 @@ export type Database = {
           },
         ]
       }
+      nines_config: {
+        Row: {
+          created_at: string
+          id: string
+          player_ids: string[]
+          round_id: string
+          value_per_point: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_ids?: string[]
+          round_id: string
+          value_per_point?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_ids?: string[]
+          round_id?: string
+          value_per_point?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nines_config_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_statistics: {
         Row: {
           average_putts: number | null
@@ -1351,6 +1383,85 @@ export type Database = {
           },
         ]
       }
+      sixes_config: {
+        Row: {
+          amount: number
+          cobro: string
+          created_at: string
+          id: string
+          round_id: string
+          scoring_mode: string
+          use_handicap: boolean
+        }
+        Insert: {
+          amount?: number
+          cobro?: string
+          created_at?: string
+          id?: string
+          round_id: string
+          scoring_mode?: string
+          use_handicap?: boolean
+        }
+        Update: {
+          amount?: number
+          cobro?: string
+          created_at?: string
+          id?: string
+          round_id?: string
+          scoring_mode?: string
+          use_handicap?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sixes_config_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sixes_sets: {
+        Row: {
+          created_at: string
+          id: string
+          round_id: string
+          set_number: number
+          team1_player1_id: string
+          team1_player2_id: string
+          team2_player1_id: string
+          team2_player2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          round_id: string
+          set_number: number
+          team1_player1_id: string
+          team1_player2_id: string
+          team2_player1_id: string
+          team2_player2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          round_id?: string
+          set_number?: number
+          team1_player1_id?: string
+          team1_player2_id?: string
+          team2_player1_id?: string
+          team2_player2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sixes_sets_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sliding_current: {
         Row: {
           id: string
@@ -1588,6 +1699,147 @@ export type Database = {
             columns: ["team_b_player2_id"]
             isOneToOne: false
             referencedRelation: "round_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vegas_config: {
+        Row: {
+          birdie_multiplier: boolean
+          created_at: string
+          id: string
+          player_a_id: string | null
+          player_b_id: string | null
+          player_c_id: string | null
+          player_d_id: string | null
+          round_id: string
+          use_handicap: boolean
+          value_per_point: number
+          variant: string
+        }
+        Insert: {
+          birdie_multiplier?: boolean
+          created_at?: string
+          id?: string
+          player_a_id?: string | null
+          player_b_id?: string | null
+          player_c_id?: string | null
+          player_d_id?: string | null
+          round_id: string
+          use_handicap?: boolean
+          value_per_point?: number
+          variant?: string
+        }
+        Update: {
+          birdie_multiplier?: boolean
+          created_at?: string
+          id?: string
+          player_a_id?: string | null
+          player_b_id?: string | null
+          player_c_id?: string | null
+          player_d_id?: string | null
+          round_id?: string
+          use_handicap?: boolean
+          value_per_point?: number
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vegas_config_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wolf_config: {
+        Row: {
+          amount_per_hole: number
+          carryover: boolean
+          created_at: string
+          id: string
+          round_id: string
+          scoring_mode: string
+          timing: string
+          use_handicap: boolean
+        }
+        Insert: {
+          amount_per_hole?: number
+          carryover?: boolean
+          created_at?: string
+          id?: string
+          round_id: string
+          scoring_mode?: string
+          timing?: string
+          use_handicap?: boolean
+        }
+        Update: {
+          amount_per_hole?: number
+          carryover?: boolean
+          created_at?: string
+          id?: string
+          round_id?: string
+          scoring_mode?: string
+          timing?: string
+          use_handicap?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wolf_config_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wolf_hole_state: {
+        Row: {
+          carryover_holes: number
+          created_at: string
+          effective_amount: number | null
+          hole_number: number
+          id: string
+          partner_ids: string[]
+          result: string | null
+          round_id: string
+          updated_at: string
+          went_solo: boolean
+          wolf_player_id: string
+        }
+        Insert: {
+          carryover_holes?: number
+          created_at?: string
+          effective_amount?: number | null
+          hole_number: number
+          id?: string
+          partner_ids?: string[]
+          result?: string | null
+          round_id: string
+          updated_at?: string
+          went_solo?: boolean
+          wolf_player_id: string
+        }
+        Update: {
+          carryover_holes?: number
+          created_at?: string
+          effective_amount?: number | null
+          hole_number?: number
+          id?: string
+          partner_ids?: string[]
+          result?: string | null
+          round_id?: string
+          updated_at?: string
+          went_solo?: boolean
+          wolf_player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wolf_hole_state_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
             referencedColumns: ["id"]
           },
         ]
