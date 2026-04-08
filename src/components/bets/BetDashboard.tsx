@@ -97,6 +97,7 @@ interface BetDashboardProps {
   snapshotLedger?: SnapshotLedgerEntry[];
   snapshotPairBreakdowns?: SnapshotPairBreakdowns;
   snapshotPairSegmentResults?: SnapshotPairSegmentResults;
+  roundId?: string | null;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
