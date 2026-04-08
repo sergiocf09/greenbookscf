@@ -27,6 +27,11 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const needsConfig = !vegasConfig.playerAId;
 
+  const hasEmptyPlayerIds = useMemo(() => {
+    const ids = [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId];
+    return ids.some(id => !id || id === '');
+  }, [vegasConfig]);
+
   const missingPlayerIds = useMemo(() => {
     const ids = [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId].filter(Boolean) as string[];
     return ids.filter(id => !players.find(p => p.id === id));
