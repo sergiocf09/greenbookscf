@@ -73,6 +73,10 @@ import { BilateralDetail } from './BilateralDetail';
 import { CarritosResultsCard, TeamHoleGrid } from './CarritosResultsCard';
 import { CrossGroupHandicapWidget } from './CrossGroupHandicapWidget';
 import { BetAmountEditor, BilateralHandicapEditor } from './BetEditors';
+import { SixesResultsCard } from './SixesResultsCard';
+import { NinesResultsCard } from './NinesResultsCard';
+import { useSixes } from '@/hooks/useSixes';
+import { useNines } from '@/hooks/useNines';
 // BilateralHandicap is now imported from types/golf.ts
 
 interface BetDashboardProps {
