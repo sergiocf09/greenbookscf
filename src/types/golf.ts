@@ -512,6 +512,7 @@ export interface CarosBetConfig {
 export interface UnitsBetConfig {
   enabled: boolean;
   valuePerPoint: number;
+  valuePerGenericUnit?: number;
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
