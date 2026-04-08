@@ -9,7 +9,7 @@ import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { WolfDecisionPanel } from '@/components/bets/WolfDecisionPanel';
 import { SixesActiveBadge } from '@/components/bets/SixesActiveBadge';
-import { NinesLiveTable } from '@/components/bets/NinesLiveTable';
+
 import { resolveWolfHole } from '@/lib/bets/wolf';
 import { Button } from '@/components/ui/button';
 import { Check, CheckCircle2, DollarSign, Target, AlertTriangle } from 'lucide-react';
