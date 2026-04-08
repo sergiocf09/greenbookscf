@@ -85,6 +85,10 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 import { GuestConversionScreen } from '@/components/guest/GuestRoundClosedListener';
+import { useWolf } from '@/hooks/useWolf';
+import { useSixes } from '@/hooks/useSixes';
+import { useVegas } from '@/hooks/useVegas';
+import { useNines } from '@/hooks/useNines';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
