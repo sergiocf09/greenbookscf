@@ -37,6 +37,13 @@ const getActiveIds = (
 };
 
 const getParticipantIds = (config: BetConfig, betKey: GrupalBetKey): string[] | undefined => {
+  if (betKey === 'nines') {
+    const ninesBets = config.ninesBets ?? [];
+    if (ninesBets.length === 0) return [];
+    const ids = new Set<string>();
+    ninesBets.forEach(b => b.playerIds.forEach(id => ids.add(id)));
+    return ids.size > 0 ? Array.from(ids) : undefined;
+  }
   const betConfig = config[betKey] as any;
   if (!betConfig?.enabled && betConfig?.participantIds === undefined) return [];
   return betConfig?.participantIds;
