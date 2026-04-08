@@ -1,25 +1,63 @@
 
+Objetivo: corregir la persistencia de `manchaGenerica` y `unidadGenerica` cuando el contador supera 1, para que al refrescar o restaurar la ronda se conserven todas las incidencias y se reflejen igual en avatares, badges e íconos de detalle.
 
-## Plan: Rediseñar ícono PWA — Solo medallón circular sobre fondo blanco
+Diagnóstico
+- La restauración sí parece estar preparada para reconstruir conteos: `restoreMarkerStateFromRows(...)` suma múltiples filas de `hole_markers` para `manchaGenerica` y `unidadGenerica`.
+- El problema más probable está en el guardado concurrente desde `src/pages/Index.tsx`:
+  - `updateScore(...)` dispara `saveScoreToDb(...)` en cada click de `+/-`.
+  - `saveScoreToDb(...)` hace “delete all manual markers” + “insert current marker rows”.
+  - Si el usuario toca rápido dos veces (`1`, luego `2`), ambas escrituras corren en paralelo y la más vieja puede terminar al final, dejando solo 1 fila en DB.
+- Eso explica exactamente el síntoma: en UI local se ve bien al momento, pero después de refresh/restaurar solo queda una incidencia.
 
-### Objetivo
-Eliminar el texto "GreenBook" del ícono PWA, dejando únicamente el medallón circular (el logo con la pelota de golf, "TU RONDA. TUS APUESTAS.") centrado y más grande sobre un fondo blanco sólido.
+Plan de implementación
+1. Endurecer el guardado de score/markers en `src/pages/Index.tsx`
+- Reemplazar el guardado “sin control de orden” por un guardado serializado por `playerId + holeNumber`.
+- Mantener una referencia por hoyo/jugador con:
+  - último payload pendiente
+  - bandera “saving”
+  - versión/timestamp incremental
+- Asegurar que solo el último estado de `markers` llegue a la base, evitando que una escritura vieja sobreescriba una nueva.
 
-### Cambios
+2. Separar claramente el caso de marcadores
+- Conservar el `upsert` de `hole_scores`.
+- Después, para `hole_markers`, seguir usando `expandMarkerStateToRows(...)`, pero ejecutarlo únicamente dentro del flujo serializado.
+- Así, el ciclo `delete + insert` siempre representará el estado final del contador, no un estado intermedio.
 
-1. **Procesar los íconos PWA con Python/Pillow**
-   - Usar el asset circular existente (`src/assets/greenbook-icon-circle-light.png`) como fuente del medallón
-   - Crear un canvas cuadrado con fondo blanco (`#FFFFFF`)
-   - Centrar el medallón circular ocupando ~85-90% del canvas para maximizar tamaño
-   - Generar: `pwa-icon-192.png`, `pwa-icon-512.png` (fondo blanco, propósito "any")
-   - Generar: `pwa-icon-maskable-192.png`, `pwa-icon-maskable-512.png` (fondo blanco, medallón al ~75% para safe zone)
-   - Regenerar `apple-touch-icon.png` (180x180) con el mismo diseño
+3. Revisar los puntos donde se restaura la ronda
+- Verificar consistencia entre:
+  - `src/hooks/useRoundManagement.ts`
+  - `src/hooks/useScorePersistence.ts`
+- Mantener `select('hole_score_id, marker_type, is_auto_detected')` en ambos lugares para no perder agregación numérica.
+- Si detecto alguna lectura incompleta, la alineo al mismo formato usado por `restoreMarkerStateFromRows(...)`.
 
-2. **Actualizar `manifest.json`**
-   - Cambiar `background_color` a `#FFFFFF` para consistencia con el fondo blanco del ícono
+4. Validar que la UI consuma el conteo restaurado sin colapsarlo
+- Confirmar que las vistas que muestran:
+  - badges junto al avatar
+  - resumen visual de unidades/manchas
+  - detalle de incidencias
+  sigan leyendo `score.markers.manchaGenerica` y `score.markers.unidadGenerica` como número.
+- No cambiaré el diseño; solo aseguraré que el dato restaurado no se degrade a booleano en ningún punto del flujo.
 
-3. **Sin cambios en el código de la app** — solo assets y manifest.
+5. Verificación final
+- Probar este caso exacto:
+  - marcar 2+ unidades genéricas
+  - marcar 2+ manchas genéricas
+  - esperar guardado
+  - refrescar
+  - restaurar ronda
+- Confirmar que:
+  - el contador numérico se conserva
+  - los badges muestran la cantidad correcta
+  - los íconos/resúmenes siguen reflejando múltiples incidencias
+  - bilateralidad y montos no cambian
 
-### Resultado esperado
-Un ícono limpio: fondo blanco con el medallón verde/dorado centrado y grande, sin texto "GreenBook" debajo, con buen contraste en cualquier launcher Android/iOS.
+Archivos que probablemente tocaré
+- `src/pages/Index.tsx` — fix principal del guardado concurrente
+- Posible ajuste menor de consistencia en:
+  - `src/hooks/useRoundManagement.ts`
+  - `src/hooks/useScorePersistence.ts`
 
+Detalles técnicos
+- No hace falta cambiar base de datos.
+- No hace falta tocar componentes de UI para el bug raíz.
+- La causa no parece ser `markerPersistence.ts`, sino una condición de carrera al persistir múltiples clicks rápidos del contador.
