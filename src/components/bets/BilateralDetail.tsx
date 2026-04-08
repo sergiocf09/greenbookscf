@@ -265,7 +265,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // IMPORTANT: Use confirmedScores to match the calculation engine, not allScores
   const getMarkerDetails = (playerId: string, type: 'units' | 'manchas') => {
     const playerScores = confirmedScores.get(playerId) || [];
-    const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean }[] = [];
+    const details: { holeNumber: number; marker: string; emoji: string; isPositive: boolean; isGeneric?: boolean }[] = [];
     const isBasePlayer = playerId === player.id;
     
     playerScores.forEach(score => {
