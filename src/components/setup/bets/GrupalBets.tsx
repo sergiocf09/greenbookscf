@@ -349,6 +349,26 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           <p className="text-[9px] text-muted-foreground mt-2">El ganador con más puntos Stableford cobra a los demás.</p>
         </BetSection>
       )}
+
+      {/* Nines — 3 players */}
+      {players.length === 3 && (
+        <BetSection
+          id="nines" title="🎯 5-3-1 (Nines)"
+          description="Distribución de 9 puntos por hoyo entre 3 jugadores"
+          enabled={config.ninesSetup?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('ninesSetup', { enabled, valuePerPoint: config.ninesSetup?.valuePerPoint ?? 1 } as any)}
+          isExpanded={expandedSections.includes('nines')}
+          onExpandChange={(open) => onToggleSection('nines', open)}
+          helpText="Cada hoyo se reparten 9 puntos: 5 al mejor score neto, 3 al segundo, 1 al tercero. En caso de empate: empate arriba 4-4-1, todos empatan 3-3-3."
+        >
+          <AmountInput label="Valor por punto" value={config.ninesSetup?.valuePerPoint ?? 1}
+            onChange={(v) => onUpdateBet('ninesSetup', { enabled: true, valuePerPoint: v } as any)} />
+
+          <p className="text-[9px] text-muted-foreground mt-2">
+            Distribución: 5 primero · 3 segundo · 1 tercero · Empate arriba: 4-4-1 · Todos empatan: 3-3-3
+          </p>
+        </BetSection>
+      )}
     </div>
   );
 };
