@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope, SkinsGrupalBetConfig } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput, PointInput } from './AmountInput';
