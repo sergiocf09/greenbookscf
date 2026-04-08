@@ -74,6 +74,7 @@ export const calculatePressureBets = (
       if (!shouldCalculatePair(resolvedPairConfig.pressures, playerA.id, playerB.id)) continue;
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      const pairContinua = config.pressures.continua === true && onlyMatch;
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
 
       const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
