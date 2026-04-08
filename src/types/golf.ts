@@ -609,6 +609,11 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   medalGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
+  // Sprint 3
+  wolf: 'parejas',
+  sixes: 'parejas',
+  vegas: 'parejas',
+  nines: 'grupal',
 };
 
 // Default Stableford point values (flexible)
