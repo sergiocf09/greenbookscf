@@ -1,62 +1,65 @@
 
+## Plan: Persistencia, Match-Play "Continúa" y Auto-rotación Sixes
 
-## Fixes: Foursomes Dashboard, Sixes/Vegas Guards, Matrix Alignment
+### 1. Fix persistence for missing bet types
 
-### Issues Found
+**File**: `src/hooks/useBetConfigPersistence.ts`
 
-1. **Foursomes hole grid shows no results** — `getHoleDetail()` in BetDashboard (line 2339) only handles `lowBall`, `highBall`, and `combined` scoring types. `matchOnly` matches none, so every hole returns 0 points. Also `openingThreshold` (line 2372) doesn't account for `matchOnly`.
+The following fields exist on `BetConfig` but are **never saved or loaded** in the persistence hook:
+- `wolfSetup` (Loba)
+- `sixesBets` (Sixes instances)
+- `vegasBets` (Vegas instances)
+- `ninesBets` (Nines instances)
+- `parejasExcluded` (Parejas matrix exclusions)
 
-2. **Sixes/Vegas show "missing players" warning** — `SixesResultsCard` and `VegasResultsCard` read player assignments from `sixesHook.sixesConfig` / `vegasHook.vegasConfig` (DB tables), but the setup UI saves to `betConfig.sixesBets` / `betConfig.vegasBets` (local state). The DB-backed hooks never receive the player assignments configured in setup. The results cards need to also check `betConfig` as a fallback source for player data, or the setup needs to sync to the DB hooks.
+**Changes**:
+- In `RoundBetConfig` interface: add `wolfSetup`, `sixesBets`, `vegasBets`, `ninesBets`, `parejasExcluded`
+- In `saveBetConfig` (`configToSave`): add all 5 fields
+- In `applyDbConfigToState`: add restore logic for all 5 fields (using `'key' in dbConfig` pattern for arrays)
 
-3. **Individual/Grupal matrix cell misalignment** — Cell buttons in `ParticipationMatrix.tsx` (line 345) and `GrupalParticipationMatrix.tsx` (line 301) are missing `mx-auto` class, causing them not to center under the column headers.
+### 2. Add "Continúa" (18-hole match) option to Individual Pressures
 
-### Plan
+**Files**: `src/types/golf.ts`, `src/components/setup/bets/IndividualBets.tsx`, `src/lib/bets/pressures.ts`, `src/components/bets/BetDashboard.tsx`
 
-#### 1. Fix Foursomes `matchOnly` in BetDashboard hole detail (lines 2339-2372)
+When `onlyMatch` is true, add a new toggle `continua?: boolean` on `PressureBetConfig`:
+- **UI** (`IndividualBets.tsx`): Show "Continúa (18 hoyos)" switch when `onlyMatch` is enabled. When `continua` is true, hide Front/Back amounts and only show a single "Match 18" amount.
+- **Calculation** (`pressures.ts`): When `continua`, don't split at hole 9. Run a single match 1-18. Apply early-win logic: if a player leads by more holes than remain, the match ends (e.g., "4&3"). 
+- **Dashboard** (`BetDashboard.tsx`): Show match result as "4&3", "2&1", "1 Up" etc. instead of F9/B9 split.
 
-Add `matchOnly` handling — treat it like `lowBall` for scoring (compare low balls) but set `openingThreshold = Infinity` so no pressures open:
+### 3. Add "Continúa" to Foursomes (Team Pressures) matchOnly
 
-```text
-if (scoringType === 'lowBall' || scoringType === 'combined' || scoringType === 'matchOnly') {
-  // lowBall comparison...
-}
-```
+**Files**: `src/types/golf.ts`, `src/components/setup/bets/ParejasBets.tsx`, `src/lib/bets/teamPressures.ts`, `src/components/bets/BetDashboard.tsx`
 
-And on line 2372:
-```text
-const openingThreshold = scoringType === 'matchOnly' ? Infinity 
-  : (scoringType === 'lowBall' || scoringType === 'highBall') ? 2 : 3;
-```
+Same concept for `TeamPressuresBet` when `scoringType === 'matchOnly'`:
+- Add `continua?: boolean` to `TeamPressuresBet` interface
+- **UI**: Show "Continúa (18 hoyos)" toggle when matchOnly is selected. When true, show only one "Match" amount field.
+- **Calculation**: Run single 18-hole match with early-win detection
+- **Dashboard**: Display "4&3", "1 Up", etc.
 
-Also update the label on line 2795 to include `matchOnly`:
-```text
-{bet.scoringType === 'matchOnly' ? 'Solo Match' : ...}
-```
+### 4. Auto-rotate Sixes set assignments
 
-#### 2. Fix Sixes/Vegas "missing players" guard
+**File**: `src/components/setup/bets/ParejasBets.tsx` (SixesBetCard)
 
-The simplest fix: in `BetDashboard.tsx` where `SixesResultsCard` and `VegasResultsCard` are rendered, construct the config from `betConfig.sixesBets` / `betConfig.vegasBets` when the hook config has empty player IDs. This way, player assignments from setup flow through to the results cards.
+When the user sets 4 players in Set 1 (A+B vs C+D), auto-populate Sets 2 and 3:
+- Set 2: A+C vs B+D
+- Set 3: A+D vs B+C
 
-For **Sixes** (line 3013-3021): Build `sixesConfig` from `effectiveBetConfig.sixesBets[0]` if `sixesHook.sixesConfig` has empty player IDs in sets.
+Logic: In `updateSet` for set 1, if all 4 player IDs are filled and sets 2/3 are empty, auto-generate them. User can still manually edit any set afterward.
 
-For **Vegas** (line 3023-3031): Build `vegasConfig` from `effectiveBetConfig.vegasBets[0]` if `vegasHook.vegasConfig` has empty player IDs.
+### 5. Persistence for new fields
 
-Alternatively, update `SixesResultsCard` and `VegasResultsCard` to accept an optional `betConfigFallback` prop and merge player assignments.
+Add `continua` to the `RoundBetConfig` type for both `pressures` and `teamPressures.bets[]`.
 
-**Chosen approach**: Pass the `betConfig` instance data directly to the results cards as a fallback. Modify `SixesResultsCard` to accept optional `sixesBetInstance` and use its `sets` if the hook config has empties. Same for `VegasResultsCard` with `vegasBetInstance`.
-
-#### 3. Add `mx-auto` to cell buttons in Individual and Grupal matrices
-
-**ParticipationMatrix.tsx** line 345: Add `mx-auto` to button class.
-**GrupalParticipationMatrix.tsx** line 301: Add `mx-auto` to button class.
+---
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/bets/BetDashboard.tsx` | Fix `matchOnly` in `getHoleDetail`, `openingThreshold`, label; pass betConfig instance to Sixes/Vegas cards |
-| `src/components/bets/SixesResultsCard.tsx` | Accept optional `sixesBetInstance` prop for player fallback |
-| `src/components/bets/VegasResultsCard.tsx` | Accept optional `vegasBetInstance` prop for player fallback |
-| `src/components/setup/bets/ParticipationMatrix.tsx` | Add `mx-auto` to cell buttons |
-| `src/components/setup/bets/GrupalParticipationMatrix.tsx` | Add `mx-auto` to cell buttons |
-
+| `src/hooks/useBetConfigPersistence.ts` | Save/load wolfSetup, sixesBets, vegasBets, ninesBets, parejasExcluded |
+| `src/types/golf.ts` | Add `continua?: boolean` to `PressureBetConfig` and `TeamPressuresBet` |
+| `src/components/setup/bets/IndividualBets.tsx` | "Continúa" toggle UI when onlyMatch, single amount |
+| `src/components/setup/bets/ParejasBets.tsx` | "Continúa" toggle for matchOnly Foursomes; Sixes auto-rotation |
+| `src/lib/bets/pressures.ts` | 18-hole match logic with early-win detection |
+| `src/lib/bets/teamPressures.ts` | 18-hole match logic with early-win detection |
+| `src/components/bets/BetDashboard.tsx` | Display match-play results ("4&3", "1 Up") for continúa mode |
