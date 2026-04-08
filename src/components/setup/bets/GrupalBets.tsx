@@ -379,7 +379,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
                 onUpdateConfig({ ...config, ninesBets: [nueva] });
               }} className="gap-1">
-                <Plus className="h-3.5 w-3.5" /> Agregar apuesta 5-3-1
+                <Plus className="h-3.5 w-3.5" /> Agregar apuesta Nines
               </Button>
             </div>
           ) : (
