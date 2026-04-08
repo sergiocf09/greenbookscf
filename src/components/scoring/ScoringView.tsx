@@ -1,14 +1,18 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
-import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig, NinesConfig } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { SideBetsDialog } from '@/components/scoring/SideBetsDialog';
 import { OyesesDialog } from '@/components/scoring/OyesesDialog';
 import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
+import { WolfDecisionPanel } from '@/components/bets/WolfDecisionPanel';
+import { SixesActiveBadge } from '@/components/bets/SixesActiveBadge';
+import { NinesLiveTable } from '@/components/bets/NinesLiveTable';
+import { resolveWolfHole } from '@/lib/bets/wolf';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle2, DollarSign, Target } from 'lucide-react';
+import { Check, CheckCircle2, DollarSign, Target, AlertTriangle } from 'lucide-react';
 
 interface ScoringViewProps {
   players: Player[];
@@ -27,11 +31,17 @@ interface ScoringViewProps {
   onAddSideBet?: (bet: SideBet) => void;
   onUpdateSideBet?: (bet: SideBet) => void;
   onDeleteSideBet?: (betId: string) => void;
-  // Zoologico handlers
   onAddZooEvent?: (event: ZooEvent) => void;
   onUpdateZooEvent?: (event: ZooEvent) => void;
   onDeleteZooEvent?: (eventId: string) => void;
-  
+  wolfConfig?: WolfConfig;
+  wolfHoleStates?: WolfHoleState[];
+  currentUserId?: string;
+  isOrganizer?: boolean;
+  onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  onWolfResolve?: (holeNumber: number, result: 'won' | 'lost' | 'tied') => Promise<void>;
+  sixesConfig?: SixesConfig;
+  ninesConfig?: NinesConfig;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
@@ -94,23 +104,27 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onAddZooEvent,
   onUpdateZooEvent,
   onDeleteZooEvent,
+  wolfConfig,
+  wolfHoleStates,
+  currentUserId,
+  isOrganizer,
+  onWolfDecision,
+  onWolfResolve,
+  sixesConfig,
+  ninesConfig,
 }) => {
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!profile?.id || playerGroups.length === 0) return 0;
-    // Check if user is in main group
     if (players.some(p => p.profileId === profile.id)) return 0;
-    // Check additional groups
     for (let i = 0; i < playerGroups.length; i++) {
       if (playerGroups[i].players.some(p => p.profileId === profile.id)) return i + 1;
     }
     return 0;
   }, [profile?.id, players, playerGroups]);
 
-  // State for which group to display (0 = main group, 1+ = additional groups)
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0);
 
-  // Sync default when userGroupIndex changes (e.g. on restore)
   const hasSetInitialGroup = useRef(false);
   useEffect(() => {
     if (!hasSetInitialGroup.current && playerGroups.length > 0) {
@@ -121,13 +135,9 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   
   const hasMultipleGroups = playerGroups.length > 0;
   
-  // Get players to display based on selected group, with logged-in player first
   const displayPlayers = useMemo(() => {
     const groupPlayers = getPlayersForGroup(displayGroupIndex, players, playerGroups);
-    
-    // Sort to put logged-in player first
     if (!profile?.id) return groupPlayers;
-    
     return [...groupPlayers].sort((a, b) => {
       const aIsBase = a.profileId === profile.id;
       const bIsBase = b.profileId === profile.id;
@@ -137,14 +147,12 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     });
   }, [displayGroupIndex, players, playerGroups, profile?.id]);
   
-  // Get all players for confirmation check (a hole is confirmed when ALL players have confirmed)
   const allPlayers = useMemo(() => {
     return getAllPlayersFromAllGroups(players, playerGroups);
   }, [players, playerGroups]);
 
   const disambiguatedInitials = useMemo(() => disambiguateInitials(displayPlayers), [displayPlayers]);
 
-  // Check if hole is confirmed for the CURRENTLY DISPLAYED group only
   const isHoleConfirmedForDisplayGroup = useCallback(
     (holeNumber: number): boolean => {
       if (!displayPlayers.length) return false;
@@ -156,19 +164,30 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     [displayPlayers, scores]
   );
 
-  // Confirm hole for the currently displayed group's players
   const handleConfirmHole = useCallback((holeNumber: number) => {
     const playerIds = displayPlayers.map(p => p.id);
     confirmHole(holeNumber, playerIds);
 
+    // Auto-resolve wolf hole on confirm
+    if (onWolfResolve && wolfConfig && wolfHoleStates) {
+      const holeState = wolfHoleStates.find(s => s.holeNumber === holeNumber) ?? null;
+      if (holeState && holeState.result === null) {
+        const wolfTeam = [holeState.wolfPlayerId, ...holeState.partnerIds];
+        const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
+        const resolved = resolveWolfHole(
+          wolfTeam, rivalTeam, holeNumber, players, scores, course, wolfConfig
+        );
+        const result = resolved.winner === 'wolf' ? 'won'
+          : resolved.winner === 'rival' ? 'lost' : 'tied';
+        onWolfResolve(holeNumber, result);
+      }
+    }
+
     // Auto-advance to next unconfirmed hole
-    // Look forward first from current hole, then wrap around from hole 1
     const findNextUnconfirmed = (): number | null => {
-      // Forward from current+1 to 18
       for (let h = holeNumber + 1; h <= 18; h++) {
         if (!isHoleConfirmedForDisplayGroup(h)) return h;
       }
-      // Wrap: from 1 to current-1
       for (let h = 1; h < holeNumber; h++) {
         if (!isHoleConfirmedForDisplayGroup(h)) return h;
       }
@@ -177,10 +196,17 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
     const next = findNextUnconfirmed();
     if (next !== null) {
-      // Small delay so the user sees the green confirmation before navigating
       setTimeout(() => setCurrentHole(next), 350);
     }
-  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole]);
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, wolfConfig, wolfHoleStates, players, scores, course]);
+
+  // Wolf: check if decision is needed before confirming
+  const wolfNeedsDecision = !!(
+    wolfConfig &&
+    players.length >= 4 &&
+    !wolfHoleStates?.find(s => s.holeNumber === currentHole) &&
+    !isHoleConfirmedForDisplayGroup(currentHole)
+  );
 
   return (
     <>
@@ -201,6 +227,15 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Hole Navigation */}
       <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
+
+      {/* Sixes Badge */}
+      {sixesConfig && sixesConfig.sets && sixesConfig.sets.length > 0 && (
+        <SixesActiveBadge
+          currentHole={currentHole}
+          sixesConfig={sixesConfig}
+          players={displayPlayers}
+        />
+      )}
 
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
@@ -270,13 +305,42 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         )}
       </div>
 
+      {/* Wolf Decision Panel */}
+      {wolfConfig && players.length >= 4 && (
+        <WolfDecisionPanel
+          holeNumber={currentHole}
+          players={displayPlayers}
+          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
+          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
+          wolfConfig={wolfConfig}
+          isOrganizer={isOrganizer ?? false}
+          currentUserId={currentUserId ?? null}
+          onDecision={async (partnerIds, wentSolo) => {
+            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
+          }}
+        />
+      )}
+
+      {/* Nines Live Table */}
+      {ninesConfig && ninesConfig.playerIds.length >= 3 && (
+        <NinesLiveTable
+          players={players}
+          scores={scores}
+          ninesConfig={ninesConfig}
+          course={course}
+          confirmedHoles={confirmedHoles}
+        />
+      )}
+
       {/* Confirm Button */}
       <Button 
         onClick={() => handleConfirmHole(currentHole)}
-        disabled={isHoleConfirmedForDisplayGroup(currentHole)}
-        className={`w-full ${isHoleConfirmedForDisplayGroup(currentHole) ? 'bg-green-600 hover:bg-green-600' : 'bg-accent hover:bg-accent/90'}`}
+        disabled={isHoleConfirmedForDisplayGroup(currentHole) || wolfNeedsDecision}
+        className={`w-full ${isHoleConfirmedForDisplayGroup(currentHole) ? 'bg-green-600 hover:bg-green-600' : wolfNeedsDecision ? 'bg-amber-600 hover:bg-amber-600' : 'bg-accent hover:bg-accent/90'}`}
       >
-        {isHoleConfirmedForDisplayGroup(currentHole) ? (
+        {wolfNeedsDecision ? (
+          <><AlertTriangle className="h-4 w-4 mr-2" /> La Loba debe declarar</>
+        ) : isHoleConfirmedForDisplayGroup(currentHole) ? (
           <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
         ) : (
           <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
