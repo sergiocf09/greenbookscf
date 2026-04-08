@@ -351,96 +351,132 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         </BetSection>
       )}
 
-      {/* Nines — 3 or 4 players */}
+      {/* Nines — multi-instance */}
       {players.length >= 3 && (
         <BetSection
           id="nines" title="🎯 5-3-1 (Nines)"
           description="Distribución de 9 puntos por hoyo entre 3 jugadores"
-          enabled={config.ninesSetup?.enabled ?? false}
-          onToggle={(enabled) => onUpdateBet('ninesSetup', { enabled, valuePerPoint: config.ninesSetup?.valuePerPoint ?? 10 } as any)}
+          enabled={(config.ninesBets?.length ?? 0) > 0}
+          onToggle={(enabled) => {
+            if (!onUpdateConfig) return;
+            if (enabled) {
+              const primera: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+              onUpdateConfig({ ...config, ninesBets: [primera] });
+            } else {
+              onUpdateConfig({ ...config, ninesBets: [] });
+            }
+            onToggleSection('nines', enabled);
+          }}
           isExpanded={expandedSections.includes('nines')}
           onExpandChange={(open) => onToggleSection('nines', open)}
-          helpText="Cada hoyo se reparten 9 puntos: 5 al mejor score neto, 3 al segundo, 1 al tercero. En caso de empate: empate arriba 4-4-1, todos empatan 3-3-3."
+          helpText="Cada hoyo se reparten 9 puntos: 5 al mejor, 3 al segundo, 1 al tercero. Con 4 jugadores, el descansante rota y recibe 3 pts. Múltiples instancias permiten diferentes tríos."
         >
-          <AmountInput label="Valor por punto" value={config.ninesSetup?.valuePerPoint ?? 10}
-            onChange={(v) => onUpdateBet('ninesSetup', { enabled: true, valuePerPoint: v } as any)} />
-
-          {players.length === 4 && (
-            <div className="space-y-3 mt-3">
-              <Label className="text-[10px] font-semibold text-primary">
-                Selecciona los 3 jugadores que participan
-              </Label>
-              <p className="text-[9px] text-muted-foreground">
-                El 4° jugador rota como descansante hoyo a hoyo (recibe 3 pts).
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {players.map(p => {
-                  const currentIds: string[] =
-                    (config.ninesSetup as any)?.playerIds?.length > 0
-                      ? (config.ninesSetup as any).playerIds
-                      : players.slice(0, 3).map(x => x.id);
-                  const isSelected = currentIds.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        let next: string[];
-                        if (isSelected) {
-                          if (currentIds.length <= 3) return;
-                          next = currentIds.filter(id => id !== p.id);
-                        } else {
-                          if (currentIds.length >= 4) return;
-                          next = [...currentIds, p.id];
-                        }
-                        onUpdateBet('ninesSetup', {
-                          ...config.ninesSetup,
-                          enabled: true,
-                          playerIds: next,
-                        } as any);
-                      }}
-                      className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-left transition-colors border',
-                        isSelected
-                          ? 'bg-primary/10 border-primary/30 text-primary font-medium'
-                          : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted'
-                      )}
-                    >
-                      <span className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0">
-                        {isSelected && <Check className="h-3 w-3" />}
-                      </span>
-                      {p.name}
-                    </button>
-                  );
-                })}
-              </div>
-              {(() => {
-                const currentIds: string[] =
-                  (config.ninesSetup as any)?.playerIds?.length > 0
-                    ? (config.ninesSetup as any).playerIds
-                    : players.slice(0, 3).map(x => x.id);
-                if (currentIds.length !== 3) {
-                  return (
-                    <p className="text-[9px] text-amber-600">
-                      Selecciona exactamente 3 jugadores ({currentIds.length}/3)
-                    </p>
-                  );
-                }
-                const resting = players.find(p => !currentIds.includes(p.id));
-                return (
-                  <p className="text-[9px] text-muted-foreground">
-                    Descansante rotativo: {resting?.name.split(' ')[0]}
-                  </p>
-                );
-              })()}
+          {(config.ninesBets?.length ?? 0) === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de 5-3-1 configuradas</p>
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!onUpdateConfig) return;
+                const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+                onUpdateConfig({ ...config, ninesBets: [nueva] });
+              }} className="gap-1">
+                <Plus className="h-3.5 w-3.5" /> Agregar apuesta 5-3-1
+              </Button>
             </div>
+          ) : (
+            <>
+              {config.ninesBets!.map((bet, idx) => (
+                <NinesBetCard key={bet.id} index={idx} bet={bet} players={players}
+                  onUpdate={(updates) => {
+                    if (!onUpdateConfig) return;
+                    const next = config.ninesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
+                    onUpdateConfig({ ...config, ninesBets: next });
+                  }}
+                  onRemove={() => {
+                    if (!onUpdateConfig) return;
+                    onUpdateConfig({ ...config, ninesBets: config.ninesBets!.filter(b => b.id !== bet.id) });
+                  }}
+                />
+              ))}
+              <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
+                if (!onUpdateConfig) return;
+                const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+                onUpdateConfig({ ...config, ninesBets: [...(config.ninesBets ?? []), nueva] });
+              }}>
+                <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta 5-3-1
+              </Button>
+            </>
           )}
-
-          <p className="text-[9px] text-muted-foreground mt-2">
-            Distribución: 5 primero · 3 segundo · 1 tercero · Empate arriba: 4-4-1 · Todos empatan: 3-3-3
-          </p>
         </BetSection>
       )}
+    </div>
+  );
+};
+
+/* ─── Nines Bet Card ─── */
+const NinesBetCard: React.FC<{
+  index: number;
+  bet: NinesBetInstance;
+  players: Player[];
+  onUpdate: (updates: Partial<NinesBetInstance>) => void;
+  onRemove: () => void;
+}> = ({ index, bet, players, onUpdate, onRemove }) => {
+  const selectedIds = bet.playerIds ?? [];
+  const maxPlayers = 4;
+  const minPlayers = 3;
+
+  const toggle = (playerId: string) => {
+    if (selectedIds.includes(playerId)) {
+      if (selectedIds.length <= minPlayers) return;
+      onUpdate({ playerIds: selectedIds.filter(id => id !== playerId) });
+    } else {
+      if (selectedIds.length >= maxPlayers) return;
+      onUpdate({ playerIds: [...selectedIds, playerId] });
+    }
+  };
+
+  return (
+    <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium">5-3-1 · Grupo {index + 1}</Label>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRemove}>
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
+      </div>
+
+      <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
+
+      <div className="space-y-2">
+        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3 o 4)</Label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {players.map(p => {
+            const isSelected = selectedIds.includes(p.id);
+            const isDisabled = !isSelected && selectedIds.length >= maxPlayers;
+            return (
+              <button key={p.id} type="button" onClick={() => !isDisabled && toggle(p.id)}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs text-left transition-colors border',
+                  isSelected ? 'bg-primary/10 border-primary/30 text-primary font-medium'
+                    : isDisabled ? 'opacity-40 bg-muted/20 border-transparent cursor-not-allowed'
+                    : 'bg-muted/40 border-transparent text-muted-foreground hover:bg-muted'
+                )}>
+                <span className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0">
+                  {isSelected && <Check className="h-3 w-3" />}
+                </span>
+                {p.name}
+              </button>
+            );
+          })}
+        </div>
+        {selectedIds.length < minPlayers && (
+          <p className="text-[9px] text-amber-600">Selecciona al menos 3 jugadores ({selectedIds.length}/{minPlayers})</p>
+        )}
+        {selectedIds.length === 3 && (
+          <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
+        )}
+        {selectedIds.length === 4 && (
+          <p className="text-[9px] text-muted-foreground">4 jugadores: rota quien descansa hoyo a hoyo (3 pts)</p>
+        )}
+      </div>
     </div>
   );
 };
