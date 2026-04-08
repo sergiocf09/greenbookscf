@@ -154,6 +154,7 @@ interface RoundBetConfig {
       teamHandicaps: Record<string, number>;
       scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
       enabled: boolean;
+      continua?: boolean;
     }>;
   };
   zoologico?: ZoologicoBetConfig;
@@ -165,6 +166,12 @@ interface RoundBetConfig {
     playerHandicaps: { playerId: string; handicap: number }[];
     participantIds?: string[];
   };
+  // Sprint 3 new bet types
+  wolfSetup?: any;
+  sixesBets?: any[];
+  vegasBets?: any[];
+  ninesBets?: any[];
+  parejasExcluded?: Record<string, string[]>;
 }
 
 export const useBetConfigPersistence = ({
