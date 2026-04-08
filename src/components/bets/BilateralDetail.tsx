@@ -285,10 +285,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers?.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
         if (score.markers?.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
         if (score.markers?.oyesUni) details.push({ holeNumber: score.holeNumber, marker: 'Oyes Uni', emoji: '📍', isPositive: isBasePlayer });
+        // Unidades genéricas — una entrada por ocurrencia
+        const unidadGenCount = score.markers.unidadGenerica ?? 0;
+        for (let ug = 0; ug < unidadGenCount; ug++) {
+          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer });
+        }
       } else {
         // Manchas - negative for the player who commits them
-        // When it's the base player's mancha, it's negative (red). When it's rival's mancha, it's positive (green).
-        const isManchaPositiveForBasePlayer = !isBasePlayer; // Rival's mancha = positive for base player
+        const isManchaPositiveForBasePlayer = !isBasePlayer;
         
         if (score.markers.ladies) details.push({ holeNumber: score.holeNumber, marker: 'Pinkies', emoji: '👠', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.swingBlanco) details.push({ holeNumber: score.holeNumber, marker: 'Paloma', emoji: '💨', isPositive: isManchaPositiveForBasePlayer });
@@ -297,24 +301,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers.dobleAgua) details.push({ holeNumber: score.holeNumber, marker: 'Doble Agua', emoji: '🌊', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.dobleOB) details.push({ holeNumber: score.holeNumber, marker: 'Doble OB', emoji: '🚫', isPositive: isManchaPositiveForBasePlayer });
         if (score.markers.par3GirMas3) details.push({ holeNumber: score.holeNumber, marker: 'Par3 +3', emoji: '3️⃣', isPositive: isManchaPositiveForBasePlayer });
-        // Moreliana — manual marker, independent of putts count
         if (score.markers.moreliana) details.push({ holeNumber: score.holeNumber, marker: 'Moreliana', emoji: '🎭', isPositive: isManchaPositiveForBasePlayer });
-        // DobleDigito - auto-detected when strokes >= 10 (not persisted to DB)
         if (score.strokes >= 10 || score.markers.dobleDigito) details.push({ holeNumber: score.holeNumber, marker: 'Doble Dígito', emoji: '🔟', isPositive: isManchaPositiveForBasePlayer });
-        // Cuatriput - 4+ putts - negative for the player who commits it
         if (score.putts >= 4 || score.markers.cuatriput) {
           details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
-        // Manchas genéricas — una entrada por ocurrencia
+        // Manchas genéricas
         const manchaGenCount = score.markers.manchaGenerica ?? 0;
         for (let mg = 0; mg < manchaGenCount; mg++) {
           details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer });
-        }
-      } else {
-        // Units — generic units
-        const unidadGenCount = score.markers.unidadGenerica ?? 0;
-        for (let ug = 0; ug < unidadGenCount; ug++) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer });
         }
       }
     });
