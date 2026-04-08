@@ -853,7 +853,7 @@ const Index = () => {
           const scoreIdByHole = new Map<number, string>();
           insertedScores.forEach((s: any) => scoreIdByHole.set(s.hole_number, s.id));
 
-          const markerInserts: { hole_score_id: string; marker_type: any; is_auto_detected: boolean }[] = [];
+          const markerInserts: { hole_score_id: string; marker_type: any; is_auto_detected: boolean; marker_count: number }[] = [];
           for (const score of playerScores as any[]) {
             if (!score.markers) continue;
             const holeScoreId = scoreIdByHole.get(score.holeNumber);
@@ -865,6 +865,7 @@ const Index = () => {
                 hole_score_id: holeScoreId,
                 marker_type: marker.marker_type as any,
                 is_auto_detected: marker.is_auto_detected,
+                marker_count: marker.marker_count ?? 1,
               }))
             );
           }
