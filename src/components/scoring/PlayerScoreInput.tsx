@@ -238,19 +238,28 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             {mergedMarkers.cuatriput && (
               <AutoDetectedBadge type="cuatriput" show={true} />
             )}
-            {activeStains.map(m => (
-              <div key={m.key} className="relative inline-flex items-center">
-                <button
-                  onClick={() => toggleMarker(m.key)}
-                  className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
-                >
-                  <X className="h-2 w-2" strokeWidth={3} />
-                </button>
-                <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
-                  {markerLabels[m.key]}
-                </span>
-              </div>
-            ))}
+            {activeStains.map(m => {
+              const isGeneric = m.key === 'manchaGenerica';
+              const genVal = isGeneric ? ((markers.manchaGenerica as number) ?? 0) : 0;
+              return (
+                <div key={m.key} className="relative inline-flex items-center">
+                  {isGeneric && genVal > 1 && (
+                    <span className="absolute -top-2 -left-1.5 min-w-[14px] h-[14px] rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center px-0.5 z-10">
+                      {genVal}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => isGeneric ? incrementMarker('manchaGenerica', -1) : toggleMarker(m.key)}
+                    className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
+                  >
+                    <X className="h-2 w-2" strokeWidth={3} />
+                  </button>
+                  <span className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                    {markerLabels[m.key]}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Red Stains Popover - right side */}
