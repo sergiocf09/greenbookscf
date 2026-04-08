@@ -576,17 +576,22 @@ export const useRoundManagement = ({
                  .in('hole_score_id', holeScoreIds) as any
              );
 
-             if (holeMarkers?.length) {
-               markersByHoleScoreId = new Map();
-               for (const m of holeMarkers as any[]) {
-                 if (m.is_auto_detected) continue;
-                 const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
-                 const key = markerDbToKey(m.marker_type);
-                 if (key && key in prev && !isAutoDetectedMarker(key as any)) {
-                   (prev as any)[key] = true;
-                 }
-                 markersByHoleScoreId.set(m.hole_score_id, prev);
-               }
+              if (holeMarkers?.length) {
+                markersByHoleScoreId = new Map();
+                for (const m of holeMarkers as any[]) {
+                  if (m.is_auto_detected) continue;
+                  const prev = markersByHoleScoreId.get(m.hole_score_id) ?? { ...defaultMarkerState };
+                  const key = markerDbToKey(m.marker_type);
+                  if (key && key in prev && !isAutoDetectedMarker(key as any)) {
+                    // Numeric markers: increment count; boolean markers: set true
+                    if (key === 'manchaGenerica' || key === 'unidadGenerica') {
+                      (prev as any)[key] = ((prev as any)[key] ?? 0) + 1;
+                    } else {
+                      (prev as any)[key] = true;
+                    }
+                  }
+                  markersByHoleScoreId.set(m.hole_score_id, prev);
+                }
              }
            }
 

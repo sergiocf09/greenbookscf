@@ -186,10 +186,13 @@ export const useRealtimeScores = ({
                 if (idx < 0) return prev;
 
                 const currentMarkers = playerScores[idx].markers || { ...defaultMarkerState };
-                const updatedMarkers = {
-                  ...currentMarkers,
-                  [key]: eventType !== 'DELETE',
-                } as any;
+                let updatedMarkers: any;
+                if (key === 'manchaGenerica' || key === 'unidadGenerica') {
+                  const cur = (currentMarkers as any)[key] ?? 0;
+                  updatedMarkers = { ...currentMarkers, [key]: eventType === 'DELETE' ? Math.max(0, cur - 1) : cur + 1 };
+                } else {
+                  updatedMarkers = { ...currentMarkers, [key]: eventType !== 'DELETE' };
+                }
 
                 playerScores[idx] = { ...playerScores[idx], markers: updatedMarkers };
                 next.set(playerId, playerScores);
