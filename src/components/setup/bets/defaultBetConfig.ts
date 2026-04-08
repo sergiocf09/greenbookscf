@@ -65,10 +65,12 @@ export const defaultBetConfig: BetConfig = {
   sixesSetup: {
     enabled: false, scoringMode: 'lowBall' as SixesScoringMode,
     cobro: 'per_hole' as SixesCobro, amount: 100, useHandicap: true,
+    sets: [],
   },
   vegasSetup: {
     enabled: false, valuePerPoint: 10, useHandicap: false,
-    birdieMultiplier: true, variant: 'fixed' as VegasVariant,
+    birdieMultiplier: false, variant: 'fixed' as VegasVariant,
+    playerAId: '', playerBId: '', playerCId: '', playerDId: '',
   },
   ninesSetup: { enabled: false, valuePerPoint: 10 },
 };

@@ -739,6 +739,7 @@ export interface VegasSetResult {
 export interface VegasSetupConfig {
   enabled: boolean; valuePerPoint: number; useHandicap: boolean;
   birdieMultiplier: boolean; variant: VegasVariant;
+  playerAId: string; playerBId: string; playerCId: string; playerDId: string;
 }
 
 // =====================================================
