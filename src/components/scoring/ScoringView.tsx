@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
-import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig, NinesConfig } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
 import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
