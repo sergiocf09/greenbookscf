@@ -1950,7 +1950,23 @@ const Index = () => {
 
       // Persist manual markers
       if (score.markers) {
-        const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
+        // upsert .select() can return [] on update in some Supabase versions.
+        // Fall back to an explicit select to guarantee we have the ID.
+        let holeScoreId: string | null =
+          Array.isArray(upserted) && upserted.length > 0
+            ? upserted[0]?.id ?? null
+            : null;
+
+        if (!holeScoreId) {
+          const { data: existing } = await supabase
+            .from('hole_scores')
+            .select('id')
+            .eq('round_player_id', rpId)
+            .eq('hole_number', holeNumber)
+            .maybeSingle();
+          holeScoreId = existing?.id ?? null;
+        }
+
         if (holeScoreId) {
           const markerRows = expandMarkerStateToRows(score.markers);
 
@@ -1971,7 +1987,7 @@ const Index = () => {
               .from('hole_markers')
               .insert(
                 markerRows.map((marker) => ({
-                  hole_score_id: holeScoreId,
+                  hole_score_id: holeScoreId as string,
                   marker_type: marker.marker_type as any,
                   is_auto_detected: marker.is_auto_detected,
                 }))
