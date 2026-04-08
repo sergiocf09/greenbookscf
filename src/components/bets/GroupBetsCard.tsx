@@ -2487,7 +2487,170 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
       </CardContent>
+
+      {/* ── ResultsCards Sprint 3 ── */}
+      {wolfHook?.isActive && wolfHook.wolfConfig && (
+        <WolfResultsCard
+          players={players}
+          wolfConfig={wolfHook.wolfConfig}
+          holeStates={wolfHook.holeStates}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayerId || ''}
+        />
+      )}
+
+      {sixesHook?.isActive && sixesHook.sixesConfig && (
+        <SixesResultsCard
+          players={players}
+          sixesConfig={sixesHook.sixesConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayerId || ''}
+          onConfigureSets={
+            (sixesHook.sixesConfig.sets?.length ?? 0) < 3
+              ? () => setSixesSheetOpen(true)
+              : undefined
+          }
+        />
+      )}
+
+      {vegasHook?.isActive && vegasHook.vegasConfig && (
+        <VegasResultsCard
+          players={players}
+          vegasConfig={vegasHook.vegasConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayerId || ''}
+          onConfigurePlayers={
+            !vegasHook.vegasConfig.playerAId
+              ? () => setVegasSheetOpen(true)
+              : undefined
+          }
+        />
+      )}
+
+      {ninesHook?.isActive && ninesHook.ninesConfig && (
+        <NinesResultsCard
+          players={players}
+          ninesConfig={ninesHook.ninesConfig}
+          scores={scores}
+          course={course}
+          basePlayerId={basePlayerId || ''}
+        />
+      )}
     </Card>
+
+    {/* Sheet — configure Sixes sets */}
+    <Sheet open={sixesSheetOpen} onOpenChange={setSixesSheetOpen}>
+      <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Configurar parejas · Seises</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-4 mt-4">
+          {([1, 2, 3] as const).map(setNum => {
+            const ranges: Record<number, string> = { 1:'H1–6', 2:'H7–12', 3:'H13–18' };
+            const set = sixesSets[setNum];
+            const playerOpts = players.map(p => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ));
+            return (
+              <div key={setNum} className="space-y-2 border-b border-border pb-3">
+                <p className="text-sm font-semibold">Set {setNum} · {ranges[setNum]}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Equipo 1</p>
+                    <Select value={set.t1p1} onValueChange={v => setSixesSets(prev => ({
+                      ...prev, [setNum]: { ...prev[setNum], t1p1: v }
+                    }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
+                      <SelectContent>{playerOpts}</SelectContent>
+                    </Select>
+                    <Select value={set.t1p2} onValueChange={v => setSixesSets(prev => ({
+                      ...prev, [setNum]: { ...prev[setNum], t1p2: v }
+                    }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
+                      <SelectContent>{playerOpts}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Equipo 2</p>
+                    <Select value={set.t2p1} onValueChange={v => setSixesSets(prev => ({
+                      ...prev, [setNum]: { ...prev[setNum], t2p1: v }
+                    }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
+                      <SelectContent>{playerOpts}</SelectContent>
+                    </Select>
+                    <Select value={set.t2p2} onValueChange={v => setSixesSets(prev => ({
+                      ...prev, [setNum]: { ...prev[setNum], t2p2: v }
+                    }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
+                      <SelectContent>{playerOpts}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <Button className="w-full" onClick={async () => {
+            const assignments: SixesSetAssignment[] = ([1, 2, 3] as const).map(setNum => ({
+              setNumber: setNum,
+              team1: [sixesSets[setNum].t1p1, sixesSets[setNum].t1p2] as [string, string],
+              team2: [sixesSets[setNum].t2p1, sixesSets[setNum].t2p2] as [string, string],
+            }));
+            await sixesHook?.saveSets(assignments);
+            setSixesSheetOpen(false);
+          }}>
+            Guardar parejas
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+
+    {/* Sheet — configure Vegas players */}
+    <Sheet open={vegasSheetOpen} onOpenChange={setVegasSheetOpen}>
+      <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Asignar jugadores · Las Vegas</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-3 mt-4">
+          {(['A', 'B', 'C', 'D'] as const).map(letter => {
+            const key = `player${letter}Id` as keyof typeof vegasPlayers;
+            return (
+              <div key={letter} className="flex items-center gap-3">
+                <span className="text-sm font-medium w-20">Jugador {letter}</span>
+                <Select value={vegasPlayers[key]} onValueChange={v => setVegasPlayers(prev => ({ ...prev, [key]: v }))}>
+                  <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent>
+                    {players.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground text-center">Equipo 1: A+B · Equipo 2: C+D</p>
+          <Button className="w-full" onClick={async () => {
+            if (!vegasHook?.vegasConfig) return;
+            await vegasHook.saveConfig({
+              valuePerPoint: vegasHook.vegasConfig.valuePerPoint,
+              useHandicap: vegasHook.vegasConfig.useHandicap,
+              birdieMultiplier: vegasHook.vegasConfig.birdieMultiplier,
+              variant: vegasHook.vegasConfig.variant,
+              playerAId: vegasPlayers.playerAId,
+              playerBId: vegasPlayers.playerBId,
+              playerCId: vegasPlayers.playerCId,
+              playerDId: vegasPlayers.playerDId,
+            });
+            setVegasSheetOpen(false);
+          }}>
+            Guardar
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+    </>
   );
 };
 
