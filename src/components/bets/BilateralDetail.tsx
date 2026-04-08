@@ -305,8 +305,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.putts >= 4 || score.markers.cuatriput) {
           details.push({ holeNumber: score.holeNumber, marker: 'Cuatriput', emoji: '😱', isPositive: isManchaPositiveForBasePlayer });
         }
-      }
-    });
+        // Manchas genéricas — una entrada por ocurrencia
+        const manchaGenCount = score.markers.manchaGenerica ?? 0;
+        for (let mg = 0; mg < manchaGenCount; mg++) {
+          details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer });
+        }
     
     return details;
   };

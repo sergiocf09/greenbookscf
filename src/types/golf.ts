@@ -113,6 +113,8 @@ export const markerInfo: Record<keyof MarkerState, { label: string; emoji: strin
   dobleDigito: { label: 'Doble Dígito', emoji: '🔟', isUnit: false, autoDetected: false },
   moreliana: { label: 'Moreliana', emoji: '🎭', isUnit: false, autoDetected: false },
   culebra: { label: 'Culebra', emoji: '🐍', isUnit: false, autoDetected: true },
+  manchaGenerica: { label: 'Mancha', emoji: '⬛', isUnit: false, autoDetected: false },
+  unidadGenerica: { label: 'Unidad', emoji: '⭐', isUnit: true, autoDetected: false },
 };
 
 // Bet override for individual pair bets
