@@ -32,6 +32,14 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     return ids.filter(id => !players.find(p => p.id === id));
   }, [players, vegasConfig]);
 
+  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildVegasSetResults(players, scores, vegasConfig, course), [players, scores, vegasConfig, course, missingPlayerIds]);
+  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course), [players, scores, vegasConfig, course, missingPlayerIds]);
+
+  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
+  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+
+  const isTeam1 = (sr: typeof setResults[0]) => sr.team1.includes(basePlayerId);
+
   if (missingPlayerIds.length > 0) {
     return (
       <Card>
@@ -50,14 +58,6 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       </Card>
     );
   }
-
-  const setResults = useMemo(() => buildVegasSetResults(players, scores, vegasConfig, course), [players, scores, vegasConfig, course]);
-  const bets = useMemo(() => calculateVegasBets(players, scores, vegasConfig, course), [players, scores, vegasConfig, course]);
-
-  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
-
-  const isTeam1 = (sr: typeof setResults[0]) => sr.team1.includes(basePlayerId);
 
   return (
     <Card>

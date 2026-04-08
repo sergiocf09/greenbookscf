@@ -31,10 +31,22 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     if (!sixesConfig.sets) return [];
     const referencedIds = new Set<string>();
     for (const s of sixesConfig.sets) {
-      [s.team1Player1Id, s.team1Player2Id, s.team2Player1Id, s.team2Player2Id].forEach(id => { if (id) referencedIds.add(id); });
+      [...s.team1, ...s.team2].forEach(id => { if (id) referencedIds.add(id); });
     }
     return [...referencedIds].filter(id => !players.find(p => p.id === id));
   }, [players, sixesConfig.sets]);
+
+  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildSixesSetResults(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
+  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
+
+  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
+  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+
+  const getTeamSide = (setResult: typeof setResults[0]) => {
+    if (setResult.team1.includes(basePlayerId)) return 'team1';
+    if (setResult.team2.includes(basePlayerId)) return 'team2';
+    return null;
+  };
 
   if (missingPlayerIds.length > 0) {
     return (
@@ -54,18 +66,6 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       </Card>
     );
   }
-
-  const setResults = useMemo(() => buildSixesSetResults(players, scores, sixesConfig, course), [players, scores, sixesConfig, course]);
-  const bets = useMemo(() => calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course]);
-
-  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
-
-  const getTeamSide = (setResult: typeof setResults[0]) => {
-    if (setResult.team1.includes(basePlayerId)) return 'team1';
-    if (setResult.team2.includes(basePlayerId)) return 'team2';
-    return null;
-  };
 
   return (
     <Card>

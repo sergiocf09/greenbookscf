@@ -34,6 +34,15 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     return [...referencedIds].filter(id => !players.find(p => p.id === id));
   }, [players, holeStates]);
 
+  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateWolfBets(players, wolfConfig, holeStates), [players, wolfConfig, holeStates, missingPlayerIds]);
+  const details = useMemo(() => missingPlayerIds.length > 0 ? [] : buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course, missingPlayerIds]);
+
+  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
+  const f9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) <= 9).reduce((s, b) => s + b.amount, 0);
+  const b9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) > 9).reduce((s, b) => s + b.amount, 0);
+
+  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+
   if (missingPlayerIds.length > 0) {
     return (
       <Card>
@@ -52,15 +61,6 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       </Card>
     );
   }
-
-  const bets = useMemo(() => calculateWolfBets(players, wolfConfig, holeStates), [players, wolfConfig, holeStates]);
-  const details = useMemo(() => buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course]);
-
-  const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
-  const f9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) <= 9).reduce((s, b) => s + b.amount, 0);
-  const b9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) > 9).reduce((s, b) => s + b.amount, 0);
-
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
 
   const renderPill = (hole: number) => {
     const state = holeStates.find(s => s.holeNumber === hole);
