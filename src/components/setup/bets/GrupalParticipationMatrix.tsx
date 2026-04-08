@@ -247,7 +247,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
               {players.map(player => {
                 const colState = getColumnState(player.id);
                 return (
-                  <th key={player.id} className="p-1 text-center min-w-[40px]">
+                  <th key={player.id} className="p-1 text-center min-w-[36px]">
                     <button
                       type="button"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleColumnToggle(player.id); }}

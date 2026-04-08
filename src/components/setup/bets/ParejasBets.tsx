@@ -159,6 +159,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.
       </p>
 
+      {/* Parejas Participation Matrix */}
+      <ParejasParticipationMatrix
+        config={config}
+        players={players}
+        onUpdateConfig={onUpdateConfig}
+        onUpdateBet={onUpdateBet}
+      />
+
       {/* Team Pressures */}
       <BetSection
         id="teamPressures"
