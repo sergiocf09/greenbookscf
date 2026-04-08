@@ -2955,7 +2955,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       />
 
       {/* Sprint 3 — Wolf / Sixes / Vegas / Nines Results Cards */}
-      {wolfHook?.isActive && wolfHook.wolfConfig && (
+      {wolfHook?.isActive && wolfHook.wolfConfig && effectiveBetConfig.wolfSetup?.enabled !== false && (
         <WolfResultsCard
           players={allPlayersForCalculations}
           wolfConfig={wolfHook.wolfConfig}
@@ -2966,7 +2966,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {sixesHook?.isActive && sixesHook.sixesConfig && (
+      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).some(b => b.enabled !== false) && (
         <SixesResultsCard
           players={allPlayersForCalculations}
           sixesConfig={sixesHook.sixesConfig}
@@ -2976,7 +2976,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (
+      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).some(b => b.enabled !== false) && (
         <VegasResultsCard
           players={allPlayersForCalculations}
           vegasConfig={vegasHook.vegasConfig}
@@ -2986,7 +2986,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {ninesHook?.isActive && ninesHook.ninesConfig && (
+      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => b.enabled !== false) && (
         <NinesResultsCard
           players={allPlayersForCalculations}
           ninesConfig={ninesHook.ninesConfig}
