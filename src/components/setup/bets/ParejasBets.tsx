@@ -1040,10 +1040,26 @@ const SixesBetCard: React.FC<{
         const team1: [string, string] = assignment?.team1 ?? ['', ''];
         const team2: [string, string] = assignment?.team2 ?? ['', ''];
         const updateSet = (t1: [string, string], t2: [string, string]) => {
+          const currentSets = bet.sets ?? [];
           const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
             if (n === setNum) return { setNumber: n, team1: t1, team2: t2 };
-            return (bet.sets ?? []).find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+            return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
           });
+
+          // Auto-rotate: when Set 1 is fully assigned and Sets 2/3 are empty, auto-generate
+          if (setNum === 1 && t1[0] && t1[1] && t2[0] && t2[1]) {
+            const set2 = newSets.find(s => s.setNumber === 2)!;
+            const set3 = newSets.find(s => s.setNumber === 3)!;
+            const set2Empty = !set2.team1[0] && !set2.team1[1] && !set2.team2[0] && !set2.team2[1];
+            const set3Empty = !set3.team1[0] && !set3.team1[1] && !set3.team2[0] && !set3.team2[1];
+            if (set2Empty && set3Empty) {
+              const [a, b] = t1;
+              const [c, d] = t2;
+              newSets[1] = { setNumber: 2, team1: [a, c], team2: [b, d] };
+              newSets[2] = { setNumber: 3, team1: [a, d], team2: [b, c] };
+            }
+          }
+
           onUpdate({ sets: newSets });
         };
         return (
