@@ -2948,6 +2948,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         onBetConfigChange={onBetConfigChange}
         renderSection="grupales"
       />
+
+      {/* Nines Results */}
+      {ninesActive && ninesConfig && course && (
+        <NinesResultsCard players={allPlayersForCalculations} scores={scores} config={ninesConfig} course={course} />
+      )}
     </div>
   );
 };

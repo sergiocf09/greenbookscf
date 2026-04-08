@@ -2796,6 +2796,7 @@ const Index = () => {
               getStrokesForLocalPair={getStrokesForLocalPair}
               setStrokesForLocalPair={setStrokesForLocalPair}
               getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
+              roundId={roundState.id}
             />
             </ErrorBoundary>
             
