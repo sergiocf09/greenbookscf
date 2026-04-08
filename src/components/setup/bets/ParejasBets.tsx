@@ -224,7 +224,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bet={bet}
                 index={idx}
                 players={players}
-                playerOptions={playerOptions}
+                playerOptions={foursomesOptions}
                 onUpdate={(updates) => updateTeamPressure(bet.id, updates)}
                 onRemove={() => removeTeamPressure(bet.id)}
               />
