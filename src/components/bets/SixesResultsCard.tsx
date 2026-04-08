@@ -43,17 +43,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({ players, sco
   };
   const getPlayer = (id: string) => players.find(p => p.id === id);
 
-  // Compute per-player totals across all sets
-  const playerTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    results.forEach(sr => {
-      const t1Ids = sr.team1;
-      const t2Ids = sr.team2;
-      t1Ids.forEach(id => totals.set(id, (totals.get(id) ?? 0) + sr.amountTeam1 / 2));
-      t2Ids.forEach(id => totals.set(id, (totals.get(id) ?? 0) + sr.amountTeam2 / 2));
-    });
-    return totals;
-  }, [results]);
+  // (playerTotals already computed above)
 
   const toggleSet = (n: number) => setExpandedSets(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]);
 
