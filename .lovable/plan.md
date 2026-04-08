@@ -1,44 +1,86 @@
 
 
-## Fix: Graceful handling when a player is removed from a bet
+## Mejoras UX en Setup de Apuestas de Parejas
 
-### Problem
-When a player is removed from the round but their ID is still referenced in bet configurations (Nines, Sixes, Vegas, Wolf), the ResultsCards crash with `Cannot read properties of undefined (reading 'id')`. The app should instead show a warning message indicating incomplete participation.
+### Cambios solicitados
 
-### Plan
+**1. Auto-crear primera instancia al abrir sección (Carritos, Sixes, Vegas)**
+Actualmente Foursomes muestra "No hay foursomes configurados" con botón. Se cambiará para que al activar el toggle o expandir la sección vacía, se auto-cree la primera instancia (plantilla vacía). Aplica a:
+- **Carritos**: Al hacer toggle ON, crear automáticamente un CarritosTeamBet vacío en `carritosTeams` (eliminar el flujo legacy de `config.carritos` primario)
+- **Sixes**: Ya crea instancia al toggle ON — eliminar el bloque "No hay apuestas" y auto-crear al activar
+- **Vegas**: Mismo patrón — eliminar bloque vacío
+- **Foursomes**: Mismo patrón — al toggle ON, auto-crear un TeamPressuresBet si `bets.length === 0`
 
-**1. Add missing-player guard to NinesResultsCard.tsx**
-- After computing `activePlayers`, check if `activePlayers.length < 3` (minimum for Nines)
-- If insufficient players, render a warning card instead of the calculation: "⚠️ Faltan jugadores para esta apuesta. Verifica la configuración."
-- Show which player IDs from `ninesConfig.playerIds` are missing from the round
+**2. Renombrar labels de Wolf timing**
+En `ParejasBets.tsx`, líneas ~322-325:
+- `"Antes del drive"` → `"Antes del driver"`
+- `"Después del drive"` → `"Al pegar el driver"`
+- `"Antes del 2° golpe"` permanece igual
 
-**2. Add missing-player guard to SixesResultsCard.tsx**
-- Check if any player ID referenced in `sixesConfig.sets` is not found in `players`
-- If missing players detected, render warning card with message about incomplete team assignments
+También en `WolfDecisionPanel.tsx` (timingLabels, línea ~29):
+- A: `"Antes del driver"`
+- B: `"Al pegar el driver"`
+- C: permanece
 
-**3. Add missing-player guard to VegasResultsCard.tsx**
-- Check if `playerAId/playerBId/playerCId/playerDId` from config resolve to actual players
-- If any are missing, render warning card
+**3. Renombrar "Seises" → "Sixes"**
+En `ParejasBets.tsx`:
+- Título: `"⛳ Seises"` → `"⛳ Sixes"`
+- Todos los textos internos: "Seises" → "Sixes"
 
-**4. Add missing-player guard to WolfResultsCard.tsx**
-- Check if any player ID in `wolfConfig` or `holeStates` references a missing player
-- If so, render warning card
+En `BetDashboard.tsx`:
+- Sheet title: `"Configurar parejas · Seises"` → si se mantiene, renombrar. Pero se eliminará (ver punto 5).
 
-### Warning card design
-Each card will show its normal header (title + icon) but replace the content with:
+**4. Toggle OFF debe colapsar y ocultar contenido**
+En `BetSection.tsx`: cuando `enabled` es `false`, forzar `isExpanded` a `false` para que `CollapsibleContent` no se renderice. Cambio en el componente `BetSection`:
+- Si `enabled === false`, pasar `open={false}` al `Collapsible` independientemente de `isExpanded`
+
+Además en los `onToggle` handlers de Wolf y Carritos, al desactivar:
+- **Wolf**: Colapsar sección al toggle OFF
+- **Carritos**: Colapsar sección al toggle OFF
+- **Foursomes**: Colapsar sección al toggle OFF
+
+**5. Eliminar sheets de configuración del Dashboard**
+En `BetDashboard.tsx`:
+- Eliminar el Sheet de "Configurar parejas · Sixes" (~líneas 3011-3065)
+- Eliminar el Sheet de "Asignar jugadores · Vegas" (~líneas 3067-3109)
+- Eliminar estados `sixesSheetOpen`, `vegasSheetOpen`, `sixesSetsLocal`, `vegasPlayersLocal`
+- En los ResultsCards, eliminar props `onConfigureSets` y `onConfigurePlayers` (pasar `undefined` o no pasarlos)
+- Los ResultsCards ya tienen guardas de "Participación incompleta" que guían al usuario al setup
+
+**6. Preservar configuración al eliminar jugador**
+Ya implementado con las guardas defensivas. El comportamiento actual es correcto: el setup mantiene los IDs de jugadores que siguen en la ronda y deja vacíos los que fueron eliminados, mostrando la advertencia en resultados.
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/setup/bets/BetSection.tsx` | Forzar collapse cuando `enabled=false` |
+| `src/components/setup/bets/ParejasBets.tsx` | Auto-crear instancia, renombrar timing Wolf, renombrar Sixes, colapsar al desactivar |
+| `src/components/bets/WolfDecisionPanel.tsx` | Actualizar `timingLabels` |
+| `src/components/bets/BetDashboard.tsx` | Eliminar sheets de config Sixes/Vegas y estados asociados |
+
+### Detalle técnico
+
+**BetSection.tsx** — línea 39:
+```tsx
+<Collapsible open={enabled === false ? false : isExpanded} onOpenChange={onExpandChange}>
 ```
-⚠️ Participación incompleta
-[Nombre del jugador eliminado] ya no está en la ronda.
-Agrega un jugador de reemplazo o desactiva esta apuesta.
+
+**ParejasBets.tsx** — Carritos onToggle:
+```tsx
+onToggle={(enabled) => {
+  onUpdateBet('carritos', { enabled });
+  if (enabled) {
+    // Auto-create first instance if none exist
+    if ((config.carritosTeams || []).length === 0) addCarritosTeam();
+    onToggleSection('carritos', true);
+  } else {
+    onToggleSection('carritos', false);
+  }
+}}
 ```
 
-Uses existing `AlertTriangle` icon (already imported in Sixes/Vegas cards) and `bg-amber-500/10` styling consistent with the app's warning patterns.
+Mismo patrón para Foursomes (auto-crear bet si `bets.length === 0`) y Wolf (colapsar al OFF).
 
-### Technical details
-- **NinesResultsCard.tsx**: Early return after `activePlayers` memo if `length < 3`. The guard wraps the entire calculation block.
-- **SixesResultsCard.tsx**: Collect missing IDs from sets' team arrays; show warning if any found.
-- **VegasResultsCard.tsx**: Check all 4 player IDs resolve; show warning if any missing.
-- **WolfResultsCard.tsx**: Filter `wolfConfig` player references against current players list.
-- No changes to hooks or data model — this is purely a defensive UI guard.
-- The existing `ninesConfig`/`sixesConfig`/`vegasConfig` in the DB remain unchanged; the warning prompts the organizer to reconfigure or re-add a player.
+Sixes y Vegas ya crean instancia al toggle ON — solo falta agregar `onToggleSection('sixes', false)` / `onToggleSection('vegas', false)` en el else.
 
