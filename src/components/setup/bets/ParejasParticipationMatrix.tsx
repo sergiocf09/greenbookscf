@@ -15,8 +15,8 @@ const PAREJAS_BETS = [
   { key: 'teamPressures' as const, label: 'Foursomes' },
   { key: 'carritos' as const, label: 'Carritos' },
   { key: 'wolf' as const, label: '🐺 Loba' },
-  { key: 'sixes' as const, label: '⛳ Sixes' },
-  { key: 'vegas' as const, label: '🎲 Vegas' },
+  { key: 'sixes' as const, label: 'Sixes' },
+  { key: 'vegas' as const, label: 'Vegas' },
 ] as const;
 
 type ParejasBetKey = typeof PAREJAS_BETS[number]['key'];

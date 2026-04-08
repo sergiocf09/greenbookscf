@@ -946,7 +946,7 @@ const SixesBetCard: React.FC<{
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar Seises {index + 1}?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar Sixes {index + 1}?</AlertDialogTitle>
             <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
