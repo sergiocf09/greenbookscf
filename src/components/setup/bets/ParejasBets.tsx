@@ -679,15 +679,16 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
         <Select
           value={bet.scoringType}
-          onValueChange={(v: 'lowBall' | 'highBall' | 'combined') => onUpdate({ scoringType: v })}
+          onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'matchOnly') => onUpdate({ scoringType: v })}
         >
-          <SelectTrigger className="h-7 w-28 text-[11px]">
+          <SelectTrigger className="h-7 w-32 text-[11px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="lowBall">Bola Baja</SelectItem>
             <SelectItem value="highBall">Bola Alta</SelectItem>
             <SelectItem value="combined">Combinado</SelectItem>
+            <SelectItem value="matchOnly">Solo Match</SelectItem>
           </SelectContent>
         </Select>
       </div>
