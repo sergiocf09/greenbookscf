@@ -1,63 +1,44 @@
 
-Objetivo: corregir la persistencia de `manchaGenerica` y `unidadGenerica` cuando el contador supera 1, para que al refrescar o restaurar la ronda se conserven todas las incidencias y se reflejen igual en avatares, badges e íconos de detalle.
 
-Diagnóstico
-- La restauración sí parece estar preparada para reconstruir conteos: `restoreMarkerStateFromRows(...)` suma múltiples filas de `hole_markers` para `manchaGenerica` y `unidadGenerica`.
-- El problema más probable está en el guardado concurrente desde `src/pages/Index.tsx`:
-  - `updateScore(...)` dispara `saveScoreToDb(...)` en cada click de `+/-`.
-  - `saveScoreToDb(...)` hace “delete all manual markers” + “insert current marker rows”.
-  - Si el usuario toca rápido dos veces (`1`, luego `2`), ambas escrituras corren en paralelo y la más vieja puede terminar al final, dejando solo 1 fila en DB.
-- Eso explica exactamente el síntoma: en UI local se ve bien al momento, pero después de refresh/restaurar solo queda una incidencia.
+## Fix: Graceful handling when a player is removed from a bet
 
-Plan de implementación
-1. Endurecer el guardado de score/markers en `src/pages/Index.tsx`
-- Reemplazar el guardado “sin control de orden” por un guardado serializado por `playerId + holeNumber`.
-- Mantener una referencia por hoyo/jugador con:
-  - último payload pendiente
-  - bandera “saving”
-  - versión/timestamp incremental
-- Asegurar que solo el último estado de `markers` llegue a la base, evitando que una escritura vieja sobreescriba una nueva.
+### Problem
+When a player is removed from the round but their ID is still referenced in bet configurations (Nines, Sixes, Vegas, Wolf), the ResultsCards crash with `Cannot read properties of undefined (reading 'id')`. The app should instead show a warning message indicating incomplete participation.
 
-2. Separar claramente el caso de marcadores
-- Conservar el `upsert` de `hole_scores`.
-- Después, para `hole_markers`, seguir usando `expandMarkerStateToRows(...)`, pero ejecutarlo únicamente dentro del flujo serializado.
-- Así, el ciclo `delete + insert` siempre representará el estado final del contador, no un estado intermedio.
+### Plan
 
-3. Revisar los puntos donde se restaura la ronda
-- Verificar consistencia entre:
-  - `src/hooks/useRoundManagement.ts`
-  - `src/hooks/useScorePersistence.ts`
-- Mantener `select('hole_score_id, marker_type, is_auto_detected')` en ambos lugares para no perder agregación numérica.
-- Si detecto alguna lectura incompleta, la alineo al mismo formato usado por `restoreMarkerStateFromRows(...)`.
+**1. Add missing-player guard to NinesResultsCard.tsx**
+- After computing `activePlayers`, check if `activePlayers.length < 3` (minimum for Nines)
+- If insufficient players, render a warning card instead of the calculation: "⚠️ Faltan jugadores para esta apuesta. Verifica la configuración."
+- Show which player IDs from `ninesConfig.playerIds` are missing from the round
 
-4. Validar que la UI consuma el conteo restaurado sin colapsarlo
-- Confirmar que las vistas que muestran:
-  - badges junto al avatar
-  - resumen visual de unidades/manchas
-  - detalle de incidencias
-  sigan leyendo `score.markers.manchaGenerica` y `score.markers.unidadGenerica` como número.
-- No cambiaré el diseño; solo aseguraré que el dato restaurado no se degrade a booleano en ningún punto del flujo.
+**2. Add missing-player guard to SixesResultsCard.tsx**
+- Check if any player ID referenced in `sixesConfig.sets` is not found in `players`
+- If missing players detected, render warning card with message about incomplete team assignments
 
-5. Verificación final
-- Probar este caso exacto:
-  - marcar 2+ unidades genéricas
-  - marcar 2+ manchas genéricas
-  - esperar guardado
-  - refrescar
-  - restaurar ronda
-- Confirmar que:
-  - el contador numérico se conserva
-  - los badges muestran la cantidad correcta
-  - los íconos/resúmenes siguen reflejando múltiples incidencias
-  - bilateralidad y montos no cambian
+**3. Add missing-player guard to VegasResultsCard.tsx**
+- Check if `playerAId/playerBId/playerCId/playerDId` from config resolve to actual players
+- If any are missing, render warning card
 
-Archivos que probablemente tocaré
-- `src/pages/Index.tsx` — fix principal del guardado concurrente
-- Posible ajuste menor de consistencia en:
-  - `src/hooks/useRoundManagement.ts`
-  - `src/hooks/useScorePersistence.ts`
+**4. Add missing-player guard to WolfResultsCard.tsx**
+- Check if any player ID in `wolfConfig` or `holeStates` references a missing player
+- If so, render warning card
 
-Detalles técnicos
-- No hace falta cambiar base de datos.
-- No hace falta tocar componentes de UI para el bug raíz.
-- La causa no parece ser `markerPersistence.ts`, sino una condición de carrera al persistir múltiples clicks rápidos del contador.
+### Warning card design
+Each card will show its normal header (title + icon) but replace the content with:
+```
+⚠️ Participación incompleta
+[Nombre del jugador eliminado] ya no está en la ronda.
+Agrega un jugador de reemplazo o desactiva esta apuesta.
+```
+
+Uses existing `AlertTriangle` icon (already imported in Sixes/Vegas cards) and `bg-amber-500/10` styling consistent with the app's warning patterns.
+
+### Technical details
+- **NinesResultsCard.tsx**: Early return after `activePlayers` memo if `length < 3`. The guard wraps the entire calculation block.
+- **SixesResultsCard.tsx**: Collect missing IDs from sets' team arrays; show warning if any found.
+- **VegasResultsCard.tsx**: Check all 4 player IDs resolve; show warning if any missing.
+- **WolfResultsCard.tsx**: Filter `wolfConfig` player references against current players list.
+- No changes to hooks or data model — this is purely a defensive UI guard.
+- The existing `ninesConfig`/`sixesConfig`/`vegasConfig` in the DB remain unchanged; the warning prompts the organizer to reconfigure or re-add a player.
+
