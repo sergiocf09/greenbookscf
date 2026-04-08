@@ -128,7 +128,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({ players, sco
                 if (!p) return null;
                 return (
                   <div key={id} className="flex items-center gap-1.5 p-1.5 bg-muted/20 rounded">
-                    <PlayerAvatar name={p.name} initials={p.initials} background={p.color} size="xs" />
+                    <PlayerAvatar initials={p.initials} background={p.color} size="xs" />
                     <span className="text-[10px] truncate flex-1">{formatPlayerNameShort(p.name)}</span>
                     <span className={cn('text-[10px] font-bold tabular-nums', total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                       {total > 0 ? '+' : ''}{total !== 0 ? `$${fmtMoney(Math.abs(total))}` : '$0'}

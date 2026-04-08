@@ -130,7 +130,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({ players, sco
             return (
               <div key={s.playerId} className="flex items-center gap-2 p-1.5 bg-muted/20 rounded">
                 <span className="text-[10px] font-bold w-4 text-center text-muted-foreground">{idx + 1}</span>
-                <PlayerAvatar name={p.name} initials={p.initials} background={p.color} size="xs" />
+                <PlayerAvatar initials={p.initials} background={p.color} size="xs" />
                 <span className="text-[10px] truncate flex-1">{formatPlayerNameShort(p.name)}</span>
                 <span className="text-[10px] font-bold tabular-nums w-8 text-center">{s.totalPoints}</span>
                 <span className={cn('text-[10px] font-bold tabular-nums min-w-[50px] text-right',
