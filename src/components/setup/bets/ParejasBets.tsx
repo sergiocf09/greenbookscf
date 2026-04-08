@@ -855,7 +855,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
-        {bet.scoringType === 'matchOnly'
+        {bet.scoringType === 'matchOnly' && bet.continua
+          ? '💡 Solo Match Continuo: corre del 1 al 18, se define cuando la ventaja supera los hoyos restantes'
+          : bet.scoringType === 'matchOnly'
           ? '💡 Solo Match: sin apertura de presiones'
           : bet.scoringType === 'combined'
           ? '💡 Combinado: abre presión cuando diferencia > 2'
