@@ -301,7 +301,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Wolf — 4-6 players */}
       {players.length >= 4 && players.length <= 6 && (
         <BetSection
-          id="wolf" title="🐺 La Loba"
+          id="wolf" title="🐺 Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
           enabled={config.wolfSetup?.enabled ?? false}
           onToggle={(enabled) => {
