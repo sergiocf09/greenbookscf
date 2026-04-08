@@ -85,6 +85,10 @@ import { FriendsDialog } from '@/components/friends/FriendsDialog';
 import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 import { GuestConversionScreen } from '@/components/guest/GuestRoundClosedListener';
+import { useWolf } from '@/hooks/useWolf';
+import { useSixes } from '@/hooks/useSixes';
+import { useVegas } from '@/hooks/useVegas';
+import { useNines } from '@/hooks/useNines';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
@@ -168,7 +172,7 @@ const Index = () => {
   // Upgrade modal state
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'create_round' | 'history' | 'share' | 'leaderboard'>('create_round');
-  
+
 
   // PERF: no cargues el catálogo de campos hasta que el usuario decida qué hacer con las rondas pendientes.
   const [enableCourseCatalog, setEnableCourseCatalog] = useState(false);
@@ -219,6 +223,21 @@ const Index = () => {
     getCourseById,
     setPlayerGroups,
   });
+
+  // Sprint 3 bet hooks
+  const wolf  = useWolf(roundState?.id ?? null, players);
+  const sixes = useSixes(roundState?.id ?? null, players);
+  const vegas = useVegas(roundState?.id ?? null);
+  const nines = useNines(roundState?.id ?? null, players);
+
+  // Sprint 3: sync betConfig setup → dedicated hooks
+  useEffect(() => {
+    if (!roundState?.id) return;
+    if (betConfig.wolfSetup?.enabled && !wolf.isActive) wolf.saveConfig({ amountPerHole: betConfig.wolfSetup.amountPerHole ?? 10, scoringMode: betConfig.wolfSetup.scoringMode ?? 'lowBall', useHandicap: betConfig.wolfSetup.useHandicap ?? true, timing: betConfig.wolfSetup.timing ?? 'B', carryover: betConfig.wolfSetup.carryover ?? true });
+    if (betConfig.sixesSetup?.enabled && !sixes.isActive) sixes.saveConfig({ scoringMode: betConfig.sixesSetup.scoringMode ?? 'lowBall', cobro: betConfig.sixesSetup.cobro ?? 'per_hole', amount: betConfig.sixesSetup.amount ?? 10, useHandicap: betConfig.sixesSetup.useHandicap ?? true });
+    if (betConfig.vegasSetup?.enabled && !vegas.isActive) vegas.saveConfig({ valuePerPoint: betConfig.vegasSetup.valuePerPoint ?? 1, useHandicap: betConfig.vegasSetup.useHandicap ?? true, birdieMultiplier: betConfig.vegasSetup.birdieMultiplier ?? false, variant: betConfig.vegasSetup.variant ?? 'fixed', playerAId: '', playerBId: '', playerCId: '', playerDId: '' });
+    if (betConfig.ninesSetup?.enabled && !nines.isActive) nines.saveConfig({ valuePerPoint: betConfig.ninesSetup.valuePerPoint ?? 1, playerIds: players.map(p => p.id).slice(0, 3) });
+  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesSetup?.enabled, betConfig.vegasSetup?.enabled, betConfig.ninesSetup?.enabled]);
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
@@ -2761,7 +2780,19 @@ const Index = () => {
                 },
               }));
             }}
-            
+            wolfConfig={wolf.wolfConfig ?? undefined}
+            wolfHoleStates={wolf.holeStates}
+            currentUserId={profile?.id ?? undefined}
+            isOrganizer={profile?.id === roundState.organizerProfileId}
+            onWolfDecision={async (holeNumber, partnerIds, wentSolo) => {
+              const wolfId = wolf.getCurrentWolfId(holeNumber) ?? '';
+              await wolf.saveDecision(holeNumber, wolfId, partnerIds, wentSolo);
+            }}
+            onWolfResolve={async (holeNumber, result) => {
+              await wolf.resolveHole(holeNumber, result);
+            }}
+            sixesConfig={sixes.sixesConfig ?? undefined}
+            ninesConfig={nines.ninesConfig ?? undefined}
           />
           </ErrorBoundary>
         )}
