@@ -74,7 +74,6 @@ export const markerLabels: Record<string, string> = {
   sandyPar: 'Sandy',
   holeOut: 'HoleOut',
   aquaPar: 'Aqua',
-  oyesUni: 'OyesUni',
   par3GirMas3: 'GIR>3',
   trampa: 'Trampa',
   ladies: 'Pinkies',

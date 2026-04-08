@@ -1266,7 +1266,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // Calculate Unidades summary per player (informational only)
   const unidadesSummary = useMemo(() => {
     if (sameGroupPlayers.length < 2) return null;
-    const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar', 'oyesUni'];
+    const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
     const UNIT_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       birdie:    { label: 'Birdie',      emoji: '🐦', short: 'Birdie' },
       eagle:     { label: 'Águila',      emoji: '🦅', short: 'Águila' },
@@ -1274,7 +1274,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       holeOut:   { label: 'Hole Out',    emoji: '🎯', short: 'HoleOut' },
       aquaPar:   { label: 'Aqua Par',    emoji: '💧', short: 'AquaPar' },
       sandyPar:  { label: 'Sandy Par',   emoji: '🏖️', short: 'Sandy' },
-      oyesUni:   { label: 'Oyes Uni',    emoji: '📍', short: 'OyesUni' },
+      unidadGenerica: { label: 'Unidad', emoji: '⭐', short: 'Unidad' },
     };
     const participatingPlayers = resolveGroupParticipants(betConfig.units.participantIds);
     if (participatingPlayers.length < 2) return null;
@@ -1296,11 +1296,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         }
         // Manual markers (holeOut, aquaPar, sandyPar)
         if (score.markers) {
-          ['holeOut', 'aquaPar', 'sandyPar', 'oyesUni'].forEach(key => {
+          ['holeOut', 'aquaPar', 'sandyPar'].forEach(key => {
             if ((score.markers as any)[key]) {
               unidades.push({ marker: key, ...(UNIT_LABELS[key] || { label: key, emoji: '⭐', short: key }), holeNumber: score.holeNumber });
             }
           });
+        }
+        // Unidades genéricas (numeric counter)
+        const unidadGenCount = (score.markers as any)?.unidadGenerica ?? 0;
+        for (let i = 0; i < unidadGenCount; i++) {
+          unidades.push({ marker: 'unidadGenerica', ...UNIT_LABELS.unidadGenerica, holeNumber: score.holeNumber });
         }
       });
       return { player, unidades, total: unidades.length };
