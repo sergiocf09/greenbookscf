@@ -2336,7 +2336,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             let highBallWinner: 'A' | 'B' | 'tie' | undefined;
             let combinedWinner: 'A' | 'B' | 'tie' | undefined;
             
-            if (scoringType === 'lowBall' || scoringType === 'combined') {
+            if (scoringType === 'lowBall' || scoringType === 'combined' || scoringType === 'matchOnly') {
               if (lowA < lowB) { teamAPoints++; lowBallWinner = 'A'; }
               else if (lowB < lowA) { teamBPoints++; lowBallWinner = 'B'; }
               else { lowBallWinner = 'tie'; }
