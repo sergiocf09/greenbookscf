@@ -5,61 +5,50 @@
 
 **File**: `src/hooks/useBetConfigPersistence.ts`
 
-The following fields exist on `BetConfig` but are **never saved or loaded** in the persistence hook:
-- `wolfSetup` (Loba)
-- `sixesBets` (Sixes instances)
-- `vegasBets` (Vegas instances)
-- `ninesBets` (Nines instances)
-- `parejasExcluded` (Parejas matrix exclusions)
+The following fields exist on `BetConfig` but are never saved or loaded:
+- `wolfSetup`, `sixesBets`, `vegasBets`, `ninesBets`, `parejasExcluded`
 
-**Changes**:
-- In `RoundBetConfig` interface: add `wolfSetup`, `sixesBets`, `vegasBets`, `ninesBets`, `parejasExcluded`
-- In `saveBetConfig` (`configToSave`): add all 5 fields
-- In `applyDbConfigToState`: add restore logic for all 5 fields (using `'key' in dbConfig` pattern for arrays)
+Add all 5 to `RoundBetConfig`, `saveBetConfig`, and `applyDbConfigToState`.
 
-### 2. Add "Continúa" (18-hole match) option to Individual Pressures
+### 2. Add "Continúa" (18-hole match) to Individual Pressures
 
-**Files**: `src/types/golf.ts`, `src/components/setup/bets/IndividualBets.tsx`, `src/lib/bets/pressures.ts`, `src/components/bets/BetDashboard.tsx`
+**Files**: `golf.ts`, `IndividualBets.tsx`, `pressures.ts`, `BetDashboard.tsx`
 
-When `onlyMatch` is true, add a new toggle `continua?: boolean` on `PressureBetConfig`:
-- **UI** (`IndividualBets.tsx`): Show "Continúa (18 hoyos)" switch when `onlyMatch` is enabled. When `continua` is true, hide Front/Back amounts and only show a single "Match 18" amount.
-- **Calculation** (`pressures.ts`): When `continua`, don't split at hole 9. Run a single match 1-18. Apply early-win logic: if a player leads by more holes than remain, the match ends (e.g., "4&3"). 
-- **Dashboard** (`BetDashboard.tsx`): Show match result as "4&3", "2&1", "1 Up" etc. instead of F9/B9 split.
+- Add `continua?: boolean` to `PressureBetConfig`
+- When `onlyMatch` + `continua`: hide Front/Back amounts, show single Match 18 amount
+- Run single 1-18 match with early-win detection (lead > remaining holes = match over)
+- Dashboard shows "4&3", "2&1", "1 Up" / "1 Down" with green/red styling
 
-### 3. Add "Continúa" to Foursomes (Team Pressures) matchOnly
+### 3. Add "Continúa" to Foursomes matchOnly
 
-**Files**: `src/types/golf.ts`, `src/components/setup/bets/ParejasBets.tsx`, `src/lib/bets/teamPressures.ts`, `src/components/bets/BetDashboard.tsx`
+**Files**: `golf.ts`, `ParejasBets.tsx`, `teamPressures.ts`, `BetDashboard.tsx`
 
-Same concept for `TeamPressuresBet` when `scoringType === 'matchOnly'`:
-- Add `continua?: boolean` to `TeamPressuresBet` interface
-- **UI**: Show "Continúa (18 hoyos)" toggle when matchOnly is selected. When true, show only one "Match" amount field.
-- **Calculation**: Run single 18-hole match with early-win detection
-- **Dashboard**: Display "4&3", "1 Up", etc.
+- Add `continua?: boolean` to `TeamPressuresBet`
+- Same "Continúa (18 hoyos)" toggle when matchOnly is selected
+- Same early-win logic and "X&Y" display format
 
 ### 4. Auto-rotate Sixes set assignments
 
-**File**: `src/components/setup/bets/ParejasBets.tsx` (SixesBetCard)
+**File**: `ParejasBets.tsx` (SixesBetCard)
 
-When the user sets 4 players in Set 1 (A+B vs C+D), auto-populate Sets 2 and 3:
+When Set 1 has all 4 players filled (A+B vs C+D) and Sets 2/3 are empty, auto-generate:
 - Set 2: A+C vs B+D
 - Set 3: A+D vs B+C
 
-Logic: In `updateSet` for set 1, if all 4 player IDs are filled and sets 2/3 are empty, auto-generate them. User can still manually edit any set afterward.
+User can still manually edit any set afterward.
 
-### 5. Persistence for new fields
+### 5. Persist new fields
 
-Add `continua` to the `RoundBetConfig` type for both `pressures` and `teamPressures.bets[]`.
-
----
+Add `continua` to persistence for both `pressures` and `teamPressures.bets[]`.
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
 | `src/hooks/useBetConfigPersistence.ts` | Save/load wolfSetup, sixesBets, vegasBets, ninesBets, parejasExcluded |
-| `src/types/golf.ts` | Add `continua?: boolean` to `PressureBetConfig` and `TeamPressuresBet` |
-| `src/components/setup/bets/IndividualBets.tsx` | "Continúa" toggle UI when onlyMatch, single amount |
-| `src/components/setup/bets/ParejasBets.tsx` | "Continúa" toggle for matchOnly Foursomes; Sixes auto-rotation |
-| `src/lib/bets/pressures.ts` | 18-hole match logic with early-win detection |
-| `src/lib/bets/teamPressures.ts` | 18-hole match logic with early-win detection |
-| `src/components/bets/BetDashboard.tsx` | Display match-play results ("4&3", "1 Up") for continúa mode |
+| `src/types/golf.ts` | Add `continua?: boolean` to PressureBetConfig and TeamPressuresBet |
+| `src/components/setup/bets/IndividualBets.tsx` | "Continúa" toggle + single amount UI |
+| `src/components/setup/bets/ParejasBets.tsx` | "Continúa" toggle for matchOnly; Sixes auto-rotation |
+| `src/lib/bets/pressures.ts` | 18-hole continuous match with early-win |
+| `src/lib/bets/teamPressures.ts` | 18-hole continuous match with early-win |
+| `src/components/bets/BetDashboard.tsx` | "4&3" / "1 Up" match-play display |
