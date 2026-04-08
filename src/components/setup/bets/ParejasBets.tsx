@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment } from '@/types/golf';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
