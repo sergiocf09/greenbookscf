@@ -453,6 +453,11 @@ export interface BetConfig {
   teamPressures: TeamPressuresBetConfig;
   zoologico: ZoologicoBetConfig; // NEW: Zoo bet
   skinsGrupal?: SkinsGrupalBetConfig; // NEW: Group skins
+  // Sprint 3 new bets
+  wolfSetup?: WolfSetupConfig;
+  sixesSetup?: SixesSetupConfig;
+  vegasSetup?: VegasSetupConfig;
+  ninesSetup?: NinesSetupConfig;
 }
 
 export interface MedalBetConfig {
