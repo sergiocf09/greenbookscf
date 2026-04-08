@@ -362,7 +362,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         ) : (
           <>
             {config.sixesBets!.map((bet, idx) => (
-              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={playerOptions}
+              <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={sixesOptions}
                 onUpdate={(updates) => {
                   const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, sixesBets: next });
