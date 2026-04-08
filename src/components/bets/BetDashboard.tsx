@@ -3011,25 +3011,41 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).length > 0 && (
-        <SixesResultsCard
-          players={allPlayersForCalculations}
-          sixesConfig={sixesHook.sixesConfig}
-          scores={scores}
-          course={course}
-          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-        />
-      )}
+      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).length > 0 && (() => {
+        const hookCfg = sixesHook.sixesConfig;
+        const betInst = effectiveBetConfig.sixesBets?.[0];
+        const hookHasEmptySets = !hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id));
+        const mergedSixesConfig: typeof hookCfg = hookHasEmptySets && betInst?.sets?.length >= 3
+          ? { ...hookCfg, sets: betInst.sets, scoringMode: betInst.scoringMode, cobro: betInst.cobro, amount: betInst.amount, useHandicap: betInst.useHandicap }
+          : hookCfg;
+        return (
+          <SixesResultsCard
+            players={allPlayersForCalculations}
+            sixesConfig={mergedSixesConfig}
+            scores={scores}
+            course={course}
+            basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          />
+        );
+      })()}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).length > 0 && (
-        <VegasResultsCard
-          players={allPlayersForCalculations}
-          vegasConfig={vegasHook.vegasConfig}
-          scores={scores}
-          course={course}
-          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-        />
-      )}
+      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).length > 0 && (() => {
+        const hookCfg = vegasHook.vegasConfig;
+        const betInst = effectiveBetConfig.vegasBets?.[0];
+        const hookHasEmptyPlayers = !hookCfg.playerAId || !hookCfg.playerBId || !hookCfg.playerCId || !hookCfg.playerDId;
+        const mergedVegasConfig: typeof hookCfg = hookHasEmptyPlayers && betInst?.playerAId
+          ? { ...hookCfg, playerAId: betInst.playerAId, playerBId: betInst.playerBId, playerCId: betInst.playerCId, playerDId: betInst.playerDId, valuePerPoint: betInst.valuePerPoint, useHandicap: betInst.useHandicap, birdieMultiplier: betInst.birdieMultiplier, variant: betInst.variant }
+          : hookCfg;
+        return (
+          <VegasResultsCard
+            players={allPlayersForCalculations}
+            vegasConfig={mergedVegasConfig}
+            scores={scores}
+            course={course}
+            basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          />
+        );
+      })()}
 
       {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).length > 0 && (
         <NinesResultsCard
