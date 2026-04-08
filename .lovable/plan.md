@@ -1,43 +1,75 @@
 
 
-## Dashboard: Mostrar solo apuestas habilitadas y validar configuración
+## Matriz de Configuración Rápida para Parejas + Correcciones en Grupal
 
-### Problema
-Las cards de Wolf, Sixes, Vegas y Nines aparecen en el BetDashboard si existen en la BD (`hook.isActive`), sin importar si el toggle en el setup está desactivado. Además, cuando el toggle está activo pero faltan jugadores por configurar, no hay indicación clara.
+### Resumen
 
-### Cambios
+Tres cambios: (1) crear una matriz de configuración rápida para apuestas de parejas, (2) corregir la alineación de iniciales en las matrices existentes, y (3) agregar Nines a la matriz grupal.
 
-**1. Condicionar renderizado al `enabled` del betConfig (`BetDashboard.tsx`, líneas 2957-2997)**
+---
 
-Agregar verificación del flag `enabled` en el `effectiveBetConfig`:
+### 1. Nueva Matriz de Parejas (`ParejasParticipationMatrix.tsx`)
 
-- **Wolf** (línea 2958): `wolfHook?.isActive && wolfHook.wolfConfig && effectiveBetConfig.wolfSetup?.enabled !== false`
-- **Sixes** (línea 2969): `sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).some(b => b.enabled !== false)`  
-  — Si `sixesBets` no existe o está vacío, no se muestra
-- **Vegas** (línea 2979): `vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).some(b => b.enabled !== false)`
-- **Nines** (línea 2989): `ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => b.enabled !== false)`
+Crear un nuevo componente similar a `GrupalParticipationMatrix` y `ParticipationMatrix`.
 
-**2. Validar configuración de jugadores en cada ResultsCard**
+**Filas**: Foursomes, Carritos, Wolf, Sixes, Vegas
+**Columnas**: Jugadores (iniciales)
 
-Los guards de "Participación incompleta" ya existen en cada card (del fix anterior). Estos detectan jugadores faltantes. Sin embargo, también deben cubrir el caso de "no se han asignado jugadores aún" (IDs vacíos):
+**Lógica de cada fila**:
+- El checkbox de fila controla si la apuesta está habilitada (equivale al toggle actual)
+- Las celdas individuales controlan si ese jugador participa en esa apuesta
+- Al desactivar la fila completa, la sección de configuración detallada abajo se oculta (mismo efecto que toggle OFF)
+- Al activar la fila, se auto-crea la primera instancia si no existe (mismo patrón del UX actual)
 
-- **SixesResultsCard**: Si algún set tiene `team1` o `team2` con strings vacíos `''`, mostrar warning "Falta configurar jugadores"
-- **VegasResultsCard**: Si `playerAId`, `playerBId`, `playerCId` o `playerDId` son strings vacíos, mostrar warning
-- **NinesResultsCard**: Si `playerIds` está vacío o tiene menos de 3 entries, mostrar warning
-- **WolfResultsCard**: Ya valida por número mínimo de jugadores
+**Filtrado de jugadores en dropdowns**:
+- Cuando un jugador se desmarca de una apuesta en la matriz, ese jugador no aparece en los `<Select>` de asignación de parejas en la configuración detallada de esa apuesta
+- Esto se implementa filtrando `playerOptions` en cada card (Foursomes, Carritos, Sixes, Vegas) según los jugadores activos para esa apuesta
 
-El mensaje será: "⚠️ Falta configurar jugadores — revisa la configuración de esta apuesta en la sección de Apuestas."
+**Mapeo de datos por tipo de apuesta**:
+| Apuesta | Enabled | Participantes |
+|---------|---------|---------------|
+| Foursomes | `config.teamPressures.enabled` | Jugadores usados en `teamA`/`teamB` de `bets[]` |
+| Carritos | `config.carritos.enabled` | Jugadores en `teamA`/`teamB` |
+| Wolf | `config.wolfSetup?.enabled` | Todos los jugadores (Wolf usa todos, 4-6) |
+| Sixes | `sixesBets.length > 0` | Jugadores en sets de cada instancia |
+| Vegas | `vegasBets.length > 0` | Jugadores en `playerAId`..`playerDId` |
 
-**3. Renombrar "Seises" → "Sixes" en SixesResultsCard**
+Para simplificar, la columna de jugador en parejas actúa como un filtro: marca qué jugadores están *disponibles* para configurar en esa apuesta. Si un jugador se desmarca, se elimina de los dropdowns y de cualquier asignación existente donde aparezca.
 
-Buscar y reemplazar las ocurrencias restantes de "Seises" en `SixesResultsCard.tsx`.
+**Ubicación**: Se renderiza al inicio de `ParejasBets.tsx`, antes de las secciones individuales (mismo patrón que en `GrupalBets.tsx` e `IndividualBets.tsx`).
 
-### Archivos a modificar
+---
+
+### 2. Corregir alineación de iniciales en matrices
+
+En los tres componentes de matriz (`ParticipationMatrix.tsx`, `GrupalParticipationMatrix.tsx`, y el nuevo `ParejasParticipationMatrix.tsx`):
+
+- Cambiar la celda del header (`<th>`) para usar el mismo `min-w` y padding que las celdas de datos (`<td>`)
+- Asegurar que el botón de iniciales en el header tenga exactamente las mismas dimensiones (`w-7 h-7`) y centrado que los botones `✓/—` en el cuerpo
+- Agregar `mx-auto` consistente en ambos para garantizar alineación vertical perfecta
+
+---
+
+### 3. Agregar Nines a la matriz grupal
+
+En `GrupalParticipationMatrix.tsx`:
+
+- Agregar `{ key: 'nines', label: '5-3-1' }` al array `GRUPAL_BETS`
+- El tipo `GrupalBetKey` se amplía para incluir `'nines'`
+
+**Manejo especial**: Nines usa `ninesBets[]` (array de instancias con `playerIds`) en lugar de un objeto con `participantIds`. La función `getParticipantIds` necesita un caso especial:
+- Si `betKey === 'nines'`: verificar `config.ninesBets`. Si está vacío → `[]`. Si tiene instancias, unir todos los `playerIds` de todas las instancias como el set de participantes.
+- Al hacer toggle de fila para Nines: ON → crear primera instancia con todos los jugadores; OFF → vaciar `ninesBets[]`
+- Al toggle celda individual: agregar/remover `playerId` de los `playerIds` de cada instancia de Nines
+
+---
+
+### Archivos a crear/modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/bets/BetDashboard.tsx` | Agregar check de `enabled` en condiciones de render de Wolf/Sixes/Vegas/Nines |
-| `src/components/bets/SixesResultsCard.tsx` | Guard para sets sin jugadores + renombrar "Seises" |
-| `src/components/bets/VegasResultsCard.tsx` | Guard para player IDs vacíos |
-| `src/components/bets/NinesResultsCard.tsx` | Guard para playerIds vacíos/insuficientes |
+| `src/components/setup/bets/ParejasParticipationMatrix.tsx` | **Nuevo** — Matriz de configuración rápida para parejas |
+| `src/components/setup/bets/ParejasBets.tsx` | Importar y renderizar la nueva matriz al inicio; filtrar `playerOptions` según participantes activos |
+| `src/components/setup/bets/GrupalParticipationMatrix.tsx` | Agregar Nines al array + lógica especial para `ninesBets` |
+| `src/components/setup/bets/ParticipationMatrix.tsx` | Ajustar alineación header vs celdas |
 
