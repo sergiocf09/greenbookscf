@@ -2973,10 +2973,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           scores={scores}
           course={course}
           basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-          onConfigureSets={sixesHook.sixesConfig.sets?.length < 3
-            ? () => setSixesSheetOpen(true)
-            : undefined
-          }
         />
       )}
 
@@ -2987,10 +2983,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           scores={scores}
           course={course}
           basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-          onConfigurePlayers={!vegasHook.vegasConfig.playerAId
-            ? () => setVegasSheetOpen(true)
-            : undefined
-          }
         />
       )}
 
