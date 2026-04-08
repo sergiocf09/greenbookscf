@@ -284,11 +284,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (score.markers?.sandyPar) details.push({ holeNumber: score.holeNumber, marker: 'Sandy Par', emoji: '🏖️', isPositive: isBasePlayer });
         if (score.markers?.aquaPar) details.push({ holeNumber: score.holeNumber, marker: 'Aqua Par', emoji: '💧', isPositive: isBasePlayer });
         if (score.markers?.holeOut) details.push({ holeNumber: score.holeNumber, marker: 'Hole Out', emoji: '🎯', isPositive: isBasePlayer });
-        if (score.markers?.oyesUni) details.push({ holeNumber: score.holeNumber, marker: 'Oyes Uni', emoji: '📍', isPositive: isBasePlayer });
         // Unidades genéricas — una entrada por ocurrencia
         const unidadGenCount = score.markers.unidadGenerica ?? 0;
         for (let ug = 0; ug < unidadGenCount; ug++) {
-          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer });
+          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer, isGeneric: true });
         }
       } else {
         // Manchas - negative for the player who commits them
