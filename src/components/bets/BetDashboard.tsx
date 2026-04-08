@@ -2243,8 +2243,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-700 space-y-1">
-                    <p className="font-medium">Falta configurar jugadores</p>
-                    <p>Revisa la configuración de esta apuesta en la sección de Apuestas.</p>
+                     <p className="font-medium">Agregar jugadores faltantes</p>
+                     <p>Revisa la configuración en la sección de Apuestas.</p>
                   </div>
                 </div>
               </CardContent>
