@@ -175,21 +175,37 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2" align="end">
               <div className="flex flex-col gap-1">
-                {manualUnitMarkers.map(marker => (
-                  <button
-                    key={marker.key}
-                    onClick={() => toggleMarker(marker.key)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
-                      markers[marker.key]
-                        ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    <span>{marker.emoji}</span>
-                    <span>{marker.label}</span>
-                  </button>
-                ))}
+                {manualUnitMarkers.map(marker => {
+                  if (marker.key === 'unidadGenerica') {
+                    const val = (markers.unidadGenerica as number) ?? 0;
+                    return (
+                      <div key={marker.key} className="flex items-center gap-2 px-3 py-1.5">
+                        <span>{marker.emoji}</span>
+                        <span className="text-sm flex-1">{marker.label}</span>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => incrementMarker('unidadGenerica', -1)} disabled={val === 0} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm font-bold disabled:opacity-30">−</button>
+                          <span className={cn("w-5 text-center text-sm font-semibold", val > 0 ? "text-green-700 dark:text-green-300" : "text-muted-foreground")}>{val}</span>
+                          <button onClick={() => incrementMarker('unidadGenerica', 1)} className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 flex items-center justify-center text-sm font-bold">+</button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={marker.key}
+                      onClick={() => toggleMarker(marker.key)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
+                        markers[marker.key as keyof MarkerState]
+                          ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <span>{marker.emoji}</span>
+                      <span>{marker.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </PopoverContent>
           </Popover>
