@@ -718,7 +718,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             <SelectItem value="lowBall">Bola Baja</SelectItem>
             <SelectItem value="highBall">Bola Alta</SelectItem>
             <SelectItem value="combined">Combinado</SelectItem>
-            <SelectItem value="matchOnly">Solo Match</SelectItem>
+            <SelectItem value="matchOnly">Sin presiones</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -726,7 +726,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       {/* Amounts - conditional on continua */}
       {bet.scoringType === 'matchOnly' && (
         <div className="flex items-center justify-between pt-1">
-          <Label className="text-xs text-muted-foreground">Continúa (18 hoyos)</Label>
+          <Label className="text-xs text-muted-foreground">Match Play por 18 hoyos</Label>
           <Switch checked={bet.continua ?? false} onCheckedChange={(v) => onUpdate({ continua: v })} />
         </div>
       )}

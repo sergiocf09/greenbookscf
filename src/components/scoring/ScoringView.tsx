@@ -200,7 +200,9 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, wolfConfig, wolfHoleStates, players, scores, course]);
 
   // Wolf: check if decision is needed before confirming
+  const wolfEnabled = !!(betConfig?.wolfSetup?.enabled);
   const wolfNeedsDecision = !!(
+    wolfEnabled &&
     wolfConfig &&
     players.length >= 4 &&
     !wolfHoleStates?.find(s => s.holeNumber === currentHole) &&
@@ -237,7 +239,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Wolf Decision Panel — prominent at top */}
-      {wolfConfig && players.length >= 4 && (
+      {wolfEnabled && wolfConfig && players.length >= 4 && (
         <WolfDecisionPanel
           holeNumber={currentHole}
           players={displayPlayers}

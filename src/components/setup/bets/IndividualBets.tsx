@@ -85,13 +85,13 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
 
           <div className="flex items-center justify-between pt-1">
-            <Label className="text-xs text-muted-foreground">Sólo match</Label>
+            <Label className="text-xs text-muted-foreground">Sin presiones</Label>
             <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v, ...(v ? {} : { continua: false }) })} />
           </div>
           {config.pressures.onlyMatch && (
             <>
               <div className="flex items-center justify-between pt-1">
-                <Label className="text-xs text-muted-foreground">Continúa (18 hoyos)</Label>
+                <Label className="text-xs text-muted-foreground">Match Play por 18 hoyos</Label>
                 <Switch checked={config.pressures.continua ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { continua: v })} />
               </div>
               {config.pressures.continua ? (
