@@ -89,6 +89,8 @@ export const defaultMarkerState: MarkerState = {
   dobleDigito: false,
   moreliana: false,
   culebra: false,
+  manchaGenerica: 0,
+  unidadGenerica: 0,
 };
 
 // Marker display info
