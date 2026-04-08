@@ -902,3 +902,156 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
     </div>
   );
 };
+
+/* ─── Sixes Bet Card ─── */
+const SixesBetCard: React.FC<{
+  index: number;
+  bet: SixesBetInstance;
+  players: Player[];
+  playerOptions: { value: string; label: string }[];
+  onUpdate: (updates: Partial<SixesBetInstance>) => void;
+  onRemove: () => void;
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
+  <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
+    <div className="flex items-center justify-between">
+      <Label className="text-xs font-medium">Seises {index + 1}</Label>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar Seises {index + 1}?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+      <Select value={bet.scoringMode} onValueChange={(v) => onUpdate({ scoringMode: v as SixesScoringMode })}>
+        <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="lowBall">Bola Baja</SelectItem>
+          <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
+          <SelectItem value="stroke">Score Neto</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Cobro</Label>
+      <Select value={bet.cobro} onValueChange={(v) => onUpdate({ cobro: v as SixesCobro })}>
+        <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="per_hole">Por hoyo ganado</SelectItem>
+          <SelectItem value="per_set">Por set ganado</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <Switch checked={bet.useHandicap} onCheckedChange={(v) => onUpdate({ useHandicap: v })} />
+      <Label className="text-xs">Jugar con hándicap</Label>
+    </div>
+
+    <AmountInput label="Monto" value={bet.amount} onChange={(v) => onUpdate({ amount: v })} />
+
+    <div className="space-y-3">
+      {([1, 2, 3] as const).map(setNum => {
+        const ranges: Record<number, string> = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' };
+        const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
+        const team1: [string, string] = assignment?.team1 ?? ['', ''];
+        const team2: [string, string] = assignment?.team2 ?? ['', ''];
+        const updateSet = (t1: [string, string], t2: [string, string]) => {
+          const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
+            if (n === setNum) return { setNumber: n, team1: t1, team2: t2 };
+            return (bet.sets ?? []).find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+          });
+          onUpdate({ sets: newSets });
+        };
+        return (
+          <div key={setNum} className="space-y-2 p-2 rounded-lg bg-muted/30">
+            <Label className="text-[10px] font-semibold text-primary">Set {setNum} · {ranges[setNum]}</Label>
+            <TeamColumns teamA={team1} teamB={team2} teamHandicaps={{}} players={players} playerOptions={playerOptions}
+              onUpdateTeamA={(t) => updateSet(t, team2)} onUpdateTeamB={(t) => updateSet(team1, t)} onUpdateHandicaps={() => {}} />
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+/* ─── Vegas Bet Card ─── */
+const VegasBetCard: React.FC<{
+  index: number;
+  bet: VegasBetInstance;
+  players: Player[];
+  playerOptions: { value: string; label: string }[];
+  onUpdate: (updates: Partial<VegasBetInstance>) => void;
+  onRemove: () => void;
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
+  <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
+    <div className="flex items-center justify-between">
+      <Label className="text-xs font-medium">Vegas {index + 1}</Label>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar Vegas {index + 1}?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+
+    <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
+
+    <div className="flex items-center gap-2">
+      <Switch checked={bet.useHandicap} onCheckedChange={(v) => onUpdate({ useHandicap: v })} />
+      <Label className="text-xs">Jugar con hándicap</Label>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <Switch checked={bet.birdieMultiplier} onCheckedChange={(v) => onUpdate({ birdieMultiplier: v })} />
+      <Label className="text-xs">Multiplicador Birdie (×2)</Label>
+    </div>
+
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Variante</Label>
+      <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
+        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
+          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div className="space-y-2">
+      <Label className="text-[10px] font-semibold text-primary">Jugadores</Label>
+      <TeamColumns
+        teamA={[bet.playerAId, bet.playerBId]}
+        teamB={[bet.playerCId, bet.playerDId]}
+        teamHandicaps={{}}
+        players={players}
+        playerOptions={playerOptions}
+        onUpdateTeamA={([a, b]) => onUpdate({ playerAId: a, playerBId: b })}
+        onUpdateTeamB={([c, d]) => onUpdate({ playerCId: c, playerDId: d })}
+        onUpdateHandicaps={() => {}}
+      />
+      <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
+    </div>
+  </div>
+);
