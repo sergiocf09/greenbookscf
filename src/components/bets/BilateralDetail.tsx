@@ -310,6 +310,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         for (let mg = 0; mg < manchaGenCount; mg++) {
           details.push({ holeNumber: score.holeNumber, marker: 'Mancha', emoji: '⬛', isPositive: isManchaPositiveForBasePlayer });
         }
+      } else {
+        // Units — generic units
+        const unidadGenCount = score.markers.unidadGenerica ?? 0;
+        for (let ug = 0; ug < unidadGenCount; ug++) {
+          details.push({ holeNumber: score.holeNumber, marker: 'Unidad', emoji: '⭐', isPositive: isBasePlayer });
+        }
+      }
+    });
     
     return details;
   };
