@@ -571,7 +571,7 @@ export const useRoundManagement = ({
              const holeMarkers = await retry<any[]>(() =>
                supabase
                  .from('hole_markers')
-                 .select('hole_score_id, marker_type, is_auto_detected')
+                 .select('hole_score_id, marker_type, is_auto_detected, marker_count')
                  .in('hole_score_id', holeScoreIds) as any
              );
 

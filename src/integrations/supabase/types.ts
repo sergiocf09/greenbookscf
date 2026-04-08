@@ -471,6 +471,7 @@ export type Database = {
           hole_score_id: string
           id: string
           is_auto_detected: boolean
+          marker_count: number
           marker_type: Database["public"]["Enums"]["marker_type"]
         }
         Insert: {
@@ -478,6 +479,7 @@ export type Database = {
           hole_score_id: string
           id?: string
           is_auto_detected?: boolean
+          marker_count?: number
           marker_type: Database["public"]["Enums"]["marker_type"]
         }
         Update: {
@@ -485,6 +487,7 @@ export type Database = {
           hole_score_id?: string
           id?: string
           is_auto_detected?: boolean
+          marker_count?: number
           marker_type?: Database["public"]["Enums"]["marker_type"]
         }
         Relationships: [
