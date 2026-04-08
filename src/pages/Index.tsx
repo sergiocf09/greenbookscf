@@ -61,6 +61,7 @@ import { toast } from 'sonner';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { isAutoDetectedMarker } from '@/lib/scoreDetection';
 import { markerKeyToDb } from '@/lib/markerTypeMapping';
+import { expandMarkerStateToRows } from '@/lib/markerPersistence';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -804,16 +805,14 @@ const Index = () => {
             const holeScoreId = scoreIdByHole.get(score.holeNumber);
             if (!holeScoreId) continue;
             
-            for (const [markerKey, isActive] of Object.entries(score.markers)) {
-              if (!isActive) continue;
-              const dbMarkerType = markerKeyToDb[markerKey as keyof typeof markerKeyToDb];
-              if (!dbMarkerType) continue;
-              markerInserts.push({
+            const expandedMarkers = expandMarkerStateToRows(score.markers);
+            markerInserts.push(
+              ...expandedMarkers.map((marker) => ({
                 hole_score_id: holeScoreId,
-                marker_type: dbMarkerType as any,
-                is_auto_detected: false,
-              });
-            }
+                marker_type: marker.marker_type as any,
+                is_auto_detected: marker.is_auto_detected,
+              }))
+            );
           }
 
           if (markerInserts.length > 0) {
@@ -1884,12 +1883,10 @@ const Index = () => {
 
        // Persist manual markers (unidades + manchas). We intentionally do NOT persist
        // auto-detected markers (birdie/eagle/culebra/etc.) since they can be derived.
-      if (score.markers) {
+       if (score.markers) {
         const holeScoreId = Array.isArray(upserted) ? upserted[0]?.id : (upserted as any)?.id;
         if (holeScoreId) {
-           const activeKeys = (Object.keys(score.markers) as (keyof typeof score.markers)[])
-             .filter((k) => !!(score.markers as any)[k])
-             .filter((k) => !isAutoDetectedMarker(k as any));
+           const markerRows = expandMarkerStateToRows(score.markers);
 
           // Replace manual markers for this hole_score_id
           const { error: delErr } = await supabase
@@ -1903,14 +1900,14 @@ const Index = () => {
             return;
           }
 
-          if (activeKeys.length) {
+           if (markerRows.length) {
             const { error: insErr } = await supabase
               .from('hole_markers')
               .insert(
-                activeKeys.map((markerKey) => ({
+                 markerRows.map((marker) => ({
                   hole_score_id: holeScoreId,
-                  marker_type: markerKeyToDb[markerKey as any] as any,
-                  is_auto_detected: false,
+                   marker_type: marker.marker_type as any,
+                   is_auto_detected: marker.is_auto_detected,
                 }))
               );
 
