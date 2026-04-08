@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
-import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
+import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, SixesSetAssignment } from '@/types/golf';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useWolf } from '@/hooks/useWolf';
+import { useSixes } from '@/hooks/useSixes';
+import { useVegas } from '@/hooks/useVegas';
+import { useNines } from '@/hooks/useNines';
+import { WolfResultsCard } from '@/components/bets/WolfResultsCard';
+import { SixesResultsCard } from '@/components/bets/SixesResultsCard';
+import { VegasResultsCard } from '@/components/bets/VegasResultsCard';
+import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 
 interface GroupBetsCardProps {
   players: Player[];
