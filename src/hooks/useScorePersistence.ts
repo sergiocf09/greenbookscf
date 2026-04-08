@@ -58,7 +58,7 @@ export const useScorePersistence = ({
       if (holeScoreIds.length) {
         const { data: holeMarkers, error: markersErr } = await supabase
           .from('hole_markers')
-          .select('hole_score_id, marker_type')
+          .select('hole_score_id, marker_type, marker_count')
           .in('hole_score_id', holeScoreIds);
 
         if (!markersErr && holeMarkers?.length) {

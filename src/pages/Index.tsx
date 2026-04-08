@@ -1991,6 +1991,7 @@ const Index = () => {
                   hole_score_id: holeScoreId as string,
                   marker_type: marker.marker_type as any,
                   is_auto_detected: marker.is_auto_detected,
+                  marker_count: marker.marker_count ?? 1,
                 }))
               );
 

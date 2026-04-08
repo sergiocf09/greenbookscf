@@ -5,6 +5,7 @@ import { markerDbToKey, markerKeyToDb, type MarkerKey } from '@/lib/markerTypeMa
 type HoleMarkerRow = {
   marker_type: string | null;
   is_auto_detected?: boolean | null;
+  marker_count?: number | null;
 };
 
 const numericMarkerKeys: MarkerKey[] = ['manchaGenerica', 'unidadGenerica'];
@@ -21,7 +22,9 @@ export const restoreMarkerStateFromRows = (rows: HoleMarkerRow[] | null | undefi
     if (!key || isAutoDetectedMarker(key)) continue;
 
     if (isNumericMarkerKey(key)) {
-      next[key] = ((next[key] as number) ?? 0) + 1;
+      // marker_count column stores the count directly (default 1 for old rows)
+      const count = row.marker_count ?? 1;
+      next[key] = ((next[key] as number) ?? 0) + count;
       continue;
     }
 
@@ -32,7 +35,7 @@ export const restoreMarkerStateFromRows = (rows: HoleMarkerRow[] | null | undefi
 };
 
 export const expandMarkerStateToRows = (markers: MarkerState | null | undefined) => {
-  const rows: Array<{ marker_type: string; is_auto_detected: false }> = [];
+  const rows: Array<{ marker_type: string; is_auto_detected: false; marker_count: number }> = [];
   if (!markers) return rows;
 
   for (const [rawKey, rawValue] of Object.entries(markers) as [MarkerKey, MarkerState[MarkerKey]][]) {
@@ -43,14 +46,23 @@ export const expandMarkerStateToRows = (markers: MarkerState | null | undefined)
 
     if (isNumericMarkerKey(rawKey)) {
       const count = Math.max(0, Number(rawValue) || 0);
-      for (let i = 0; i < count; i += 1) {
-        rows.push({ marker_type: markerType, is_auto_detected: false });
+      if (count > 0) {
+        // Single row with count — respects UNIQUE(hole_score_id, marker_type)
+        rows.push({
+          marker_type: markerType,
+          is_auto_detected: false,
+          marker_count: count,
+        });
       }
       continue;
     }
 
     if (rawValue) {
-      rows.push({ marker_type: markerType, is_auto_detected: false });
+      rows.push({
+        marker_type: markerType,
+        is_auto_detected: false,
+        marker_count: 1,
+      });
     }
   }
 
