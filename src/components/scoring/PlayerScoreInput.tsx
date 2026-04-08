@@ -144,19 +144,28 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
           {/* Active Units Labels */}
           {activeUnits.length > 0 && (
             <div className="flex flex-wrap gap-1.5 flex-1">
-              {activeUnits.map(m => (
-                <div key={m.key} className="relative inline-flex items-center">
-                  <button
-                    onClick={() => toggleMarker(m.key)}
-                    className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
-                  >
-                    <X className="h-2 w-2" strokeWidth={3} />
-                  </button>
-                  <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded">
-                    {markerLabels[m.key]}
-                  </span>
-                </div>
-              ))}
+              {activeUnits.map(m => {
+                const isGeneric = m.key === 'unidadGenerica';
+                const genVal = isGeneric ? ((markers.unidadGenerica as number) ?? 0) : 0;
+                return (
+                  <div key={m.key} className="relative inline-flex items-center">
+                    {isGeneric && genVal > 1 && (
+                      <span className="absolute -top-2 -left-1.5 min-w-[14px] h-[14px] rounded-full bg-green-600 text-white text-[9px] font-bold flex items-center justify-center px-0.5 z-10">
+                        {genVal}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => isGeneric ? incrementMarker('unidadGenerica', -1) : toggleMarker(m.key)}
+                      className="absolute -top-1.5 -right-1 w-3 h-3 rounded-full bg-muted-foreground/60 hover:bg-destructive text-white flex items-center justify-center"
+                    >
+                      <X className="h-2 w-2" strokeWidth={3} />
+                    </button>
+                    <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded">
+                      {markerLabels[m.key]}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
           {activeUnits.length === 0 && <div className="flex-1" />}
