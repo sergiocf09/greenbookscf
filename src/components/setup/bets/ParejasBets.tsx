@@ -53,6 +53,27 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     [players]
   );
 
+  // Filtered player options per bet type (exclude players deselected in matrix)
+  const foursomesOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'teamPressures', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const carritosOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'carritos', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const sixesOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'sixes', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
+  const vegasOptions = useMemo(() => {
+    const activeIds = getParejasActivePlayerIds(config, 'vegas', players);
+    return playerOptions.filter(o => activeIds.includes(o.value));
+  }, [config, players, playerOptions]);
+
   // Team Pressures management
   const addTeamPressure = () => {
     const newBet: TeamPressuresBet = {
