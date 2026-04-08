@@ -2986,7 +2986,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => b.enabled !== false) && (
+      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).length > 0 && (
         <NinesResultsCard
           players={allPlayersForCalculations}
           ninesConfig={ninesHook.ninesConfig}
