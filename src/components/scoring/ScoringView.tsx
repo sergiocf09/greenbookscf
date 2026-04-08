@@ -110,7 +110,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onWolfDecision,
   onWolfResolve,
   sixesConfig,
-  ninesConfig,
+  
 }) => {
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
