@@ -181,7 +181,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1 justify-end">
-                                    {rv.strokes > 0 && <span className="text-[9px] text-muted-foreground">({rv.gross})</span>}
+                                    {rv.strokes > 0 && rv.net !== rv.gross && <span className="text-[9px] text-muted-foreground">({rv.gross})</span>}
                                     <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
                                   </div>
                                 </React.Fragment>
