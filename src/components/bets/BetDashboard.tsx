@@ -3192,7 +3192,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {ninesHook?.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && (
+      {(effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && ninesHook?.ninesConfig && (
         <NinesResultsCard
           players={allPlayersForCalculations}
           ninesConfig={ninesHook.ninesConfig}
