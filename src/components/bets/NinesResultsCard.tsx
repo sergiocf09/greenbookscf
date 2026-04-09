@@ -187,7 +187,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
             const isLeader = i === 0 && s.totalPoints > 0;
             return (
               <div key={s.playerId} className="flex items-center gap-2 text-sm">
-                <PlayerAvatar initials={s.playerInitials} background={s.playerColor} size="sm" />
+                <PlayerAvatar initials={disambiguated.get(s.playerId) || s.playerInitials} background={s.playerColor} size="sm" />
                 <span className={isLeader ? 'font-semibold text-primary' : 'text-foreground'}>
                   {isLeader && '★ '}{player.name.split(' ')[0]}
                 </span>
