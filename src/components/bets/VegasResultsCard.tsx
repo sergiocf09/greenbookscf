@@ -163,19 +163,19 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                     )}
                     onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
                   >
-                    <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
-                      H{SET_LABELS[sr.setNumber]}
-                    </div>
-                    <div className="text-[10px] truncate text-center">
-                      {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
-                    </div>
-                    <div className="text-[9px] text-muted-foreground text-center">vs</div>
-                    <div className="text-[10px] truncate text-center">
-                      {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
-                    </div>
-                    <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(acc.total))}>
-                      {acc.total > 0 ? '+' : ''}{acc.total}
-                    </div>
+                     <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
+                       H{SET_LABELS[sr.setNumber]}
+                     </div>
+                     <div className="text-xs truncate text-center font-medium">
+                       {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
+                     </div>
+                     <div className="text-[10px] text-muted-foreground text-center">vs</div>
+                     <div className="text-xs truncate text-center font-medium">
+                       {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
+                     </div>
+                     <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
+                       {acc.total > 0 ? '+' : ''}{acc.total}
+                     </div>
                   </button>
                 );
               })}
@@ -211,7 +211,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                 return (
                   <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                      {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" isLoggedInUser={pr.id === basePlayerId} />}
                       <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
                     </div>
                     <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
@@ -310,8 +310,8 @@ function renderHolePill(
       myDiff < 0 && 'bg-red-500/15 border-red-500/30 text-red-700',
       myDiff === 0 && 'bg-muted border-border text-muted-foreground',
     )}>
-      <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-      <span className="text-[10px] font-bold tabular-nums">{myDiff > 0 ? '+' : ''}{myDiff}</span>
+       <span className="text-[10px] text-muted-foreground">{hd.holeNumber}</span>
+       <span className="text-xs font-bold tabular-nums">{myDiff > 0 ? '+' : ''}{myDiff}</span>
     </div>
   );
 
@@ -364,7 +364,7 @@ function renderHolePill(
             const myHasStroke = (getStrokes(i, true) || 0) > 0;
             const rvHasStroke = (getStrokes(i, false) || 0) > 0;
             return (
-              <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+              <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                 <span className="truncate text-left">{getName(myPids[i])}</span>
                 <span className="font-medium text-right px-1">{myS}</span>
                 <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>

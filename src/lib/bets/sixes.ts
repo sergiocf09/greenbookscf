@@ -72,7 +72,7 @@ export const buildSixesSetResults = (
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);
     const winner = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
-    const baseAmt = config.cobro === 'per_set' ? config.amount * 2 : Math.abs(p1 - p2) * config.amount * 2;
+    const baseAmt = config.cobro === 'per_set' ? config.amount : Math.abs(p1 - p2) * config.amount;
     const amt1 = winner === 'team1' ? baseAmt : winner === 'team2' ? -baseAmt : 0;
     const amt2 = -amt1;
     return { setNumber: setNum, startHole: start, endHole: end, team1: assignment.team1, team2: assignment.team2, holeDetails: details, pointsTeam1: p1, pointsTeam2: p2, setWinner: winner, amountTeam1: amt1, amountTeam2: amt2 } as SixesSetResult;
@@ -90,19 +90,20 @@ export const calculateSixesBets = (
       if (!sr.setWinner || sr.setWinner === 'tied') return;
       const winners = [...(sr.setWinner === 'team1' ? sr.team1 : sr.team2)];
       const losers  = [...(sr.setWinner === 'team1' ? sr.team2 : sr.team1)];
+      const half = config.amount / 2;
       losers.forEach(lId => winners.forEach(wId => {
-        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount: config.amount, segment: 'total', description: `Set ${sr.setNumber}` });
-        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -config.amount, segment: 'total', description: `Set ${sr.setNumber}` });
+        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount: half, segment: 'total', description: `Set ${sr.setNumber}` });
+        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -half, segment: 'total', description: `Set ${sr.setNumber}` });
       }));
     } else {
       sr.holeDetails.forEach(hd => {
         if (hd.pointsTeam1 === hd.pointsTeam2) return;
         const winners = [...(hd.pointsTeam1 > hd.pointsTeam2 ? sr.team1 : sr.team2)];
         const losers  = [...(hd.pointsTeam1 > hd.pointsTeam2 ? sr.team2 : sr.team1)];
-        const amount = config.amount * Math.abs(hd.pointsTeam1 - hd.pointsTeam2);
+        const half = (config.amount * Math.abs(hd.pointsTeam1 - hd.pointsTeam2)) / 2;
         losers.forEach(lId => winners.forEach(wId => {
-          summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });
-          summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -amount, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });
+          summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount: half, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });
+          summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -half, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });
         }));
       });
     }

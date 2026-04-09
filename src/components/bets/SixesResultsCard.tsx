@@ -146,17 +146,17 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 )}
                 onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
               >
-                <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
+                <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                   H{SET_LABELS[sr.setNumber]}
                 </div>
-                <div className="text-[10px] truncate text-center">
+                <div className="text-xs truncate text-center font-medium">
                   {getName(myTeam[0])}/{getName(myTeam[1])}
                 </div>
-                <div className="text-[9px] text-muted-foreground text-center">vs</div>
-                <div className="text-[10px] truncate text-center">
+                <div className="text-[10px] text-muted-foreground text-center">vs</div>
+                <div className="text-xs truncate text-center font-medium">
                   {getName(rivalTeam[0])}/{getName(rivalTeam[1])}
                 </div>
-                <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(diff))}>
+                <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(diff))}>
                   {diff > 0 ? '+' : ''}{diff}
                 </div>
               </button>
@@ -191,8 +191,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                       diff === 0 && hd.holeWinner && 'bg-muted border-border text-muted-foreground',
                       !hd.holeWinner && 'bg-muted/50 border-border/50 text-muted-foreground',
                     )}>
-                      <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-                      <span className="text-[11px] font-bold tabular-nums">
+                      <span className="text-[10px] text-muted-foreground">{hd.holeNumber}</span>
+                      <span className="text-xs font-bold tabular-nums">
                         {!hd.holeWinner ? '–' : diff > 0 ? `+${diff}` : `${diff}`}
                       </span>
                     </div>
@@ -222,7 +222,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                             const myHasStroke = my.strokes > 0 && my.net !== my.gross;
                             const rvHasStroke = rv.strokes > 0 && rv.net !== rv.gross;
                             return (
-                              <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+                              <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                                 <span className="truncate text-left">{my.playerName.split(' ')[0]}</span>
                                 <span className="font-medium text-right px-1">{myDisplay}</span>
                                 <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
@@ -255,7 +255,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
             return (
               <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" isLoggedInUser={pr.id === basePlayerId} />}
                   <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
                 </div>
                 <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
