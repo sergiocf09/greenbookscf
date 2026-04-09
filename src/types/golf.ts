@@ -679,6 +679,10 @@ export interface SixesSetAssignment {
 export interface SixesConfig {
   roundId: string; scoringMode: SixesScoringMode; cobro: SixesCobro;
   amount: number; useHandicap: boolean; sets: SixesSetAssignment[];
+  usePerSetAmounts?: boolean;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
 }
 
 export interface SixesHoleDetail {
