@@ -80,6 +80,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
 
+  const basePlayerBalance = useMemo(() => bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0), [bets, basePlayerId]);
+
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
   if (missingPlayerIds.length > 0 || hasEmptyPlayerIds || needsConfig) {
@@ -118,8 +120,12 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
         <CardTitle className="text-sm flex items-center justify-between">
           <span>Sixes</span>
           <div className="flex items-center gap-2">
-            {isDisabled && (
+            {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(basePlayerBalance))}>
+                {basePlayerBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(basePlayerBalance))}
+              </span>
             )}
             {onToggleDisabled && (
               <Button
