@@ -39,7 +39,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     });
   }, [holeStates, wolfConfig.participantIds]);
 
-  const bets = useMemo(() => calculateWolfBets(players, wolfConfig, validHoleStates), [players, wolfConfig, validHoleStates]);
+  const bets = useMemo(() => calculateWolfBets(players, wolfConfig, validHoleStates, scores, course), [players, wolfConfig, validHoleStates, scores, course]);
   const details = useMemo(() => buildWolfHoleDetails(players, scores, wolfConfig, validHoleStates, course), [players, scores, wolfConfig, validHoleStates, course]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
@@ -235,9 +235,30 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
             {/* Extra info */}
             <div className="pt-1 border-t border-border/50 text-xs space-y-0.5">
+              {wolfConfig.scoringMode === 'lowBall' && detail.teamWolfScore !== null && detail.teamRivalScore !== null && (
+                <p className="flex justify-between">
+                  <span>Bola Baja</span>
+                  <span>
+                    {detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}
+                    {' · '}{detail.teamWolfScore} vs {detail.teamRivalScore}
+                  </span>
+                </p>
+              )}
+              {wolfConfig.scoringMode === 'stroke' && detail.teamWolfScore !== null && detail.teamRivalScore !== null && (
+                <p className="flex justify-between">
+                  <span>Score Neto</span>
+                  <span>{detail.teamWolfScore} vs {detail.teamRivalScore}</span>
+                </p>
+              )}
               {wolfConfig.scoringMode === 'lowHighBall' && (
                 <>
-                  <p className="flex justify-between"><span>Bola Baja</span><span>{detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
+                  <p className="flex justify-between">
+                    <span>Bola Baja</span>
+                    <span>
+                      {detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}
+                      {detail.teamWolfScore !== null && detail.teamRivalScore !== null && ` · ${detail.teamWolfScore} vs ${detail.teamRivalScore}`}
+                    </span>
+                  </p>
                   <p className="flex justify-between"><span>Bola Alta</span><span>{detail.highBallWinner === 'wolf' ? 'Loba' : detail.highBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
                   <p className="flex justify-between"><span>Puntos</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
                 </>

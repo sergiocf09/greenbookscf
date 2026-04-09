@@ -410,8 +410,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const wolfPlayers = (wolfHook.wolfConfig.participantIds?.length ?? 0) > 0
       ? allPlayersForCalculations.filter(p => wolfHook.wolfConfig!.participantIds!.includes(p.id))
       : allPlayersForCalculations;
-    return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates);
-  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, effectiveBetConfig.wolfSetup?.enabled]);
+    return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates, confirmedScores, course);
+  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, effectiveBetConfig.wolfSetup?.enabled, confirmedScores, course]);
 
   // Sixes summaries
   const sixesBetSummaries = useMemo(() => {
