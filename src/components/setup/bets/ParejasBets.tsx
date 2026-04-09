@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
@@ -544,17 +545,21 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               return (
                 <div className="bg-muted/30 rounded-lg p-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    {displayOrder.map((id: string, i: number) => {
-                      const p = players.find(pl => pl.id === id);
-                      return (
-                        <div key={id} className="flex items-center gap-1 text-[11px]">
-                          <span className="text-muted-foreground font-semibold">{i + 1}.</span>
-                          {p && <PlayerAvatar initials={p.initials} background={p.color} size="xs" />}
-                          <span>{p?.name?.split(' ')[0] ?? '?'}</span>
-                          {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      const wolfPlayers = displayOrder.map((id: string) => players.find(pl => pl.id === id)).filter(Boolean) as Player[];
+                      const disambiguated = disambiguateInitials(wolfPlayers);
+                      return displayOrder.map((id: string, i: number) => {
+                        const p = players.find(pl => pl.id === id);
+                        return (
+                          <div key={id} className="flex items-center gap-1 text-[11px]">
+                            <span className="text-muted-foreground font-semibold">{i + 1}.</span>
+                            {p && <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" />}
+                            <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                            {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               );
