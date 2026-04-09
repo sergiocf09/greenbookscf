@@ -4,6 +4,13 @@ import { calculateStrokesPerHole } from '../handicapUtils';
 
 const SET_RANGES: Record<1|2|3, [number, number]> = { 1:[1,6], 2:[7,12], 3:[13,18] };
 
+const getSixesSetAmount = (config: SixesConfig, setNumber: 1 | 2 | 3): number => {
+  if (!config.usePerSetAmounts) return config.amount;
+  if (setNumber === 1) return config.set1Amount ?? config.amount;
+  if (setNumber === 2) return config.set2Amount ?? config.amount;
+  return config.set3Amount ?? config.amount;
+};
+
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
   scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean
