@@ -3177,9 +3177,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const hookCfg = vegasHook.vegasConfig;
         const betInst = effectiveBetConfig.vegasBets?.[0];
         const hookHasEmptyPlayers = !hookCfg.playerAId || !hookCfg.playerBId || !hookCfg.playerCId || !hookCfg.playerDId;
-        const mergedVegasConfig: typeof hookCfg = hookHasEmptyPlayers && betInst?.playerAId
-          ? { ...hookCfg, playerAId: betInst.playerAId, playerBId: betInst.playerBId, playerCId: betInst.playerCId, playerDId: betInst.playerDId, valuePerPoint: betInst.valuePerPoint, useHandicap: betInst.useHandicap, birdieMultiplier: betInst.birdieMultiplier, variant: betInst.variant }
-          : hookCfg;
+        const mergedVegasConfig: typeof hookCfg = {
+          ...hookCfg,
+          ...(betInst ? {
+            variant: betInst.variant,
+            valuePerPoint: betInst.valuePerPoint,
+            useHandicap: betInst.useHandicap,
+            birdieMultiplier: betInst.birdieMultiplier,
+            ...(hookHasEmptyPlayers && betInst.playerAId ? {
+              playerAId: betInst.playerAId,
+              playerBId: betInst.playerBId,
+              playerCId: betInst.playerCId,
+              playerDId: betInst.playerDId,
+            } : {}),
+          } : {}),
+        };
         return (
           <VegasResultsCard
             players={allPlayersForCalculations}
