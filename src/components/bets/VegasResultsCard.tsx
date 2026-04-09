@@ -108,7 +108,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       }
     });
     return [...balances.entries()]
-      .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
+      .map(([id, bal]) => ({ id, name: getFullName(id), balance: bal }))
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
 
