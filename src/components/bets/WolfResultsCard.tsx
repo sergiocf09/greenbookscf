@@ -191,6 +191,14 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     );
   };
 
+  const scoringLabel = wolfConfig.scoringMode === 'lowBall' ? 'Bola Baja' : wolfConfig.scoringMode === 'lowHighBall' ? 'BB + BA' : 'Score Neto';
+  const configSummary = [
+    scoringLabel,
+    wolfConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    wolfConfig.carryover ? 'Carryover' : null,
+    `$${fmtMoney(wolfConfig.amountPerHole)}/hoyo`,
+  ].filter(Boolean).join(' · ');
+
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
@@ -217,6 +225,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             )}
           </div>
         </CardTitle>
+        <p className="text-[10px] text-muted-foreground">{configSummary}</p>
       </CardHeader>
       <CardContent className="space-y-2">
         {/* F9 */}
