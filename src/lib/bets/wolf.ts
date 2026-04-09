@@ -113,16 +113,28 @@ export const computeRedemptionAmount = (
 
 // Motor principal: genera BetSummary[] desde holeStates resueltos
 export const calculateWolfBets = (
-  players: Player[], config: WolfConfig, holeStates: WolfHoleState[]
+  players: Player[], config: WolfConfig, holeStates: WolfHoleState[],
+  scores?: Map<string, PlayerScore[]>, course?: GolfCourse
 ): BetSummary[] => {
   if (!config || players.length < 4) return [];
   const participantPlayers = getParticipantPlayers(players, config);
   const participantIdSet = new Set(participantPlayers.map(p => p.id));
   const summaries: BetSummary[] = [];
   holeStates
-    .filter(s => s.result && s.result !== 'tied')
     .sort((a, b) => a.holeNumber - b.holeNumber)
     .forEach(state => {
+      const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
+      const rivalTeamIds = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
+
+      // Re-resolve with current config if scores/course available
+      let result: 'won' | 'lost' | 'tied' | null = state.result as any;
+      if (scores && course) {
+        const resolved = resolveWolfHole(wolfTeam, rivalTeamIds, state.holeNumber, players, scores, course, config);
+        result = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+      }
+
+      if (!result || result === 'tied') return;
+
       // Recalcular siempre desde config actual para reflejar cambios de importe
       const isRedemption = state.wentSolo && state.carryoverHoles === -1;
       const amount = isRedemption
@@ -130,10 +142,8 @@ export const calculateWolfBets = (
         : config.amountPerHole
           * (1 + Math.max(state.carryoverHoles ?? 0, 0))
           * (state.wentSolo ? 2 : 1);
-      const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
-      const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
-      const winners = state.result === 'won' ? wolfTeam : rivalTeam;
-      const losers  = state.result === 'won' ? rivalTeam : wolfTeam;
+      const winners = result === 'won' ? wolfTeam : rivalTeamIds;
+      const losers  = result === 'won' ? rivalTeamIds : wolfTeam;
       // Filter to only include participants
       const validWinners = winners.filter(id => participantIdSet.has(id));
       const validLosers = losers.filter(id => participantIdSet.has(id));
@@ -157,6 +167,8 @@ export const buildWolfHoleDetails = (
     const wolfTeam  = [state.wolfPlayerId, ...state.partnerIds];
     const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id));
     const resolved  = resolveWolfHole(wolfTeam, rivalTeam.map(p => p.id), state.holeNumber, players, scores, course, config);
+    // Use re-resolved winner instead of stale state.result
+    const freshResult: 'won' | 'lost' | 'tied' | null = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
     const scoresByPlayer = participantPlayers.map(p => {
       const hs = (scores.get(p.id) ?? []).find(s => s.holeNumber === state.holeNumber);
       const gross = hs?.strokes ?? 0;
@@ -172,7 +184,7 @@ export const buildWolfHoleDetails = (
       partnerIds: state.partnerIds,
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
-      result: state.result,
+      result: freshResult,
       effectiveAmount: (() => {
         const isRedemption = state.wentSolo && state.carryoverHoles === -1;
         return isRedemption
