@@ -1,93 +1,70 @@
 
 
-## Plan: Dashboard Polish — Names, Disambiguation, Nines Visibility, Sixes Setup, Stroke Indicators, Wolf UX, Pressures Toggle
+## Plan: Standardize Popovers, Pill Values, and Block Layout for Sixes/Vegas/Wolf
 
-### 1. Full names in Sixes & Vegas (3-block variant) player rankings
+### Summary
 
-In `SixesResultsCard.tsx` and `VegasResultsCard.tsx`, the player ranking section uses `getName(id)` which truncates to first name. Change to show full player name for these rankings since there's sufficient space.
-
-**Files**: `SixesResultsCard.tsx`, `VegasResultsCard.tsx`
+Three main changes: (A) Match all popovers to the Carritos `TeamHoleGrid` style (larger `text-sm` font, filled circle `h-2 w-2 rounded-full bg-foreground` for strokes, dot to the RIGHT of "my team" scores and to the LEFT of rival scores). (B) Replace ✅/❌ icons in Sixes pills with the actual point differential number (e.g. `+1`, `-2`). (C) Refactor Vegas rotating variant from collapsible dropdown to 3 clickable blocks (same pattern as Sixes), and unify the block header style (compact team names) across both cards.
 
 ---
 
-### 2. Disambiguated initials in Sixes, Vegas, Wolf, Nines
+### 1. Standardize popovers across Sixes, Vegas, Wolf to match Carritos
 
-Import `disambiguateInitials` from `playerInput.ts` and compute disambiguated initials map for the active players. Use these initials wherever `PlayerAvatar` or initials-based headers are rendered, instead of raw `player.initials`.
+**Reference pattern** (from `CarritosResultsCard.tsx` `TeamHoleGrid`):
+- Uses `text-sm` for player rows (not `text-xs`/`text-[10px]`)
+- Stroke indicator: `<span className="h-2 w-2 rounded-full bg-foreground" />` (filled circle, not text `●`)
+- Position: For "my team" (left side), the dot appears to the RIGHT of the net score. For rivals (right side), the dot appears to the LEFT of the net score.
+- Grid layout: `gridTemplateColumns: '1fr auto auto 12px auto auto 1fr'` — Name | Score | Dot | spacer | Dot | Score | Name
 
-**Files**: `SixesResultsCard.tsx`, `VegasResultsCard.tsx`, `WolfResultsCard.tsx`, `NinesResultsCard.tsx`
+**Apply to**:
+- **Sixes** (`SixesResultsCard.tsx` lines 208-244): Replace the current `text-xs`/`text-[10px]` popover with the `TeamHoleGrid`-style 7-column grid at `text-sm`. Move `●` text to filled circle. Fix dot placement (right of my team scores, left of rival scores).
+- **Vegas** (`VegasResultsCard.tsx` lines 324-378): Same treatment for the per-player rows in the popover. Increase font to `text-sm`, use filled circle, correct dot side placement.
+- **Wolf** (`WolfResultsCard.tsx` lines 120-159): Restructure the popover to use the same side-by-side layout (wolf team on left, rivals on right) with the 7-column grid, `text-sm`, filled circles.
 
----
-
-### 3. Fix Nines still showing when deselected from matrix
-
-**Root cause**: The condition at line 3195 checks `ninesHook?.ninesConfig` first — once a config is saved to the DB, this stays truthy forever even after deselecting from the matrix. The `effectiveBetConfig.ninesBets` check is correct but `ninesHook?.ninesConfig` bypasses it.
-
-**Fix**: Remove the `ninesHook?.ninesConfig` prerequisite. Use only the `effectiveBetConfig.ninesBets` check: `(effectiveBetConfig.ninesBets ?? []).some(b => b.playerIds?.length >= 3)`. This mirrors the pattern used for Sixes/Vegas (which use `(effectiveBetConfig.sixesBets ?? []).length > 0`).
-
-**File**: `BetDashboard.tsx`
-
----
-
-### 4. Fix Carritos ghost data persisting in Balance General
-
-**Root cause analysis**: The guard at line 778 (`if (!betConfig.carritos.enabled) return results`) uses `betConfig` but the rendering and useEffect use `effectiveBetConfig`. If `effectiveBetConfig` has a stale `enabled: true`, the inline summary computation runs. Also the useEffect at line 818 doesn't check `betConfig.carritos.enabled` before processing `allCarritosResults`.
-
-**Fix**: Add `if (!betConfig.carritos.enabled) return;` at the top of the useEffect (line 818) to skip `carritosSummaries` emission. Also ensure `allCarritosResults` memo uses `effectiveBetConfig.carritos.enabled` consistently.
-
-**File**: `BetDashboard.tsx`
+**Files**: `SixesResultsCard.tsx`, `VegasResultsCard.tsx`, `WolfResultsCard.tsx`
 
 ---
 
-### 5. Sixes setup: show all 3 sets in rotation preview (not just 2 & 3)
+### 2. Sixes pills: show point value instead of ✅/❌
 
-Currently shows Set 1 as editable + Sets 2&3 as read-only. The user wants all 3 sets shown below (like Vegas). Change to show Set 1 in the same read-only preview format alongside Sets 2&3, creating a 3-column grid.
+**Current** (line 196): `{myTeamWon ? '✅' : myTeamLost ? '❌' : '='}`
 
-**File**: `ParejasBets.tsx` (SixesBetCard)
+**Change**: Show the actual point differential as a number. For `lowHighBall` mode the points can be 0, 1, or 2 per hole. Display `+N` in green or `-N` in red (same pattern as Vegas pills already do). When tied, show `0`.
 
----
+Compute: `myPts = side === 'team1' ? hd.pointsTeam1 : hd.pointsTeam2` and `rvPts = ...`, then `diff = myPts - rvPts`. Display `{diff > 0 ? '+' : ''}{diff}`.
 
-### 6. Stroke indicator in popovers: only ● dot, no gross in parentheses
-
-**Current**: Nines shows `(gross) ●`, Sixes shows `(gross)`. User wants: show only the net score and `●` beside it when a stroke was applied — no gross value shown.
-
-**Fix across all 4 cards**:
-- **Sixes**: Replace `({my.gross})` with just `●` when `strokes > 0`
-- **Nines**: Replace `({hs.strokes}) ●` with just `●`
-- **Vegas**: Add `●` indicator (currently missing)
-- **Wolf**: Add `●` indicator (currently missing)
-
-**Files**: `SixesResultsCard.tsx`, `NinesResultsCard.tsx`, `VegasResultsCard.tsx`, `WolfResultsCard.tsx`
+**File**: `SixesResultsCard.tsx`
 
 ---
 
-### 7. Wolf setup: show player avatars with initials in shuffle order display
+### 3. Vegas rotating: convert from collapsible dropdown to 3 clickable blocks (like Sixes)
 
-Currently displays `1. Name · 2. Name`. Change to include `PlayerAvatar` inline next to each name, distributed across the full row width for better spacing and clarity when names repeat.
+**Current**: The rotating variant (lines 146-199) uses a `Collapsible` with a single chevron that expands ALL 3 sets at once.
 
-**File**: `ParejasBets.tsx`
+**Change**: Replace with the Sixes pattern — 3 clickable block buttons in a `grid grid-cols-3`. Clicking one expands only that set's 6-hole detail below. Use `expandedSet` state (same as Sixes).
+
+Block header style (shared with Sixes):
+```
+H1–6
+Name/Name
+vs
+Name/Name
++3 (or diff value)
+```
+
+This also unifies the visual: both Sixes and Vegas rotating use the same block + expand pattern.
+
+**File**: `VegasResultsCard.tsx`
 
 ---
 
-### 8. Wolf H18 Redemption: show loser info, allow reversibility
+### 4. Sixes block headers: adopt Vegas compact font sizing
 
-- Show who the max loser is at the time of H18 (name + accumulated loss amount)
-- Allow selecting either the max loser (×3 solo) OR the regular rotation wolf
-- Make the choice always reversible (editing returns to the selection UI)
-- The "Cambiar" button already exists in the in-play state; ensure it properly resets `redemptionMode` back to `pending`
+**Current Sixes blocks** use `text-[10px]` for team names and `text-[9px]` for "vs". The current Vegas rotating layout uses the same sizes.
 
-**Files**: `WolfDecisionPanel.tsx`, `ScoringView.tsx`
+Keep these as-is since both cards will now share the identical block pattern. The key change is just removing the full-width "vs" row that the user mentioned takes too much space — which is already solved by the block layout.
 
----
-
-### 9. Pressures bilateral toggle: dynamic label + restore F9/B9 when toggled off
-
-**Problem 1**: The toggle label says "Solo Match" — should say "Sin Presiones" when only `onlyMatch` is set, and "Sin Presiones · Match Play 18" when both `continua` and `onlyMatch` are set.
-
-**Problem 2**: When toggled OFF (from Sin Presiones → regular pressures), the F9/B9 segments don't reappear because `isContinuaMatch` still reads from `resolvedCfg.pressures?.continua && resolvedCfg.pressures?.onlyMatch`. When the pair override sets `onlyMatch: false`, the segment filter at line 677 should correctly produce all 3 segments. The issue is that `isContinuaMatch` uses the resolved config (which includes pair overrides), but the pair override is checked independently later. Need to unify: at line 677, incorporate the pair-level override to determine `isContinuaMatch`.
-
-**Fix**: Pass pair-specific override context into the pressures segment determination. The `isContinuaMatch` at line 677 should use the same pair-aware logic as line 2454-2457.
-
-**Files**: `BilateralDetail.tsx`
+No additional file changes needed beyond what's covered in steps 2 and 3.
 
 ---
 
@@ -95,12 +72,7 @@ Currently displays `1. Name · 2. Name`. Change to include `PlayerAvatar` inline
 
 | File | Changes |
 |------|---------|
-| `SixesResultsCard.tsx` | Full names in ranking; disambiguated initials; ● only (no gross) |
-| `VegasResultsCard.tsx` | Full names in ranking; disambiguated initials; ● indicator |
-| `WolfResultsCard.tsx` | Disambiguated initials; ● indicator |
-| `NinesResultsCard.tsx` | Disambiguated initials; ● only (no gross) |
-| `BetDashboard.tsx` | Fix nines visibility; fix carritos useEffect guard |
-| `ParejasBets.tsx` | Sixes 3-set preview; Wolf avatar+initials in order display |
-| `WolfDecisionPanel.tsx` | Show loser info on H18; reversible redemption choice |
-| `BilateralDetail.tsx` | Dynamic toggle label; pair-aware isContinuaMatch for segments |
+| `SixesResultsCard.tsx` | Popover → Carritos-style `text-sm` grid with filled circles; pills show point numbers instead of ✅/❌ |
+| `VegasResultsCard.tsx` | Popover → Carritos-style grid; rotating variant → 3 clickable blocks with `expandedSet` state |
+| `WolfResultsCard.tsx` | Popover → Carritos-style side-by-side grid with filled circles |
 
