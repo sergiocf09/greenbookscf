@@ -1114,14 +1114,14 @@ const SixesBetCard: React.FC<{
                 onUpdateHandicaps={() => {}} />
             </div>
 
-            {/* Sets 2&3 - read-only preview when auto-generated */}
+            {/* All 3 sets - read-only preview when auto-generated */}
             {set1Complete && (
               <div className="bg-muted/40 rounded-lg p-2 space-y-1">
                 <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
-                <div className="grid grid-cols-2 gap-1 text-[9px] text-center">
-                  {([2, 3] as const).map(setNum => {
+                <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
+                  {([1, 2, 3] as const).map(setNum => {
                     const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
-                    const ranges: Record<number, string> = { 2: 'H7–12', 3: 'H13–18' };
+                    const ranges: Record<number, string> = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' };
                     return (
                       <div key={setNum} className="bg-background rounded p-1.5">
                         <div className="font-semibold text-primary">{ranges[setNum]}</div>
