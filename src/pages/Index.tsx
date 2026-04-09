@@ -260,6 +260,7 @@ const Index = () => {
         carryover:      betConfig.wolfSetup.carryover ?? true,
         playerOrder,
         participantIds: wolfParticipantIds,
+        playerHandicaps: betConfig.wolfSetup.playerHandicaps ?? [],
       });
     }
     const firstSixes = betConfig.sixesBets?.[0];

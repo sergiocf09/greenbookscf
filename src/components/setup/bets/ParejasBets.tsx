@@ -495,9 +495,49 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
           <div className="flex items-center gap-2 mt-2">
             <Switch checked={config.wolfSetup?.useHandicap ?? true}
-              onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, useHandicap: v } as any)} />
+              onCheckedChange={(v) => {
+                onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, useHandicap: v } as any);
+              }} />
             <Label className="text-xs">Jugar con hándicap</Label>
           </div>
+
+          {/* Editable handicaps when useHandicap is on */}
+          {(config.wolfSetup?.useHandicap ?? true) && (() => {
+            const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
+            const currentHandicaps = config.wolfSetup?.playerHandicaps ?? [];
+            const getHcp = (pid: string) => {
+              const found = currentHandicaps.find(h => h.playerId === pid);
+              return found ? found.handicap : (players.find(p => p.id === pid)?.handicap ?? 0);
+            };
+            const updateHcp = (pid: string, newHcp: number) => {
+              const existing = [...currentHandicaps.filter(h => h.playerId !== pid), { playerId: pid, handicap: newHcp }];
+              onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+            };
+            return (
+              <div className="mt-2 space-y-1">
+                <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+                  {activeIds.map(pid => {
+                    const p = players.find(pl => pl.id === pid);
+                    if (!p) return null;
+                    const hcp = getHcp(pid);
+                    return (
+                      <div key={pid} className="flex items-center justify-between">
+                        <span className="text-xs truncate">{p.name.split(' ')[0]}</span>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="icon" className="h-6 w-6 text-xs"
+                            onClick={() => updateHcp(pid, Math.max(0, hcp - 1))}>−</Button>
+                          <span className="text-xs font-mono w-6 text-center">{hcp}</span>
+                          <Button variant="outline" size="icon" className="h-6 w-6 text-xs"
+                            onClick={() => updateHcp(pid, hcp + 1)}>+</Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center justify-between mt-2">
             <Label className="text-[10px] font-semibold text-primary">Timing de decisión</Label>
