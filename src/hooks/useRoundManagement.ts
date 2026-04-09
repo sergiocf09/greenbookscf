@@ -12,6 +12,11 @@ import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
+import { calculateWolfBets } from '@/lib/bets/wolf';
+import { calculateSixesBets } from '@/lib/bets/sixes';
+import { calculateVegasBets } from '@/lib/bets/vegas';
+import { calculateNinesBets } from '@/lib/bets/nines';
+import type { WolfConfig, WolfHoleState, SixesConfig, VegasConfig, NinesConfig } from '@/types/golf';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
@@ -1290,8 +1295,117 @@ export const useRoundManagement = ({
         });
       }
 
-      const allBetResults = [...intraGroupBetResults, ...crossGroupSummaries];
-      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group = ${allBetResults.length} total bet summaries`);
+      // ─── SPRINT 3 BET CALCULATION ────────────────────────────────────────────
+      const sprint3Summaries: BetSummary[] = [];
+
+      try {
+        const rId = roundState.id!;
+
+        // ── WOLF ──────────────────────────────────────────────────────────────
+        const [{ data: wolfCfgRow }, { data: wolfStates }] = await Promise.all([
+          supabase.from('wolf_config').select('*').eq('round_id', rId).maybeSingle(),
+          supabase.from('wolf_hole_state').select('*').eq('round_id', rId).order('hole_number'),
+        ]);
+        if (wolfCfgRow && wolfStates && normalizedBetConfig.wolfSetup?.enabled === true) {
+          const wolfConfig: WolfConfig = {
+            roundId: wolfCfgRow.round_id,
+            amountPerHole: wolfCfgRow.amount_per_hole,
+            scoringMode: wolfCfgRow.scoring_mode as WolfConfig['scoringMode'],
+            useHandicap: wolfCfgRow.use_handicap,
+            timing: wolfCfgRow.timing as WolfConfig['timing'],
+            carryover: wolfCfgRow.carryover,
+            playerOrder: wolfCfgRow.player_order ?? [],
+            participantIds: wolfCfgRow.participant_ids ?? [],
+            playerHandicaps: (wolfCfgRow.player_handicaps as any) ?? [],
+          };
+          const holeStates: WolfHoleState[] = (wolfStates as any[]).map(s => ({
+            roundId: s.round_id,
+            holeNumber: s.hole_number,
+            wolfPlayerId: s.wolf_player_id,
+            partnerIds: s.partner_ids ?? [],
+            wentSolo: s.went_solo,
+            result: s.result ?? null,
+            effectiveAmount: s.effective_amount ?? null,
+            carryoverHoles: s.carryover_holes ?? 0,
+          }));
+          const wolfPlayers = wolfConfig.participantIds.length > 0
+            ? sanitizedPlayers.filter(p => wolfConfig.participantIds.includes(p.id))
+            : sanitizedPlayers;
+          sprint3Summaries.push(...calculateWolfBets(wolfPlayers, wolfConfig, holeStates, confirmedScoresForClose, course));
+          devLog(`[CLOSE] Wolf: ${sprint3Summaries.filter(s => s.betType === 'Wolf' && s.amount > 0).length} winning entries`);
+        }
+
+        // ── SIXES ─────────────────────────────────────────────────────────────
+        const [{ data: sixesCfgRow }, { data: sixesSetsRows }] = await Promise.all([
+          supabase.from('sixes_config').select('*').eq('round_id', rId).maybeSingle(),
+          supabase.from('sixes_sets').select('*').eq('round_id', rId).order('set_number'),
+        ]);
+        if (sixesCfgRow && (normalizedBetConfig.sixesBets ?? []).length > 0) {
+          const sixesConfig: SixesConfig = {
+            roundId: sixesCfgRow.round_id,
+            scoringMode: sixesCfgRow.scoring_mode as SixesConfig['scoringMode'],
+            cobro: sixesCfgRow.cobro as SixesConfig['cobro'],
+            amount: sixesCfgRow.amount,
+            useHandicap: sixesCfgRow.use_handicap,
+            usePerSetAmounts: sixesCfgRow.use_per_set_amounts ?? false,
+            set1Amount: sixesCfgRow.set1_amount ?? undefined,
+            set2Amount: sixesCfgRow.set2_amount ?? undefined,
+            set3Amount: sixesCfgRow.set3_amount ?? undefined,
+            sets: ((sixesSetsRows ?? []) as any[]).map(s => ({
+              setNumber: s.set_number as 1 | 2 | 3,
+              team1: [s.team1_player1_id, s.team1_player2_id] as [string, string],
+              team2: [s.team2_player1_id, s.team2_player2_id] as [string, string],
+            })),
+          };
+          sprint3Summaries.push(...calculateSixesBets(sanitizedPlayers, confirmedScoresForClose, sixesConfig, course));
+          devLog(`[CLOSE] Sixes: ${sprint3Summaries.filter(s => s.betType === 'Sixes' && s.amount > 0).length} winning entries`);
+        }
+
+        // ── VEGAS ─────────────────────────────────────────────────────────────
+        const { data: vegasCfgRow } = await supabase
+          .from('vegas_config').select('*').eq('round_id', rId).maybeSingle();
+        if (vegasCfgRow && (normalizedBetConfig.vegasBets ?? []).length > 0) {
+          const vegasConfig: VegasConfig = {
+            roundId: vegasCfgRow.round_id,
+            valuePerPoint: vegasCfgRow.value_per_point,
+            useHandicap: vegasCfgRow.use_handicap,
+            birdieMultiplier: vegasCfgRow.birdie_multiplier,
+            variant: vegasCfgRow.variant as VegasConfig['variant'],
+            playerAId: vegasCfgRow.player_a_id ?? '',
+            playerBId: vegasCfgRow.player_b_id ?? '',
+            playerCId: vegasCfgRow.player_c_id ?? '',
+            playerDId: vegasCfgRow.player_d_id ?? '',
+            useSegmentAmounts: vegasCfgRow.use_segment_amounts ?? false,
+            frontAmount: vegasCfgRow.front_amount ?? undefined,
+            backAmount: vegasCfgRow.back_amount ?? undefined,
+            set1Amount: vegasCfgRow.set1_amount ?? undefined,
+            set2Amount: vegasCfgRow.set2_amount ?? undefined,
+            set3Amount: vegasCfgRow.set3_amount ?? undefined,
+          };
+          sprint3Summaries.push(...calculateVegasBets(sanitizedPlayers, confirmedScoresForClose, vegasConfig, course));
+          devLog(`[CLOSE] Vegas: ${sprint3Summaries.filter(s => s.betType === 'Vegas' && s.amount > 0).length} winning entries`);
+        }
+
+        // ── NINES ─────────────────────────────────────────────────────────────
+        const { data: ninesCfgRow } = await supabase
+          .from('nines_config').select('*').eq('round_id', rId).maybeSingle();
+        if (ninesCfgRow && (ninesCfgRow.player_ids?.length ?? 0) >= 3) {
+          const ninesConfig: NinesConfig = {
+            roundId: ninesCfgRow.round_id,
+            valuePerPoint: ninesCfgRow.value_per_point,
+            playerIds: ninesCfgRow.player_ids,
+          };
+          sprint3Summaries.push(...calculateNinesBets(sanitizedPlayers, confirmedScoresForClose, ninesConfig, course));
+          devLog(`[CLOSE] Nines: ${sprint3Summaries.filter(s => s.betType === 'Nines' && s.amount > 0).length} winning entries`);
+        }
+
+      } catch (sprint3Err) {
+        devError('[CLOSE] Error fetching Sprint3 bets for snapshot (non-fatal):', sprint3Err);
+      }
+      // ─── END SPRINT 3 BET CALCULATION ────────────────────────────────────────
+
+      const allBetResults = [...intraGroupBetResults, ...crossGroupSummaries, ...sprint3Summaries];
+      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group + ${sprint3Summaries.length} sprint3 = ${allBetResults.length} total bet summaries`);
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
 
       // ─── SIDE BETS DIAGNOSTIC LOG ───────────────────────────────────────────

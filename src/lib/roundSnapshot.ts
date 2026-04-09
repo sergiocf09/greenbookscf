@@ -441,6 +441,10 @@ export function generateRoundSnapshot(
   const TEAM_BET_TYPES = new Set([
     'Carritos Front', 'Carritos Back', 'Carritos Total',
     'Presiones Parejas', 'Presiones Pareja',
+    'Wolf',   // Team bet — va al Balance General, no al bilateral individual
+    'Sixes',  // Team bet
+    'Vegas',  // Team bet
+    // 'Nines' NO está aquí — es bilateral individual, sí va al pairBreakdowns
   ]);
 
   const pairBreakdowns: SnapshotPairBreakdowns = {};
