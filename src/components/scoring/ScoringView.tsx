@@ -288,6 +288,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             }}
             isRedemption={false}
             redemptionCandidateId={redemptionCandidateId ?? undefined}
+            redemptionCandidateLoss={redemptionCandidateLoss ?? undefined}
             regularWolfPlayerId={regularWolfPlayerId}
           />
         );
