@@ -2531,7 +2531,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Collapsible>
+              <Collapsible open={foursomeOpenId === bet.id} onOpenChange={(open) => setFoursomeOpenId(open ? bet.id : null)}>
                 <div className="space-y-1">
                   {/* Names row */}
                   <div className="flex items-center justify-between text-sm">
