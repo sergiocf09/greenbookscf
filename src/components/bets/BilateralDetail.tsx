@@ -1326,6 +1326,29 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       }
     }
     
+    // Nines (grupal bilateral — same pattern as Coneja)
+    {
+      const ninesTotal = groupedSummaries['Nines']?.total || 0;
+      if (ninesTotal !== 0) {
+        const ninesDetails = groupedSummaries['Nines']?.details || [];
+        const ptsWon = ninesDetails.filter(d => d.amount > 0).reduce((s, d) => s + (d.units ?? 0), 0);
+        const ptsLost = ninesDetails.filter(d => d.amount < 0).reduce((s, d) => s + (d.units ?? 0), 0);
+        groups.push({
+          key: 'nines',
+          label: 'Nines (5-3-1)',
+          configKey: 'ninesBets',
+          segments: [],
+          getTotal: () => ninesTotal,
+          getSegmentData: () => ({
+            playerNet: ptsWon,
+            rivalNet: ptsLost,
+            amount: ninesTotal,
+            description: ninesDetails[0]?.description || '',
+          }),
+        });
+      }
+    }
+    
     // NOTE: Team Pressures are NOT shown in bilateral view - they're pair bets
     
     return groups;
