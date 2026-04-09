@@ -1,71 +1,77 @@
 
 
-## Plan: Hándicaps editables en el setup de Loba + correcciones del diagnóstico previo
+## Plan: Mejoras Loba — Nombres completos, reversión, recalculación y layout
 
-### Contexto
+### Problemas identificados
 
-Actualmente los cálculos de Loba usan `player.handicap` (el hándicap general del jugador en la ronda). El usuario quiere que, igual que en Skins Grupal y Medal General, los hándicaps de Loba se puedan confirmar/editar dentro de su sección de setup, y que esos sean los que usen los cálculos.
+1. **Setup Loba — nombres truncados**: En la sección de hándicaps editables, solo muestra `p.name.split(' ')[0]` (primer nombre). Falta nombre completo y avatar verde/dorado del logueado.
 
-La tabla `wolf_config` no tiene columna para `player_handicaps`. Se necesita una migración.
+2. **Hoyos 4,6,7,8,9,11,12 no permiten selección**: Tienen `result: 'tied'` en la BD, lo que activa `showResolved` en el panel. No hay botón para revertir/re-editar una decisión ya resuelta (solo existe "Cambiar" para `showInPlay` con `result === null`).
 
-### Cambios
+3. **No se puede revertir selección de Loba**: Falta un botón "Cambiar" en el estado resuelto (`showResolved`) que permita borrar el resultado y volver al modo selección.
 
-#### 1. Migración: agregar `player_handicaps` a `wolf_config`
+4. **Scores cambiados no recalculan resultado**: Cuando se modifica un score después de resolver, no hay trigger para recalcular. Solo se resuelve en `handleConfirmHole` y en `saveDecision`.
 
-```sql
-ALTER TABLE wolf_config
-ADD COLUMN player_handicaps jsonb DEFAULT '[]'::jsonb;
-```
+5. **Tooltip Loba — icono lobo en vez de punto verde**: Actualmente usa `<span className="h-2 w-2 rounded-full bg-green-500">` para marcar al Wolf. Debe usar 🐺.
 
-Formato: `[{ "playerId": "xxx", "handicap": 12 }, ...]`
+6. **Tooltip — nombres con desambiguación de apellido**: Usa `formatPlayerName` que solo da primer nombre. Necesita "Sergio CD", "Sergio CF" etc.
 
-#### 2. Tipos (`src/types/golf.ts`)
+7. **Tooltip — falta monto ganado/perdido por jugador**: No muestra el resultado monetario por jugador en el detalle del hoyo.
 
-- Agregar `playerHandicaps?: { playerId: string; handicap: number }[]` a `WolfSetupConfig` y `WolfConfig`.
+8. **Tooltip — decisión y monto en esquina superior derecha**: Actualmente está abajo. Mover al extremo superior derecho.
 
-#### 3. Setup UI (`src/components/setup/bets/ParejasBets.tsx`)
+9. **Front 9 / Back 9 — layout lado a lado**: Actualmente son collapsibles verticales con texto. Deben ser 2 botones en el mismo renglón, 50% ancho cada uno.
 
-- Debajo de la fila "Jugar con hándicap" (cuando está activo), mostrar la lista de participantes activos de Loba con stepper +/- para editar hándicap, usando el mismo patrón de Skins Grupal.
-- Default: toma `player.handicap` de cada participante activo.
-- Persistir en `wolfSetup.playerHandicaps`.
+10. **Sixes/Vegas — layout parejas alineado**: Las iniciales de equipo 1 alineadas a la izquierda (una arriba de otra), "vs" en medio, equipo 2 a la derecha (una arriba de otra).
 
-#### 4. Hook (`src/hooks/useWolf.ts`)
+### Cambios por archivo
 
-- Leer y escribir `player_handicaps` en `saveConfig`/`fetchData`.
-- Exponer `playerHandicaps` en el estado de `wolfConfig`.
+#### `src/components/setup/bets/ParejasBets.tsx`
+- Línea 526: Cambiar `p.name.split(' ')[0]` → nombre completo `p.name` en la lista de hándicaps
+- Agregar avatar con `isLoggedInUser` y iniciales desambiguadas junto al nombre
+- En rotación (línea 596): agregar `isLoggedInUser` al `PlayerAvatar`
 
-#### 5. Motor de cálculo (`src/lib/bets/wolf.ts`)
+#### `src/components/bets/WolfDecisionPanel.tsx`
+- **Estado resuelto** (líneas 260-286): Agregar botón "Cambiar" que limpie el resultado (llame a `onDecision` con reset o nuevo callback `onRevert`)
+- Necesario un nuevo prop `onRevert?: (holeNumber: number) => Promise<void>` que borre el resultado en BD
+- Agregar en `useWolf.ts` una función `revertDecision` que haga `UPDATE wolf_hole_state SET result = null, partner_ids = '[]', went_solo = false WHERE round_id = ? AND hole_number = ?` o directamente `DELETE`
 
-- `getPlayerScore`: recibir un parámetro opcional `handicapOverrides?: Map<string, number>`. Si existe override para el jugador, usar ese hándicap en lugar de `player.handicap`.
-- `resolveWolfHole` y `buildWolfHoleDetails`: propagar el override.
+#### `src/hooks/useWolf.ts`
+- Agregar función `revertDecision(holeNumber)`: borra el `wolf_hole_state` para ese hoyo (DELETE) y hace `fetchData()`
+- Agregar función `recalculateHole(holeNumber)`: re-ejecuta `resolveWolfHole` para un hoyo ya con decisión pero cuyo score cambió. Se expondrá para que `ScoringView` la llame al confirmar scores.
 
-#### 6. Auto-resolve en `useWolf.ts` (`saveDecision`)
+#### `src/components/scoring/ScoringView.tsx`
+- Pasar `onRevert` al `WolfDecisionPanel`
+- En `handleConfirmHole`: ya recalcula, pero también llamar recalculación si el hoyo ya tenía resultado previo (para cubrir cambio de score)
+- Conectar `wolf.revertDecision` desde `Index.tsx`
 
-- Al construir el objeto `course`, cambiar `strokeIndex` → `handicapIndex` (bug existente del diagnóstico).
-- Pasar los `playerHandicaps` del config como overrides al resolver.
+#### `src/pages/Index.tsx`
+- Exponer `wolf.revertDecision` como prop `onWolfRevert` hacia `ScoringView`
 
-#### 7. `calculateWolfBets` y `buildWolfHoleDetails` (`wolf.ts`)
+#### `src/components/bets/WolfResultsCard.tsx`
+- **Front 9 / Back 9**: Reemplazar los 2 `Collapsible` verticales por 2 botones en `grid grid-cols-2 gap-2`, cada uno con icono y al hacer click expanden los 9 hoyos debajo
+- **Tooltip**: 
+  - Mover decisión y monto al extremo superior derecho del popover
+  - Reemplazar punto verde `bg-green-500` por emoji 🐺
+  - Nombres: usar función de desambiguación con apellido ("Sergio CD") en vez de `formatPlayerName`
+  - Agregar renglón con monto ganado/perdido por jugador debajo de los scores de cada equipo
 
-- Filtrar `rivalTeam` usando `config.participantIds` en lugar de `players` completo (bug existente del diagnóstico).
+#### `src/components/bets/SixesResultsCard.tsx`
+- Cambiar layout de parejas en los bloques de sets: alinear iniciales de equipo 1 verticalmente a la izquierda, "vs" centrado, equipo 2 a la derecha vertical
 
-#### 8. Resumen de modalidad en dashboard + badges verdes + nombres desambiguados
-
-- **WolfResultsCard**: subtítulo con "Bola Baja · Con Hándicap · Carryover" debajo del título.
-- **SixesResultsCard**: subtítulo con modalidad/cobro.
-- **VegasResultsCard**: subtítulo con variante.
-- Tooltip de cada hoyo: badge verde para el jugador Loba, nombres con iniciales de apellido desambiguadas.
+#### `src/components/bets/VegasResultsCard.tsx`
+- Mismo cambio de layout de parejas que Sixes
 
 ### Archivos a modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| **Migración SQL** | `ADD COLUMN player_handicaps jsonb` |
-| `src/types/golf.ts` | `playerHandicaps` en `WolfSetupConfig` y `WolfConfig` |
-| `src/components/setup/bets/ParejasBets.tsx` | UI de hándicaps editables para Loba |
-| `src/hooks/useWolf.ts` | Leer/escribir `player_handicaps`, fix `handicapIndex` |
-| `src/lib/bets/wolf.ts` | Override de hándicaps, fix `rivalTeam` filter |
-| `src/components/bets/WolfResultsCard.tsx` | Subtítulo modalidad, badge verde, nombres |
-| `src/components/bets/SixesResultsCard.tsx` | Subtítulo modalidad |
-| `src/components/bets/VegasResultsCard.tsx` | Subtítulo variante |
-| `src/pages/Index.tsx` | Pasar `playerHandicaps` al sync de wolf config |
+| Archivo | Cambios |
+|---------|---------|
+| `src/hooks/useWolf.ts` | `revertDecision()`, exponer recalculación |
+| `src/components/bets/WolfDecisionPanel.tsx` | Botón "Cambiar" en estado resuelto, prop `onRevert` |
+| `src/components/scoring/ScoringView.tsx` | Pasar `onRevert`, recalcular al re-confirmar |
+| `src/pages/Index.tsx` | Conectar `wolf.revertDecision` |
+| `src/components/bets/WolfResultsCard.tsx` | Layout F9/B9, tooltip redesign, 🐺 badge, montos |
+| `src/components/setup/bets/ParejasBets.tsx` | Nombres completos + avatar logueado en hándicaps |
+| `src/components/bets/SixesResultsCard.tsx` | Layout parejas alineado |
+| `src/components/bets/VegasResultsCard.tsx` | Layout parejas alineado |
 
