@@ -163,19 +163,19 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                     )}
                     onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
                   >
-                    <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
-                      H{SET_LABELS[sr.setNumber]}
-                    </div>
-                    <div className="text-[10px] truncate text-center">
-                      {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
-                    </div>
-                    <div className="text-[9px] text-muted-foreground text-center">vs</div>
-                    <div className="text-[10px] truncate text-center">
-                      {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
-                    </div>
-                    <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(acc.total))}>
-                      {acc.total > 0 ? '+' : ''}{acc.total}
-                    </div>
+                     <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
+                       H{SET_LABELS[sr.setNumber]}
+                     </div>
+                     <div className="text-xs truncate text-center font-medium">
+                       {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
+                     </div>
+                     <div className="text-[10px] text-muted-foreground text-center">vs</div>
+                     <div className="text-xs truncate text-center font-medium">
+                       {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
+                     </div>
+                     <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
+                       {acc.total > 0 ? '+' : ''}{acc.total}
+                     </div>
                   </button>
                 );
               })}
