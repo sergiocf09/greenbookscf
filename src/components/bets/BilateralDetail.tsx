@@ -674,7 +674,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Presiones
     if (bothParticipate(undefined, 'pressures')) {
-      const isContinuaMatch = !!(config.pressures?.continua && config.pressures?.onlyMatch);
+      const isContinuaMatch = !!(resolvedCfg.pressures?.continua && resolvedCfg.pressures?.onlyMatch);
       const pressureSegments = isContinuaMatch
         ? [
             { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
