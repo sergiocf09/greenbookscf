@@ -21,6 +21,10 @@ export const useSixes = (roundId: string | null, _players: Player[]) => {
           cobro: cfg.cobro as SixesConfig['cobro'],
           amount: cfg.amount,
           useHandicap: cfg.use_handicap,
+          usePerSetAmounts: (cfg as any).use_per_set_amounts ?? false,
+          set1Amount: (cfg as any).set1_amount ?? undefined,
+          set2Amount: (cfg as any).set2_amount ?? undefined,
+          set3Amount: (cfg as any).set3_amount ?? undefined,
           sets: (sets ?? []).map(s => ({
             setNumber: s.set_number as 1|2|3,
             team1: [s.team1_player1_id, s.team1_player2_id] as [string,string],
