@@ -170,7 +170,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                           : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
                       )}
                     >
-                      <PlayerAvatar initials={p.initials} background={p.color} size="xs" />
+                      <PlayerAvatar initials={p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
                       {p.name.split(' ')[0]}
                     </button>
                   );

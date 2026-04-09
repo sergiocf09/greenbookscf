@@ -276,7 +276,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
         // Don't auto-override; pass candidate info so the panel can offer the choice
         const existingState = wolfHoleStates?.find(s => s.holeNumber === currentHole);
-        const effectiveWolfId = existingState?.wolfPlayerId ?? regularWolfPlayerId;
+        // Always use rotation-derived wolfId; ignore stale saved wolfPlayerId
+        const effectiveWolfId = regularWolfPlayerId;
 
         return (
           <WolfDecisionPanel

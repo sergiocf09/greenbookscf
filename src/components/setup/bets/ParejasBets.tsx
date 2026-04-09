@@ -544,17 +544,24 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               return (
                 <div className="bg-muted/30 rounded-lg p-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    {displayOrder.map((id: string, i: number) => {
-                      const p = players.find(pl => pl.id === id);
-                      return (
-                        <div key={id} className="flex items-center gap-1 text-[11px]">
-                          <span className="text-muted-foreground font-semibold">{i + 1}.</span>
-                          {p && <PlayerAvatar initials={p.initials} background={p.color} size="xs" />}
-                          <span>{p?.name?.split(' ')[0] ?? '?'}</span>
-                          {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      const wolfPlayers = displayOrder.map((id: string) => players.find(pl => pl.id === id)).filter(Boolean) as Player[];
+                      const { disambiguateInitials } = require('@/lib/playerInput');
+                      const disambiguated = disambiguateInitials(wolfPlayers);
+                      // Detect logged-in user
+                      const loggedInProfileId = wolfPlayers.find(p => p.profileId)?.profileId; // Will be refined below
+                      return displayOrder.map((id: string, i: number) => {
+                        const p = players.find(pl => pl.id === id);
+                        return (
+                          <div key={id} className="flex items-center gap-1 text-[11px]">
+                            <span className="text-muted-foreground font-semibold">{i + 1}.</span>
+                            {p && <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" />}
+                            <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                            {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               );

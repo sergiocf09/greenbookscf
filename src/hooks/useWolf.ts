@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WolfConfig, WolfHoleState, Player } from '@/types/golf';
-import { getWolfPlayerId, computeEffectiveAmount } from '@/lib/bets/wolf';
+import { getWolfPlayerId, computeEffectiveAmount, resolveWolfHole } from '@/lib/bets/wolf';
 
 export const useWolf = (roundId: string | null, players: Player[]) => {
   const [wolfConfig, setWolfConfig] = useState<WolfConfig | null>(null);
@@ -97,8 +97,92 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       carryover_holes: carryoverHoles,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'round_id,hole_number' });
+
+    // Auto-resolve: if all players have confirmed scores for this hole, compute result
+    if (players.length >= 4) {
+      const { data: roundPlayers } = await supabase
+        .from('round_players')
+        .select('id, profile_id')
+        .eq('round_id', roundId);
+      if (roundPlayers) {
+        const rpIds = roundPlayers.map(rp => rp.id);
+        const { data: holeScores } = await supabase
+          .from('hole_scores')
+          .select('round_player_id, confirmed, strokes')
+          .eq('hole_number', holeNumber)
+          .in('round_player_id', rpIds);
+        const allConfirmed = holeScores && rpIds.every(rpId => {
+          const hs = holeScores.find(s => s.round_player_id === rpId);
+          return hs?.confirmed && hs?.strokes;
+        });
+        if (allConfirmed) {
+          // Build scores map and call resolveWolfHole
+          const wolfTeam = [wolfPlayerId, ...partnerIds];
+          const rivalTeam = (wolfConfig.participantIds ?? []).filter(id => !wolfTeam.includes(id));
+          // We need course data - fetch it
+          const { data: round } = await supabase
+            .from('rounds')
+            .select('course_id')
+            .eq('id', roundId)
+            .single();
+          if (round) {
+            const { data: courseHoles } = await supabase
+              .from('course_holes')
+              .select('*')
+              .eq('course_id', round.course_id)
+              .order('hole_number');
+            if (courseHoles && courseHoles.length > 0) {
+              const course = {
+                id: round.course_id,
+                name: '',
+                location: '',
+                holes: courseHoles.map(h => ({
+                  number: h.hole_number,
+                  par: h.par,
+                  strokeIndex: h.stroke_index,
+                  yards: h.yards_white ?? 0,
+                })),
+              };
+              // Build player scores map from DB
+              const scoresMap = new Map<string, { holeNumber: number; strokes: number; confirmed: boolean }[]>();
+              for (const rp of roundPlayers) {
+                const profileId = rp.profile_id;
+                if (!profileId) continue;
+                const playerPlayer = players.find(p => p.profileId === profileId || p.id === rp.id);
+                const pid = playerPlayer?.id ?? rp.id;
+                const rpScores = holeScores!.filter(s => s.round_player_id === rp.id);
+                scoresMap.set(pid, rpScores.map(s => ({
+                  holeNumber,
+                  strokes: s.strokes ?? 0,
+                  confirmed: s.confirmed,
+                })));
+              }
+              // Convert to the format resolveWolfHole expects
+              const playerScoresMap = new Map<string, any[]>();
+              scoresMap.forEach((scores, pid) => {
+                playerScoresMap.set(pid, scores.map(s => ({
+                  holeNumber: s.holeNumber,
+                  strokes: s.strokes,
+                  confirmed: s.confirmed,
+                  putts: 0,
+                  markers: {},
+                  strokesReceived: 0,
+                })));
+              });
+              const resolved = resolveWolfHole(wolfTeam, rivalTeam, holeNumber, players, playerScoresMap, course as any, wolfConfig);
+              const result = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+              await supabase.from('wolf_hole_state').update({
+                result,
+                updated_at: new Date().toISOString(),
+              }).eq('round_id', roundId).eq('hole_number', holeNumber);
+            }
+          }
+        }
+      }
+    }
+
     await fetchData();
-  }, [roundId, wolfConfig, holeStates, fetchData]);
+  }, [roundId, wolfConfig, holeStates, fetchData, players]);
 
   const resolveHole = useCallback(async (holeNumber: number, result: 'won' | 'lost' | 'tied') => {
     if (!roundId) return;
