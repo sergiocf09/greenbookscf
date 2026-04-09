@@ -86,7 +86,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
 
   /** Toggle a player across all enabled bets */
   const handleColumnToggle = (playerId: string) => {
-    const enabledBets = PAREJAS_BETS.filter(b => isBetEnabled(config, b.key) && b.key !== 'wolf');
+    const enabledBets = PAREJAS_BETS.filter(b => isBetEnabled(config, b.key));
     if (enabledBets.length === 0) return;
 
     // If player is active in all enabled bets, exclude from all; otherwise include in all
