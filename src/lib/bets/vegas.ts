@@ -43,18 +43,25 @@ const resolveVegasHole = (
   course: GolfCourse, config: VegasConfig
 ): VegasHoleDetail => {
   const [pA, pB] = team1, [pC, pD] = team2;
+  // Net scores used for Vegas number formation
   const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap);
   const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap);
   const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap);
   const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap);
 
-  const pd = (id: string, gross: number) => {
+  // Raw gross scores for popover display
+  const gA = getScore(pA, holeNumber, players, scores, course, false);
+  const gB = getScore(pB, holeNumber, players, scores, course, false);
+  const gC = getScore(pC, holeNumber, players, scores, course, false);
+  const gD = getScore(pD, holeNumber, players, scores, course, false);
+
+  const pd = (id: string, gross: number, net: number) => {
     const p = players.find(x => x.id === id);
     const sp = calculateStrokesPerHole(p?.handicap ?? 0, course);
     const strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
-    return { gross, strokes, net: gross - strokes };
+    return { gross, strokes, net };
   };
-  const dA = pd(pA, sA), dB = pd(pB, sB), dC = pd(pC, sC), dD = pd(pD, sD);
+  const dA = pd(pA, gA, sA), dB = pd(pB, gB, sB), dC = pd(pC, gC, sC), dD = pd(pD, gD, sD);
 
   const n1 = formVegasNumber(sA, sB), n2 = formVegasNumber(sC, sD);
   const bT1 = config.birdieMultiplier && hasBirdie([pA,pB], holeNumber, players, scores, course);
