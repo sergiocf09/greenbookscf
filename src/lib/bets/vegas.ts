@@ -36,6 +36,18 @@ const hasBirdie = (
     return !!(d.birdie || d.eagle || d.albatross);
   });
 
+const getVegasSegmentAmount = (config: VegasConfig, holeNumber: number): number => {
+  if (!config.useSegmentAmounts) return config.valuePerPoint;
+  if (config.variant === 'fixed') {
+    return holeNumber <= 9
+      ? (config.frontAmount ?? config.valuePerPoint)
+      : (config.backAmount  ?? config.valuePerPoint);
+  }
+  if (holeNumber <= 6)  return config.set1Amount ?? config.valuePerPoint;
+  if (holeNumber <= 12) return config.set2Amount ?? config.valuePerPoint;
+  return config.set3Amount ?? config.valuePerPoint;
+};
+
 const resolveVegasHole = (
   team1: [string,string], team2: [string,string],
   holeNumber: number, setNumber: 1|2|3|null,
