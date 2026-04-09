@@ -44,7 +44,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course), [players, scores, vegasConfig, course, missingPlayerIds]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
+  const getShortName = (id: string) => shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
   const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
