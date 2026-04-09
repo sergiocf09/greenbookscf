@@ -506,8 +506,56 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             <Label className="text-xs">Carryover en empates</Label>
           </div>
 
+          <div className="flex items-center gap-2 mt-2">
+            <Switch checked={config.wolfSetup?.hole18Redemption ?? false}
+              onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, hole18Redemption: v } as any)} />
+            <Label className="text-xs">Recuperación Hoyo 18 (máx. perdedor, solo, ×3)</Label>
+          </div>
+
+          {/* Shuffle order button */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] font-semibold text-primary">Orden de rotación</Label>
+              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => {
+                const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
+                const shuffled = [...activeIds].sort(() => Math.random() - 0.5);
+                onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerOrder: shuffled } as any);
+              }}>
+                🎲 Sortear orden
+              </Button>
+            </div>
+            {(() => {
+              const order = config.wolfSetup?.playerOrder;
+              const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
+              const displayOrder = order && order.length > 0 && order.every((id: string) => activeIds.includes(id))
+                ? order
+                : activeIds;
+              return (
+                <div className="bg-muted/30 rounded-lg p-2 space-y-0.5">
+                  {displayOrder.map((id: string, i: number) => {
+                    const p = players.find(pl => pl.id === id);
+                    return (
+                      <div key={id} className="flex items-center gap-2 text-[11px]">
+                        <span className="w-4 text-right font-bold text-primary">{i + 1}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
           <p className="text-[9px] text-muted-foreground mt-2">
-            Rotación: {players.slice(0, 6).map((p, i) => `H${i + 1}: ${p.name.split(' ')[0]}`).join(' · ')}
+            Rotación: {(() => {
+              const order = config.wolfSetup?.playerOrder;
+              const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
+              const displayOrder = order && order.length > 0 && order.every((id: string) => activeIds.includes(id))
+                ? order
+                : activeIds;
+              return displayOrder.slice(0, 6).map((id: string, i: number) => `H${i + 1}: ${players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?'}`).join(' · ');
+            })()}
           </p>
         </BetSection>
       )}
