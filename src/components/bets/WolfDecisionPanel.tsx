@@ -224,7 +224,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   if (!p) return null;
                   return (
                     <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                      <PlayerAvatar initials={p.initials} background={p.color} size="xs" />
+                      <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
                       {p.name.split(' ')[0]}
                     </Badge>
                   );
