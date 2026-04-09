@@ -538,7 +538,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         { bt: 'Medal General',label: 'Medal General', configKey: 'medalGeneral' },
         { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
         { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
-      ];
+        { bt: 'Nines',        label: 'Nines (5-3-1)', configKey: 'ninesBets' },
       for (const { bt, label, configKey } of atomicBets) {
         const amount = getAmt(bt);
         if (amount !== 0) {
@@ -562,6 +562,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
         'Coneja','Medal General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
+        'Nines',
       ]);
       const sourceKeys = breakdown ? Object.keys(breakdown) : Object.keys(groupedSummaries);
       for (const bt of sourceKeys) {
