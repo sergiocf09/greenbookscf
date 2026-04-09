@@ -1915,7 +1915,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const otherGroupIdx = players.some(p => p.id === other.id) ? 0 : 
                           playerGroups.findIndex(g => g.players.some(p => p.id === other.id)) + 1;
                         
-                        return { other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx };
+                        return { other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsWolfBalance, vsSixesBalance, vsVegasBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx };
                       })
                       // In historical mode, hide rivals with zero balance (no actual bets)
                       .filter(({ vsTotalBalance }) => !isHistorical || vsTotalBalance !== 0)
