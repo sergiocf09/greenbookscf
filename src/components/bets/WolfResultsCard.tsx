@@ -143,7 +143,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
         <PopoverTrigger asChild>{pill}</PopoverTrigger>
         <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
           <div className="space-y-1">
-            <p className="text-xs font-medium">
+           <p className="text-xs font-medium">
               Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
             </p>
             <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -158,13 +158,27 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               const rvHasStroke = rv && rv.strokes > 0 && rv.net !== rv.gross;
               return (
                 <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-                  <span className="truncate text-left">{my ? my.playerName.split(' ')[0] : ''}</span>
+                  <span className="truncate text-left flex items-center gap-1">
+                    {my ? (
+                      <>
+                        {my.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
+                        {formatPlayerName(my.playerName)}
+                      </>
+                    ) : ''}
+                  </span>
                   <span className="font-medium text-right px-1">{my ? (my.gross > 0 ? my.net : '–') : ''}</span>
                   <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span />
                   <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span className="font-medium text-left px-1">{rv ? (rv.gross > 0 ? rv.net : '–') : ''}</span>
-                  <span className="truncate text-right">{rv ? rv.playerName.split(' ')[0] : ''}</span>
+                  <span className="truncate text-right flex items-center justify-end gap-1">
+                    {rv ? (
+                      <>
+                        {formatPlayerName(rv.playerName)}
+                        {rv.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
+                      </>
+                    ) : ''}
+                  </span>
                 </div>
               );
             })}
@@ -190,6 +204,14 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       </Popover>
     );
   };
+
+  const scoringLabel = wolfConfig.scoringMode === 'lowBall' ? 'Bola Baja' : wolfConfig.scoringMode === 'lowHighBall' ? 'BB + BA' : 'Score Neto';
+  const configSummary = [
+    scoringLabel,
+    wolfConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    wolfConfig.carryover ? 'Carryover' : null,
+    `$${fmtMoney(wolfConfig.amountPerHole)}/hoyo`,
+  ].filter(Boolean).join(' · ');
 
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
@@ -217,6 +239,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             )}
           </div>
         </CardTitle>
+        <p className="text-[10px] text-muted-foreground">{configSummary}</p>
       </CardHeader>
       <CardContent className="space-y-2">
         {/* F9 */}

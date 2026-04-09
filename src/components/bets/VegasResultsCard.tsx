@@ -112,6 +112,14 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const SET_LABELS: Record<number, string> = { 1: '1–6', 2: '7–12', 3: '13–18' };
 
+  const vegasVariantLabel = vegasConfig.variant === 'fixed' ? 'Parejas Fijas' : 'Rotatoria';
+  const vegasSummary = [
+    vegasVariantLabel,
+    vegasConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    vegasConfig.birdieMultiplier ? 'Birdie ×2' : null,
+    `$${fmtMoney(vegasConfig.valuePerPoint)}/pto`,
+  ].filter(Boolean).join(' · ');
+
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
@@ -141,6 +149,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
             )}
           </div>
         </CardTitle>
+        <p className="text-[10px] text-muted-foreground">{vegasSummary}</p>
       </CardHeader>
       <CardContent className="pt-0 space-y-2">
         {isRotating ? (

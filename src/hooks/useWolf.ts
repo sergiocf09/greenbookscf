@@ -26,6 +26,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
           carryover:      cfg.carryover,
           playerOrder:    (cfg as any).player_order ?? [],
           participantIds: (cfg as any).participant_ids ?? [],
+          playerHandicaps: (cfg as any).player_handicaps ?? [],
         });
       } else {
         setWolfConfig(null);
@@ -58,6 +59,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       carryover:       cfg.carryover,
       player_order:    cfg.playerOrder ?? [],
       participant_ids: cfg.participantIds ?? [],
+      player_handicaps: cfg.playerHandicaps ?? [],
     } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
@@ -139,7 +141,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
                 holes: courseHoles.map(h => ({
                   number: h.hole_number,
                   par: h.par,
-                  strokeIndex: h.stroke_index,
+                  handicapIndex: h.stroke_index,
                   yards: h.yards_white ?? 0,
                 })),
               };
