@@ -1,72 +1,40 @@
 
 
-## Diagnóstico: Vegas Fixed no se refleja en el Dashboard
+## Plan: Fix Loba Visibility + Redesign Nines Presentation
 
-### Causa raíz
+### Issue 1 — Loba sigue sin aparecer en BetDashboard
 
-El problema está en la **sincronización** entre la configuración local (`betConfig.vegasBets[0]`) y el hook de base de datos (`useVegas`).
+**Diagnóstico**: El sync en `Index.tsx` línea 236 usa `players` (para calcular `wolfParticipantIds`) pero `players` NO está en el array de dependencias del `useEffect` (línea 305). Esto significa que si `betConfig.wolfSetup?.enabled` ya es `true` cuando el efecto corre por primera vez pero `players` aún está vacío, `wolfParticipantIds` será `[]`, y `wolf.saveConfig` guardará arrays vacíos. Cuando `players` se popula después, el efecto NO se re-ejecuta.
 
-En `Index.tsx` línea 258, la sincronización solo ocurre cuando `!vegas.isActive`:
+**Fix** (`src/pages/Index.tsx`):
+- Agregar `players.length` como dependencia del `useEffect` de sync Sprint 3
+- Agregar guard `if (players.length < 4) return` antes del bloque wolf para no guardar config con 0 participantes
 
-```ts
-if (firstVegas && !vegas.isActive) {
-  vegas.saveConfig({ ... });
-}
-```
+### Issue 2 — Nines: rediseñar presentación como Stableford
 
-Una vez que el hook guarda la config en la base de datos (por ejemplo, como `rotating`), si el usuario cambia la variante a `fixed` en el setup, **el cambio nunca se propaga** al hook porque `vegas.isActive` ya es `true`.
+**Estado actual**: NinesResultsCard muestra un listado simple con avatares + puntos, saldos en texto, y un collapsible "Detalle por hoyo" con tabla.
 
-Además, la dependencia del `useEffect` en línea 277 solo observa `betConfig.vegasBets?.length` — es decir, solo reacciona cuando se agrega o elimina una apuesta de Vegas, **no cuando cambian propiedades internas** como `variant`, `valuePerPoint`, o los player IDs.
+**Objetivo**: Replicar el look & feel de Stableford:
+1. **Grid de tarjetas de jugadores** (como `StablefordResultBlock`): Grid 3-col con cada jugador en una pill/card mostrando avatar, puntos totales (grande), y desglose F/B. El líder tiene highlight verde y trofeo.
+2. **Tooltip clickable** (como el Popover de Stableford): Al dar clic al grid, aparece un Popover con tabla hole-by-hole mostrando Front 9 y Back 9, con colores por rango de puntos (5=amber, 3=green, 1=blue, 0=red) y dot de handicap.
+3. **Ranking de ganancias** al pie (como Sixes/Vegas): Lista de jugadores con avatar + nombre + balance neto en verde/rojo, idéntico al patrón de `playerRanking` en VegasResultsCard.
 
-El merge en `BetDashboard.tsx` línea 3180 solo sobreescribe campos cuando `hookHasEmptyPlayers`, así que tampoco corrige la variante si los jugadores ya están asignados.
+**Cambios** (`src/components/bets/NinesResultsCard.tsx`):
 
-### Solución
+- Calcular `pointsFront` y `pointsBack` por jugador en el `useMemo` de summaries
+- Reemplazar el listado actual de rankings por un grid clickable estilo Stableford:
+  - Grid `grid-cols-3` (o `grid-cols-4` para 4 jugadores)
+  - Cada celda: avatar + puntos total + F/B split
+  - Wrapped en `Popover` trigger
+- PopoverContent: tabla Front 9 + Back 9 con colores por valor de punto (5, 3, 1, 0) y dot de handicap
+- Reemplazar la sección "Saldos" actual por un ranking estilo Sixes/Vegas:
+  - `border-t` + lista de jugadores con `PlayerAvatar`, nombre completo formateado, y balance `+$X / -$X` en verde/rojo
+- Eliminar el `Collapsible` de "Detalle por hoyo" (reemplazado por el Popover del grid)
 
-**Archivo: `src/pages/Index.tsx`**
-
-1. Cambiar la condición de sincronización de Vegas para que **siempre** re-sincronice cuando las propiedades del `betConfig.vegasBets[0]` cambien, no solo cuando el hook está inactivo.
-2. Agregar como dependencias del `useEffect` los campos clave: `variant`, `valuePerPoint`, `playerAId`, etc., o simplemente serializar `betConfig.vegasBets?.[0]` como dependencia.
-
-```ts
-// Antes:
-if (firstVegas && !vegas.isActive) {
-  vegas.saveConfig({ ... });
-}
-
-// Después:
-if (firstVegas) {
-  vegas.saveConfig({ ... });
-}
-```
-
-Y en las dependencias del efecto, agregar `JSON.stringify(betConfig.vegasBets?.[0])` para detectar cualquier cambio interno.
-
-**Archivo: `src/components/bets/BetDashboard.tsx`**
-
-3. Como defensa adicional, actualizar el merge en línea 3180 para que SIEMPRE tome el `variant` del `betInst` (la fuente de verdad del setup) si existe, no solo cuando `hookHasEmptyPlayers`:
-
-```ts
-const mergedVegasConfig = {
-  ...hookCfg,
-  ...(betInst ? {
-    variant: betInst.variant,
-    valuePerPoint: betInst.valuePerPoint,
-    useHandicap: betInst.useHandicap,
-    birdieMultiplier: betInst.birdieMultiplier,
-    ...(hookHasEmptyPlayers && betInst.playerAId ? {
-      playerAId: betInst.playerAId,
-      playerBId: betInst.playerBId,
-      playerCId: betInst.playerCId,
-      playerDId: betInst.playerDId,
-    } : {}),
-  } : {}),
-};
-```
-
-### Archivos a modificar
+**Archivos a modificar**:
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/Index.tsx` | Remover guarda `!vegas.isActive`; agregar dependencia serializada de `vegasBets[0]` |
-| `src/components/bets/BetDashboard.tsx` | Merge siempre tome `variant` y config values del `betInst` |
+| `src/pages/Index.tsx` | Agregar `players.length` a deps del useEffect de sync |
+| `src/components/bets/NinesResultsCard.tsx` | Rediseñar completo: grid de tarjetas + popover hole-by-hole + ranking de ganancias |
 
