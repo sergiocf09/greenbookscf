@@ -241,15 +241,14 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       {/* Wolf Decision Panel — prominent at top */}
       {wolfEnabled && wolfConfig && players.length >= 4 && (() => {
         const wolfPlayerOrder = betConfig?.wolfSetup?.playerOrder;
-        const wolfPlayerId = wolfPlayerOrder && wolfPlayerOrder.length > 0
+        const regularWolfPlayerId = wolfPlayerOrder && wolfPlayerOrder.length > 0
           ? wolfPlayerOrder[(currentHole - 1) % wolfPlayerOrder.length]
           : displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? '';
         
-        // Hole 18 Redemption: override wolf to biggest loser, solo, ×3
+        // Hole 18 Redemption: identify biggest loser as candidate (optional)
         const isRedemptionHole = currentHole === 18 && betConfig?.wolfSetup?.hole18Redemption;
-        let redemptionPlayerId: string | null = null;
+        let redemptionCandidateId: string | null = null;
         if (isRedemptionHole && wolfHoleStates) {
-          // Calculate P&L through 17 holes
           const pnl = new Map<string, number>();
           players.forEach(p => pnl.set(p.id, 0));
           wolfHoleStates.filter(s => s.holeNumber <= 17 && s.result && s.result !== 'tied').forEach(state => {
@@ -265,24 +264,29 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           });
           const sorted = [...pnl.entries()].sort((a, b) => a[1] - b[1]);
           if (sorted.length >= 2 && sorted[0][1] < sorted[1][1]) {
-            redemptionPlayerId = sorted[0][0];
+            redemptionCandidateId = sorted[0][0];
           }
         }
-        const effectiveWolfId = redemptionPlayerId ?? wolfPlayerId;
+
+        // Don't auto-override; pass candidate info so the panel can offer the choice
+        const existingState = wolfHoleStates?.find(s => s.holeNumber === currentHole);
+        const effectiveWolfId = existingState?.wolfPlayerId ?? regularWolfPlayerId;
 
         return (
           <WolfDecisionPanel
             holeNumber={currentHole}
             players={displayPlayers}
             wolfPlayerId={effectiveWolfId}
-            holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
+            holeState={existingState ?? null}
             wolfConfig={wolfConfig}
             isOrganizer={isOrganizer ?? false}
             currentUserId={currentUserId ?? null}
             onDecision={async (partnerIds, wentSolo) => {
               await onWolfDecision?.(currentHole, partnerIds, wentSolo);
             }}
-            isRedemption={!!redemptionPlayerId}
+            isRedemption={false}
+            redemptionCandidateId={redemptionCandidateId ?? undefined}
+            regularWolfPlayerId={regularWolfPlayerId}
           />
         );
       })()}
