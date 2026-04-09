@@ -541,6 +541,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 </div>
               );
             })()}
+          </div>
         </BetSection>
       )}
     </div>
