@@ -391,21 +391,26 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       )}
 
       {/* Vegas — only if enabled */}
-      {(config.vegasBets?.length ?? 0) > 0 && (
+      {(config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)) && (
       <BetSection
         id="vegas" title="Las Vegas"
         description="Combina scores en números de 2 dígitos"
-        enabled={(config.vegasBets?.length ?? 0) > 0}
+        enabled={config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
           if (enabled) {
-            const primera: VegasBetInstance = {
-              id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-              birdieMultiplier: false, variant: 'fixed',
-              playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-            };
-            onUpdateConfig({ ...config, vegasBets: [primera] });
+            const hasBets = (config.vegasBets?.length ?? 0) > 0;
+            if (hasBets) {
+              onUpdateConfig({ ...config, vegasEnabled: true });
+            } else {
+              const primera: VegasBetInstance = {
+                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+                birdieMultiplier: false, variant: 'fixed',
+                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+              };
+              onUpdateConfig({ ...config, vegasBets: [primera], vegasEnabled: true });
+            }
           } else {
-            onUpdateConfig({ ...config, vegasBets: [] });
+            onUpdateConfig({ ...config, vegasEnabled: false });
           }
           onToggleSection('vegas', enabled);
         }}
