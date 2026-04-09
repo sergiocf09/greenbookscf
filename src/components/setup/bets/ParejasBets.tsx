@@ -139,6 +139,10 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     };
     onUpdateConfig({
       ...config,
+      carritos: {
+        ...config.carritos,
+        enabled: true,
+      },
       carritosTeams: [...(config.carritosTeams || []), newTeam],
     });
   };
