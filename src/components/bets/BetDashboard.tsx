@@ -2559,7 +2559,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           break;
                         }
                       }
-                      if (!matchOver && allDetails.every(d => d !== null)) {
+                      if (!matchOver && scoredCount === allDetails.length) {
                         matchResult = cumBal === 0 ? 'E' : `${Math.abs(cumBal)} Up`;
                       }
                       const statusLabel = matchOver ? matchResult :
