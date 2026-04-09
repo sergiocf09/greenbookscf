@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
@@ -50,6 +51,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   onUpdateBet,
   onUpdateConfig,
 }) => {
+  const { profile } = useAuth();
   const playerOptions = useMemo(
     () => players.map((p) => ({ value: p.id, label: p.name })),
     [players]
