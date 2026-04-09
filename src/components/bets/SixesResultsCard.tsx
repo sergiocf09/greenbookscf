@@ -191,8 +191,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                       diff === 0 && hd.holeWinner && 'bg-muted border-border text-muted-foreground',
                       !hd.holeWinner && 'bg-muted/50 border-border/50 text-muted-foreground',
                     )}>
-                      <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-                      <span className="text-[11px] font-bold tabular-nums">
+                      <span className="text-[10px] text-muted-foreground">{hd.holeNumber}</span>
+                      <span className="text-xs font-bold tabular-nums">
                         {!hd.holeWinner ? '–' : diff > 0 ? `+${diff}` : `${diff}`}
                       </span>
                     </div>
