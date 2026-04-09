@@ -38,6 +38,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   onDecision,
   isRedemption,
   redemptionCandidateId,
+  redemptionCandidateLoss,
   regularWolfPlayerId,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
