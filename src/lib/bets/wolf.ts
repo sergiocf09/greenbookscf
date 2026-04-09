@@ -77,7 +77,15 @@ export const isWolfCarryoverHole = (
 // Monto efectivo = base × (1 + carryoverHoles) × (2 si Lone Wolf)
 export const computeEffectiveAmount = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean
-): number => config.amountPerHole * (1 + carryoverHoles) * (wentSolo ? 2 : 1);
+): number => {
+  const redemptionMultiplier = (wentSolo && carryoverHoles === -1) ? 3 : 1; // -1 sentinel = redemption
+  return config.amountPerHole * (1 + Math.max(carryoverHoles, 0)) * (wentSolo ? 2 : 1) * (redemptionMultiplier > 1 ? 1.5 : 1);
+};
+
+// Effective amount for redemption hole (×3, solo)
+export const computeRedemptionAmount = (
+  config: WolfConfig
+): number => config.amountPerHole * 3;
 
 // Motor principal: genera BetSummary[] desde holeStates resueltos
 export const calculateWolfBets = (

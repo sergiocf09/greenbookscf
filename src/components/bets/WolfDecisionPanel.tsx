@@ -33,6 +33,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   isOrganizer,
   currentUserId,
   onDecision,
+  isRedemption,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);

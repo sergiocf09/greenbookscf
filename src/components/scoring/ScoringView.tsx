@@ -239,20 +239,53 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Wolf Decision Panel — prominent at top */}
-      {wolfEnabled && wolfConfig && players.length >= 4 && (
-        <WolfDecisionPanel
-          holeNumber={currentHole}
-          players={displayPlayers}
-          wolfPlayerId={displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? ''}
-          holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
-          wolfConfig={wolfConfig}
-          isOrganizer={isOrganizer ?? false}
-          currentUserId={currentUserId ?? null}
-          onDecision={async (partnerIds, wentSolo) => {
-            await onWolfDecision?.(currentHole, partnerIds, wentSolo);
-          }}
-        />
-      )}
+      {wolfEnabled && wolfConfig && players.length >= 4 && (() => {
+        const wolfPlayerOrder = betConfig?.wolfSetup?.playerOrder;
+        const wolfPlayerId = wolfPlayerOrder && wolfPlayerOrder.length > 0
+          ? wolfPlayerOrder[(currentHole - 1) % wolfPlayerOrder.length]
+          : displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? '';
+        
+        // Hole 18 Redemption: override wolf to biggest loser, solo, ×3
+        const isRedemptionHole = currentHole === 18 && betConfig?.wolfSetup?.hole18Redemption;
+        let redemptionPlayerId: string | null = null;
+        if (isRedemptionHole && wolfHoleStates) {
+          // Calculate P&L through 17 holes
+          const pnl = new Map<string, number>();
+          players.forEach(p => pnl.set(p.id, 0));
+          wolfHoleStates.filter(s => s.holeNumber <= 17 && s.result && s.result !== 'tied').forEach(state => {
+            const amount = state.effectiveAmount ?? wolfConfig.amountPerHole;
+            const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
+            const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
+            const winners = state.result === 'won' ? wolfTeam : rivalTeam;
+            const losers = state.result === 'won' ? rivalTeam : wolfTeam;
+            winners.forEach(w => losers.forEach(l => {
+              pnl.set(w, (pnl.get(w) ?? 0) + amount);
+              pnl.set(l, (pnl.get(l) ?? 0) - amount);
+            }));
+          });
+          const sorted = [...pnl.entries()].sort((a, b) => a[1] - b[1]);
+          if (sorted.length >= 2 && sorted[0][1] < sorted[1][1]) {
+            redemptionPlayerId = sorted[0][0];
+          }
+        }
+        const effectiveWolfId = redemptionPlayerId ?? wolfPlayerId;
+
+        return (
+          <WolfDecisionPanel
+            holeNumber={currentHole}
+            players={displayPlayers}
+            wolfPlayerId={effectiveWolfId}
+            holeState={wolfHoleStates?.find(s => s.holeNumber === currentHole) ?? null}
+            wolfConfig={wolfConfig}
+            isOrganizer={isOrganizer ?? false}
+            currentUserId={currentUserId ?? null}
+            onDecision={async (partnerIds, wentSolo) => {
+              await onWolfDecision?.(currentHole, partnerIds, wentSolo);
+            }}
+            isRedemption={!!redemptionPlayerId}
+          />
+        );
+      })()}
 
       {/* Player Score Inputs — wrapped in relative container for floating Oyes */}
       <div className="relative">
