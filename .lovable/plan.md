@@ -1,35 +1,54 @@
 
 
-## Plan: Desambiguación en Carritos/Foursomes + Ampliar grid de hoyos en Foursomes
+## Plan: Fix Wolf scoring mode change + tooltip detail
 
-### Cambios
+### Problem
+1. **Stale results after mode change**: When the scoring mode is changed (e.g., from `stroke` to `lowBall`), the hole results stored in DB (`state.result`) are from the old mode. Both `calculateWolfBets` and `buildWolfHoleDetails` use the stale `state.result` instead of re-resolving with the current scoring mode.
+2. **Missing tooltip detail**: In `lowBall` mode, the tooltip doesn't show which low balls were compared (e.g., "BB: Empate 5 vs 5"). In `stroke` mode, it doesn't show the sum breakdown (e.g., "5+5=10 vs 5+6=11"). Only `lowHighBall` mode currently shows the BB/BA detail.
 
-**1. `src/components/bets/CarritosResultsCard.tsx`** — Desambiguación de nombres
+### Changes
 
-- Importar `disambiguateShortNames` de `playerInput.ts`
-- Crear un `shortNames` map con `useMemo` usando todos los players
-- **TeamHoleGrid** (líneas 31, 37, 41, 47): Reemplazar `name.split(' ')[0]` por lookup en `shortNames`
-- **Línea de nombres** (líneas 290, 294): Reemplazar `formatPlayerName(p.name).split(' ')[0]` por lookup en `shortNames`
-- Pasar `shortNames` map como prop a `TeamHoleGrid` o resolverlo inline
+**File 1: `src/lib/bets/wolf.ts`**
 
-**2. `src/components/bets/BilateralDetail.tsx`** — Desambiguación en tooltips de Presiones, Skins y Putts
+- **`calculateWolfBets`**: Add `scores`, `course` parameters. For each hole state, re-resolve the result using `resolveWolfHole` with the current config (scoring mode). Use the fresh `resolved.winner` instead of `state.result` to determine winners/losers.
+- **`buildWolfHoleDetails`**: Already calls `resolveWolfHole` but ignores the resolved `winner`. Change `result` in the return to use the mapped resolved winner (`wolf`→`won`, `rival`→`lost`, `tied`→`tied`) instead of `state.result`.
 
-- Ya importa `disambiguateShortNames`; crear `shortNames` map con `useMemo`
-- Línea 2545: `{player.initials} vs {rival.initials}` → usar short names desambiguados
-- Línea 2643-2645 (Skins final): `{player.initials}` / `{rival.initials}` → short names
-- Línea 2675 (Putts): `{player.initials} vs {rival.initials}` → short names
-- Línea 1853-1856 (Rayas conflict): `{player.initials}` / `{rival.initials}` → short names
+**File 2: `src/components/bets/WolfResultsCard.tsx`**
 
-**3. `src/components/bets/BilateralDetail.tsx`** — Ampliar grid de hoyos en Foursomes
+- Update `calculateWolfBets` call to pass `scores, course`.
+- Update the tooltip "Extra info" section to show breakdown for ALL scoring modes:
+  - **lowBall**: Show "Bola Baja: Loba/Rival/Empate" with the actual low ball values (e.g., "5 vs 5")
+  - **stroke**: Show "Score Neto: X vs Y" with per-player sums
+  - **lowHighBall**: Keep existing BB + BA display (already works)
 
-- Líneas 2552, 2569: El grid usa `grid-cols-9 gap-0.5` con `w-full h-7 text-[9px]`
-- Ampliar: cambiar `gap-0.5` → `gap-1`, `h-7` → `h-8`, `text-[9px]` → `text-[10px]` para que los números con presiones (ej: `+8+5+1`) no se sobrepongan
-- Considerar `overflow-hidden text-ellipsis` como fallback si el contenido es muy largo
+**File 3: `src/components/bets/BetDashboard.tsx`**
 
-### Archivos
+- Update `calculateWolfBets` call to pass `scores, course` (the `wolfBetSummaries` useMemo).
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/bets/CarritosResultsCard.tsx` | Desambiguación en TeamHoleGrid + línea de nombres |
-| `src/components/bets/BilateralDetail.tsx` | Desambiguación en tooltips + ampliar grid hoyos Foursomes |
+### Detail on re-resolution logic
+
+In `calculateWolfBets`, for each `state`:
+```
+const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
+const rivalTeam = participantPlayers.filter(...);
+const resolved = resolveWolfHole(wolfTeam, rivalTeam.map(p => p.id), state.holeNumber, players, scores, course, config);
+// Use resolved.winner instead of state.result
+const result = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+```
+
+This ensures that changing the scoring mode instantly recalculates all results without needing to re-save each hole decision.
+
+### Tooltip enhancement
+
+For `lowBall` mode, after the player scores grid, add:
+```
+BB: {lowBallWinner label} · {wolfLowBall} vs {rivalLowBall}
+```
+
+For `stroke` mode, add:
+```
+Neto: {wolfTeamTotal} vs {rivalTeamTotal}
+```
+
+These use `detail.teamWolfScore` and `detail.teamRivalScore` which are already computed by `resolveWolfHole`.
 
