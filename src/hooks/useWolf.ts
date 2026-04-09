@@ -50,13 +50,15 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
   const saveConfig = useCallback(async (cfg: Omit<WolfConfig, 'roundId'>) => {
     if (!roundId) return;
     await supabase.from('wolf_config').upsert({
-      round_id: roundId,
+      round_id:        roundId,
       amount_per_hole: cfg.amountPerHole,
-      scoring_mode: cfg.scoringMode,
-      use_handicap: cfg.useHandicap,
-      timing: cfg.timing,
-      carryover: cfg.carryover,
-    }, { onConflict: 'round_id' });
+      scoring_mode:    cfg.scoringMode,
+      use_handicap:    cfg.useHandicap,
+      timing:          cfg.timing,
+      carryover:       cfg.carryover,
+      player_order:    cfg.playerOrder ?? [],
+      participant_ids: cfg.participantIds ?? [],
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 
