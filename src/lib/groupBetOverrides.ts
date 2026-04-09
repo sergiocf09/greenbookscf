@@ -30,9 +30,10 @@ export const resolveConfigForGroup = (
     const override = overrides[key];
     if (!override) continue;
     
-    const base = config[key];
+    const base = config[key as keyof BetConfig];
     if (base && typeof base === 'object' && !Array.isArray(base)) {
-      (resolved as any)[key] = { ...base, ...override };
+      const merged = Object.assign({}, base, override);
+      (resolved as any)[key] = merged;
     }
   }
 

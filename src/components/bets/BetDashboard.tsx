@@ -3160,7 +3160,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).length > 0 && (() => {
+      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) && (() => {
         const hookCfg = sixesHook.sixesConfig;
         const betInst = effectiveBetConfig.sixesBets?.[0];
         const hookHasEmptySets = !hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id));
@@ -3180,7 +3180,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).length > 0 && (() => {
+      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) && (() => {
         const hookCfg = vegasHook.vegasConfig;
         const betInst = effectiveBetConfig.vegasBets?.[0];
         const hookHasEmptyPlayers = !hookCfg.playerAId || !hookCfg.playerBId || !hookCfg.playerCId || !hookCfg.playerDId;

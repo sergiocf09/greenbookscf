@@ -326,20 +326,25 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       )}
 
       {/* Sixes — only if enabled */}
-      {(config.sixesBets?.length ?? 0) > 0 && (
+      {(config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)) && (
       <BetSection
         id="sixes" title="Sixes"
         description="3 sets de 6 hoyos con cambio de parejas"
-        enabled={(config.sixesBets?.length ?? 0) > 0}
+        enabled={config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
           if (enabled) {
-            const primera: SixesBetInstance = {
-              id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
-              amount: 100, useHandicap: true, sets: [],
-            };
-            onUpdateConfig({ ...config, sixesBets: [primera] });
+            const hasBets = (config.sixesBets?.length ?? 0) > 0;
+            if (hasBets) {
+              onUpdateConfig({ ...config, sixesEnabled: true });
+            } else {
+              const primera: SixesBetInstance = {
+                id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
+                amount: 100, useHandicap: true, sets: [],
+              };
+              onUpdateConfig({ ...config, sixesBets: [primera], sixesEnabled: true });
+            }
           } else {
-            onUpdateConfig({ ...config, sixesBets: [] });
+            onUpdateConfig({ ...config, sixesEnabled: false });
           }
           onToggleSection('sixes', enabled);
         }}
@@ -386,21 +391,26 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       )}
 
       {/* Vegas — only if enabled */}
-      {(config.vegasBets?.length ?? 0) > 0 && (
+      {(config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)) && (
       <BetSection
         id="vegas" title="Las Vegas"
         description="Combina scores en números de 2 dígitos"
-        enabled={(config.vegasBets?.length ?? 0) > 0}
+        enabled={config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
           if (enabled) {
-            const primera: VegasBetInstance = {
-              id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-              birdieMultiplier: false, variant: 'fixed',
-              playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-            };
-            onUpdateConfig({ ...config, vegasBets: [primera] });
+            const hasBets = (config.vegasBets?.length ?? 0) > 0;
+            if (hasBets) {
+              onUpdateConfig({ ...config, vegasEnabled: true });
+            } else {
+              const primera: VegasBetInstance = {
+                id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+                birdieMultiplier: false, variant: 'fixed',
+                playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+              };
+              onUpdateConfig({ ...config, vegasBets: [primera], vegasEnabled: true });
+            }
           } else {
-            onUpdateConfig({ ...config, vegasBets: [] });
+            onUpdateConfig({ ...config, vegasEnabled: false });
           }
           onToggleSection('vegas', enabled);
         }}

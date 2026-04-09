@@ -79,10 +79,18 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       const updated = setGroupBetOverride(config, userGroupId, betType, updates);
       safeOnChange(updated);
     } else {
-      safeOnChange({
-        ...config,
-        [betType]: { ...config[betType], ...updates },
-      });
+      const current = config[betType];
+      if (current && typeof current === 'object' && !Array.isArray(current)) {
+        safeOnChange({
+          ...config,
+          [betType]: { ...current, ...updates },
+        });
+      } else {
+        safeOnChange({
+          ...config,
+          [betType]: updates,
+        });
+      }
     }
   };
 

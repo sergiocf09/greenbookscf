@@ -421,7 +421,7 @@ const NinesBetCard: React.FC<{
   onRemove: () => void;
 }> = ({ index, bet, players, onUpdate, onRemove }) => {
   const selectedIds = bet.playerIds ?? [];
-  const maxPlayers = 4;
+  const maxPlayers = 3;
   const minPlayers = 3;
 
   const toggle = (playerId: string) => {
@@ -446,7 +446,7 @@ const NinesBetCard: React.FC<{
       <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
       <div className="space-y-2">
-        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3 o 4)</Label>
+        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3)</Label>
         <div className="grid grid-cols-2 gap-1.5">
           {players.map(p => {
             const isSelected = selectedIds.includes(p.id);
@@ -472,9 +472,6 @@ const NinesBetCard: React.FC<{
         )}
         {selectedIds.length === 3 && (
           <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
-        )}
-        {selectedIds.length === 4 && (
-          <p className="text-[9px] text-muted-foreground">4 jugadores: rota quien descansa hoyo a hoyo (3 pts)</p>
         )}
       </div>
     </div>
