@@ -26,6 +26,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
           carryover:      cfg.carryover,
           playerOrder:    (cfg as any).player_order ?? [],
           participantIds: (cfg as any).participant_ids ?? [],
+          playerHandicaps: (cfg as any).player_handicaps ?? [],
         });
       } else {
         setWolfConfig(null);
