@@ -1467,28 +1467,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
-  // HISTORICAL: Use snapshotBalances (immutable source of truth). LIVE: Use calculated values.
-  // getSortedPlayersForDisplay uses getCorrectedBilateralBalance inline to avoid TDZ
-  const getSortedPlayersForDisplay = (playersToSort: Player[]) => {
-    return [...playersToSort].sort((a, b) => {
-      const snapA = isHistorical ? getSnapshotTotalBalance(a.id) : null;
-      const snapB = isHistorical ? getSnapshotTotalBalance(b.id) : null;
-      const balanceA = snapA !== null ? snapA : (() => {
-        const rivalIds = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id) + getWolfBalanceForPlayer(a.id) + getSixesBalanceForPlayer(a.id) + getVegasBalanceForPlayer(a.id);
-      })();
-      const balanceB = snapB !== null ? snapB : (() => {
-        const rivalIds = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id) + getWolfBalanceForPlayer(b.id) + getSixesBalanceForPlayer(b.id) + getVegasBalanceForPlayer(b.id);
-      })();
-      return balanceB - balanceA;
-    });
-  };
-  
-  // For verification calculation, still use all players from current group
-  const sortedPlayers = useMemo(() => {
-    return getSortedPlayersForDisplay(players);
-  }, [players, betSummaries, allCarritosResults, balanceMapVersion]);
+
 
   // Get player abbreviation with disambiguation
   const disambiguatedAbbrs = useMemo(() => disambiguateInitials(allPlayersForCalculations), [allPlayersForCalculations]);
