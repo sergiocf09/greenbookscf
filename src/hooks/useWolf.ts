@@ -141,7 +141,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
                 holes: courseHoles.map(h => ({
                   number: h.hole_number,
                   par: h.par,
-                  strokeIndex: h.stroke_index,
+                  handicapIndex: h.stroke_index,
                   yards: h.yards_white ?? 0,
                 })),
               };
