@@ -2546,10 +2546,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       let cumBal = 0;
                       let matchOver = false;
                       let matchResult = '';
+                      let scoredCount = 0;
                       for (let i = 0; i < allDetails.length; i++) {
                         const d = allDetails[i];
-                        if (d) cumBal += d.net;
-                        const remaining = allDetails.length - (i + 1);
+                        if (!d) break; // Stop at first unscored hole
+                        cumBal += d.net;
+                        scoredCount++;
+                        const remaining = allDetails.length - scoredCount;
                         if (Math.abs(cumBal) > remaining && remaining > 0) {
                           matchOver = true;
                           matchResult = `${Math.abs(cumBal)} & ${remaining}`;
