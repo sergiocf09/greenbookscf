@@ -310,8 +310,8 @@ function renderHolePill(
       myDiff < 0 && 'bg-red-500/15 border-red-500/30 text-red-700',
       myDiff === 0 && 'bg-muted border-border text-muted-foreground',
     )}>
-      <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-      <span className="text-[10px] font-bold tabular-nums">{myDiff > 0 ? '+' : ''}{myDiff}</span>
+       <span className="text-[10px] text-muted-foreground">{hd.holeNumber}</span>
+       <span className="text-xs font-bold tabular-nums">{myDiff > 0 ? '+' : ''}{myDiff}</span>
     </div>
   );
 
