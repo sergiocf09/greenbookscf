@@ -85,7 +85,7 @@ const resolveVegasHole = (
   else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
 
   const diff = n2e - n1e;
-  const amountThisHole = Math.abs(diff) * config.valuePerPoint;
+  const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
 
   return {
