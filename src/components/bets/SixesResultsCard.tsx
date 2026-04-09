@@ -127,7 +127,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Three-column set layout */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5 -mx-1">
           {setResults.map(sr => {
             const side = getTeamSide(sr);
             const myTeam = side === 'team1' ? sr.team1 : sr.team2;
@@ -141,7 +141,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
               <button
                 key={sr.setNumber}
                 className={cn(
-                  'rounded-lg border p-2 text-left transition-colors',
+                  'rounded-lg border px-1.5 py-2 text-left transition-colors w-full',
                   isExpanded ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30',
                 )}
                 onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
@@ -149,11 +149,11 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                   H{SET_LABELS[sr.setNumber]}
                 </div>
-                <div className="text-xs truncate text-center font-medium">
+                <div className="text-[11px] truncate text-center font-medium">
                   {getName(myTeam[0])}/{getName(myTeam[1])}
                 </div>
                 <div className="text-[10px] text-muted-foreground text-center">vs</div>
-                <div className="text-xs truncate text-center font-medium">
+                <div className="text-[11px] truncate text-center font-medium">
                   {getName(rivalTeam[0])}/{getName(rivalTeam[1])}
                 </div>
                 <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(diff))}>

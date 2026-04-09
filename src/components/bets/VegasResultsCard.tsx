@@ -146,7 +146,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
         {isRotating ? (
           /* ── Rotating variant: 3 clickable blocks (like Sixes) ── */
           <>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 -mx-1">
               {setResults.map(sr => {
                 const myT1 = isTeam1(sr);
                 const srMyTeam = myT1 ? sr.team1 : sr.team2;
@@ -158,7 +158,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                   <button
                     key={sr.setNumber}
                     className={cn(
-                      'rounded-lg border p-2 text-left transition-colors',
+                      'rounded-lg border px-1.5 py-2 text-left transition-colors w-full',
                       isExpanded ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30',
                     )}
                     onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
@@ -166,11 +166,11 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                      <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                        H{SET_LABELS[sr.setNumber]}
                      </div>
-                     <div className="text-xs truncate text-center font-medium">
+                     <div className="text-[11px] truncate text-center font-medium">
                        {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
                      </div>
                      <div className="text-[10px] text-muted-foreground text-center">vs</div>
-                     <div className="text-xs truncate text-center font-medium">
+                     <div className="text-[11px] truncate text-center font-medium">
                        {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
                      </div>
                      <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
