@@ -1919,7 +1919,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       })
                       // In historical mode, hide rivals with zero balance (no actual bets)
                       .filter(({ vsTotalBalance }) => !isHistorical || vsTotalBalance !== 0)
-                      .map(({ other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx }) => (
+                      .map(({ other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsWolfBalance, vsSixesBalance, vsVegasBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx }) => (
                           <div 
                             key={other.id} 
                             className={cn(
