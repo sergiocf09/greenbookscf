@@ -81,6 +81,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   // Use first set for team names (fixed variant)
   const sr0 = setResults[0];
   if (!sr0) return null;
+  const isRotating = vegasConfig.variant === 'rotating' && setResults.length === 3;
   const myTeam1 = isTeam1(sr0);
   const myTeam = myTeam1 ? sr0.team1 : sr0.team2;
   const rivalTeam = myTeam1 ? sr0.team2 : sr0.team1;
@@ -117,69 +118,128 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-2">
-        {/* Team names row */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium truncate">
-            {getName(myTeam[0])} / {getName(myTeam[1])}
-          </span>
-          <span className="text-muted-foreground text-xs mx-2">vs</span>
-          <span className="font-medium truncate text-right">
-            {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
-          </span>
-        </div>
+        {isRotating ? (
+          /* ── Rotating variant: 3-column Sixes-style layout ── */
+          <>
+            <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
+              <div className="flex items-center justify-between">
+                <div className="grid grid-cols-3 gap-1 flex-1 text-center">
+                  {setResults.map(sr => {
+                    const myT1 = isTeam1(sr);
+                    const acc = getSetAccum(sr);
+                    return (
+                      <div key={sr.setNumber} className="text-[10px]">
+                        <div className="font-semibold text-primary">H{sr.startHole}–{sr.endHole}</div>
+                        <div className="text-[9px] text-muted-foreground truncate">
+                          {getName(sr.team1[0])}/{getName(sr.team1[1])}
+                        </div>
+                        <div className="text-[9px] text-muted-foreground truncate">
+                          vs {getName(sr.team2[0])}/{getName(sr.team2[1])}
+                        </div>
+                        <span className={cn('font-bold tabular-nums text-xs', getNetTone(acc.total))}>
+                          {acc.total > 0 ? '+' : ''}{acc.total}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                    <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
+                    <span className="sr-only">Ver detalle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
 
-        {/* Collapsible detail */}
-        <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
-              <span className={cn('font-semibold', getNetTone(accum.front))}>
-                F9 {accum.front > 0 ? '+' : ''}{accum.front}
+              <CollapsibleContent className="mt-2 space-y-2">
+                {setResults.map((sr) => {
+                  const myT1 = isTeam1(sr);
+                  const srMyTeam = myT1 ? sr.team1 : sr.team2;
+                  const srRivalTeam = myT1 ? sr.team2 : sr.team1;
+                  return (
+                    <div key={sr.setNumber} className="bg-muted/30 rounded-lg p-2 space-y-1">
+                      <div className="text-[10px] font-semibold text-primary text-center">
+                        Set {sr.setNumber} · H{sr.startHole}–{sr.endHole}: {getName(sr.team1[0])}/{getName(sr.team1[1])} vs {getName(sr.team2[0])}/{getName(sr.team2[1])}
+                      </div>
+                      <div className="grid grid-cols-6 gap-1">
+                        {sr.holeDetails.map(hd => {
+                          const myDiff = myT1 ? hd.diff : -hd.diff;
+                          return renderHolePill(hd, myDiff, myT1, srMyTeam, srRivalTeam, getName, vegasConfig);
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          </>
+        ) : (
+          /* ── Fixed variant: original single-pair layout ── */
+          <>
+            {/* Team names row */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium truncate">
+                {getName(myTeam[0])} / {getName(myTeam[1])}
               </span>
-              <span className={cn('font-semibold', getNetTone(accum.back))}>
-                B9 {accum.back > 0 ? '+' : ''}{accum.back}
-              </span>
-              <span className={cn('font-bold', getNetTone(accum.total))}>
-                T {accum.total > 0 ? '+' : ''}{accum.total}
+              <span className="text-muted-foreground text-xs mx-2">vs</span>
+              <span className="font-medium truncate text-right">
+                {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
               </span>
             </div>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
-                <span className="sr-only">Ver detalle</span>
-              </Button>
-            </CollapsibleTrigger>
-          </div>
 
-          <CollapsibleContent className="mt-2">
-            {setResults.map((sr) => {
-              const myT1 = isTeam1(sr);
-              const holesCount = sr.endHole - sr.startHole + 1;
-              
-              return (
-                <div key={sr.setNumber || 'all'} className="bg-muted/30 rounded-lg p-2 space-y-1">
-                  <div className="text-[10px] text-muted-foreground text-center">
-                    Toca en un hoyo para ver el desglose
-                  </div>
-                  <div className={cn('grid gap-1', holesCount <= 9 ? 'grid-cols-9' : 'grid-cols-9')}>
-                    {/* Front 9 */}
-                    {sr.holeDetails.filter(hd => hd.holeNumber <= 9).map(hd => {
-                      const myDiff = myT1 ? hd.diff : -hd.diff;
-                      return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
-                    })}
-                  </div>
-                  {sr.holeDetails.some(hd => hd.holeNumber > 9) && (
-                    <div className="grid grid-cols-9 gap-1 mt-1">
-                      {sr.holeDetails.filter(hd => hd.holeNumber > 9).map(hd => {
-                        const myDiff = myT1 ? hd.diff : -hd.diff;
-                        return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
-                      })}
-                    </div>
-                  )}
+            {/* Collapsible detail */}
+            <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                  <span className={cn('font-semibold', getNetTone(accum.front))}>
+                    F9 {accum.front > 0 ? '+' : ''}{accum.front}
+                  </span>
+                  <span className={cn('font-semibold', getNetTone(accum.back))}>
+                    B9 {accum.back > 0 ? '+' : ''}{accum.back}
+                  </span>
+                  <span className={cn('font-bold', getNetTone(accum.total))}>
+                    T {accum.total > 0 ? '+' : ''}{accum.total}
+                  </span>
                 </div>
-              );
-            })}
-          </CollapsibleContent>
-        </Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                    <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
+                    <span className="sr-only">Ver detalle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+
+              <CollapsibleContent className="mt-2">
+                {setResults.map((sr) => {
+                  const myT1 = isTeam1(sr);
+                  
+                  return (
+                    <div key={sr.setNumber || 'all'} className="bg-muted/30 rounded-lg p-2 space-y-1">
+                      <div className="text-[10px] text-muted-foreground text-center">
+                        Toca en un hoyo para ver el desglose
+                      </div>
+                      <div className={cn('grid gap-1', 'grid-cols-9')}>
+                        {/* Front 9 */}
+                        {sr.holeDetails.filter(hd => hd.holeNumber <= 9).map(hd => {
+                          const myDiff = myT1 ? hd.diff : -hd.diff;
+                          return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                        })}
+                      </div>
+                      {sr.holeDetails.some(hd => hd.holeNumber > 9) && (
+                        <div className="grid grid-cols-9 gap-1 mt-1">
+                          {sr.holeDetails.filter(hd => hd.holeNumber > 9).map(hd => {
+                            const myDiff = myT1 ? hd.diff : -hd.diff;
+                            return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
+          </>
+        )}
       </CardContent>
     </Card>
   );
