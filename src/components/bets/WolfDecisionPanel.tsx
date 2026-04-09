@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Player, WolfConfig, WolfHoleState } from '@/types/golf';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
   const [redemptionMode, setRedemptionMode] = useState<'pending' | 'accepted' | 'declined'>('pending');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const wolfPlayer = players.find(p => p.id === wolfPlayerId);
   if (!wolfPlayer) return null;
@@ -74,7 +76,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
       <div className="bg-[hsl(155,100%,15%)] text-[hsl(50,95%,55%)] px-3 py-2 flex items-center gap-2">
         <span>🐺</span>
         <PlayerAvatar
-          initials={wolfPlayer.initials}
+          initials={disambiguated.get(wolfPlayerId) || wolfPlayer.initials}
           background={wolfPlayer.color}
           size="sm"
           isLoggedInUser={wolfPlayer.profileId === currentUserId}
@@ -222,7 +224,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   if (!p) return null;
                   return (
                     <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                      <PlayerAvatar initials={p.initials} background={p.color} size="xs" />
+                      <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
                       {p.name.split(' ')[0]}
                     </Badge>
                   );
