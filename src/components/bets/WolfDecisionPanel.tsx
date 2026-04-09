@@ -73,10 +73,17 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
         />
         <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span>
         <span className="text-xs opacity-80">— La Loba</span>
+        {isRedemption && (
+          <Badge variant="destructive" className="ml-auto text-[9px]">
+            Recuperación ×3
+          </Badge>
+        )}
       </div>
       <div className="px-3 pb-1 bg-[hsl(155,100%,15%)]">
         <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
-          ${fmtMoney(wolfConfig.amountPerHole)} por hoyo · {timingLabels[wolfConfig.timing] ?? wolfConfig.timing}
+          {isRedemption
+            ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · Solo obligatorio`
+            : `$${fmtMoney(wolfConfig.amountPerHole)} por hoyo · ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
         </p>
       </div>
 
