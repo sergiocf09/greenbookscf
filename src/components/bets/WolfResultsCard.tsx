@@ -143,7 +143,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
         <PopoverTrigger asChild>{pill}</PopoverTrigger>
         <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
           <div className="space-y-1">
-            <p className="text-xs font-medium">
+           <p className="text-xs font-medium">
               Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
             </p>
             <div className="flex justify-between text-[10px] text-muted-foreground">
