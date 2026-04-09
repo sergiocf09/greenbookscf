@@ -140,6 +140,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   }, [bets, basePlayerId, activePlayers, scores, ninesConfig, course]);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const disambiguated = useMemo(() => disambiguateInitials(activePlayers), [activePlayers]);
 
   const hasInsufficientPlayers = ninesConfig.playerIds.length < 3 || ninesConfig.playerIds.some(id => !id || id === '');
 
