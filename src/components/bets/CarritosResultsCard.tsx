@@ -373,6 +373,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
+                          shortNames={shortNames}
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
@@ -435,6 +436,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
+                          shortNames={shortNames}
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
