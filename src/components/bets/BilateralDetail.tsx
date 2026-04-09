@@ -674,17 +674,21 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Presiones
     if (bothParticipate(undefined, 'pressures')) {
+      const isContinuaMatch = !!(config.pressures?.continua && config.pressures?.onlyMatch);
+      const pressureSegments = isContinuaMatch
+        ? [
+            { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
+          ]
+        : [
+            { label: 'Front 9', key: 'pressure_front', overrideLabel: 'Presiones Front' },
+            { label: 'Back 9', key: 'pressure_back', overrideLabel: 'Presiones Back' },
+            { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
+          ];
       groups.push({
         key: 'pressures',
         label: 'Presiones',
         configKey: 'pressures',
-        segments: [
-          // NOTE: override labels MUST match calculatePressureBets() betType strings (Spanish).
-          { label: 'Front 9', key: 'pressure_front', overrideLabel: 'Presiones Front' },
-          // Matches both "Presiones Back" and "Presiones Back (Carry x2+Match)" via includes().
-          { label: 'Back 9', key: 'pressure_back', overrideLabel: 'Presiones Back' },
-          { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
-        ],
+        segments: pressureSegments,
         getTotal: () => {
           const front = groupedSummaries['Presiones Front']?.total || 0;
           // Back can be regular or carry

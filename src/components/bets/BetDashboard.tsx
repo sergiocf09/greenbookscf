@@ -3189,7 +3189,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).length > 0 && (
+      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && (
         <NinesResultsCard
           players={allPlayersForCalculations}
           ninesConfig={ninesHook.ninesConfig}

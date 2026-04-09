@@ -248,7 +248,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                   </td>
                   {players.map(player => {
                     const cellOn = getParticipantIds(config, bet.key, players).includes(player.id);
-                    const canToggle = isBetEnabled(config, bet.key) && bet.key !== 'wolf' && (cellOn ? activeCount > 4 : true);
+                    const canToggle = isBetEnabled(config, bet.key) && (cellOn ? activeCount > 4 : true);
                     return (
                       <td key={player.id} className="p-1 text-center">
                         <button
