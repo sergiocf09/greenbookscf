@@ -1854,7 +1854,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     <span className="text-[10px] font-medium">Modalidad Oyes (este par)</span>
                                     {hasConflict && !pairOverride && (
                                       <span className="text-[9px] text-amber-600">
-                                        {player.initials}: {modalityA === 'sangron' ? 'Sangrón' : 'Acum'} · {rival.initials}: {modalityB === 'sangron' ? 'Sangrón' : 'Acum'}
+                                        {getShortName(player)}: {modalityA === 'sangron' ? 'Sangrón' : 'Acum'} · {getShortName(rival)}: {modalityB === 'sangron' ? 'Sangrón' : 'Acum'}
                                       </span>
                                     )}
                                   </div>
@@ -2544,19 +2544,19 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           {isContinua && segmentType === 'total' ? 'Match Play 18' : `Presiones ${segment.label}`}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
-                                          {player.initials} vs {rival.initials}
+                                          {getShortName(player)} vs {getShortName(rival)}
                                         </span>
                                       </div>
                                       {/* Holes grid — for continua total, show 2 rows of 9 */}
                                       {isContinua && segmentType === 'total' && pressureEvolution ? (
                                         <div className="space-y-1">
                                           {/* Front 9 row */}
-                                          <div className="grid grid-cols-9 gap-0.5">
+                                          <div className="grid grid-cols-9 gap-1">
                                             {pressureEvolution.front.holes.map((hole) => (
                                               <div key={hole.holeNumber} className="flex flex-col items-center">
                                                 <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
                                                 <div className={cn(
-                                                  'w-full h-7 flex items-center justify-center text-[9px] font-bold rounded',
+                                                  'w-full h-8 flex items-center justify-center text-[10px] font-bold rounded',
                                                   hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
                                                   hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                                                   hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
@@ -2568,12 +2568,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                             ))}
                                           </div>
                                           {/* Back 9 row */}
-                                          <div className="grid grid-cols-9 gap-0.5">
+                                          <div className="grid grid-cols-9 gap-1">
                                             {pressureEvolution.back.holes.map((hole) => (
                                               <div key={hole.holeNumber} className="flex flex-col items-center">
                                                 <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
                                                 <div className={cn(
-                                                  'w-full h-7 flex items-center justify-center text-[9px] font-bold rounded',
+                                                  'w-full h-8 flex items-center justify-center text-[10px] font-bold rounded',
                                                   hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
                                                   hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
                                                   hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
@@ -2642,9 +2642,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                       {/* Final result */}
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
-                                        <span>{player.initials}: <span className="font-bold text-green-600">{skinsSegmentData.totalSkinsA}</span></span>
+                                        <span>{getShortName(player)}: <span className="font-bold text-green-600">{skinsSegmentData.totalSkinsA}</span></span>
                                         <span className="text-muted-foreground">vs</span>
-                                        <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegmentData.totalSkinsB}</span></span>
+                                        <span>{getShortName(rival)}: <span className="font-bold text-destructive">{skinsSegmentData.totalSkinsB}</span></span>
                                         {skinsSegmentData.hasZapato && <span className="ml-1">🥾</span>}
                                       </div>
                                       {/* Legend */}
@@ -2674,7 +2674,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between gap-4">
                                           <span className="font-medium text-sm">Putts {segment.label}</span>
-                                          <span className="text-xs text-muted-foreground">{player.initials} vs {rival.initials}</span>
+                                          <span className="text-xs text-muted-foreground">{getShortName(player)} vs {getShortName(rival)}</span>
                                         </div>
                                         <div className="overflow-x-auto">
                                           <div className="min-w-max">
@@ -2713,9 +2713,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           </div>
                                         </div>
                                         <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
-                                          <span>{player.initials}: <span className={cn('font-bold', totalP < totalR ? 'text-green-600' : totalP > totalR ? 'text-destructive' : '')}>{totalP}</span></span>
+                                          <span>{getShortName(player)}: <span className={cn('font-bold', totalP < totalR ? 'text-green-600' : totalP > totalR ? 'text-destructive' : '')}>{totalP}</span></span>
                                           <span className="text-muted-foreground">vs</span>
-                                          <span>{rival.initials}: <span className={cn('font-bold', totalR < totalP ? 'text-green-600' : totalR > totalP ? 'text-destructive' : '')}>{totalR}</span></span>
+                                          <span>{getShortName(rival)}: <span className={cn('font-bold', totalR < totalP ? 'text-green-600' : totalR > totalP ? 'text-destructive' : '')}>{totalR}</span></span>
                                           <span className="text-muted-foreground">putts</span>
                                         </div>
                                       </div>
