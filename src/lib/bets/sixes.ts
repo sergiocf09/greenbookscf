@@ -108,7 +108,7 @@ export const calculateSixesBets = (
         if (hd.pointsTeam1 === hd.pointsTeam2) return;
         const winners = [...(hd.pointsTeam1 > hd.pointsTeam2 ? sr.team1 : sr.team2)];
         const losers  = [...(hd.pointsTeam1 > hd.pointsTeam2 ? sr.team2 : sr.team1)];
-        const half = (config.amount * Math.abs(hd.pointsTeam1 - hd.pointsTeam2)) / 2;
+        const half = (getSixesSetAmount(config, sr.setNumber) * Math.abs(hd.pointsTeam1 - hd.pointsTeam2)) / 2;
         losers.forEach(lId => winners.forEach(wId => {
           summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount: half, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });
           summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -half, segment: 'hole', holeNumber: hd.holeNumber, description: `Sixes H${hd.holeNumber} Set${sr.setNumber}` });

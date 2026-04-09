@@ -44,12 +44,16 @@ export const useSixes = (roundId: string | null, _players: Player[]) => {
   const saveConfig = useCallback(async (cfg: Omit<SixesConfig, 'roundId' | 'sets'>) => {
     if (!roundId) return;
     await supabase.from('sixes_config').upsert({
-      round_id: roundId,
-      scoring_mode: cfg.scoringMode,
-      cobro: cfg.cobro,
-      amount: cfg.amount,
-      use_handicap: cfg.useHandicap,
-    }, { onConflict: 'round_id' });
+      round_id:            roundId,
+      scoring_mode:        cfg.scoringMode,
+      cobro:               cfg.cobro,
+      amount:              cfg.amount,
+      use_handicap:        cfg.useHandicap,
+      use_per_set_amounts: (cfg as any).usePerSetAmounts ?? false,
+      set1_amount:         (cfg as any).set1Amount ?? null,
+      set2_amount:         (cfg as any).set2Amount ?? null,
+      set3_amount:         (cfg as any).set3Amount ?? null,
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 

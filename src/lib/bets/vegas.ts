@@ -120,7 +120,7 @@ export const buildVegasSetResults = (
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
     const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
-    const totalAmount = Math.abs(totalDiff) * config.valuePerPoint;
+    const totalAmount = details.reduce((acc, d) => acc + d.amountThisHole, 0);
     const winner: 'team1'|'team2'|'tied' = totalDiff > 0 ? 'team1' : totalDiff < 0 ? 'team2' : 'tied';
     return { setNumber: s.setNumber, startHole: s.start, endHole: s.end, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
   });
