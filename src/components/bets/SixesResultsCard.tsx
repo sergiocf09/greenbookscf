@@ -57,8 +57,6 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return null;
   };
 
-  // Per-player ranking
-  // Only include participating players
   const participantIds = useMemo(() => {
     if (!sixesConfig.sets) return new Set<string>();
     const ids = new Set<string>();
@@ -149,7 +147,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
               >
                 <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
-                  {SET_LABELS[sr.setNumber]}
+                  H{SET_LABELS[sr.setNumber]}
                 </div>
                 <div className="text-[10px] truncate text-center">
                   {getName(myTeam[0])}/{getName(myTeam[1])}
@@ -159,7 +157,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                   {getName(rivalTeam[0])}/{getName(rivalTeam[1])}
                 </div>
                 <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(diff))}>
-                  {myPoints}–{rivalPoints}
+                  {diff > 0 ? '+' : ''}{diff}
                 </div>
               </button>
             );
@@ -177,23 +175,26 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
           return (
             <div className="bg-muted/30 rounded-lg p-2 space-y-1">
               <div className="text-[10px] text-muted-foreground text-center mb-1">
-                Set {SET_LABELS[sr.setNumber]} · Toca en un hoyo para ver detalle
+                Set H{SET_LABELS[sr.setNumber]} · Toca en un hoyo para ver detalle
               </div>
               <div className="grid grid-cols-6 gap-1">
                 {sr.holeDetails.map(hd => {
-                  const myTeamWon = side && hd.holeWinner === side;
-                  const myTeamLost = side && hd.holeWinner && hd.holeWinner !== 'tied' && hd.holeWinner !== side;
+                  const myPts = side === 'team1' ? hd.pointsTeam1 : hd.pointsTeam2;
+                  const rvPts = side === 'team1' ? hd.pointsTeam2 : hd.pointsTeam1;
+                  const diff = myPts - rvPts;
 
                   const pill = (
                     <div className={cn(
                       'flex flex-col items-center justify-center rounded-lg p-0.5 h-10 text-xs border cursor-pointer',
-                      myTeamWon && 'bg-green-500/15 border-green-500/30 text-green-700',
-                      myTeamLost && 'bg-red-500/15 border-red-500/30 text-red-700',
-                      hd.holeWinner === 'tied' && 'bg-muted border-border text-muted-foreground',
+                      diff > 0 && 'bg-green-500/15 border-green-500/30 text-green-700',
+                      diff < 0 && 'bg-red-500/15 border-red-500/30 text-red-700',
+                      diff === 0 && hd.holeWinner && 'bg-muted border-border text-muted-foreground',
                       !hd.holeWinner && 'bg-muted/50 border-border/50 text-muted-foreground',
                     )}>
                       <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
-                      <span className="text-[10px] font-bold">{myTeamWon ? '✅' : myTeamLost ? '❌' : '='}</span>
+                      <span className="text-[11px] font-bold tabular-nums">
+                        {!hd.holeWinner ? '–' : diff > 0 ? `+${diff}` : `${diff}`}
+                      </span>
                     </div>
                   );
 
@@ -205,47 +206,38 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                   return (
                     <Popover key={hd.holeNumber}>
                       <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                      <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
-                        <p className="font-semibold mb-2">Hoyo {hd.holeNumber}</p>
-                        <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-1 items-center">
-                          <span className="text-[10px] text-muted-foreground font-medium">Tu equipo</span>
-                          <span></span>
-                          <span className="text-[10px] text-muted-foreground font-medium text-right">Rival</span>
+                      <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">Hoyo {hd.holeNumber} · {diff > 0 ? `+${diff}` : `${diff}`} pts</p>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Tu equipo</span>
+                            <span>Rival</span>
+                          </div>
                           {[0, 1].map(i => {
                             const my = myScores[i];
                             const rv = rivalScores[i];
                             if (!my || !rv) return null;
                             const myDisplay = my.gross > 0 ? my.net : '–';
                             const rvDisplay = rv.gross > 0 ? rv.net : '–';
-                            const myWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && myDisplay < rvDisplay;
-                            const rvWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && rvDisplay < myDisplay;
+                            const myHasStroke = my.strokes > 0 && my.net !== my.gross;
+                            const rvHasStroke = rv.strokes > 0 && rv.net !== rv.gross;
                             return (
-                              <React.Fragment key={i}>
-                                <div className="flex items-center gap-1">
-                                  <span className="truncate">{my.playerName.split(' ')[0]}</span>
-                                  {my.strokes > 0 && my.net !== my.gross && <span className="text-[9px]">●</span>}
-                                </div>
-                                <div className="flex items-center gap-1 justify-center">
-                                  <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myWins && 'bg-foreground text-background')}>
-                                    {myDisplay}
-                                  </span>
-                                  <span className="text-muted-foreground">–</span>
-                                  <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', rvWins && 'bg-foreground text-background')}>
-                                    {rvDisplay}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 justify-end">
-                                  {rv.strokes > 0 && rv.net !== rv.gross && <span className="text-[9px]">●</span>}
-                                  <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
-                                </div>
-                              </React.Fragment>
+                              <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+                                <span className="truncate text-left">{my.playerName.split(' ')[0]}</span>
+                                <span className="font-medium text-right px-1">{myDisplay}</span>
+                                <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                                <span />
+                                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                                <span className="font-medium text-left px-1">{rvDisplay}</span>
+                                <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
+                              </div>
                             );
                           })}
-                        </div>
-                        <div className="mt-2 pt-1 border-t border-border/50 flex justify-between text-[10px]">
-                          {hd.lowBallWinner && <span>BB: {hd.lowBallWinner === side ? 'Tu equipo' : hd.lowBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
-                          {hd.highBallWinner && <span>BA: {hd.highBallWinner === side ? 'Tu equipo' : hd.highBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
-                          <span className="font-medium">Pts: {side === 'team1' ? hd.pointsTeam1 : hd.pointsTeam2}–{side === 'team1' ? hd.pointsTeam2 : hd.pointsTeam1}</span>
+                          <div className="pt-1 border-t border-border/50 text-xs flex justify-between">
+                            {hd.lowBallWinner && <span>BB: {hd.lowBallWinner === side ? 'Tu equipo' : hd.lowBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
+                            {hd.highBallWinner && <span>BA: {hd.highBallWinner === side ? 'Tu equipo' : hd.highBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
+                            <span className="font-medium">Pts: {myPts}–{rvPts}</span>
+                          </div>
                         </div>
                       </PopoverContent>
                     </Popover>

@@ -45,16 +45,13 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
-  // Only include participating players (referenced in hole states)
   const participantIds = useMemo(() => {
     const ids = new Set<string>();
     for (const hs of holeStates) {
       ids.add(hs.wolfPlayerId);
       hs.partnerIds.forEach(id => ids.add(id));
     }
-    // Also add all players who appear in bets
     bets.forEach(b => ids.add(b.playerId));
-    // Fallback: if no states yet, include all players
     if (ids.size === 0) players.forEach(p => ids.add(p.id));
     return ids;
   }, [holeStates, bets, players]);
@@ -101,62 +98,84 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     const playerWon = result === 'won' ? isWolfTeam : result === 'lost' ? !isWolfTeam : false;
     const playerLost = result === 'won' ? !isWolfTeam : result === 'lost' ? isWolfTeam : false;
 
+    const pill = (
+      <button className={cn(
+        'flex flex-col items-center justify-center rounded-lg p-0.5 min-w-[2.2rem] h-10 text-xs border transition-colors',
+        playerWon && 'bg-green-500/15 border-green-500/30 text-green-700',
+        playerLost && 'bg-red-500/15 border-red-500/30 text-red-700',
+        result === 'tied' && 'bg-muted border-border text-muted-foreground',
+        !result && 'bg-muted/50 border-border/50 text-muted-foreground',
+      )}>
+        <span className="text-[8px] text-muted-foreground">{hole}</span>
+        <span className="text-[10px] font-bold">
+          {playerWon ? '✅' : playerLost ? '❌' : result === 'tied' ? '↔' : '–'}
+        </span>
+      </button>
+    );
+
+    if (!detail) {
+      return <div key={hole}>{pill}</div>;
+    }
+
+    // Build wolf team and rival team arrays
+    const wolfTeamIds = [state!.wolfPlayerId, ...state!.partnerIds];
+    const allPlayerIds = [...new Set([...wolfTeamIds, ...players.map(p => p.id)])];
+    const rivalIds = allPlayerIds.filter(id => !wolfTeamIds.includes(id) && detail.scoresByPlayer.some(s => s.playerId === id));
+
+    const isBaseWolfTeam = wolfTeamIds.includes(basePlayerId);
+    const myTeamIds = isBaseWolfTeam ? wolfTeamIds : rivalIds;
+    const theirTeamIds = isBaseWolfTeam ? rivalIds : wolfTeamIds;
+    const myTeamScores = detail.scoresByPlayer.filter(s => myTeamIds.includes(s.playerId));
+    const theirTeamScores = detail.scoresByPlayer.filter(s => theirTeamIds.includes(s.playerId));
+
     return (
       <Popover key={hole}>
-        <PopoverTrigger asChild>
-          <button className={cn(
-            'flex flex-col items-center justify-center rounded-lg p-0.5 min-w-[2.2rem] h-10 text-xs border transition-colors',
-            playerWon && 'bg-green-500/15 border-green-500/30 text-green-700',
-            playerLost && 'bg-red-500/15 border-red-500/30 text-red-700',
-            result === 'tied' && 'bg-muted border-border text-muted-foreground',
-            !result && 'bg-muted/50 border-border/50 text-muted-foreground',
-          )}>
-            <span className="text-[8px] text-muted-foreground">{hole}</span>
-            <span className="text-[10px] font-bold">
-              {playerWon ? '✅' : playerLost ? '❌' : result === 'tied' ? '↔' : '–'}
-            </span>
-          </button>
-        </PopoverTrigger>
-        <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
-          {!detail ? <p className="text-muted-foreground">Sin datos</p> : (
-            <div className="space-y-2">
-              <p className="font-semibold">Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}</p>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-0.5">Equipo Loba</p>
-                {detail.scoresByPlayer.filter(s => s.teamSide === 'wolf').map(s => (
-                  <div key={s.playerId} className="flex items-center gap-1">
-                    <span>{s.playerName.split(' ')[0]}</span>
-                    {s.strokes > 0 && s.net !== s.gross && <span className="text-[9px]">●</span>}
-                    <span className="ml-auto font-mono">{s.net}</span>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-0.5">Rivales</p>
-                {detail.scoresByPlayer.filter(s => s.teamSide === 'rival').map(s => (
-                  <div key={s.playerId} className="flex items-center gap-1">
-                    <span>{s.playerName.split(' ')[0]}</span>
-                    {s.strokes > 0 && s.net !== s.gross && <span className="text-[9px]">●</span>}
-                    <span className="ml-auto font-mono">{s.net}</span>
-                  </div>
-                ))}
-              </div>
-              {wolfConfig.scoringMode === 'lowHighBall' && (
-                <div className="text-[10px] space-y-0.5">
-                  <p>Bola Baja: {detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}</p>
-                  <p>Bola Alta: {detail.highBallWinner === 'wolf' ? 'Loba' : detail.highBallWinner === 'rival' ? 'Rival' : 'Empate'}</p>
-                  <p>Puntos: {detail.pointsWolf}–{detail.pointsRival}</p>
+        <PopoverTrigger asChild>{pill}</PopoverTrigger>
+        <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
+          <div className="space-y-1">
+            <p className="text-xs font-medium">
+              Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
+            </p>
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>{isBaseWolfTeam ? 'Tu equipo (Loba)' : 'Tu equipo'}</span>
+              <span>{isBaseWolfTeam ? 'Rivales' : 'Equipo Loba'}</span>
+            </div>
+            {/* Render rows for max of both sides */}
+            {Array.from({ length: Math.max(myTeamScores.length, theirTeamScores.length) }, (_, i) => {
+              const my = myTeamScores[i];
+              const rv = theirTeamScores[i];
+              const myHasStroke = my && my.strokes > 0 && my.net !== my.gross;
+              const rvHasStroke = rv && rv.strokes > 0 && rv.net !== rv.gross;
+              return (
+                <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+                  <span className="truncate text-left">{my ? my.playerName.split(' ')[0] : ''}</span>
+                  <span className="font-medium text-right px-1">{my ? (my.gross > 0 ? my.net : '–') : ''}</span>
+                  <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span />
+                  <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span className="font-medium text-left px-1">{rv ? (rv.gross > 0 ? rv.net : '–') : ''}</span>
+                  <span className="truncate text-right">{rv ? rv.playerName.split(' ')[0] : ''}</span>
                 </div>
+              );
+            })}
+            <div className="pt-1 border-t border-border/50 text-xs space-y-0.5">
+              {wolfConfig.scoringMode === 'lowHighBall' && (
+                <>
+                  <p className="flex justify-between"><span>Bola Baja</span><span>{detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
+                  <p className="flex justify-between"><span>Bola Alta</span><span>{detail.highBallWinner === 'wolf' ? 'Loba' : detail.highBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
+                  <p className="flex justify-between"><span>Puntos</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
+                </>
               )}
-              <p className="text-[10px]">
-                Decisión: {detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerNames.join(', ')}`}
+              <p className="flex justify-between">
+                <span>Decisión</span>
+                <span>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerNames.join(', ')}`}</span>
               </p>
               {(detail.carryoverHoles ?? 0) > 0 && (
-                <p className="text-[10px]">↑ Carryover: +{detail.carryoverHoles} hoyo(s)</p>
+                <p className="flex justify-between"><span>Carryover</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
               )}
-              <p className="text-[10px] font-medium">Monto efectivo: ${fmtMoney(detail.effectiveAmount)} por rival</p>
+              <p className="flex justify-between font-medium"><span>Monto</span><span>${fmtMoney(detail.effectiveAmount)} por rival</span></p>
             </div>
-          )}
+          </div>
         </PopoverContent>
       </Popover>
     );

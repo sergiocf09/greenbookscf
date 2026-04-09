@@ -26,6 +26,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
   const [detailOpen, setDetailOpen] = useState(false);
+  const [expandedSet, setExpandedSet] = useState<number | null>(null);
 
   const needsConfig = !vegasConfig.playerAId;
 
@@ -68,7 +69,6 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     );
   }
 
-  // Accumulate front/back/total diffs per set
   const getSetAccum = (sr: typeof setResults[0]) => {
     const myTeam1 = isTeam1(sr);
     let front = 0, back = 0;
@@ -82,16 +82,14 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
-  // Use first set for team names (fixed variant)
   const sr0 = setResults[0];
   if (!sr0) return null;
   const isRotating = vegasConfig.variant === 'rotating' && setResults.length === 3;
-  const myTeam1 = isTeam1(sr0);
-  const myTeam = myTeam1 ? sr0.team1 : sr0.team2;
-  const rivalTeam = myTeam1 ? sr0.team2 : sr0.team1;
+  const myTeam1Fixed = isTeam1(sr0);
+  const myTeam = myTeam1Fixed ? sr0.team1 : sr0.team2;
+  const rivalTeam = myTeam1Fixed ? sr0.team2 : sr0.team1;
   const accum = getSetAccum(sr0);
 
-  // Participating player IDs and ranking
   const participantIds = useMemo(() => {
     const ids = new Set<string>();
     [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId]
@@ -111,6 +109,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       .map(([id, bal]) => ({ id, name: getFullName(id), balance: bal }))
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
+
+  const SET_LABELS: Record<number, string> = { 1: '1–6', 2: '7–12', 3: '13–18' };
 
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
@@ -144,59 +144,65 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       </CardHeader>
       <CardContent className="pt-0 space-y-2">
         {isRotating ? (
-          /* ── Rotating variant: 3-column Sixes-style layout ── */
+          /* ── Rotating variant: 3 clickable blocks (like Sixes) ── */
           <>
-            <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
-              <div className="flex items-center justify-between">
-                <div className="grid grid-cols-3 gap-1 flex-1 text-center">
-                  {setResults.map(sr => {
-                    const myT1 = isTeam1(sr);
-                    const acc = getSetAccum(sr);
-                    return (
-                      <div key={sr.setNumber} className="text-[10px]">
-                        <div className="font-semibold text-primary">H{sr.startHole}–{sr.endHole}</div>
-                        <div className="text-[9px] text-muted-foreground truncate">
-                          {getName(sr.team1[0])}/{getName(sr.team1[1])}
-                        </div>
-                        <div className="text-[9px] text-muted-foreground truncate">
-                          vs {getName(sr.team2[0])}/{getName(sr.team2[1])}
-                        </div>
-                        <span className={cn('font-bold tabular-nums text-xs', getNetTone(acc.total))}>
-                          {acc.total > 0 ? '+' : ''}{acc.total}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                    <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
-                    <span className="sr-only">Ver detalle</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
+            <div className="grid grid-cols-3 gap-2">
+              {setResults.map(sr => {
+                const myT1 = isTeam1(sr);
+                const srMyTeam = myT1 ? sr.team1 : sr.team2;
+                const srRivalTeam = myT1 ? sr.team2 : sr.team1;
+                const acc = getSetAccum(sr);
+                const isExpanded = expandedSet === sr.setNumber;
 
-              <CollapsibleContent className="mt-2 space-y-2">
-                {setResults.map((sr) => {
-                  const myT1 = isTeam1(sr);
-                  const srMyTeam = myT1 ? sr.team1 : sr.team2;
-                  const srRivalTeam = myT1 ? sr.team2 : sr.team1;
-                  return (
-                    <div key={sr.setNumber} className="bg-muted/30 rounded-lg p-2 space-y-1">
-                      <div className="text-[10px] font-semibold text-primary text-center">
-                        Set {sr.setNumber} · H{sr.startHole}–{sr.endHole}: {getName(sr.team1[0])}/{getName(sr.team1[1])} vs {getName(sr.team2[0])}/{getName(sr.team2[1])}
-                      </div>
-                      <div className="grid grid-cols-6 gap-1">
-                        {sr.holeDetails.map(hd => {
-                          const myDiff = myT1 ? hd.diff : -hd.diff;
-                          return renderHolePill(hd, myDiff, myT1, srMyTeam, srRivalTeam, getName, vegasConfig);
-                        })}
-                      </div>
+                return (
+                  <button
+                    key={sr.setNumber}
+                    className={cn(
+                      'rounded-lg border p-2 text-left transition-colors',
+                      isExpanded ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30',
+                    )}
+                    onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
+                  >
+                    <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
+                      H{SET_LABELS[sr.setNumber]}
                     </div>
-                  );
-                })}
-              </CollapsibleContent>
-            </Collapsible>
+                    <div className="text-[10px] truncate text-center">
+                      {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
+                    </div>
+                    <div className="text-[9px] text-muted-foreground text-center">vs</div>
+                    <div className="text-[10px] truncate text-center">
+                      {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
+                    </div>
+                    <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(acc.total))}>
+                      {acc.total > 0 ? '+' : ''}{acc.total}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Expanded set detail */}
+            {expandedSet !== null && (() => {
+              const sr = setResults.find(s => s.setNumber === expandedSet);
+              if (!sr) return null;
+              const myT1 = isTeam1(sr);
+              const srMyTeam = myT1 ? sr.team1 : sr.team2;
+              const srRivalTeam = myT1 ? sr.team2 : sr.team1;
+
+              return (
+                <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+                  <div className="text-[10px] text-muted-foreground text-center mb-1">
+                    Set H{SET_LABELS[sr.setNumber]} · Toca en un hoyo para ver detalle
+                  </div>
+                  <div className="grid grid-cols-6 gap-1">
+                    {sr.holeDetails.map(hd => {
+                      const myDiff = myT1 ? hd.diff : -hd.diff;
+                      return renderHolePill(hd, myDiff, myT1, srMyTeam, srRivalTeam, getName, vegasConfig);
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Per-player ranking for rotating variant */}
             <div className="border-t border-border/50 pt-2 space-y-0.5">
@@ -318,62 +324,79 @@ function renderHolePill(
     ? (hd.multiplierApplied === 'team2' ? hd.numberTeam2Effective : hd.numberTeam2)
     : (hd.multiplierApplied === 'team1' ? hd.numberTeam1Effective : hd.numberTeam1);
 
+  // Build per-player data for the 7-col grid
+  const myPids = myTeam;
+  const rvPids = rivalTeam;
+  const getNet = (idx: number, isMy: boolean) => {
+    if (isMy) {
+      return idx === 0
+        ? (myTeam1 ? hd.netA : hd.netC)
+        : (myTeam1 ? hd.netB : hd.netD);
+    }
+    return idx === 0
+      ? (myTeam1 ? hd.netC : hd.netA)
+      : (myTeam1 ? hd.netD : hd.netB);
+  };
+  const getStrokes = (idx: number, isMy: boolean) => {
+    if (isMy) {
+      return idx === 0
+        ? (myTeam1 ? hd.strokesA : hd.strokesC)
+        : (myTeam1 ? hd.strokesB : hd.strokesD);
+    }
+    return idx === 0
+      ? (myTeam1 ? hd.strokesC : hd.strokesA)
+      : (myTeam1 ? hd.strokesD : hd.strokesB);
+  };
+
   return (
     <Popover key={hd.holeNumber}>
       <PopoverTrigger asChild>{pill}</PopoverTrigger>
-      <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
-        <p className="font-semibold mb-2">Hoyo {hd.holeNumber}</p>
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-1 items-center">
-          <span className="text-[10px] text-muted-foreground font-medium">Tu equipo</span>
-          <span></span>
-          <span className="text-[10px] text-muted-foreground font-medium text-right">Rival</span>
+      <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
+        <div className="space-y-1">
+          <p className="text-xs font-medium">Hoyo {hd.holeNumber}</p>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>Tu equipo</span>
+            <span>Rival</span>
+          </div>
           {[0, 1].map(i => {
-            const myPid = myTeam[i];
-            const rvPid = rivalTeam[i];
-            const myS = hd.netA !== undefined && i === 0 ? (myTeam1 ? hd.netA : hd.netC) : (myTeam1 ? hd.netB : hd.netD);
-            const rvS = i === 0 ? (myTeam1 ? hd.netC : hd.netA) : (myTeam1 ? hd.netD : hd.netB);
-            const myStrokes = i === 0 ? (myTeam1 ? hd.strokesA : hd.strokesC) : (myTeam1 ? hd.strokesB : hd.strokesD);
-            const rvStrokes = i === 0 ? (myTeam1 ? hd.strokesC : hd.strokesA) : (myTeam1 ? hd.strokesD : hd.strokesB);
+            const myS = getNet(i, true);
+            const rvS = getNet(i, false);
+            const myHasStroke = (getStrokes(i, true) || 0) > 0;
+            const rvHasStroke = (getStrokes(i, false) || 0) > 0;
             return (
-              <React.Fragment key={i}>
-                <div className="flex items-center gap-1">
-                  <span className="truncate">{getName(myPid)}</span>
-                  {myStrokes > 0 && <span className="text-[9px]">●</span>}
-                </div>
-                <div className="flex items-center gap-1 justify-center">
-                  <span className="font-mono font-bold tabular-nums text-[11px]">{myS}</span>
-                  <span className="text-muted-foreground">–</span>
-                  <span className="font-mono font-bold tabular-nums text-[11px]">{rvS}</span>
-                </div>
-                <div className="flex items-center gap-1 justify-end">
-                  {rvStrokes > 0 && <span className="text-[9px]">●</span>}
-                  <span className="truncate text-right">{getName(rvPid)}</span>
-                </div>
-              </React.Fragment>
+              <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+                <span className="truncate text-left">{getName(myPids[i])}</span>
+                <span className="font-medium text-right px-1">{myS}</span>
+                <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                <span />
+                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                <span className="font-medium text-left px-1">{rvS}</span>
+                <span className="truncate text-right">{getName(rvPids[i])}</span>
+              </div>
             );
           })}
-        </div>
-        <div className="mt-2 pt-1 border-t border-border/50 space-y-1">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-muted-foreground">Número</span>
-            <div className="flex items-center gap-2">
-              <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff > 0 && 'bg-foreground text-background')}>
-                {myNumEff}
-              </span>
-              <span className="text-muted-foreground">vs</span>
-              <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff < 0 && 'bg-foreground text-background')}>
-                {rvNumEff}
+          <div className="pt-1 border-t border-border/50 space-y-1 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Número</span>
+              <div className="flex items-center gap-2">
+                <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded', myDiff > 0 && 'bg-foreground text-background')}>
+                  {myNumEff}
+                </span>
+                <span className="text-muted-foreground">vs</span>
+                <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded', myDiff < 0 && 'bg-foreground text-background')}>
+                  {rvNumEff}
+                </span>
+              </div>
+            </div>
+            {hd.multiplierApplied !== 'none' && (
+              <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Diferencia</span>
+              <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
+                {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
               </span>
             </div>
-          </div>
-          {hd.multiplierApplied !== 'none' && (
-            <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
-          )}
-          <div className="flex justify-between text-[10px]">
-            <span>Diferencia</span>
-            <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
-              {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
-            </span>
           </div>
         </div>
       </PopoverContent>
