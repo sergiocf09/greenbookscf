@@ -473,9 +473,6 @@ const NinesBetCard: React.FC<{
         {selectedIds.length === 3 && (
           <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
         )}
-        {selectedIds.length === 4 && (
-          <p className="text-[9px] text-muted-foreground">4 jugadores: rota quien descansa hoyo a hoyo (3 pts)</p>
-        )}
       </div>
     </div>
   );
