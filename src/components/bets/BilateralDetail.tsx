@@ -539,6 +539,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
         { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
         { bt: 'Nines',        label: 'Nines (5-3-1)', configKey: 'ninesBets' },
+      ];
       for (const { bt, label, configKey } of atomicBets) {
         const amount = getAmt(bt);
         if (amount !== 0) {
