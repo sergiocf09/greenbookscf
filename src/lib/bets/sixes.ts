@@ -79,7 +79,8 @@ export const buildSixesSetResults = (
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);
     const winner = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
-    const baseAmt = config.cobro === 'per_set' ? config.amount : Math.abs(p1 - p2) * config.amount;
+    const effectiveAmt = getSixesSetAmount(config, setNum);
+    const baseAmt = config.cobro === 'per_set' ? effectiveAmt : Math.abs(p1 - p2) * effectiveAmt;
     const amt1 = winner === 'team1' ? baseAmt : winner === 'team2' ? -baseAmt : 0;
     const amt2 = -amt1;
     return { setNumber: setNum, startHole: start, endHole: end, team1: assignment.team1, team2: assignment.team2, holeDetails: details, pointsTeam1: p1, pointsTeam2: p2, setWinner: winner, amountTeam1: amt1, amountTeam2: amt2 } as SixesSetResult;
