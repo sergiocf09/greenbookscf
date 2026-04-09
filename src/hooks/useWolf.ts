@@ -93,7 +93,8 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
 
   const getCurrentWolfId = useCallback((holeNumber: number) => {
     if (!wolfConfig || players.length < 4) return null;
-    return getWolfPlayerId(holeNumber, players);
+    const order = wolfConfig.playerOrder.length > 0 ? wolfConfig.playerOrder : undefined;
+    return getWolfPlayerId(holeNumber, players, order);
   }, [wolfConfig, players]);
 
   const getHoleState = useCallback((holeNumber: number) =>

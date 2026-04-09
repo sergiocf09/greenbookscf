@@ -637,6 +637,8 @@ export type WolfTiming = 'A' | 'B' | 'C';
 export interface WolfConfig {
   roundId: string; amountPerHole: number; scoringMode: WolfScoringMode;
   useHandicap: boolean; timing: WolfTiming; carryover: boolean;
+  playerOrder: string[];
+  participantIds: string[];
 }
 
 export interface WolfHoleState {

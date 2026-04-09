@@ -3143,7 +3143,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {/* Sprint 3 — Wolf / Sixes / Vegas / Nines Results Cards */}
       {wolfHook?.isActive && wolfHook.wolfConfig && effectiveBetConfig.wolfSetup?.enabled === true && (
         <WolfResultsCard
-          players={allPlayersForCalculations}
+          players={
+            wolfHook.wolfConfig.participantIds.length > 0
+              ? allPlayersForCalculations.filter(p =>
+                  wolfHook.wolfConfig!.participantIds.includes(p.id)
+                )
+              : allPlayersForCalculations
+          }
           wolfConfig={wolfHook.wolfConfig}
           holeStates={wolfHook.holeStates}
           scores={scores}

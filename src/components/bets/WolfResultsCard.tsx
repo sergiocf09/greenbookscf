@@ -50,6 +50,11 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const participantIds = useMemo(() => {
+    // Fuente de verdad: participantIds del config (ya filtrado en BetDashboard)
+    if (wolfConfig.participantIds && wolfConfig.participantIds.length > 0) {
+      return new Set<string>(wolfConfig.participantIds);
+    }
+    // Fallback
     const ids = new Set<string>();
     for (const hs of holeStates) {
       ids.add(hs.wolfPlayerId);
@@ -58,7 +63,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     bets.forEach(b => ids.add(b.playerId));
     if (ids.size === 0) players.forEach(p => ids.add(p.id));
     return ids;
-  }, [holeStates, bets, players]);
+  }, [wolfConfig.participantIds, holeStates, bets, players]);
 
   const playerRanking = useMemo(() => {
     const balances = new Map<string, number>();

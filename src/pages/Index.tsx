@@ -309,6 +309,8 @@ const Index = () => {
     betConfig.wolfSetup?.scoringMode,
     betConfig.wolfSetup?.timing,
     betConfig.wolfSetup?.carryover,
+    JSON.stringify(betConfig.wolfSetup?.playerOrder),
+    JSON.stringify(betConfig.parejasExcluded?.wolf),
     betConfig.sixesBets?.length,
     JSON.stringify(betConfig.vegasBets?.[0]),
     betConfig.ninesBets?.length,

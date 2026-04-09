@@ -449,7 +449,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       )}
 
       {/* Wolf — 4-6 players, only if enabled, LAST in order */}
-      {players.length >= 4 && players.length <= 6 && (config.wolfSetup?.enabled ?? false) && (
+      {players.length >= 4 && players.length <= 6 && (
         <BetSection
           id="wolf" title="🐺 Loba"
           description="Cada hoyo un jugador elige pareja o va solo"
