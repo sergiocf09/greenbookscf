@@ -538,6 +538,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         { bt: 'Medal General',label: 'Medal General', configKey: 'medalGeneral' },
         { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
         { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
+        { bt: 'Nines',        label: 'Nines (5-3-1)', configKey: 'ninesBets' },
       ];
       for (const { bt, label, configKey } of atomicBets) {
         const amount = getAmt(bt);
@@ -562,6 +563,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
         'Coneja','Medal General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
+        'Nines',
       ]);
       const sourceKeys = breakdown ? Object.keys(breakdown) : Object.keys(groupedSummaries);
       for (const bt of sourceKeys) {
@@ -1322,6 +1324,29 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               description: `Front: ${sgFrontTotal >= 0 ? '+' : ''}$${sgFrontTotal} · Back: ${sgBackTotal >= 0 ? '+' : ''}$${sgBackTotal}`,
             };
           },
+        });
+      }
+    }
+    
+    // Nines (grupal bilateral — same pattern as Coneja)
+    {
+      const ninesTotal = groupedSummaries['Nines']?.total || 0;
+      if (ninesTotal !== 0) {
+        const ninesDetails = groupedSummaries['Nines']?.details || [];
+        const ptsWon = ninesDetails.filter(d => d.amount > 0).reduce((s, d) => s + (d.units ?? 0), 0);
+        const ptsLost = ninesDetails.filter(d => d.amount < 0).reduce((s, d) => s + (d.units ?? 0), 0);
+        groups.push({
+          key: 'nines',
+          label: 'Nines (5-3-1)',
+          configKey: 'ninesBets',
+          segments: [],
+          getTotal: () => ninesTotal,
+          getSegmentData: () => ({
+            playerNet: ptsWon,
+            rivalNet: ptsLost,
+            amount: ninesTotal,
+            description: ninesDetails[0]?.description || '',
+          }),
         });
       }
     }

@@ -81,6 +81,10 @@ import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
+import { calculateNinesBets } from '@/lib/bets/nines';
+import { calculateWolfBets } from '@/lib/bets/wolf';
+import { calculateSixesBets } from '@/lib/bets/sixes';
+import { calculateVegasBets } from '@/lib/bets/vegas';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -391,14 +395,47 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // be double-counted in onBetSummariesChange emission, causing engine vs UI
   // discrepancy at closure time (e.g., $100 delta per affected player).
   const carritosEngineTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+  // Nines summaries (grupal bilateral — same pattern as Coneja)
+  const ninesBetSummaries = useMemo(() => {
+    if (isHistorical || !ninesHook?.ninesConfig) return [];
+    const cfg = ninesHook.ninesConfig;
+    if (!cfg.playerIds || cfg.playerIds.length < 3) return [];
+    return calculateNinesBets(allPlayersForCalculations, confirmedScores, cfg, course);
+  }, [isHistorical, ninesHook?.ninesConfig, allPlayersForCalculations, confirmedScores, course]);
+
+  // Wolf summaries (team bet — Balance General pattern)
+  const wolfBetSummaries = useMemo(() => {
+    if (isHistorical || !wolfHook?.wolfConfig || !wolfHook.holeStates) return [];
+    if (effectiveBetConfig.wolfSetup?.enabled !== true) return [];
+    const wolfPlayers = (wolfHook.wolfConfig.participantIds?.length ?? 0) > 0
+      ? allPlayersForCalculations.filter(p => wolfHook.wolfConfig!.participantIds!.includes(p.id))
+      : allPlayersForCalculations;
+    return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates);
+  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, effectiveBetConfig.wolfSetup?.enabled]);
+
+  // Sixes summaries
+  const sixesBetSummaries = useMemo(() => {
+    if (isHistorical || !sixesHook?.sixesConfig) return [];
+    if ((effectiveBetConfig.sixesBets ?? []).length === 0) return [];
+    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course);
+  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets]);
+
+  // Vegas summaries
+  const vegasBetSummaries = useMemo(() => {
+    if (isHistorical || !vegasHook?.vegasConfig) return [];
+    if ((effectiveBetConfig.vegasBets ?? []).length === 0) return [];
+    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course);
+  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets]);
+
   const betSummaries = useMemo(
     () => isHistorical
       ? snapshotLedgerToBetSummaries(snapshotLedger!)
       : [
           ...liveBetSummaries.filter(s => !carritosEngineTypes.includes(s.betType)),
           ...crossGroupBetSummaries,
+          ...ninesBetSummaries,
         ],
-    [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries]
+    [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries, ninesBetSummaries]
   );
   
   // NOTE: onBetSummariesChange is called in a single useEffect defined after
@@ -1438,11 +1475,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const snapB = isHistorical ? getSnapshotTotalBalance(b.id) : null;
       const balanceA = snapA !== null ? snapA : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== a.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(a.id, rId), 0) + getCarritosBalanceForPlayer(a.id) + getTeamPressuresBalanceForPlayer(a.id) + getWolfBalanceForPlayer(a.id) + getSixesBalanceForPlayer(a.id) + getVegasBalanceForPlayer(a.id);
       })();
       const balanceB = snapB !== null ? snapB : (() => {
         const rivalIds = playersToSort.filter(p => p.id !== b.id).map(p => p.id);
-        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id);
+        return rivalIds.reduce((sum, rId) => sum + getBilateralBalanceFromMap(b.id, rId), 0) + getCarritosBalanceForPlayer(b.id) + getTeamPressuresBalanceForPlayer(b.id) + getWolfBalanceForPlayer(b.id) + getSixesBalanceForPlayer(b.id) + getVegasBalanceForPlayer(b.id);
       })();
       return balanceB - balanceA;
     });
@@ -1518,6 +1555,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
   };
   
+  // ── Wolf balance ──────────────────────────────────────────────────────
+  const getWolfBalanceForPlayer = (playerId: string): number =>
+    wolfBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getWolfBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    wolfBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
+  // ── Sixes balance ─────────────────────────────────────────────────────
+  const getSixesBalanceForPlayer = (playerId: string): number =>
+    sixesBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getSixesBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    sixesBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
+  // ── Vegas balance ─────────────────────────────────────────────────────
+  const getVegasBalanceForPlayer = (playerId: string): number =>
+    vegasBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getVegasBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    vegasBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
   // isTeamBetDisabled moved above getCarritosBalanceForPlayer
   
   // Get players to display based on selected group
@@ -1747,7 +1802,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getBilateralBalanceFromMap(player.id, rivalId), 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
-                totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
+                const wolfBalance = getWolfBalanceForPlayer(player.id);
+                const sixesBalance = getSixesBalanceForPlayer(player.id);
+                const vegasBalance = getVegasBalanceForPlayer(player.id);
+                totalBalance = individualBalance + carritosBalance + teamPressuresBalance + wolfBalance + sixesBalance + vegasBalance;
               }
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
@@ -1845,7 +1903,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
+                        const vsWolfBalance = isHistorical ? 0 : getWolfBalanceVsPlayer(player.id, other.id);
+                        const vsSixesBalance = isHistorical ? 0 : getSixesBalanceVsPlayer(player.id, other.id);
+                        const vsVegasBalance = isHistorical ? 0 : getVegasBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance + vsWolfBalance + vsSixesBalance + vsVegasBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
@@ -1854,11 +1915,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const otherGroupIdx = players.some(p => p.id === other.id) ? 0 : 
                           playerGroups.findIndex(g => g.players.some(p => p.id === other.id)) + 1;
                         
-                        return { other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx };
+                        return { other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsWolfBalance, vsSixesBalance, vsVegasBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx };
                       })
                       // In historical mode, hide rivals with zero balance (no actual bets)
                       .filter(({ vsTotalBalance }) => !isHistorical || vsTotalBalance !== 0)
-                      .map(({ other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx }) => (
+                      .map(({ other, vsIndividualBalance, vsCarritosBalance, vsTeamPressuresBalance, vsWolfBalance, vsSixesBalance, vsVegasBalance, vsTotalBalance, isCrossGroupRival, otherGroupIdx }) => (
                           <div 
                             key={other.id} 
                             className={cn(
@@ -1880,7 +1941,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 </span>
                               )}
                               {/* Show breakdown when there are pair bets */}
-                              {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0) && (
+                              {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0 || vsWolfBalance !== 0 || vsSixesBalance !== 0 || vsVegasBalance !== 0) && (
                                 <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
                                   <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
                                   {vsCarritosBalance !== 0 && (
@@ -1888,6 +1949,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   )}
                                   {vsTeamPressuresBalance !== 0 && (
                                     <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                  )}
+                                  {vsWolfBalance !== 0 && (
+                                    <span>| 🐺: <span className={cn(vsWolfBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsWolfBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsWolfBalance))}</span></span>
+                                  )}
+                                  {vsSixesBalance !== 0 && (
+                                    <span>| 6s: <span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
+                                  )}
+                                  {vsVegasBalance !== 0 && (
+                                    <span>| LV: <span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
                                   )}
                                 </span>
                               )}
@@ -1913,7 +1983,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
