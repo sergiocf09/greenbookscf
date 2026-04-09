@@ -641,6 +641,7 @@ export interface WolfConfig {
   useHandicap: boolean; timing: WolfTiming; carryover: boolean;
   playerOrder: string[];
   participantIds: string[];
+  playerHandicaps?: { playerId: string; handicap: number }[];
 }
 
 export interface WolfHoleState {
