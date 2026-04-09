@@ -175,16 +175,16 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                      <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                        H{SET_LABELS[sr.setNumber]}
                      </div>
-                     <div className="flex items-center justify-center gap-0.5">
-                       <span className="text-xs font-bold">{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
-                       <span className="text-[9px] text-muted-foreground">/</span>
-                       <span className="text-xs font-bold">{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
-                     </div>
                      <div className="flex items-center justify-center gap-1">
-                       <span className="text-[10px] text-muted-foreground">vs</span>
-                       <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
-                       <span className="text-[9px] text-muted-foreground">/</span>
-                       <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
+                       <div className="flex flex-col items-end">
+                         <span className="text-xs font-bold">{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
+                         <span className="text-xs font-bold">{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
+                       </div>
+                       <span className="text-[9px] text-muted-foreground">vs</span>
+                       <div className="flex flex-col items-start">
+                         <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
+                         <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
+                       </div>
                      </div>
                      <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
                        {acc.total > 0 ? '+' : ''}{acc.total}
