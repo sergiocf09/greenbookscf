@@ -817,6 +817,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // between teams), which is exactly what generateRoundSnapshot expects.
   useEffect(() => {
     if (isHistorical) return; // Historical view reads from snapshot – do not re-emit
+    if (!betConfig.carritos.enabled) return; // Guard: skip emission when carritos disabled
 
     const carritosSummaries: BetSummary[] = [];
     allCarritosResults.forEach((result, idx) => {

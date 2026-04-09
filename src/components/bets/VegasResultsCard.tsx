@@ -336,6 +336,7 @@ function renderHolePill(
               <React.Fragment key={i}>
                 <div className="flex items-center gap-1">
                   <span className="truncate">{getName(myPid)}</span>
+                  {hd.strokeIndicators?.[myPid] && <span className="text-[9px]">●</span>}
                 </div>
                 <div className="flex items-center gap-1 justify-center">
                   <span className="font-mono font-bold tabular-nums text-[11px]">{myS}</span>
@@ -343,6 +344,7 @@ function renderHolePill(
                   <span className="font-mono font-bold tabular-nums text-[11px]">{rvS}</span>
                 </div>
                 <div className="flex items-center gap-1 justify-end">
+                  {hd.strokeIndicators?.[rvPid] && <span className="text-[9px]">●</span>}
                   <span className="truncate text-right">{getName(rvPid)}</span>
                 </div>
               </React.Fragment>

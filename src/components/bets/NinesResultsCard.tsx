@@ -258,10 +258,10 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                             const strokesRcvd = hs?.strokesReceived ?? 0;
                             return (
                               <div key={pp.playerId} className={cn('flex items-center gap-1', pp.resting && 'text-muted-foreground')}>
-                                <PlayerAvatar initials={player.initials} background={player.color} size="xs" />
+                              <PlayerAvatar initials={disambiguated.get(player.id) || player.initials} background={player.color} size="xs" />
                                 <span>{player.name.split(' ')[0]}</span>
                                 {strokesRcvd > 0 && hs && hs.strokes > 0 && (
-                                  <span className="text-[9px] text-muted-foreground">({hs.strokes}) ●</span>
+                                  <span className="text-[9px]">●</span>
                                 )}
                                 <span className="ml-auto font-mono">{pp.points} pts</span>
                                 {pp.resting && <span className="text-[9px]">(descansa)</span>}

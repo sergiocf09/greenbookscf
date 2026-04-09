@@ -218,14 +218,20 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
         {/* Per-player ranking */}
         <div className="border-t border-border/50 pt-2 space-y-0.5">
-          {playerRanking.map(pr => (
-            <div key={pr.id} className="flex items-center justify-between text-xs">
-              <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
-              <span className={cn('font-bold tabular-nums', getNetTone(pr.balance))}>
-                {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
-              </span>
-            </div>
-          ))}
+          {playerRanking.map(pr => {
+            const p = players.find(x => x.id === pr.id);
+            return (
+              <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                  <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
+                </div>
+                <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
+                  {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
