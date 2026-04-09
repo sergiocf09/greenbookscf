@@ -3180,7 +3180,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasBets ?? []).length > 0 && (() => {
+      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) && (() => {
         const hookCfg = vegasHook.vegasConfig;
         const betInst = effectiveBetConfig.vegasBets?.[0];
         const hookHasEmptyPlayers = !hookCfg.playerAId || !hookCfg.playerBId || !hookCfg.playerCId || !hookCfg.playerDId;
