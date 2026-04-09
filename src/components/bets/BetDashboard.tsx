@@ -2853,9 +2853,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       let matchConcludedAt = -1;
                       const cumBalances: number[] = [];
                       
+                      let lastScoredIdx = -1;
                       for (let i = 0; i < allDetails.length; i++) {
                         const d = allDetails[i];
-                        if (d && matchConcludedAt < 0) cumBal += d.net;
+                        if (!d) {
+                          cumBalances.push(cumBal);
+                          continue;
+                        }
+                        if (matchConcludedAt < 0) cumBal += d.net;
+                        lastScoredIdx = i;
                         cumBalances.push(cumBal);
                         if (matchConcludedAt < 0) {
                           const remaining = allDetails.length - (i + 1);
