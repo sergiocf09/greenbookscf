@@ -16,6 +16,8 @@ interface WolfDecisionPanelProps {
   currentUserId: string | null;
   onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
   isRedemption?: boolean;
+  redemptionCandidateId?: string; // ID of max loser eligible for redemption
+  regularWolfPlayerId?: string; // The wolf by normal rotation
 }
 
 const timingLabels: Record<string, string> = {
