@@ -77,6 +77,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
           initials={wolfPlayer.initials}
           background={wolfPlayer.color}
           size="sm"
+          isLoggedInUser={wolfPlayer.profileId === currentUserId}
         />
         <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span>
         <span className="text-xs opacity-80">— La Loba</span>
