@@ -306,6 +306,7 @@ const Index = () => {
     }
   }, [
     roundState?.id,
+    players.length,
     betConfig.wolfSetup?.enabled,
     betConfig.wolfSetup?.amountPerHole,
     betConfig.wolfSetup?.scoringMode,
