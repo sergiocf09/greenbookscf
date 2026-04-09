@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, NinesConfig } from '@/types/golf';
 import { buildNinesHoleDetails, calculateNinesPlayerSummaries, calculateNinesBets, distributeNinesPoints } from '@/lib/bets/nines';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
