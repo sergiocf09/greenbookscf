@@ -167,15 +167,15 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                        H{SET_LABELS[sr.setNumber]}
                      </div>
                      <div className="flex items-center justify-center gap-1">
-                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[0])?.avatarColor }}>{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[0])?.color }}>{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
                        <span className="text-[9px] text-muted-foreground">/</span>
-                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[1])?.avatarColor }}>{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[1])?.color }}>{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
                      </div>
                      <div className="text-[10px] text-muted-foreground text-center">vs</div>
                      <div className="flex items-center justify-center gap-1">
-                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[0])?.avatarColor }}>{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[0])?.color }}>{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
                        <span className="text-[9px] text-muted-foreground">/</span>
-                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[1])?.avatarColor }}>{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[1])?.color }}>{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
                      </div>
                      <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
                        {acc.total > 0 ? '+' : ''}{acc.total}
