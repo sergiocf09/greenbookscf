@@ -244,6 +244,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                 onClick={() => {
                   setEditing(true);
                   setSelectedPartners([]);
+                  setRedemptionMode('pending');
                 }}
               >
                 Cambiar
