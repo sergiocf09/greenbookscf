@@ -1903,7 +1903,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance;
+                        const vsWolfBalance = isHistorical ? 0 : getWolfBalanceVsPlayer(player.id, other.id);
+                        const vsSixesBalance = isHistorical ? 0 : getSixesBalanceVsPlayer(player.id, other.id);
+                        const vsVegasBalance = isHistorical ? 0 : getVegasBalanceVsPlayer(player.id, other.id);
+                        const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance + vsWolfBalance + vsSixesBalance + vsVegasBalance;
                         
                         // Check if this is a cross-group rival
                         const isCrossGroupRival = crossGroupOthers.some(p => p.id === other.id);
