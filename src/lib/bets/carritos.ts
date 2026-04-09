@@ -11,6 +11,7 @@ export const calculateCarritosBets = (
   config: BetConfig,
   course: GolfCourse,
 ): BetSummary[] => {
+  if (!config.carritos.enabled) return [];
   const summaries: BetSummary[] = [];
 
   const configs: Array<{
