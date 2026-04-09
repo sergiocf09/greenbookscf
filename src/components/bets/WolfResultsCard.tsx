@@ -6,9 +6,8 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Badge } from '@/components/ui/badge';
-import { ChevronDown, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, ChevronDown, XCircle, CheckCircle } from 'lucide-react';
 
 interface WolfResultsCardProps {
   players: Player[];
@@ -17,13 +16,14 @@ interface WolfResultsCardProps {
   scores: Map<string, PlayerScore[]>;
   course: GolfCourse;
   basePlayerId: string;
+  isDisabled?: boolean;
+  onToggleDisabled?: () => void;
 }
 
 export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
-  players, wolfConfig, holeStates, scores, course, basePlayerId,
+  players, wolfConfig, holeStates, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const [paymentsOpen, setPaymentsOpen] = useState(false);
 
   const missingPlayerIds = useMemo(() => {
     const referencedIds = new Set<string>();
@@ -38,10 +38,22 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const details = useMemo(() => missingPlayerIds.length > 0 ? [] : buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course, missingPlayerIds]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
-  const f9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) <= 9).reduce((s, b) => s + b.amount, 0);
-  const b9Balance = bets.filter(b => b.playerId === basePlayerId && (b.holeNumber ?? 0) > 9).reduce((s, b) => s + b.amount, 0);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+
+  // Per-player ranking
+  const playerRanking = useMemo(() => {
+    const balances = new Map<string, number>();
+    players.forEach(p => balances.set(p.id, 0));
+    bets.forEach(b => {
+      balances.set(b.playerId, (balances.get(b.playerId) || 0) + b.amount);
+    });
+    return [...balances.entries()]
+      .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
+      .sort((a, b) => b.balance - a.balance);
+  }, [bets, players]);
+
+  const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
   if (missingPlayerIds.length > 0) {
     return (
@@ -74,19 +86,16 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       <Popover key={hole}>
         <PopoverTrigger asChild>
           <button className={cn(
-            'flex flex-col items-center justify-center rounded-lg p-1 min-w-[2.2rem] h-12 text-xs border transition-colors',
+            'flex flex-col items-center justify-center rounded-lg p-0.5 min-w-[2.2rem] h-10 text-xs border transition-colors',
             playerWon && 'bg-green-500/15 border-green-500/30 text-green-700',
             playerLost && 'bg-red-500/15 border-red-500/30 text-red-700',
             result === 'tied' && 'bg-muted border-border text-muted-foreground',
             !result && 'bg-muted/50 border-border/50 text-muted-foreground',
           )}>
-            <span className="font-semibold">{hole}</span>
-            <span className="text-[9px]">
+            <span className="text-[8px] text-muted-foreground">{hole}</span>
+            <span className="text-[10px] font-bold">
               {playerWon ? '✅' : playerLost ? '❌' : result === 'tied' ? '↔' : '–'}
             </span>
-            {result && state?.effectiveAmount && (
-              <span className="text-[8px] font-mono">{fmtMoney(state.effectiveAmount)}</span>
-            )}
           </button>
         </PopoverTrigger>
         <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
@@ -132,28 +141,38 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     );
   };
 
-  const positivePayments = bets.filter(b => b.amount > 0);
-
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">🐺 Loba</CardTitle>
-          <Badge className={cn(
-            'text-xs',
-            totalBalance > 0 && 'bg-green-500/15 text-green-700 border-green-500/30',
-            totalBalance < 0 && 'bg-red-500/15 text-red-700 border-red-500/30',
-            totalBalance === 0 && 'bg-muted text-muted-foreground',
-          )}>
-            {totalBalance > 0 ? '+' : ''}{totalBalance !== 0 ? `$${fmtMoney(Math.abs(totalBalance))}` : '$0'}
-          </Badge>
-        </div>
+    <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <span>🐺 Loba</span>
+          <div className="flex items-center gap-2">
+            {isDisabled ? (
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
+                {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
+              </span>
+            )}
+            {onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                onClick={onToggleDisabled}
+                title={isDisabled ? 'Reactivar Loba' : 'No considerar Loba'}
+              >
+                {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              </Button>
+            )}
+          </div>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {/* F9 */}
         <Collapsible open={openSection === 'f9'} onOpenChange={o => setOpenSection(o ? 'f9' : null)}>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1">
-            <span>Front 9 · {f9Balance >= 0 ? '+' : ''}${fmtMoney(Math.abs(f9Balance))}</span>
+            <span>Front 9</span>
             <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === 'f9' && 'rotate-180')} />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -166,7 +185,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
         {/* B9 */}
         <Collapsible open={openSection === 'b9'} onOpenChange={o => setOpenSection(o ? 'b9' : null)}>
           <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1">
-            <span>Back 9 · {b9Balance >= 0 ? '+' : ''}${fmtMoney(Math.abs(b9Balance))}</span>
+            <span>Back 9</span>
             <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === 'b9' && 'rotate-180')} />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -176,24 +195,17 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Pagos */}
-        {positivePayments.length > 0 && (
-          <Collapsible open={paymentsOpen} onOpenChange={setPaymentsOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1 text-muted-foreground">
-              <span>Pagos</span>
-              <ChevronDown className={cn('h-3 w-3 transition-transform', paymentsOpen && 'rotate-180')} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-0.5 mt-1">
-                {positivePayments.map((b, i) => (
-                  <p key={i} className="text-[11px]">
-                    {getName(b.playerId)} cobra ${fmtMoney(b.amount)} de {getName(b.vsPlayer!)}
-                  </p>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+        {/* Per-player ranking */}
+        <div className="border-t border-border/50 pt-2 space-y-0.5">
+          {playerRanking.map(pr => (
+            <div key={pr.id} className="flex items-center justify-between text-xs">
+              <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
+              <span className={cn('font-bold tabular-nums', getNetTone(pr.balance))}>
+                {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
+              </span>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
