@@ -17,6 +17,7 @@ interface VegasResultsCardProps {
   basePlayerId: string;
   isDisabled?: boolean;
   onToggleDisabled?: () => void;
+  onConfigurePlayers?: () => void;
 }
 
 export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
