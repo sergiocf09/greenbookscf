@@ -2536,11 +2536,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {/* Names row */}
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium truncate">
-                      {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                      {displayTeamAPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
                     </span>
                     <span className="text-muted-foreground text-xs mx-2">vs</span>
                     <span className="font-medium truncate text-right">
-                      {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                      {displayTeamBPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
                     </span>
                   </div>
                   {/* Results row */}
