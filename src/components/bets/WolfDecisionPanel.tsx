@@ -15,6 +15,7 @@ interface WolfDecisionPanelProps {
   isOrganizer: boolean;
   currentUserId: string | null;
   onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  isRedemption?: boolean;
 }
 
 const timingLabels: Record<string, string> = {
