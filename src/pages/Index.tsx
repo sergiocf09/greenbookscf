@@ -255,7 +255,7 @@ const Index = () => {
       }
     }
     const firstVegas = betConfig.vegasBets?.[0];
-    if (firstVegas && !vegas.isActive) {
+    if (firstVegas) {
       vegas.saveConfig({
         valuePerPoint:    firstVegas.valuePerPoint ?? 10,
         useHandicap:      firstVegas.useHandicap ?? false,
@@ -274,7 +274,7 @@ const Index = () => {
         playerIds:     firstNines.playerIds.slice(0, 3),
       });
     }
-  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesBets?.length, betConfig.vegasBets?.length, betConfig.ninesBets?.length]);
+  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesBets?.length, JSON.stringify(betConfig.vegasBets?.[0]), betConfig.ninesBets?.length]);
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {
