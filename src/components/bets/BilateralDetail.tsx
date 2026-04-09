@@ -2391,7 +2391,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           return (
                             <div className="flex items-center justify-between px-3 py-1.5 bg-muted/20 border-t border-border/20">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground">Solo Match</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {currentOnlyMatch
+                                    ? (betConfig.pressures?.continua ? 'Sin Presiones · Match Play 18' : 'Sin Presiones')
+                                    : 'Sin Presiones'}
+                                </span>
                                 {isOverridden && (
                                   <span className="text-[9px] text-amber-500 bg-amber-500/10 rounded px-1">✱ este par</span>
                                 )}
