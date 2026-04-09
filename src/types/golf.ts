@@ -788,6 +788,10 @@ export interface SixesBetInstance {
   scoringMode: SixesScoringMode;
   cobro: SixesCobro;
   amount: number;
+  usePerSetAmounts?: boolean;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
   useHandicap: boolean;
   sets: SixesSetAssignment[];
 }
