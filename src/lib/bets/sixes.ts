@@ -98,7 +98,7 @@ export const calculateSixesBets = (
       if (!sr.setWinner || sr.setWinner === 'tied') return;
       const winners = [...(sr.setWinner === 'team1' ? sr.team1 : sr.team2)];
       const losers  = [...(sr.setWinner === 'team1' ? sr.team2 : sr.team1)];
-      const half = config.amount / 2;
+      const half = getSixesSetAmount(config, sr.setNumber) / 2;
       losers.forEach(lId => winners.forEach(wId => {
         summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Sixes', amount: half, segment: 'total', description: `Set ${sr.setNumber}` });
         summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Sixes', amount: -half, segment: 'total', description: `Set ${sr.setNumber}` });
