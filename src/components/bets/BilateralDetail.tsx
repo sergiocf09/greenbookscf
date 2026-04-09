@@ -2444,6 +2444,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
 
+                        // Check if continua mode is active for this pair
+                        const pairKeyEv = [player.id, rival.id].sort().join('_');
+                        const pairOverrideEv = effectiveBetConfig.pressurePairOverrides?.[pairKeyEv];
+                        const pairOnlyMatch = pairOverrideEv?.onlyMatch !== undefined
+                          ? pairOverrideEv.onlyMatch
+                          : effectiveBetConfig.pressures.onlyMatch === true;
+                        const isContinua = pairOnlyMatch && effectiveBetConfig.pressures.continua === true;
+
                         // In HISTORICAL mode, NEVER recalculate — description from snapshot is the only source.
                         const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
 
@@ -2506,7 +2514,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && segmentType !== 'total') || isSkins || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -2517,29 +2525,70 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {isPressures && pressureSegmentData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
-                                        <span className="font-medium text-sm">Presiones {segment.label}</span>
+                                        <span className="font-medium text-sm">
+                                          {isContinua && segmentType === 'total' ? 'Match Play 18' : `Presiones ${segment.label}`}
+                                        </span>
                                         <span className="text-xs text-muted-foreground">
                                           {player.initials} vs {rival.initials}
                                         </span>
                                       </div>
-                                      {/* Holes grid */}
-                                      <div className="overflow-x-auto">
-                                        <div className="flex gap-0.5 min-w-max">
-                                          {pressureSegmentData.holes.map((hole) => (
-                                            <div key={hole.holeNumber} className="flex flex-col items-center">
-                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
-                                              <div className={cn(
-                                                'w-8 h-7 flex items-center justify-center text-[11px] font-bold rounded',
-                                                hole.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
-                                                hole.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
-                                                'bg-muted/50 text-muted-foreground'
-                                              )}>
-                                                {hole.display || 'E'}
+                                      {/* Holes grid — for continua total, show 2 rows of 9 */}
+                                      {isContinua && segmentType === 'total' && pressureEvolution ? (
+                                        <div className="space-y-1">
+                                          {/* Front 9 row */}
+                                          <div className="grid grid-cols-9 gap-0.5">
+                                            {pressureEvolution.front.holes.map((hole) => (
+                                              <div key={hole.holeNumber} className="flex flex-col items-center">
+                                                <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                                <div className={cn(
+                                                  'w-full h-7 flex items-center justify-center text-[9px] font-bold rounded',
+                                                  hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
+                                                  hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                  hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                  'bg-muted/50 text-muted-foreground'
+                                                )}>
+                                                  {hole.display || 'E'}
+                                                </div>
                                               </div>
-                                            </div>
-                                          ))}
+                                            ))}
+                                          </div>
+                                          {/* Back 9 row */}
+                                          <div className="grid grid-cols-9 gap-0.5">
+                                            {pressureEvolution.back.holes.map((hole) => (
+                                              <div key={hole.holeNumber} className="flex flex-col items-center">
+                                                <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                                <div className={cn(
+                                                  'w-full h-7 flex items-center justify-center text-[9px] font-bold rounded',
+                                                  hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
+                                                  hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                  hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                  'bg-muted/50 text-muted-foreground'
+                                                )}>
+                                                  {hole.display || 'E'}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
                                         </div>
-                                      </div>
+                                      ) : (
+                                        <div className="overflow-x-auto">
+                                          <div className="flex gap-0.5 min-w-max">
+                                            {pressureSegmentData.holes.map((hole) => (
+                                              <div key={hole.holeNumber} className="flex flex-col items-center">
+                                                <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                                <div className={cn(
+                                                  'w-8 h-7 flex items-center justify-center text-[11px] font-bold rounded',
+                                                  hole.bets.some(b => b > 0) ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                  hole.bets.some(b => b < 0) ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                  'bg-muted/50 text-muted-foreground'
+                                                )}>
+                                                  {hole.display || 'E'}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                       {/* Final result */}
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50">
                                         Final: <span className="font-bold">{pressureSegmentData.finalDisplay}</span>

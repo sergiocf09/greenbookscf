@@ -2546,17 +2546,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       let cumBal = 0;
                       let matchOver = false;
                       let matchResult = '';
+                      let scoredCount = 0;
                       for (let i = 0; i < allDetails.length; i++) {
                         const d = allDetails[i];
-                        if (d) cumBal += d.net;
-                        const remaining = allDetails.length - (i + 1);
+                        if (!d) break; // Stop at first unscored hole
+                        cumBal += d.net;
+                        scoredCount++;
+                        const remaining = allDetails.length - scoredCount;
                         if (Math.abs(cumBal) > remaining && remaining > 0) {
                           matchOver = true;
                           matchResult = `${Math.abs(cumBal)} & ${remaining}`;
                           break;
                         }
                       }
-                      if (!matchOver && allDetails.every(d => d !== null)) {
+                      if (!matchOver && scoredCount === allDetails.length) {
                         matchResult = cumBal === 0 ? 'E' : `${Math.abs(cumBal)} Up`;
                       }
                       const statusLabel = matchOver ? matchResult :
@@ -2850,9 +2853,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       let matchConcludedAt = -1;
                       const cumBalances: number[] = [];
                       
+                      let lastScoredIdx = -1;
                       for (let i = 0; i < allDetails.length; i++) {
                         const d = allDetails[i];
-                        if (d && matchConcludedAt < 0) cumBal += d.net;
+                        if (!d) {
+                          cumBalances.push(cumBal);
+                          continue;
+                        }
+                        if (matchConcludedAt < 0) cumBal += d.net;
+                        lastScoredIdx = i;
                         cumBalances.push(cumBal);
                         if (matchConcludedAt < 0) {
                           const remaining = allDetails.length - (i + 1);
@@ -3135,6 +3144,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           scores={scores}
           course={course}
           basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          isDisabled={isTeamBetDisabled('wolf-primary')}
+          onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('wolf-primary') : undefined}
         />
       )}
 
@@ -3152,6 +3163,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             scores={scores}
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+            isDisabled={isTeamBetDisabled('sixes-primary')}
+            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('sixes-primary') : undefined}
           />
         );
       })()}
@@ -3170,6 +3183,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             scores={scores}
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+            isDisabled={isTeamBetDisabled('vegas-primary')}
+            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
           />
         );
       })()}

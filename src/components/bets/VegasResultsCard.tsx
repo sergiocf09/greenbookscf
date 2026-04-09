@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { ChevronDown, AlertTriangle } from 'lucide-react';
+import { Users, XCircle, CheckCircle, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface VegasResultsCardProps {
   players: Player[];
@@ -15,13 +15,15 @@ interface VegasResultsCardProps {
   scores: Map<string, PlayerScore[]>;
   course: GolfCourse;
   basePlayerId: string;
+  isDisabled?: boolean;
+  onToggleDisabled?: () => void;
   onConfigurePlayers?: () => void;
 }
 
 export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
-  players, vegasConfig, scores, course, basePlayerId,
+  players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const needsConfig = !vegasConfig.playerAId;
 
@@ -74,166 +76,200 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     return { front, back, total: front + back };
   };
 
+  const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
+
+  // Use first set for team names (fixed variant)
+  const sr0 = setResults[0];
+  if (!sr0) return null;
+  const myTeam1 = isTeam1(sr0);
+  const myTeam = myTeam1 ? sr0.team1 : sr0.team2;
+  const rivalTeam = myTeam1 ? sr0.team2 : sr0.team1;
+  const accum = getSetAccum(sr0);
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">Las Vegas</CardTitle>
-          <Badge className={cn(
-            'text-xs',
-            totalBalance > 0 && 'bg-green-500/15 text-green-700 border-green-500/30',
-            totalBalance < 0 && 'bg-red-500/15 text-red-700 border-red-500/30',
-            totalBalance === 0 && 'bg-muted text-muted-foreground',
-          )}>
-            {totalBalance > 0 ? '+' : ''}{totalBalance !== 0 ? `$${fmtMoney(Math.abs(totalBalance))}` : '$0'}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {needsConfig && (
-          <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <p className="text-xs text-amber-700 flex-1">Jugadores A/B/C/D no asignados</p>
+    <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
+      <CardHeader className="py-3">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Las Vegas
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            {isDisabled ? (
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
+                {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
+              </span>
+            )}
+            {onToggleDisabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                onClick={onToggleDisabled}
+                title={isDisabled ? 'Reactivar Vegas' : 'No considerar Vegas'}
+              >
+                {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              </Button>
+            )}
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0 space-y-2">
+        {/* Team names row */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium truncate">
+            {getName(myTeam[0])} / {getName(myTeam[1])}
+          </span>
+          <span className="text-muted-foreground text-xs mx-2">vs</span>
+          <span className="font-medium truncate text-right">
+            {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
+          </span>
+        </div>
 
-        {setResults.map((sr, idx) => {
-          const key = sr.setNumber ? `set${sr.setNumber}` : 'all';
-          const myTeam1 = isTeam1(sr);
-          const myTeam = myTeam1 ? sr.team1 : sr.team2;
-          const rivalTeam = myTeam1 ? sr.team2 : sr.team1;
-          const accum = getSetAccum(sr);
-          const holesCount = sr.endHole - sr.startHole + 1;
+        {/* Collapsible detail */}
+        <Collapsible open={detailOpen} onOpenChange={setDetailOpen}>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+              <span className={cn('font-semibold', getNetTone(accum.front))}>
+                F9 {accum.front > 0 ? '+' : ''}{accum.front}
+              </span>
+              <span className={cn('font-semibold', getNetTone(accum.back))}>
+                B9 {accum.back > 0 ? '+' : ''}{accum.back}
+              </span>
+              <span className={cn('font-bold', getNetTone(accum.total))}>
+                T {accum.total > 0 ? '+' : ''}{accum.total}
+              </span>
+            </div>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
+                <span className="sr-only">Ver detalle</span>
+              </Button>
+            </CollapsibleTrigger>
+          </div>
 
-          return (
-            <Collapsible key={key} open={openSection === key} onOpenChange={o => setOpenSection(o ? key : null)}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full py-1">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {sr.setNumber && <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">H{sr.startHole}–{sr.endHole}</Badge>}
-                  <span className="text-xs font-medium truncate">
-                    {getName(myTeam[0])} / {getName(myTeam[1])}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">vs</span>
-                  <span className="text-xs font-medium truncate">
-                    {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                  <span className={cn('text-xs font-bold tabular-nums',
-                    accum.total > 0 ? 'text-green-600' :
-                    accum.total < 0 ? 'text-destructive' : 'text-muted-foreground'
-                  )}>
-                    {accum.total > 0 ? '+' : ''}{accum.total}
-                  </span>
-                  <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === key && 'rotate-180')} />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                {/* Front / Back / Total summary */}
-                {holesCount > 9 && (
-                  <div className="grid grid-cols-3 gap-1 text-center text-[10px] tabular-nums mb-1">
-                    <span className={cn('font-semibold', accum.front > 0 ? 'text-green-600' : accum.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      F9 {accum.front > 0 ? '+' : ''}{accum.front}
-                    </span>
-                    <span className={cn('font-semibold', accum.back > 0 ? 'text-green-600' : accum.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      B9 {accum.back > 0 ? '+' : ''}{accum.back}
-                    </span>
-                    <span className={cn('font-bold', accum.total > 0 ? 'text-green-600' : accum.total < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      T {accum.total > 0 ? '+' : ''}{accum.total}
-                    </span>
+          <CollapsibleContent className="mt-2">
+            {setResults.map((sr) => {
+              const myT1 = isTeam1(sr);
+              const holesCount = sr.endHole - sr.startHole + 1;
+              
+              return (
+                <div key={sr.setNumber || 'all'} className="bg-muted/30 rounded-lg p-2 space-y-1">
+                  <div className="text-[10px] text-muted-foreground text-center">
+                    Toca en un hoyo para ver el desglose
                   </div>
-                )}
-                <div className={cn('grid gap-1 mt-1', holesCount <= 6 ? 'grid-cols-6' : 'grid-cols-9')}>
-                  {sr.holeDetails.map(hd => {
-                    const myDiff = myTeam1 ? hd.diff : -hd.diff;
-                    const pill = (
-                      <div className={cn(
-                        'flex flex-col items-center justify-center rounded-lg p-1 h-12 text-xs border cursor-pointer',
-                        myDiff > 0 && 'bg-green-500/15 border-green-500/30 text-green-700',
-                        myDiff < 0 && 'bg-red-500/15 border-red-500/30 text-red-700',
-                        myDiff === 0 && 'bg-muted border-border text-muted-foreground',
-                      )}>
-                        <span className="font-semibold">{hd.holeNumber}</span>
-                        <span className="text-[8px] font-mono">{myDiff > 0 ? '+' : ''}{myDiff}</span>
-                      </div>
-                    );
-
-                    // Side-by-side popover
-                    const myNum = myTeam1 ? hd.numberTeam1 : hd.numberTeam2;
-                    const rvNum = myTeam1 ? hd.numberTeam2 : hd.numberTeam1;
-                    const myNumEff = myTeam1
-                      ? (hd.multiplierApplied === 'team1' ? hd.numberTeam1Effective : hd.numberTeam1)
-                      : (hd.multiplierApplied === 'team2' ? hd.numberTeam2Effective : hd.numberTeam2);
-                    const rvNumEff = myTeam1
-                      ? (hd.multiplierApplied === 'team2' ? hd.numberTeam2Effective : hd.numberTeam2)
-                      : (hd.multiplierApplied === 'team1' ? hd.numberTeam1Effective : hd.numberTeam1);
-
-                    return (
-                      <Popover key={hd.holeNumber}>
-                        <PopoverTrigger asChild>{pill}</PopoverTrigger>
-                        <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
-                          <p className="font-semibold mb-2">Hoyo {hd.holeNumber}</p>
-                          <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-1 items-center">
-                            <span className="text-[10px] text-muted-foreground font-medium">Tu equipo</span>
-                            <span></span>
-                            <span className="text-[10px] text-muted-foreground font-medium text-right">Rival</span>
-                            {/* Player scores */}
-                            {[0, 1].map(i => {
-                              const myPid = myTeam[i];
-                              const rvPid = rivalTeam[i];
-                              const myS = hd.netA !== undefined && i === 0 ? (myTeam1 ? hd.netA : hd.netC) : (myTeam1 ? hd.netB : hd.netD);
-                              const rvS = i === 0 ? (myTeam1 ? hd.netC : hd.netA) : (myTeam1 ? hd.netD : hd.netB);
-                              return (
-                                <React.Fragment key={i}>
-                                  <div className="flex items-center gap-1">
-                                    <span className="truncate">{getName(myPid)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 justify-center">
-                                    <span className="font-mono font-bold tabular-nums text-[11px]">{myS}</span>
-                                    <span className="text-muted-foreground">–</span>
-                                    <span className="font-mono font-bold tabular-nums text-[11px]">{rvS}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 justify-end">
-                                    <span className="truncate text-right">{getName(rvPid)}</span>
-                                  </div>
-                                </React.Fragment>
-                              );
-                            })}
-                          </div>
-                          {/* Vegas numbers */}
-                          <div className="mt-2 pt-1 border-t border-border/50 space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] text-muted-foreground">Número</span>
-                              <div className="flex items-center gap-2">
-                                <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff > 0 && 'bg-foreground text-background')}>
-                                  {myNumEff}
-                                </span>
-                                <span className="text-muted-foreground">vs</span>
-                                <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff < 0 && 'bg-foreground text-background')}>
-                                  {rvNumEff}
-                                </span>
-                              </div>
-                            </div>
-                            {hd.multiplierApplied !== 'none' && (
-                              <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
-                            )}
-                            <div className="flex justify-between text-[10px]">
-                              <span>Diferencia</span>
-                              <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
-                                {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
-                              </span>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    );
-                  })}
+                  <div className={cn('grid gap-1', holesCount <= 9 ? 'grid-cols-9' : 'grid-cols-9')}>
+                    {/* Front 9 */}
+                    {sr.holeDetails.filter(hd => hd.holeNumber <= 9).map(hd => {
+                      const myDiff = myT1 ? hd.diff : -hd.diff;
+                      return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                    })}
+                  </div>
+                  {sr.holeDetails.some(hd => hd.holeNumber > 9) && (
+                    <div className="grid grid-cols-9 gap-1 mt-1">
+                      {sr.holeDetails.filter(hd => hd.holeNumber > 9).map(hd => {
+                        const myDiff = myT1 ? hd.diff : -hd.diff;
+                        return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                      })}
+                    </div>
+                  )}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-          );
-        })}
+              );
+            })}
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
 };
+
+function renderHolePill(
+  hd: any,
+  myDiff: number,
+  myTeam1: boolean,
+  myTeam: string[],
+  rivalTeam: string[],
+  getName: (id: string) => string,
+  vegasConfig: VegasConfig,
+) {
+  const pill = (
+    <div className={cn(
+      'flex flex-col items-center justify-center rounded-lg p-0.5 h-10 text-xs border cursor-pointer',
+      myDiff > 0 && 'bg-green-500/15 border-green-500/30 text-green-700',
+      myDiff < 0 && 'bg-red-500/15 border-red-500/30 text-red-700',
+      myDiff === 0 && 'bg-muted border-border text-muted-foreground',
+    )}>
+      <span className="text-[8px] text-muted-foreground">{hd.holeNumber}</span>
+      <span className="text-[10px] font-bold tabular-nums">{myDiff > 0 ? '+' : ''}{myDiff}</span>
+    </div>
+  );
+
+  const myNum = myTeam1 ? hd.numberTeam1 : hd.numberTeam2;
+  const rvNum = myTeam1 ? hd.numberTeam2 : hd.numberTeam1;
+  const myNumEff = myTeam1
+    ? (hd.multiplierApplied === 'team1' ? hd.numberTeam1Effective : hd.numberTeam1)
+    : (hd.multiplierApplied === 'team2' ? hd.numberTeam2Effective : hd.numberTeam2);
+  const rvNumEff = myTeam1
+    ? (hd.multiplierApplied === 'team2' ? hd.numberTeam2Effective : hd.numberTeam2)
+    : (hd.multiplierApplied === 'team1' ? hd.numberTeam1Effective : hd.numberTeam1);
+
+  return (
+    <Popover key={hd.holeNumber}>
+      <PopoverTrigger asChild>{pill}</PopoverTrigger>
+      <PopoverContent side="top" className="w-[95vw] max-w-sm p-3 text-xs">
+        <p className="font-semibold mb-2">Hoyo {hd.holeNumber}</p>
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-1 items-center">
+          <span className="text-[10px] text-muted-foreground font-medium">Tu equipo</span>
+          <span></span>
+          <span className="text-[10px] text-muted-foreground font-medium text-right">Rival</span>
+          {[0, 1].map(i => {
+            const myPid = myTeam[i];
+            const rvPid = rivalTeam[i];
+            const myS = hd.netA !== undefined && i === 0 ? (myTeam1 ? hd.netA : hd.netC) : (myTeam1 ? hd.netB : hd.netD);
+            const rvS = i === 0 ? (myTeam1 ? hd.netC : hd.netA) : (myTeam1 ? hd.netD : hd.netB);
+            return (
+              <React.Fragment key={i}>
+                <div className="flex items-center gap-1">
+                  <span className="truncate">{getName(myPid)}</span>
+                </div>
+                <div className="flex items-center gap-1 justify-center">
+                  <span className="font-mono font-bold tabular-nums text-[11px]">{myS}</span>
+                  <span className="text-muted-foreground">–</span>
+                  <span className="font-mono font-bold tabular-nums text-[11px]">{rvS}</span>
+                </div>
+                <div className="flex items-center gap-1 justify-end">
+                  <span className="truncate text-right">{getName(rvPid)}</span>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
+        <div className="mt-2 pt-1 border-t border-border/50 space-y-1">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-muted-foreground">Número</span>
+            <div className="flex items-center gap-2">
+              <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff > 0 && 'bg-foreground text-background')}>
+                {myNumEff}
+              </span>
+              <span className="text-muted-foreground">vs</span>
+              <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myDiff < 0 && 'bg-foreground text-background')}>
+                {rvNumEff}
+              </span>
+            </div>
+          </div>
+          {hd.multiplierApplied !== 'none' && (
+            <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
+          )}
+          <div className="flex justify-between text-[10px]">
+            <span>Diferencia</span>
+            <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
+              {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
+            </span>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
