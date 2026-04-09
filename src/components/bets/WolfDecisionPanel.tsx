@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Player, WolfConfig, WolfHoleState } from '@/types/golf';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
