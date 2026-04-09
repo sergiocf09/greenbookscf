@@ -223,7 +223,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                               <React.Fragment key={i}>
                                 <div className="flex items-center gap-1">
                                   <span className="truncate">{my.playerName.split(' ')[0]}</span>
-                                  {my.strokes > 0 && my.net !== my.gross && <span className="text-[9px] text-muted-foreground">({my.gross})</span>}
+                                  {my.strokes > 0 && my.net !== my.gross && <span className="text-[9px]">●</span>}
                                 </div>
                                 <div className="flex items-center gap-1 justify-center">
                                   <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myWins && 'bg-foreground text-background')}>
