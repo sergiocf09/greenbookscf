@@ -248,6 +248,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         // Hole 18 Redemption: identify biggest loser as candidate (optional)
         const isRedemptionHole = currentHole === 18 && betConfig?.wolfSetup?.hole18Redemption;
         let redemptionCandidateId: string | null = null;
+        let redemptionCandidateLoss = 0;
         if (isRedemptionHole && wolfHoleStates) {
           const pnl = new Map<string, number>();
           players.forEach(p => pnl.set(p.id, 0));
@@ -265,6 +266,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           const sorted = [...pnl.entries()].sort((a, b) => a[1] - b[1]);
           if (sorted.length >= 2 && sorted[0][1] < sorted[1][1]) {
             redemptionCandidateId = sorted[0][0];
+            redemptionCandidateLoss = sorted[0][1];
           }
         }
 
@@ -286,6 +288,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             }}
             isRedemption={false}
             redemptionCandidateId={redemptionCandidateId ?? undefined}
+            redemptionCandidateLoss={redemptionCandidateLoss ?? undefined}
             regularWolfPlayerId={regularWolfPlayerId}
           />
         );

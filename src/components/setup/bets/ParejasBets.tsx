@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
@@ -532,12 +533,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 : activeIds;
               return (
                 <div className="bg-muted/30 rounded-lg p-2">
-                  <p className="text-[11px] text-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
                     {displayOrder.map((id: string, i: number) => {
                       const p = players.find(pl => pl.id === id);
-                      return `${i + 1}. ${p?.name?.split(' ')[0] ?? '?'}`;
-                    }).join(' · ')}
-                  </p>
+                      return (
+                        <div key={id} className="flex items-center gap-1 text-[11px]">
+                          <span className="text-muted-foreground font-semibold">{i + 1}.</span>
+                          {p && <PlayerAvatar initials={p.initials} background={p.color} size="xs" />}
+                          <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                          {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
@@ -1114,14 +1122,14 @@ const SixesBetCard: React.FC<{
                 onUpdateHandicaps={() => {}} />
             </div>
 
-            {/* Sets 2&3 - read-only preview when auto-generated */}
+            {/* All 3 sets - read-only preview when auto-generated */}
             {set1Complete && (
               <div className="bg-muted/40 rounded-lg p-2 space-y-1">
                 <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
-                <div className="grid grid-cols-2 gap-1 text-[9px] text-center">
-                  {([2, 3] as const).map(setNum => {
+                <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
+                  {([1, 2, 3] as const).map(setNum => {
                     const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
-                    const ranges: Record<number, string> = { 2: 'H7–12', 3: 'H13–18' };
+                    const ranges: Record<number, string> = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' };
                     return (
                       <div key={setNum} className="bg-background rounded p-1.5">
                         <div className="font-semibold text-primary">{ranges[setNum]}</div>

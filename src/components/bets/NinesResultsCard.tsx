@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, NinesConfig } from '@/types/golf';
 import { buildNinesHoleDetails, calculateNinesPlayerSummaries, calculateNinesBets, distributeNinesPoints } from '@/lib/bets/nines';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,6 +140,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   }, [bets, basePlayerId, activePlayers, scores, ninesConfig, course]);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const disambiguated = useMemo(() => disambiguateInitials(activePlayers), [activePlayers]);
 
   const hasInsufficientPlayers = ninesConfig.playerIds.length < 3 || ninesConfig.playerIds.some(id => !id || id === '');
 
@@ -185,7 +187,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
             const isLeader = i === 0 && s.totalPoints > 0;
             return (
               <div key={s.playerId} className="flex items-center gap-2 text-sm">
-                <PlayerAvatar initials={s.playerInitials} background={s.playerColor} size="sm" />
+                <PlayerAvatar initials={disambiguated.get(s.playerId) || s.playerInitials} background={s.playerColor} size="sm" />
                 <span className={isLeader ? 'font-semibold text-primary' : 'text-foreground'}>
                   {isLeader && '★ '}{player.name.split(' ')[0]}
                 </span>
@@ -224,7 +226,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                     <tr className="text-muted-foreground">
                       <th className="text-left px-1">H</th>
                       {activePlayers.map(p => (
-                        <th key={p.id} className="text-center px-1">{p.initials}</th>
+                        <th key={p.id} className="text-center px-1">{disambiguated.get(p.id) || p.initials}</th>
                       ))}
                     </tr>
                   </thead>
@@ -256,10 +258,10 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                             const strokesRcvd = hs?.strokesReceived ?? 0;
                             return (
                               <div key={pp.playerId} className={cn('flex items-center gap-1', pp.resting && 'text-muted-foreground')}>
-                                <PlayerAvatar initials={player.initials} background={player.color} size="xs" />
+                              <PlayerAvatar initials={disambiguated.get(player.id) || player.initials} background={player.color} size="xs" />
                                 <span>{player.name.split(' ')[0]}</span>
                                 {strokesRcvd > 0 && hs && hs.strokes > 0 && (
-                                  <span className="text-[9px] text-muted-foreground">({hs.strokes}) ●</span>
+                                  <span className="text-[9px]">●</span>
                                 )}
                                 <span className="ml-auto font-mono">{pp.points} pts</span>
                                 {pp.resting && <span className="text-[9px]">(descansa)</span>}

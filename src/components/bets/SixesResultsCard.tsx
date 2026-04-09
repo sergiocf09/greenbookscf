@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, SixesConfig } from '@/types/golf';
+import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { buildSixesSetResults, calculateSixesBets } from '@/lib/bets/sixes';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
@@ -46,6 +48,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const getTeamSide = (setResult: typeof setResults[0]) => {
     if (setResult.team1.includes(basePlayerId)) return 'team1';
@@ -73,7 +77,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       }
     });
     return [...balances.entries()]
-      .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
+      .map(([id, bal]) => ({ id, name: getFullName(id), balance: bal }))
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
 
@@ -219,7 +223,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                               <React.Fragment key={i}>
                                 <div className="flex items-center gap-1">
                                   <span className="truncate">{my.playerName.split(' ')[0]}</span>
-                                  {my.strokes > 0 && my.net !== my.gross && <span className="text-[9px] text-muted-foreground">({my.gross})</span>}
+                                  {my.strokes > 0 && my.net !== my.gross && <span className="text-[9px]">●</span>}
                                 </div>
                                 <div className="flex items-center gap-1 justify-center">
                                   <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded text-[11px]', myWins && 'bg-foreground text-background')}>
@@ -231,7 +235,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1 justify-end">
-                                  {rv.strokes > 0 && rv.net !== rv.gross && <span className="text-[9px] text-muted-foreground">({rv.gross})</span>}
+                                  {rv.strokes > 0 && rv.net !== rv.gross && <span className="text-[9px]">●</span>}
                                   <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
                                 </div>
                               </React.Fragment>
@@ -254,14 +258,20 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
 
         {/* Per-player ranking */}
         <div className="border-t border-border/50 pt-2 space-y-0.5">
-          {playerRanking.map(pr => (
-            <div key={pr.id} className="flex items-center justify-between text-xs">
-              <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
-              <span className={cn('font-bold tabular-nums', getNetTone(pr.balance))}>
-                {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
-              </span>
-            </div>
-          ))}
+          {playerRanking.map(pr => {
+            const p = players.find(x => x.id === pr.id);
+            return (
+              <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                  <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
+                </div>
+                <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
+                  {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

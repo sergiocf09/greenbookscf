@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, VegasConfig } from '@/types/golf';
+import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { buildVegasSetResults, calculateVegasBets, formVegasNumber } from '@/lib/bets/vegas';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
@@ -42,6 +44,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const isTeam1 = (sr: typeof setResults[0]) => sr.team1.includes(basePlayerId);
 
@@ -104,7 +108,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       }
     });
     return [...balances.entries()]
-      .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
+      .map(([id, bal]) => ({ id, name: getFullName(id), balance: bal }))
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
 
@@ -196,14 +200,20 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
             {/* Per-player ranking for rotating variant */}
             <div className="border-t border-border/50 pt-2 space-y-0.5">
-              {playerRanking.map(pr => (
-                <div key={pr.id} className="flex items-center justify-between text-xs">
-                  <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
-                  <span className={cn('font-bold tabular-nums', getNetTone(pr.balance))}>
-                    {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
-                  </span>
-                </div>
-              ))}
+              {playerRanking.map(pr => {
+                const p = players.find(x => x.id === pr.id);
+                return (
+                  <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                      <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
+                    </div>
+                    <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
+                      {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </>
         ) : (
@@ -322,10 +332,13 @@ function renderHolePill(
             const rvPid = rivalTeam[i];
             const myS = hd.netA !== undefined && i === 0 ? (myTeam1 ? hd.netA : hd.netC) : (myTeam1 ? hd.netB : hd.netD);
             const rvS = i === 0 ? (myTeam1 ? hd.netC : hd.netA) : (myTeam1 ? hd.netD : hd.netB);
+            const myStrokes = i === 0 ? (myTeam1 ? hd.strokesA : hd.strokesC) : (myTeam1 ? hd.strokesB : hd.strokesD);
+            const rvStrokes = i === 0 ? (myTeam1 ? hd.strokesC : hd.strokesA) : (myTeam1 ? hd.strokesD : hd.strokesB);
             return (
               <React.Fragment key={i}>
                 <div className="flex items-center gap-1">
                   <span className="truncate">{getName(myPid)}</span>
+                  {myStrokes > 0 && <span className="text-[9px]">●</span>}
                 </div>
                 <div className="flex items-center gap-1 justify-center">
                   <span className="font-mono font-bold tabular-nums text-[11px]">{myS}</span>
@@ -333,6 +346,7 @@ function renderHolePill(
                   <span className="font-mono font-bold tabular-nums text-[11px]">{rvS}</span>
                 </div>
                 <div className="flex items-center gap-1 justify-end">
+                  {rvStrokes > 0 && <span className="text-[9px]">●</span>}
                   <span className="truncate text-right">{getName(rvPid)}</span>
                 </div>
               </React.Fragment>
