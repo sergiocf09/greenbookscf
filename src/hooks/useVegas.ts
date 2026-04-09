@@ -22,6 +22,12 @@ export const useVegas = (roundId: string | null) => {
           playerBId: data.player_b_id ?? '',
           playerCId: data.player_c_id ?? '',
           playerDId: data.player_d_id ?? '',
+          useSegmentAmounts: (data as any).use_segment_amounts ?? false,
+          frontAmount: (data as any).front_amount ?? undefined,
+          backAmount: (data as any).back_amount ?? undefined,
+          set1Amount: (data as any).set1_amount ?? undefined,
+          set2Amount: (data as any).set2_amount ?? undefined,
+          set3Amount: (data as any).set3_amount ?? undefined,
         });
       } else {
         setVegasConfig(null);
