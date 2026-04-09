@@ -720,6 +720,12 @@ export interface VegasConfig {
   roundId: string; valuePerPoint: number; useHandicap: boolean;
   birdieMultiplier: boolean; variant: VegasVariant;
   playerAId: string; playerBId: string; playerCId: string; playerDId: string;
+  useSegmentAmounts?: boolean;
+  frontAmount?: number;
+  backAmount?: number;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
 }
 
 export interface VegasHoleDetail {
