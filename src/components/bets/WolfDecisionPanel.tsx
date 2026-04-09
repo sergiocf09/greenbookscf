@@ -36,9 +36,12 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   currentUserId,
   onDecision,
   isRedemption,
+  redemptionCandidateId,
+  regularWolfPlayerId,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
+  const [redemptionMode, setRedemptionMode] = useState<'pending' | 'accepted' | 'declined'>('pending');
 
   const wolfPlayer = players.find(p => p.id === wolfPlayerId);
   if (!wolfPlayer) return null;
