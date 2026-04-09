@@ -674,7 +674,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     
     // Presiones
     if (bothParticipate(undefined, 'pressures')) {
-      const isContinuaMatch = !!(resolvedCfg.pressures?.continua && resolvedCfg.pressures?.onlyMatch);
+      const pairKeyP = [player.id, rival.id].sort().join('_');
+      const pairOverrideP = betConfig.pressurePairOverrides?.[pairKeyP];
+      const pairOnlyMatchP = pairOverrideP?.onlyMatch !== undefined
+        ? pairOverrideP.onlyMatch
+        : resolvedCfg.pressures?.onlyMatch === true;
+      const isContinuaMatch = !!(resolvedCfg.pressures?.continua && pairOnlyMatchP);
       const pressureSegments = isContinuaMatch
         ? [
             { label: 'Total 18', key: 'pressure_total', overrideLabel: 'Presiones Match 18' },
