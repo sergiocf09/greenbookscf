@@ -196,17 +196,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">Nines (5-3-1)</CardTitle>
-          <Badge className={cn(
-            'text-xs',
-            totalBalance > 0 && 'bg-green-500/15 text-green-700 border-green-500/30',
-            totalBalance < 0 && 'bg-red-500/15 text-red-700 border-red-500/30',
-            totalBalance === 0 && 'bg-muted text-muted-foreground',
-          )}>
-            {totalBalance > 0 ? '+' : ''}{totalBalance !== 0 ? `$${fmtMoney(Math.abs(totalBalance))}` : '$0'}
-          </Badge>
-        </div>
+        <CardTitle className="text-sm">Nines (5-3-1)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Grid de tarjetas estilo Stableford */}
