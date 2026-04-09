@@ -63,7 +63,6 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
   /** Toggle a single player's participation in a bet via exclusion list */
   const handleCellToggle = (betKey: ParejasBetKey, playerId: string) => {
     if (!isBetEnabled(config, betKey)) return;
-    if (betKey === 'wolf') return; // Wolf uses all players
 
     const currentActive = getParticipantIds(config, betKey, players);
     const isIn = currentActive.includes(playerId);
