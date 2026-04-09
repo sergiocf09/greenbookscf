@@ -1802,7 +1802,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getBilateralBalanceFromMap(player.id, rivalId), 0);
                 const carritosBalance = getCarritosBalanceForPlayer(player.id);
                 const teamPressuresBalance = getTeamPressuresBalanceForPlayer(player.id);
-                totalBalance = individualBalance + carritosBalance + teamPressuresBalance;
+                const wolfBalance = getWolfBalanceForPlayer(player.id);
+                const sixesBalance = getSixesBalanceForPlayer(player.id);
+                const vegasBalance = getVegasBalanceForPlayer(player.id);
+                totalBalance = individualBalance + carritosBalance + teamPressuresBalance + wolfBalance + sixesBalance + vegasBalance;
               }
               const isBase = player.id === basePlayer?.id || player.profileId === basePlayerId;
               const isExpanded = expandedLeaderboard === player.id;
