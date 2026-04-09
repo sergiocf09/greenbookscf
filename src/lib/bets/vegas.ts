@@ -120,7 +120,15 @@ export const buildVegasSetResults = (
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
     const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
-    const totalAmount = details.reduce((acc, d) => acc + d.amountThisHole, 0);
+    const totalAmount = (() => {
+      if (!config.useSegmentAmounts || config.variant !== 'fixed') {
+        return Math.abs(totalDiff) * getVegasSegmentAmount(config, s.start);
+      }
+      const frontDiff = details.filter(d => d.holeNumber <= 9).reduce((a, d) => a + d.diff, 0);
+      const backDiff = details.filter(d => d.holeNumber > 9).reduce((a, d) => a + d.diff, 0);
+      return Math.abs(frontDiff) * getVegasSegmentAmount(config, 1)
+           + Math.abs(backDiff) * getVegasSegmentAmount(config, 10);
+    })();
     const winner: 'team1'|'team2'|'tied' = totalDiff > 0 ? 'team1' : totalDiff < 0 ? 'team2' : 'tied';
     return { setNumber: s.setNumber, startHole: s.start, endHole: s.end, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
   });
