@@ -1142,5 +1142,36 @@ const VegasBetCard: React.FC<{
       />
       <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
     </div>
+
+    {/* Auto-rotation preview for rotating variant */}
+    {bet.variant === 'rotating' && bet.playerAId && bet.playerBId && bet.playerCId && bet.playerDId && (() => {
+      const gn = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+      const A = gn(bet.playerAId), B = gn(bet.playerBId), C = gn(bet.playerCId), D = gn(bet.playerDId);
+      return (
+        <div className="bg-muted/40 rounded-lg p-2 space-y-1 mt-1">
+          <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
+          <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
+            <div className="bg-background rounded p-1">
+              <div className="font-semibold text-primary">H1–6</div>
+              <div>{A}+{B}</div>
+              <div className="text-muted-foreground">vs</div>
+              <div>{C}+{D}</div>
+            </div>
+            <div className="bg-background rounded p-1">
+              <div className="font-semibold text-primary">H7–12</div>
+              <div>{A}+{C}</div>
+              <div className="text-muted-foreground">vs</div>
+              <div>{B}+{D}</div>
+            </div>
+            <div className="bg-background rounded p-1">
+              <div className="font-semibold text-primary">H13–18</div>
+              <div>{A}+{D}</div>
+              <div className="text-muted-foreground">vs</div>
+              <div>{B}+{C}</div>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
   </div>
 );
