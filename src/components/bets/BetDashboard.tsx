@@ -1555,6 +1555,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
   };
   
+  // ── Wolf balance ──────────────────────────────────────────────────────
+  const getWolfBalanceForPlayer = (playerId: string): number =>
+    wolfBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getWolfBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    wolfBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
+  // ── Sixes balance ─────────────────────────────────────────────────────
+  const getSixesBalanceForPlayer = (playerId: string): number =>
+    sixesBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getSixesBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    sixesBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
+  // ── Vegas balance ─────────────────────────────────────────────────────
+  const getVegasBalanceForPlayer = (playerId: string): number =>
+    vegasBetSummaries.filter(s => s.playerId === playerId).reduce((sum, s) => sum + s.amount, 0);
+  const getVegasBalanceVsPlayer = (playerAId: string, playerBId: string): number =>
+    vegasBetSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId).reduce((sum, s) => sum + s.amount, 0);
+
   // isTeamBetDisabled moved above getCarritosBalanceForPlayer
   
   // Get players to display based on selected group
