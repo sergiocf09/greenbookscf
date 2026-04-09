@@ -774,6 +774,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       };
     };
 
+    // Guard: skip all carritos calculations if carritos is disabled in the matrix
+    if (!betConfig.carritos.enabled) return results;
+
     // Primary carritos - show only if no carritosTeams exist (legacy pattern)
     // When carritosTeams array has entries, all carritos are managed there
     const hasCarritosTeams = (betConfig.carritosTeams?.length ?? 0) > 0;
@@ -3189,7 +3192,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {ninesHook?.isActive && ninesHook.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && (
+      {ninesHook?.ninesConfig && (effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && (
         <NinesResultsCard
           players={allPlayersForCalculations}
           ninesConfig={ninesHook.ninesConfig}

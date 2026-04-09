@@ -531,32 +531,17 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 ? order
                 : activeIds;
               return (
-                <div className="bg-muted/30 rounded-lg p-2 space-y-0.5">
-                  {displayOrder.map((id: string, i: number) => {
-                    const p = players.find(pl => pl.id === id);
-                    return (
-                      <div key={id} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-4 text-right font-bold text-primary">{i + 1}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span>{p?.name?.split(' ')[0] ?? '?'}</span>
-                      </div>
-                    );
-                  })}
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <p className="text-[11px] text-foreground">
+                    {displayOrder.map((id: string, i: number) => {
+                      const p = players.find(pl => pl.id === id);
+                      return `${i + 1}. ${p?.name?.split(' ')[0] ?? '?'}`;
+                    }).join(' · ')}
+                  </p>
                 </div>
               );
             })()}
           </div>
-
-          <p className="text-[9px] text-muted-foreground mt-2">
-            Rotación: {(() => {
-              const order = config.wolfSetup?.playerOrder;
-              const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
-              const displayOrder = order && order.length > 0 && order.every((id: string) => activeIds.includes(id))
-                ? order
-                : activeIds;
-              return displayOrder.slice(0, 6).map((id: string, i: number) => `H${i + 1}: ${players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?'}`).join(' · ');
-            })()}
-          </p>
         </BetSection>
       )}
     </div>
@@ -1084,42 +1069,74 @@ const SixesBetCard: React.FC<{
     <AmountInput label="Monto" value={bet.amount} onChange={(v) => onUpdate({ amount: v })} />
 
     <div className="space-y-3">
-      {([1, 2, 3] as const).map(setNum => {
-        const ranges: Record<number, string> = { 1: 'H1–6', 2: 'H7–12', 3: 'H13–18' };
-        const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
-        const team1: [string, string] = assignment?.team1 ?? ['', ''];
-        const team2: [string, string] = assignment?.team2 ?? ['', ''];
-        const updateSet = (t1: [string, string], t2: [string, string]) => {
-          const currentSets = bet.sets ?? [];
-          const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
-            if (n === setNum) return { setNumber: n, team1: t1, team2: t2 };
-            return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
-          });
+      {(() => {
+        // Check if sets 2&3 are auto-generated from set 1
+        const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
+        const set1Complete = set1 && set1.team1[0] && set1.team1[1] && set1.team2[0] && set1.team2[1];
+        const gn = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
 
-          // Auto-rotate: when Set 1 is fully assigned and Sets 2/3 are empty, auto-generate
-          if (setNum === 1 && t1[0] && t1[1] && t2[0] && t2[1]) {
-            const set2 = newSets.find(s => s.setNumber === 2)!;
-            const set3 = newSets.find(s => s.setNumber === 3)!;
-            const set2Empty = !set2.team1[0] && !set2.team1[1] && !set2.team2[0] && !set2.team2[1];
-            const set3Empty = !set3.team1[0] && !set3.team1[1] && !set3.team2[0] && !set3.team2[1];
-            if (set2Empty && set3Empty) {
-              const [a, b] = t1;
-              const [c, d] = t2;
-              newSets[1] = { setNumber: 2, team1: [a, c], team2: [b, d] };
-              newSets[2] = { setNumber: 3, team1: [a, d], team2: [b, c] };
-            }
-          }
-
-          onUpdate({ sets: newSets });
-        };
         return (
-          <div key={setNum} className="space-y-2 p-2 rounded-lg bg-muted/30">
-            <Label className="text-[10px] font-semibold text-primary">Set {setNum} · {ranges[setNum]}</Label>
-            <TeamColumns teamA={team1} teamB={team2} teamHandicaps={{}} players={players} playerOptions={playerOptions}
-              onUpdateTeamA={(t) => updateSet(t, team2)} onUpdateTeamB={(t) => updateSet(team1, t)} onUpdateHandicaps={() => {}} />
-          </div>
+          <>
+            {/* Set 1 - always editable */}
+            <div className="space-y-2 p-2 rounded-lg bg-muted/30">
+              <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
+              <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']} teamHandicaps={{}} players={players} playerOptions={playerOptions}
+                onUpdateTeamA={(t) => {
+                  const currentSets = bet.sets ?? [];
+                  const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
+                    if (n === 1) return { setNumber: n, team1: t, team2: set1?.team2 ?? ['', ''] as [string,string] };
+                    return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+                  });
+                  // Auto-rotate when Set 1 is fully assigned
+                  if (t[0] && t[1] && (set1?.team2?.[0]) && (set1?.team2?.[1])) {
+                    const [a, b] = t;
+                    const [c, d] = set1!.team2;
+                    newSets[1] = { setNumber: 2, team1: [a, c], team2: [b, d] };
+                    newSets[2] = { setNumber: 3, team1: [a, d], team2: [b, c] };
+                  }
+                  onUpdate({ sets: newSets });
+                }}
+                onUpdateTeamB={(t) => {
+                  const currentSets = bet.sets ?? [];
+                  const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
+                    if (n === 1) return { setNumber: n, team1: set1?.team1 ?? ['', ''] as [string,string], team2: t };
+                    return currentSets.find(s => s.setNumber === n) ?? { setNumber: n, team1: ['', ''] as [string,string], team2: ['', ''] as [string,string] };
+                  });
+                  // Auto-rotate when Set 1 is fully assigned
+                  if ((set1?.team1?.[0]) && (set1?.team1?.[1]) && t[0] && t[1]) {
+                    const [a, b] = set1!.team1;
+                    const [c, d] = t;
+                    newSets[1] = { setNumber: 2, team1: [a, c], team2: [b, d] };
+                    newSets[2] = { setNumber: 3, team1: [a, d], team2: [b, c] };
+                  }
+                  onUpdate({ sets: newSets });
+                }}
+                onUpdateHandicaps={() => {}} />
+            </div>
+
+            {/* Sets 2&3 - read-only preview when auto-generated */}
+            {set1Complete && (
+              <div className="bg-muted/40 rounded-lg p-2 space-y-1">
+                <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-center">
+                  {([2, 3] as const).map(setNum => {
+                    const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
+                    const ranges: Record<number, string> = { 2: 'H7–12', 3: 'H13–18' };
+                    return (
+                      <div key={setNum} className="bg-background rounded p-1.5">
+                        <div className="font-semibold text-primary">{ranges[setNum]}</div>
+                        <div>{gn(assignment?.team1[0] ?? '')}+{gn(assignment?.team1[1] ?? '')}</div>
+                        <div className="text-muted-foreground">vs</div>
+                        <div>{gn(assignment?.team2[0] ?? '')}+{gn(assignment?.team2[1] ?? '')}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         );
-      })}
+      })()}
     </div>
   </div>
 );

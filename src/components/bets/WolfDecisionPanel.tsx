@@ -16,6 +16,8 @@ interface WolfDecisionPanelProps {
   currentUserId: string | null;
   onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
   isRedemption?: boolean;
+  redemptionCandidateId?: string; // ID of max loser eligible for redemption
+  regularWolfPlayerId?: string; // The wolf by normal rotation
 }
 
 const timingLabels: Record<string, string> = {
@@ -34,9 +36,12 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   currentUserId,
   onDecision,
   isRedemption,
+  redemptionCandidateId,
+  regularWolfPlayerId,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
+  const [redemptionMode, setRedemptionMode] = useState<'pending' | 'accepted' | 'declined'>('pending');
 
   const wolfPlayer = players.find(p => p.id === wolfPlayerId);
   if (!wolfPlayer) return null;
@@ -90,7 +95,41 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
       <div className="p-3 bg-card">
         {/* STATE 1: Selection */}
         {showSelectionUI && (
-          isRedemption ? (
+          /* Redemption candidate offer (optional) */
+          redemptionCandidateId && redemptionMode === 'pending' && !holeState ? (
+            canDecide ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> es el máximo perdedor y puede tomar la Recuperación (Solo ×3).
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
+                    onClick={() => {
+                      setRedemptionMode('accepted');
+                      // Override wolf to the candidate and force solo ×3
+                      onDecision([], true);
+                      setSelectedPartners([]);
+                      setEditing(false);
+                    }}
+                  >
+                    🐺 Aceptar Recuperación ×3
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setRedemptionMode('declined')}
+                  >
+                    Declinar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Esperando decisión de recuperación…</p>
+            )
+          ) : isRedemption ? (
             canDecide ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
