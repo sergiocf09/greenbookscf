@@ -531,32 +531,16 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 ? order
                 : activeIds;
               return (
-                <div className="bg-muted/30 rounded-lg p-2 space-y-0.5">
-                  {displayOrder.map((id: string, i: number) => {
-                    const p = players.find(pl => pl.id === id);
-                    return (
-                      <div key={id} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-4 text-right font-bold text-primary">{i + 1}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span>{p?.name?.split(' ')[0] ?? '?'}</span>
-                      </div>
-                    );
-                  })}
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <p className="text-[11px] text-foreground">
+                    {displayOrder.map((id: string, i: number) => {
+                      const p = players.find(pl => pl.id === id);
+                      return `${i + 1}. ${p?.name?.split(' ')[0] ?? '?'}`;
+                    }).join(' · ')}
+                  </p>
                 </div>
               );
             })()}
-          </div>
-
-          <p className="text-[9px] text-muted-foreground mt-2">
-            Rotación: {(() => {
-              const order = config.wolfSetup?.playerOrder;
-              const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
-              const displayOrder = order && order.length > 0 && order.every((id: string) => activeIds.includes(id))
-                ? order
-                : activeIds;
-              return displayOrder.slice(0, 6).map((id: string, i: number) => `H${i + 1}: ${players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?'}`).join(' · ');
-            })()}
-          </p>
         </BetSection>
       )}
     </div>
