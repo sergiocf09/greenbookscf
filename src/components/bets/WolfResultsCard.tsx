@@ -136,10 +136,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 {detail.scoresByPlayer.filter(s => s.teamSide === 'rival').map(s => (
                   <div key={s.playerId} className="flex items-center gap-1">
                     <span>{s.playerName.split(' ')[0]}</span>
-                    {s.strokes > 0 && s.net !== s.gross && <span className="text-[9px] text-muted-foreground">({s.gross})</span>}
-                    <span className="ml-auto font-mono">
-                      {s.strokes > 0 && '● '}{s.net}
-                    </span>
+                    {s.strokes > 0 && s.net !== s.gross && <span className="text-[9px]">●</span>}
+                    <span className="ml-auto font-mono">{s.net}</span>
                   </div>
                 ))}
               </div>
