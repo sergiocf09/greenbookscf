@@ -87,6 +87,27 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   const rivalTeam = myTeam1 ? sr0.team2 : sr0.team1;
   const accum = getSetAccum(sr0);
 
+  // Participating player IDs and ranking
+  const participantIds = useMemo(() => {
+    const ids = new Set<string>();
+    [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId]
+      .filter(Boolean).forEach(id => ids.add(id!));
+    return ids;
+  }, [vegasConfig]);
+
+  const playerRanking = useMemo(() => {
+    const balances = new Map<string, number>();
+    participantIds.forEach(id => balances.set(id, 0));
+    bets.forEach(b => {
+      if (participantIds.has(b.playerId)) {
+        balances.set(b.playerId, (balances.get(b.playerId) || 0) + b.amount);
+      }
+    });
+    return [...balances.entries()]
+      .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
+      .sort((a, b) => b.balance - a.balance);
+  }, [bets, participantIds]);
+
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
@@ -98,11 +119,11 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
-            ) : (
+            ) : !isRotating ? (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
                 {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
               </span>
-            )}
+            ) : null}
             {onToggleDisabled && (
               <Button
                 variant="ghost"
