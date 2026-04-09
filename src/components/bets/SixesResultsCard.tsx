@@ -48,6 +48,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const getTeamSide = (setResult: typeof setResults[0]) => {
     if (setResult.team1.includes(basePlayerId)) return 'team1';
