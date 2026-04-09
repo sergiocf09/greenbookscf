@@ -323,9 +323,9 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
               return (
                 <div key={s.playerId} className="flex items-center gap-2 text-sm">
                   <PlayerAvatar initials={getPlayerAbbr(player)} background={player.color} size="sm" isLoggedInUser={s.playerId === basePlayerId} />
-                  <span className="text-foreground text-xs">{player.name}</span>
+                  <span className="text-foreground text-xs font-medium">{player.name}</span>
                   <span className={cn(
-                    'ml-auto font-mono text-xs font-bold',
+                    'ml-auto font-bold font-sans text-sm',
                     bal > 0 && 'text-green-600',
                     bal < 0 && 'text-red-600',
                     bal === 0 && 'text-muted-foreground',
