@@ -446,7 +446,7 @@ const NinesBetCard: React.FC<{
       <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
       <div className="space-y-2">
-        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3 o 4)</Label>
+        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3)</Label>
         <div className="grid grid-cols-2 gap-1.5">
           {players.map(p => {
             const isSelected = selectedIds.includes(p.id);
