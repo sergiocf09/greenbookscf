@@ -90,7 +90,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   
   const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
+  const shortNamesLocal = useMemo(() => disambiguateShortNames(allPlayers), [allPlayers]);
   const getPlayerAbbr = (p: Player) => disambiguatedAbbrsLocal.get(p.id) || p.initials;
+  const getShortName = (p: Player) => shortNamesLocal.get(p.id) || formatPlayerName(p.name).split(' ')[0];
 
   // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
   const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
