@@ -41,17 +41,32 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
 
-  // Per-player ranking
+  // Only include participating players (referenced in hole states)
+  const participantIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const hs of holeStates) {
+      ids.add(hs.wolfPlayerId);
+      hs.partnerIds.forEach(id => ids.add(id));
+    }
+    // Also add all players who appear in bets
+    bets.forEach(b => ids.add(b.playerId));
+    // Fallback: if no states yet, include all players
+    if (ids.size === 0) players.forEach(p => ids.add(p.id));
+    return ids;
+  }, [holeStates, bets, players]);
+
   const playerRanking = useMemo(() => {
     const balances = new Map<string, number>();
-    players.forEach(p => balances.set(p.id, 0));
+    participantIds.forEach(id => balances.set(id, 0));
     bets.forEach(b => {
-      balances.set(b.playerId, (balances.get(b.playerId) || 0) + b.amount);
+      if (participantIds.has(b.playerId)) {
+        balances.set(b.playerId, (balances.get(b.playerId) || 0) + b.amount);
+      }
     });
     return [...balances.entries()]
       .map(([id, bal]) => ({ id, name: getName(id), balance: bal }))
       .sort((a, b) => b.balance - a.balance);
-  }, [bets, players]);
+  }, [bets, participantIds]);
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 

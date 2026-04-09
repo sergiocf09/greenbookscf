@@ -193,6 +193,18 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                 })}
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Per-player ranking for rotating variant */}
+            <div className="border-t border-border/50 pt-2 space-y-0.5">
+              {playerRanking.map(pr => (
+                <div key={pr.id} className="flex items-center justify-between text-xs">
+                  <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
+                  <span className={cn('font-bold tabular-nums', getNetTone(pr.balance))}>
+                    {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
+                  </span>
+                </div>
+              ))}
+            </div>
           </>
         ) : (
           /* ── Fixed variant: original single-pair layout ── */
