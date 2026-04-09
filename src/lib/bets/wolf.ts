@@ -123,7 +123,13 @@ export const calculateWolfBets = (
     .filter(s => s.result && s.result !== 'tied')
     .sort((a, b) => a.holeNumber - b.holeNumber)
     .forEach(state => {
-      const amount = state.effectiveAmount ?? config.amountPerHole;
+      // Recalcular siempre desde config actual para reflejar cambios de importe
+      const isRedemption = state.wentSolo && state.carryoverHoles === -1;
+      const amount = isRedemption
+        ? config.amountPerHole * 3
+        : config.amountPerHole
+          * (1 + Math.max(state.carryoverHoles ?? 0, 0))
+          * (state.wentSolo ? 2 : 1);
       const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
       const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
       const winners = state.result === 'won' ? wolfTeam : rivalTeam;
@@ -167,7 +173,14 @@ export const buildWolfHoleDetails = (
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
       result: state.result,
-      effectiveAmount: state.effectiveAmount ?? config.amountPerHole,
+      effectiveAmount: (() => {
+        const isRedemption = state.wentSolo && state.carryoverHoles === -1;
+        return isRedemption
+          ? config.amountPerHole * 3
+          : config.amountPerHole
+            * (1 + Math.max(state.carryoverHoles ?? 0, 0))
+            * (state.wentSolo ? 2 : 1);
+      })(),
       carryoverHoles: state.carryoverHoles,
       scoresByPlayer,
       teamWolfScore: resolved.teamWolfScore,
