@@ -90,7 +90,28 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
       <div className="p-3 bg-card">
         {/* STATE 1: Selection */}
         {showSelectionUI && (
-          canDecide ? (
+          isRedemption ? (
+            canDecide ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  🔥 Recuperación: {wolfPlayer.name.split(' ')[0]} va solo con apuesta ×3
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
+                  onClick={() => {
+                    onDecision([], true);
+                    setSelectedPartners([]);
+                    setEditing(false);
+                  }}
+                >
+                  🐺 Confirmar Recuperación (Solo ×3)
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Esperando confirmación de recuperación…</p>
+            )
+          ) : canDecide ? (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">Elige pareja{maxPartners > 1 ? 's' : ''}:</p>
               <div className="flex flex-wrap gap-2">
