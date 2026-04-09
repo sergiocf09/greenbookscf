@@ -44,6 +44,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   const isTeam1 = (sr: typeof setResults[0]) => sr.team1.includes(basePlayerId);
 
