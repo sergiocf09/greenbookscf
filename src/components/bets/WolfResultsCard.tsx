@@ -42,6 +42,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
 
   const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
+  const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
   // Only include participating players (referenced in hole states)
   const participantIds = useMemo(() => {
