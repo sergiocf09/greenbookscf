@@ -18,12 +18,14 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       ]);
       if (cfg) {
         setWolfConfig({
-          roundId: cfg.round_id,
-          amountPerHole: cfg.amount_per_hole,
-          scoringMode: cfg.scoring_mode as WolfConfig['scoringMode'],
-          useHandicap: cfg.use_handicap,
-          timing: cfg.timing as WolfConfig['timing'],
-          carryover: cfg.carryover,
+          roundId:        cfg.round_id,
+          amountPerHole:  cfg.amount_per_hole,
+          scoringMode:    cfg.scoring_mode as WolfConfig['scoringMode'],
+          useHandicap:    cfg.use_handicap,
+          timing:         cfg.timing as WolfConfig['timing'],
+          carryover:      cfg.carryover,
+          playerOrder:    (cfg as any).player_order ?? [],
+          participantIds: (cfg as any).participant_ids ?? [],
         });
       } else {
         setWolfConfig(null);
