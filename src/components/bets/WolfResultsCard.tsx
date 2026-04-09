@@ -115,7 +115,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const renderPill = (hole: number) => {
     const state = holeStates.find(s => s.holeNumber === hole);
     const detail = details.find(d => d.holeNumber === hole);
-    const result = state?.result;
+    // Use re-resolved result from details (recalculated from current scores/course) instead of stale DB value
+    const result = detail?.result ?? state?.result ?? null;
     const isWolfTeam = state ? [state.wolfPlayerId, ...state.partnerIds].includes(basePlayerId) : false;
     const playerWon = result === 'won' ? isWolfTeam : result === 'lost' ? !isWolfTeam : false;
     const playerLost = result === 'won' ? !isWolfTeam : result === 'lost' ? isWolfTeam : false;

@@ -84,9 +84,14 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
         return;
       }
     }
-    const carryoverHoles = holeStates.filter(s =>
-      s.holeNumber < holeNumber && s.result === 'tied' && wolfConfig.carryover
-    ).length;
+    let carryoverHoles = 0;
+    if (wolfConfig.carryover) {
+      for (let h = holeNumber - 1; h >= 1; h--) {
+        const prev = holeStates.find(s => s.holeNumber === h);
+        if (prev?.result === 'tied') carryoverHoles++;
+        else break;
+      }
+    }
     const effectiveAmount = computeEffectiveAmount(wolfConfig, carryoverHoles, wentSolo);
     await supabase.from('wolf_hole_state').upsert({
       round_id: roundId,

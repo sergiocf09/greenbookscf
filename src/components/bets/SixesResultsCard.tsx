@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, SixesConfig } from '@/types/golf';
-import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { disambiguateInitials, disambiguateShortNames, formatPlayerName } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { buildSixesSetResults, calculateSixesBets } from '@/lib/bets/sixes';
 import { fmtMoney } from '@/lib/formatMoney';
@@ -47,7 +47,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildSixesSetResults(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
   const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateSixesBets(players, scores, sixesConfig, course), [players, scores, sixesConfig, course, missingPlayerIds]);
 
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
+  const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
+  const getShortName = (id: string) => shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
   const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
 
@@ -237,13 +238,13 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                             const rvHasStroke = rv.strokes > 0 && rv.net !== rv.gross;
                             return (
                               <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-                                <span className="truncate text-left">{my.playerName.split(' ')[0]}</span>
+                                <span className="truncate text-left">{getShortName(my.playerId)}</span>
                                 <span className="font-medium text-right px-1">{myDisplay}</span>
                                 <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                                 <span />
                                 <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                                 <span className="font-medium text-left px-1">{rvDisplay}</span>
-                                <span className="truncate text-right">{rv.playerName.split(' ')[0]}</span>
+                                <span className="truncate text-right">{getShortName(rv.playerId)}</span>
                               </div>
                             );
                           })}
