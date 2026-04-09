@@ -146,17 +146,17 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 )}
                 onClick={() => setExpandedSet(isExpanded ? null : sr.setNumber)}
               >
-                <div className="text-[10px] text-muted-foreground font-medium text-center mb-1">
+                <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                   H{SET_LABELS[sr.setNumber]}
                 </div>
-                <div className="text-[10px] truncate text-center">
+                <div className="text-xs truncate text-center font-medium">
                   {getName(myTeam[0])}/{getName(myTeam[1])}
                 </div>
-                <div className="text-[9px] text-muted-foreground text-center">vs</div>
-                <div className="text-[10px] truncate text-center">
+                <div className="text-[10px] text-muted-foreground text-center">vs</div>
+                <div className="text-xs truncate text-center font-medium">
                   {getName(rivalTeam[0])}/{getName(rivalTeam[1])}
                 </div>
-                <div className={cn('text-center font-bold text-sm tabular-nums mt-1', getNetTone(diff))}>
+                <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(diff))}>
                   {diff > 0 ? '+' : ''}{diff}
                 </div>
               </button>
