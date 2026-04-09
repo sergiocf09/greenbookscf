@@ -150,25 +150,35 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
         break;
       case 'sixes':
         if (enabled) {
-          onUpdateConfig({ ...config, sixesBets: [] });
+          onUpdateConfig({ ...config, sixesEnabled: false });
         } else {
-          const primera: SixesBetInstance = {
-            id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
-            amount: 100, useHandicap: true, sets: [],
-          };
-          onUpdateConfig({ ...config, sixesBets: [primera] });
+          const hasBets = (config.sixesBets?.length ?? 0) > 0;
+          if (hasBets) {
+            onUpdateConfig({ ...config, sixesEnabled: true });
+          } else {
+            const primera: SixesBetInstance = {
+              id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
+              amount: 100, useHandicap: true, sets: [],
+            };
+            onUpdateConfig({ ...config, sixesBets: [primera], sixesEnabled: true });
+          }
         }
         break;
       case 'vegas':
         if (enabled) {
-          onUpdateConfig({ ...config, vegasBets: [] });
+          onUpdateConfig({ ...config, vegasEnabled: false });
         } else {
-          const primera: VegasBetInstance = {
-            id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
-            birdieMultiplier: false, variant: 'fixed',
-            playerAId: '', playerBId: '', playerCId: '', playerDId: '',
-          };
-          onUpdateConfig({ ...config, vegasBets: [primera] });
+          const hasBets = (config.vegasBets?.length ?? 0) > 0;
+          if (hasBets) {
+            onUpdateConfig({ ...config, vegasEnabled: true });
+          } else {
+            const primera: VegasBetInstance = {
+              id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
+              birdieMultiplier: false, variant: 'fixed',
+              playerAId: '', playerBId: '', playerCId: '', playerDId: '',
+            };
+            onUpdateConfig({ ...config, vegasBets: [primera], vegasEnabled: true });
+          }
         }
         break;
     }

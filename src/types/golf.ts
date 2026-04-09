@@ -463,7 +463,9 @@ export interface BetConfig {
   // Sprint 3 new bets
   wolfSetup?: WolfSetupConfig;
   sixesBets?: SixesBetInstance[];
+  sixesEnabled?: boolean;
   vegasBets?: VegasBetInstance[];
+  vegasEnabled?: boolean;
   ninesBets?: NinesBetInstance[];
   parejasExcluded?: Record<string, string[]>; // betKey -> excluded player IDs
 }
