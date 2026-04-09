@@ -930,8 +930,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       });
     });
 
-    onBetSummariesChange?.([...betSummaries, ...carritosSummaries]);
-  }, [betSummaries, allCarritosResults, betConfig.disabledTeamBetIds, betConfig.carritos, betConfig.carritosTeams, isHistorical, onBetSummariesChange]);
+    onBetSummariesChange?.([
+      ...betSummaries,
+      ...carritosSummaries,
+      ...wolfBetSummaries,
+      ...sixesBetSummaries,
+      ...vegasBetSummaries,
+      ...ninesBetSummaries,
+    ]);
+  }, [betSummaries, allCarritosResults, wolfBetSummaries, sixesBetSummaries, vegasBetSummaries, ninesBetSummaries, betConfig.disabledTeamBetIds, betConfig.carritos, betConfig.carritosTeams, isHistorical, onBetSummariesChange]);
   
   // Default base player = logged-in user (via basePlayerId prop), across ALL groups.
   // Critical: must not validate only against `players` (Group 1) or selection breaks for Groups 2/3.
@@ -1156,14 +1163,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       // IMPORTANT: Exclude Carritos and Presiones Parejas from bilateral avatar/header.
       // Those are shown in their own team cards. The BilateralDetail header (computedTotalBalance)
       // also excludes them (they don't appear in betTypeGroups), so this keeps avatars consistent.
-      const historicalCarritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+      const historicalTeamBetTypes = new Set([
+        'Carritos Front', 'Carritos Back', 'Carritos Total',
+        'Presiones Parejas', 'Presiones Pareja',
+        'Wolf', 'Sixes', 'Vegas',
+      ]);
       return betSummaries
         .filter(s =>
           s.playerId === playerId &&
           s.vsPlayer === rivalId &&
-          !historicalCarritosTypes.includes(s.betType) &&
-          s.betType !== 'Presiones Parejas' &&
-          s.betType !== 'Presiones Pareja'
+          !historicalTeamBetTypes.has(s.betType)
         )
         .reduce((sum, s) => sum + s.amount, 0);
     }
@@ -1458,12 +1467,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Used in Tabla General to show the real total including team bets alongside the individual subtotal.
   const getHistoricalTeamBetsBalanceForPlayer = (playerId: string): number => {
     if (!isHistorical) return 0;
-    const carritosTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+    const teamBetTypes = new Set([
+      'Carritos Front', 'Carritos Back', 'Carritos Total',
+      'Presiones Parejas', 'Presiones Pareja',
+      'Wolf', 'Sixes', 'Vegas',
+    ]);
     return betSummaries
-      .filter(s =>
-        s.playerId === playerId &&
-        (carritosTypes.includes(s.betType) || s.betType === 'Presiones Parejas' || s.betType === 'Presiones Pareja')
-      )
+      .filter(s => s.playerId === playerId && teamBetTypes.has(s.betType))
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
