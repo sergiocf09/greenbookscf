@@ -268,6 +268,11 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               {(detail.carryoverHoles ?? 0) > 0 && (
                 <p className="flex justify-between"><span>Carryover</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
               )}
+              {detail.wentSolo && wolfConfig.scoringMode !== 'lowBall' && (
+                <p className="text-[9px] text-amber-600 mt-1">
+                  ⚠️ Lone Wolf: se aplica Bola Baja independientemente del modo configurado
+                </p>
+              )}
             </div>
           </div>
         </PopoverContent>
