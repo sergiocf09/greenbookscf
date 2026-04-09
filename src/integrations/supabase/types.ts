@@ -1792,6 +1792,8 @@ export type Database = {
           carryover: boolean
           created_at: string
           id: string
+          participant_ids: string[]
+          player_order: string[]
           round_id: string
           scoring_mode: string
           timing: string
@@ -1802,6 +1804,8 @@ export type Database = {
           carryover?: boolean
           created_at?: string
           id?: string
+          participant_ids?: string[]
+          player_order?: string[]
           round_id: string
           scoring_mode?: string
           timing?: string
@@ -1812,6 +1816,8 @@ export type Database = {
           carryover?: boolean
           created_at?: string
           id?: string
+          participant_ids?: string[]
+          player_order?: string[]
           round_id?: string
           scoring_mode?: string
           timing?: string

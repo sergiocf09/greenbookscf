@@ -1,0 +1,3 @@
+ALTER TABLE wolf_config
+  ADD COLUMN IF NOT EXISTS player_order TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS participant_ids TEXT[] NOT NULL DEFAULT '{}';
