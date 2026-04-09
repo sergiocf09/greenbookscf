@@ -102,7 +102,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             canDecide ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> es el máximo perdedor y puede tomar la Recuperación (Solo ×3).
+                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> es el máximo perdedor{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} y puede tomar la Recuperación (Solo ×3).
                 </p>
                 <div className="flex gap-2">
                   <Button
