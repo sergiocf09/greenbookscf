@@ -80,6 +80,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds]);
 
+  const basePlayerBalance = useMemo(() => bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0), [bets, basePlayerId]);
+
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
   if (missingPlayerIds.length > 0 || hasEmptyPlayerIds || needsConfig) {
