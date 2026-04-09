@@ -394,6 +394,36 @@ const Index = () => {
     setEnableCourseCatalog(hasRoundContext || !shouldBlockForPending);
   }, [profile, isRestoring, dialogs.pendingRound, pendingRounds.length, isRoundStarted, roundState.id, selectedCourseId]);
 
+  // Persist course/tee/starting-hole changes to DB when a round already exists
+  useEffect(() => {
+    if (!roundState.id || isRestoring) return;
+    if (!selectedCourseId) return;
+
+    const updates: Record<string, unknown> = {};
+    if (selectedCourseId !== roundState.courseId) updates.course_id = selectedCourseId;
+    if (teeColor !== roundState.teeColor) updates.tee_color = teeColor;
+    if (startingHole !== roundState.startingHole) updates.starting_hole = startingHole;
+
+    if (Object.keys(updates).length === 0) return;
+
+    supabase
+      .from('rounds')
+      .update(updates)
+      .eq('id', roundState.id)
+      .then(({ error }) => {
+        if (error) {
+          devError('Error persisting course/tee/starting-hole change:', error);
+        } else {
+          setRoundState(prev => ({
+            ...prev,
+            ...(updates.course_id ? { courseId: selectedCourseId } : {}),
+            ...(updates.tee_color ? { teeColor } : {}),
+            ...(updates.starting_hole ? { startingHole } : {}),
+          }));
+        }
+      });
+  }, [roundState.id, isRestoring, selectedCourseId, teeColor, startingHole]);
+
   // Persist bet config (overrides, handicaps bilaterales, carritos cancelados, etc.) to backend
   const { loadBetConfig, saveBetConfig, isLoaded: isBetConfigLoaded } = useBetConfigPersistence({
     roundId: roundState.id,
