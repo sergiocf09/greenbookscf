@@ -12,15 +12,18 @@ import { cn } from '@/lib/utils';
 
 
 const TeamHoleGrid: React.FC<{
-  teamAPlayers: { name: string }[];
-  teamBPlayers: { name: string }[];
+  teamAPlayers: { name: string; id: string }[];
+  teamBPlayers: { name: string; id: string }[];
+  shortNames: Map<string, string>;
   detail: {
     netA1: number; hcpA1: number;
     netA2: number; hcpA2: number;
     netB1: number; hcpB1: number;
     netB2: number; hcpB2: number;
   };
-}> = ({ teamAPlayers, teamBPlayers, detail }) => (
+}> = ({ teamAPlayers, teamBPlayers, shortNames, detail }) => {
+  const getName = (p?: { name: string; id: string }) => p ? (shortNames.get(p.id) || p.name.split(' ')[0]) : 'Jugador';
+  return (
   <div className="space-y-0.5">
     <div className="flex justify-between text-[10px] text-muted-foreground">
       <span>Tu equipo</span>
@@ -28,26 +31,27 @@ const TeamHoleGrid: React.FC<{
     </div>
     {/* Player row 1 */}
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-      <span className="truncate text-left">{teamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-left">{getName(teamAPlayers[0])}</span>
       <span className="font-medium text-right px-1">{detail.netA1}</span>
       <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span />
       <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span className="font-medium text-left px-1">{detail.netB1}</span>
-      <span className="truncate text-right">{teamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-right">{getName(teamBPlayers[0])}</span>
     </div>
     {/* Player row 2 */}
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-      <span className="truncate text-left">{teamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-left">{getName(teamAPlayers[1])}</span>
       <span className="font-medium text-right px-1">{detail.netA2}</span>
       <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span />
       <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span className="font-medium text-left px-1">{detail.netB2}</span>
-      <span className="truncate text-right">{teamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-right">{getName(teamBPlayers[1])}</span>
     </div>
   </div>
-);
+  );
+};
 
 // Carritos Results Card - Updated for point-based scoring
 interface CarritosResultsCardProps {
