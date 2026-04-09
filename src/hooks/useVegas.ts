@@ -22,6 +22,12 @@ export const useVegas = (roundId: string | null) => {
           playerBId: data.player_b_id ?? '',
           playerCId: data.player_c_id ?? '',
           playerDId: data.player_d_id ?? '',
+          useSegmentAmounts: (data as any).use_segment_amounts ?? false,
+          frontAmount: (data as any).front_amount ?? undefined,
+          backAmount: (data as any).back_amount ?? undefined,
+          set1Amount: (data as any).set1_amount ?? undefined,
+          set2Amount: (data as any).set2_amount ?? undefined,
+          set3Amount: (data as any).set3_amount ?? undefined,
         });
       } else {
         setVegasConfig(null);
@@ -36,16 +42,22 @@ export const useVegas = (roundId: string | null) => {
   const saveConfig = useCallback(async (cfg: Omit<VegasConfig, 'roundId'>) => {
     if (!roundId) return;
     await supabase.from('vegas_config').upsert({
-      round_id: roundId,
-      value_per_point: cfg.valuePerPoint,
-      use_handicap: cfg.useHandicap,
-      birdie_multiplier: cfg.birdieMultiplier,
-      variant: cfg.variant,
-      player_a_id: cfg.playerAId || null,
-      player_b_id: cfg.playerBId || null,
-      player_c_id: cfg.playerCId || null,
-      player_d_id: cfg.playerDId || null,
-    }, { onConflict: 'round_id' });
+      round_id:            roundId,
+      value_per_point:     cfg.valuePerPoint,
+      use_handicap:        cfg.useHandicap,
+      birdie_multiplier:   cfg.birdieMultiplier,
+      variant:             cfg.variant,
+      player_a_id:         cfg.playerAId || null,
+      player_b_id:         cfg.playerBId || null,
+      player_c_id:         cfg.playerCId || null,
+      player_d_id:         cfg.playerDId || null,
+      use_segment_amounts: (cfg as any).useSegmentAmounts ?? false,
+      front_amount:        (cfg as any).frontAmount ?? null,
+      back_amount:         (cfg as any).backAmount ?? null,
+      set1_amount:         (cfg as any).set1Amount ?? null,
+      set2_amount:         (cfg as any).set2Amount ?? null,
+      set3_amount:         (cfg as any).set3Amount ?? null,
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 

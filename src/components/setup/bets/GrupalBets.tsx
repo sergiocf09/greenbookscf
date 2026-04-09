@@ -352,7 +352,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       )}
 
       {/* Nines — multi-instance */}
-      {players.length >= 3 && (
+      {show('nines') && (
         <BetSection
           id="nines" title="Nines (5-3-1)"
           description="Distribución de 9 puntos por hoyo entre 3 jugadores"

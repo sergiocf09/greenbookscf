@@ -36,6 +36,18 @@ const hasBirdie = (
     return !!(d.birdie || d.eagle || d.albatross);
   });
 
+const getVegasSegmentAmount = (config: VegasConfig, holeNumber: number): number => {
+  if (!config.useSegmentAmounts) return config.valuePerPoint;
+  if (config.variant === 'fixed') {
+    return holeNumber <= 9
+      ? (config.frontAmount ?? config.valuePerPoint)
+      : (config.backAmount  ?? config.valuePerPoint);
+  }
+  if (holeNumber <= 6)  return config.set1Amount ?? config.valuePerPoint;
+  if (holeNumber <= 12) return config.set2Amount ?? config.valuePerPoint;
+  return config.set3Amount ?? config.valuePerPoint;
+};
+
 const resolveVegasHole = (
   team1: [string,string], team2: [string,string],
   holeNumber: number, setNumber: 1|2|3|null,
@@ -73,7 +85,7 @@ const resolveVegasHole = (
   else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
 
   const diff = n2e - n1e;
-  const amountThisHole = Math.abs(diff) * config.valuePerPoint;
+  const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
 
   return {
@@ -108,7 +120,7 @@ export const buildVegasSetResults = (
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
     const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
-    const totalAmount = Math.abs(totalDiff) * config.valuePerPoint;
+    const totalAmount = details.reduce((acc, d) => acc + d.amountThisHole, 0);
     const winner: 'team1'|'team2'|'tied' = totalDiff > 0 ? 'team1' : totalDiff < 0 ? 'team2' : 'tied';
     return { setNumber: s.setNumber, startHole: s.start, endHole: s.end, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
   });

@@ -21,6 +21,10 @@ export const useSixes = (roundId: string | null, _players: Player[]) => {
           cobro: cfg.cobro as SixesConfig['cobro'],
           amount: cfg.amount,
           useHandicap: cfg.use_handicap,
+          usePerSetAmounts: (cfg as any).use_per_set_amounts ?? false,
+          set1Amount: (cfg as any).set1_amount ?? undefined,
+          set2Amount: (cfg as any).set2_amount ?? undefined,
+          set3Amount: (cfg as any).set3_amount ?? undefined,
           sets: (sets ?? []).map(s => ({
             setNumber: s.set_number as 1|2|3,
             team1: [s.team1_player1_id, s.team1_player2_id] as [string,string],
@@ -40,12 +44,16 @@ export const useSixes = (roundId: string | null, _players: Player[]) => {
   const saveConfig = useCallback(async (cfg: Omit<SixesConfig, 'roundId' | 'sets'>) => {
     if (!roundId) return;
     await supabase.from('sixes_config').upsert({
-      round_id: roundId,
-      scoring_mode: cfg.scoringMode,
-      cobro: cfg.cobro,
-      amount: cfg.amount,
-      use_handicap: cfg.useHandicap,
-    }, { onConflict: 'round_id' });
+      round_id:            roundId,
+      scoring_mode:        cfg.scoringMode,
+      cobro:               cfg.cobro,
+      amount:              cfg.amount,
+      use_handicap:        cfg.useHandicap,
+      use_per_set_amounts: (cfg as any).usePerSetAmounts ?? false,
+      set1_amount:         (cfg as any).set1Amount ?? null,
+      set2_amount:         (cfg as any).set2Amount ?? null,
+      set3_amount:         (cfg as any).set3Amount ?? null,
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 

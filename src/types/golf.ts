@@ -679,6 +679,10 @@ export interface SixesSetAssignment {
 export interface SixesConfig {
   roundId: string; scoringMode: SixesScoringMode; cobro: SixesCobro;
   amount: number; useHandicap: boolean; sets: SixesSetAssignment[];
+  usePerSetAmounts?: boolean;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
 }
 
 export interface SixesHoleDetail {
@@ -716,6 +720,12 @@ export interface VegasConfig {
   roundId: string; valuePerPoint: number; useHandicap: boolean;
   birdieMultiplier: boolean; variant: VegasVariant;
   playerAId: string; playerBId: string; playerCId: string; playerDId: string;
+  useSegmentAmounts?: boolean;
+  frontAmount?: number;
+  backAmount?: number;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
 }
 
 export interface VegasHoleDetail {
@@ -778,6 +788,10 @@ export interface SixesBetInstance {
   scoringMode: SixesScoringMode;
   cobro: SixesCobro;
   amount: number;
+  usePerSetAmounts?: boolean;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
   useHandicap: boolean;
   sets: SixesSetAssignment[];
 }
@@ -785,6 +799,12 @@ export interface SixesBetInstance {
 export interface VegasBetInstance {
   id: string;
   valuePerPoint: number;
+  useSegmentAmounts?: boolean;
+  frontAmount?: number;
+  backAmount?: number;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
   useHandicap: boolean;
   birdieMultiplier: boolean;
   variant: VegasVariant;

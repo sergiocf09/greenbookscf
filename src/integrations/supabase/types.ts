@@ -1394,7 +1394,11 @@ export type Database = {
           id: string
           round_id: string
           scoring_mode: string
+          set1_amount: number | null
+          set2_amount: number | null
+          set3_amount: number | null
           use_handicap: boolean
+          use_per_set_amounts: boolean
         }
         Insert: {
           amount?: number
@@ -1403,7 +1407,11 @@ export type Database = {
           id?: string
           round_id: string
           scoring_mode?: string
+          set1_amount?: number | null
+          set2_amount?: number | null
+          set3_amount?: number | null
           use_handicap?: boolean
+          use_per_set_amounts?: boolean
         }
         Update: {
           amount?: number
@@ -1412,7 +1420,11 @@ export type Database = {
           id?: string
           round_id?: string
           scoring_mode?: string
+          set1_amount?: number | null
+          set2_amount?: number | null
+          set3_amount?: number | null
           use_handicap?: boolean
+          use_per_set_amounts?: boolean
         }
         Relationships: [
           {
@@ -1708,41 +1720,59 @@ export type Database = {
       }
       vegas_config: {
         Row: {
+          back_amount: number | null
           birdie_multiplier: boolean
           created_at: string
+          front_amount: number | null
           id: string
           player_a_id: string | null
           player_b_id: string | null
           player_c_id: string | null
           player_d_id: string | null
           round_id: string
+          set1_amount: number | null
+          set2_amount: number | null
+          set3_amount: number | null
           use_handicap: boolean
+          use_segment_amounts: boolean
           value_per_point: number
           variant: string
         }
         Insert: {
+          back_amount?: number | null
           birdie_multiplier?: boolean
           created_at?: string
+          front_amount?: number | null
           id?: string
           player_a_id?: string | null
           player_b_id?: string | null
           player_c_id?: string | null
           player_d_id?: string | null
           round_id: string
+          set1_amount?: number | null
+          set2_amount?: number | null
+          set3_amount?: number | null
           use_handicap?: boolean
+          use_segment_amounts?: boolean
           value_per_point?: number
           variant?: string
         }
         Update: {
+          back_amount?: number | null
           birdie_multiplier?: boolean
           created_at?: string
+          front_amount?: number | null
           id?: string
           player_a_id?: string | null
           player_b_id?: string | null
           player_c_id?: string | null
           player_d_id?: string | null
           round_id?: string
+          set1_amount?: number | null
+          set2_amount?: number | null
+          set3_amount?: number | null
           use_handicap?: boolean
+          use_segment_amounts?: boolean
           value_per_point?: number
           variant?: string
         }
