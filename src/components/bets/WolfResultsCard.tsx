@@ -158,13 +158,27 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               const rvHasStroke = rv && rv.strokes > 0 && rv.net !== rv.gross;
               return (
                 <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-                  <span className="truncate text-left">{my ? my.playerName.split(' ')[0] : ''}</span>
+                  <span className="truncate text-left flex items-center gap-1">
+                    {my ? (
+                      <>
+                        {my.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
+                        {formatPlayerName(my.playerName)}
+                      </>
+                    ) : ''}
+                  </span>
                   <span className="font-medium text-right px-1">{my ? (my.gross > 0 ? my.net : '–') : ''}</span>
                   <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span />
                   <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span className="font-medium text-left px-1">{rv ? (rv.gross > 0 ? rv.net : '–') : ''}</span>
-                  <span className="truncate text-right">{rv ? rv.playerName.split(' ')[0] : ''}</span>
+                  <span className="truncate text-right flex items-center justify-end gap-1">
+                    {rv ? (
+                      <>
+                        {formatPlayerName(rv.playerName)}
+                        {rv.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
+                      </>
+                    ) : ''}
+                  </span>
                 </div>
               );
             })}
