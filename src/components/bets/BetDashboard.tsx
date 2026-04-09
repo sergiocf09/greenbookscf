@@ -2916,6 +2916,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <TeamHoleGrid
                                   teamAPlayers={displayTeamAPlayers}
                                   teamBPlayers={displayTeamBPlayers}
+                                  shortNames={disambiguatedNames}
                                   detail={{ netA1: rawDetail.a1.net, hcpA1: rawDetail.a1.hcp, netA2: rawDetail.a2.net, hcpA2: rawDetail.a2.hcp, netB1: rawDetail.b1.net, hcpB1: rawDetail.b1.hcp, netB2: rawDetail.b2.net, hcpB2: rawDetail.b2.hcp }}
                                 />
                                 <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
@@ -2989,6 +2990,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <TeamHoleGrid
                                       teamAPlayers={displayTeamAPlayers}
                                       teamBPlayers={displayTeamBPlayers}
+                                      shortNames={disambiguatedNames}
                                       detail={{ netA1: detail.a1.net, hcpA1: detail.a1.hcp, netA2: detail.a2.net, hcpA2: detail.a2.hcp, netB1: detail.b1.net, hcpB1: detail.b1.hcp, netB2: detail.b2.net, hcpB2: detail.b2.hcp }}
                                     />
                                     <div className="pt-1 border-t border-border/50">
@@ -3054,6 +3056,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     <TeamHoleGrid
                                       teamAPlayers={displayTeamAPlayers}
                                       teamBPlayers={displayTeamBPlayers}
+                                      shortNames={disambiguatedNames}
                                       detail={{ netA1: detail.a1.net, hcpA1: detail.a1.hcp, netA2: detail.a2.net, hcpA2: detail.a2.hcp, netB1: detail.b1.net, hcpB1: detail.b1.hcp, netB2: detail.b2.net, hcpB2: detail.b2.hcp }}
                                     />
                                     <div className="pt-1 border-t border-border/50">

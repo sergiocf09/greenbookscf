@@ -6,21 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials, disambiguateShortNames } from '@/lib/playerInput';
 import { Users, XCircle, CheckCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 
 const TeamHoleGrid: React.FC<{
-  teamAPlayers: { name: string }[];
-  teamBPlayers: { name: string }[];
+  teamAPlayers: { name: string; id: string }[];
+  teamBPlayers: { name: string; id: string }[];
+  shortNames: Map<string, string>;
   detail: {
     netA1: number; hcpA1: number;
     netA2: number; hcpA2: number;
     netB1: number; hcpB1: number;
     netB2: number; hcpB2: number;
   };
-}> = ({ teamAPlayers, teamBPlayers, detail }) => (
+}> = ({ teamAPlayers, teamBPlayers, shortNames, detail }) => {
+  const getName = (p?: { name: string; id: string }) => p ? (shortNames.get(p.id) || p.name.split(' ')[0]) : 'Jugador';
+  return (
   <div className="space-y-0.5">
     <div className="flex justify-between text-[10px] text-muted-foreground">
       <span>Tu equipo</span>
@@ -28,26 +31,27 @@ const TeamHoleGrid: React.FC<{
     </div>
     {/* Player row 1 */}
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-      <span className="truncate text-left">{teamAPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-left">{getName(teamAPlayers[0])}</span>
       <span className="font-medium text-right px-1">{detail.netA1}</span>
       <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span />
       <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span className="font-medium text-left px-1">{detail.netB1}</span>
-      <span className="truncate text-right">{teamBPlayers[0]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-right">{getName(teamBPlayers[0])}</span>
     </div>
     {/* Player row 2 */}
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-      <span className="truncate text-left">{teamAPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-left">{getName(teamAPlayers[1])}</span>
       <span className="font-medium text-right px-1">{detail.netA2}</span>
       <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span />
       <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
       <span className="font-medium text-left px-1">{detail.netB2}</span>
-      <span className="truncate text-right">{teamBPlayers[1]?.name.split(' ')[0] ?? 'Jugador'}</span>
+      <span className="truncate text-right">{getName(teamBPlayers[1])}</span>
     </div>
   </div>
-);
+  );
+};
 
 // Carritos Results Card - Updated for point-based scoring
 interface CarritosResultsCardProps {
@@ -122,7 +126,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
+  const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
   const getPlayerAbbr = (player: Player) => disambiguatedAbbrsCarritos.get(player.id) || player.initials;
+  const getShortName = (p: Player) => shortNames.get(p.id) || formatPlayerName(p.name).split(' ')[0];
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
 
@@ -287,11 +293,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             {/* Names row */}
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium truncate">
-                {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                {displayTeamAPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
               <span className="text-muted-foreground text-xs mx-2">vs</span>
               <span className="font-medium truncate text-right">
-                {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                {displayTeamBPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
             </div>
             {/* Results row */}
@@ -367,6 +373,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
+                          shortNames={shortNames}
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
@@ -429,6 +436,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
+                          shortNames={shortNames}
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
