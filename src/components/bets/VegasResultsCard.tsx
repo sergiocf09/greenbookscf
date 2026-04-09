@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, VegasConfig } from '@/types/golf';
-import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { disambiguateInitials, disambiguateShortNames, formatPlayerName } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { buildVegasSetResults, calculateVegasBets, formVegasNumber } from '@/lib/bets/vegas';
 import { fmtMoney } from '@/lib/formatMoney';

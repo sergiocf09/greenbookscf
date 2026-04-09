@@ -224,9 +224,27 @@ export const disambiguateShortNames = (players: Player[]): Map<string, string> =
       if (subGroup.length <= 1) {
         subGroup.forEach(p => result.set(p.id, shortName));
       } else {
-        // Still colliding - use formatPlayerNameTwoWords
+        // Still colliding - try formatPlayerNameTwoWords
+        const twoWordNames = new Map<string, Player[]>();
         subGroup.forEach(p => {
-          result.set(p.id, formatPlayerNameTwoWords(p.name));
+          const tw = formatPlayerNameTwoWords(p.name);
+          const g = twoWordNames.get(tw) || [];
+          g.push(p);
+          twoWordNames.set(tw, g);
+        });
+        
+        twoWordNames.forEach((twGroup, twName) => {
+          if (twGroup.length <= 1) {
+            twGroup.forEach(p => result.set(p.id, twName));
+          } else {
+            // Still colliding (e.g. "Sergio Cruz" x2) - use FirstName + surname initials
+            twGroup.forEach(p => {
+              const parts = p.name.trim().split(/\s+/).filter(Boolean);
+              const firstName = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase() : '';
+              const surnameInitials = parts.slice(1).map(w => w.charAt(0).toUpperCase()).join('');
+              result.set(p.id, surnameInitials ? `${firstName} ${surnameInitials}` : firstName);
+            });
+          }
         });
       }
     });
