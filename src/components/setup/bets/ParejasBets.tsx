@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
