@@ -139,6 +139,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
+  const [foursomeOpenId, setFoursomeOpenId] = useState<string | null>(null);
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
@@ -2530,7 +2531,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <Collapsible>
+              <Collapsible open={foursomeOpenId === bet.id} onOpenChange={(open) => setFoursomeOpenId(open ? bet.id : null)}>
                 <div className="space-y-1">
                   {/* Names row */}
                   <div className="flex items-center justify-between text-sm">
