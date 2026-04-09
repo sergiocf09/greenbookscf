@@ -160,12 +160,12 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                   H{SET_LABELS[sr.setNumber]}
                 </div>
                 <div className="flex items-center justify-center gap-1">
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-start">
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[1]) ?? '?'}</span>
                   </div>
                   <span className="text-[9px] text-muted-foreground">vs</span>
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-end">
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[1]) ?? '?'}</span>
                   </div>
