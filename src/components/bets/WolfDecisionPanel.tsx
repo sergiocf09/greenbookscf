@@ -76,7 +76,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
       <div className="bg-[hsl(155,100%,15%)] text-[hsl(50,95%,55%)] px-3 py-2 flex items-center gap-2">
         <span>🐺</span>
         <PlayerAvatar
-          initials={wolfPlayer.initials}
+          initials={disambiguated.get(wolfPlayerId) || wolfPlayer.initials}
           background={wolfPlayer.color}
           size="sm"
           isLoggedInUser={wolfPlayer.profileId === currentUserId}
