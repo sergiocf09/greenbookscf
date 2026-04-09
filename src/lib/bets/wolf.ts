@@ -49,6 +49,61 @@ const getParticipantPlayers = (players: Player[], config: WolfConfig): Player[] 
   return players;
 };
 
+// Obtiene qué IDs de jugadores aportan el score "usado" en la comparación
+// según modo y tamaño del equipo. Devuelve Set de IDs que SÍ se usan.
+const getUsedPlayerIds = (
+  _teamIds: string[],
+  teamScores: { id: string; net: number }[],
+  mode: WolfConfig['scoringMode'],
+  isLoneWolf: boolean,
+  side: 'wolf' | 'rival'
+): Set<string> => {
+  if (teamScores.length === 0) return new Set();
+  if (teamScores.length === 1) return new Set([teamScores[0].id]);
+
+  if (isLoneWolf) {
+    // Lone Wolf: rival usa solo min (Bola Baja)
+    if (side === 'rival') {
+      const minScore = Math.min(...teamScores.map(s => s.net));
+      const minPlayer = teamScores.find(s => s.net === minScore);
+      return new Set(minPlayer ? [minPlayer.id] : []);
+    }
+    // Wolf solo: usa su propio único score
+    return new Set(teamScores.map(s => s.id));
+  }
+
+  if (mode === 'lowBall') {
+    const minScore = Math.min(...teamScores.map(s => s.net));
+    const minPlayer = teamScores.find(s => s.net === minScore);
+    return new Set(minPlayer ? [minPlayer.id] : []);
+  }
+
+  if (mode === 'lowHighBall') {
+    const minScore = Math.min(...teamScores.map(s => s.net));
+    const maxScore = Math.max(...teamScores.map(s => s.net));
+    const minPlayer = teamScores.find(s => s.net === minScore);
+    const maxPlayer = teamScores.find(s => s.net === maxScore);
+    const used = new Set<string>();
+    if (minPlayer) used.add(minPlayer.id);
+    if (maxPlayer) used.add(maxPlayer.id);
+    return used;
+  }
+
+  if (mode === 'stroke') {
+    // Suma de extremos: min + max. Intermedio NO se usa.
+    const minScore = Math.min(...teamScores.map(s => s.net));
+    const maxScore = Math.max(...teamScores.map(s => s.net));
+    const minPlayer = teamScores.find(s => s.net === minScore);
+    const maxPlayer = [...teamScores].reverse().find(s => s.net === maxScore);
+    const used = new Set<string>();
+    if (minPlayer) used.add(minPlayer.id);
+    if (maxPlayer) used.add(maxPlayer.id);
+    return used;
+  }
+
+  return new Set(teamScores.map(s => s.id));
+};
+
 // Resolución del hoyo según modo de scoring
 export const resolveWolfHole = (
   wolfTeam: string[], rivalTeam: string[], holeNumber: number,
@@ -62,30 +117,76 @@ export const resolveWolfHole = (
   highBallWinner: 'wolf' | 'rival' | 'tied' | null;
 } => {
   const overrides = buildHandicapOverrides(config);
-  const ws = wolfTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides)).filter((s): s is number => s !== null);
-  const rs = rivalTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides)).filter((s): s is number => s !== null);
-  const empty = { winner: 'tied' as const, pointsWolf: 0, pointsRival: 0, teamWolfScore: null, teamRivalScore: null, lowBallWinner: null, highBallWinner: null };
-  if (!ws.length || !rs.length) return empty;
+  const isLoneWolf = wolfTeam.length === 1 && rivalTeam.length > 1;
 
+  const wsRaw = wolfTeam.map(id => ({
+    id,
+    net: getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides) ?? Infinity,
+  })).filter(s => s.net !== Infinity);
+
+  const rsRaw = rivalTeam.map(id => ({
+    id,
+    net: getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides) ?? Infinity,
+  })).filter(s => s.net !== Infinity);
+
+  const empty = {
+    winner: 'tied' as const,
+    pointsWolf: 0, pointsRival: 0,
+    teamWolfScore: null, teamRivalScore: null,
+    lowBallWinner: null, highBallWinner: null,
+  };
+  if (!wsRaw.length || !rsRaw.length) return empty;
+
+  const wNets = wsRaw.map(s => s.net);
+  const rNets = rsRaw.map(s => s.net);
+
+  // ── LONE WOLF: siempre Bola Baja del Lobo vs min(rivales) ──
+  if (isLoneWolf) {
+    const w = wNets[0];
+    const r = Math.min(...rNets);
+    const winner = w < r ? 'wolf' : r < w ? 'rival' : 'tied';
+    return {
+      winner, pointsWolf: 0, pointsRival: 0,
+      teamWolfScore: w, teamRivalScore: r,
+      lowBallWinner: winner, highBallWinner: null,
+    };
+  }
+
+  // ── CON COMPAÑERO(S) ──
   if (config.scoringMode === 'lowBall') {
-    const w = Math.min(...ws), r = Math.min(...rs);
+    const w = Math.min(...wNets), r = Math.min(...rNets);
     const winner = w < r ? 'wolf' : r < w ? 'rival' : 'tied';
-    return { winner, pointsWolf: 0, pointsRival: 0, teamWolfScore: w, teamRivalScore: r, lowBallWinner: winner, highBallWinner: null };
+    return {
+      winner, pointsWolf: 0, pointsRival: 0,
+      teamWolfScore: w, teamRivalScore: r,
+      lowBallWinner: winner, highBallWinner: null,
+    };
   }
-  if (config.scoringMode === 'stroke') {
-    const w = ws.reduce((a, b) => a + b, 0), r = rs.reduce((a, b) => a + b, 0);
-    const winner = w < r ? 'wolf' : r < w ? 'rival' : 'tied';
-    return { winner, pointsWolf: 0, pointsRival: 0, teamWolfScore: w, teamRivalScore: r, lowBallWinner: null, highBallWinner: null };
+
+  if (config.scoringMode === 'lowHighBall') {
+    const lowW = Math.min(...wNets), lowR = Math.min(...rNets);
+    const highW = Math.max(...wNets), highR = Math.max(...rNets);
+    const lbw = lowW < lowR ? 'wolf' : lowR < lowW ? 'rival' : 'tied';
+    const hbw = highW < highR ? 'wolf' : highR < highW ? 'rival' : 'tied';
+    const pW = (lbw === 'wolf' ? 1 : 0) + (hbw === 'wolf' ? 1 : 0);
+    const pR = (lbw === 'rival' ? 1 : 0) + (hbw === 'rival' ? 1 : 0);
+    const winner = pW > pR ? 'wolf' : pR > pW ? 'rival' : 'tied';
+    return {
+      winner, pointsWolf: pW, pointsRival: pR,
+      teamWolfScore: lowW, teamRivalScore: lowR,
+      lowBallWinner: lbw, highBallWinner: hbw,
+    };
   }
-  // lowHighBall: 2 puntos en juego
-  const lowW = Math.min(...ws), lowR = Math.min(...rs);
-  const highW = Math.max(...ws), highR = Math.max(...rs);
-  const lbw = lowW < lowR ? 'wolf' : lowR < lowW ? 'rival' : 'tied';
-  const hbw = highW < highR ? 'wolf' : highR < highW ? 'rival' : 'tied';
-  const pW = (lbw === 'wolf' ? 1 : 0) + (hbw === 'wolf' ? 1 : 0);
-  const pR = (lbw === 'rival' ? 1 : 0) + (hbw === 'rival' ? 1 : 0);
-  const winner = pW > pR ? 'wolf' : pR > pW ? 'rival' : 'tied';
-  return { winner, pointsWolf: pW, pointsRival: pR, teamWolfScore: lowW, teamRivalScore: lowR, lowBallWinner: lbw, highBallWinner: hbw };
+
+  // stroke: suma de extremos (min + max), ignorando intermedios
+  const wScore = Math.min(...wNets) + Math.max(...wNets);
+  const rScore = Math.min(...rNets) + Math.max(...rNets);
+  const winner = wScore < rScore ? 'wolf' : rScore < wScore ? 'rival' : 'tied';
+  return {
+    winner, pointsWolf: 0, pointsRival: 0,
+    teamWolfScore: wScore, teamRivalScore: rScore,
+    lowBallWinner: null, highBallWinner: null,
+  };
 };
 
 // Carryover en BB+BA: SOLO si 0-0 (ambas bolas empatadas)
@@ -102,7 +203,7 @@ export const isWolfCarryoverHole = (
 export const computeEffectiveAmount = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean
 ): number => {
-  const redemptionMultiplier = (wentSolo && carryoverHoles === -1) ? 3 : 1; // -1 sentinel = redemption
+  const redemptionMultiplier = (wentSolo && carryoverHoles === -1) ? 3 : 1;
   return config.amountPerHole * (1 + Math.max(carryoverHoles, 0)) * (wentSolo ? 2 : 1) * (redemptionMultiplier > 1 ? 1.5 : 1);
 };
 
@@ -135,16 +236,15 @@ export const calculateWolfBets = (
 
       if (!result || result === 'tied') return;
 
-      // Recalcular siempre desde config actual para reflejar cambios de importe
       const isRedemption = state.wentSolo && state.carryoverHoles === -1;
       const amount = isRedemption
         ? config.amountPerHole * 3
         : config.amountPerHole
           * (1 + Math.max(state.carryoverHoles ?? 0, 0))
           * (state.wentSolo ? 2 : 1);
+
       const winners = result === 'won' ? wolfTeam : rivalTeamIds;
       const losers  = result === 'won' ? rivalTeamIds : wolfTeam;
-      // Filter to only include participants
       const validWinners = winners.filter(id => participantIdSet.has(id));
       const validLosers = losers.filter(id => participantIdSet.has(id));
       validWinners.forEach(wId => validLosers.forEach(lId => {
@@ -166,17 +266,46 @@ export const buildWolfHoleDetails = (
   return [...holeStates].sort((a, b) => a.holeNumber - b.holeNumber).map(state => {
     const wolfTeam  = [state.wolfPlayerId, ...state.partnerIds];
     const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id));
+    const isLoneWolf = wolfTeam.length === 1 && rivalTeam.length > 1;
     const resolved  = resolveWolfHole(wolfTeam, rivalTeam.map(p => p.id), state.holeNumber, players, scores, course, config);
-    // Use re-resolved winner instead of stale state.result
     const freshResult: 'won' | 'lost' | 'tied' | null = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+
+    // Calcular scores netos para identificar quién se usó
+    const getNet = (pid: string): number => {
+      const p = participantPlayers.find(x => x.id === pid);
+      if (!p) return 0;
+      const hs = (scores.get(pid) ?? []).find(s => s.holeNumber === state.holeNumber);
+      const gross = hs?.strokes ?? 0;
+      const effectiveHandicap = overrides?.get(pid) ?? p.handicap;
+      const sp = calculateStrokesPerHole(effectiveHandicap, course);
+      const strokes = config.useHandicap ? (sp[state.holeNumber - 1] ?? 0) : 0;
+      return gross - strokes;
+    };
+
+    const wolfScoresRaw = wolfTeam.map(id => ({ id, net: getNet(id) }));
+    const rivalScoresRaw = rivalTeam.map(p => ({ id: p.id, net: getNet(p.id) }));
+
+    const usedWolf  = getUsedPlayerIds(wolfTeam, wolfScoresRaw, config.scoringMode, isLoneWolf, 'wolf');
+    const usedRival = getUsedPlayerIds(rivalTeam.map(p => p.id), rivalScoresRaw, config.scoringMode, isLoneWolf, 'rival');
+
     const scoresByPlayer = participantPlayers.map(p => {
       const hs = (scores.get(p.id) ?? []).find(s => s.holeNumber === state.holeNumber);
       const gross = hs?.strokes ?? 0;
       const effectiveHandicap = overrides?.get(p.id) ?? p.handicap;
       const sp = calculateStrokesPerHole(effectiveHandicap, course);
       const strokes = config.useHandicap ? (sp[state.holeNumber - 1] ?? 0) : 0;
-      return { playerId: p.id, playerName: p.name, gross, strokes, net: gross - strokes, teamSide: wolfTeam.includes(p.id) ? 'wolf' as const : 'rival' as const };
+      const isWolfSide = wolfTeam.includes(p.id);
+      return {
+        playerId: p.id,
+        playerName: p.name,
+        gross,
+        strokes,
+        net: gross - strokes,
+        teamSide: isWolfSide ? 'wolf' as const : 'rival' as const,
+        usedForScoring: isWolfSide ? usedWolf.has(p.id) : usedRival.has(p.id),
+      };
     });
+
     return {
       holeNumber: state.holeNumber,
       wolfPlayerId: state.wolfPlayerId,

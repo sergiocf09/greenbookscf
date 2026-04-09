@@ -656,7 +656,7 @@ export interface WolfHoleDetail {
   partnerIds: string[]; partnerNames: string[]; wentSolo: boolean;
   result: 'won' | 'lost' | 'tied' | null;
   effectiveAmount: number; carryoverHoles: number;
-  scoresByPlayer: { playerId: string; playerName: string; gross: number; strokes: number; net: number; teamSide: 'wolf' | 'rival'; }[];
+  scoresByPlayer: { playerId: string; playerName: string; gross: number; strokes: number; net: number; teamSide: 'wolf' | 'rival'; usedForScoring: boolean; }[];
   teamWolfScore: number | null; teamRivalScore: number | null;
   lowBallWinner: 'wolf' | 'rival' | 'tied' | null;
   highBallWinner: 'wolf' | 'rival' | 'tied' | null;

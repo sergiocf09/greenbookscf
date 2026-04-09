@@ -180,9 +180,11 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               const rs = rivalTeamScores[i];
               const wsHasStroke = ws && ws.strokes > 0 && ws.net !== ws.gross;
               const rsHasStroke = rs && rs.strokes > 0 && rs.net !== rs.gross;
+              const wsUsed = ws?.usedForScoring !== false;
+              const rsUsed = rs?.usedForScoring !== false;
               return (
                 <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-                  <span className="truncate text-left flex items-center gap-1">
+                  <span className={cn('truncate text-left flex items-center gap-1', !wsUsed && 'opacity-40 line-through')}>
                     {ws ? (
                       <>
                         {ws.playerId === state.wolfPlayerId && <span className="text-[10px]">🐺</span>}
@@ -190,12 +192,12 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                       </>
                     ) : ''}
                   </span>
-                  <span className="font-medium text-right px-1">{ws ? (ws.gross > 0 ? ws.net : '–') : ''}</span>
-                  <span className="flex items-center justify-center w-3">{wsHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span className={cn('font-medium text-right px-1', !wsUsed && 'opacity-40 line-through')}>{ws ? (ws.gross > 0 ? ws.net : '–') : ''}</span>
+                  <span className="flex items-center justify-center w-3">{wsHasStroke && wsUsed && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span />
-                  <span className="flex items-center justify-center w-3">{rsHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
-                  <span className="font-medium text-left px-1">{rs ? (rs.gross > 0 ? rs.net : '–') : ''}</span>
-                  <span className="truncate text-right flex items-center justify-end gap-1">
+                  <span className="flex items-center justify-center w-3">{rsHasStroke && rsUsed && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span className={cn('font-medium text-left px-1', !rsUsed && 'opacity-40 line-through')}>{rs ? (rs.gross > 0 ? rs.net : '–') : ''}</span>
+                  <span className={cn('truncate text-right flex items-center justify-end gap-1', !rsUsed && 'opacity-40 line-through')}>
                     {rs ? (
                       <>
                         {shortNames.get(rs.playerId) ?? rs.playerName.split(' ')[0]}
@@ -265,6 +267,11 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               )}
               {(detail.carryoverHoles ?? 0) > 0 && (
                 <p className="flex justify-between"><span>Carryover</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
+              )}
+              {detail.wentSolo && wolfConfig.scoringMode !== 'lowBall' && (
+                <p className="text-[9px] text-amber-600 mt-1">
+                  ⚠️ Lone Wolf: se aplica Bola Baja independientemente del modo configurado
+                </p>
               )}
             </div>
           </div>
