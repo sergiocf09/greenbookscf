@@ -2444,6 +2444,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
 
+                        // Check if continua mode is active for this pair
+                        const pairKeyEv = [player.id, rival.id].sort().join('_');
+                        const pairOverrideEv = effectiveBetConfig.pressurePairOverrides?.[pairKeyEv];
+                        const pairOnlyMatch = pairOverrideEv?.onlyMatch !== undefined
+                          ? pairOverrideEv.onlyMatch
+                          : effectiveBetConfig.pressures.onlyMatch === true;
+                        const isContinua = pairOnlyMatch && effectiveBetConfig.pressures.continua === true;
+
                         // In HISTORICAL mode, NEVER recalculate — description from snapshot is the only source.
                         const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
 
