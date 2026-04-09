@@ -1,77 +1,70 @@
 
 
-## Plan: Mejoras Loba — Nombres completos, reversión, recalculación y layout
+## Plan: Corrección del cálculo de montos en Las Vegas
 
-### Problemas identificados
+### Diagnóstico
 
-1. **Setup Loba — nombres truncados**: En la sección de hándicaps editables, solo muestra `p.name.split(' ')[0]` (primer nombre). Falta nombre completo y avatar verde/dorado del logueado.
+He verificado los datos reales de la ronda y confirmado el bug. Los números que reportas coinciden exactamente con lo que el código produce y lo que debería producir:
 
-2. **Hoyos 4,6,7,8,9,11,12 no permiten selección**: Tienen `result: 'tied'` en la BD, lo que activa `showResolved` en el panel. No hay botón para revertir/re-editar una decisión ya resuelta (solo existe "Cambiar" para `showInPlay` con `result === null`).
+| Jugador | Correcto | Actual (buggy) |
+|---------|----------|-----------------|
+| Cruz Fernández | +$440 | +$840 |
+| Cruz Delfín | -$140 | -$180 |
+| Pizarro | -$260 | -$220 |
+| Ocampo | -$40 | -$440 |
 
-3. **No se puede revertir selección de Loba**: Falta un botón "Cambiar" en el estado resuelto (`showResolved`) que permita borrar el resultado y volver al modo selección.
+### Causa raíz
 
-4. **Scores cambiados no recalculan resultado**: Cuando se modifica un score después de resolver, no hay trigger para recalcular. Solo se resuelve en `handleConfirmHole` y en `saveDecision`.
+En `buildVegasSetResults` (línea 123 de `vegas.ts`), el `totalAmount` se calcula como la **suma de valores absolutos** de las diferencias por hoyo:
 
-5. **Tooltip Loba — icono lobo en vez de punto verde**: Actualmente usa `<span className="h-2 w-2 rounded-full bg-green-500">` para marcar al Wolf. Debe usar 🐺.
+```
+totalAmount = Σ |diff_hoyo_i| × $10
+```
 
-6. **Tooltip — nombres con desambiguación de apellido**: Usa `formatPlayerName` que solo da primer nombre. Necesita "Sergio CD", "Sergio CF" etc.
+Pero en Las Vegas el cobro es sobre la **diferencia neta acumulada** del set:
 
-7. **Tooltip — falta monto ganado/perdido por jugador**: No muestra el resultado monetario por jugador en el detalle del hoyo.
+```
+totalAmount = |Σ diff_hoyo_i| × $10
+```
 
-8. **Tooltip — decisión y monto en esquina superior derecha**: Actualmente está abajo. Mover al extremo superior derecho.
+Ejemplo Set 1: las diferencias por hoyo son +10, +12, +1, -9, +1, 0. El neto es +15, pero la suma de absolutos es 33. Esto infla el monto de $150 a $330 por equipo.
 
-9. **Front 9 / Back 9 — layout lado a lado**: Actualmente son collapsibles verticales con texto. Deben ser 2 botones en el mismo renglón, 50% ancho cada uno.
+### Cambio
 
-10. **Sixes/Vegas — layout parejas alineado**: Las iniciales de equipo 1 alineadas a la izquierda (una arriba de otra), "vs" en medio, equipo 2 a la derecha (una arriba de otra).
+**Archivo: `src/lib/bets/vegas.ts`**
 
-### Cambios por archivo
+Reemplazar la línea 123:
+```typescript
+const totalAmount = details.reduce((acc, d) => acc + d.amountThisHole, 0);
+```
 
-#### `src/components/setup/bets/ParejasBets.tsx`
-- Línea 526: Cambiar `p.name.split(' ')[0]` → nombre completo `p.name` en la lista de hándicaps
-- Agregar avatar con `isLoggedInUser` y iniciales desambiguadas junto al nombre
-- En rotación (línea 596): agregar `isLoggedInUser` al `PlayerAvatar`
+Por lógica que use el **neto** del set multiplicado por la tarifa correspondiente:
 
-#### `src/components/bets/WolfDecisionPanel.tsx`
-- **Estado resuelto** (líneas 260-286): Agregar botón "Cambiar" que limpie el resultado (llame a `onDecision` con reset o nuevo callback `onRevert`)
-- Necesario un nuevo prop `onRevert?: (holeNumber: number) => Promise<void>` que borre el resultado en BD
-- Agregar en `useWolf.ts` una función `revertDecision` que haga `UPDATE wolf_hole_state SET result = null, partner_ids = '[]', went_solo = false WHERE round_id = ? AND hole_number = ?` o directamente `DELETE`
+```typescript
+// Sin montos por segmento: tarifa uniforme
+// Con montos por segmento en rotatorio: cada set tiene su tarifa
+// Con montos por segmento en fijo: front y back se liquidan por separado
+const totalAmount = (() => {
+  if (!config.useSegmentAmounts || config.variant !== 'fixed') {
+    return Math.abs(totalDiff) * getVegasSegmentAmount(config, s.start);
+  }
+  // Fixed + segment amounts: liquidar front y back por separado
+  const frontDiff = details.filter(d => d.holeNumber <= 9).reduce((a, d) => a + d.diff, 0);
+  const backDiff = details.filter(d => d.holeNumber > 9).reduce((a, d) => a + d.diff, 0);
+  return Math.abs(frontDiff) * getVegasSegmentAmount(config, 1)
+       + Math.abs(backDiff) * getVegasSegmentAmount(config, 10);
+})();
+```
 
-#### `src/hooks/useWolf.ts`
-- Agregar función `revertDecision(holeNumber)`: borra el `wolf_hole_state` para ese hoyo (DELETE) y hace `fetchData()`
-- Agregar función `recalculateHole(holeNumber)`: re-ejecuta `resolveWolfHole` para un hoyo ya con decisión pero cuyo score cambió. Se expondrá para que `ScoringView` la llame al confirmar scores.
-
-#### `src/components/scoring/ScoringView.tsx`
-- Pasar `onRevert` al `WolfDecisionPanel`
-- En `handleConfirmHole`: ya recalcula, pero también llamar recalculación si el hoyo ya tenía resultado previo (para cubrir cambio de score)
-- Conectar `wolf.revertDecision` desde `Index.tsx`
-
-#### `src/pages/Index.tsx`
-- Exponer `wolf.revertDecision` como prop `onWolfRevert` hacia `ScoringView`
-
-#### `src/components/bets/WolfResultsCard.tsx`
-- **Front 9 / Back 9**: Reemplazar los 2 `Collapsible` verticales por 2 botones en `grid grid-cols-2 gap-2`, cada uno con icono y al hacer click expanden los 9 hoyos debajo
-- **Tooltip**: 
-  - Mover decisión y monto al extremo superior derecho del popover
-  - Reemplazar punto verde `bg-green-500` por emoji 🐺
-  - Nombres: usar función de desambiguación con apellido ("Sergio CD") en vez de `formatPlayerName`
-  - Agregar renglón con monto ganado/perdido por jugador debajo de los scores de cada equipo
-
-#### `src/components/bets/SixesResultsCard.tsx`
-- Cambiar layout de parejas en los bloques de sets: alinear iniciales de equipo 1 verticalmente a la izquierda, "vs" centrado, equipo 2 a la derecha vertical
-
-#### `src/components/bets/VegasResultsCard.tsx`
-- Mismo cambio de layout de parejas que Sixes
+Los `amountThisHole` individuales se mantienen para la visualización del tooltip por hoyo, pero ya no se suman para el cobro final.
 
 ### Archivos a modificar
 
-| Archivo | Cambios |
-|---------|---------|
-| `src/hooks/useWolf.ts` | `revertDecision()`, exponer recalculación |
-| `src/components/bets/WolfDecisionPanel.tsx` | Botón "Cambiar" en estado resuelto, prop `onRevert` |
-| `src/components/scoring/ScoringView.tsx` | Pasar `onRevert`, recalcular al re-confirmar |
-| `src/pages/Index.tsx` | Conectar `wolf.revertDecision` |
-| `src/components/bets/WolfResultsCard.tsx` | Layout F9/B9, tooltip redesign, 🐺 badge, montos |
-| `src/components/setup/bets/ParejasBets.tsx` | Nombres completos + avatar logueado en hándicaps |
-| `src/components/bets/SixesResultsCard.tsx` | Layout parejas alineado |
-| `src/components/bets/VegasResultsCard.tsx` | Layout parejas alineado |
+| Archivo | Cambio |
+|---------|--------|
+| `src/lib/bets/vegas.ts` | Corregir cálculo de `totalAmount` en `buildVegasSetResults` |
+
+### Nota sobre los puntos de Ocampo
+
+Verificando los scores reales: Ocampo tiene -15 (Set 1) - 9 (Set 2) + 20 (Set 3) = **-4 puntos netos** = -$40, no +$60 como mencionaste. Es posible que haya un error en la cuenta manual. El motor con la corrección dará -$40 para Ocampo.
 
