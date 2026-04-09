@@ -122,7 +122,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
+  const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
   const getPlayerAbbr = (player: Player) => disambiguatedAbbrsCarritos.get(player.id) || player.initials;
+  const getShortName = (p: Player) => shortNames.get(p.id) || formatPlayerName(p.name).split(' ')[0];
   const teamAPlayers = [getPlayer(results.teamA[0]), getPlayer(results.teamA[1])].filter(Boolean) as Player[];
   const teamBPlayers = [getPlayer(results.teamB[0]), getPlayer(results.teamB[1])].filter(Boolean) as Player[];
 
@@ -287,11 +289,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             {/* Names row */}
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium truncate">
-                {displayTeamAPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                {displayTeamAPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
               <span className="text-muted-foreground text-xs mx-2">vs</span>
               <span className="font-medium truncate text-right">
-                {displayTeamBPlayers.map(p => formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                {displayTeamBPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
             </div>
             {/* Results row */}
