@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState } from '@/types/golf';
+import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { calculateWolfBets, buildWolfHoleDetails } from '@/lib/bets/wolf';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
