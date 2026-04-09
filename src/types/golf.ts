@@ -799,6 +799,12 @@ export interface SixesBetInstance {
 export interface VegasBetInstance {
   id: string;
   valuePerPoint: number;
+  useSegmentAmounts?: boolean;
+  frontAmount?: number;
+  backAmount?: number;
+  set1Amount?: number;
+  set2Amount?: number;
+  set3Amount?: number;
   useHandicap: boolean;
   birdieMultiplier: boolean;
   variant: VegasVariant;

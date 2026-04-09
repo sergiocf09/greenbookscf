@@ -233,7 +233,7 @@ const Index = () => {
   // Sprint 3: sync betConfig setup → dedicated hooks
   useEffect(() => {
     if (!roundState?.id) return;
-    if (betConfig.wolfSetup?.enabled && !wolf.isActive) {
+    if (betConfig.wolfSetup?.enabled) {
       wolf.saveConfig({
         amountPerHole: betConfig.wolfSetup.amountPerHole ?? 100,
         scoringMode:   betConfig.wolfSetup.scoringMode ?? 'lowBall',
@@ -245,10 +245,14 @@ const Index = () => {
     const firstSixes = betConfig.sixesBets?.[0];
     if (firstSixes && !sixes.isActive) {
       sixes.saveConfig({
-        scoringMode: firstSixes.scoringMode ?? 'lowBall',
-        cobro:       firstSixes.cobro ?? 'per_hole',
-        amount:      firstSixes.amount ?? 100,
-        useHandicap: firstSixes.useHandicap ?? true,
+        scoringMode:      firstSixes.scoringMode ?? 'lowBall',
+        cobro:            firstSixes.cobro ?? 'per_hole',
+        amount:           firstSixes.amount ?? 100,
+        useHandicap:      firstSixes.useHandicap ?? true,
+        usePerSetAmounts: firstSixes.usePerSetAmounts ?? false,
+        set1Amount:       firstSixes.set1Amount,
+        set2Amount:       firstSixes.set2Amount,
+        set3Amount:       firstSixes.set3Amount,
       });
       if ((firstSixes.sets?.length ?? 0) > 0) {
         sixes.saveSets(firstSixes.sets);
@@ -257,14 +261,20 @@ const Index = () => {
     const firstVegas = betConfig.vegasBets?.[0];
     if (firstVegas) {
       vegas.saveConfig({
-        valuePerPoint:    firstVegas.valuePerPoint ?? 10,
-        useHandicap:      firstVegas.useHandicap ?? false,
-        birdieMultiplier: firstVegas.birdieMultiplier ?? false,
-        variant:          firstVegas.variant ?? 'fixed',
-        playerAId: firstVegas.playerAId ?? '',
-        playerBId: firstVegas.playerBId ?? '',
-        playerCId: firstVegas.playerCId ?? '',
-        playerDId: firstVegas.playerDId ?? '',
+        valuePerPoint:     firstVegas.valuePerPoint ?? 10,
+        useHandicap:       firstVegas.useHandicap ?? false,
+        birdieMultiplier:  firstVegas.birdieMultiplier ?? false,
+        variant:           firstVegas.variant ?? 'fixed',
+        playerAId:         firstVegas.playerAId ?? '',
+        playerBId:         firstVegas.playerBId ?? '',
+        playerCId:         firstVegas.playerCId ?? '',
+        playerDId:         firstVegas.playerDId ?? '',
+        useSegmentAmounts: firstVegas.useSegmentAmounts ?? false,
+        frontAmount:       firstVegas.frontAmount,
+        backAmount:        firstVegas.backAmount,
+        set1Amount:        firstVegas.set1Amount,
+        set2Amount:        firstVegas.set2Amount,
+        set3Amount:        firstVegas.set3Amount,
       });
     }
     const firstNines = betConfig.ninesBets?.[0];
@@ -274,7 +284,17 @@ const Index = () => {
         playerIds:     firstNines.playerIds.slice(0, 3),
       });
     }
-  }, [roundState?.id, betConfig.wolfSetup?.enabled, betConfig.sixesBets?.length, JSON.stringify(betConfig.vegasBets?.[0]), betConfig.ninesBets?.length]);
+  }, [
+    roundState?.id,
+    betConfig.wolfSetup?.enabled,
+    betConfig.wolfSetup?.amountPerHole,
+    betConfig.wolfSetup?.scoringMode,
+    betConfig.wolfSetup?.timing,
+    betConfig.wolfSetup?.carryover,
+    betConfig.sixesBets?.length,
+    JSON.stringify(betConfig.vegasBets?.[0]),
+    betConfig.ninesBets?.length,
+  ]);
 
   // Reset all round state to prepare for a new round (called after successful close)
   const resetToNewRound = useCallback(() => {

@@ -28,8 +28,12 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const missingPlayerIds = useMemo(() => {
+    const resolvedStates = holeStates.filter(
+      hs => hs.wolfPlayerId && (hs.wentSolo || hs.partnerIds.length > 0)
+    );
+    if (resolvedStates.length === 0) return [];
     const referencedIds = new Set<string>();
-    for (const hs of holeStates) {
+    for (const hs of resolvedStates) {
       referencedIds.add(hs.wolfPlayerId);
       hs.partnerIds.forEach(id => referencedIds.add(id));
     }
