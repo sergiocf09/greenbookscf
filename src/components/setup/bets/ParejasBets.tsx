@@ -1076,6 +1076,34 @@ const SixesBetCard: React.FC<{
 
     <AmountInput label="Monto" value={bet.amount} onChange={(v) => onUpdate({ amount: v })} />
 
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={bet.usePerSetAmounts ?? false}
+        onCheckedChange={(v) => onUpdate({ usePerSetAmounts: v })}
+      />
+      <Label className="text-xs">Monto diferente por set</Label>
+    </div>
+
+    {bet.usePerSetAmounts && (
+      <div className="space-y-2 p-2 bg-muted/30 rounded-lg">
+        <AmountInput
+          label="Set 1 · H1–6"
+          value={bet.set1Amount ?? bet.amount}
+          onChange={(v) => onUpdate({ set1Amount: v })}
+        />
+        <AmountInput
+          label="Set 2 · H7–12"
+          value={bet.set2Amount ?? bet.amount}
+          onChange={(v) => onUpdate({ set2Amount: v })}
+        />
+        <AmountInput
+          label="Set 3 · H13–18"
+          value={bet.set3Amount ?? bet.amount}
+          onChange={(v) => onUpdate({ set3Amount: v })}
+        />
+      </div>
+    )}
+
     <div className="space-y-3">
       {(() => {
         // Check if sets 2&3 are auto-generated from set 1
