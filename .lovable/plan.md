@@ -1,64 +1,71 @@
 
 
-## Plan: Fix Loba — Rotation, Auto-Resolution, and Visual Consistency
+## Plan: Hándicaps editables en el setup de Loba + correcciones del diagnóstico previo
 
-### Problems Identified
+### Contexto
 
-1. **Rotation inconsistency**: Saved `wolf_hole_state` records have wrong `wolf_player_id` values (from before the source-of-truth fix). The UI uses `existingState?.wolfPlayerId ?? regularWolfPlayerId`, so corrupted saved data overrides the correct rotation.
+Actualmente los cálculos de Loba usan `player.handicap` (el hándicap general del jugador en la ronda). El usuario quiere que, igual que en Skins Grupal y Medal General, los hándicaps de Loba se puedan confirmar/editar dentro de su sección de setup, y que esos sean los que usen los cálculos.
 
-2. **No results showing**: Most holes have `result: null` because auto-resolve only fires during `handleConfirmHole`. If scores were confirmed BEFORE the wolf decision was saved, the result is never calculated. There's no mechanism to auto-resolve when a decision is saved post-confirmation.
+La tabla `wolf_config` no tiene columna para `player_handicaps`. Se necesita una migración.
 
-3. **Avatar green/gold missing**: `WolfResultsCard.tsx` and `ParejasBets.tsx` (setup order display) don't pass `isLoggedInUser` to `PlayerAvatar`, so the logged-in user's avatar doesn't show Augusta colors.
+### Cambios
 
-4. **Disambiguated initials missing in setup**: The wolf rotation order in `ParejasBets.tsx` shows raw `p.initials`, not disambiguated initials (important when multiple "SC" players exist).
+#### 1. Migración: agregar `player_handicaps` a `wolf_config`
 
-5. **Position number missing in results**: The user wants a sequence number (1, 2, 3, 4) next to each player in the results ranking showing their Loba rotation position.
-
-### Solution
-
-#### Phase 1 — Fix rotation override from corrupted data
-
-**`ScoringView.tsx`**: Change `effectiveWolfId` logic. The rotation order from `wolfConfig.playerOrder` must always take precedence. Only use saved `wolfPlayerId` if it matches the expected rotation for that hole (otherwise ignore the saved value as stale data).
-
-```
-const effectiveWolfId = (existingState?.wolfPlayerId === regularWolfPlayerId)
-  ? regularWolfPlayerId
-  : regularWolfPlayerId; // Always use rotation
+```sql
+ALTER TABLE wolf_config
+ADD COLUMN player_handicaps jsonb DEFAULT '[]'::jsonb;
 ```
 
-**`Index.tsx` `onWolfDecision`**: Currently calls `wolf.getCurrentWolfId(holeNumber)` to derive the wolfId. This is correct but should be reinforced — if an existing state has a different wolfPlayerId, the save must overwrite it with the correct rotation value.
+Formato: `[{ "playerId": "xxx", "handicap": 12 }, ...]`
 
-#### Phase 2 — Auto-resolve on decision save (post-confirm)
+#### 2. Tipos (`src/types/golf.ts`)
 
-**`useWolf.ts` `saveDecision`**: After the upsert, check if all players in the hole have confirmed scores. If so, auto-compute the result using `resolveWolfHole` and immediately call `resolveHole`. This handles the scenario where scores were captured first and the wolf decision comes after.
+- Agregar `playerHandicaps?: { playerId: string; handicap: number }[]` a `WolfSetupConfig` y `WolfConfig`.
 
-**`ScoringView.tsx`**: Keep existing auto-resolve on confirm as a fallback (for when decision exists before confirm).
+#### 3. Setup UI (`src/components/setup/bets/ParejasBets.tsx`)
 
-#### Phase 3 — Visual consistency (green/gold avatars + disambiguated initials)
+- Debajo de la fila "Jugar con hándicap" (cuando está activo), mostrar la lista de participantes activos de Loba con stepper +/- para editar hándicap, usando el mismo patrón de Skins Grupal.
+- Default: toma `player.handicap` de cada participante activo.
+- Persistir en `wolfSetup.playerHandicaps`.
 
-**`WolfResultsCard.tsx`**:
-- Pass `isLoggedInUser={pr.id === basePlayerId}` to `PlayerAvatar` in the ranking list
-- Add rotation position number (from `wolfConfig.playerOrder`) as a small badge to the left of each player's avatar
+#### 4. Hook (`src/hooks/useWolf.ts`)
 
-**`ParejasBets.tsx`** (setup order display):
-- Compute disambiguated initials for the wolf participant players
-- Pass `isLoggedInUser` to the `PlayerAvatar` in the rotation display
+- Leer y escribir `player_handicaps` en `saveConfig`/`fetchData`.
+- Exponer `playerHandicaps` en el estado de `wolfConfig`.
 
-**`WolfDecisionPanel.tsx`**:
-- Pass `isLoggedInUser` to the wolf player's avatar in the header and to partner selection avatars
+#### 5. Motor de cálculo (`src/lib/bets/wolf.ts`)
 
-#### Phase 4 — Data cleanup for active round
+- `getPlayerScore`: recibir un parámetro opcional `handicapOverrides?: Map<string, number>`. Si existe override para el jugador, usar ese hándicap en lugar de `player.handicap`.
+- `resolveWolfHole` y `buildWolfHoleDetails`: propagar el override.
 
-Run a targeted cleanup to update `wolf_player_id` in existing `wolf_hole_state` records for the active round to match the correct rotation from `wolf_config.player_order`. This prevents stale data from causing display issues.
+#### 6. Auto-resolve en `useWolf.ts` (`saveDecision`)
 
-### Files to modify
+- Al construir el objeto `course`, cambiar `strokeIndex` → `handicapIndex` (bug existente del diagnóstico).
+- Pasar los `playerHandicaps` del config como overrides al resolver.
 
-| File | Change |
-|------|--------|
-| `src/components/scoring/ScoringView.tsx` | Always use rotation-derived wolfId, ignore stale saved wolfPlayerId |
-| `src/hooks/useWolf.ts` | Auto-resolve hole on saveDecision if scores already confirmed |
-| `src/components/bets/WolfResultsCard.tsx` | Add `isLoggedInUser`, rotation position number |
-| `src/components/bets/WolfDecisionPanel.tsx` | Add `isLoggedInUser` to avatars |
-| `src/components/setup/bets/ParejasBets.tsx` | Disambiguated initials + `isLoggedInUser` in order display |
-| Database | Cleanup corrupted `wolf_hole_state` for active round |
+#### 7. `calculateWolfBets` y `buildWolfHoleDetails` (`wolf.ts`)
+
+- Filtrar `rivalTeam` usando `config.participantIds` en lugar de `players` completo (bug existente del diagnóstico).
+
+#### 8. Resumen de modalidad en dashboard + badges verdes + nombres desambiguados
+
+- **WolfResultsCard**: subtítulo con "Bola Baja · Con Hándicap · Carryover" debajo del título.
+- **SixesResultsCard**: subtítulo con modalidad/cobro.
+- **VegasResultsCard**: subtítulo con variante.
+- Tooltip de cada hoyo: badge verde para el jugador Loba, nombres con iniciales de apellido desambiguadas.
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| **Migración SQL** | `ADD COLUMN player_handicaps jsonb` |
+| `src/types/golf.ts` | `playerHandicaps` en `WolfSetupConfig` y `WolfConfig` |
+| `src/components/setup/bets/ParejasBets.tsx` | UI de hándicaps editables para Loba |
+| `src/hooks/useWolf.ts` | Leer/escribir `player_handicaps`, fix `handicapIndex` |
+| `src/lib/bets/wolf.ts` | Override de hándicaps, fix `rivalTeam` filter |
+| `src/components/bets/WolfResultsCard.tsx` | Subtítulo modalidad, badge verde, nombres |
+| `src/components/bets/SixesResultsCard.tsx` | Subtítulo modalidad |
+| `src/components/bets/VegasResultsCard.tsx` | Subtítulo variante |
+| `src/pages/Index.tsx` | Pasar `playerHandicaps` al sync de wolf config |
 
