@@ -32,7 +32,7 @@ export const resolveConfigForGroup = (
     
     const base = config[key as keyof BetConfig];
     if (base && typeof base === 'object' && !Array.isArray(base)) {
-      (resolved as any)[key] = { ...(base as Record<string, unknown>), ...override };
+      (resolved as any)[key] = { ...Object(base), ...override };
     }
   }
 
