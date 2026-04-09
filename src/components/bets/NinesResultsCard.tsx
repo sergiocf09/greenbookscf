@@ -226,7 +226,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                     <tr className="text-muted-foreground">
                       <th className="text-left px-1">H</th>
                       {activePlayers.map(p => (
-                        <th key={p.id} className="text-center px-1">{p.initials}</th>
+                        <th key={p.id} className="text-center px-1">{disambiguated.get(p.id) || p.initials}</th>
                       ))}
                     </tr>
                   </thead>
