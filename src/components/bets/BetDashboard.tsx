@@ -3144,6 +3144,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           scores={scores}
           course={course}
           basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          isDisabled={isTeamBetDisabled('wolf-primary')}
+          onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('wolf-primary') : undefined}
         />
       )}
 
@@ -3161,6 +3163,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             scores={scores}
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+            isDisabled={isTeamBetDisabled('sixes-primary')}
+            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('sixes-primary') : undefined}
           />
         );
       })()}
@@ -3179,6 +3183,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             scores={scores}
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+            isDisabled={isTeamBetDisabled('vegas-primary')}
+            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
           />
         );
       })()}
