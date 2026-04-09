@@ -255,7 +255,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
             return (
               <div key={pr.id} className="flex items-center gap-2 justify-between text-xs">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" />}
+                  {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" isLoggedInUser={pr.id === basePlayerId} />}
                   <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
                 </div>
                 <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
