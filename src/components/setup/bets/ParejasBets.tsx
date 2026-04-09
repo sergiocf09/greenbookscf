@@ -532,12 +532,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 : activeIds;
               return (
                 <div className="bg-muted/30 rounded-lg p-2">
-                  <p className="text-[11px] text-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
                     {displayOrder.map((id: string, i: number) => {
                       const p = players.find(pl => pl.id === id);
-                      return `${i + 1}. ${p?.name?.split(' ')[0] ?? '?'}`;
-                    }).join(' · ')}
-                  </p>
+                      return (
+                        <div key={id} className="flex items-center gap-1 text-[11px]">
+                          <span className="text-muted-foreground font-semibold">{i + 1}.</span>
+                          {p && <PlayerAvatar initials={p.initials} background={p.color} size="xs" />}
+                          <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                          {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
