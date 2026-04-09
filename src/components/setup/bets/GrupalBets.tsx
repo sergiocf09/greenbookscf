@@ -421,7 +421,7 @@ const NinesBetCard: React.FC<{
   onRemove: () => void;
 }> = ({ index, bet, players, onUpdate, onRemove }) => {
   const selectedIds = bet.playerIds ?? [];
-  const maxPlayers = 4;
+  const maxPlayers = 3;
   const minPlayers = 3;
 
   const toggle = (playerId: string) => {
