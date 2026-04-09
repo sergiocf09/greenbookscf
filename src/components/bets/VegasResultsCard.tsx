@@ -130,13 +130,13 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
             Las Vegas
           </div>
           <div className="flex items-center gap-2">
-            {isDisabled ? (
+          {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
-            ) : !isRotating ? (
+            ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
                 {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
               </span>
-            ) : null}
+            )}
             {onToggleDisabled && (
               <Button
                 variant="ghost"

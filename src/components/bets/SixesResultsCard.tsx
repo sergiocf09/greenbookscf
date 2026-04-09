@@ -118,8 +118,12 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
         <CardTitle className="text-sm flex items-center justify-between">
           <span>Sixes</span>
           <div className="flex items-center gap-2">
-            {isDisabled && (
+            {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+            ) : (
+              <span className={cn('text-base font-bold tabular-nums', getNetTone(basePlayerBalance))}>
+                {basePlayerBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(basePlayerBalance))}
+              </span>
             )}
             {onToggleDisabled && (
               <Button
