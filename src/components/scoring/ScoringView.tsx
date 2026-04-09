@@ -263,8 +263,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             }));
           });
           const sorted = [...pnl.entries()].sort((a, b) => a[1] - b[1]);
+          let redemptionCandidateLoss = 0;
           if (sorted.length >= 2 && sorted[0][1] < sorted[1][1]) {
             redemptionCandidateId = sorted[0][0];
+            redemptionCandidateLoss = sorted[0][1];
           }
         }
 
