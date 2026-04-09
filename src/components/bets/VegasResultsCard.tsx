@@ -176,12 +176,12 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                        H{SET_LABELS[sr.setNumber]}
                      </div>
                      <div className="flex items-center justify-center gap-1">
-                       <div className="flex flex-col items-end">
+                       <div className="flex flex-col items-start">
                          <span className="text-xs font-bold">{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
                          <span className="text-xs font-bold">{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
                        </div>
                        <span className="text-[9px] text-muted-foreground">vs</span>
-                       <div className="flex flex-col items-start">
+                       <div className="flex flex-col items-end">
                          <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
                          <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
                        </div>

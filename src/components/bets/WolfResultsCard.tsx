@@ -70,7 +70,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       }
     });
     return [...balances.entries()]
-      .map(([id, bal]) => ({ id, name: shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?', balance: bal }))
+      .map(([id, bal]) => ({ id, name: players.find(p => p.id === id)?.name ?? '?', balance: bal }))
       .sort((a, b) => b.balance - a.balance);
   }, [bets, participantIds, shortNames, players]);
 
@@ -162,7 +162,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
               </p>
               <div className="text-right text-[10px] text-muted-foreground shrink-0 ml-2">
-                <div>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerNames.map(n => n.split(' ')[0]).join(', ')}`}</div>
+                <div>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerIds.map(id => shortNames.get(id) ?? '?').join(', ')}`}</div>
                 <div className="font-medium text-foreground">${fmtMoney(detail.effectiveAmount)}/rival</div>
               </div>
             </div>
