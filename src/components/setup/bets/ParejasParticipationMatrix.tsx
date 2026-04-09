@@ -63,7 +63,6 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
   /** Toggle a single player's participation in a bet via exclusion list */
   const handleCellToggle = (betKey: ParejasBetKey, playerId: string) => {
     if (!isBetEnabled(config, betKey)) return;
-    if (betKey === 'wolf') return; // Wolf uses all players
 
     const currentActive = getParticipantIds(config, betKey, players);
     const isIn = currentActive.includes(playerId);
@@ -87,7 +86,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
 
   /** Toggle a player across all enabled bets */
   const handleColumnToggle = (playerId: string) => {
-    const enabledBets = PAREJAS_BETS.filter(b => isBetEnabled(config, b.key) && b.key !== 'wolf');
+    const enabledBets = PAREJAS_BETS.filter(b => isBetEnabled(config, b.key));
     if (enabledBets.length === 0) return;
 
     // If player is active in all enabled bets, exclude from all; otherwise include in all
@@ -249,7 +248,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                   </td>
                   {players.map(player => {
                     const cellOn = getParticipantIds(config, bet.key, players).includes(player.id);
-                    const canToggle = isBetEnabled(config, bet.key) && bet.key !== 'wolf' && (cellOn ? activeCount > 4 : true);
+                    const canToggle = isBetEnabled(config, bet.key) && (cellOn ? activeCount > 4 : true);
                     return (
                       <td key={player.id} className="p-1 text-center">
                         <button

@@ -15,6 +15,7 @@ interface WolfDecisionPanelProps {
   isOrganizer: boolean;
   currentUserId: string | null;
   onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  isRedemption?: boolean;
 }
 
 const timingLabels: Record<string, string> = {
@@ -32,6 +33,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   isOrganizer,
   currentUserId,
   onDecision,
+  isRedemption,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
@@ -71,17 +73,45 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
         />
         <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span>
         <span className="text-xs opacity-80">— La Loba</span>
+        {isRedemption && (
+          <Badge variant="destructive" className="ml-auto text-[9px]">
+            Recuperación ×3
+          </Badge>
+        )}
       </div>
       <div className="px-3 pb-1 bg-[hsl(155,100%,15%)]">
         <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
-          ${fmtMoney(wolfConfig.amountPerHole)} por hoyo · {timingLabels[wolfConfig.timing] ?? wolfConfig.timing}
+          {isRedemption
+            ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · Solo obligatorio`
+            : `$${fmtMoney(wolfConfig.amountPerHole)} por hoyo · ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
         </p>
       </div>
 
       <div className="p-3 bg-card">
         {/* STATE 1: Selection */}
         {showSelectionUI && (
-          canDecide ? (
+          isRedemption ? (
+            canDecide ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  🔥 Recuperación: {wolfPlayer.name.split(' ')[0]} va solo con apuesta ×3
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
+                  onClick={() => {
+                    onDecision([], true);
+                    setSelectedPartners([]);
+                    setEditing(false);
+                  }}
+                >
+                  🐺 Confirmar Recuperación (Solo ×3)
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Esperando confirmación de recuperación…</p>
+            )
+          ) : canDecide ? (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">Elige pareja{maxPartners > 1 ? 's' : ''}:</p>
               <div className="flex flex-wrap gap-2">

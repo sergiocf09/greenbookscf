@@ -4,8 +4,13 @@ import { calculateStrokesPerHole } from '../handicapUtils';
 
 // Rotación: jugador en posición (holeNumber-1) % players.length es el Wolf
 export const getWolfPlayerId = (
-  holeNumber: number, players: Player[]
-): string => players[(holeNumber - 1) % players.length].id;
+  holeNumber: number, players: Player[], playerOrder?: string[]
+): string => {
+  if (playerOrder && playerOrder.length > 0) {
+    return playerOrder[(holeNumber - 1) % playerOrder.length];
+  }
+  return players[(holeNumber - 1) % players.length].id;
+};
 
 // Score efectivo de un jugador en un hoyo (gross o neto)
 const getPlayerScore = (
@@ -72,7 +77,15 @@ export const isWolfCarryoverHole = (
 // Monto efectivo = base × (1 + carryoverHoles) × (2 si Lone Wolf)
 export const computeEffectiveAmount = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean
-): number => config.amountPerHole * (1 + carryoverHoles) * (wentSolo ? 2 : 1);
+): number => {
+  const redemptionMultiplier = (wentSolo && carryoverHoles === -1) ? 3 : 1; // -1 sentinel = redemption
+  return config.amountPerHole * (1 + Math.max(carryoverHoles, 0)) * (wentSolo ? 2 : 1) * (redemptionMultiplier > 1 ? 1.5 : 1);
+};
+
+// Effective amount for redemption hole (×3, solo)
+export const computeRedemptionAmount = (
+  config: WolfConfig
+): number => config.amountPerHole * 3;
 
 // Motor principal: genera BetSummary[] desde holeStates resueltos
 export const calculateWolfBets = (
