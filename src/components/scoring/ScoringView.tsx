@@ -186,7 +186,6 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         const result = resolved.winner === 'wolf' ? 'won'
           : resolved.winner === 'rival' ? 'lost' : 'tied';
         onWolfResolve(holeNumber, result);
-        }
       }
     }
 
