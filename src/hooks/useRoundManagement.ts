@@ -1316,7 +1316,7 @@ export const useRoundManagement = ({
             carryover: wolfCfgRow.carryover,
             playerOrder: wolfCfgRow.player_order ?? [],
             participantIds: wolfCfgRow.participant_ids ?? [],
-            playerHandicaps: wolfCfgRow.player_handicaps ?? [],
+            playerHandicaps: (wolfCfgRow.player_handicaps as any) ?? [],
           };
           const holeStates: WolfHoleState[] = (wolfStates as any[]).map(s => ({
             roundId: s.round_id,
