@@ -64,6 +64,24 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
 
   const saveDecision = useCallback(async (holeNumber: number, wolfPlayerId: string, partnerIds: string[], wentSolo: boolean) => {
     if (!roundId || !wolfConfig) return;
+    // Validate: wolfPlayerId and partnerIds must belong to participantIds
+    const validIds = new Set(wolfConfig.participantIds ?? []);
+    if (validIds.size > 0) {
+      if (!validIds.has(wolfPlayerId)) {
+        console.warn(`[useWolf] wolfPlayerId ${wolfPlayerId} not in participantIds, skipping save`);
+        return;
+      }
+      for (const pid of partnerIds) {
+        if (!validIds.has(pid)) {
+          console.warn(`[useWolf] partnerId ${pid} not in participantIds, skipping save`);
+          return;
+        }
+      }
+      if (partnerIds.includes(wolfPlayerId)) {
+        console.warn(`[useWolf] wolfPlayerId cannot be its own partner, skipping save`);
+        return;
+      }
+    }
     const carryoverHoles = holeStates.filter(s =>
       s.holeNumber < holeNumber && s.result === 'tied' && wolfConfig.carryover
     ).length;

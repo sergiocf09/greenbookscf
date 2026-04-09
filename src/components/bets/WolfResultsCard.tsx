@@ -27,21 +27,21 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const missingPlayerIds = useMemo(() => {
-    const resolvedStates = holeStates.filter(
-      hs => hs.wolfPlayerId && (hs.wentSolo || hs.partnerIds.length > 0)
-    );
-    if (resolvedStates.length === 0) return [];
-    const referencedIds = new Set<string>();
-    for (const hs of resolvedStates) {
-      referencedIds.add(hs.wolfPlayerId);
-      hs.partnerIds.forEach(id => referencedIds.add(id));
-    }
-    return [...referencedIds].filter(id => !players.find(p => p.id === id));
-  }, [players, holeStates]);
+  // Filter out contaminated hole states (players not in current participantIds)
+  const validHoleStates = useMemo(() => {
+    const validIds = new Set(wolfConfig.participantIds ?? []);
+    if (validIds.size === 0) return holeStates;
+    return holeStates.filter(hs => {
+      if (!validIds.has(hs.wolfPlayerId)) return false;
+      for (const pid of hs.partnerIds) {
+        if (!validIds.has(pid)) return false;
+      }
+      return true;
+    });
+  }, [holeStates, wolfConfig.participantIds]);
 
-  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateWolfBets(players, wolfConfig, holeStates), [players, wolfConfig, holeStates, missingPlayerIds]);
-  const details = useMemo(() => missingPlayerIds.length > 0 ? [] : buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course, missingPlayerIds]);
+  const bets = useMemo(() => calculateWolfBets(players, wolfConfig, validHoleStates), [players, wolfConfig, validHoleStates]);
+  const details = useMemo(() => buildWolfHoleDetails(players, scores, wolfConfig, validHoleStates, course), [players, scores, wolfConfig, validHoleStates, course]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
 
@@ -80,7 +80,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
-  if (missingPlayerIds.length > 0) {
+  if (validHoleStates.length === 0 && holeStates.length > 0) {
+    // All hole states were filtered out as invalid
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -90,8 +91,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-              <p className="font-medium">Agregar jugadores faltantes</p>
-              <p>Revisa la configuración en la sección de Apuestas.</p>
+              <p className="font-medium">Datos de Loba inconsistentes</p>
+              <p>Las decisiones guardadas contienen jugadores fuera del match actual. Se limpiarán automáticamente.</p>
             </div>
           </div>
         </CardContent>
