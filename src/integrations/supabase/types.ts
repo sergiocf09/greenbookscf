@@ -1793,6 +1793,7 @@ export type Database = {
           created_at: string
           id: string
           participant_ids: string[]
+          player_handicaps: Json | null
           player_order: string[]
           round_id: string
           scoring_mode: string
@@ -1805,6 +1806,7 @@ export type Database = {
           created_at?: string
           id?: string
           participant_ids?: string[]
+          player_handicaps?: Json | null
           player_order?: string[]
           round_id: string
           scoring_mode?: string
@@ -1817,6 +1819,7 @@ export type Database = {
           created_at?: string
           id?: string
           participant_ids?: string[]
+          player_handicaps?: Json | null
           player_order?: string[]
           round_id?: string
           scoring_mode?: string
