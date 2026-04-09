@@ -240,10 +240,14 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Wolf Decision Panel — prominent at top */}
       {wolfEnabled && wolfConfig && players.length >= 4 && (() => {
-        const wolfPlayerOrder = betConfig?.wolfSetup?.playerOrder;
-        const regularWolfPlayerId = wolfPlayerOrder && wolfPlayerOrder.length > 0
+        // Use wolfConfig (persisted source of truth) for wolf resolution
+        const wolfParticipants = wolfConfig?.participantIds ?? [];
+        const wolfPlayerOrder = wolfConfig?.playerOrder ?? [];
+        const regularWolfPlayerId = wolfPlayerOrder.length > 0
           ? wolfPlayerOrder[(currentHole - 1) % wolfPlayerOrder.length]
-          : displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? '';
+          : wolfParticipants.length > 0
+            ? wolfParticipants[(currentHole - 1) % wolfParticipants.length]
+            : displayPlayers[(currentHole - 1) % displayPlayers.length]?.id ?? '';
         
         // Hole 18 Redemption: identify biggest loser as candidate (optional)
         const isRedemptionHole = currentHole === 18 && betConfig?.wolfSetup?.hole18Redemption;

@@ -27,21 +27,21 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const missingPlayerIds = useMemo(() => {
-    const resolvedStates = holeStates.filter(
-      hs => hs.wolfPlayerId && (hs.wentSolo || hs.partnerIds.length > 0)
-    );
-    if (resolvedStates.length === 0) return [];
-    const referencedIds = new Set<string>();
-    for (const hs of resolvedStates) {
-      referencedIds.add(hs.wolfPlayerId);
-      hs.partnerIds.forEach(id => referencedIds.add(id));
-    }
-    return [...referencedIds].filter(id => !players.find(p => p.id === id));
-  }, [players, holeStates]);
+  // Filter out contaminated hole states (players not in current participantIds)
+  const validHoleStates = useMemo(() => {
+    const validIds = new Set(wolfConfig.participantIds ?? []);
+    if (validIds.size === 0) return holeStates;
+    return holeStates.filter(hs => {
+      if (!validIds.has(hs.wolfPlayerId)) return false;
+      for (const pid of hs.partnerIds) {
+        if (!validIds.has(pid)) return false;
+      }
+      return true;
+    });
+  }, [holeStates, wolfConfig.participantIds]);
 
-  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateWolfBets(players, wolfConfig, holeStates), [players, wolfConfig, holeStates, missingPlayerIds]);
-  const details = useMemo(() => missingPlayerIds.length > 0 ? [] : buildWolfHoleDetails(players, scores, wolfConfig, holeStates, course), [players, scores, wolfConfig, holeStates, course, missingPlayerIds]);
+  const bets = useMemo(() => calculateWolfBets(players, wolfConfig, validHoleStates), [players, wolfConfig, validHoleStates]);
+  const details = useMemo(() => buildWolfHoleDetails(players, scores, wolfConfig, validHoleStates, course), [players, scores, wolfConfig, validHoleStates, course]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
 
