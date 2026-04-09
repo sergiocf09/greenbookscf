@@ -161,8 +161,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                               const my = myScores[i];
                               const rv = rivalScores[i];
                               if (!my || !rv) return null;
-                              const myDisplay = my.strokes > 0 ? (my.net !== my.gross ? my.net : my.gross) : '–';
-                              const rvDisplay = rv.strokes > 0 ? (rv.net !== rv.gross ? rv.net : rv.gross) : '–';
+                              const myDisplay = my.gross > 0 ? my.net : '–';
+                              const rvDisplay = rv.gross > 0 ? rv.net : '–';
                               const myWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && myDisplay < rvDisplay;
                               const rvWins = typeof myDisplay === 'number' && typeof rvDisplay === 'number' && rvDisplay < myDisplay;
                               return (
