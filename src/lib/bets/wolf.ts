@@ -12,18 +12,41 @@ export const getWolfPlayerId = (
   return players[(holeNumber - 1) % players.length].id;
 };
 
+// Build a handicap overrides map from config
+const buildHandicapOverrides = (
+  config: WolfConfig
+): Map<string, number> | undefined => {
+  if (!config.playerHandicaps || config.playerHandicaps.length === 0) return undefined;
+  const map = new Map<string, number>();
+  for (const ph of config.playerHandicaps) {
+    map.set(ph.playerId, ph.handicap);
+  }
+  return map;
+};
+
 // Score efectivo de un jugador en un hoyo (gross o neto)
 const getPlayerScore = (
   playerId: string, holeNumber: number, players: Player[],
-  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
+  handicapOverrides?: Map<string, number>
 ): number | null => {
   const player = players.find(p => p.id === playerId);
   if (!player) return null;
   const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
   if (!hs?.strokes) return null;
   if (!useHandicap) return hs.strokes;
-  const sp = calculateStrokesPerHole(player.handicap, course);
+  const effectiveHandicap = handicapOverrides?.get(playerId) ?? player.handicap;
+  const sp = calculateStrokesPerHole(effectiveHandicap, course);
   return hs.strokes - (sp[holeNumber - 1] ?? 0);
+};
+
+// Get participant players from config
+const getParticipantPlayers = (players: Player[], config: WolfConfig): Player[] => {
+  if (config.participantIds && config.participantIds.length > 0) {
+    const ids = new Set(config.participantIds);
+    return players.filter(p => ids.has(p.id));
+  }
+  return players;
 };
 
 // Resolución del hoyo según modo de scoring
@@ -38,8 +61,9 @@ export const resolveWolfHole = (
   lowBallWinner: 'wolf' | 'rival' | 'tied' | null;
   highBallWinner: 'wolf' | 'rival' | 'tied' | null;
 } => {
-  const ws = wolfTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap)).filter((s): s is number => s !== null);
-  const rs = rivalTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap)).filter((s): s is number => s !== null);
+  const overrides = buildHandicapOverrides(config);
+  const ws = wolfTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides)).filter((s): s is number => s !== null);
+  const rs = rivalTeam.map(id => getPlayerScore(id, holeNumber, players, scores, course, config.useHandicap, overrides)).filter((s): s is number => s !== null);
   const empty = { winner: 'tied' as const, pointsWolf: 0, pointsRival: 0, teamWolfScore: null, teamRivalScore: null, lowBallWinner: null, highBallWinner: null };
   if (!ws.length || !rs.length) return empty;
 
@@ -92,6 +116,8 @@ export const calculateWolfBets = (
   players: Player[], config: WolfConfig, holeStates: WolfHoleState[]
 ): BetSummary[] => {
   if (!config || players.length < 4) return [];
+  const participantPlayers = getParticipantPlayers(players, config);
+  const participantIdSet = new Set(participantPlayers.map(p => p.id));
   const summaries: BetSummary[] = [];
   holeStates
     .filter(s => s.result && s.result !== 'tied')
@@ -99,10 +125,13 @@ export const calculateWolfBets = (
     .forEach(state => {
       const amount = state.effectiveAmount ?? config.amountPerHole;
       const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
-      const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
+      const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
       const winners = state.result === 'won' ? wolfTeam : rivalTeam;
       const losers  = state.result === 'won' ? rivalTeam : wolfTeam;
-      winners.forEach(wId => losers.forEach(lId => {
+      // Filter to only include participants
+      const validWinners = winners.filter(id => participantIdSet.has(id));
+      const validLosers = losers.filter(id => participantIdSet.has(id));
+      validWinners.forEach(wId => validLosers.forEach(lId => {
         const desc = state.wentSolo ? `Loba Sola ×2 · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`;
         summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount, segment: 'hole', holeNumber: state.holeNumber, description: desc });
         summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Wolf', amount: -amount, segment: 'hole', holeNumber: state.holeNumber, description: `vs ${desc}` });
@@ -115,15 +144,18 @@ export const calculateWolfBets = (
 export const buildWolfHoleDetails = (
   players: Player[], scores: Map<string, PlayerScore[]>,
   config: WolfConfig, holeStates: WolfHoleState[], course: GolfCourse
-): WolfHoleDetail[] =>
-  [...holeStates].sort((a, b) => a.holeNumber - b.holeNumber).map(state => {
+): WolfHoleDetail[] => {
+  const participantPlayers = getParticipantPlayers(players, config);
+  const overrides = buildHandicapOverrides(config);
+  return [...holeStates].sort((a, b) => a.holeNumber - b.holeNumber).map(state => {
     const wolfTeam  = [state.wolfPlayerId, ...state.partnerIds];
-    const rivalTeam = players.filter(p => !wolfTeam.includes(p.id));
+    const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id));
     const resolved  = resolveWolfHole(wolfTeam, rivalTeam.map(p => p.id), state.holeNumber, players, scores, course, config);
-    const scoresByPlayer = players.map(p => {
+    const scoresByPlayer = participantPlayers.map(p => {
       const hs = (scores.get(p.id) ?? []).find(s => s.holeNumber === state.holeNumber);
       const gross = hs?.strokes ?? 0;
-      const sp = calculateStrokesPerHole(p.handicap, course);
+      const effectiveHandicap = overrides?.get(p.id) ?? p.handicap;
+      const sp = calculateStrokesPerHole(effectiveHandicap, course);
       const strokes = config.useHandicap ? (sp[state.holeNumber - 1] ?? 0) : 0;
       return { playerId: p.id, playerName: p.name, gross, strokes, net: gross - strokes, teamSide: wolfTeam.includes(p.id) ? 'wolf' as const : 'rival' as const };
     });
@@ -146,3 +178,4 @@ export const buildWolfHoleDetails = (
       pointsRival: resolved.pointsRival,
     };
   });
+};

@@ -59,6 +59,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       carryover:       cfg.carryover,
       player_order:    cfg.playerOrder ?? [],
       participant_ids: cfg.participantIds ?? [],
+      player_handicaps: cfg.playerHandicaps ?? [],
     } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
