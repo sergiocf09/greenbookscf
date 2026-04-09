@@ -534,7 +534,9 @@ const Index = () => {
 
     const validPlayerIds = new Set([
       ...players.map((p) => p.id),
+      ...players.filter((p) => p.profileId).map((p) => p.profileId!),
       ...playerGroups.flatMap((g) => g.players.map((p) => p.id)),
+      ...playerGroups.flatMap((g) => g.players.filter((p) => p.profileId).map((p) => p.profileId!)),
     ]);
     const isTeamComplete = (team: [string, string]) =>
       Boolean(team?.[0]) && Boolean(team?.[1]) && validPlayerIds.has(team[0]) && validPlayerIds.has(team[1]);
