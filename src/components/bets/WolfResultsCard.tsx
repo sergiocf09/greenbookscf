@@ -80,7 +80,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
-  if (missingPlayerIds.length > 0) {
+  if (validHoleStates.length === 0 && holeStates.length > 0) {
+    // All hole states were filtered out as invalid
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -90,8 +91,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-              <p className="font-medium">Agregar jugadores faltantes</p>
-              <p>Revisa la configuración en la sección de Apuestas.</p>
+              <p className="font-medium">Datos de Loba inconsistentes</p>
+              <p>Las decisiones guardadas contienen jugadores fuera del match actual. Se limpiarán automáticamente.</p>
             </div>
           </div>
         </CardContent>
