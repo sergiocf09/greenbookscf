@@ -102,6 +102,15 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
 
   const SET_LABELS: Record<number, string> = { 1: '1–6', 2: '7–12', 3: '13–18' };
 
+  const sixesScoringLabel = sixesConfig.scoringMode === 'lowBall' ? 'Bola Baja' : sixesConfig.scoringMode === 'lowHighBall' ? 'BB + BA' : 'Score Neto';
+  const sixesCobroLabel = sixesConfig.cobro === 'per_hole' ? 'Por Hoyo' : 'Por Set';
+  const sixesSummary = [
+    sixesScoringLabel,
+    sixesCobroLabel,
+    sixesConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    `$${fmtMoney(sixesConfig.amount)}`,
+  ].filter(Boolean).join(' · ');
+
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
@@ -124,6 +133,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
             )}
           </div>
         </CardTitle>
+        <p className="text-[10px] text-muted-foreground">{sixesSummary}</p>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Three-column set layout */}
