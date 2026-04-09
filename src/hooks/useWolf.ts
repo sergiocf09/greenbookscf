@@ -18,12 +18,14 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       ]);
       if (cfg) {
         setWolfConfig({
-          roundId: cfg.round_id,
-          amountPerHole: cfg.amount_per_hole,
-          scoringMode: cfg.scoring_mode as WolfConfig['scoringMode'],
-          useHandicap: cfg.use_handicap,
-          timing: cfg.timing as WolfConfig['timing'],
-          carryover: cfg.carryover,
+          roundId:        cfg.round_id,
+          amountPerHole:  cfg.amount_per_hole,
+          scoringMode:    cfg.scoring_mode as WolfConfig['scoringMode'],
+          useHandicap:    cfg.use_handicap,
+          timing:         cfg.timing as WolfConfig['timing'],
+          carryover:      cfg.carryover,
+          playerOrder:    (cfg as any).player_order ?? [],
+          participantIds: (cfg as any).participant_ids ?? [],
         });
       } else {
         setWolfConfig(null);
@@ -48,13 +50,15 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
   const saveConfig = useCallback(async (cfg: Omit<WolfConfig, 'roundId'>) => {
     if (!roundId) return;
     await supabase.from('wolf_config').upsert({
-      round_id: roundId,
+      round_id:        roundId,
       amount_per_hole: cfg.amountPerHole,
-      scoring_mode: cfg.scoringMode,
-      use_handicap: cfg.useHandicap,
-      timing: cfg.timing,
-      carryover: cfg.carryover,
-    }, { onConflict: 'round_id' });
+      scoring_mode:    cfg.scoringMode,
+      use_handicap:    cfg.useHandicap,
+      timing:          cfg.timing,
+      carryover:       cfg.carryover,
+      player_order:    cfg.playerOrder ?? [],
+      participant_ids: cfg.participantIds ?? [],
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 
@@ -89,7 +93,8 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
 
   const getCurrentWolfId = useCallback((holeNumber: number) => {
     if (!wolfConfig || players.length < 4) return null;
-    return getWolfPlayerId(holeNumber, players);
+    const order = wolfConfig.playerOrder.length > 0 ? wolfConfig.playerOrder : undefined;
+    return getWolfPlayerId(holeNumber, players, order);
   }, [wolfConfig, players]);
 
   const getHoleState = useCallback((holeNumber: number) =>

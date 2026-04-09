@@ -234,12 +234,30 @@ const Index = () => {
   useEffect(() => {
     if (!roundState?.id) return;
     if (betConfig.wolfSetup?.enabled) {
+      // Participantes activos en la matriz para Loba
+      const wolfExcluded = betConfig.parejasExcluded?.wolf ?? [];
+      const wolfParticipantIds = players
+        .map(p => p.id)
+        .filter(id => !wolfExcluded.includes(id));
+
+      // playerOrder: usar el ya guardado en wolfSetup si aplica a los mismos jugadores
+      const savedOrder: string[] = betConfig.wolfSetup.playerOrder ?? [];
+      const orderIsValid =
+        savedOrder.length === wolfParticipantIds.length &&
+        wolfParticipantIds.every(id => savedOrder.includes(id));
+
+      const playerOrder = orderIsValid
+        ? savedOrder
+        : [...wolfParticipantIds].sort(() => Math.random() - 0.5);
+
       wolf.saveConfig({
-        amountPerHole: betConfig.wolfSetup.amountPerHole ?? 100,
-        scoringMode:   betConfig.wolfSetup.scoringMode ?? 'lowBall',
-        useHandicap:   betConfig.wolfSetup.useHandicap ?? true,
-        timing:        betConfig.wolfSetup.timing ?? 'B',
-        carryover:     betConfig.wolfSetup.carryover ?? true,
+        amountPerHole:  betConfig.wolfSetup.amountPerHole ?? 100,
+        scoringMode:    betConfig.wolfSetup.scoringMode ?? 'lowBall',
+        useHandicap:    betConfig.wolfSetup.useHandicap ?? true,
+        timing:         betConfig.wolfSetup.timing ?? 'B',
+        carryover:      betConfig.wolfSetup.carryover ?? true,
+        playerOrder,
+        participantIds: wolfParticipantIds,
       });
     }
     const firstSixes = betConfig.sixesBets?.[0];
@@ -291,6 +309,8 @@ const Index = () => {
     betConfig.wolfSetup?.scoringMode,
     betConfig.wolfSetup?.timing,
     betConfig.wolfSetup?.carryover,
+    JSON.stringify(betConfig.wolfSetup?.playerOrder),
+    JSON.stringify(betConfig.parejasExcluded?.wolf),
     betConfig.sixesBets?.length,
     JSON.stringify(betConfig.vegasBets?.[0]),
     betConfig.ninesBets?.length,
