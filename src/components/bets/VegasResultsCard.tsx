@@ -364,7 +364,7 @@ function renderHolePill(
             const myHasStroke = (getStrokes(i, true) || 0) > 0;
             const rvHasStroke = (getStrokes(i, false) || 0) > 0;
             return (
-              <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
+              <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                 <span className="truncate text-left">{getName(myPids[i])}</span>
                 <span className="font-medium text-right px-1">{myS}</span>
                 <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
