@@ -3160,7 +3160,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         />
       )}
 
-      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesBets ?? []).length > 0 && (() => {
+      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) && (() => {
         const hookCfg = sixesHook.sixesConfig;
         const betInst = effectiveBetConfig.sixesBets?.[0];
         const hookHasEmptySets = !hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id));
