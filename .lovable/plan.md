@@ -1,111 +1,93 @@
 
 
-## Plan: Dashboard & Setup Fixes — Carritos Ghost, Nines Visibility, Vegas Rotating, Wolf UX, Handicap Indicators
+## Plan: Dashboard Polish — Names, Disambiguation, Nines Visibility, Sixes Setup, Stroke Indicators, Wolf UX, Pressures Toggle
 
-### 1. Fix Carritos ghost data in Balance General
+### 1. Full names in Sixes & Vegas (3-block variant) player rankings
 
-**Root cause**: `BetDashboard.tsx` line ~780 computes `allCarritosResults` without checking `effectiveBetConfig.carritos.enabled`. The guard in `carritos.ts` only protects the engine path, but the dashboard has its own inline calculator. The `carritosSummaries` emitted via `onBetSummariesChange` leak into the balance even when carritos is disabled in the matrix.
+In `SixesResultsCard.tsx` and `VegasResultsCard.tsx`, the player ranking section uses `getName(id)` which truncates to first name. Change to show full player name for these rankings since there's sufficient space.
 
-**Fix**: Wrap the legacy carritos block (line ~779-788) with `if (effectiveBetConfig.carritos.enabled && !hasCarritosTeams ...)`. Also wrap the `carritosTeams` loop (line ~792) to skip when carritos is disabled.
-
-**File**: `src/components/bets/BetDashboard.tsx`
+**Files**: `SixesResultsCard.tsx`, `VegasResultsCard.tsx`
 
 ---
 
-### 2. Fix Nines showing when deselected from matrix
+### 2. Disambiguated initials in Sixes, Vegas, Wolf, Nines
 
-**Root cause**: `ninesHook?.isActive` returns `true` whenever a config was saved to the DB (even if the matrix later toggled it off). The `ninesBets` array-length check is correct but `ninesHook.isActive` overrides it.
+Import `disambiguateInitials` from `playerInput.ts` and compute disambiguated initials map for the active players. Use these initials wherever `PlayerAvatar` or initials-based headers are rendered, instead of raw `player.initials`.
 
-**Fix**: Change the condition to: `(effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3)` — removing `ninesHook?.isActive` as a prerequisite. The nines card already needs valid bet instances with ≥3 players; the hook being "active" is irrelevant.
-
-**File**: `src/components/bets/BetDashboard.tsx`
+**Files**: `SixesResultsCard.tsx`, `VegasResultsCard.tsx`, `WolfResultsCard.tsx`, `NinesResultsCard.tsx`
 
 ---
 
-### 3. Vegas rotating variant: remove top-level total, add player ranking
+### 3. Fix Nines still showing when deselected from matrix
 
-**Problem**: Rotating variant shows `totalBalance` in the header (only relevant to logged-in user). Should show no single total and instead use a player ranking at the bottom (like Sixes).
+**Root cause**: The condition at line 3195 checks `ninesHook?.ninesConfig` first — once a config is saved to the DB, this stays truthy forever even after deselecting from the matrix. The `effectiveBetConfig.ninesBets` check is correct but `ninesHook?.ninesConfig` bypasses it.
 
-**Fix**: In `VegasResultsCard.tsx`, when `isRotating`, hide the `totalBalance` from the header. Add a `playerRanking` computation (same pattern as Sixes) and render sorted list below the set columns. Only include the 4 participating players in the ranking.
+**Fix**: Remove the `ninesHook?.ninesConfig` prerequisite. Use only the `effectiveBetConfig.ninesBets` check: `(effectiveBetConfig.ninesBets ?? []).some(b => b.playerIds?.length >= 3)`. This mirrors the pattern used for Sixes/Vegas (which use `(effectiveBetConfig.sixesBets ?? []).length > 0`).
 
-**File**: `src/components/bets/VegasResultsCard.tsx`
-
----
-
-### 4. Sixes & Vegas ranking: only show participating players
-
-**Problem**: `playerRanking` iterates over all `players` including non-participants. Should filter to only the 4 players in the bet.
-
-**Fix**:
-- **Sixes**: Compute participating player IDs from `sixesConfig.sets` (unique set of all team members). Filter `playerRanking` to only those IDs.
-- **Vegas**: Same approach — only include `playerAId/B/C/D`.
-- **Wolf**: Filter to only wolf-participating players.
-
-**Files**: `src/components/bets/SixesResultsCard.tsx`, `src/components/bets/VegasResultsCard.tsx`, `src/components/bets/WolfResultsCard.tsx`
+**File**: `BetDashboard.tsx`
 
 ---
 
-### 5. Wolf player order: show all players in one row
+### 4. Fix Carritos ghost data persisting in Balance General
 
-**Problem**: The player order list in setup shows one player per row (vertical). User wants them all in one horizontal row for visual cleanliness.
+**Root cause analysis**: The guard at line 778 (`if (!betConfig.carritos.enabled) return results`) uses `betConfig` but the rendering and useEffect use `effectiveBetConfig`. If `effectiveBetConfig` has a stale `enabled: true`, the inline summary computation runs. Also the useEffect at line 818 doesn't check `betConfig.carritos.enabled` before processing `allCarritosResults`.
 
-**Fix**: Change the order display from a vertical list to a horizontal inline format: `1. Name · 2. Name · 3. Name · 4. Name`.
+**Fix**: Add `if (!betConfig.carritos.enabled) return;` at the top of the useEffect (line 818) to skip `carritosSummaries` emission. Also ensure `allCarritosResults` memo uses `effectiveBetConfig.carritos.enabled` consistently.
 
-**File**: `src/components/setup/bets/ParejasBets.tsx`
-
----
-
-### 6. Wolf Hole 18 Redemption: make it optional for the loser
-
-**Problem**: Current logic auto-assigns the biggest loser on H18 with no choice. The user wants the loser to be able to decline, in which case the normal rotation applies.
-
-**Fix**: On hole 18 with redemption enabled:
-- Show a choice UI in `WolfDecisionPanel`: "El máximo perdedor (Name) puede tomar la Loba ×3 solo" with Accept/Decline buttons.
-- If accepted → force solo, ×3. If declined → normal wolf rotation applies.
-- Track choice via a new `redemptionAccepted` field on the `WolfHoleState` or by simply not overriding `wolfPlayerId` until accepted.
-- In `ScoringView.tsx`: show both options (regular wolf and redemption candidate) until decided.
-
-**Files**: `src/components/scoring/ScoringView.tsx`, `src/components/bets/WolfDecisionPanel.tsx`
+**File**: `BetDashboard.tsx`
 
 ---
 
-### 7. Sixes setup: auto-generate sets 2 & 3 from set 1
+### 5. Sixes setup: show all 3 sets in rotation preview (not just 2 & 3)
 
-**Problem**: User must manually configure all 3 sets. Should auto-generate sets 2 and 3 when set 1 is fully assigned (A+B vs C+D → A+C vs B+D → A+D vs B+C), and show a preview like Vegas does.
+Currently shows Set 1 as editable + Sets 2&3 as read-only. The user wants all 3 sets shown below (like Vegas). Change to show Set 1 in the same read-only preview format alongside Sets 2&3, creating a 3-column grid.
 
-**Status**: The auto-rotation logic already exists (lines 1099-1111 in `ParejasBets.tsx`). It fires only when sets 2 & 3 are empty. The preview display for sets 2 & 3 should show them as read-only (like the Vegas rotation preview).
-
-**Fix**: After auto-generation, display sets 2 and 3 as read-only previews (similar to Vegas). Remove the manual selectors for sets 2 and 3 when auto-generated.
-
-**File**: `src/components/setup/bets/ParejasBets.tsx` (SixesBetCard)
+**File**: `ParejasBets.tsx` (SixesBetCard)
 
 ---
 
-### 8. Add per-set/per-round amounts for Sixes and Vegas
+### 6. Stroke indicator in popovers: only ● dot, no gross in parentheses
 
-**Sixes**: Currently has a single `amount`. Add the ability to define amount per set (for `per_set` cobro mode) — or keep single amount as the per-unit amount.
+**Current**: Nines shows `(gross) ●`, Sixes shows `(gross)`. User wants: show only the net score and `●` beside it when a stroke was applied — no gross value shown.
 
-**Vegas (fixed)**: Add option to define amount per 9-hole half (front/back amount) instead of a single `valuePerPoint`.
+**Fix across all 4 cards**:
+- **Sixes**: Replace `({my.gross})` with just `●` when `strokes > 0`
+- **Nines**: Replace `({hs.strokes}) ●` with just `●`
+- **Vegas**: Add `●` indicator (currently missing)
+- **Wolf**: Add `●` indicator (currently missing)
 
-**Fix**:
-- For Sixes: The current `amount` already serves as per-hole or per-set unit. Add a label clarification in setup. No structural change needed.
-- For Vegas fixed variant: Add `frontAmount`, `backAmount` fields to `VegasBetInstance` and `VegasConfig`. In setup, show these fields when variant is `fixed`. The engine uses `valuePerPoint` — keep that as the multiplier, and add segment-level amounts for settlement.
-
-**Files**: `src/types/golf.ts`, `src/components/setup/bets/ParejasBets.tsx`
+**Files**: `SixesResultsCard.tsx`, `NinesResultsCard.tsx`, `VegasResultsCard.tsx`, `WolfResultsCard.tsx`
 
 ---
 
-### 9. Handicap stroke indicators in Wolf, Sixes, Vegas, Nines popovers
+### 7. Wolf setup: show player avatars with initials in shuffle order display
 
-**Problem**: When playing with handicaps, the hole detail popovers don't show the black dot (●) indicator for strokes received, as Carritos and Foursomes do.
+Currently displays `1. Name · 2. Name`. Change to include `PlayerAvatar` inline next to each name, distributed across the full row width for better spacing and clarity when names repeat.
 
-**Fix**: In each results card's hole popover:
-- Show `●` next to the net score when `strokes > 0`
-- Show gross in parentheses when net ≠ gross
-- This pattern already exists in Sixes (`my.strokes > 0 && my.net !== my.gross`), ensure it's consistent across Vegas and Wolf popovers too.
-- For Nines: add stroke indicator in the per-player score display.
+**File**: `ParejasBets.tsx`
 
-**Files**: `src/components/bets/SixesResultsCard.tsx`, `src/components/bets/VegasResultsCard.tsx`, `src/components/bets/WolfResultsCard.tsx`, `src/components/bets/NinesResultsCard.tsx`
+---
+
+### 8. Wolf H18 Redemption: show loser info, allow reversibility
+
+- Show who the max loser is at the time of H18 (name + accumulated loss amount)
+- Allow selecting either the max loser (×3 solo) OR the regular rotation wolf
+- Make the choice always reversible (editing returns to the selection UI)
+- The "Cambiar" button already exists in the in-play state; ensure it properly resets `redemptionMode` back to `pending`
+
+**Files**: `WolfDecisionPanel.tsx`, `ScoringView.tsx`
+
+---
+
+### 9. Pressures bilateral toggle: dynamic label + restore F9/B9 when toggled off
+
+**Problem 1**: The toggle label says "Solo Match" — should say "Sin Presiones" when only `onlyMatch` is set, and "Sin Presiones · Match Play 18" when both `continua` and `onlyMatch` are set.
+
+**Problem 2**: When toggled OFF (from Sin Presiones → regular pressures), the F9/B9 segments don't reappear because `isContinuaMatch` still reads from `resolvedCfg.pressures?.continua && resolvedCfg.pressures?.onlyMatch`. When the pair override sets `onlyMatch: false`, the segment filter at line 677 should correctly produce all 3 segments. The issue is that `isContinuaMatch` uses the resolved config (which includes pair overrides), but the pair override is checked independently later. Need to unify: at line 677, incorporate the pair-level override to determine `isContinuaMatch`.
+
+**Fix**: Pass pair-specific override context into the pressures segment determination. The `isContinuaMatch` at line 677 should use the same pair-aware logic as line 2454-2457.
+
+**Files**: `BilateralDetail.tsx`
 
 ---
 
@@ -113,13 +95,12 @@
 
 | File | Changes |
 |------|---------|
-| `src/components/bets/BetDashboard.tsx` | Gate carritos inline calc on `enabled`; fix nines visibility condition |
-| `src/components/bets/VegasResultsCard.tsx` | Remove header total for rotating; add player ranking (participants only); add ● stroke indicator in popover |
-| `src/components/bets/SixesResultsCard.tsx` | Filter ranking to participants only; ensure ● stroke indicator |
-| `src/components/bets/WolfResultsCard.tsx` | Filter ranking to participants only; add ● stroke indicator in popover |
-| `src/components/bets/NinesResultsCard.tsx` | Add ● stroke indicator |
-| `src/components/setup/bets/ParejasBets.tsx` | Wolf order horizontal; Sixes auto-gen read-only preview; Vegas per-half amounts |
-| `src/components/scoring/ScoringView.tsx` | H18 redemption: show choice instead of auto-assign |
-| `src/components/bets/WolfDecisionPanel.tsx` | Add Accept/Decline redemption UI |
-| `src/types/golf.ts` | Optional: Vegas front/back amounts |
+| `SixesResultsCard.tsx` | Full names in ranking; disambiguated initials; ● only (no gross) |
+| `VegasResultsCard.tsx` | Full names in ranking; disambiguated initials; ● indicator |
+| `WolfResultsCard.tsx` | Disambiguated initials; ● indicator |
+| `NinesResultsCard.tsx` | Disambiguated initials; ● only (no gross) |
+| `BetDashboard.tsx` | Fix nines visibility; fix carritos useEffect guard |
+| `ParejasBets.tsx` | Sixes 3-set preview; Wolf avatar+initials in order display |
+| `WolfDecisionPanel.tsx` | Show loser info on H18; reversible redemption choice |
+| `BilateralDetail.tsx` | Dynamic toggle label; pair-aware isContinuaMatch for segments |
 
