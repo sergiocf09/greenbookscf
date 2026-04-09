@@ -16,9 +16,10 @@ interface WolfDecisionPanelProps {
   isOrganizer: boolean;
   currentUserId: string | null;
   onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  onRevert?: (holeNumber: number) => Promise<void>;
   isRedemption?: boolean;
   redemptionCandidateId?: string;
-  redemptionCandidateLoss?: number; // accumulated loss amount for display
+  redemptionCandidateLoss?: number;
   regularWolfPlayerId?: string;
 }
 
@@ -37,6 +38,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   isOrganizer,
   currentUserId,
   onDecision,
+  onRevert,
   isRedemption,
   redemptionCandidateId,
   redemptionCandidateLoss,
@@ -258,29 +260,46 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
 
         {/* STATE 3: Resolved */}
         {showResolved && holeState && (
-          <div
-            className={cn(
-              'rounded-md px-3 py-2 text-sm font-medium',
-              holeState.result === 'won' && 'bg-green-500/10 text-green-700',
-              holeState.result === 'lost' && 'bg-red-500/10 text-red-700',
-              holeState.result === 'tied' && 'bg-muted text-muted-foreground'
-            )}
-          >
-            {holeState.result === 'won' && (
-              <>✅ La Loba ganó · +${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
-            )}
-            {holeState.result === 'lost' && (
-              <>❌ La Loba perdió · -${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
-            )}
-            {holeState.result === 'tied' && (
-              <span className="flex items-center gap-2">
-                ↔ Empate
-                {wolfConfig.carryover && (
-                  <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
-                    ↑ Carry
-                  </Badge>
-                )}
-              </span>
+          <div className="space-y-2">
+            <div
+              className={cn(
+                'rounded-md px-3 py-2 text-sm font-medium',
+                holeState.result === 'won' && 'bg-green-500/10 text-green-700',
+                holeState.result === 'lost' && 'bg-red-500/10 text-red-700',
+                holeState.result === 'tied' && 'bg-muted text-muted-foreground'
+              )}
+            >
+              {holeState.result === 'won' && (
+                <>✅ La Loba ganó · +${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
+              )}
+              {holeState.result === 'lost' && (
+                <>❌ La Loba perdió · -${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
+              )}
+              {holeState.result === 'tied' && (
+                <span className="flex items-center gap-2">
+                  ↔ Empate
+                  {wolfConfig.carryover && (
+                    <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
+                      ↑ Carry
+                    </Badge>
+                  )}
+                </span>
+              )}
+            </div>
+            {canDecide && onRevert && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-7"
+                onClick={async () => {
+                  await onRevert(holeNumber);
+                  setEditing(false);
+                  setSelectedPartners([]);
+                  setRedemptionMode('pending');
+                }}
+              >
+                Cambiar
+              </Button>
             )}
           </div>
         )}

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
@@ -50,6 +51,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   onUpdateBet,
   onUpdateConfig,
 }) => {
+  const { profile } = useAuth();
   const playerOptions = useMemo(
     () => players.map((p) => ({ value: p.id, label: p.name })),
     [players]
@@ -521,9 +523,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                     const p = players.find(pl => pl.id === pid);
                     if (!p) return null;
                     const hcp = getHcp(pid);
+                    const isLoggedIn = !!(profile && p.profileId === profile.id);
+                    const wolfPlayers = activeIds.map(id => players.find(pl => pl.id === id)).filter(Boolean) as Player[];
+                    const disambiguatedMap = disambiguateInitials(wolfPlayers);
                     return (
                       <div key={pid} className="flex items-center justify-between">
-                        <span className="text-xs truncate">{p.name.split(' ')[0]}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <PlayerAvatar
+                            initials={disambiguatedMap.get(pid) || p.initials}
+                            background={p.color}
+                            size="xs"
+                            isLoggedInUser={isLoggedIn}
+                          />
+                          <span className="text-xs truncate">{p.name}</span>
+                        </div>
                         <div className="flex items-center gap-1">
                           <Button variant="outline" size="icon" className="h-6 w-6 text-xs"
                             onClick={() => updateHcp(pid, Math.max(0, hcp - 1))}>−</Button>
@@ -593,8 +606,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                         return (
                           <div key={id} className="flex items-center gap-1 text-[11px]">
                             <span className="text-muted-foreground font-semibold">{i + 1}.</span>
-                            {p && <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" />}
-                            <span>{p?.name?.split(' ')[0] ?? '?'}</span>
+                            {p && <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" isLoggedInUser={!!(profile && p.profileId === profile.id)} />}
+                            <span>{p?.name ?? '?'}</span>
                             {i < displayOrder.length - 1 && <span className="text-muted-foreground ml-1">·</span>}
                           </div>
                         );

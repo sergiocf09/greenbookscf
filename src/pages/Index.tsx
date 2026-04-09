@@ -2891,6 +2891,12 @@ const Index = () => {
             onWolfResolve={async (holeNumber, result) => {
               await wolf.resolveHole(holeNumber, result);
             }}
+            onWolfRevert={async (holeNumber) => {
+              await wolf.revertDecision(holeNumber);
+            }}
+            onWolfRecalculate={async (holeNumber) => {
+              await wolf.recalculateHole(holeNumber);
+            }}
             sixesConfig={sixes.sixesConfig ?? undefined}
             
           />

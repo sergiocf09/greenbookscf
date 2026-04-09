@@ -40,6 +40,8 @@ interface ScoringViewProps {
   isOrganizer?: boolean;
   onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean) => Promise<void>;
   onWolfResolve?: (holeNumber: number, result: 'won' | 'lost' | 'tied') => Promise<void>;
+  onWolfRevert?: (holeNumber: number) => Promise<void>;
+  onWolfRecalculate?: (holeNumber: number) => Promise<void>;
   sixesConfig?: SixesConfig;
 }
 
@@ -109,6 +111,8 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   isOrganizer,
   onWolfDecision,
   onWolfResolve,
+  onWolfRevert,
+  onWolfRecalculate,
   sixesConfig,
   
 }) => {
@@ -167,10 +171,13 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     const playerIds = displayPlayers.map(p => p.id);
     confirmHole(holeNumber, playerIds);
 
-    // Auto-resolve wolf hole on confirm
-    if (onWolfResolve && wolfConfig && wolfHoleStates) {
+    // Auto-resolve or recalculate wolf hole on confirm
+    if (wolfConfig && wolfHoleStates) {
       const holeState = wolfHoleStates.find(s => s.holeNumber === holeNumber) ?? null;
-      if (holeState && holeState.result === null) {
+      if (holeState && holeState.result !== null && onWolfRecalculate) {
+        // Score changed after resolution — recalculate
+        onWolfRecalculate(holeNumber);
+      } else if (holeState && holeState.result === null && onWolfResolve) {
         const wolfTeam = [holeState.wolfPlayerId, ...holeState.partnerIds];
         const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
         const resolved = resolveWolfHole(
@@ -197,7 +204,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     if (next !== null) {
       setTimeout(() => setCurrentHole(next), 350);
     }
-  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, wolfConfig, wolfHoleStates, players, scores, course]);
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, onWolfRecalculate, wolfConfig, wolfHoleStates, players, scores, course]);
 
   // Wolf: check if decision is needed before confirming
   const wolfEnabled = !!(betConfig?.wolfSetup?.enabled);
@@ -291,6 +298,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             onDecision={async (partnerIds, wentSolo) => {
               await onWolfDecision?.(currentHole, partnerIds, wentSolo);
             }}
+            onRevert={onWolfRevert}
             isRedemption={false}
             redemptionCandidateId={redemptionCandidateId ?? undefined}
             redemptionCandidateLoss={redemptionCandidateLoss ?? undefined}

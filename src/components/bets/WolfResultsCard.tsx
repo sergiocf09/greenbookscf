@@ -1,15 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState } from '@/types/golf';
-import { disambiguateInitials, formatPlayerName } from '@/lib/playerInput';
+import { disambiguateInitials, disambiguateShortNames } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { calculateWolfBets, buildWolfHoleDetails } from '@/lib/bets/wolf';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, ChevronDown, XCircle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
 
 interface WolfResultsCardProps {
   players: Player[];
@@ -45,16 +44,13 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
 
-  const getName = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
-  const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
+  const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
 
   const participantIds = useMemo(() => {
-    // Fuente de verdad: participantIds del config (ya filtrado en BetDashboard)
     if (wolfConfig.participantIds && wolfConfig.participantIds.length > 0) {
       return new Set<string>(wolfConfig.participantIds);
     }
-    // Fallback
     const ids = new Set<string>();
     for (const hs of holeStates) {
       ids.add(hs.wolfPlayerId);
@@ -74,14 +70,30 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       }
     });
     return [...balances.entries()]
-      .map(([id, bal]) => ({ id, name: getFullName(id), balance: bal }))
+      .map(([id, bal]) => ({ id, name: shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?', balance: bal }))
       .sort((a, b) => b.balance - a.balance);
-  }, [bets, participantIds]);
+  }, [bets, participantIds, shortNames, players]);
 
   const getNetTone = (n: number) => (n > 0 ? 'text-green-600' : n < 0 ? 'text-destructive' : 'text-muted-foreground');
 
+  // Per-hole balance for a player
+  const getHolePnL = (state: WolfHoleState, playerId: string): number => {
+    const amount = state.effectiveAmount ?? wolfConfig.amountPerHole;
+    const wolfTeamIds = [state.wolfPlayerId, ...state.partnerIds];
+    const participantPlayers = wolfConfig.participantIds?.length
+      ? players.filter(p => wolfConfig.participantIds!.includes(p.id))
+      : players;
+    const rivalIds = participantPlayers.filter(p => !wolfTeamIds.includes(p.id)).map(p => p.id);
+    const isWolfTeam = wolfTeamIds.includes(playerId);
+    if (!state.result || state.result === 'tied') return 0;
+    const wolfWon = state.result === 'won';
+    const myTeam = isWolfTeam ? wolfTeamIds : rivalIds;
+    const opponents = isWolfTeam ? rivalIds : wolfTeamIds;
+    const iWon = (isWolfTeam && wolfWon) || (!isWolfTeam && !wolfWon);
+    return iWon ? amount * opponents.length : -amount * opponents.length;
+  };
+
   if (validHoleStates.length === 0 && holeStates.length > 0) {
-    // All hole states were filtered out as invalid
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -123,65 +135,104 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
       </button>
     );
 
-    if (!detail) {
+    if (!detail || !state) {
       return <div key={hole}>{pill}</div>;
     }
 
-    // Build wolf team and rival team arrays
-    const wolfTeamIds = [state!.wolfPlayerId, ...state!.partnerIds];
-    const allPlayerIds = [...new Set([...wolfTeamIds, ...players.map(p => p.id)])];
-    const rivalIds = allPlayerIds.filter(id => !wolfTeamIds.includes(id) && detail.scoresByPlayer.some(s => s.playerId === id));
+    const wolfTeamIds = [state.wolfPlayerId, ...state.partnerIds];
+    const participantPlayers = wolfConfig.participantIds?.length
+      ? players.filter(p => wolfConfig.participantIds!.includes(p.id))
+      : players;
+    const rivalIds = participantPlayers.filter(p => !wolfTeamIds.includes(p.id)).map(p => p.id);
 
-    const isBaseWolfTeam = wolfTeamIds.includes(basePlayerId);
-    const myTeamIds = isBaseWolfTeam ? wolfTeamIds : rivalIds;
-    const theirTeamIds = isBaseWolfTeam ? rivalIds : wolfTeamIds;
-    const myTeamScores = detail.scoresByPlayer.filter(s => myTeamIds.includes(s.playerId));
-    const theirTeamScores = detail.scoresByPlayer.filter(s => theirTeamIds.includes(s.playerId));
+    const wolfTeamScores = detail.scoresByPlayer.filter(s => wolfTeamIds.includes(s.playerId));
+    const rivalTeamScores = detail.scoresByPlayer.filter(s => rivalIds.includes(s.playerId));
+
+    // Per-player PnL for this hole
+    const holePnL = state.result && state.result !== 'tied' ? (playerId: string) => getHolePnL(state, playerId) : null;
 
     return (
       <Popover key={hole}>
         <PopoverTrigger asChild>{pill}</PopoverTrigger>
         <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
           <div className="space-y-1">
-           <p className="text-xs font-medium">
-              Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
-            </p>
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>{isBaseWolfTeam ? 'Tu equipo (Loba)' : 'Tu equipo'}</span>
-              <span>{isBaseWolfTeam ? 'Rivales' : 'Equipo Loba'}</span>
+            {/* Header with decision info top-right */}
+            <div className="flex items-start justify-between">
+              <p className="text-xs font-medium">
+                Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
+              </p>
+              <div className="text-right text-[10px] text-muted-foreground shrink-0 ml-2">
+                <div>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerNames.map(n => n.split(' ')[0]).join(', ')}`}</div>
+                <div className="font-medium text-foreground">${fmtMoney(detail.effectiveAmount)}/rival</div>
+              </div>
             </div>
-            {/* Render rows for max of both sides */}
-            {Array.from({ length: Math.max(myTeamScores.length, theirTeamScores.length) }, (_, i) => {
-              const my = myTeamScores[i];
-              const rv = theirTeamScores[i];
-              const myHasStroke = my && my.strokes > 0 && my.net !== my.gross;
-              const rvHasStroke = rv && rv.strokes > 0 && rv.net !== rv.gross;
+
+            {/* Team labels */}
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>Equipo Loba</span>
+              <span>Rivales</span>
+            </div>
+
+            {/* Player scores */}
+            {Array.from({ length: Math.max(wolfTeamScores.length, rivalTeamScores.length) }, (_, i) => {
+              const ws = wolfTeamScores[i];
+              const rs = rivalTeamScores[i];
+              const wsHasStroke = ws && ws.strokes > 0 && ws.net !== ws.gross;
+              const rsHasStroke = rs && rs.strokes > 0 && rs.net !== rs.gross;
               return (
                 <div key={i} className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                   <span className="truncate text-left flex items-center gap-1">
-                    {my ? (
+                    {ws ? (
                       <>
-                        {my.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
-                        {formatPlayerName(my.playerName)}
+                        {ws.playerId === state.wolfPlayerId && <span className="text-[10px]">🐺</span>}
+                        {shortNames.get(ws.playerId) ?? ws.playerName.split(' ')[0]}
                       </>
                     ) : ''}
                   </span>
-                  <span className="font-medium text-right px-1">{my ? (my.gross > 0 ? my.net : '–') : ''}</span>
-                  <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span className="font-medium text-right px-1">{ws ? (ws.gross > 0 ? ws.net : '–') : ''}</span>
+                  <span className="flex items-center justify-center w-3">{wsHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                   <span />
-                  <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
-                  <span className="font-medium text-left px-1">{rv ? (rv.gross > 0 ? rv.net : '–') : ''}</span>
+                  <span className="flex items-center justify-center w-3">{rsHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                  <span className="font-medium text-left px-1">{rs ? (rs.gross > 0 ? rs.net : '–') : ''}</span>
                   <span className="truncate text-right flex items-center justify-end gap-1">
-                    {rv ? (
+                    {rs ? (
                       <>
-                        {formatPlayerName(rv.playerName)}
-                        {rv.playerId === state!.wolfPlayerId && <span className="inline-block h-2 w-2 rounded-full bg-green-500 shrink-0" />}
+                        {shortNames.get(rs.playerId) ?? rs.playerName.split(' ')[0]}
+                        {rs.playerId === state.wolfPlayerId && <span className="text-[10px]">🐺</span>}
                       </>
                     ) : ''}
                   </span>
                 </div>
               );
             })}
+
+            {/* Per-player amounts */}
+            {holePnL && (
+              <div className="flex justify-between text-[10px] tabular-nums pt-0.5">
+                <div className="space-x-2">
+                  {wolfTeamScores.map(ws => {
+                    const pnl = holePnL(ws.playerId);
+                    return (
+                      <span key={ws.playerId} className={cn('font-medium', getNetTone(pnl))}>
+                        {shortNames.get(ws.playerId) ?? ws.playerName.split(' ')[0]}: {pnl >= 0 ? '+' : ''}${fmtMoney(Math.abs(pnl))}
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="space-x-2">
+                  {rivalTeamScores.map(rs => {
+                    const pnl = holePnL(rs.playerId);
+                    return (
+                      <span key={rs.playerId} className={cn('font-medium', getNetTone(pnl))}>
+                        {pnl >= 0 ? '+' : ''}${fmtMoney(Math.abs(pnl))}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Extra info */}
             <div className="pt-1 border-t border-border/50 text-xs space-y-0.5">
               {wolfConfig.scoringMode === 'lowHighBall' && (
                 <>
@@ -190,14 +241,9 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                   <p className="flex justify-between"><span>Puntos</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
                 </>
               )}
-              <p className="flex justify-between">
-                <span>Decisión</span>
-                <span>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerNames.join(', ')}`}</span>
-              </p>
               {(detail.carryoverHoles ?? 0) > 0 && (
                 <p className="flex justify-between"><span>Carryover</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
               )}
-              <p className="flex justify-between font-medium"><span>Monto</span><span>${fmtMoney(detail.effectiveAmount)} por rival</span></p>
             </div>
           </div>
         </PopoverContent>
@@ -242,31 +288,39 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
         <p className="text-[10px] text-muted-foreground">{configSummary}</p>
       </CardHeader>
       <CardContent className="space-y-2">
-        {/* F9 */}
-        <Collapsible open={openSection === 'f9'} onOpenChange={o => setOpenSection(o ? 'f9' : null)}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1">
-            <span>Front 9</span>
-            <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === 'f9' && 'rotate-180')} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="grid grid-cols-9 gap-1 mt-1">
-              {Array.from({ length: 9 }, (_, i) => renderPill(i + 1))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* F9 / B9 side-by-side buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className={cn(
+              'rounded-lg border px-3 py-2 text-center text-xs font-medium transition-colors',
+              openSection === 'f9' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/50'
+            )}
+            onClick={() => setOpenSection(openSection === 'f9' ? null : 'f9')}
+          >
+            Front 9
+          </button>
+          <button
+            className={cn(
+              'rounded-lg border px-3 py-2 text-center text-xs font-medium transition-colors',
+              openSection === 'b9' ? 'border-primary/50 bg-primary/5 text-primary' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/50'
+            )}
+            onClick={() => setOpenSection(openSection === 'b9' ? null : 'b9')}
+          >
+            Back 9
+          </button>
+        </div>
 
-        {/* B9 */}
-        <Collapsible open={openSection === 'b9'} onOpenChange={o => setOpenSection(o ? 'b9' : null)}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-medium py-1">
-            <span>Back 9</span>
-            <ChevronDown className={cn('h-3 w-3 transition-transform', openSection === 'b9' && 'rotate-180')} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="grid grid-cols-9 gap-1 mt-1">
-              {Array.from({ length: 9 }, (_, i) => renderPill(i + 10))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Expanded holes */}
+        {openSection === 'f9' && (
+          <div className="grid grid-cols-9 gap-1">
+            {Array.from({ length: 9 }, (_, i) => renderPill(i + 1))}
+          </div>
+        )}
+        {openSection === 'b9' && (
+          <div className="grid grid-cols-9 gap-1">
+            {Array.from({ length: 9 }, (_, i) => renderPill(i + 10))}
+          </div>
+        )}
 
         {/* Per-player ranking */}
         <div className="border-t border-border/50 pt-2 space-y-0.5">
