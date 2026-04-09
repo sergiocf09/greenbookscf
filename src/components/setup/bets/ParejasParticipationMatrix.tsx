@@ -27,8 +27,8 @@ const isBetEnabled = (config: BetConfig, betKey: ParejasBetKey): boolean => {
     case 'teamPressures': return config.teamPressures.enabled;
     case 'carritos': return config.carritos.enabled;
     case 'wolf': return config.wolfSetup?.enabled ?? false;
-    case 'sixes': return (config.sixesBets?.length ?? 0) > 0;
-    case 'vegas': return (config.vegasBets?.length ?? 0) > 0;
+    case 'sixes': return config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0);
+    case 'vegas': return config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0);
   }
 };
 
