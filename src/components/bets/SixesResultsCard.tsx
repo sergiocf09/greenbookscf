@@ -149,12 +149,16 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                   H{SET_LABELS[sr.setNumber]}
                 </div>
-                <div className="text-[11px] truncate text-center font-medium">
-                  {getName(myTeam[0])}/{getName(myTeam[1])}
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-xs font-bold" style={{ color: players.find(p => p.id === myTeam[0])?.color }}>{disambiguated.get(myTeam[0]) ?? '?'}</span>
+                  <span className="text-[9px] text-muted-foreground">/</span>
+                  <span className="text-xs font-bold" style={{ color: players.find(p => p.id === myTeam[1])?.color }}>{disambiguated.get(myTeam[1]) ?? '?'}</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground text-center">vs</div>
-                <div className="text-[11px] truncate text-center font-medium">
-                  {getName(rivalTeam[0])}/{getName(rivalTeam[1])}
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-xs font-bold" style={{ color: players.find(p => p.id === rivalTeam[0])?.color }}>{disambiguated.get(rivalTeam[0]) ?? '?'}</span>
+                  <span className="text-[9px] text-muted-foreground">/</span>
+                  <span className="text-xs font-bold" style={{ color: players.find(p => p.id === rivalTeam[1])?.color }}>{disambiguated.get(rivalTeam[1]) ?? '?'}</span>
                 </div>
                 <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(diff))}>
                   {diff > 0 ? '+' : ''}{diff}

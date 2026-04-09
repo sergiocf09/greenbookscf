@@ -166,12 +166,16 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                      <div className="text-[11px] text-muted-foreground font-medium text-center mb-1">
                        H{SET_LABELS[sr.setNumber]}
                      </div>
-                     <div className="text-[11px] truncate text-center font-medium">
-                       {getName(srMyTeam[0])}/{getName(srMyTeam[1])}
+                     <div className="flex items-center justify-center gap-1">
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[0])?.color }}>{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
+                       <span className="text-[9px] text-muted-foreground">/</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srMyTeam[1])?.color }}>{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
                      </div>
                      <div className="text-[10px] text-muted-foreground text-center">vs</div>
-                     <div className="text-[11px] truncate text-center font-medium">
-                       {getName(srRivalTeam[0])}/{getName(srRivalTeam[1])}
+                     <div className="flex items-center justify-center gap-1">
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[0])?.color }}>{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
+                       <span className="text-[9px] text-muted-foreground">/</span>
+                       <span className="text-xs font-bold" style={{ color: players.find(p => p.id === srRivalTeam[1])?.color }}>{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
                      </div>
                      <div className={cn('text-center font-extrabold text-base tabular-nums mt-1', getNetTone(acc.total))}>
                        {acc.total > 0 ? '+' : ''}{acc.total}
