@@ -211,7 +211,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                   <div className="grid grid-cols-6 gap-1">
                     {sr.holeDetails.map(hd => {
                       const myDiff = myT1 ? hd.diff : -hd.diff;
-                      return renderHolePill(hd, myDiff, myT1, srMyTeam, srRivalTeam, getName, vegasConfig);
+                      return renderHolePill(hd, myDiff, myT1, srMyTeam, srRivalTeam, getShortName, vegasConfig);
                     })}
                   </div>
                 </div>
@@ -242,11 +242,11 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
             {/* Team names row */}
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium truncate">
-                {getName(myTeam[0])} / {getName(myTeam[1])}
+                {getShortName(myTeam[0])} / {getShortName(myTeam[1])}
               </span>
               <span className="text-muted-foreground text-xs mx-2">vs</span>
               <span className="font-medium truncate text-right">
-                {getName(rivalTeam[0])} / {getName(rivalTeam[1])}
+                {getShortName(rivalTeam[0])} / {getShortName(rivalTeam[1])}
               </span>
             </div>
 
@@ -285,14 +285,14 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                         {/* Front 9 */}
                         {sr.holeDetails.filter(hd => hd.holeNumber <= 9).map(hd => {
                           const myDiff = myT1 ? hd.diff : -hd.diff;
-                          return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                          return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getShortName, vegasConfig);
                         })}
                       </div>
                       {sr.holeDetails.some(hd => hd.holeNumber > 9) && (
                         <div className="grid grid-cols-9 gap-1 mt-1">
                           {sr.holeDetails.filter(hd => hd.holeNumber > 9).map(hd => {
                             const myDiff = myT1 ? hd.diff : -hd.diff;
-                            return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getName, vegasConfig);
+                            return renderHolePill(hd, myDiff, myT1, myTeam, rivalTeam, getShortName, vegasConfig);
                           })}
                         </div>
                       )}
@@ -314,7 +314,7 @@ function renderHolePill(
   myTeam1: boolean,
   myTeam: string[],
   rivalTeam: string[],
-  getName: (id: string) => string,
+  getShortName: (id: string) => string,
   vegasConfig: VegasConfig,
 ) {
   const pill = (
@@ -379,13 +379,13 @@ function renderHolePill(
             const rvHasStroke = (getStrokes(i, false) || 0) > 0;
             return (
               <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
-                <span className="truncate text-left">{getName(myPids[i])}</span>
+                <span className="truncate text-left">{getShortName(myPids[i])}</span>
                 <span className="font-medium text-right px-1">{myS}</span>
                 <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                 <span />
                 <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
                 <span className="font-medium text-left px-1">{rvS}</span>
-                <span className="truncate text-right">{getName(rvPids[i])}</span>
+                <span className="truncate text-right">{getShortName(rvPids[i])}</span>
               </div>
             );
           })}
