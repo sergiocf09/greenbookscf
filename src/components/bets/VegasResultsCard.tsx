@@ -214,7 +214,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                       {p && <PlayerAvatar initials={disambiguated.get(pr.id) || p.initials} background={p.color} size="xs" isLoggedInUser={pr.id === basePlayerId} />}
                       <span className={cn('truncate', pr.id === basePlayerId && 'font-semibold')}>{pr.name}</span>
                     </div>
-                    <span className={cn('font-bold tabular-nums shrink-0', getNetTone(pr.balance))}>
+                    <span className={cn('font-bold tabular-nums shrink-0 text-sm', getNetTone(pr.balance))}>
                       {pr.balance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(pr.balance))}
                     </span>
                   </div>
