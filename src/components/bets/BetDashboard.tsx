@@ -81,6 +81,10 @@ import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
+import { calculateNinesBets } from '@/lib/bets/nines';
+import { calculateWolfBets } from '@/lib/bets/wolf';
+import { calculateSixesBets } from '@/lib/bets/sixes';
+import { calculateVegasBets } from '@/lib/bets/vegas';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -391,14 +395,47 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // be double-counted in onBetSummariesChange emission, causing engine vs UI
   // discrepancy at closure time (e.g., $100 delta per affected player).
   const carritosEngineTypes = ['Carritos Front', 'Carritos Back', 'Carritos Total'];
+  // Nines summaries (grupal bilateral — same pattern as Coneja)
+  const ninesBetSummaries = useMemo(() => {
+    if (isHistorical || !ninesHook?.ninesConfig) return [];
+    const cfg = ninesHook.ninesConfig;
+    if (!cfg.playerIds || cfg.playerIds.length < 3) return [];
+    return calculateNinesBets(allPlayersForCalculations, confirmedScores, cfg, course);
+  }, [isHistorical, ninesHook?.ninesConfig, allPlayersForCalculations, confirmedScores, course]);
+
+  // Wolf summaries (team bet — Balance General pattern)
+  const wolfBetSummaries = useMemo(() => {
+    if (isHistorical || !wolfHook?.wolfConfig || !wolfHook.holeStates) return [];
+    if (effectiveBetConfig.wolfSetup?.enabled !== true) return [];
+    const wolfPlayers = (wolfHook.wolfConfig.participantIds?.length ?? 0) > 0
+      ? allPlayersForCalculations.filter(p => wolfHook.wolfConfig!.participantIds!.includes(p.id))
+      : allPlayersForCalculations;
+    return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates);
+  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, effectiveBetConfig.wolfSetup?.enabled]);
+
+  // Sixes summaries
+  const sixesBetSummaries = useMemo(() => {
+    if (isHistorical || !sixesHook?.sixesConfig) return [];
+    if ((effectiveBetConfig.sixesBets ?? []).length === 0) return [];
+    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course);
+  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets]);
+
+  // Vegas summaries
+  const vegasBetSummaries = useMemo(() => {
+    if (isHistorical || !vegasHook?.vegasConfig) return [];
+    if ((effectiveBetConfig.vegasBets ?? []).length === 0) return [];
+    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course);
+  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets]);
+
   const betSummaries = useMemo(
     () => isHistorical
       ? snapshotLedgerToBetSummaries(snapshotLedger!)
       : [
           ...liveBetSummaries.filter(s => !carritosEngineTypes.includes(s.betType)),
           ...crossGroupBetSummaries,
+          ...ninesBetSummaries,
         ],
-    [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries]
+    [isHistorical, snapshotLedger, liveBetSummaries, crossGroupBetSummaries, ninesBetSummaries]
   );
   
   // NOTE: onBetSummariesChange is called in a single useEffect defined after
