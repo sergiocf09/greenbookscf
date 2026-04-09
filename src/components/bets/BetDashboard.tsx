@@ -1971,7 +1971,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
                 if (snap !== null) return sum + snap;
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id);
+                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id);
               }, 0)} 
             <span className="ml-1">(debe ser $0)</span>
           </div>
