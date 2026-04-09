@@ -234,6 +234,8 @@ const Index = () => {
   useEffect(() => {
     if (!roundState?.id) return;
     if (betConfig.wolfSetup?.enabled) {
+      // Guard: no guardar config vacía si players aún no cargaron
+      if (players.length < 4) return;
       // Participantes activos en la matriz para Loba
       const wolfExcluded = betConfig.parejasExcluded?.wolf ?? [];
       const wolfParticipantIds = players
@@ -304,6 +306,7 @@ const Index = () => {
     }
   }, [
     roundState?.id,
+    players.length,
     betConfig.wolfSetup?.enabled,
     betConfig.wolfSetup?.amountPerHole,
     betConfig.wolfSetup?.scoringMode,
