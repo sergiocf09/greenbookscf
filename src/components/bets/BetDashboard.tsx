@@ -1941,7 +1941,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 </span>
                               )}
                               {/* Show breakdown when there are pair bets */}
-                              {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0) && (
+                              {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0 || vsWolfBalance !== 0 || vsSixesBalance !== 0 || vsVegasBalance !== 0) && (
                                 <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
                                   <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
                                   {vsCarritosBalance !== 0 && (
@@ -1949,6 +1949,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   )}
                                   {vsTeamPressuresBalance !== 0 && (
                                     <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                  )}
+                                  {vsWolfBalance !== 0 && (
+                                    <span>| 🐺: <span className={cn(vsWolfBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsWolfBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsWolfBalance))}</span></span>
+                                  )}
+                                  {vsSixesBalance !== 0 && (
+                                    <span>| 6s: <span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
+                                  )}
+                                  {vsVegasBalance !== 0 && (
+                                    <span>| LV: <span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
                                   )}
                                 </span>
                               )}
