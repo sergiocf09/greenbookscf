@@ -547,10 +547,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                   <div className="flex flex-wrap items-center gap-2">
                     {(() => {
                       const wolfPlayers = displayOrder.map((id: string) => players.find(pl => pl.id === id)).filter(Boolean) as Player[];
-                      const { disambiguateInitials } = require('@/lib/playerInput');
                       const disambiguated = disambiguateInitials(wolfPlayers);
-                      // Detect logged-in user
-                      const loggedInProfileId = wolfPlayers.find(p => p.profileId)?.profileId; // Will be refined below
                       return displayOrder.map((id: string, i: number) => {
                         const p = players.find(pl => pl.id === id);
                         return (
