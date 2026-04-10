@@ -1459,9 +1459,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   };
 
   // Get team pressures balance for a specific player (total from all team pressure bets)
-  // Historical mode: team pressures are already included in snapshot balances
   const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
-    if (isHistorical) return 0;
+    if (isHistorical) {
+      // In historical mode, read from betSummaries (derived from snapshot ledger)
+      return betSummaries
+        .filter(s => s.playerId === playerId && (s.betType === 'Presiones Parejas' || s.betType === 'Presiones Pareja'))
+        .reduce((sum, s) => sum + s.amount, 0);
+    }
     return betSummaries
       .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas' && !isTeamBetDisabled(s.betId || ''))
       .reduce((sum, s) => sum + s.amount, 0);

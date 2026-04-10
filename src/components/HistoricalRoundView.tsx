@@ -9,7 +9,7 @@ import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
 import { BetDashboard } from './bets/BetDashboard';
-import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState, PlayerGroup } from '@/types/golf';
+import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState, PlayerGroup, WolfConfig, WolfHoleState } from '@/types/golf';
 import { defaultBetConfig } from './setup/BetSetup';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { RoundSnapshot, isValidSnapshot, SnapshotHoleScore, SnapshotPlayer, SnapshotGroup } from '@/lib/roundSnapshot';
@@ -59,6 +59,49 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   // Fallback state for rounds without snapshot
   const [betConfig, setBetConfig] = useState<BetConfig>(defaultBetConfig);
   const [markers, setMarkers] = useState<Map<string, Map<number, MarkerState>>>(new Map());
+
+  // ── Wolf data for historical rendering ─────────────────────────────────────
+  const [historicalWolfConfig, setHistoricalWolfConfig] = useState<WolfConfig | null>(null);
+  const [historicalWolfHoleStates, setHistoricalWolfHoleStates] = useState<WolfHoleState[]>([]);
+
+  useEffect(() => {
+    const fetchWolfData = async () => {
+      try {
+        const [{ data: cfg }, { data: states }] = await Promise.all([
+          supabase.from('wolf_config').select('*').eq('round_id', roundId).maybeSingle(),
+          supabase.from('wolf_hole_state').select('*').eq('round_id', roundId).order('hole_number'),
+        ]);
+        if (cfg) {
+          setHistoricalWolfConfig({
+            roundId: cfg.round_id,
+            amountPerHole: cfg.amount_per_hole,
+            scoringMode: cfg.scoring_mode as WolfConfig['scoringMode'],
+            useHandicap: cfg.use_handicap,
+            timing: cfg.timing as WolfConfig['timing'],
+            carryover: cfg.carryover,
+            playerOrder: (cfg as any).player_order ?? [],
+            participantIds: (cfg as any).participant_ids ?? [],
+            playerHandicaps: (cfg as any).player_handicaps ?? [],
+          });
+        }
+        if (states) {
+          setHistoricalWolfHoleStates(states.map(s => ({
+            roundId: s.round_id,
+            holeNumber: s.hole_number,
+            wolfPlayerId: s.wolf_player_id,
+            partnerIds: s.partner_ids ?? [],
+            wentSolo: s.went_solo,
+            result: (s.result as WolfHoleState['result']) ?? null,
+            effectiveAmount: s.effective_amount ?? null,
+            carryoverHoles: s.carryover_holes ?? 0,
+          })));
+        }
+      } catch (err) {
+        devError('[HistoricalRoundView] Error fetching wolf data:', err);
+      }
+    };
+    fetchWolfData();
+  }, [roundId]);
 
   // Fetch snapshot — this is the ONLY source of truth for historical views.
   useEffect(() => {
@@ -460,6 +503,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
               snapshotLedger={viewLedger}
               snapshotPairBreakdowns={viewPairBreakdowns}
               snapshotPairSegmentResults={viewPairSegmentResults}
+              wolfHook={historicalWolfConfig ? {
+                wolfConfig: historicalWolfConfig,
+                holeStates: historicalWolfHoleStates,
+                isActive: true,
+                loading: false,
+              } as any : undefined}
             />
           )}
         </TabsContent>
