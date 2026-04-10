@@ -936,9 +936,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       ...wolfBetSummaries,
       ...sixesBetSummaries,
       ...vegasBetSummaries,
-      ...ninesBetSummaries,
+      // NOTE: ninesBetSummaries is already included inside betSummaries (line ~436)
     ]);
-  }, [betSummaries, allCarritosResults, wolfBetSummaries, sixesBetSummaries, vegasBetSummaries, ninesBetSummaries, betConfig.disabledTeamBetIds, betConfig.carritos, betConfig.carritosTeams, isHistorical, onBetSummariesChange]);
+  }, [betSummaries, allCarritosResults, wolfBetSummaries, sixesBetSummaries, vegasBetSummaries, betConfig.disabledTeamBetIds, betConfig.carritos, betConfig.carritosTeams, isHistorical, onBetSummariesChange]);
   
   // Default base player = logged-in user (via basePlayerId prop), across ALL groups.
   // Critical: must not validate only against `players` (Group 1) or selection breaks for Groups 2/3.
