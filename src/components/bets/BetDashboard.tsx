@@ -3238,7 +3238,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           timing: (effectiveBetConfig.wolfSetup?.timing ?? 'B') as import('@/types/golf').WolfConfig['timing'],
           carryover: effectiveBetConfig.wolfSetup?.carryover ?? true,
           playerOrder: effectiveBetConfig.wolfSetup?.playerOrder ?? [],
-          participantIds: effectiveBetConfig.wolfSetup?.participantIds ?? [],
+          participantIds: effectiveBetConfig.wolfSetup?.playerOrder ?? [],
           playerHandicaps: effectiveBetConfig.wolfSetup?.playerHandicaps ?? [],
         };
         const wStates = wolfHook?.holeStates ?? [];
