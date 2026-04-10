@@ -1361,15 +1361,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Historical mode: break down the pair balance by category from the snapshot ledger.
   // Individual = all non-team bets; Carritos = carritos bets; Presiones = team pressures.
   // Overrides are already baked into the ledger — no re-filtering needed.
-  const getHistoricalPairBreakdown = (playerAId: string, playerBId: string): { individual: number; carritos: number; presiones: number } | null => {
+  const getHistoricalPairBreakdown = (playerAId: string, playerBId: string): { individual: number; carritos: number; presiones: number; wolf: number; sixes: number; vegas: number } | null => {
     if (!isHistorical) return null;
     const pairSummaries = betSummaries.filter(s => s.playerId === playerAId && s.vsPlayer === playerBId);
-    const isCarritosBet = (bt: string) => bt === 'Carritos Front' || bt === 'Carritos Back' || bt === 'Carritos Total';
+    const isCarritosBet     = (bt: string) => bt === 'Carritos Front' || bt === 'Carritos Back' || bt === 'Carritos Total';
     const isPresionesPareja = (bt: string) => bt === 'Presiones Parejas' || bt === 'Presiones Pareja';
-    const carritos = pairSummaries.filter(s => isCarritosBet(s.betType)).reduce((s, e) => s + e.amount, 0);
-    const presiones = pairSummaries.filter(s => isPresionesPareja(s.betType)).reduce((s, e) => s + e.amount, 0);
-    const individual = pairSummaries.filter(s => !isCarritosBet(s.betType) && !isPresionesPareja(s.betType)).reduce((s, e) => s + e.amount, 0);
-    return { individual, carritos, presiones };
+    const isTeamSprint3     = (bt: string) => bt === 'Wolf' || bt === 'Sixes' || bt === 'Vegas';
+    const carritos  = pairSummaries.filter(s => isCarritosBet(s.betType)).reduce((a, e) => a + e.amount, 0);
+    const presiones = pairSummaries.filter(s => isPresionesPareja(s.betType)).reduce((a, e) => a + e.amount, 0);
+    const wolf      = pairSummaries.filter(s => s.betType === 'Wolf').reduce((a, e) => a + e.amount, 0);
+    const sixes     = pairSummaries.filter(s => s.betType === 'Sixes').reduce((a, e) => a + e.amount, 0);
+    const vegas     = pairSummaries.filter(s => s.betType === 'Vegas').reduce((a, e) => a + e.amount, 0);
+    const individual = pairSummaries.filter(s => !isCarritosBet(s.betType) && !isPresionesPareja(s.betType) && !isTeamSprint3(s.betType)).reduce((a, e) => a + e.amount, 0);
+    return { individual, carritos, presiones, wolf, sixes, vegas };
   };
   
   // Historical mode: get bilateral balance directly from snapshotBalances (immutable source of truth at close time).
@@ -1914,9 +1918,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         const vsTeamPressuresBalance = isHistorical
                           ? (historicalBreakdown?.presiones ?? 0)
                           : getTeamPressuresBalanceVsPlayer(player.id, other.id);
-                        const vsWolfBalance = isHistorical ? 0 : getWolfBalanceVsPlayer(player.id, other.id);
-                        const vsSixesBalance = isHistorical ? 0 : getSixesBalanceVsPlayer(player.id, other.id);
-                        const vsVegasBalance = isHistorical ? 0 : getVegasBalanceVsPlayer(player.id, other.id);
+                        const vsWolfBalance  = isHistorical ? (historicalBreakdown?.wolf  ?? 0) : getWolfBalanceVsPlayer(player.id, other.id);
+                        const vsSixesBalance = isHistorical ? (historicalBreakdown?.sixes ?? 0) : getSixesBalanceVsPlayer(player.id, other.id);
+                        const vsVegasBalance = isHistorical ? (historicalBreakdown?.vegas ?? 0) : getVegasBalanceVsPlayer(player.id, other.id);
                         const vsTotalBalance = vsIndividualBalance + vsCarritosBalance + vsTeamPressuresBalance + vsWolfBalance + vsSixesBalance + vsVegasBalance;
                         
                         // Check if this is a cross-group rival
@@ -2356,18 +2360,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           if (!allMembers.some(id => dpIds.has(id))) return null;
         }
 
-        // Calculate team pressures balance from betSummaries for THIS specific bet only
-        const teamAPressures = betSummaries.filter(s => 
-          s.betType === 'Presiones Parejas' && s.betId === bet.id && resolvedTeamA.includes(s.playerId)
-        );
-        const teamABalance = Math.round(teamAPressures.reduce((sum, s) => sum + s.amount, 0) / 2); // Each member's share (team total / 2 members)
+        // Use getTeamPressuresBalanceForPlayer to get the base player's balance directly
+        // (betId filter was broken — calculateTeamPressuresBets doesn't assign betId to summaries)
+        const basePlayerForBalance = basePlayer?.id || '';
+        const baseTeamBalance = getTeamPressuresBalanceForPlayer(basePlayerForBalance);
         
         const getPlayer = (id: string) => allPlayersForCalculations.find(p => p.id === id);
         const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
         const teamBPlayers = [getPlayer(resolvedTeamB[0]), getPlayer(resolvedTeamB[1])].filter(Boolean) as Player[];
         
         const isBaseInTeamA = resolvedTeamA.includes(basePlayer?.id || '');
-        const baseTeamBalance = isBaseInTeamA ? teamABalance : -teamABalance;
         
         if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
         
@@ -3225,32 +3227,61 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       />
 
       {/* Sprint 3 — Wolf / Sixes / Vegas / Nines Results Cards */}
-      {wolfHook?.isActive && wolfHook.wolfConfig && effectiveBetConfig.wolfSetup?.enabled === true && (
-        <WolfResultsCard
-          players={
-            wolfHook.wolfConfig.participantIds.length > 0
-              ? allPlayersForCalculations.filter(p =>
-                  wolfHook.wolfConfig!.participantIds.includes(p.id)
-                )
-              : allPlayersForCalculations
-          }
-          wolfConfig={wolfHook.wolfConfig}
-          holeStates={wolfHook.holeStates}
-          scores={scores}
-          course={course}
-          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-          isDisabled={isTeamBetDisabled('wolf-primary')}
-          onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('wolf-primary') : undefined}
-        />
-      )}
+      {/* Sprint 3 — Wolf */}
+      {(wolfHook?.isActive && wolfHook.wolfConfig || (isHistorical && effectiveBetConfig.wolfSetup?.enabled)) &&
+        effectiveBetConfig.wolfSetup?.enabled === true && (() => {
+        const wConfig = wolfHook?.wolfConfig ?? {
+          roundId: '',
+          amountPerHole: effectiveBetConfig.wolfSetup?.amountPerHole ?? 100,
+          scoringMode: (effectiveBetConfig.wolfSetup?.scoringMode ?? 'lowBall') as import('@/types/golf').WolfConfig['scoringMode'],
+          useHandicap: effectiveBetConfig.wolfSetup?.useHandicap ?? true,
+          timing: (effectiveBetConfig.wolfSetup?.timing ?? 'B') as import('@/types/golf').WolfConfig['timing'],
+          carryover: effectiveBetConfig.wolfSetup?.carryover ?? true,
+          playerOrder: effectiveBetConfig.wolfSetup?.playerOrder ?? [],
+          participantIds: effectiveBetConfig.wolfSetup?.participantIds ?? [],
+          playerHandicaps: effectiveBetConfig.wolfSetup?.playerHandicaps ?? [],
+        };
+        const wStates = wolfHook?.holeStates ?? [];
+        const wPlayers = wConfig.participantIds.length > 0
+          ? allPlayersForCalculations.filter(p => wConfig.participantIds.includes(p.id))
+          : allPlayersForCalculations;
+        return (
+          <WolfResultsCard
+            players={wPlayers}
+            wolfConfig={wConfig}
+            holeStates={wStates}
+            scores={scores}
+            course={course}
+            basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+            isDisabled={isTeamBetDisabled('wolf-primary')}
+            onToggleDisabled={!isHistorical && onBetConfigChange ? () => toggleTeamBetDisabled('wolf-primary') : undefined}
+          />
+        );
+      })()}
 
-      {sixesHook?.isActive && sixesHook.sixesConfig && (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) && (() => {
-        const hookCfg = sixesHook.sixesConfig;
+      {/* Sprint 3 — Sixes */}
+      {(sixesHook?.isActive && sixesHook.sixesConfig || isHistorical) &&
+        (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) && (() => {
+        const hookCfg = sixesHook?.sixesConfig;
         const betInst = effectiveBetConfig.sixesBets?.[0];
-        const hookHasEmptySets = !hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id));
-        const mergedSixesConfig: typeof hookCfg = hookHasEmptySets && betInst?.sets?.length >= 3
-          ? { ...hookCfg, sets: betInst.sets, scoringMode: betInst.scoringMode, cobro: betInst.cobro, amount: betInst.amount, useHandicap: betInst.useHandicap }
-          : hookCfg;
+        if (!betInst && !hookCfg) return null;
+        const baseCfg: import('@/types/golf').SixesConfig = hookCfg ?? {
+          roundId: '',
+          scoringMode: (betInst?.scoringMode ?? 'lowBall') as import('@/types/golf').SixesConfig['scoringMode'],
+          cobro: (betInst?.cobro ?? 'per_hole') as import('@/types/golf').SixesConfig['cobro'],
+          amount: betInst?.amount ?? 100,
+          useHandicap: betInst?.useHandicap ?? true,
+          usePerSetAmounts: betInst?.usePerSetAmounts ?? false,
+          set1Amount: betInst?.set1Amount,
+          set2Amount: betInst?.set2Amount,
+          set3Amount: betInst?.set3Amount,
+          sets: betInst?.sets ?? [],
+        };
+        const hookHasEmptySets = hookCfg && (!hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id)));
+        const mergedSixesConfig = (hookHasEmptySets || !hookCfg) && betInst?.sets?.length >= 3
+          ? { ...baseCfg, sets: betInst.sets, scoringMode: betInst.scoringMode as any, cobro: betInst.cobro as any, amount: betInst.amount, useHandicap: betInst.useHandicap }
+          : baseCfg;
+        if (!mergedSixesConfig.sets?.length) return null;
         return (
           <SixesResultsCard
             players={allPlayersForCalculations}
@@ -3259,23 +3290,43 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
             isDisabled={isTeamBetDisabled('sixes-primary')}
-            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('sixes-primary') : undefined}
+            onToggleDisabled={!isHistorical && onBetConfigChange ? () => toggleTeamBetDisabled('sixes-primary') : undefined}
           />
         );
       })()}
 
-      {vegasHook?.isActive && vegasHook.vegasConfig && (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) && (() => {
-        const hookCfg = vegasHook.vegasConfig;
+      {/* Sprint 3 — Vegas */}
+      {(vegasHook?.isActive && vegasHook.vegasConfig || isHistorical) &&
+        (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) && (() => {
+        const hookCfg = vegasHook?.vegasConfig;
         const betInst = effectiveBetConfig.vegasBets?.[0];
-        const hookHasEmptyPlayers = !hookCfg.playerAId || !hookCfg.playerBId || !hookCfg.playerCId || !hookCfg.playerDId;
-        const mergedVegasConfig: typeof hookCfg = {
-          ...hookCfg,
+        if (!betInst && !hookCfg) return null;
+        if (!betInst?.playerAId && !hookCfg?.playerAId) return null;
+        const baseCfg: import('@/types/golf').VegasConfig = hookCfg ?? {
+          roundId: '',
+          valuePerPoint: betInst?.valuePerPoint ?? 10,
+          useHandicap: betInst?.useHandicap ?? false,
+          birdieMultiplier: betInst?.birdieMultiplier ?? false,
+          variant: (betInst?.variant ?? 'fixed') as import('@/types/golf').VegasConfig['variant'],
+          playerAId: betInst?.playerAId ?? '',
+          playerBId: betInst?.playerBId ?? '',
+          playerCId: betInst?.playerCId ?? '',
+          playerDId: betInst?.playerDId ?? '',
+          useSegmentAmounts: betInst?.useSegmentAmounts ?? false,
+          frontAmount: betInst?.frontAmount,
+          backAmount: betInst?.backAmount,
+          set1Amount: betInst?.set1Amount,
+          set2Amount: betInst?.set2Amount,
+          set3Amount: betInst?.set3Amount,
+        };
+        const mergedVegasConfig = {
+          ...baseCfg,
           ...(betInst ? {
-            variant: betInst.variant,
+            variant: betInst.variant as any,
             valuePerPoint: betInst.valuePerPoint,
             useHandicap: betInst.useHandicap,
             birdieMultiplier: betInst.birdieMultiplier,
-            ...(hookHasEmptyPlayers && betInst.playerAId ? {
+            ...(!baseCfg.playerAId && betInst.playerAId ? {
               playerAId: betInst.playerAId,
               playerBId: betInst.playerBId,
               playerCId: betInst.playerCId,
@@ -3291,20 +3342,31 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             course={course}
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
             isDisabled={isTeamBetDisabled('vegas-primary')}
-            onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
+            onToggleDisabled={!isHistorical && onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
           />
         );
       })()}
 
-      {(effectiveBetConfig.ninesBets ?? []).some(b => (b as any).playerIds?.length >= 3) && ninesHook?.ninesConfig && (
-        <NinesResultsCard
-          players={allPlayersForCalculations}
-          ninesConfig={ninesHook.ninesConfig}
-          scores={scores}
-          course={course}
-          basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
-        />
-      )}
+      {/* Sprint 3 — Nines */}
+      {(effectiveBetConfig.ninesBets ?? []).some((b: any) => b.playerIds?.length >= 3) &&
+        (ninesHook?.ninesConfig || isHistorical) && (() => {
+        const betInst = (effectiveBetConfig.ninesBets ?? []).find((b: any) => b.playerIds?.length >= 3) as any;
+        if (!betInst) return null;
+        const ninesCfg: import('@/types/golf').NinesConfig = ninesHook?.ninesConfig ?? {
+          roundId: '',
+          valuePerPoint: betInst.valuePerPoint ?? 10,
+          playerIds: betInst.playerIds,
+        };
+        return (
+          <NinesResultsCard
+            players={allPlayersForCalculations}
+            ninesConfig={ninesCfg}
+            scores={scores}
+            course={course}
+            basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
+          />
+        );
+      })()}
 
     </div>
   );
