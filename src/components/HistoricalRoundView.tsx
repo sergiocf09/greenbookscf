@@ -503,6 +503,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
               snapshotLedger={viewLedger}
               snapshotPairBreakdowns={viewPairBreakdowns}
               snapshotPairSegmentResults={viewPairSegmentResults}
+              wolfHook={historicalWolfConfig ? {
+                wolfConfig: historicalWolfConfig,
+                holeStates: historicalWolfHoleStates,
+                isActive: true,
+                loading: false,
+              } as any : undefined}
             />
           )}
         </TabsContent>
