@@ -299,10 +299,11 @@ const Index = () => {
       });
     }
     const firstNines = betConfig.ninesBets?.[0];
-    if (firstNines && firstNines.playerIds.length >= 3 && !nines.isActive) {
+    if (firstNines && firstNines.playerIds.length >= 3) {
       nines.saveConfig({
         valuePerPoint: firstNines.valuePerPoint ?? 10,
         playerIds:     firstNines.playerIds.slice(0, 3),
+        playerHandicaps: firstNines.playerHandicaps,
       });
     }
   }, [
@@ -318,7 +319,7 @@ const Index = () => {
     JSON.stringify(betConfig.parejasExcluded?.wolf),
     betConfig.sixesBets?.length,
     JSON.stringify(betConfig.vegasBets?.[0]),
-    betConfig.ninesBets?.length,
+    JSON.stringify(betConfig.ninesBets?.[0]),
   ]);
 
   // Reset all round state to prepare for a new round (called after successful close)
