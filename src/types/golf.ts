@@ -769,6 +769,7 @@ export interface VegasSetupConfig {
 
 export interface NinesConfig {
   roundId: string; valuePerPoint: number; playerIds: string[];
+  playerHandicaps?: Record<string, number>;
 }
 
 export interface NinesHoleDetail {
