@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash } from 'lucide-react';
+import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';

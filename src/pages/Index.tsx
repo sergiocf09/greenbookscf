@@ -2328,8 +2328,17 @@ const Index = () => {
             )}
           </div>
           
-          {/* Right: Friends (only in setup) + Profile Menu */}
+          {/* Right: Refresh (iOS PWA) + Friends (only in setup) + Profile Menu */}
           <div className="flex items-center flex-shrink-0 gap-1">
+            {/* Refresh Button for iOS PWA standalone */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
             {/* Help Button - show on main tab views */}
             {view !== 'leaderboards' && view !== 'rankings' && (
               <Button 
