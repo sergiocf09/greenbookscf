@@ -269,15 +269,14 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                     {[1,2,3,4,5,6,7,8,9].map(h => {
                       const hd = holeData.find(d => d.holeNumber === h);
                       const pp = hd?.playerPoints.find(p => p.playerId === s.playerId);
-                      const hs = (scores.get(s.playerId) ?? []).find(sc => sc.confirmed && sc.holeNumber === h);
-                      const strokesRcvd = hs?.strokesReceived ?? 0;
+                      const ninesStrokes = (ninesStrokesMap.get(s.playerId) ?? [])[h - 1] ?? 0;
                       return (
                         <div key={h} className={cn(
                           'text-center text-[10px] font-bold rounded py-0.5 relative',
                           pp ? pointColor(pp.points, pp.resting) : 'text-muted-foreground'
                         )}>
                           {pp ? pp.points : '-'}
-                          {pp && !pp.resting && strokesRcvd > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
+                          {pp && !pp.resting && ninesStrokes > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
                         </div>
                       );
                     })}
