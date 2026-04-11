@@ -103,6 +103,15 @@ export const queretaroCourses: GolfCourse[] = [
     location: 'San José del Cabo, BCS',
     holes: generateDefaultHoles(standardPar72, standardStrokeIndex),
   },
+  {
+    id: 'solmar-golf-links',
+    name: 'Solmar Golf Links',
+    location: 'Cabo San Lucas, BCS',
+    holes: generateDefaultHoles(
+      [5, 4, 3, 4, 3, 4, 4, 5, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5],
+      [3, 1, 13, 17, 9, 7, 11, 15, 5, 8, 14, 2, 10, 4, 16, 18, 12, 6]
+    ),
+  },
 ];
 
 export const getCourseById = (id: string): GolfCourse | undefined => {
