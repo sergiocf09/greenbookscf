@@ -157,6 +157,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [displayGroupIndex, setDisplayGroupIndex] = useState(0); // For group selector in detail view
   
   const hasSetInitialGroupRef = useRef(false);
+  // Reset when basePlayerId changes so each player sees their own group
+  useEffect(() => {
+    hasSetInitialGroupRef.current = false;
+  }, [basePlayerId]);
   useEffect(() => {
     if (!hasSetInitialGroupRef.current && (playerGroups ?? []).length > 0) {
       setDisplayGroupIndex(userGroupIndex);
@@ -2145,7 +2149,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <div className="w-20 h-8 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
                           <UserPlus className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <span className="text-[10px] text-muted-foreground">Grupo</span>
+                        <span className="text-[10px] text-muted-foreground">+ Grupo</span>
                       </button>
                     </DialogTrigger>
                     <DialogContent className="max-w-sm">
@@ -2153,7 +2157,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <DialogTitle className="text-base">Agregar Jugadores de Otros Grupos</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 max-h-60 overflow-y-auto">
-                        {playerGroups.map((group, groupIdx) => (
+                        {playerGroups
+                          .filter((_, gIdx) => gIdx !== displayGroupIndex)
+                          .map((group) => (
                           <div key={group.id} className="space-y-2">
                             <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                               <Users className="h-3 w-3" />
