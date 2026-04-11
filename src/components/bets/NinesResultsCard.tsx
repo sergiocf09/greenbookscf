@@ -84,7 +84,8 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
       const restingPlayer = activePlayers[(h - 1) % 4];
       const activeThree = activePlayers.filter(p => p.id !== restingPlayer.id);
       const netScores = activeThree.map(p => {
-        const sp = calculateStrokesPerHole(p.handicap, course);
+        const hcp = ninesConfig.playerHandicaps?.[p.id] ?? p.handicap;
+        const sp = calculateStrokesPerHole(hcp, course);
         const hs = (scores.get(p.id) ?? []).find(s => s.confirmed && s.holeNumber === h);
         if (!hs?.strokes) return null;
         return { id: p.id, net: hs.strokes - (sp[h - 1] ?? 0) };
@@ -151,6 +152,16 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   }, [activePlayers, bets, scores, ninesConfig, course]);
 
   const totalBalance = playerBalances.get(basePlayerId) ?? 0;
+
+  // Pre-compute Nines-specific strokes per hole for each player
+  const ninesStrokesMap = useMemo(() => {
+    const map = new Map<string, number[]>();
+    activePlayers.forEach(p => {
+      const hcp = ninesConfig.playerHandicaps?.[p.id] ?? p.handicap;
+      map.set(p.id, calculateStrokesPerHole(hcp, course));
+    });
+    return map;
+  }, [activePlayers, ninesConfig.playerHandicaps, course]);
 
   const disambiguated = useMemo(() => disambiguateInitials(activePlayers), [activePlayers]);
   const getPlayerAbbr = (p: Player) => disambiguated.get(p.id) || p.initials;
@@ -259,15 +270,14 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                     {[1,2,3,4,5,6,7,8,9].map(h => {
                       const hd = holeData.find(d => d.holeNumber === h);
                       const pp = hd?.playerPoints.find(p => p.playerId === s.playerId);
-                      const hs = (scores.get(s.playerId) ?? []).find(sc => sc.confirmed && sc.holeNumber === h);
-                      const strokesRcvd = hs?.strokesReceived ?? 0;
+                      const ninesStrokes = (ninesStrokesMap.get(s.playerId) ?? [])[h - 1] ?? 0;
                       return (
                         <div key={h} className={cn(
                           'text-center text-[10px] font-bold rounded py-0.5 relative',
                           pp ? pointColor(pp.points, pp.resting) : 'text-muted-foreground'
                         )}>
                           {pp ? pp.points : '-'}
-                          {pp && !pp.resting && strokesRcvd > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
+                          {pp && !pp.resting && ninesStrokes > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
                         </div>
                       );
                     })}
@@ -290,15 +300,14 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                     {[10,11,12,13,14,15,16,17,18].map(h => {
                       const hd = holeData.find(d => d.holeNumber === h);
                       const pp = hd?.playerPoints.find(p => p.playerId === s.playerId);
-                      const hs = (scores.get(s.playerId) ?? []).find(sc => sc.confirmed && sc.holeNumber === h);
-                      const strokesRcvd = hs?.strokesReceived ?? 0;
+                      const ninesStrokes = (ninesStrokesMap.get(s.playerId) ?? [])[h - 1] ?? 0;
                       return (
                         <div key={h} className={cn(
                           'text-center text-[10px] font-bold rounded py-0.5 relative',
                           pp ? pointColor(pp.points, pp.resting) : 'text-muted-foreground'
                         )}>
                           {pp ? pp.points : '-'}
-                          {pp && !pp.resting && strokesRcvd > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
+                          {pp && !pp.resting && ninesStrokes > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
                         </div>
                       );
                     })}
