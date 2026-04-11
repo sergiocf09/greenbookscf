@@ -923,6 +923,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          player_handicaps: Json | null
           player_ids: string[]
           round_id: string
           value_per_point: number
@@ -930,6 +931,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          player_handicaps?: Json | null
           player_ids?: string[]
           round_id: string
           value_per_point?: number
@@ -937,6 +939,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          player_handicaps?: Json | null
           player_ids?: string[]
           round_id?: string
           value_per_point?: number
