@@ -84,7 +84,8 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
       const restingPlayer = activePlayers[(h - 1) % 4];
       const activeThree = activePlayers.filter(p => p.id !== restingPlayer.id);
       const netScores = activeThree.map(p => {
-        const sp = calculateStrokesPerHole(p.handicap, course);
+        const hcp = ninesConfig.playerHandicaps?.[p.id] ?? p.handicap;
+        const sp = calculateStrokesPerHole(hcp, course);
         const hs = (scores.get(p.id) ?? []).find(s => s.confirmed && s.holeNumber === h);
         if (!hs?.strokes) return null;
         return { id: p.id, net: hs.strokes - (sp[h - 1] ?? 0) };
