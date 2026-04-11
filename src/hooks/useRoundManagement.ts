@@ -1461,6 +1461,7 @@ export const useRoundManagement = ({
             roundId: ninesCfgRow.round_id,
             valuePerPoint: ninesCfgRow.value_per_point,
             playerIds: ninesCfgRow.player_ids,
+            playerHandicaps: (ninesCfgRow.player_handicaps as Record<string, number>) ?? undefined,
           };
           sprint3Summaries.push(...calculateNinesBets(sanitizedPlayers, confirmedScoresForClose, ninesConfig, course));
           devLog(`[CLOSE] Nines: ${sprint3Summaries.filter(s => s.betType === 'Nines' && s.amount > 0).length} winning entries`);
