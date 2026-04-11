@@ -89,21 +89,26 @@ const Leaderboards = () => {
           <GreenBookLogo height={24} />
           <h1 className="text-lg font-bold">Leaderboards</h1>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-              <User className="h-4 w-4 mr-2" /> Perfil
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
+            <RefreshCw className="h-5 w-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                <User className="h-4 w-4 mr-2" /> Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="p-4 max-w-lg mx-auto space-y-4">
