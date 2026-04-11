@@ -1606,7 +1606,11 @@ export const useRoundManagement = ({
       report.balanceComparison = balanceComparison;
 
       const maxDelta = Math.max(...balanceComparison.map(b => Math.abs(b.delta)), 0);
-      if (maxDelta > 1) {
+      // Skip blocking validation when the UI provided no summaries at all —
+      // this happens when BetDashboard is not mounted (user closes from scoring/scorecard view).
+      // In that case UI=$0 for everyone is expected; the engine is authoritative.
+      const uiProvidedResults = normalizedUiBetResults.length > 0;
+      if (maxDelta > 1 && uiProvidedResults) {
         devWarn(`⚠️ PRE-VALIDATION: UI vs Engine discrepancy detected (max delta: $${maxDelta})`);
         const discrepancies = balanceComparison
           .filter(b => Math.abs(b.delta) > 1)
@@ -1618,6 +1622,8 @@ export const useRoundManagement = ({
         await fail('preValidation', new Error(errorMsg), report.attemptId);
         toast.error(`Cierre bloqueado: discrepancia de $${maxDelta} entre UI y motor de cálculo. Revisa participantes.`, { duration: 8000 });
         return false;
+      } else if (maxDelta > 1 && !uiProvidedResults) {
+        devWarn(`[CLOSE] PRE-VALIDATION skipped: UI provided 0 summaries (BetDashboard not mounted). Engine is authoritative. Max delta: $${maxDelta}`);
       }
 
       // ── Structural guardrail: verify enabled bets produced results ──────────
