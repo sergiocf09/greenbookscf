@@ -1,0 +1,1 @@
+ALTER TABLE public.nines_config ADD COLUMN player_handicaps jsonb DEFAULT '{}'::jsonb;

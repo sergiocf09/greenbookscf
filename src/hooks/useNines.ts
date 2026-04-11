@@ -12,10 +12,12 @@ export const useNines = (roundId: string | null, _players: Player[]) => {
     try {
       const { data } = await supabase.from('nines_config').select('*').eq('round_id', roundId).maybeSingle();
       if (data) {
+        const ph = (data as any).player_handicaps;
         setNinesConfig({
           roundId: data.round_id,
           valuePerPoint: data.value_per_point,
           playerIds: data.player_ids ?? [],
+          playerHandicaps: ph && typeof ph === 'object' && !Array.isArray(ph) ? ph as Record<string, number> : undefined,
         });
       } else {
         setNinesConfig(null);
@@ -33,7 +35,8 @@ export const useNines = (roundId: string | null, _players: Player[]) => {
       round_id: roundId,
       value_per_point: cfg.valuePerPoint,
       player_ids: cfg.playerIds,
-    }, { onConflict: 'round_id' });
+      player_handicaps: cfg.playerHandicaps ?? {},
+    } as any, { onConflict: 'round_id' });
     await fetchData();
   }, [roundId, fetchData]);
 

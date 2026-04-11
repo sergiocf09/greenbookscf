@@ -769,6 +769,7 @@ export interface VegasSetupConfig {
 
 export interface NinesConfig {
   roundId: string; valuePerPoint: number; playerIds: string[];
+  playerHandicaps?: Record<string, number>;
 }
 
 export interface NinesHoleDetail {
@@ -824,6 +825,7 @@ export interface NinesBetInstance {
   id: string;
   valuePerPoint: number;
   playerIds: string[];
+  playerHandicaps?: Record<string, number>;
 }
 
 // Default Stableford point values (flexible)
