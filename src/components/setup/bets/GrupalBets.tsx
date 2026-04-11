@@ -427,10 +427,14 @@ const NinesBetCard: React.FC<{
   const toggle = (playerId: string) => {
     if (selectedIds.includes(playerId)) {
       if (selectedIds.length <= minPlayers) return;
-      onUpdate({ playerIds: selectedIds.filter(id => id !== playerId) });
+      const newHandicaps = { ...bet.playerHandicaps };
+      delete newHandicaps[playerId];
+      onUpdate({ playerIds: selectedIds.filter(id => id !== playerId), playerHandicaps: newHandicaps });
     } else {
       if (selectedIds.length >= maxPlayers) return;
-      onUpdate({ playerIds: [...selectedIds, playerId] });
+      const p = players.find(pl => pl.id === playerId);
+      const newHandicaps = { ...bet.playerHandicaps, [playerId]: p?.handicap ?? 0 };
+      onUpdate({ playerIds: [...selectedIds, playerId], playerHandicaps: newHandicaps });
     }
   };
 
