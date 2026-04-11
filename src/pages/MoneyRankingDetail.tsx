@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Loader2, TrendingUp, UserPlus, UserMinus, Trash2, ChevronRight, Search, DollarSign, Award, CalendarRange, CalendarIcon, Pencil,
+  ArrowLeft, Loader2, TrendingUp, UserPlus, UserMinus, Trash2, ChevronRight, Search, DollarSign, Award, CalendarRange, CalendarIcon, Pencil, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fmtMoney } from '@/lib/formatMoney';
@@ -228,7 +228,12 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               <h1 className="text-base font-semibold truncate text-accent">{ranking?.name ?? 'Ranking'}</h1>
               <p className="text-xs text-primary-foreground/70">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
             </div>
-            <GreenBookLogo />
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label="Actualizar">
+                <RefreshCw className="h-5 w-5" />
+              </Button>
+              <GreenBookLogo />
+            </div>
           </div>
         </header>
       )}

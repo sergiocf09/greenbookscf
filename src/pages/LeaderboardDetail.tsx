@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Settings, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -98,6 +98,9 @@ const LeaderboardDetail = () => {
             <GreenBookLogo height={24} />
           </div>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => window.location.reload()} aria-label="Actualizar">
+              <RefreshCw className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={copyShareLink}>
               <Share2 className="h-4 w-4" />
             </Button>
