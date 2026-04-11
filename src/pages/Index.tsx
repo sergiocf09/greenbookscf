@@ -361,6 +361,15 @@ const Index = () => {
     }
   }, [profile]);
 
+  // Retomar join de leaderboard pendiente si venía de un link compartido
+  useEffect(() => {
+    const pendingCode = sessionStorage.getItem('pendingLeaderboardCode');
+    if (pendingCode) {
+      sessionStorage.removeItem('pendingLeaderboardCode');
+      navigate(`/leaderboards/join/${pendingCode}`, { replace: true });
+    }
+  }, [navigate]);
+
   // Upgrade modal via custom event
   useEffect(() => {
     const upgradeHandler = (e: Event) => {
