@@ -170,7 +170,16 @@ interface FriendCardProps {
 
 const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound }) => {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+    <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-card">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onRemove}
+        className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+        title="Quitar amigo"
+      >
+        <UserMinus className="h-4 w-4" />
+      </Button>
       <PlayerAvatar
         initials={friend.initials}
         background={friend.avatarColor}
@@ -182,28 +191,17 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound 
           HCP: {friend.currentHandicap}
         </p>
       </div>
-      <div className="flex items-center gap-1">
-        {onAddToRound && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAddToRound}
-            className="text-xs h-8"
-          >
-            <UserPlus className="h-3.5 w-3.5 mr-1" />
-            A Ronda
-          </Button>
-        )}
+      {onAddToRound && (
         <Button
           variant="outline"
           size="sm"
-          onClick={onRemove}
-          className="text-xs h-8 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+          onClick={onAddToRound}
+          className="text-xs h-8 shrink-0"
         >
-          <UserMinus className="h-3.5 w-3.5 mr-1" />
-          Quitar
+          <UserPlus className="h-3.5 w-3.5 mr-1" />
+          A Ronda
         </Button>
-      </div>
+      )}
     </div>
   );
 };
@@ -216,7 +214,7 @@ interface SearchResultCardProps {
 
 const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend }) => {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+    <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-card">
       <PlayerAvatar
         initials={result.initials}
         background={result.avatarColor}
@@ -229,7 +227,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend
         </p>
       </div>
       {result.isFriend ? (
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
           Ya es amigo
         </span>
       ) : (
@@ -237,7 +235,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend
           variant="outline"
           size="sm"
           onClick={onAddFriend}
-          className="text-xs h-8"
+          className="text-xs h-8 shrink-0"
         >
           <UserPlus className="h-3.5 w-3.5 mr-1" />
           Agregar
