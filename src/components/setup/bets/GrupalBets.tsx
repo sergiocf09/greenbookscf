@@ -360,7 +360,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onToggle={(enabled) => {
             if (!onUpdateConfig) return;
             if (enabled) {
-              const primera: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+              const primera: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [], playerHandicaps: {} };
               onUpdateConfig({ ...config, ninesBets: [primera] });
             } else {
               onUpdateConfig({ ...config, ninesBets: [] });
@@ -376,7 +376,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Nines configuradas</p>
               <Button variant="outline" size="sm" onClick={() => {
                 if (!onUpdateConfig) return;
-                const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [], playerHandicaps: {} };
                 onUpdateConfig({ ...config, ninesBets: [nueva] });
               }} className="gap-1">
                 <Plus className="h-3.5 w-3.5" /> Agregar apuesta Nines
@@ -399,7 +399,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               ))}
               <Button variant="outline" size="sm" className="w-full mt-3 gap-1" onClick={() => {
                 if (!onUpdateConfig) return;
-                const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [] };
+                const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [], playerHandicaps: {} };
                 onUpdateConfig({ ...config, ninesBets: [...(config.ninesBets ?? []), nueva] });
               }}>
                 <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta Nines
