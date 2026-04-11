@@ -667,6 +667,73 @@ export const useRoundManagement = ({
     restoreActiveRound();
   }, [profile, setPlayers, setScores, setConfirmedHoles, setBetConfig, setSelectedCourseId, setTeeColor, setStartingHole, getCourseById, applyMyUsgaHandicapIfAvailable]);
 
+  // ── Realtime: detect when the user is added to a round ──
+  useEffect(() => {
+    if (!profile) return;
+
+    const channel = supabase
+      .channel(`my-round-invites-${profile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'round_players',
+          filter: `profile_id=eq.${profile.id}`,
+        },
+        async (payload) => {
+          const newRoundId = (payload.new as any)?.round_id;
+          if (!newRoundId) return;
+
+          // Skip if this round is already known
+          if (pendingRounds.some(r => r.roundId === newRoundId)) return;
+          if (roundState.id === newRoundId) return;
+
+          // Fetch the round info
+          const { data: roundRow, error } = await supabase
+            .from('rounds')
+            .select('id, status, date, course_id, tee_color, starting_hole, golf_courses(name)')
+            .eq('id', newRoundId)
+            .in('status', ['setup', 'in_progress'])
+            .maybeSingle();
+
+          if (error || !roundRow) return;
+
+          const newPending: PendingRoundInfo = {
+            roundId: roundRow.id,
+            status: roundRow.status as 'setup' | 'in_progress',
+            date: parseLocalDate(roundRow.date),
+            courseId: roundRow.course_id,
+            courseName: (roundRow as any).golf_courses?.name ?? undefined,
+            teeColor: roundRow.tee_color as any,
+            startingHole: (roundRow.starting_hole === 10 ? 10 : 1) as 1 | 10,
+          };
+
+          setPendingRounds(prev => {
+            if (prev.some(r => r.roundId === newRoundId)) return prev;
+            return [newPending, ...prev];
+          });
+          setPendingRound(prev => prev ?? newPending);
+
+          const courseName = newPending.courseName ?? 'una ronda';
+          toast.info(`Te han agregado a ${courseName}`, {
+            action: {
+              label: 'Abrir',
+              onClick: () => {
+                sessionStorage.setItem('restore_round_id', newRoundId);
+                window.location.reload();
+              },
+            },
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile, roundState.id, pendingRounds]);
+
   // Generate shareable link
   const getShareableLink = useCallback(() => {
     if (!roundState.id) return null;
