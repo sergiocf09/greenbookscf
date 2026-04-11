@@ -399,6 +399,8 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     }
   }, [leaderboardId, profile, fetchDetail]);
 
+  const queryClient = useQueryClient();
+
   const unlinkRound = useCallback(async (roundId: string) => {
     if (!leaderboardId) return;
     try {
@@ -425,10 +427,11 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
       toast.success('Ronda desvinculada del leaderboard');
       await fetchDetail();
+      queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
     } catch (err: any) {
       toast.error('Error al desvincular ronda: ' + err.message);
     }
-  }, [leaderboardId, fetchDetail]);
+  }, [leaderboardId, fetchDetail, queryClient]);
 
   const checkRoundLinked = useCallback(async (roundId: string): Promise<boolean> => {
     if (!leaderboardId) return false;
