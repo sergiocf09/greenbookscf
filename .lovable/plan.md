@@ -1,54 +1,64 @@
 
 
-## Plan: Fix Wolf scoring mode change + tooltip detail
+## Plan: Agregar configuración de hándicap por jugador en Nines (5-3-1)
 
-### Problem
-1. **Stale results after mode change**: When the scoring mode is changed (e.g., from `stroke` to `lowBall`), the hole results stored in DB (`state.result`) are from the old mode. Both `calculateWolfBets` and `buildWolfHoleDetails` use the stale `state.result` instead of re-resolving with the current scoring mode.
-2. **Missing tooltip detail**: In `lowBall` mode, the tooltip doesn't show which low balls were compared (e.g., "BB: Empate 5 vs 5"). In `stroke` mode, it doesn't show the sum breakdown (e.g., "5+5=10 vs 5+6=11"). Only `lowHighBall` mode currently shows the BB/BA detail.
+### Objetivo
+Permitir que cada instancia de Nines tenga hándicaps personalizados por jugador, heredando automáticamente del setup pero permitiendo overrides que persistan entre refrescos.
 
-### Changes
+### Cambios
 
-**File 1: `src/lib/bets/wolf.ts`**
-
-- **`calculateWolfBets`**: Add `scores`, `course` parameters. For each hole state, re-resolve the result using `resolveWolfHole` with the current config (scoring mode). Use the fresh `resolved.winner` instead of `state.result` to determine winners/losers.
-- **`buildWolfHoleDetails`**: Already calls `resolveWolfHole` but ignores the resolved `winner`. Change `result` in the return to use the mapped resolved winner (`wolf`→`won`, `rival`→`lost`, `tied`→`tied`) instead of `state.result`.
-
-**File 2: `src/components/bets/WolfResultsCard.tsx`**
-
-- Update `calculateWolfBets` call to pass `scores, course`.
-- Update the tooltip "Extra info" section to show breakdown for ALL scoring modes:
-  - **lowBall**: Show "Bola Baja: Loba/Rival/Empate" with the actual low ball values (e.g., "5 vs 5")
-  - **stroke**: Show "Score Neto: X vs Y" with per-player sums
-  - **lowHighBall**: Keep existing BB + BA display (already works)
-
-**File 3: `src/components/bets/BetDashboard.tsx`**
-
-- Update `calculateWolfBets` call to pass `scores, course` (the `wolfBetSummaries` useMemo).
-
-### Detail on re-resolution logic
-
-In `calculateWolfBets`, for each `state`:
+#### 1. Tipo `NinesBetInstance` — agregar campo de hándicaps
+En `src/types/golf.ts`, agregar un campo opcional `playerHandicaps` al tipo:
+```typescript
+export interface NinesBetInstance {
+  id: string;
+  valuePerPoint: number;
+  playerIds: string[];
+  playerHandicaps?: Record<string, number>; // playerId -> handicap override
+}
 ```
-const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
-const rivalTeam = participantPlayers.filter(...);
-const resolved = resolveWolfHole(wolfTeam, rivalTeam.map(p => p.id), state.holeNumber, players, scores, course, config);
-// Use resolved.winner instead of state.result
-const result = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+Esto se persiste dentro del `betConfig` JSON de la ronda (no requiere migración de DB).
+
+#### 2. UI de configuración — `NinesBetCard` en `GrupalBets.tsx`
+Debajo de la selección de jugadores (cuando hay 3 seleccionados), mostrar inputs de hándicap para cada jugador:
+- Cada jugador muestra su nombre + input numérico con el hándicap
+- Al seleccionar un jugador, su hándicap se inicializa con `player.handicap` del setup
+- El usuario puede modificar el valor manualmente
+- Los cambios se guardan en `playerHandicaps` del `NinesBetInstance`
+
+#### 3. Motor de cálculo — `src/lib/bets/nines.ts`
+En `buildNinesHoleDetails`, usar `config.playerHandicaps?.[p.id] ?? p.handicap` en lugar de `p.handicap` directo al llamar `calculateStrokesPerHole`. Esto aplica tanto en la línea 34 como en la 46.
+
+#### 4. Persistencia
+Los hándicaps se guardan como parte del `ninesBets` array dentro del `betConfig` JSON de la tabla `rounds`. No se necesita migración de base de datos ya que `betConfig` es un campo `jsonb` flexible. La restauración ya maneja `ninesBets` correctamente en `useRoundManagement.ts` (línea 567).
+
+#### 5. Hook `useNines.ts` — pasar hándicaps al `NinesConfig`
+Actualizar `NinesConfig` en `src/types/golf.ts` para incluir `playerHandicaps`:
+```typescript
+export interface NinesConfig {
+  roundId: string;
+  valuePerPoint: number;
+  playerIds: string[];
+  playerHandicaps?: Record<string, number>;
+}
+```
+Y en `useNines.ts`, leer/guardar el campo `playerHandicaps` si la tabla lo soporta, o bien obtenerlo del `betConfig` pasado como parámetro.
+
+Dado que `nines_config` es una tabla separada sin columna `playerHandicaps`, se necesita agregar una columna JSONB a la tabla `nines_config` para persistir los hándicaps:
+
+**Migración SQL:**
+```sql
+ALTER TABLE public.nines_config 
+ADD COLUMN player_handicaps jsonb DEFAULT '{}'::jsonb;
 ```
 
-This ensures that changing the scoring mode instantly recalculates all results without needing to re-save each hole decision.
+Luego actualizar `useNines.ts` para leer/escribir `player_handicaps`.
 
-### Tooltip enhancement
-
-For `lowBall` mode, after the player scores grid, add:
-```
-BB: {lowBallWinner label} · {wolfLowBall} vs {rivalLowBall}
-```
-
-For `stroke` mode, add:
-```
-Neto: {wolfTeamTotal} vs {rivalTeamTotal}
-```
-
-These use `detail.teamWolfScore` and `detail.teamRivalScore` which are already computed by `resolveWolfHole`.
+### Archivos a modificar
+1. `src/types/golf.ts` — agregar `playerHandicaps` a `NinesBetInstance` y `NinesConfig`
+2. `src/components/setup/bets/GrupalBets.tsx` — UI de hándicaps en `NinesBetCard`
+3. `src/lib/bets/nines.ts` — usar hándicaps custom en cálculos
+4. `src/hooks/useNines.ts` — persistir/restaurar `playerHandicaps`
+5. `src/hooks/useRoundManagement.ts` — pasar `playerHandicaps` al close flow
+6. **Migración DB** — agregar columna `player_handicaps` a `nines_config`
 
