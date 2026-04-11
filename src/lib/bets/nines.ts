@@ -31,7 +31,8 @@ export const buildNinesHoleDetails = (
 
   for (let h = 1; h <= 18; h++) {
     const netScores = participants.map(p => {
-      const sp = calculateStrokesPerHole(p.handicap, course);
+      const hcp = config.playerHandicaps?.[p.id] ?? p.handicap;
+      const sp = calculateStrokesPerHole(hcp, course);
       const hs = (scores.get(p.id) ?? []).find(s => s.confirmed && s.holeNumber === h);
       if (!hs?.strokes) return null;
       return { id: p.id, net: hs.strokes - (sp[h - 1] ?? 0) };
@@ -43,7 +44,8 @@ export const buildNinesHoleDetails = (
     const sorted = [...netScores].sort((a, b) => a.net - b.net);
 
     const playerScores = participants.map(p => {
-      const sp = calculateStrokesPerHole(p.handicap, course);
+      const hcp = config.playerHandicaps?.[p.id] ?? p.handicap;
+      const sp = calculateStrokesPerHole(hcp, course);
       const hs = (scores.get(p.id) ?? []).find(s => s.holeNumber === h);
       const gross = hs?.strokes ?? 0;
       const strokes = sp[h - 1] ?? 0;

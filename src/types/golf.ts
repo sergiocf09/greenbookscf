@@ -825,6 +825,7 @@ export interface NinesBetInstance {
   id: string;
   valuePerPoint: number;
   playerIds: string[];
+  playerHandicaps?: Record<string, number>;
 }
 
 // Default Stableford point values (flexible)
