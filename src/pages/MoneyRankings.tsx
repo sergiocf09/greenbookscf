@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User, Award } from 'lucide-react';
+import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User, Award, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -109,7 +109,10 @@ const MoneyRankings = () => {
             </Button>
             <GreenBookLogo />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label="Actualizar">
+              <RefreshCw className="h-5 w-5" />
+            </Button>
             <TrendingUp className="h-5 w-5 text-accent" />
             <span className="font-semibold text-sm text-accent">Rankings</span>
           </div>
