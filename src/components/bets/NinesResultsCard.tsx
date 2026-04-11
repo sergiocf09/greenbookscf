@@ -152,6 +152,16 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
 
   const totalBalance = playerBalances.get(basePlayerId) ?? 0;
 
+  // Pre-compute Nines-specific strokes per hole for each player
+  const ninesStrokesMap = useMemo(() => {
+    const map = new Map<string, number[]>();
+    activePlayers.forEach(p => {
+      const hcp = ninesConfig.playerHandicaps?.[p.id] ?? p.handicap;
+      map.set(p.id, calculateStrokesPerHole(hcp, course));
+    });
+    return map;
+  }, [activePlayers, ninesConfig.playerHandicaps, course]);
+
   const disambiguated = useMemo(() => disambiguateInitials(activePlayers), [activePlayers]);
   const getPlayerAbbr = (p: Player) => disambiguated.get(p.id) || p.initials;
 
