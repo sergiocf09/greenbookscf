@@ -102,13 +102,6 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
     setSaving(true);
     try {
-      // Re-authenticate
-      const ok = await reAuthenticate();
-      if (!ok) {
-        setSaving(false);
-        return;
-      }
-
       // Compute new initials
       const newInitials = initialsFromPlayerName(sanitizedName);
 
@@ -440,14 +433,13 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         />
         <p className="text-xs text-muted-foreground">El nombre se mostrará en scorecards, dashboards e historial.</p>
       </div>
-      {renderReAuthField()}
       <div className="flex gap-2 pt-2">
         <Button variant="outline" className="flex-1" onClick={() => setSection('menu')} disabled={saving}>
           Cancelar
         </Button>
         <Button
           className="flex-1"
-          disabled={!newName.trim() || newName.trim().length < 2 || !currentPassword || saving}
+          disabled={!newName.trim() || newName.trim().length < 2 || saving}
           onClick={handleSaveName}
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
