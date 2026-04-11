@@ -475,7 +475,38 @@ const NinesBetCard: React.FC<{
           <p className="text-[9px] text-amber-600">Selecciona al menos 3 jugadores ({selectedIds.length}/{minPlayers})</p>
         )}
         {selectedIds.length === 3 && (
-          <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
+          <>
+            <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
+            <div className="space-y-1.5 mt-2">
+              <Label className="text-[10px] font-semibold text-primary">Handicaps</Label>
+              {selectedIds.map(pid => {
+                const p = players.find(pl => pl.id === pid);
+                if (!p) return null;
+                const currentHcp = bet.playerHandicaps?.[pid] ?? p.handicap;
+                return (
+                  <div key={pid} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: p.color }}>{p.initials}</div>
+                      <span className="text-xs font-medium">{formatPlayerName(p.name)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button type="button" variant="outline" size="icon" className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); const nh = { ...bet.playerHandicaps, [pid]: Math.max(0, currentHcp - 1) }; onUpdate({ playerHandicaps: nh }); }}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <Input type="number" value={currentHcp}
+                        onChange={(e) => { const nv = parseInt(e.target.value) || 0; const nh = { ...bet.playerHandicaps, [pid]: nv }; onUpdate({ playerHandicaps: nh }); }}
+                        className="w-14 h-6 text-center text-xs p-1" onClick={(e) => e.stopPropagation()} />
+                      <Button type="button" variant="outline" size="icon" className="h-6 w-6"
+                        onClick={(e) => { e.stopPropagation(); const nh = { ...bet.playerHandicaps, [pid]: currentHcp + 1 }; onUpdate({ playerHandicaps: nh }); }}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
