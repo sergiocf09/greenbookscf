@@ -2324,6 +2324,7 @@ const Index = () => {
                   Par {holePar} • SI {holeStrokeIndex}
                   {holeYards && <span> • {holeYards} yds</span>}
                 </p>
+                <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
               </>
             )}
           </div>
