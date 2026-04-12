@@ -1979,6 +1979,19 @@ export type Database = {
           rounds_played: number
         }[]
       }
+      get_friends_live_rounds: {
+        Args: never
+        Returns: {
+          avatar_color: string
+          course_name: string
+          display_name: string
+          gross_vs_par: number
+          holes_played: number
+          initials: string
+          profile_id: string
+          round_id: string
+        }[]
+      }
       get_money_ranking_balances: {
         Args: {
           p_date_from?: string
