@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,13 @@ const Auth = () => {
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
+  // Persist returnTo so it survives OAuth redirects and email confirmation
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('pendingReturnTo', returnTo);
+    }
+  }, [returnTo]);
+
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
@@ -60,7 +67,12 @@ const Auth = () => {
       toast.error('Error al iniciar sesión', { description: error.message });
     } else {
       toast.success('¡Bienvenido!');
-      // No navigate manually — PublicRoute will redirect once profile loads
+      const pending = sessionStorage.getItem('pendingReturnTo');
+      if (pending) {
+        sessionStorage.removeItem('pendingReturnTo');
+        navigate(pending, { replace: true });
+      }
+      // If no pending, PublicRoute will redirect to /
     }
     setIsLoading(false);
   };

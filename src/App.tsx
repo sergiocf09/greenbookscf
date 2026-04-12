@@ -34,16 +34,31 @@ const Spinner = () => (
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
   if (loading) return <Spinner />;
-  if (!user || user.is_anonymous || !profile) return <Navigate to="/auth" replace />;
-  return <>{children}</>;
+  // Registered user with profile
+  if (user && !user.is_anonymous && profile) return <>{children}</>;
+  // Anonymous user with a valid guest session in localStorage
+  if (user?.is_anonymous) {
+    const hasGuestSession = Object.keys(localStorage).some(k =>
+      k.startsWith('guest_session_')
+    );
+    if (hasGuestSession) return <>{children}</>;
+  }
+  return <Navigate to="/auth" replace />;
 };
 
 // Ruta pública: redirige a / solo si hay usuario real con profile
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
   if (loading) return <Spinner />;
-  // Solo redirigir si el usuario está completamente autenticado (no anónimo, con profile)
-  if (user && !user.is_anonymous && profile) return <Navigate to="/" replace />;
+  if (user && !user.is_anonymous && profile) {
+    // Check for pending returnTo from invitation flow
+    const pending = sessionStorage.getItem('pendingReturnTo');
+    if (pending) {
+      sessionStorage.removeItem('pendingReturnTo');
+      return <Navigate to={pending} replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
   return <>{children}</>;
 };
 
