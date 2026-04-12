@@ -67,7 +67,12 @@ const Auth = () => {
       toast.error('Error al iniciar sesión', { description: error.message });
     } else {
       toast.success('¡Bienvenido!');
-      // No navigate manually — PublicRoute will redirect once profile loads
+      const pending = sessionStorage.getItem('pendingReturnTo');
+      if (pending) {
+        sessionStorage.removeItem('pendingReturnTo');
+        navigate(pending, { replace: true });
+      }
+      // If no pending, PublicRoute will redirect to /
     }
     setIsLoading(false);
   };
