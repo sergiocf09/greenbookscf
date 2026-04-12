@@ -1983,8 +1983,10 @@ export type Database = {
         Args: never
         Returns: {
           avatar_color: string
+          birdie_holes: number[]
           course_name: string
           display_name: string
+          eagle_holes: number[]
           gross_vs_par: number
           holes_played: number
           initials: string

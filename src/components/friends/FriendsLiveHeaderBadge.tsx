@@ -4,17 +4,39 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { Radio } from 'lucide-react';
 
+/** Capitaliza cada palabra: "ALEJANDRO SERRANO" → "Alejandro Serrano" */
+const titleCase = (s: string) =>
+  s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
 const VsParLabel = ({ value }: { value: number }) => {
   if (value === 0) return (
-    <span className="text-sm font-bold text-muted-foreground">E</span>
+    <span className="text-base font-bold text-muted-foreground">E</span>
   );
   return (
     <span className={cn(
-      'text-sm font-bold',
+      'text-base font-bold',
       value < 0 ? 'text-green-500' : 'text-red-500',
     )}>
       {value > 0 ? `+${value}` : value}
     </span>
+  );
+};
+
+const HighlightsLine: React.FC<{ birdies: number[]; eagles: number[] }> = ({ birdies, eagles }) => {
+  if (birdies.length === 0 && eagles.length === 0) return null;
+
+  const parts: string[] = [];
+  if (eagles.length > 0) {
+    parts.push(`🦅 ${eagles.length === 1 ? `Hoyo ${eagles[0]}` : `Hoyos ${eagles.join(', ')}`}`);
+  }
+  if (birdies.length > 0) {
+    parts.push(`🐦 ${birdies.length === 1 ? `Hoyo ${birdies[0]}` : `Hoyos ${birdies.join(', ')}`}`);
+  }
+
+  return (
+    <p className="text-[11px] text-green-600 dark:text-green-400 mt-0.5 truncate">
+      {parts.join('  •  ')}
+    </p>
   );
 };
 
@@ -83,11 +105,12 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">
-                      {r.displayName}
+                      {titleCase(r.displayName)}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {r.courseName}
                     </p>
+                    <HighlightsLine birdies={r.birdieHoles} eagles={r.eagleHoles} />
                   </div>
                   <div className="text-right shrink-0">
                     <VsParLabel value={r.grossVsPar} />
