@@ -2366,6 +2366,16 @@ const Index = () => {
              </div>
 
 
+            {user?.is_anonymous ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => navigate('/auth', { state: { returnTo: '/' } })}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            ) : (
             <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -2481,6 +2491,7 @@ const Index = () => {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
 
           <ProfileDialog open={dialogs.profile} onOpenChange={(v: boolean) => setDialog('profile', v)} />
