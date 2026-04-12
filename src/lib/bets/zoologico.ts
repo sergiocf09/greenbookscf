@@ -128,8 +128,8 @@ export const calculateZoologicoBets = (
       if (!result || !result.loser || result.totalOccurrences === 0) return;
       participatingPlayers.forEach(player => {
         if (player.id === result.loser!.playerId) return;
-        allSummaries.push({ playerId: player.id, vsPlayer: result.loser!.playerId, betType: `Zoológico ${result.label}`, amount: result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias` });
-        allSummaries.push({ playerId: result.loser!.playerId, vsPlayer: player.id, betType: `Zoológico ${result.label}`, amount: -result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias` });
+        allSummaries.push({ playerId: player.id, vsPlayer: result.loser!.playerId, betType: `Zoológico ${result.label}`, amount: result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias`, units: result.totalOccurrences, baseUnitAmount: result.valuePerOccurrence });
+        allSummaries.push({ playerId: result.loser!.playerId, vsPlayer: player.id, betType: `Zoológico ${result.label}`, amount: -result.amountPerPlayer, segment: 'total', description: `${result.emoji} ${result.totalOccurrences} incidencias`, units: result.totalOccurrences, baseUnitAmount: result.valuePerOccurrence });
       });
     });
   });

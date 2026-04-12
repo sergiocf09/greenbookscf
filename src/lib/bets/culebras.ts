@@ -68,8 +68,8 @@ export const calculateCulebrasBets = (
     
     participatingPlayers.forEach(player => {
       if (player.id === lastPlayerToPay) return;
-      allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Culebras', amount: -amountPerPlayer, segment: 'total', description: `Último en culebra - paga ${totalCulebras} culebras` });
-      allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Culebras', amount: amountPerPlayer, segment: 'total', description: `Recibe de culebras x${totalCulebras}` });
+      allSummaries.push({ playerId: lastPlayerToPay, vsPlayer: player.id, betType: 'Culebras', amount: -amountPerPlayer, segment: 'total', description: `Último en culebra - paga ${totalCulebras} culebras`, units: totalCulebras, baseUnitAmount: resolved.culebras.valuePerOccurrence });
+      allSummaries.push({ playerId: player.id, vsPlayer: lastPlayerToPay, betType: 'Culebras', amount: amountPerPlayer, segment: 'total', description: `Recibe de culebras x${totalCulebras}`, units: totalCulebras, baseUnitAmount: resolved.culebras.valuePerOccurrence });
     });
   });
   
