@@ -47,51 +47,65 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
         </span>
       </button>
 
-      {/* Sheet de detalle */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          className="max-h-[65vh] overflow-y-auto rounded-t-2xl"
-        >
-          <SheetHeader className="pb-4">
-            <SheetTitle className="flex items-center gap-2">
-              <Radio className="h-4 w-4 text-green-500" />
-              Amigos jugando ahora
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="space-y-2 pb-6">
-            {liveRounds.map((r) => (
-              <div
-                key={r.roundId}
-                className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/40"
+      {/* Overlay + Panel que se despliega justo debajo del header */}
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setOpen(false)}
+          />
+          {/* Panel */}
+          <div
+            className="fixed left-0 right-0 z-50 bg-background border-b border-border shadow-xl overflow-y-auto animate-in slide-in-from-top duration-200"
+            style={{ top: 'var(--header-height, 72px)', maxHeight: 'calc(100dvh - var(--header-height, 72px))' }}
+          >
+            <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Radio className="h-4 w-4 text-green-500" />
+                Amigos jugando ahora
+              </h3>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
-                <PlayerAvatar
-                  initials={r.initials}
-                  background={r.avatarColor}
-                  size="md"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {r.displayName}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {r.courseName}
-                  </p>
+                Cerrar
+              </button>
+            </div>
+            <div className="space-y-2 px-4 pb-4 pt-2">
+              {liveRounds.map((r) => (
+                <div
+                  key={r.roundId}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/40"
+                >
+                  <PlayerAvatar
+                    initials={r.initials}
+                    background={r.avatarColor}
+                    size="md"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">
+                      {r.displayName}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {r.courseName}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <VsParLabel value={r.grossVsPar} />
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {r.holesPlayed > 0
+                        ? `Hoyo ${r.holesPlayed}`
+                        : 'Iniciando'}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <VsParLabel value={r.grossVsPar} />
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {r.holesPlayed > 0
-                      ? `Hoyo ${r.holesPlayed}`
-                      : 'Iniciando'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </>
+      )}
     </>
   );
 };
