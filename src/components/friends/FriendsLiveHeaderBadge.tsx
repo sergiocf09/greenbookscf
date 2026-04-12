@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { useFriendsLive } from '@/hooks/useFriendsLive';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { Radio } from 'lucide-react';
 
