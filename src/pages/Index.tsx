@@ -78,6 +78,7 @@ import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBadge';
 import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
 import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
@@ -2316,18 +2317,20 @@ const Index = () => {
             <GreenBookLogo height={72} variant="header" />
           </div>
           
-          {/* Center: Hole Info - takes remaining space */}
-          <div className="flex-1 text-center">
-            {view !== 'setup' && course && currentHoleInfo && (
-              <>
+          {/* Center: Hole Info or Live Badge */}
+          <div className="flex-1 flex justify-center">
+            {view !== 'setup' && course && currentHoleInfo ? (
+              <div className="text-center">
                 <p className="text-xl font-bold text-primary-foreground">Hoyo {currentHole}</p>
                 <p className="text-sm font-bold text-primary-foreground/90">
                   Par {holePar} • SI {holeStrokeIndex}
                   {holeYards && <span> • {holeYards} yds</span>}
                 </p>
                 <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
-              </>
-            )}
+              </div>
+            ) : view === 'setup' ? (
+              <FriendsLiveHeaderBadge />
+            ) : null}
           </div>
           
            {/* Right: Friends + Help/Refresh + Profile Menu */}
