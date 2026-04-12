@@ -32,6 +32,13 @@ const Auth = () => {
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
+  // Persist returnTo so it survives OAuth redirects and email confirmation
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('pendingReturnTo', returnTo);
+    }
+  }, [returnTo]);
+
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
