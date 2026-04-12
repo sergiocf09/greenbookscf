@@ -2498,6 +2498,23 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Guest registration banner */}
+      {user?.is_anonymous && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700 px-4 py-2 flex items-center justify-between gap-2">
+          <span className="text-xs text-amber-800 dark:text-amber-200">
+            Estás viendo la ronda como invitado
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 border-amber-400 text-amber-800 hover:bg-amber-100 dark:text-amber-200 dark:border-amber-600 dark:hover:bg-amber-900/40"
+            onClick={() => navigate('/auth', { state: { returnTo: '/' } })}
+          >
+            Registrarme
+          </Button>
+        </div>
+      )}
+
       {/* Navigation Tabs - show when round is in progress OR not in setup view */}
       {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
