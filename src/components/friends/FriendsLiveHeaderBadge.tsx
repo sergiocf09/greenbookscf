@@ -104,7 +104,7 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
                     size="md"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">
+                    <p className="font-semibold text-sm truncate text-foreground">
                       {titleCase(r.displayName)}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
