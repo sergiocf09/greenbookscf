@@ -62,7 +62,7 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
           {liveRounds.length}
         </span>
         <span className="text-[10px] text-primary-foreground/80 leading-none">
-          en vivo
+          LIVE
         </span>
       </button>
 
