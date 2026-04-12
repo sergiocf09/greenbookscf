@@ -6,7 +6,7 @@ import { Radio } from 'lucide-react';
 
 /** Capitaliza cada palabra: "ALEJANDRO SERRANO" → "Alejandro Serrano" */
 const titleCase = (s: string) =>
-  s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  s.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 
 const VsParLabel = ({ value }: { value: number }) => {
   if (value === 0) return (
