@@ -11,6 +11,8 @@ export interface FriendLiveRound {
   courseName: string;
   holesPlayed: number;
   grossVsPar: number;
+  birdieHoles: number[];
+  eagleHoles: number[];
 }
 
 export function useFriendsLive() {
@@ -33,6 +35,8 @@ export function useFriendsLive() {
         courseName: r.course_name,
         holesPlayed: r.holes_played ?? 0,
         grossVsPar: r.gross_vs_par ?? 0,
+        birdieHoles: r.birdie_holes ?? [],
+        eagleHoles: r.eagle_holes ?? [],
       })));
     } catch (e) {
       console.error('useFriendsLive error:', e);
