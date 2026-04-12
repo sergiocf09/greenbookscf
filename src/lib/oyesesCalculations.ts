@@ -597,6 +597,8 @@ export const calculateOyesesBets = (
         const zapatoBonus = Math.abs(baseTotal);
         
         // Add Zapato bonus as separate entry
+        // Use `units` so that betOverrides amountOverride scales correctly
+        const zapatoHoles = holesWonByA === totalPlayedHoles ? holesWonByA : holesWonByB;
         pairSummaries.push({
           playerId: zapatoWinnerId,
           vsPlayer: zapatoLoserId,
@@ -604,6 +606,7 @@ export const calculateOyesesBets = (
           amount: zapatoBonus,
           segment: 'total',
           description: '🥾 Zapato (100%)',
+          units: zapatoHoles,
         });
         pairSummaries.push({
           playerId: zapatoLoserId,
@@ -612,6 +615,7 @@ export const calculateOyesesBets = (
           amount: -zapatoBonus,
           segment: 'total',
           description: '🥾 Zapato (100%)',
+          units: zapatoHoles,
         });
       }
       
