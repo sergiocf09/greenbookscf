@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Settings, Dices, RefreshCw, Trophy, BarChart3 } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 
-type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
+type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
 
 const helpContent: Record<string, { icon: React.ReactNode; title: string; items: string[] }> = {
   scoring: {
