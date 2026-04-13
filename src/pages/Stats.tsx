@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlayerStats, type PlayerStats, type PlayerMilestone, type CourseSummary, type HoleAvg, type RecentRound } from '@/hooks/usePlayerStats';
 import { isPaywallActive } from '@/lib/paywallConfig';
 import { fmtPct, fmtAvg, fmtVsPar, vsParColor } from '@/lib/statsFormatters';
-import { ProfileDialog } from '@/components/ProfileDialog';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
-import GreenBookLogo from '@/components/GreenBookLogo';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,114 +15,119 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ArrowLeft, Loader2, BarChart2, MapPin, TrendingDown, Target, Circle, Feather, Minus, Lock, Check, ChevronDown,
+  Loader2, BarChart2, MapPin, TrendingDown, Target, Circle, Feather, Minus, Lock, Check, ChevronDown,
 } from 'lucide-react';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ReferenceLine, CartesianGrid,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
-/* ═══════════════ MAIN PAGE ═══════════════ */
-const Stats: React.FC = () => {
+/* ═══════════════ INLINE STATS VIEW ═══════════════ */
+export const StatsInlineView: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { isPro, isFounder } = useSubscription();
   const [courseId, setCourseId] = useState<string | null>(null);
   const { stats, milestones, courses, holeAvgs, recentRounds, loading, error } = usePlayerStats(courseId);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [lowestHcp, setLowestHcp] = useState<number | null>(null);
 
   const canViewStats = isPro || isFounder || !isPaywallActive();
   const selectedCourse = courses.find(c => c.course_id === courseId);
 
+  // Fetch lowest handicap in last 12 months
+  useEffect(() => {
+    if (!profile?.id) return;
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+    const dateStr = twelveMonthsAgo.toISOString();
+
+    supabase
+      .from('handicap_history')
+      .select('handicap')
+      .eq('profile_id', profile.id)
+      .gte('recorded_at', dateStr)
+      .order('handicap', { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setLowestHcp(data[0].handicap);
+        }
+      });
+  }, [profile?.id]);
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <GreenBookLogo height={32} />
-        <button onClick={() => setProfileOpen(true)} className="p-0 bg-transparent border-none cursor-pointer">
-          <PlayerAvatar
-            initials={profile?.initials ?? ''}
-            background={profile?.avatar_color ?? '#3B82F6'}
-            size="sm"
-            isLoggedInUser
-          />
-        </button>
-      </header>
-
+    <div className="px-4 pb-8 space-y-6 pt-3">
       {/* Course selector */}
-      <div className="px-4 pt-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
-              <span className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {selectedCourse ? selectedCourse.course_name : 'Global — Todos los campos'}
-              </span>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
-            <DropdownMenuItem onClick={() => setCourseId(null)}>
-              Global — Todos los campos
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            <span className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {selectedCourse ? selectedCourse.course_name : 'Global — Todos los campos'}
+            </span>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
+          <DropdownMenuItem onClick={() => setCourseId(null)}>
+            Global — Todos los campos
+          </DropdownMenuItem>
+          {courses.map(c => (
+            <DropdownMenuItem key={c.course_id} onClick={() => setCourseId(c.course_id)}>
+              {c.course_name} ({c.rounds_played})
             </DropdownMenuItem>
-            {courses.map(c => (
-              <DropdownMenuItem key={c.course_id} onClick={() => setCourseId(c.course_id)}>
-                {c.course_name} ({c.rounds_played})
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-6 pt-4">
-        {!stats || stats.rounds_played === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <BarChart2 className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-sm">Juega tu primera ronda para ver tus estadísticas</p>
-          </div>
-        ) : (
-          <>
-            {/* Section A — KPI Grid */}
-            <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} />
+      {!stats || stats.rounds_played === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <BarChart2 className="h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground text-sm">Juega tu primera ronda para ver tus estadísticas</p>
+        </div>
+      ) : (
+        <>
+          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} lowestHcp={lowestHcp} />
 
-            {!canViewStats && <UpgradeBanner onNavigate={() => navigate('/')} />}
+          {!canViewStats && <UpgradeBanner onNavigate={() => navigate('/')} />}
 
-            {canViewStats && (
-              <>
-                <ScoreDistribution stats={stats} />
-                <ParPerformance stats={stats} />
-                {courseId && holeAvgs.length > 0 && (
-                  <HoleByHoleChart holeAvgs={holeAvgs} courseName={selectedCourse?.course_name ?? ''} />
-                )}
-                {milestones && <Milestones milestones={milestones} />}
-                {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} />}
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+          {canViewStats && (
+            <>
+              <ScoreDistribution stats={stats} />
+              <ParPerformance stats={stats} />
+              {courseId && holeAvgs.length > 0 && (
+                <HoleByHoleChart holeAvgs={holeAvgs} courseName={selectedCourse?.course_name ?? ''} />
+              )}
+              {milestones && <Milestones milestones={milestones} />}
+              {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} />}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 };
 
+// Keep default export for the /stats route (redirect or standalone fallback)
+const Stats: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => { navigate('/', { replace: true }); }, [navigate]);
+  return null;
+};
 export default Stats;
 
 /* ═══════════════ KPI GRID ═══════════════ */
-function KPIGrid({ stats, profile, canViewStats }: { stats: PlayerStats; profile: any; canViewStats: boolean }) {
+function KPIGrid({ stats, profile, canViewStats, lowestHcp }: { stats: PlayerStats; profile: any; canViewStats: boolean; lowestHcp: number | null }) {
   const handicap = profile?.current_handicap;
   const hcpColor = handicap == null ? 'text-muted-foreground' : handicap < 18 ? 'text-emerald-500' : handicap < 25 ? 'text-yellow-500' : 'text-red-500';
   const girColor = stats.gir_pct == null ? 'text-muted-foreground' : Number(stats.gir_pct) > 50 ? 'text-emerald-500' : Number(stats.gir_pct) > 30 ? 'text-yellow-500' : 'text-red-500';
@@ -134,9 +136,11 @@ function KPIGrid({ stats, profile, canViewStats }: { stats: PlayerStats; profile
   const parsPct = stats.holes_played > 0 ? (stats.pars_count / stats.holes_played) * 100 : null;
   const bogeysPct = stats.holes_played > 0 ? (stats.bogeys_count / stats.holes_played) * 100 : null;
 
+  const lowestSub = lowestHcp != null ? `lowest (12m): ${lowestHcp.toFixed(1)}` : undefined;
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap" value={handicap?.toFixed(1) ?? '—'} sub={stats.rounds_played > 0 ? `avg score: ${fmtAvg(stats.avg_gross_score)}` : undefined} />
+      <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap" value={handicap?.toFixed(1) ?? '—'} sub={lowestSub} />
       <KPICard icon={<BarChart2 className="h-5 w-5 text-primary" />} label="Score Promedio" value={fmtAvg(stats.avg_gross_score)} sub={<span className={vsParColor(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}>vs par: {fmtVsPar(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}</span>} />
       <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="Greens en Reg." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={`P3:${fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)} P4:${fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)} P5:${fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}`} />
       <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={`1-putt:${fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)} 3-putt+:${fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}`} />
@@ -203,7 +207,10 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
             <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={55} />
             <Tooltip
               contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }}
-              formatter={(value: number, _name: string, props: any) => [`${value} (${props.payload.pct}%)`, 'Hoyos']}
+              formatter={(_value: number, _name: string, props: any) => {
+                const d = props.payload;
+                return [`${d.count} hoyos — ${d.pct}%`, d.name];
+              }}
             />
             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
               {data.map((d, i) => (
@@ -243,7 +250,7 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
   );
 }
 
-/* ═══════════════ HOLE BY HOLE ═══════════════ */
+/* ═══════════════ HOLE BY HOLE (HORIZONTAL — holes on Y, vs_par on X) ═══════════════ */
 function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; courseName: string }) {
   const colorForVsPar = (v: number) => {
     if (v <= -1) return '#22c55e';
@@ -252,25 +259,49 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
     return '#ef4444';
   };
 
+  // Data uses avg_vs_par as bar value
+  const chartData = holeAvgs.map(h => ({
+    ...h,
+    label: `${h.hole_number}`,
+    vsPar: Number(h.avg_vs_par),
+  }));
+
+  const minVal = Math.min(...chartData.map(d => d.vsPar), -1);
+  const maxVal = Math.max(...chartData.map(d => d.vsPar), 1);
+  const domainMin = Math.floor(minVal * 4) / 4;
+  const domainMax = Math.ceil(maxVal * 4) / 4;
+
   return (
     <section>
       <h2 className="text-sm font-semibold text-foreground mb-3">Score por Hoyo — {courseName}</h2>
       <Card className="rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={holeAvgs} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-            <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+        <ResponsiveContainer width="100%" height={holeAvgs.length * 28 + 30}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 35, right: 15, top: 5, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+            <XAxis
+              type="number"
+              domain={[domainMin, domainMax]}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tickFormatter={(v: number) => (v > 0 ? `+${v}` : `${v}`)}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              width={30}
+              tickFormatter={(v: string) => `H${v}`}
+            />
+            <ReferenceLine x={0} stroke="hsl(var(--border))" strokeWidth={1} />
             <Tooltip
               contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }}
               formatter={(_v: number, _n: string, props: any) => {
-                const h = props.payload as HoleAvg;
-                return [`${fmtAvg(h.avg_strokes)} avg (${fmtVsPar(h.avg_vs_par)})`, `Hoyo ${h.hole_number} (Par ${h.par})`];
+                const h = props.payload;
+                return [`Avg: ${fmtAvg(h.avg_strokes, 1)} (${fmtVsPar(h.vsPar)})`, `Hoyo ${h.hole_number} (Par ${h.par})`];
               }}
             />
-            <Bar dataKey="avg_strokes" radius={[4, 4, 0, 0]}>
-              {holeAvgs.map((h, i) => (
-                <Cell key={i} fill={colorForVsPar(Number(h.avg_vs_par))} />
+            <Bar dataKey="vsPar" radius={[0, 4, 4, 0]}>
+              {chartData.map((d, i) => (
+                <Cell key={i} fill={colorForVsPar(d.vsPar)} />
               ))}
             </Bar>
           </BarChart>
@@ -291,7 +322,8 @@ function Milestones({ milestones: m }: { milestones: PlayerMilestone }) {
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '📍', label: 'Campos jugados', value: m.unique_courses },
     { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
-    { emoji: '🎯', label: 'Hoyo en uno', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
+    { emoji: '🏌️', label: 'Rondas jugadas', value: m.organizer_rounds + (m.total_holes > 0 ? Math.round(m.total_holes / 18) : 0) > 0 ? Math.round(m.total_holes / 18) : 0 },
+    { emoji: '🎯', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
     { emoji: '🏌️', label: 'Sin bogeys', value: `${m.rounds_no_bogey}`, sub: 'rondas', zero: true },
     { emoji: '📊', label: 'Sub-80', value: m.rounds_sub_80 },
     { emoji: '📊', label: 'Sub-90', value: m.rounds_sub_90 },
@@ -351,7 +383,6 @@ function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
             <span className="text-xs text-muted-foreground w-16 shrink-0">{formatDate(r.round_date)}</span>
             <span className="text-xs truncate flex-1">{r.course_name}</span>
             <span className="text-sm font-bold tabular-nums w-8 text-right">{r.total_strokes}</span>
-            <span className={cn("text-xs tabular-nums w-10 text-right font-medium", vsParColor(r.vs_par))}>{fmtVsPar(r.vs_par)}</span>
             <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{r.total_putts}p</span>
           </div>
         ))}
