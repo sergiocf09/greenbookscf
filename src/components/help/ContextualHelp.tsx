@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Settings, Dices, RefreshCw, Trophy } from 'lucide-react';
+import { Settings, Dices, RefreshCw, Trophy, BarChart3 } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
@@ -34,9 +34,9 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     title: '🎲 Configuración de Apuestas',
     items: [
       'Las apuestas se dividen en 3 categorías: navega entre Individuales, Parejas y Grupales con los tabs superiores.',
-      'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Caros (match en los últimos 4 hoyos, configurable).',
+      'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Caros (match en los últimos 4 hoyos, configurable), Coneja (apuesta individual con acumulación progresiva).',
       'PAREJAS — entre equipos de 2 vs 2: Carritos (lowball, highball o combined) y Presiones Parejas.',
-      'GRUPALES — un ganador entre todos: Medal General (menor neto total), Stableford (puntos por hoyo), Culebras (último en tener 3+ putts paga a todos), Pingüinos (último en tener triple bogey paga a todos), Zoológico, Putts.',
+      'GRUPALES — un ganador entre todos: Medal General (menor neto total), Stableford (puntos por hoyo), Culebras (último en tener 3+ putts paga a todos), Pingüinos (último en tener triple bogey paga a todos), Zoológico, Putts, Nines (9 puntos por hoyo repartidos según score), Wolf (el lobo elige compañero o va solo cada hoyo), Sixes (rotación de parejas cada 6 hoyos), Las Vegas (puntaje combinado de parejas tipo dado).',
       'Toca el ícono ℹ️ junto a cada apuesta para ver exactamente cómo funciona y cuándo se cobra.',
     ],
   },
@@ -66,7 +66,27 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     items: [
       'El Balance General muestra el saldo neto de cada jugador — lo que ganó o perdió contra todos los demás combinado.',
       'Para ver el detalle: toca un jugador para seleccionarlo como base, luego toca a su rival. Verás el desglose completo de todas las apuestas entre esos dos.',
-      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, etc.).',
+      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, Coneja, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Nines, Wolf, Sixes, Las Vegas, etc.).',
+    ],
+  },
+  leaderboards: {
+    icon: <Trophy className="h-5 w-5 text-primary" />,
+    title: '🏆 Leaderboards',
+    items: [
+      'Los Leaderboards son torneos o competencias entre amigos que abarcan múltiples rondas. Crea uno, comparte el código y los participantes se unen automáticamente.',
+      'Al cerrar una ronda, puedes vincularla a un Leaderboard existente. Los scores de esa ronda se suman al ranking acumulado del torneo.',
+      'Modos de scoring disponibles: Gross vs Par (score bruto contra par del campo), Net vs Par (ajustado por hándicap) y Stableford (puntos por hoyo).',
+      'El ranking se actualiza en tiempo real conforme se vinculan rondas. Puedes ver la posición de cada participante, su mejor ronda y el promedio.',
+    ],
+  },
+  rankings: {
+    icon: <BarChart3 className="h-5 w-5 text-primary" />,
+    title: '📊 Rankings',
+    items: [
+      'Los Rankings se dividen en dos pestañas: Scoring (hándicap y estadísticas) y Dinero (balances económicos entre jugadores).',
+      'SCORING — muestra el Índice de Hándicap calculado con la fórmula USGA, el promedio de score gross y el mejor score de cada jugador. Se alimenta automáticamente de todas las rondas cerradas.',
+      'DINERO — crea un Ranking de Dinero para tu grupo y agrega miembros. Cada ronda cerrada entre miembros del ranking alimenta automáticamente el balance bilateral (quién le debe a quién).',
+      'Puedes filtrar los Rankings de Dinero por período: Histórico (todo), Año en curso o Rango personalizado de fechas. Toca un jugador para ver su desglose bilateral contra cada rival.',
     ],
   },
 };
