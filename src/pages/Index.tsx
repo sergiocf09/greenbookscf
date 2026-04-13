@@ -3190,6 +3190,11 @@ const Index = () => {
             />
           )
         )}
+
+        {/* Stats View */}
+        {view === 'stats' && (
+          <StatsInlineView />
+        )}
       </main>
 
       {/* Floating Action Button for Score Capture */}
