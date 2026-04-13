@@ -157,7 +157,7 @@ function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats
       <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap Index" value={handicap?.toFixed(1) ?? '—'} sub={hcpSub} />
       <KPICard icon={<BarChart2 className="h-5 w-5 text-primary" />} label="Score Promedio" value={fmtAvg(stats.avg_gross_score)} sub={<span className={vsParColor(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}>vs par: {fmtVsPar(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}</span>} />
       <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="Greens en Reg." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={`P3:${fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)} P4:${fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)} P5:${fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}`} />
-      <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={`1-putt:${fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)} 3-putt+:${fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}`} />
+      <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={<span className="flex flex-col gap-0.5"><span>1-putt: {fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)}</span><span>3-putt+: {fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}</span></span>} />
       <KPICard icon={<Feather className="h-5 w-5 text-emerald-500" />} label="% Birdies" value={fmtPct(birdiesPct)} sub={`Total: ${stats.birdies_count} birdies`} locked={!canViewStats} />
       <KPICard icon={<Minus className="h-5 w-5 text-muted-foreground" />} label="% Pares" value={fmtPct(parsPct)} sub={`Bogeys: ${fmtPct(bogeysPct, 0)}`} locked={!canViewStats} />
     </div>
@@ -225,9 +225,12 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
               itemStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(_value: number, _name: string, props: any) => {
                 const d = props.payload;
-                return [`#${d.count} — ${d.pct}%`, d.name];
+                return [`#${d.count} — ${d.pct}%`, ''];
               }}
-              labelFormatter={() => ''}
+              labelFormatter={(_label: string, payload: any[]) => {
+                if (!payload || payload.length === 0) return '';
+                return payload[0]?.payload?.name ?? '';
+              }}
             />
             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
               {data.map((d, i) => (
@@ -270,9 +273,9 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
 /* ═══════════════ HOLE BY HOLE (HORIZONTAL — holes on Y, vs_par on X) ═══════════════ */
 function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; courseName: string }) {
   const colorForVsPar = (v: number) => {
-    if (v <= -0.25) return '#22c55e';
-    if (v <= 0) return 'hsl(var(--muted-foreground))';
-    if (v <= 1) return '#eab308';
+    if (v < 0) return '#16a34a';
+    if (v <= 0.5) return '#4ade80';
+    if (v <= 1.5) return '#eab308';
     return '#ef4444';
   };
 
@@ -354,10 +357,10 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '🎯', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: 'Sin bogeys', value: `${m.rounds_no_bogey}`, sub: 'rondas', zero: true },
-    { emoji: '📊', label: 'Sub-80', value: m.rounds_sub_80 },
-    { emoji: '📊', label: 'Sub-90', value: m.rounds_sub_90 },
-    { emoji: '📊', label: 'Sub-100', value: m.rounds_sub_100 },
-    { emoji: '📈', label: 'Mejora hcp', value: m.handicap_delta != null ? (Number(m.handicap_delta) > 0 ? `▼ ${Number(m.handicap_delta).toFixed(1)}` : fmtVsPar(-Number(m.handicap_delta))) : '—' },
+    { emoji: '📊', label: 'Setentas', value: m.rounds_sub_80, sub: '< 80', zero: true },
+    { emoji: '📊', label: 'Ochentas', value: m.rounds_sub_90, sub: '80–89', zero: true },
+    { emoji: '📊', label: 'Noventas', value: m.rounds_sub_100, sub: '90–99', zero: true },
+    { emoji: '💯', label: 'Mayor a 100', value: m.rounds_sub_100 != null ? Math.max(0, roundsPlayed - (m.rounds_sub_100 + m.rounds_sub_90 + m.rounds_sub_80 + m.rounds_sub_70)) : '—', zero: true },
   ];
 
   return (
