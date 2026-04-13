@@ -34,9 +34,9 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     title: '🎲 Configuración de Apuestas',
     items: [
       'Las apuestas se dividen en 3 categorías: navega entre Individuales, Parejas y Grupales con los tabs superiores.',
-      'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Caros (match en los últimos 4 hoyos, configurable).',
+      'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Caros (match en los últimos 4 hoyos, configurable), Coneja (apuesta individual con acumulación progresiva).',
       'PAREJAS — entre equipos de 2 vs 2: Carritos (lowball, highball o combined) y Presiones Parejas.',
-      'GRUPALES — un ganador entre todos: Medal General (menor neto total), Stableford (puntos por hoyo), Culebras (último en tener 3+ putts paga a todos), Pingüinos (último en tener triple bogey paga a todos), Zoológico, Putts.',
+      'GRUPALES — un ganador entre todos: Medal General (menor neto total), Stableford (puntos por hoyo), Culebras (último en tener 3+ putts paga a todos), Pingüinos (último en tener triple bogey paga a todos), Zoológico, Putts, Nines (9 puntos por hoyo repartidos según score), Wolf (el lobo elige compañero o va solo cada hoyo), Sixes (rotación de parejas cada 6 hoyos), Las Vegas (puntaje combinado de parejas tipo dado).',
       'Toca el ícono ℹ️ junto a cada apuesta para ver exactamente cómo funciona y cuándo se cobra.',
     ],
   },
