@@ -225,7 +225,7 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
               itemStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(_value: number, _name: string, props: any) => {
                 const d = props.payload;
-                return [`#${d.count} — ${d.pct}%`, ''];
+                return [`#${d.count} — ${d.pct}%`, null];
               }}
               labelFormatter={(_label: string, payload: any[]) => {
                 if (!payload || payload.length === 0) return '';

@@ -105,25 +105,51 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     return total;
   };
 
-  const getScoreColor = (strokes: number, par: number, confirmed: boolean): string => {
-    if (!confirmed) return 'text-muted-foreground/40 font-bold';
-    if (strokes === 0) return 'text-muted-foreground font-bold';
+  // TV-style score rendering: circles for under par, squares for over par
+  const renderScoreCell = (strokes: number, par: number, confirmed: boolean) => {
+    if (!confirmed || strokes === 0) {
+      return <span className="text-muted-foreground/40 font-bold">-</span>;
+    }
     const toPar = strokes - par;
-    if (toPar <= -2) return 'text-golf-gold font-bold';
-    if (toPar === -1) return 'text-green-500 font-bold';
-    if (toPar === 0) return 'text-foreground font-bold';
-    if (toPar === 1) return 'text-orange-500 font-bold';
-    if (toPar >= 2) return 'text-destructive font-bold';
-    return 'text-foreground font-bold';
-  };
-
-  const getScoreBg = (strokes: number, par: number, confirmed: boolean): string => {
-    if (!confirmed) return '';
-    if (strokes === 0) return '';
-    const toPar = strokes - par;
-    if (toPar <= -2) return 'bg-golf-gold/20 rounded';
-    if (toPar === -1) return 'bg-green-500/20 rounded';
-    return '';
+    const num = <span className="font-bold text-foreground">{strokes}</span>;
+    if (toPar <= -2) {
+      // Eagle or better: double circle
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-foreground/60">
+          <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border border-foreground/60">
+            {num}
+          </span>
+        </span>
+      );
+    }
+    if (toPar === -1) {
+      // Birdie: single circle
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-foreground/60">
+          {num}
+        </span>
+      );
+    }
+    if (toPar === 1) {
+      // Bogey: single square
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 border border-foreground/60">
+          {num}
+        </span>
+      );
+    }
+    if (toPar >= 2) {
+      // Double bogey+: double square
+      return (
+        <span className="inline-flex items-center justify-center w-6 h-6 border border-foreground/60">
+          <span className="inline-flex items-center justify-center w-[18px] h-[18px] border border-foreground/60">
+            {num}
+          </span>
+        </span>
+      );
+    }
+    // Par: plain number
+    return num;
   };
 
   // Determine display order based on starting hole
@@ -318,19 +344,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   const score = getPlayerScoreForHole(player.id, hole.number);
                   const strokes = score?.strokes || 0;
                   const confirmed = isHoleConfirmedForPlayer(player.id, hole.number);
-                  return (
-                    <td 
-                      key={hole.number}
-                      onClick={() => onHoleClick?.(hole.number)}
-                      className={cn(
-                        'text-center px-1.5 py-1 cursor-pointer',
-                        getScoreColor(strokes, hole.par, confirmed),
-                        getScoreBg(strokes, hole.par, confirmed)
-                      )}
-                    >
-                      {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
-                    </td>
-                  );
+                    return (
+                      <td 
+                        key={hole.number}
+                        onClick={() => onHoleClick?.(hole.number)}
+                        className="text-center px-0.5 py-1 cursor-pointer text-xs"
+                      >
+                        {renderScoreCell(strokes, hole.par, confirmed)}
+                      </td>
+                    );
                 })}
                 <td className="text-center px-2 py-1 font-semibold bg-muted/30">
                   {firstNineTotal || '-'}
@@ -430,13 +452,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                       <td 
                         key={hole.number}
                         onClick={() => onHoleClick?.(hole.number)}
-                        className={cn(
-                          'text-center px-1.5 py-1 cursor-pointer',
-                          getScoreColor(strokes, hole.par, confirmed),
-                          getScoreBg(strokes, hole.par, confirmed)
-                        )}
+                        className="text-center px-0.5 py-1 cursor-pointer text-xs"
                       >
-                        {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
+                        {renderScoreCell(strokes, hole.par, confirmed)}
                       </td>
                     );
                   })}
