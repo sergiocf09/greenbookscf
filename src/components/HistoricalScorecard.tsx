@@ -130,13 +130,9 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                   return (
                     <td 
                       key={hole.number}
-                      className={cn(
-                        'text-center px-0 py-1.5',
-                        getScoreColor(strokes, hole.par),
-                        getScoreBg(strokes, hole.par)
-                      )}
+                      className="text-center px-0 py-1.5"
                     >
-                      {strokes > 0 ? strokes : '-'}
+                      {renderScoreCell(strokes, hole.par)}
                     </td>
                   );
                 })}
@@ -194,14 +190,10 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                     return (
                       <td 
                         key={hole.number}
-                        className={cn(
-                        'text-center px-0 py-1.5',
-                        getScoreColor(strokes, hole.par),
-                        getScoreBg(strokes, hole.par)
-                      )}
-                    >
-                      {strokes > 0 ? strokes : '-'}
-                    </td>
+                        className="text-center px-0 py-1.5"
+                      >
+                        {renderScoreCell(strokes, hole.par)}
+                      </td>
                   );
                 })}
                   <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
