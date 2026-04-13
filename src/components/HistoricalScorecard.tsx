@@ -39,23 +39,43 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
       .reduce((sum, s) => sum + (s.strokes || 0), 0);
   };
 
-  const getScoreColor = (strokes: number, par: number): string => {
-    if (strokes === 0) return 'text-muted-foreground';
+  const renderScoreCell = (strokes: number, par: number) => {
+    if (strokes === 0) return <span className="text-muted-foreground">-</span>;
     const toPar = strokes - par;
-    if (toPar <= -2) return 'text-golf-gold font-bold';
-    if (toPar === -1) return 'text-green-500 font-bold';
-    if (toPar === 0) return 'text-foreground';
-    if (toPar === 1) return 'text-orange-500';
-    if (toPar >= 2) return 'text-destructive';
-    return 'text-foreground';
-  };
-
-  const getScoreBg = (strokes: number, par: number): string => {
-    if (strokes === 0) return '';
-    const toPar = strokes - par;
-    if (toPar <= -2) return 'bg-golf-gold/20 rounded';
-    if (toPar === -1) return 'bg-green-500/20 rounded';
-    return '';
+    const num = <span className="font-bold text-foreground">{strokes}</span>;
+    if (toPar <= -2) {
+      return (
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-foreground/60">
+          <span className="inline-flex items-center justify-center w-[14px] h-[14px] rounded-full border border-foreground/60">
+            {num}
+          </span>
+        </span>
+      );
+    }
+    if (toPar === -1) {
+      return (
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-foreground/60">
+          {num}
+        </span>
+      );
+    }
+    if (toPar === 1) {
+      return (
+        <span className="inline-flex items-center justify-center w-5 h-5 border border-foreground/60">
+          {num}
+        </span>
+      );
+    }
+    if (toPar >= 2) {
+      return (
+        <span className="inline-flex items-center justify-center w-5 h-5 border border-foreground/60">
+          <span className="inline-flex items-center justify-center w-[14px] h-[14px] border border-foreground/60">
+            {num}
+          </span>
+        </span>
+      );
+    }
+    return num;
   };
 
   const frontNine = course.holes.slice(0, 9);
@@ -110,13 +130,9 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                   return (
                     <td 
                       key={hole.number}
-                      className={cn(
-                        'text-center px-0 py-1.5',
-                        getScoreColor(strokes, hole.par),
-                        getScoreBg(strokes, hole.par)
-                      )}
+                      className="text-center px-0 py-1.5"
                     >
-                      {strokes > 0 ? strokes : '-'}
+                      {renderScoreCell(strokes, hole.par)}
                     </td>
                   );
                 })}
@@ -174,14 +190,10 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                     return (
                       <td 
                         key={hole.number}
-                        className={cn(
-                        'text-center px-0 py-1.5',
-                        getScoreColor(strokes, hole.par),
-                        getScoreBg(strokes, hole.par)
-                      )}
-                    >
-                      {strokes > 0 ? strokes : '-'}
-                    </td>
+                        className="text-center px-0 py-1.5"
+                      >
+                        {renderScoreCell(strokes, hole.par)}
+                      </td>
                   );
                 })}
                   <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
