@@ -313,7 +313,7 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
 }
 
 /* ═══════════════ MILESTONES ═══════════════ */
-function Milestones({ milestones: m }: { milestones: PlayerMilestone }) {
+function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilestone; roundsPlayed: number }) {
   const items = [
     { emoji: '🦅', label: 'Águilas', value: m.eagles_total, zero: true },
     { emoji: '🐦', label: 'Birdies', value: m.birdies_total, zero: true },
@@ -322,9 +322,9 @@ function Milestones({ milestones: m }: { milestones: PlayerMilestone }) {
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '📍', label: 'Campos jugados', value: m.unique_courses },
     { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
-    { emoji: '🏌️', label: 'Rondas jugadas', value: m.organizer_rounds + (m.total_holes > 0 ? Math.round(m.total_holes / 18) : 0) > 0 ? Math.round(m.total_holes / 18) : 0 },
+    { emoji: '🏌️', label: 'Rondas jugadas', value: roundsPlayed },
     { emoji: '🎯', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
-    { emoji: '🏌️', label: 'Sin bogeys', value: `${m.rounds_no_bogey}`, sub: 'rondas', zero: true },
+    { emoji: '🏌️‍♂️', label: 'Sin bogeys', value: `${m.rounds_no_bogey}`, sub: 'rondas', zero: true },
     { emoji: '📊', label: 'Sub-80', value: m.rounds_sub_80 },
     { emoji: '📊', label: 'Sub-90', value: m.rounds_sub_90 },
     { emoji: '📊', label: 'Sub-100', value: m.rounds_sub_100 },
