@@ -20,6 +20,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
+import { StatsInlineView } from '@/pages/Stats';
 import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
