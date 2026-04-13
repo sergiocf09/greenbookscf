@@ -66,7 +66,27 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     items: [
       'El Balance General muestra el saldo neto de cada jugador — lo que ganó o perdió contra todos los demás combinado.',
       'Para ver el detalle: toca un jugador para seleccionarlo como base, luego toca a su rival. Verás el desglose completo de todas las apuestas entre esos dos.',
-      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, etc.).',
+      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, Coneja, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Nines, Wolf, Sixes, Las Vegas, etc.).',
+    ],
+  },
+  leaderboards: {
+    icon: <Trophy className="h-5 w-5 text-primary" />,
+    title: '🏆 Leaderboards',
+    items: [
+      'Los Leaderboards son torneos o competencias entre amigos que abarcan múltiples rondas. Crea uno, comparte el código y los participantes se unen automáticamente.',
+      'Al cerrar una ronda, puedes vincularla a un Leaderboard existente. Los scores de esa ronda se suman al ranking acumulado del torneo.',
+      'Modos de scoring disponibles: Gross vs Par (score bruto contra par del campo), Net vs Par (ajustado por hándicap) y Stableford (puntos por hoyo).',
+      'El ranking se actualiza en tiempo real conforme se vinculan rondas. Puedes ver la posición de cada participante, su mejor ronda y el promedio.',
+    ],
+  },
+  rankings: {
+    icon: <BarChart3 className="h-5 w-5 text-primary" />,
+    title: '📊 Rankings',
+    items: [
+      'Los Rankings se dividen en dos pestañas: Scoring (hándicap y estadísticas) y Dinero (balances económicos entre jugadores).',
+      'SCORING — muestra el Índice de Hándicap calculado con la fórmula USGA, el promedio de score gross y el mejor score de cada jugador. Se alimenta automáticamente de todas las rondas cerradas.',
+      'DINERO — crea un Ranking de Dinero para tu grupo y agrega miembros. Cada ronda cerrada entre miembros del ranking alimenta automáticamente el balance bilateral (quién le debe a quién).',
+      'Puedes filtrar los Rankings de Dinero por período: Histórico (todo), Año en curso o Rango personalizado de fechas. Toca un jugador para ver su desglose bilateral contra cada rival.',
     ],
   },
 };
