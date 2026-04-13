@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { RoundProvider } from "@/contexts/RoundContext";
 import Index from "./pages/Index";
+import Stats from "./pages/Stats";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import JoinRound from "./pages/JoinRound";
@@ -75,6 +76,7 @@ const AppRoutes = () => (
     <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
     <Route path="/terms" element={<TermsOfService />} />
     <Route path="/privacy" element={<PrivacyPolicy />} />
+    <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>

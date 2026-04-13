@@ -2473,6 +2473,10 @@ const Index = () => {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => { setProfileMenuOpen(false); navigate('/stats'); }}>
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  Estadísticas
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => openDialog('handicap')}>
                   <Calculator className="h-4 w-4 mr-2" />
                   Calcular Handicap

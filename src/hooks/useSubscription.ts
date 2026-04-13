@@ -47,6 +47,7 @@ export function useSubscription() {
   const canAccessHistory = !paywallOn || isPro || participatedRoundsCount < 4;
   const canShare = !paywallOn || isPro || organizerRoundsCount < 12;
   const canCreateLeaderboard = !paywallOn || isPro;
+  const canViewStats = !paywallOn || isPro || isFounder;
 
   const startCheckout = useCallback(async (plan: "semestral" | "anual") => {
     const res = await supabase.functions.invoke("create-checkout-session", {
@@ -64,6 +65,7 @@ export function useSubscription() {
     canAccessHistory,
     canShare,
     canCreateLeaderboard,
+    canViewStats,
     organizerRoundsCount,
     participatedRoundsCount,
     countsLoaded,
