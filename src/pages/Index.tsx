@@ -34,6 +34,7 @@ import { useRoundHandicaps } from '@/hooks/useRoundHandicaps';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -2331,6 +2332,10 @@ const Index = () => {
               </div>
             ) : view === 'setup' ? (
               <FriendsLiveHeaderBadge />
+            ) : (view === 'leaderboards' || view === 'rankings' || view === 'stats') ? (
+              <Badge variant="secondary" className="bg-primary-foreground/15 text-primary-foreground border-0 text-sm px-3 py-1">
+                {view === 'leaderboards' ? 'Leaderboards' : view === 'rankings' ? 'Rankings' : 'Estadísticas'}
+              </Badge>
             ) : null}
           </div>
           
