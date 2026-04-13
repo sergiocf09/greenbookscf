@@ -344,19 +344,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   const score = getPlayerScoreForHole(player.id, hole.number);
                   const strokes = score?.strokes || 0;
                   const confirmed = isHoleConfirmedForPlayer(player.id, hole.number);
-                  return (
-                    <td 
-                      key={hole.number}
-                      onClick={() => onHoleClick?.(hole.number)}
-                      className={cn(
-                        'text-center px-1.5 py-1 cursor-pointer',
-                        getScoreColor(strokes, hole.par, confirmed),
-                        getScoreBg(strokes, hole.par, confirmed)
-                      )}
-                    >
-                      {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
-                    </td>
-                  );
+                    return (
+                      <td 
+                        key={hole.number}
+                        onClick={() => onHoleClick?.(hole.number)}
+                        className="text-center px-0.5 py-1 cursor-pointer text-xs"
+                      >
+                        {renderScoreCell(strokes, hole.par, confirmed)}
+                      </td>
+                    );
                 })}
                 <td className="text-center px-2 py-1 font-semibold bg-muted/30">
                   {firstNineTotal || '-'}
@@ -456,13 +452,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                       <td 
                         key={hole.number}
                         onClick={() => onHoleClick?.(hole.number)}
-                        className={cn(
-                          'text-center px-1.5 py-1 cursor-pointer',
-                          getScoreColor(strokes, hole.par, confirmed),
-                          getScoreBg(strokes, hole.par, confirmed)
-                        )}
+                        className="text-center px-0.5 py-1 cursor-pointer text-xs"
                       >
-                        {confirmed ? (strokes > 0 ? strokes : '-') : '-'}
+                        {renderScoreCell(strokes, hole.par, confirmed)}
                       </td>
                     );
                   })}
