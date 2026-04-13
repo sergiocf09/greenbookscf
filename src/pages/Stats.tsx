@@ -52,13 +52,13 @@ const Stats: React.FC = () => {
         <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <GreenBookLogo size="sm" />
+        <GreenBookLogo height={32} />
         <button onClick={() => setProfileOpen(true)} className="p-0 bg-transparent border-none cursor-pointer">
           <PlayerAvatar
-            name={profile?.display_name ?? ''}
             initials={profile?.initials ?? ''}
-            color={profile?.avatar_color ?? '#3B82F6'}
+            background={profile?.avatar_color ?? '#3B82F6'}
             size="sm"
+            isLoggedInUser
           />
         </button>
       </header>
