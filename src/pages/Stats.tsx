@@ -166,13 +166,13 @@ function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats
 
 function KPICard({ icon, label, value, sub, locked }: { icon: React.ReactNode; label: string; value: string; sub?: React.ReactNode; locked?: boolean }) {
   return (
-    <Card className="rounded-xl p-4 shadow-sm relative">
-      <div className="flex items-center gap-2 mb-1">{icon}<span className="text-xs text-muted-foreground">{label}</span></div>
+    <Card className="rounded-xl p-4 shadow-sm relative text-center">
+      <div className="flex items-center justify-center gap-2 mb-1">{icon}<span className="text-xs text-muted-foreground">{label}</span></div>
       <div className="relative">
-        <p className={cn("text-2xl font-bold", locked && "blur-sm select-none")}>{value}</p>
+        <p className={cn("text-2xl font-bold text-center", locked && "blur-sm select-none")}>{value}</p>
         {locked && <Lock className="h-4 w-4 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
       </div>
-      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+      {sub && <div className="text-xs text-muted-foreground mt-1 text-center">{sub}</div>}
     </Card>
   );
 }
