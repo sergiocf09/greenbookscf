@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Settings, Dices, RefreshCw, Trophy } from 'lucide-react';
+import { Settings, Dices, RefreshCw, Trophy, BarChart3 } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
