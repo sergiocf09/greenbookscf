@@ -20,6 +20,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
+import { StatsInlineView } from '@/pages/Stats';
 import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
 import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
@@ -92,7 +93,7 @@ import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings';
+type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
 
 // --- Dialog state reducer ---
@@ -2348,7 +2349,7 @@ const Index = () => {
              )}
              {/* Help + Refresh stacked vertically */}
              <div className="flex flex-col items-center -space-y-1">
-               {view !== 'leaderboards' && view !== 'rankings' && (
+               {view !== 'leaderboards' && view !== 'rankings' && view !== 'stats' && (
                  <Button 
                    variant="ghost" 
                    size="icon" 
@@ -2473,7 +2474,7 @@ const Index = () => {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => { setProfileMenuOpen(false); navigate('/stats'); }}>
+                <DropdownMenuItem onClick={() => { setProfileMenuOpen(false); setView('stats'); }}>
                   <BarChart2 className="h-4 w-4 mr-2" />
                   Estadísticas
                 </DropdownMenuItem>
@@ -3188,6 +3189,11 @@ const Index = () => {
               onNavigateToDetail={(id) => setRankingDetailId(id)}
             />
           )
+        )}
+
+        {/* Stats View */}
+        {view === 'stats' && (
+          <StatsInlineView />
         )}
       </main>
 
