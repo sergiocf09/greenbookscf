@@ -48,7 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle, Sun, Moon } from 'lucide-react';
+import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle, Sun, Moon, BarChart2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
@@ -2473,6 +2473,10 @@ const Index = () => {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => { setProfileMenuOpen(false); navigate('/stats'); }}>
+                  <BarChart2 className="h-4 w-4 mr-2" />
+                  Estadísticas
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => openDialog('handicap')}>
                   <Calculator className="h-4 w-4 mr-2" />
                   Calcular Handicap
