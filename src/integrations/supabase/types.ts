@@ -2061,6 +2061,91 @@ export type Database = {
       get_my_profile_id: { Args: never; Returns: string }
       get_organizer_rounds_closed_count: { Args: never; Returns: number }
       get_participated_rounds_closed_count: { Args: never; Returns: number }
+      get_player_courses_summary: {
+        Args: never
+        Returns: {
+          avg_score: number
+          best_score: number
+          course_id: string
+          course_name: string
+          last_played: string
+          rounds_played: number
+        }[]
+      }
+      get_player_milestones: {
+        Args: never
+        Returns: {
+          best_round_course: string
+          best_round_date: string
+          best_round_score: number
+          birdie_streak_best: number
+          birdies_total: number
+          eagles_total: number
+          handicap_delta: number
+          holes_in_one: number
+          organizer_rounds: number
+          rounds_no_bogey: number
+          rounds_sub_100: number
+          rounds_sub_70: number
+          rounds_sub_80: number
+          rounds_sub_90: number
+          total_holes: number
+          unique_courses: number
+          unique_opponents: number
+        }[]
+      }
+      get_player_recent_rounds: {
+        Args: never
+        Returns: {
+          course_name: string
+          holes_played: number
+          round_date: string
+          total_putts: number
+          total_strokes: number
+          vs_par: number
+        }[]
+      }
+      get_player_score_by_hole: {
+        Args: { p_course_id: string }
+        Returns: {
+          avg_strokes: number
+          avg_vs_par: number
+          hole_number: number
+          par: number
+          rounds_count: number
+        }[]
+      }
+      get_player_stats: {
+        Args: { p_course_id?: string }
+        Returns: {
+          avg_gross_score: number
+          avg_putts_per_gir: number
+          avg_putts_per_round: number
+          avg_score_vs_par: number
+          avg_vs_par_par3: number
+          avg_vs_par_par4: number
+          avg_vs_par_par5: number
+          best_gross_score: number
+          birdies_count: number
+          bogeys_count: number
+          courses_played: number
+          doubles_count: number
+          eagles_count: number
+          gir_pct: number
+          gir_pct_par3: number
+          gir_pct_par4: number
+          gir_pct_par5: number
+          holes_played: number
+          opponents_played: number
+          pars_count: number
+          pct_one_putt: number
+          pct_three_putt_plus: number
+          rounds_played: number
+          scrambling_pct: number
+          worse_count: number
+          worst_gross_score: number
+        }[]
+      }
       get_round_handicap_ranking_stats: {
         Args: { p_round_id: string }
         Returns: {
