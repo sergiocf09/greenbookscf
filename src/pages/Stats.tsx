@@ -5,6 +5,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { usePlayerStats, type PlayerStats, type PlayerMilestone, type CourseSummary, type HoleAvg, type RecentRound } from '@/hooks/usePlayerStats';
 import { isPaywallActive } from '@/lib/paywallConfig';
 import { fmtPct, fmtAvg, fmtVsPar, vsParColor } from '@/lib/statsFormatters';
+import { getNumDifferentialsToUse } from '@/lib/usgaHandicap';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,29 +31,35 @@ export const StatsInlineView: React.FC = () => {
   const { isPro, isFounder } = useSubscription();
   const [courseId, setCourseId] = useState<string | null>(null);
   const { stats, milestones, courses, holeAvgs, recentRounds, loading, error } = usePlayerStats(courseId);
-  const [lowestHcp, setLowestHcp] = useState<number | null>(null);
+  const [hcpInfo, setHcpInfo] = useState<{ totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null>(null);
 
   const canViewStats = isPro || isFounder || !isPaywallActive();
   const selectedCourse = courses.find(c => c.course_id === courseId);
 
-  // Fetch lowest handicap in last 12 months
+  // Fetch handicap index calculation details
   useEffect(() => {
     if (!profile?.id) return;
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-    const dateStr = twelveMonthsAgo.toISOString();
-
     supabase
       .from('handicap_history')
-      .select('handicap')
+      .select('gross_score, differential')
       .eq('profile_id', profile.id)
-      .gte('recorded_at', dateStr)
-      .order('handicap', { ascending: true })
-      .limit(1)
+      .order('recorded_at', { ascending: false })
+      .limit(20)
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          setLowestHcp(data[0].handicap);
+        if (!data || data.length === 0) {
+          setHcpInfo(null);
+          return;
         }
+        const totalRounds = data.length;
+        const used = getNumDifferentialsToUse(totalRounds);
+        const scores = data.map(d => d.gross_score).filter((s): s is number => s != null);
+        // Sort differentials to find which scores are "used" — the lowest differentials
+        const withDiff = data.filter(d => d.differential != null).sort((a, b) => a.differential! - b.differential!);
+        const usedEntries = withDiff.slice(0, used);
+        const usedScores = usedEntries.map(e => e.gross_score).filter((s): s is number => s != null);
+        const lowScore = usedScores.length > 0 ? Math.min(...usedScores) : (scores.length > 0 ? Math.min(...scores) : null);
+        const highScore = usedScores.length > 0 ? Math.max(...usedScores) : (scores.length > 0 ? Math.max(...scores) : null);
+        setHcpInfo({ totalRounds, used, lowScore, highScore });
       });
   }, [profile?.id]);
 
@@ -97,7 +104,7 @@ export const StatsInlineView: React.FC = () => {
         </div>
       ) : (
         <>
-          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} lowestHcp={lowestHcp} />
+          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} hcpInfo={hcpInfo} />
 
           {!canViewStats && <UpgradeBanner onNavigate={() => navigate('/')} />}
 
@@ -127,7 +134,7 @@ const Stats: React.FC = () => {
 export default Stats;
 
 /* ═══════════════ KPI GRID ═══════════════ */
-function KPIGrid({ stats, profile, canViewStats, lowestHcp }: { stats: PlayerStats; profile: any; canViewStats: boolean; lowestHcp: number | null }) {
+function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats; profile: any; canViewStats: boolean; hcpInfo: { totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null }) {
   const handicap = profile?.current_handicap;
   const hcpColor = handicap == null ? 'text-muted-foreground' : handicap < 18 ? 'text-emerald-500' : handicap < 25 ? 'text-yellow-500' : 'text-red-500';
   const girColor = stats.gir_pct == null ? 'text-muted-foreground' : Number(stats.gir_pct) > 50 ? 'text-emerald-500' : Number(stats.gir_pct) > 30 ? 'text-yellow-500' : 'text-red-500';
@@ -136,11 +143,18 @@ function KPIGrid({ stats, profile, canViewStats, lowestHcp }: { stats: PlayerSta
   const parsPct = stats.holes_played > 0 ? (stats.pars_count / stats.holes_played) * 100 : null;
   const bogeysPct = stats.holes_played > 0 ? (stats.bogeys_count / stats.holes_played) * 100 : null;
 
-  const lowestSub = lowestHcp != null ? `lowest (12m): ${lowestHcp.toFixed(1)}` : undefined;
+  const hcpSub = hcpInfo ? (
+    <span className="flex flex-col gap-0.5">
+      <span>{hcpInfo.used} de {hcpInfo.totalRounds} scores</span>
+      {hcpInfo.lowScore != null && hcpInfo.highScore != null && (
+        <span>bajo: {hcpInfo.lowScore} — alto: {hcpInfo.highScore}</span>
+      )}
+    </span>
+  ) : undefined;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap" value={handicap?.toFixed(1) ?? '—'} sub={lowestSub} />
+      <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap Index" value={handicap?.toFixed(1) ?? '—'} sub={hcpSub} />
       <KPICard icon={<BarChart2 className="h-5 w-5 text-primary" />} label="Score Promedio" value={fmtAvg(stats.avg_gross_score)} sub={<span className={vsParColor(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}>vs par: {fmtVsPar(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}</span>} />
       <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="Greens en Reg." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={`P3:${fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)} P4:${fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)} P5:${fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}`} />
       <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={`1-putt:${fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)} 3-putt+:${fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}`} />
@@ -158,7 +172,7 @@ function KPICard({ icon, label, value, sub, locked }: { icon: React.ReactNode; l
         <p className={cn("text-2xl font-bold", locked && "blur-sm select-none")}>{value}</p>
         {locked && <Lock className="h-4 w-4 text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
       </div>
-      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </Card>
   );
 }
@@ -206,11 +220,14 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
             <XAxis type="number" hide />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={55} />
             <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }}
+              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
+              labelStyle={{ color: 'hsl(var(--foreground))' }}
+              itemStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(_value: number, _name: string, props: any) => {
                 const d = props.payload;
-                return [`${d.count} hoyos — ${d.pct}%`, d.name];
+                return [`#${d.count} — ${d.pct}%`, d.name];
               }}
+              labelFormatter={() => ''}
             />
             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
               {data.map((d, i) => (
@@ -253,23 +270,27 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
 /* ═══════════════ HOLE BY HOLE (HORIZONTAL — holes on Y, vs_par on X) ═══════════════ */
 function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; courseName: string }) {
   const colorForVsPar = (v: number) => {
-    if (v <= -1) return '#22c55e';
+    if (v <= -0.25) return '#22c55e';
     if (v <= 0) return 'hsl(var(--muted-foreground))';
     if (v <= 1) return '#eab308';
     return '#ef4444';
   };
 
-  // Data uses avg_vs_par as bar value
   const chartData = holeAvgs.map(h => ({
     ...h,
     label: `${h.hole_number}`,
     vsPar: Number(h.avg_vs_par),
   }));
 
-  const minVal = Math.min(...chartData.map(d => d.vsPar), -1);
-  const maxVal = Math.max(...chartData.map(d => d.vsPar), 1);
-  const domainMin = Math.floor(minVal * 4) / 4;
+  const maxVal = Math.max(...chartData.map(d => d.vsPar), 0.5);
+  const domainMin = -0.25;
   const domainMax = Math.ceil(maxVal * 4) / 4;
+
+  // Generate ticks at 0.25 increments
+  const ticks: number[] = [];
+  for (let t = domainMin; t <= domainMax + 0.01; t += 0.25) {
+    ticks.push(Math.round(t * 100) / 100);
+  }
 
   return (
     <section>
@@ -281,7 +302,8 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
             <XAxis
               type="number"
               domain={[domainMin, domainMax]}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              ticks={ticks}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               tickFormatter={(v: number) => (v > 0 ? `+${v}` : `${v}`)}
             />
             <YAxis
@@ -293,10 +315,17 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
             />
             <ReferenceLine x={0} stroke="hsl(var(--border))" strokeWidth={1} />
             <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }}
+              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
+              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+              itemStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(_v: number, _n: string, props: any) => {
                 const h = props.payload;
-                return [`Avg: ${fmtAvg(h.avg_strokes, 1)} (${fmtVsPar(h.vsPar)})`, `Hoyo ${h.hole_number} (Par ${h.par})`];
+                return [`Avg: ${fmtAvg(h.avg_strokes, 1)} (${fmtVsPar(h.vsPar)})`, ''];
+              }}
+              labelFormatter={(_label: string, payload: any[]) => {
+                if (!payload || payload.length === 0) return '';
+                const h = payload[0]?.payload;
+                return h ? `Hoyo ${h.hole_number} — Par ${h.par}` : '';
               }}
             />
             <Bar dataKey="vsPar" radius={[0, 4, 4, 0]}>
@@ -319,10 +348,10 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '🐦', label: 'Birdies', value: m.birdies_total, zero: true },
     { emoji: '🏆', label: 'Mejor ronda', value: m.best_round_score != null ? `${m.best_round_score}` : '—', sub: m.best_round_course ?? undefined },
     { emoji: '🔥', label: 'Mejor racha', value: `${m.birdie_streak_best}`, sub: 'birdies seguidos', zero: true },
-    { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '📍', label: 'Campos jugados', value: m.unique_courses },
-    { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
     { emoji: '🏌️', label: 'Rondas jugadas', value: roundsPlayed },
+    { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
+    { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '🎯', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: 'Sin bogeys', value: `${m.rounds_no_bogey}`, sub: 'rondas', zero: true },
     { emoji: '📊', label: 'Sub-80', value: m.rounds_sub_80 },
@@ -379,11 +408,11 @@ function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
       <h2 className="text-sm font-semibold text-foreground mb-3">Últimas Rondas</h2>
       <div className="space-y-1.5">
         {rounds.map((r, i) => (
-          <div key={i} className={cn("flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-l-4", borderColor(r.vs_par))}>
-            <span className="text-xs text-muted-foreground w-16 shrink-0">{formatDate(r.round_date)}</span>
-            <span className="text-xs truncate flex-1">{r.course_name}</span>
-            <span className="text-sm font-bold tabular-nums w-8 text-right">{r.total_strokes}</span>
-            <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{r.total_putts}p</span>
+          <div key={i} className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-l-4", borderColor(r.vs_par))}>
+            <span className="text-xs text-muted-foreground w-14 shrink-0">{formatDate(r.round_date)}</span>
+            <span className="text-xs truncate flex-1 min-w-0">{r.course_name}</span>
+            <span className="text-sm font-bold tabular-nums shrink-0">{r.total_strokes}</span>
+            <span className="text-xs text-muted-foreground tabular-nums shrink-0">{r.total_putts}p</span>
           </div>
         ))}
       </div>
