@@ -357,9 +357,9 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '⛳', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : '0', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: '\n', value: `${m.rounds_no_bogey}`, sub: 'Bogey Free', zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_80, sub: "< 80's", zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: '80–89', zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: '90–99', zero: true },
+    { emoji: '📊', label: '\n', value: m.rounds_sub_80, sub: "Rondas < 80's", zero: true },
+    { emoji: '📊', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: 'Rondas 80–89', zero: true },
+    { emoji: '📊', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: 'Rondas 90–99', zero: true },
     { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
   ];
 
@@ -382,7 +382,7 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
                  <span className="text-2xl">{it.emoji}</span>
                  <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
                </div>
-               {it.sub && <p className="text-muted-foreground leading-tight text-base">{it.sub}</p>}
+               {it.sub && <p className="text-muted-foreground leading-tight text-sm">{it.sub}</p>}
                <p className="text-muted-foreground leading-tight text-sm">{it.label}</p>
              </div>
           );
