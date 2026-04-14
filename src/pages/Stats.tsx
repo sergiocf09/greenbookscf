@@ -280,7 +280,7 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
   );
 }
 
-/* ═══════════════ HOLE BY HOLE (HORIZONTAL — holes on Y, vs_par on X) ═══════════════ */
+/* ═══════════════ HOLE BY HOLE (CUSTOM ROWS) ═══════════════ */
 function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; courseName: string }) {
   const colorForVsPar = (v: number) => {
     if (v < 0) return '#16a34a';
@@ -289,71 +289,54 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
     return '#ef4444';
   };
 
-  const chartData = holeAvgs.map(h => ({
-    ...h,
-    label: `${h.hole_number}`,
-    vsPar: Number(h.avg_vs_par),
-  }));
+  const textColorForVsPar = (v: number) => {
+    if (v < 0) return '#15803d';
+    if (v <= 0.5) return '#166534';
+    if (v <= 1.5) return '#854d0e';
+    return '#991b1b';
+  };
 
-  const maxVal = Math.max(...chartData.map(d => d.vsPar), 0.5);
-  const domainMin = -0.25;
-  const domainMax = Math.ceil(maxVal * 4) / 4;
-
-  // Generate ticks at 0.25 increments
-  const ticks: number[] = [];
-  for (let t = domainMin; t <= domainMax + 0.01; t += 0.25) {
-    ticks.push(Math.round(t * 100) / 100);
-  }
+  const maxVsPar = Math.max(...holeAvgs.map(h => Number(h.avg_vs_par)), 0.5);
 
   return (
     <section>
       <h2 className="text-sm font-semibold text-foreground mb-3">Score por Hoyo — {courseName}</h2>
       <Card className="rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={holeAvgs.length * 28 + 30}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 35, right: 15, top: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-            <XAxis
-              type="number"
-              domain={[domainMin, domainMax]}
-              ticks={ticks}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(v: number) => (v > 0 ? `+${v}` : `${v}`)}
-            />
-            <YAxis
-              type="category"
-              dataKey="label"
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              width={30}
-              tickFormatter={(v: string) => `H${v}`}
-            />
-            <ReferenceLine x={0} stroke="hsl(var(--border))" strokeWidth={1} />
-            <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
-              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-              itemStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(_v: number, _n: string, props: any) => {
-                const h = props.payload;
-                return [`Avg ${fmtAvg(h.avg_strokes, 1)} (${fmtVsPar(h.vsPar)})`, null];
-              }}
-              labelFormatter={(_label: string, payload: any[]) => {
-                if (!payload || payload.length === 0) return '';
-                const h = payload[0]?.payload;
-                return h ? `Hoyo ${h.hole_number} — Par ${h.par}` : '';
-              }}
-            />
-            <Bar dataKey="vsPar" radius={[0, 4, 4, 0]}>
-              {chartData.map((d, i) => (
-                <Cell key={i} fill={colorForVsPar(d.vsPar)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-1.5">
+          {holeAvgs.map((h, i) => {
+            const vsPar = Number(h.avg_vs_par);
+            const avgStrokes = Number(h.avg_strokes);
+            const widthPct = Math.max((Math.abs(vsPar) / maxVsPar) * 100, 4);
+            const fill = colorForVsPar(vsPar);
+            const textInside = textColorForVsPar(vsPar);
+            return (
+              <div key={i} className="flex items-center gap-1.5">
+                {/* Hole label with par */}
+                <span className="text-[11px] text-muted-foreground w-[72px] shrink-0 text-right pr-1 tabular-nums">
+                  Hoyo {h.hole_number} <span className="opacity-60">P{h.par}</span>
+                </span>
+                {/* Bar with avg strokes inside */}
+                <div className="flex-1 h-6 rounded bg-muted/30 relative overflow-hidden">
+                  <div
+                    className="h-full rounded flex items-center justify-center transition-all"
+                    style={{ width: `${widthPct}%`, backgroundColor: fill, minWidth: 32 }}
+                  >
+                    <span className="text-[10px] font-bold" style={{ color: textInside }}>{avgStrokes.toFixed(1)}</span>
+                  </div>
+                </div>
+                {/* vs par on the right */}
+                <span className="text-xs font-bold min-w-[36px] text-right shrink-0" style={{ color: fill }}>
+                  {vsPar > 0 ? '+' : ''}{vsPar.toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
         <p className="text-xs text-muted-foreground text-center mt-2">{holeAvgs[0]?.rounds_count ?? 0} rondas registradas en este campo</p>
       </Card>
     </section>
   );
 }
-
 /* ═══════════════ MILESTONES ═══════════════ */
 function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilestone; roundsPlayed: number }) {
   const items = [
