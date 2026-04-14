@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MoveRight, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -357,9 +358,9 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
     { emoji: '⛳', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : '0', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: '\n', value: `${m.rounds_no_bogey}`, sub: 'Bogey Free', zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_80, sub: "Rondas < 80's", zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: 'Rondas 80–89', zero: true },
-    { emoji: '📊', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: 'Rondas 90–99', zero: true },
+    { emoji: '__arrow_down_green', label: '\n', value: m.rounds_sub_80, sub: "Rondas < 80's", zero: true },
+    { emoji: '__arrow_right_amber', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: 'Rondas 80–89', zero: true },
+    { emoji: '__arrow_up_red', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: 'Rondas 90–99', zero: true },
     { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
   ];
 
@@ -378,9 +379,17 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
                  it.special && "border border-amber-500/50 bg-amber-500/10"
                )}
              >
-               <div className="flex items-center justify-center gap-2">
-                 <span className="text-2xl">{it.emoji}</span>
-                 <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
+                <div className="flex items-center justify-center gap-2">
+                  {it.emoji === '__arrow_down_green' ? (
+                    <TrendingDown className="w-6 h-6 text-green-500 animate-bounce" style={{ animationDuration: '2s' }} />
+                  ) : it.emoji === '__arrow_right_amber' ? (
+                    <MoveRight className="w-6 h-6 text-amber-500 animate-pulse" style={{ animationDuration: '1.5s' }} />
+                  ) : it.emoji === '__arrow_up_red' ? (
+                    <TrendingUp className="w-6 h-6 text-red-400 animate-bounce" style={{ animationDuration: '2s' }} />
+                  ) : (
+                    <span className="text-2xl">{it.emoji}</span>
+                  )}
+                  <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
                </div>
                {it.sub && <p className="text-muted-foreground leading-tight text-sm">{it.sub}</p>}
                <p className="text-muted-foreground leading-tight text-sm">{it.label}</p>
