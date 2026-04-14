@@ -20,7 +20,7 @@ import {
   Loader2, BarChart2, MapPin, TrendingDown, Target, Circle, Feather, Minus, Lock, Check, ChevronDown,
 } from 'lucide-react';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, ReferenceLine,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, CartesianGrid, ReferenceLine, LabelList,
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -203,43 +203,52 @@ function UpgradeBanner({ onNavigate }: { onNavigate: () => void }) {
 /* ═══════════════ SCORE DISTRIBUTION ═══════════════ */
 function ScoreDistribution({ stats }: { stats: PlayerStats }) {
   const total = stats.holes_played || 1;
+  const fills = ['hsl(var(--primary))', '#22c55e', 'hsl(var(--muted-foreground))', '#eab308', '#f97316', '#ef4444'];
+  const bgFills = [
+    'hsla(var(--primary)/.15)', 'rgba(34,197,94,.15)', 'hsla(var(--muted-foreground)/.15)',
+    'rgba(234,179,8,.15)', 'rgba(249,115,22,.15)', 'rgba(239,68,68,.15)',
+  ];
   const data = [
-    { name: 'Águilas', count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: 'hsl(var(--primary))' },
-    { name: 'Birdies', count: stats.birdies_count, pct: ((stats.birdies_count / total) * 100).toFixed(1), fill: '#22c55e' },
-    { name: 'Pares', count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: 'hsl(var(--muted-foreground))' },
-    { name: 'Bogeys', count: stats.bogeys_count, pct: ((stats.bogeys_count / total) * 100).toFixed(1), fill: '#eab308' },
-    { name: 'Dobles', count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: '#f97316' },
-    { name: '+3 o peor', count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: '#ef4444' },
+    { name: 'Águilas', count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: fills[0], bg: bgFills[0], border: fills[0] },
+    { name: 'Birdies', count: stats.birdies_count, pct: ((stats.birdies_count / total) * 100).toFixed(1), fill: fills[1], bg: bgFills[1], border: fills[1] },
+    { name: 'Pares', count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: fills[2], bg: bgFills[2], border: fills[2] },
+    { name: 'Bogeys', count: stats.bogeys_count, pct: ((stats.bogeys_count / total) * 100).toFixed(1), fill: fills[3], bg: bgFills[3], border: fills[3] },
+    { name: 'Dobles', count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: fills[4], bg: bgFills[4], border: fills[4] },
+    { name: '+3 o peor', count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: fills[5], bg: bgFills[5], border: fills[5] },
   ];
 
   return (
     <section>
       <h2 className="text-sm font-semibold text-foreground mb-3">Distribución de Resultados</h2>
       <Card className="rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={data} layout="vertical" margin={{ left: 60, right: 40, top: 5, bottom: 5 }}>
-            <XAxis type="number" hide />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={55} />
-            <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-              itemStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(_value: number, _name: string, props: any) => {
-                const d = props.payload;
-                return [`#${d.count} — ${d.pct}%`, null];
-              }}
-              labelFormatter={(_label: string, payload: any[]) => {
-                if (!payload || payload.length === 0) return '';
-                return payload[0]?.payload?.name ?? '';
-              }}
-            />
-            <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-2">
+          {data.map((d, i) => {
+            const maxCount = Math.max(...data.map(x => x.count), 1);
+            const widthPct = Math.max((d.count / maxCount) * 100, 2);
+            return (
+              <div key={i} className="flex items-center gap-2">
+                {/* Percentage badge on the left */}
+                <span
+                  className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-semibold min-w-[52px] shrink-0"
+                  style={{ backgroundColor: d.bg, border: `1px solid ${d.border}`, color: d.fill }}
+                >
+                  {d.pct}%
+                </span>
+                {/* Category name */}
+                <span className="text-xs text-muted-foreground w-[58px] shrink-0 truncate">{d.name}</span>
+                {/* Bar */}
+                <div className="flex-1 h-5 rounded bg-muted/30 relative overflow-hidden">
+                  <div
+                    className="h-full rounded transition-all"
+                    style={{ width: `${widthPct}%`, backgroundColor: d.fill }}
+                  />
+                </div>
+                {/* Incidence count on the right */}
+                <span className="text-xs font-bold text-foreground min-w-[28px] text-right shrink-0">x{d.count}</span>
+              </div>
+            );
+          })}
+        </div>
       </Card>
     </section>
   );
