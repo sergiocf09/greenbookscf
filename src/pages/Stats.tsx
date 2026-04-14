@@ -319,11 +319,11 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
                     className="h-full rounded flex items-center justify-center transition-all"
                     style={{ width: `${widthPct}%`, backgroundColor: fill, minWidth: 32 }}
                   >
-                    <span className="text-[10px] font-bold" style={{ color: textInside }}>{avgStrokes.toFixed(1)}</span>
+                    <span className="font-bold text-sm" style={{ color: textInside }}>{avgStrokes.toFixed(1)}</span>
                   </div>
                 </div>
                 {/* vs par on the right */}
-                <span className="text-xs font-bold min-w-[36px] text-right shrink-0" style={{ color: fill }}>
+                <span className="font-bold min-w-[36px] text-right shrink-0 text-sm" style={{ color: fill }}>
                   {vsPar > 0 ? '+' : ''}{vsPar.toFixed(2)}
                 </span>
               </div>
