@@ -310,8 +310,9 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
             return (
               <div key={i} className="flex items-center gap-1.5">
                 {/* Hole label with par */}
-                <span className="text-[11px] text-muted-foreground w-[72px] shrink-0 text-right pr-1 tabular-nums">
-                  Hoyo {h.hole_number} <span className="opacity-60">P{h.par}</span>
+                <span className="text-[11px] w-[88px] shrink-0 text-right pr-2 tabular-nums">
+                  <span className="text-muted-foreground/70">Hoyo {h.hole_number}</span>{' '}
+                  <span className="text-foreground font-semibold">P{h.par}</span>
                 </span>
                 {/* Bar with avg strokes inside */}
                 <div className="flex-1 h-6 rounded bg-muted/30 relative overflow-hidden">
