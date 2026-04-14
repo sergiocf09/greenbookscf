@@ -370,19 +370,21 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
         {items.map((it, i) => {
           const isZero = (it.zero && (it.value === 0 || it.value === '0'));
           return (
-            <div
-              key={i}
-              className={cn(
-                "bg-muted/30 rounded-xl p-3 text-center",
-                isZero && "opacity-50",
-                it.special && "border border-amber-500/50 bg-amber-500/10"
-              )}
-            >
-              <span className="text-lg">{it.emoji}</span>
-              <p className={cn("text-lg font-bold mt-1", it.special && "text-amber-500")}>{it.value}</p>
-              {it.sub && <p className="text-muted-foreground text-sm">{it.sub}</p>}
-              <p className="text-muted-foreground text-sm">{it.label}</p>
-            </div>
+             <div
+               key={i}
+               className={cn(
+                 "bg-muted/30 rounded-xl px-3 py-2 text-center",
+                 isZero && "opacity-50",
+                 it.special && "border border-amber-500/50 bg-amber-500/10"
+               )}
+             >
+               <div className="flex items-center justify-center gap-2">
+                 <span className="text-2xl">{it.emoji}</span>
+                 <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
+               </div>
+               {it.sub && <p className="text-muted-foreground text-xs leading-tight">{it.sub}</p>}
+               <p className="text-muted-foreground text-xs leading-tight">{it.label}</p>
+             </div>
           );
         })}
       </div>
