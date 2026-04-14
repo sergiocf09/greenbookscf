@@ -19,9 +19,7 @@ import {
 import {
   Loader2, BarChart2, MapPin, TrendingDown, Target, Circle, Feather, Minus, Lock, Check, ChevronDown,
 } from 'lucide-react';
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, ReferenceLine,
-} from 'recharts';
+
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -203,43 +201,52 @@ function UpgradeBanner({ onNavigate }: { onNavigate: () => void }) {
 /* ═══════════════ SCORE DISTRIBUTION ═══════════════ */
 function ScoreDistribution({ stats }: { stats: PlayerStats }) {
   const total = stats.holes_played || 1;
+  const fills = ['hsl(var(--primary))', '#22c55e', 'hsl(var(--muted-foreground))', '#eab308', '#f97316', '#ef4444'];
+  const bgFills = [
+    'hsla(var(--primary)/.15)', 'rgba(34,197,94,.15)', 'hsla(var(--muted-foreground)/.15)',
+    'rgba(234,179,8,.15)', 'rgba(249,115,22,.15)', 'rgba(239,68,68,.15)',
+  ];
   const data = [
-    { name: 'Águilas', count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: 'hsl(var(--primary))' },
-    { name: 'Birdies', count: stats.birdies_count, pct: ((stats.birdies_count / total) * 100).toFixed(1), fill: '#22c55e' },
-    { name: 'Pares', count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: 'hsl(var(--muted-foreground))' },
-    { name: 'Bogeys', count: stats.bogeys_count, pct: ((stats.bogeys_count / total) * 100).toFixed(1), fill: '#eab308' },
-    { name: 'Dobles', count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: '#f97316' },
-    { name: '+3 o peor', count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: '#ef4444' },
+    { name: 'Águilas', count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: fills[0], bg: bgFills[0], border: fills[0] },
+    { name: 'Birdies', count: stats.birdies_count, pct: ((stats.birdies_count / total) * 100).toFixed(1), fill: fills[1], bg: bgFills[1], border: fills[1] },
+    { name: 'Pares', count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: fills[2], bg: bgFills[2], border: fills[2] },
+    { name: 'Bogeys', count: stats.bogeys_count, pct: ((stats.bogeys_count / total) * 100).toFixed(1), fill: fills[3], bg: bgFills[3], border: fills[3] },
+    { name: 'Dobles', count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: fills[4], bg: bgFills[4], border: fills[4] },
+    { name: '+3 o peor', count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: fills[5], bg: bgFills[5], border: fills[5] },
   ];
 
   return (
     <section>
       <h2 className="text-sm font-semibold text-foreground mb-3">Distribución de Resultados</h2>
       <Card className="rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={data} layout="vertical" margin={{ left: 60, right: 40, top: 5, bottom: 5 }}>
-            <XAxis type="number" hide />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={55} />
-            <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-              itemStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(_value: number, _name: string, props: any) => {
-                const d = props.payload;
-                return [`#${d.count} — ${d.pct}%`, null];
-              }}
-              labelFormatter={(_label: string, payload: any[]) => {
-                if (!payload || payload.length === 0) return '';
-                return payload[0]?.payload?.name ?? '';
-              }}
-            />
-            <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-2">
+          {data.map((d, i) => {
+            const maxCount = Math.max(...data.map(x => x.count), 1);
+            const widthPct = Math.max((d.count / maxCount) * 100, 2);
+            return (
+              <div key={i} className="flex items-center gap-2">
+                {/* Percentage badge on the left */}
+                <span
+                  className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-semibold min-w-[52px] shrink-0"
+                  style={{ backgroundColor: d.bg, border: `1px solid ${d.border}`, color: d.fill }}
+                >
+                  {d.pct}%
+                </span>
+                {/* Category name */}
+                <span className="text-xs text-muted-foreground w-[58px] shrink-0 truncate">{d.name}</span>
+                {/* Bar */}
+                <div className="flex-1 h-5 rounded bg-muted/30 relative overflow-hidden">
+                  <div
+                    className="h-full rounded transition-all"
+                    style={{ width: `${widthPct}%`, backgroundColor: d.fill }}
+                  />
+                </div>
+                {/* Incidence count on the right */}
+                <span className="text-xs font-bold text-foreground min-w-[28px] text-right shrink-0">x{d.count}</span>
+              </div>
+            );
+          })}
+        </div>
       </Card>
     </section>
   );
@@ -271,7 +278,7 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
   );
 }
 
-/* ═══════════════ HOLE BY HOLE (HORIZONTAL — holes on Y, vs_par on X) ═══════════════ */
+/* ═══════════════ HOLE BY HOLE (CUSTOM ROWS) ═══════════════ */
 function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; courseName: string }) {
   const colorForVsPar = (v: number) => {
     if (v < 0) return '#16a34a';
@@ -280,71 +287,54 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
     return '#ef4444';
   };
 
-  const chartData = holeAvgs.map(h => ({
-    ...h,
-    label: `${h.hole_number}`,
-    vsPar: Number(h.avg_vs_par),
-  }));
+  const textColorForVsPar = (v: number) => {
+    if (v < 0) return '#15803d';
+    if (v <= 0.5) return '#166534';
+    if (v <= 1.5) return '#854d0e';
+    return '#991b1b';
+  };
 
-  const maxVal = Math.max(...chartData.map(d => d.vsPar), 0.5);
-  const domainMin = -0.25;
-  const domainMax = Math.ceil(maxVal * 4) / 4;
-
-  // Generate ticks at 0.25 increments
-  const ticks: number[] = [];
-  for (let t = domainMin; t <= domainMax + 0.01; t += 0.25) {
-    ticks.push(Math.round(t * 100) / 100);
-  }
+  const maxVsPar = Math.max(...holeAvgs.map(h => Number(h.avg_vs_par)), 0.5);
 
   return (
     <section>
       <h2 className="text-sm font-semibold text-foreground mb-3">Score por Hoyo — {courseName}</h2>
       <Card className="rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={holeAvgs.length * 28 + 30}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 35, right: 15, top: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-            <XAxis
-              type="number"
-              domain={[domainMin, domainMax]}
-              ticks={ticks}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(v: number) => (v > 0 ? `+${v}` : `${v}`)}
-            />
-            <YAxis
-              type="category"
-              dataKey="label"
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              width={30}
-              tickFormatter={(v: string) => `H${v}`}
-            />
-            <ReferenceLine x={0} stroke="hsl(var(--border))" strokeWidth={1} />
-            <Tooltip
-              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12, color: 'hsl(var(--foreground))' }}
-              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-              itemStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(_v: number, _n: string, props: any) => {
-                const h = props.payload;
-                return [`Avg ${fmtAvg(h.avg_strokes, 1)} (${fmtVsPar(h.vsPar)})`, null];
-              }}
-              labelFormatter={(_label: string, payload: any[]) => {
-                if (!payload || payload.length === 0) return '';
-                const h = payload[0]?.payload;
-                return h ? `Hoyo ${h.hole_number} — Par ${h.par}` : '';
-              }}
-            />
-            <Bar dataKey="vsPar" radius={[0, 4, 4, 0]}>
-              {chartData.map((d, i) => (
-                <Cell key={i} fill={colorForVsPar(d.vsPar)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-1.5">
+          {holeAvgs.map((h, i) => {
+            const vsPar = Number(h.avg_vs_par);
+            const avgStrokes = Number(h.avg_strokes);
+            const widthPct = Math.max((Math.abs(vsPar) / maxVsPar) * 100, 4);
+            const fill = colorForVsPar(vsPar);
+            const textInside = textColorForVsPar(vsPar);
+            return (
+              <div key={i} className="flex items-center gap-1.5">
+                {/* Hole label with par */}
+                <span className="text-[11px] text-muted-foreground w-[72px] shrink-0 text-right pr-1 tabular-nums">
+                  Hoyo {h.hole_number} <span className="opacity-60">P{h.par}</span>
+                </span>
+                {/* Bar with avg strokes inside */}
+                <div className="flex-1 h-6 rounded bg-muted/30 relative overflow-hidden">
+                  <div
+                    className="h-full rounded flex items-center justify-center transition-all"
+                    style={{ width: `${widthPct}%`, backgroundColor: fill, minWidth: 32 }}
+                  >
+                    <span className="text-[10px] font-bold" style={{ color: textInside }}>{avgStrokes.toFixed(1)}</span>
+                  </div>
+                </div>
+                {/* vs par on the right */}
+                <span className="text-xs font-bold min-w-[36px] text-right shrink-0" style={{ color: fill }}>
+                  {vsPar > 0 ? '+' : ''}{vsPar.toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
         <p className="text-xs text-muted-foreground text-center mt-2">{holeAvgs[0]?.rounds_count ?? 0} rondas registradas en este campo</p>
       </Card>
     </section>
   );
 }
-
 /* ═══════════════ MILESTONES ═══════════════ */
 function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilestone; roundsPlayed: number }) {
   const items = [
