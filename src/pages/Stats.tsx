@@ -227,7 +227,7 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
               <div key={i} className="flex items-center gap-2">
                 {/* Percentage badge on the left */}
                 <span
-                  className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-semibold min-w-[52px] shrink-0"
+                  className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs min-w-[52px] shrink-0 font-bold"
                   style={{ backgroundColor: d.bg, border: `1px solid ${d.border}`, color: d.fill }}
                 >
                   {d.pct}%
@@ -242,7 +242,7 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
                   />
                 </div>
                 {/* Incidence count on the right */}
-                <span className="text-xs font-bold text-foreground min-w-[28px] text-right shrink-0">x{d.count}</span>
+                <span className="text-xs font-bold text-foreground min-w-[28px] text-right shrink-0"># {d.count}</span>
               </div>
             );
           })}
