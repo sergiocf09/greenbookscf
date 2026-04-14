@@ -382,8 +382,8 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
                  <span className="text-2xl">{it.emoji}</span>
                  <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
                </div>
-               {it.sub && <p className="text-muted-foreground text-xs leading-tight">{it.sub}</p>}
-               <p className="text-muted-foreground text-xs leading-tight">{it.label}</p>
+               {it.sub && <p className="text-muted-foreground leading-tight text-base">{it.sub}</p>}
+               <p className="text-muted-foreground leading-tight text-sm">{it.label}</p>
              </div>
           );
         })}
