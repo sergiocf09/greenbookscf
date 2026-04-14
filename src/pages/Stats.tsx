@@ -355,7 +355,7 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '🏌️', label: 'Rondas jugadas', value: roundsPlayed },
     { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
-    { emoji: '🎯', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : 'Ninguno aún', special: m.holes_in_one > 0 },
+    { emoji: '⛳', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : '0', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: '\n', value: `${m.rounds_no_bogey}`, sub: 'Bogey Free', zero: true },
     { emoji: '📊', label: '\n', value: m.rounds_sub_80, sub: "< 80's", zero: true },
     { emoji: '📊', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: '80–89', zero: true },
