@@ -156,8 +156,8 @@ function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       <KPICard icon={<TrendingDown className={cn("h-5 w-5", hcpColor)} />} label="Handicap Index" value={handicap?.toFixed(1) ?? '—'} sub={hcpSub} />
       <KPICard icon={<BarChart2 className="h-5 w-5 text-primary" />} label="Score Promedio" value={fmtAvg(stats.avg_gross_score)} sub={<span className={vsParColor(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}>vs par: {fmtVsPar(stats.avg_score_vs_par != null ? Number(stats.avg_score_vs_par) : null)}</span>} />
-      <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="Greens en Reg." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={<span className="flex flex-col gap-0.5"><span>P3: {fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)}</span><span>P4: {fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)}</span><span>P5: {fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}</span></span>} />
-      <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={<span className="flex flex-col gap-0.5"><span>1-putt: {fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)}</span><span>3-putt+: {fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}</span><span>Avg/ronda: {fmtAvg(stats.avg_putts_per_round != null ? Number(stats.avg_putts_per_round) : null, 1)}</span></span>} />
+      <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="G.I.R." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={<span className="flex flex-col gap-0.5"><span>P3: {fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)}</span><span>P4: {fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)}</span><span>P5: {fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}</span></span>} />
+      <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label="Putts por GIR" value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={<span className="flex flex-col gap-0.5"><span>1-putt: {fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)}</span><span>3-putt+: {fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}</span><span className="font-bold">Avg/ronda: {fmtAvg(stats.avg_putts_per_round != null ? Number(stats.avg_putts_per_round) : null, 1)}</span></span>} />
       <KPICard icon={<Feather className="h-5 w-5 text-emerald-500" />} label="% Birdies" value={fmtPct(birdiesPct)} sub={`Total: ${stats.birdies_count} birdies`} locked={!canViewStats} />
       <KPICard icon={<Minus className="h-5 w-5 text-muted-foreground" />} label="% Pares" value={fmtPct(parsPct)} sub={`Bogeys: ${fmtPct(bogeysPct, 0)}`} locked={!canViewStats} />
     </div>
@@ -380,8 +380,8 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
             >
               <span className="text-lg">{it.emoji}</span>
               <p className={cn("text-lg font-bold mt-1", it.special && "text-amber-500")}>{it.value}</p>
-              {it.sub && <p className="text-[10px] text-muted-foreground">{it.sub}</p>}
-              <p className="text-xs text-muted-foreground">{it.label}</p>
+              {it.sub && <p className="text-muted-foreground text-sm">{it.sub}</p>}
+              <p className="text-muted-foreground text-sm">{it.label}</p>
             </div>
           );
         })}
