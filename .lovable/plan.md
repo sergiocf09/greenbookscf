@@ -1,69 +1,50 @@
 
 
-# Plan: Correcciones Putts General, HandicapModeSelector unificado, y Sliding Equipo
+# Plan: Persistencia Putts General, Medal General por segmentos, Sliding Equipo y UX
 
-## Resumen — 4 problemas a resolver
+## 6 problemas a resolver
 
-1. **Putts General no aparece en resultados** — La sección de rendering solo calcula `total`, no `segments`. Falta renderizar Front/Back/Total por separado cuando `segmentMode === 'segments'`.
-2. **Foursomes y Carritos** usan botón viejo "Base Cero / Full Hándicap" en lugar del `HandicapModeSelector` con las 4 modalidades.
-3. **Sliding Equipo** no tiene implementación — al seleccionarlo no ocurre nada. Debe leer los hándicaps de la matriz (HandicapMatrix) y aplicar la fórmula de dividir entre 2.
-4. **UX del selector**: "Individual" debe decir "Full Hándicap" y el `Select` debe mostrar claramente la opción seleccionada.
+### 1. Putts General no persiste (useBetConfigPersistence.ts)
 
----
+`puttsGeneral` no está incluido ni en el save (`configToSave`) ni en el load (`loadBetConfig`). Se necesita:
+- **Save**: Agregar `puttsGeneral` al objeto `configToSave` (junto a `medalGeneral`, `stableford`, etc.)
+- **Load**: Agregar bloque `if (dbConfig.puttsGeneral)` para restaurar la config al cargar
 
-## Cambio 1 — Putts General en resultados (GroupBetsCard.tsx)
+### 2. Medal General — segmentMode no persiste ni se muestra por segmentos
 
-**Problema**: La sección de Putts General (líneas 2293-2367) solo calcula el total de putts. Cuando `segmentMode === 'segments'`, debe calcular ganadores por Front 9, Back 9 y Total 18 por separado, con montos independientes.
+**Persistencia**: `medalGeneral` en el save no incluye `segmentMode`, `frontAmount`, ni `backAmount`. Agregar estos 3 campos al objeto de save y al bloque de load.
 
-**Fix**: Replicar la lógica de Medal General por segmentos: filtrar scores por rango de hoyos (1-9, 10-18, 1-18), calcular ganador de cada segmento, mostrar hasta 3 bloques de resultado.
+**Dashboard de resultados** (GroupBetsCard.tsx): `calculateMedalForPool` solo calcula el total. Cuando `segmentMode === 'segments'`, debe calcular 3 resultados: Front 9 (hoyos 1-9), Back 9 (hoyos 10-18), Total 18 — exactamente igual que ya hace Putts General. Modificar la sección de rendering de Medal General para mostrar los 3 bloques de resultado con montos independientes cuando está en modo segments.
 
----
+### 3. Sliding Equipo — cálculo incorrecto
 
-## Cambio 2 — HandicapModeSelector en Foursomes y Carritos (ParejasBets.tsx)
+**Bug**: `HandicapModeSelector` calcula slidings con `hcpMap[teamA[0]] - hcpMap[teamB[0]]` (diferencias de handicap del setup). Esto es INCORRECTO — debe usar los valores de la **matriz bilateral** (`sliding_current`), que ya están reflejados en `teamHandicaps` de la bet config o disponibles vía `bilateralHandicaps`.
 
-**Problema**: `TeamPressureCard` (línea 808-833) y `CarritosCard` (línea 1068-1092) usan inline `isBaseCero` toggle. Sixes y Vegas ya usan `HandicapModeSelector`.
+**Fix**: El `HandicapModeSelector` necesita recibir un prop adicional `bilateralHandicaps` (o `slidingMatrix`) con los slidings reales. Para sliding equipo:
+- Leer los valores del sliding bilateral: qué da A1 a B1, A1 a B2, A2 a B1, A2 a B2
+- Estos valores ya están en `config.bilateralHandicaps` como `sliding_current`
+- Pasar `bilateralHandicaps` desde ParejasBets al `HandicapModeSelector`
+- Usar esos valores reales en vez de recalcular desde handicaps base
 
-**Fix**: Reemplazar el botón inline por `<HandicapModeSelector>` en ambas cards:
-- `TeamPressureCard`: pasar `bet.handicapConfig`, `bet.teamHandicaps`, `bet.teamA`, `bet.teamB`. `onUpdate` actualiza `teamHandicaps` y `handicapConfig`.
-- `CarritosCard`: mismo patrón. Requiere agregar `handicapConfig` como prop y pasarlo desde el padre.
-- También en **Loba** (Wolf, línea 526-543), reemplazar el toggle por `HandicapModeSelector` adaptado a su estructura de `playerHandicaps[]`.
+Ejemplo del usuario: SC→FO=+3, SC→SP=-3, CE→FO=+1, CE→SP=+1. Total=2, /2=1. Resultado: 1 golpe a Fernando (mayor sliding recibido en equipo B).
 
----
+### 4. UX del selector — valor seleccionado no visible
 
-## Cambio 3 — Sliding Equipo: implementación real (ParejasBets.tsx + handicapUtils.ts)
+El `Select` de ShadcnUI con `SelectValue` debería mostrar el texto del item seleccionado automáticamente. El problema puede ser que `value={mode}` no coincide con el `SelectItem value` después de re-renders o que `handicapConfig` no se persiste correctamente en el state.
 
-**Problema**: `HandicapModeSelector.applyMode` no tiene caso para `slidingEquipo` (línea 1205 termina sin handler).
+**Fix**: Verificar que `handicapConfig` se incluye en `teamPressures.bets[].handicapConfig`, `carritosTeams[].handicapConfig`, `sixesBets[].handicapConfig`, `vegasBets[].handicapConfig` y `wolfSetup.handicapConfig` tanto en save como en load de `useBetConfigPersistence.ts`. Si estos campos ya se serializan con spread (`...dbConfig.wolfSetup`), verificar que no se pierden.
 
-**Solución simplificada** (según instrucción del usuario): usar los hándicaps que ya están en la matriz de handicaps (HandicapMatrix). Para acceder a estos datos desde ParejasBets:
+### 5. Reordenar tabs de navegación (Index.tsx)
 
-- La matriz de hándicaps almacena strokes por par de jugadores vía `sliding_current` y `getStrokesForCell`.
-- `HandicapModeSelector` necesita recibir un prop `matrixStrokes?: Record<string, number>` que mapee `playerId → playerId → strokes` (o los 4 sliding cruzados entre equipos).
-- Alternativamente (más simple): el `HandicapModeSelector` lee directamente de la **HandicapMatrix** existente en el state del padre. Dado que ParejasBets no tiene acceso, lo más pragmático es:
-  1. Tomar los hándicaps individuales que cada jugador tiene en la matriz (que ya están reflejados en `player.handicap` o en `teamHandicaps` cuando se aplicó sliding global).
-  2. Calcular los 4 cruces: A↔C, A↔D, B↔C, B↔D usando diferencias de hándicap.
-  3. Sumar los 4, dividir entre 2, y asignar al jugador con mayor hándicap recibido.
-  
-- Se usa `calcSlidingTeamDifferential` de `handicapUtils.ts` pasándole los slidings calculados a partir de los hándicaps individuales de cada jugador.
+Orden actual: Setup → Apuestas → Hándicaps → Scorecard → Resultados
 
-**Lógica**: Cuando `slidingEquipo` se selecciona:
-```
-// Para cada par cruzado, el sliding es la diferencia de HCP
-const hcpA1 = player A1 handicap, hcpA2 = A2, hcpB1 = B1, hcpB2 = B2
-slidings = { ac: hcpA1 - hcpB1, ad: hcpA1 - hcpB2, bc: hcpA2 - hcpB1, bd: hcpA2 - hcpB2 }
-// Positivo = A le da golpes a B
-result = calcSlidingTeamDifferential(slidings, teamA, teamB, hcpMap)
-// result.teamHandicaps asigna los strokes al jugador receptor
-```
+Nuevo orden: **Setup → Hándicaps → Apuestas → Scorecard → Resultados**
 
-Cuando hay medio punto (`result.hasHalf`): se marca en `handicapConfig.slidingHalfPointMode` y se muestra un toggle.
+Cambiar líneas 2537-2541 en Index.tsx para intercambiar las posiciones de los tabs `betsetup` y `handicaps`.
 
----
+### 6. Medal General — segmentMode persistence en save
 
-## Cambio 4 — UX del selector (ParejasBets.tsx)
-
-- Renombrar `"Individual"` → `"Full Hándicap"` en el `SelectItem`.
-- Verificar que `SelectValue` muestra correctamente el texto seleccionado. El componente ShadcnUI `Select` ya maneja esto, pero confirmar que `value={mode}` corresponde al `SelectItem value`.
-- Asegurar que el texto visible cuando el menú está colapsado refleja la selección actual.
+Agregar `segmentMode`, `frontAmount`, `backAmount` tanto al save como al load de `medalGeneral` en `useBetConfigPersistence.ts`.
 
 ---
 
@@ -71,6 +52,8 @@ Cuando hay medio punto (`result.hasHalf`): se marca en `handicapConfig.slidingHa
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/components/bets/GroupBetsCard.tsx` | Putts General: rendering por segmentos F9/B9/T18 |
-| `src/components/setup/bets/ParejasBets.tsx` | HandicapModeSelector en Foursomes, Carritos y Loba; implementar `slidingEquipo`; rename "Individual" → "Full Hándicap" |
+| `src/hooks/useBetConfigPersistence.ts` | Persistencia de `puttsGeneral`, `medalGeneral.segmentMode/frontAmount/backAmount`, verificar `handicapConfig` en team bets |
+| `src/components/bets/GroupBetsCard.tsx` | Medal General: rendering por segmentos F9/B9/T18 cuando `segmentMode === 'segments'` |
+| `src/components/setup/bets/ParejasBets.tsx` | Sliding Equipo: usar `bilateralHandicaps` reales; UX del selector |
+| `src/pages/Index.tsx` | Reordenar tabs: Setup → Hándicaps → Apuestas → Scorecard → Resultados |
 
