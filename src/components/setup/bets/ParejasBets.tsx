@@ -487,7 +487,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
 
           <div className="flex items-center justify-between mt-2">
-            <Label className="text-[10px] font-semibold text-primary">Modo de scoring</Label>
+            <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
             <Select value={config.wolfSetup?.scoringMode ?? 'lowBall'}
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, scoringMode: v as WolfScoringMode } as any)}>
               <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
@@ -521,7 +521,29 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             };
             return (
               <div className="mt-2 space-y-1">
-                <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                  {(() => {
+                    const hcps = activeIds.map(pid => getHcp(pid));
+                    const fullHcps = activeIds.map(pid => players.find(p => p.id === pid)?.handicap ?? 0);
+                    const isBaseCero = hcps.some(h => h === 0) && hcps.some((h, i) => h !== fullHcps[i]);
+                    return (
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                        onClick={() => {
+                          if (isBaseCero) {
+                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: players.find(p => p.id === pid)?.handicap ?? 0 }));
+                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                          } else {
+                            const minHcp = Math.min(...fullHcps.map((_, i) => hcps[i]));
+                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: Math.round(getHcp(pid) - minHcp) }));
+                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                          }
+                        }}>
+                        {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+                      </Button>
+                    );
+                  })()}
+                </div>
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                   {activeIds.map(pid => {
                     const p = players.find(pl => pl.id === pid);
@@ -783,21 +805,32 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">Foursome {index + 1}</Label>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-            onClick={() => {
-              const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
-              if (allIds.length < 2) return;
-              const hcps = allIds.map(id => bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-              const minHcp = Math.min(...hcps);
-              const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
-              allIds.forEach(id => {
-                const h = bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                newHandicaps[id] = Math.round(h - minHcp);
-              });
-              onUpdate({ teamHandicaps: newHandicaps });
-            }}>
-            Base Cero
-          </Button>
+          {(() => {
+            const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
+            const isBaseCero = allIds.length >= 2 && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
+            return (
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => {
+                  if (allIds.length < 2) return;
+                  if (isBaseCero) {
+                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
+                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  } else {
+                    const hcps = allIds.map(id => bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+                    const minHcp = Math.min(...hcps);
+                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
+                    allIds.forEach(id => {
+                      const h = bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
+                      newHandicaps[id] = Math.round(h - minHcp);
+                    });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  }
+                }}>
+                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+              </Button>
+            );
+          })()}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -1032,21 +1065,32 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">{label}</Label>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-            onClick={() => {
-              const allIds = [...teamA, ...teamB].filter(Boolean);
-              if (allIds.length < 2) return;
-              const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-              const minHcp = Math.min(...hcps);
-              const newHandicaps: Record<string, number> = { ...teamHandicaps };
-              allIds.forEach(id => {
-                const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                newHandicaps[id] = Math.round(h - minHcp);
-              });
-              onUpdate({ teamHandicaps: newHandicaps });
-            }}>
-            Base Cero
-          </Button>
+          {(() => {
+            const allIds = [...teamA, ...teamB].filter(Boolean);
+            const isBaseCero = allIds.length >= 2 && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
+            return (
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => {
+                  if (allIds.length < 2) return;
+                  if (isBaseCero) {
+                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
+                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  } else {
+                    const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+                    const minHcp = Math.min(...hcps);
+                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
+                    allIds.forEach(id => {
+                      const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
+                      newHandicaps[id] = Math.round(h - minHcp);
+                    });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  }
+                }}>
+                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+              </Button>
+            );
+          })()}
           {onRemove && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -1153,7 +1197,7 @@ const SixesBetCard: React.FC<{
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
       <Select value={bet.scoringMode} onValueChange={(v) => onUpdate({ scoringMode: v as SixesScoringMode })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -1312,6 +1356,18 @@ const VegasBetCard: React.FC<{
       </AlertDialog>
     </div>
 
+    {/* Modalidad FIRST */}
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
+        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
+          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
     <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
     <div className="flex items-center gap-2">
@@ -1367,17 +1423,6 @@ const VegasBetCard: React.FC<{
     <div className="flex items-center gap-2">
       <Switch checked={bet.birdieMultiplier} onCheckedChange={(v) => onUpdate({ birdieMultiplier: v })} />
       <Label className="text-xs">Multiplicador Birdie (×2)</Label>
-    </div>
-
-    <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Variante</Label>
-      <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
-        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
-          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
-        </SelectContent>
-      </Select>
     </div>
 
     <div className="space-y-2">
