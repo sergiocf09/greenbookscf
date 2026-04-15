@@ -1167,6 +1167,17 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
 };
 
 /* ─── Shared Handicap Mode Selector ─── */
+// Import the team differential and sliding functions
+import { BilateralHandicap } from '@/types/golf';
+import { calcTeamDifferential as calcTeamDifferentialFn, calcSlidingTeamDifferential as calcSlidingTeamDifferentialFn } from '@/lib/handicapUtils';
+
+const HANDICAP_MODE_LABELS: Record<string, string> = {
+  individual: 'Full Hándicap',
+  baseCero: 'Base Cero',
+  diferencialEquipo: 'Diferencial Equipo',
+  slidingEquipo: 'Sliding Equipo',
+};
+
 const HandicapModeSelector: React.FC<{
   allIds: string[];
   players: Player[];
@@ -1176,8 +1187,35 @@ const HandicapModeSelector: React.FC<{
   onUpdateHandicapConfig: (cfg: TeamHandicapConfig) => void;
   teamA?: [string, string];
   teamB?: [string, string];
-}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, teamA, teamB }) => {
+  bilateralHandicaps?: BilateralHandicap[];
+}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, teamA, teamB, bilateralHandicaps }) => {
   const mode = handicapConfig?.mode ?? 'individual';
+
+  // Helper: get bilateral strokes A gives to B from bilateralHandicaps array
+  const getBilateralStrokes = (aId: string, bId: string): number => {
+    if (!bilateralHandicaps || bilateralHandicaps.length === 0) {
+      // Fallback: use player handicap differences
+      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
+      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
+      return hcpA - hcpB;
+    }
+    // Find the pair in bilateralHandicaps
+    const pair = bilateralHandicaps.find(
+      bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
+    );
+    if (!pair) {
+      // Fallback to handicap difference
+      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
+      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
+      return hcpA - hcpB;
+    }
+    // If A is playerA in the pair, strokes = A.hcp - B.hcp (positive = A gives to B)
+    if (pair.playerAId === aId) {
+      return pair.playerAHandicap - pair.playerBHandicap;
+    }
+    // Reverse: B is playerA, so strokes A gives B = -(pairA.hcp - pairB.hcp)
+    return pair.playerBHandicap - pair.playerAHandicap;
+  };
 
   const applyMode = (newMode: TeamHandicapMode) => {
     const newConfig: TeamHandicapConfig = { ...handicapConfig, mode: newMode };
@@ -1204,14 +1242,14 @@ const HandicapModeSelector: React.FC<{
     } else if (newMode === 'slidingEquipo' && teamA && teamB) {
       const hcpMap: Record<string, number> = {};
       allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
-      // Calculate cross-pair slidings from individual handicap differences
+      // Use bilateral matrix values for cross-pair slidings
       const slidings = {
-        ac: hcpMap[teamA[0]] - hcpMap[teamB[0]],
-        ad: hcpMap[teamA[0]] - hcpMap[teamB[1]],
-        bc: hcpMap[teamA[1]] - hcpMap[teamB[0]],
-        bd: hcpMap[teamA[1]] - hcpMap[teamB[1]],
+        ac: getBilateralStrokes(teamA[0], teamB[0]),
+        ad: getBilateralStrokes(teamA[0], teamB[1]),
+        bc: getBilateralStrokes(teamA[1], teamB[0]),
+        bd: getBilateralStrokes(teamA[1], teamB[1]),
       };
-      const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, handicapConfig?.slidingHalfPointMode ?? 'roundDown');
+      const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, handicapConfig?.slidingHalfPointMode ?? 'halfPoint');
       onUpdateHandicaps(result.teamHandicaps);
       if (result.hasHalf) {
         onUpdateHandicapConfig({ ...newConfig, slidingHalfPointMode: handicapConfig?.slidingHalfPointMode ?? 'halfPoint' });
@@ -1223,7 +1261,11 @@ const HandicapModeSelector: React.FC<{
     <div className="flex items-center justify-between">
       <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
       <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
-        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-7 w-44 text-[11px]">
+          <SelectValue placeholder={HANDICAP_MODE_LABELS[mode] || 'Seleccionar'}>
+            {HANDICAP_MODE_LABELS[mode] || mode}
+          </SelectValue>
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="individual">Full Hándicap</SelectItem>
           <SelectItem value="baseCero">Base Cero</SelectItem>
@@ -1234,9 +1276,6 @@ const HandicapModeSelector: React.FC<{
     </div>
   );
 };
-
-// Import the team differential and sliding functions
-import { calcTeamDifferential as calcTeamDifferentialFn, calcSlidingTeamDifferential as calcSlidingTeamDifferentialFn } from '@/lib/handicapUtils';
 
 /* ─── Sixes Bet Card ─── */
 const SixesBetCard: React.FC<{
