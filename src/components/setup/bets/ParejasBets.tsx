@@ -293,6 +293,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 totalAmount={config.carritos.totalAmount}
                 scoringType={config.carritos.scoringType}
                 teamHandicaps={config.carritos.teamHandicaps || {}}
+                handicapConfig={config.carritos.handicapConfig}
                 players={players}
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
@@ -311,6 +312,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 totalAmount={team.totalAmount}
                 scoringType={team.scoringType}
                 teamHandicaps={team.teamHandicaps || {}}
+                handicapConfig={team.handicapConfig}
                 players={players}
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
