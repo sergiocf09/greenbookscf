@@ -1086,6 +1086,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   onUpdate,
   onRemove,
   bilateralHandicaps,
+  getStrokesForLocalPair,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
