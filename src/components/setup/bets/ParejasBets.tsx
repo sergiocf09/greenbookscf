@@ -324,6 +324,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
                 onRemove={() => removeCarritosTeam(team.id)}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
               />
             ))}
 
@@ -1297,20 +1298,65 @@ const HandicapModeSelector: React.FC<{
     }
   };
 
+  // Detect half-point for sliding equipo
+  const slidingHasHalf = React.useMemo(() => {
+    if (mode !== 'slidingEquipo' || !teamA || !teamB) return false;
+    const hcpMap: Record<string, number> = {};
+    allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+    const slidings = {
+      ac: getBilateralStrokes(teamA[0], teamB[0]),
+      ad: getBilateralStrokes(teamA[0], teamB[1]),
+      bc: getBilateralStrokes(teamA[1], teamB[0]),
+      bd: getBilateralStrokes(teamA[1], teamB[1]),
+    };
+    const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, 'halfPoint');
+    return result.hasHalf;
+  }, [mode, teamA, teamB, allIds, players, getBilateralStrokes]);
+
+  const currentHalfMode = handicapConfig?.slidingHalfPointMode ?? 'roundDown';
+
+  const toggleHalfPoint = (checked: boolean) => {
+    const newHalfMode = checked ? 'halfPoint' : 'roundDown';
+    if (!teamA || !teamB) return;
+    const hcpMap: Record<string, number> = {};
+    allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+    const slidings = {
+      ac: getBilateralStrokes(teamA[0], teamB[0]),
+      ad: getBilateralStrokes(teamA[0], teamB[1]),
+      bc: getBilateralStrokes(teamA[1], teamB[0]),
+      bd: getBilateralStrokes(teamA[1], teamB[1]),
+    };
+    const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, newHalfMode as 'halfPoint' | 'roundDown');
+    const newConfig: TeamHandicapConfig = { ...handicapConfig, mode: 'slidingEquipo', slidingHalfPointMode: newHalfMode as 'halfPoint' | 'roundDown' };
+    updateBoth(result.teamHandicaps, newConfig);
+  };
+
   return (
-    <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
-      <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
-        <SelectTrigger className="h-7 w-44 text-[11px]">
-          <SelectValue placeholder="Seleccionar" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="individual">Full Hándicap</SelectItem>
-          <SelectItem value="baseCero">Base Cero</SelectItem>
-          <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
-          <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+        <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
+          <SelectTrigger className="h-7 w-44 text-[11px]">
+            <SelectValue placeholder="Seleccionar" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="individual">Full Hándicap</SelectItem>
+            <SelectItem value="baseCero">Base Cero</SelectItem>
+            <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
+            <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {mode === 'slidingEquipo' && slidingHasHalf && (
+        <div className="flex items-center justify-between bg-muted/40 rounded-md px-2 py-1.5">
+          <Label className="text-[10px] text-muted-foreground">Jugar medio punto</Label>
+          <Switch
+            checked={currentHalfMode === 'halfPoint'}
+            onCheckedChange={toggleHalfPoint}
+            className="scale-75"
+          />
+        </div>
+      )}
     </div>
   );
 };
