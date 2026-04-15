@@ -1196,46 +1196,52 @@ const HandicapModeSelector: React.FC<{
   handicapConfig?: TeamHandicapConfig;
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
   onUpdateHandicapConfig: (cfg: TeamHandicapConfig) => void;
+  onUpdateBoth?: (hcps: Record<string, number>, cfg: TeamHandicapConfig) => void;
   teamA?: [string, string];
   teamB?: [string, string];
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, teamA, teamB, bilateralHandicaps }) => {
+}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, onUpdateBoth, teamA, teamB, bilateralHandicaps }) => {
   const mode = handicapConfig?.mode ?? 'individual';
 
   // Helper: get bilateral strokes A gives to B from bilateralHandicaps array
   const getBilateralStrokes = (aId: string, bId: string): number => {
     if (!bilateralHandicaps || bilateralHandicaps.length === 0) {
-      // Fallback: use player handicap differences
       const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
       const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
       return hcpA - hcpB;
     }
-    // Find the pair in bilateralHandicaps
     const pair = bilateralHandicaps.find(
       bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
     );
     if (!pair) {
-      // Fallback to handicap difference
       const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
       const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
       return hcpA - hcpB;
     }
-    // If A is playerA in the pair, strokes = A.hcp - B.hcp (positive = A gives to B)
     if (pair.playerAId === aId) {
       return pair.playerAHandicap - pair.playerBHandicap;
     }
-    // Reverse: B is playerA, so strokes A gives B = -(pairA.hcp - pairB.hcp)
     return pair.playerBHandicap - pair.playerAHandicap;
+  };
+
+  // Single atomic update to avoid race conditions between handicapConfig and teamHandicaps
+  const updateBoth = (newHcps: Record<string, number>, newCfg: TeamHandicapConfig) => {
+    if (onUpdateBoth) {
+      onUpdateBoth(newHcps, newCfg);
+    } else {
+      // Fallback: update config first, then handicaps (may still race)
+      onUpdateHandicapConfig(newCfg);
+      onUpdateHandicaps(newHcps);
+    }
   };
 
   const applyMode = (newMode: TeamHandicapMode) => {
     const newConfig: TeamHandicapConfig = { ...handicapConfig, mode: newMode };
-    onUpdateHandicapConfig(newConfig);
 
     if (newMode === 'individual') {
       const newHcps: Record<string, number> = {};
       allIds.forEach(id => { newHcps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
-      onUpdateHandicaps(newHcps);
+      updateBoth(newHcps, newConfig);
     } else if (newMode === 'baseCero') {
       const hcps = allIds.map(id => players.find(p => p.id === id)?.handicap ?? 0);
       const minHcp = Math.min(...hcps);
@@ -1244,16 +1250,15 @@ const HandicapModeSelector: React.FC<{
         const h = players.find(p => p.id === id)?.handicap ?? 0;
         newHcps[id] = Math.round(h - minHcp);
       });
-      onUpdateHandicaps(newHcps);
+      updateBoth(newHcps, newConfig);
     } else if (newMode === 'diferencialEquipo' && teamA && teamB) {
       const hcpMap: Record<string, number> = {};
       allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
       const { teamHandicaps: result } = calcTeamDifferentialFn(teamA, teamB, hcpMap, handicapConfig?.diferencialRecipientOverride);
-      onUpdateHandicaps(result);
+      updateBoth(result, newConfig);
     } else if (newMode === 'slidingEquipo' && teamA && teamB) {
       const hcpMap: Record<string, number> = {};
       allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
-      // Use bilateral matrix values for cross-pair slidings
       const slidings = {
         ac: getBilateralStrokes(teamA[0], teamB[0]),
         ad: getBilateralStrokes(teamA[0], teamB[1]),
@@ -1261,10 +1266,13 @@ const HandicapModeSelector: React.FC<{
         bd: getBilateralStrokes(teamA[1], teamB[1]),
       };
       const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, handicapConfig?.slidingHalfPointMode ?? 'halfPoint');
-      onUpdateHandicaps(result.teamHandicaps);
-      if (result.hasHalf) {
-        onUpdateHandicapConfig({ ...newConfig, slidingHalfPointMode: handicapConfig?.slidingHalfPointMode ?? 'halfPoint' });
-      }
+      const finalConfig = result.hasHalf
+        ? { ...newConfig, slidingHalfPointMode: handicapConfig?.slidingHalfPointMode ?? 'halfPoint' as const }
+        : newConfig;
+      updateBoth(result.teamHandicaps, finalConfig);
+    } else {
+      // No handicap changes, just update config
+      onUpdateHandicapConfig(newConfig);
     }
   };
 
