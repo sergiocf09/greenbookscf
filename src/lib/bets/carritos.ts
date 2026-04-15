@@ -2,7 +2,7 @@
  * Carritos (Team Bets) Calculator — lowball/highball/combined/all with 50/50 settlement
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { calculateStrokesPerHole } from '../handicapUtils';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '../handicapUtils';
 import { BetSummary } from './shared';
 
 export const calculateCarritosBets = (
@@ -23,6 +23,7 @@ export const calculateCarritosBets = (
     scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
     teamHandicaps?: Record<string, number>;
     useTeamHandicaps?: boolean;
+    handicapConfig?: { mode?: string; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
   }> = [];
 
   const disabledIds = new Set(config.disabledTeamBetIds || []);
@@ -36,6 +37,7 @@ export const calculateCarritosBets = (
         teamA: c.teamA, teamB: c.teamB,
         frontAmount: c.frontAmount, backAmount: c.backAmount, totalAmount: c.totalAmount,
         scoringType: c.scoringType, teamHandicaps: c.teamHandicaps, useTeamHandicaps: c.useTeamHandicaps,
+        handicapConfig: c.handicapConfig,
       });
     }
   }
@@ -49,6 +51,7 @@ export const calculateCarritosBets = (
         teamA: team.teamA, teamB: team.teamB,
         frontAmount: team.frontAmount, backAmount: team.backAmount, totalAmount: team.totalAmount,
         scoringType: team.scoringType, teamHandicaps: team.teamHandicaps, useTeamHandicaps: true,
+        handicapConfig: team.handicapConfig,
       });
     }
   });
