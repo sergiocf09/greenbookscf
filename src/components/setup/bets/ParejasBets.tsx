@@ -1291,7 +1291,8 @@ const SixesBetCard: React.FC<{
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<SixesBetInstance>) => void;
   onRemove: () => void;
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => {
+  bilateralHandicaps?: BilateralHandicap[];
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => {
   const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
   const allPlayerIds = set1 ? [...set1.team1, ...set1.team2].filter(Boolean) : [];
   const th = bet.teamHandicaps ?? {};
@@ -1356,7 +1357,7 @@ const SixesBetCard: React.FC<{
         onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
         teamA={set1?.team1}
         teamB={set1?.team2}
-        bilateralHandicaps={config.bilateralHandicaps}
+        bilateralHandicaps={bilateralHandicaps}
       />
     )}
 
@@ -1473,7 +1474,8 @@ const VegasBetCard: React.FC<{
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<VegasBetInstance>) => void;
   onRemove: () => void;
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
+  bilateralHandicaps?: BilateralHandicap[];
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
       <Label className="text-xs font-medium">Vegas {index + 1}</Label>
@@ -1574,7 +1576,7 @@ const VegasBetCard: React.FC<{
         onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
-        bilateralHandicaps={config.bilateralHandicaps}
+        bilateralHandicaps={bilateralHandicaps}
       />
     )}
 
