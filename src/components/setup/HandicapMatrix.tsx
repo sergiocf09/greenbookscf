@@ -195,6 +195,22 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const hasRoundPlayerIds = roundPlayerIds.size > 0;
   const hasPendingChanges = pendingChanges.size > 0;
 
+  // Clear savedChanges when realtime updates confirm the persisted values match
+  useEffect(() => {
+    if (savedChanges.size === 0) return;
+    const stillPending = new Map<string, number>();
+    for (const [key, expectedStrokes] of savedChanges.entries()) {
+      const [a, b] = key.split('::');
+      const persisted = getStrokesForLocalPair(a, b);
+      if (persisted !== expectedStrokes) {
+        stillPending.set(key, expectedStrokes);
+      }
+    }
+    if (stillPending.size !== savedChanges.size) {
+      setSavedChanges(stillPending);
+    }
+  }, [savedChanges, getStrokesForLocalPair]);
+
   /** Save all pending changes */
   const saveAllChanges = useCallback(async () => {
     if (pendingChanges.size === 0) return;
@@ -224,6 +240,14 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     setSaving(false);
+    // Move pending → saved (keep them visible to slidingApplied until realtime confirms)
+    setSavedChanges(prev => {
+      const next = new Map(prev);
+      for (const [key, strokes] of pendingChanges.entries()) {
+        next.set(key, strokes);
+      }
+      return next;
+    });
     setPendingChanges(new Map());
     if (errorCount === 0) toast.success(`${successCount} hándicap(s) guardado(s)`);
     else toast.error(`Error guardando ${errorCount} par(es)`);
