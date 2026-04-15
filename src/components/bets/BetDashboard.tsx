@@ -421,14 +421,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const sixesBetSummaries = useMemo(() => {
     if (isHistorical || !sixesHook?.sixesConfig) return [];
     if ((effectiveBetConfig.sixesBets ?? []).length === 0) return [];
-    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course);
+    const th = effectiveBetConfig.sixesBets?.[0]?.teamHandicaps;
+    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course, th);
   }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets]);
 
   // Vegas summaries
   const vegasBetSummaries = useMemo(() => {
     if (isHistorical || !vegasHook?.vegasConfig) return [];
     if ((effectiveBetConfig.vegasBets ?? []).length === 0) return [];
-    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course);
+    const th = effectiveBetConfig.vegasBets?.[0]?.teamHandicaps;
+    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th);
   }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets]);
 
   const betSummaries = useMemo(
@@ -3289,8 +3291,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         };
         const hookHasEmptySets = hookCfg && (!hookCfg.sets || hookCfg.sets.length < 3 || hookCfg.sets.some(s => [...s.team1, ...s.team2].some(id => !id)));
         const mergedSixesConfig = (hookHasEmptySets || !hookCfg) && betInst?.sets?.length >= 3
-          ? { ...baseCfg, sets: betInst.sets, scoringMode: betInst.scoringMode as any, cobro: betInst.cobro as any, amount: betInst.amount, useHandicap: betInst.useHandicap }
-          : baseCfg;
+          ? { ...baseCfg, sets: betInst.sets, scoringMode: betInst.scoringMode as any, cobro: betInst.cobro as any, amount: betInst.amount, useHandicap: betInst.useHandicap, teamHandicaps: betInst.teamHandicaps }
+          : { ...baseCfg, teamHandicaps: betInst?.teamHandicaps };
         if (!mergedSixesConfig.sets?.length) return null;
         return (
           <SixesResultsCard
@@ -3331,6 +3333,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         };
         const mergedVegasConfig = {
           ...baseCfg,
+          teamHandicaps: betInst?.teamHandicaps,
           ...(betInst ? {
             variant: betInst.variant as any,
             valuePerPoint: betInst.valuePerPoint,
