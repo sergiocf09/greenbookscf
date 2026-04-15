@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance, TeamHandicapMode, TeamHandicapConfig } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
@@ -1167,6 +1167,63 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   );
 };
 
+/* ─── Shared Handicap Mode Selector ─── */
+const HandicapModeSelector: React.FC<{
+  allIds: string[];
+  players: Player[];
+  teamHandicaps: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
+  onUpdateHandicaps: (hcps: Record<string, number>) => void;
+  onUpdateHandicapConfig: (cfg: TeamHandicapConfig) => void;
+  teamA?: [string, string];
+  teamB?: [string, string];
+}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, teamA, teamB }) => {
+  const mode = handicapConfig?.mode ?? 'individual';
+
+  const applyMode = (newMode: TeamHandicapMode) => {
+    const newConfig: TeamHandicapConfig = { ...handicapConfig, mode: newMode };
+    onUpdateHandicapConfig(newConfig);
+
+    if (newMode === 'individual') {
+      const newHcps: Record<string, number> = {};
+      allIds.forEach(id => { newHcps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+      onUpdateHandicaps(newHcps);
+    } else if (newMode === 'baseCero') {
+      const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+      const minHcp = Math.min(...hcps);
+      const newHcps: Record<string, number> = {};
+      allIds.forEach(id => {
+        const h = players.find(p => p.id === id)?.handicap ?? 0;
+        newHcps[id] = Math.round(h - minHcp);
+      });
+      onUpdateHandicaps(newHcps);
+    } else if (newMode === 'diferencialEquipo' && teamA && teamB) {
+      const hcpMap: Record<string, number> = {};
+      allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+      const { teamHandicaps: result } = calcTeamDifferentialFn(teamA, teamB, hcpMap, handicapConfig?.diferencialRecipientOverride);
+      onUpdateHandicaps(result);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+      <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
+        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="individual">Individual</SelectItem>
+          <SelectItem value="baseCero">Base Cero</SelectItem>
+          <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
+          <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
+// Import the team differential function
+import { calcTeamDifferential as calcTeamDifferentialFn } from '@/lib/handicapUtils';
+
 /* ─── Sixes Bet Card ─── */
 const SixesBetCard: React.FC<{
   index: number;
@@ -1175,7 +1232,12 @@ const SixesBetCard: React.FC<{
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<SixesBetInstance>) => void;
   onRemove: () => void;
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => (
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove }) => {
+  const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
+  const allPlayerIds = set1 ? [...set1.team1, ...set1.team2].filter(Boolean) : [];
+  const th = bet.teamHandicaps ?? {};
+
+  return (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
       <Label className="text-xs font-medium">Sixes {index + 1}</Label>
@@ -1224,6 +1286,20 @@ const SixesBetCard: React.FC<{
       <Label className="text-xs">Jugar con hándicap</Label>
     </div>
 
+    {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
+    {bet.useHandicap && allPlayerIds.length === 4 && (
+      <HandicapModeSelector
+        allIds={allPlayerIds}
+        players={players}
+        teamHandicaps={th}
+        handicapConfig={bet.handicapConfig}
+        onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+        onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+        teamA={set1?.team1}
+        teamB={set1?.team2}
+      />
+    )}
+
     <AmountInput label="Monto" value={bet.amount} onChange={(v) => onUpdate({ amount: v })} />
 
     <div className="flex items-center gap-2">
@@ -1257,7 +1333,6 @@ const SixesBetCard: React.FC<{
     <div className="space-y-3">
       {(() => {
         // Check if sets 2&3 are auto-generated from set 1
-        const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
         const set1Complete = set1 && set1.team1[0] && set1.team1[1] && set1.team2[0] && set1.team2[1];
         const gn = (id: string) => players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
 
@@ -1266,7 +1341,9 @@ const SixesBetCard: React.FC<{
             {/* Set 1 - always editable */}
             <div className="space-y-2 p-2 rounded-lg bg-muted/30">
               <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
-              <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']} teamHandicaps={{}} players={players} playerOptions={playerOptions}
+              <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']}
+                teamHandicaps={bet.useHandicap ? th : {}}
+                players={players} playerOptions={playerOptions}
                 onUpdateTeamA={(t) => {
                   const currentSets = bet.sets ?? [];
                   const newSets: SixesSetAssignment[] = ([1, 2, 3] as const).map(n => {
@@ -1297,7 +1374,7 @@ const SixesBetCard: React.FC<{
                   }
                   onUpdate({ sets: newSets });
                 }}
-                onUpdateHandicaps={() => {}} />
+                onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })} />
             </div>
 
             {/* All 3 sets - read-only preview when auto-generated */}
@@ -1325,7 +1402,8 @@ const SixesBetCard: React.FC<{
       })()}
     </div>
   </div>
-);
+  );
+};
 
 /* ─── Vegas Bet Card ─── */
 const VegasBetCard: React.FC<{
@@ -1425,17 +1503,31 @@ const VegasBetCard: React.FC<{
       <Label className="text-xs">Multiplicador Birdie (×2)</Label>
     </div>
 
+    {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
+    {bet.useHandicap && bet.playerAId && bet.playerBId && bet.playerCId && bet.playerDId && (
+      <HandicapModeSelector
+        allIds={[bet.playerAId, bet.playerBId, bet.playerCId, bet.playerDId]}
+        players={players}
+        teamHandicaps={bet.teamHandicaps ?? {}}
+        handicapConfig={bet.handicapConfig}
+        onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+        onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+        teamA={[bet.playerAId, bet.playerBId]}
+        teamB={[bet.playerCId, bet.playerDId]}
+      />
+    )}
+
     <div className="space-y-2">
       <Label className="text-[10px] font-semibold text-primary">Jugadores</Label>
       <TeamColumns
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
-        teamHandicaps={{}}
+        teamHandicaps={bet.useHandicap ? (bet.teamHandicaps ?? {}) : {}}
         players={players}
         playerOptions={playerOptions}
         onUpdateTeamA={([a, b]) => onUpdate({ playerAId: a, playerBId: b })}
         onUpdateTeamB={([c, d]) => onUpdate({ playerCId: c, playerDId: d })}
-        onUpdateHandicaps={() => {}}
+        onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
       />
       <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
     </div>

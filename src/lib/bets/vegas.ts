@@ -13,14 +13,16 @@ export const formVegasNumber = (s1: number, s2: number): number => {
 
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
-  scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+  scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
 ): number => {
   const player = players.find(p => p.id === playerId);
   if (!player) return 0;
   const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
   if (!hs?.strokes) return 0;
   if (!useHandicap) return hs.strokes;
-  const sp = calculateStrokesPerHole(player.handicap, course);
+  const hcp = teamHandicaps?.[playerId] ?? player.handicap;
+  const sp = calculateStrokesPerHole(Math.floor(hcp), course);
   return hs.strokes - (sp[holeNumber - 1] ?? 0);
 };
 
@@ -52,14 +54,15 @@ const resolveVegasHole = (
   team1: [string,string], team2: [string,string],
   holeNumber: number, setNumber: 1|2|3|null,
   players: Player[], scores: Map<string,PlayerScore[]>,
-  course: GolfCourse, config: VegasConfig
+  course: GolfCourse, config: VegasConfig,
+  teamHandicaps?: Record<string, number>,
 ): VegasHoleDetail => {
   const [pA, pB] = team1, [pC, pD] = team2;
   // Net scores used for Vegas number formation
-  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap);
-  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap);
-  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap);
-  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap);
+  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
 
   // Raw gross scores for popover display
   const gA = getScore(pA, holeNumber, players, scores, course, false);
@@ -69,7 +72,8 @@ const resolveVegasHole = (
 
   const pd = (id: string, gross: number, net: number) => {
     const p = players.find(x => x.id === id);
-    const sp = calculateStrokesPerHole(p?.handicap ?? 0, course);
+    const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
+    const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     const strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
     return { gross, strokes, net };
   };
@@ -103,7 +107,8 @@ const resolveVegasHole = (
 
 export const buildVegasSetResults = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: VegasConfig, course: GolfCourse
+  config: VegasConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): VegasSetResult[] => {
   const { playerAId: A, playerBId: B, playerCId: C, playerDId: D } = config;
   if (!A || !B || !C || !D) return [];
@@ -118,7 +123,7 @@ export const buildVegasSetResults = (
 
   return sets.map(s => {
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
-    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
+    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config, teamHandicaps));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
     const totalAmount = (() => {
       if (!config.useSegmentAmounts || config.variant !== 'fixed') {
@@ -136,10 +141,11 @@ export const buildVegasSetResults = (
 
 export const calculateVegasBets = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: VegasConfig, course: GolfCourse
+  config: VegasConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
-  buildVegasSetResults(players, scores, config, course).forEach(sr => {
+  buildVegasSetResults(players, scores, config, course, teamHandicaps).forEach(sr => {
     if (sr.winner === 'tied' || sr.totalAmount === 0) return;
     const winners = [...(sr.winner === 'team1' ? sr.team1 : sr.team2)];
     const losers  = [...(sr.winner === 'team1' ? sr.team2 : sr.team1)];

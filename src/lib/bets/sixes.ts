@@ -13,30 +13,37 @@ const getSixesSetAmount = (config: SixesConfig, setNumber: 1 | 2 | 3): number =>
 
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
-  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
+  halfStrokeHole?: number | null,
 ): number | null => {
   const player = players.find(p => p.id === playerId);
   if (!player) return null;
   const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
   if (!hs?.strokes) return null;
   if (!useHandicap) return hs.strokes;
-  const sp = calculateStrokesPerHole(player.handicap, course);
-  return hs.strokes - (sp[holeNumber - 1] ?? 0);
+  const hcp = teamHandicaps?.[playerId] ?? player.handicap;
+  const sp = calculateStrokesPerHole(Math.floor(hcp), course);
+  let strokesReceived = sp[holeNumber - 1] ?? 0;
+  // Half-point logic: on the halfStrokeHole, don't add stroke yet — handled at hole resolution level
+  return hs.strokes - strokesReceived;
 };
 
 const resolveHole = (
   t1: [string,string], t2: [string,string], holeNumber: number,
   players: Player[], scores: Map<string,PlayerScore[]>,
-  course: GolfCourse, mode: SixesConfig['scoringMode'], useHandicap: boolean
+  course: GolfCourse, mode: SixesConfig['scoringMode'], useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
 ): SixesHoleDetail => {
-  const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap)).filter((s): s is number => s !== null);
-  const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap)).filter((s): s is number => s !== null);
+  const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
+  const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
 
   const scoresByPlayer = [...t1, ...t2].map(id => {
     const player = players.find(p => p.id === id)!;
     const hs = (scores.get(id) ?? []).find(s => s.holeNumber === holeNumber);
     const gross = hs?.strokes ?? 0;
-    const sp = calculateStrokesPerHole(player.handicap, course);
+    const hcp = teamHandicaps?.[id] ?? player.handicap;
+    const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     const strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
     return { playerId: id, playerName: player.name, gross, strokes, net: gross - strokes, teamSide: (t1.includes(id) ? 'team1' : 'team2') as 'team1' | 'team2' };
   });
@@ -67,7 +74,8 @@ const resolveHole = (
 
 export const buildSixesSetResults = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: SixesConfig, course: GolfCourse
+  config: SixesConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): SixesSetResult[] => {
   if (!config?.sets?.length) return [];
   return ([1,2,3] as const).map(setNum => {
@@ -75,7 +83,7 @@ export const buildSixesSetResults = (
     if (!assignment) return null;
     const [start, end] = SET_RANGES[setNum];
     const holes = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-    const details = holes.map(h => resolveHole(assignment.team1, assignment.team2, h, players, scores, course, config.scoringMode, config.useHandicap));
+    const details = holes.map(h => resolveHole(assignment.team1, assignment.team2, h, players, scores, course, config.scoringMode, config.useHandicap, teamHandicaps));
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);
     const winner = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
@@ -89,11 +97,12 @@ export const buildSixesSetResults = (
 
 export const calculateSixesBets = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: SixesConfig, course: GolfCourse
+  config: SixesConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): BetSummary[] => {
   if (!config?.sets?.length) return [];
   const summaries: BetSummary[] = [];
-  buildSixesSetResults(players, scores, config, course).forEach(sr => {
+  buildSixesSetResults(players, scores, config, course, teamHandicaps).forEach(sr => {
     if (config.cobro === 'per_set') {
       if (!sr.setWinner || sr.setWinner === 'tied') return;
       const winners = [...(sr.setWinner === 'team1' ? sr.team1 : sr.team2)];

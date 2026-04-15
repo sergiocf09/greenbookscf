@@ -132,6 +132,15 @@ export type GroupBetOverride = {
   [K in keyof BetConfig]?: Partial<BetConfig[K]>;
 };
 
+// Team Handicap Modalities (shared across all pair bets)
+export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
+
+export interface TeamHandicapConfig {
+  mode: TeamHandicapMode;
+  diferencialRecipientOverride?: string; // playerId when both players tie in HCP
+  slidingHalfPointMode?: 'roundDown' | 'halfPoint'; // only when mode === 'slidingEquipo'
+}
+
 // Carritos team bet config
 export interface CarritosTeamBet {
   id: string;
@@ -142,6 +151,7 @@ export interface CarritosTeamBet {
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
   enabled: boolean;
 }
 
@@ -378,6 +388,7 @@ export interface TeamPressuresBet {
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
   enabled: boolean;
   continua?: boolean; // When true + matchOnly: single 18-hole match, early-win detection
+  handicapConfig?: TeamHandicapConfig;
   // Optional sub-modalities
   unitsConfig?: TeamPressureUnitsConfig;
   oyesesConfig?: TeamPressureOyesesConfig;
@@ -685,6 +696,7 @@ export interface WolfSetupConfig {
   playerOrder?: string[]; // Custom rotation order (player IDs)
   hole18Redemption?: boolean; // Allow biggest loser to take wolf on H18, solo, ×3
   playerHandicaps?: { playerId: string; handicap: number }[];
+  handicapConfig?: TeamHandicapConfig;
 }
 
 // =====================================================
@@ -803,7 +815,6 @@ export interface NinesSetupConfig {
 }
 
 // =====================================================
-// MULTI-INSTANCE BET TYPES
 // =====================================================
 
 export interface SixesBetInstance {
@@ -817,6 +828,8 @@ export interface SixesBetInstance {
   set3Amount?: number;
   useHandicap: boolean;
   sets: SixesSetAssignment[];
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface VegasBetInstance {
@@ -835,6 +848,8 @@ export interface VegasBetInstance {
   playerBId: string;
   playerCId: string;
   playerDId: string;
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface NinesBetInstance {
