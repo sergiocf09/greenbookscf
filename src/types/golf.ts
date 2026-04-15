@@ -142,6 +142,7 @@ export interface CarritosTeamBet {
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps?: Record<string, number>;
+  handicapConfig?: import('./golf').TeamHandicapConfig;
   enabled: boolean;
 }
 
@@ -803,6 +804,18 @@ export interface NinesSetupConfig {
 }
 
 // =====================================================
+// TEAM HANDICAP MODALITIES (shared across all pair bets)
+// =====================================================
+
+export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
+
+export interface TeamHandicapConfig {
+  mode: TeamHandicapMode;
+  diferencialRecipientOverride?: string; // playerId when both players tie in HCP
+  slidingHalfPointMode?: 'roundDown' | 'halfPoint'; // only when mode === 'slidingEquipo'
+}
+
+// =====================================================
 // MULTI-INSTANCE BET TYPES
 // =====================================================
 
@@ -817,6 +830,8 @@ export interface SixesBetInstance {
   set3Amount?: number;
   useHandicap: boolean;
   sets: SixesSetAssignment[];
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface VegasBetInstance {
@@ -835,6 +850,8 @@ export interface VegasBetInstance {
   playerBId: string;
   playerCId: string;
   playerDId: string;
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface NinesBetInstance {
