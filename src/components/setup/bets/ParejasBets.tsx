@@ -818,6 +818,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   onUpdate,
   onRemove,
   bilateralHandicaps,
+  getStrokesForLocalPair,
 }) => {
   return (
     <div className={cn(
@@ -1067,6 +1068,7 @@ interface CarritosCardProps {
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
   onRemove?: () => void;
   bilateralHandicaps?: BilateralHandicap[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1319,6 +1321,7 @@ const SixesBetCard: React.FC<{
   onUpdate: (updates: Partial<SixesBetInstance>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => {
   const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
   const allPlayerIds = set1 ? [...set1.team1, ...set1.team2].filter(Boolean) : [];
@@ -1503,7 +1506,8 @@ const VegasBetCard: React.FC<{
   onUpdate: (updates: Partial<VegasBetInstance>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => (
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
       <Label className="text-xs font-medium">Vegas {index + 1}</Label>
