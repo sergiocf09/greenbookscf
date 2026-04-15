@@ -63,7 +63,11 @@ const resolveHole = (
     const gross = hs?.strokes ?? 0;
     const hcp = teamHandicaps?.[id] ?? player.handicap;
     const sp = calculateStrokesPerHole(Math.floor(hcp), course);
-    const strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    let strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    // Show half-dot on the halfStrokeHole for the player receiving the half point
+    if (useHandicap && strokes === 0 && halfStrokeHole === holeNumber && typeof hcp === 'number' && hcp % 1 !== 0) {
+      strokes = 0.5;
+    }
     return { playerId: id, playerName: player.name, gross, strokes, net: gross - strokes, teamSide: (t1.includes(id) ? 'team1' : 'team2') as 'team1' | 'team2' };
   });
 

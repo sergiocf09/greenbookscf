@@ -95,7 +95,11 @@ const resolveVegasHole = (
     const p = players.find(x => x.id === id);
     const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
     const sp = calculateStrokesPerHole(Math.floor(hcp), course);
-    const strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    let strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    // Show half-dot on the halfStrokeHole for the player receiving the half point
+    if (config.useHandicap && strokes === 0 && halfStrokeHole === holeNumber && typeof hcp === 'number' && hcp % 1 !== 0) {
+      strokes = 0.5;
+    }
     return { gross, strokes, net };
   };
   const dA = pd(pA, gA, sA), dB = pd(pB, gB, sB), dC = pd(pC, gC, sC), dD = pd(pD, gD, sD);
