@@ -13,30 +13,37 @@ const getSixesSetAmount = (config: SixesConfig, setNumber: 1 | 2 | 3): number =>
 
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
-  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+  scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
+  halfStrokeHole?: number | null,
 ): number | null => {
   const player = players.find(p => p.id === playerId);
   if (!player) return null;
   const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
   if (!hs?.strokes) return null;
   if (!useHandicap) return hs.strokes;
-  const sp = calculateStrokesPerHole(player.handicap, course);
-  return hs.strokes - (sp[holeNumber - 1] ?? 0);
+  const hcp = teamHandicaps?.[playerId] ?? player.handicap;
+  const sp = calculateStrokesPerHole(Math.floor(hcp), course);
+  let strokesReceived = sp[holeNumber - 1] ?? 0;
+  // Half-point logic: on the halfStrokeHole, don't add stroke yet — handled at hole resolution level
+  return hs.strokes - strokesReceived;
 };
 
 const resolveHole = (
   t1: [string,string], t2: [string,string], holeNumber: number,
   players: Player[], scores: Map<string,PlayerScore[]>,
-  course: GolfCourse, mode: SixesConfig['scoringMode'], useHandicap: boolean
+  course: GolfCourse, mode: SixesConfig['scoringMode'], useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
 ): SixesHoleDetail => {
-  const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap)).filter((s): s is number => s !== null);
-  const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap)).filter((s): s is number => s !== null);
+  const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
+  const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
 
   const scoresByPlayer = [...t1, ...t2].map(id => {
     const player = players.find(p => p.id === id)!;
     const hs = (scores.get(id) ?? []).find(s => s.holeNumber === holeNumber);
     const gross = hs?.strokes ?? 0;
-    const sp = calculateStrokesPerHole(player.handicap, course);
+    const hcp = teamHandicaps?.[id] ?? player.handicap;
+    const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     const strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
     return { playerId: id, playerName: player.name, gross, strokes, net: gross - strokes, teamSide: (t1.includes(id) ? 'team1' : 'team2') as 'team1' | 'team2' };
   });
