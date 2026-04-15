@@ -421,14 +421,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const sixesBetSummaries = useMemo(() => {
     if (isHistorical || !sixesHook?.sixesConfig) return [];
     if ((effectiveBetConfig.sixesBets ?? []).length === 0) return [];
-    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course);
+    const th = effectiveBetConfig.sixesBets?.[0]?.teamHandicaps;
+    return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course, th);
   }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets]);
 
   // Vegas summaries
   const vegasBetSummaries = useMemo(() => {
     if (isHistorical || !vegasHook?.vegasConfig) return [];
     if ((effectiveBetConfig.vegasBets ?? []).length === 0) return [];
-    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course);
+    const th = effectiveBetConfig.vegasBets?.[0]?.teamHandicaps;
+    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th);
   }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets]);
 
   const betSummaries = useMemo(
