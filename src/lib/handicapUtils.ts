@@ -148,3 +148,150 @@ export const formatHandicap = (handicap: number): string => {
   if (handicap === 0) return '0';
   return handicap > 0 ? `+${handicap}` : `${handicap}`;
 };
+
+// =====================================================
+// TEAM HANDICAP MODALITY CALCULATIONS
+// =====================================================
+
+/**
+ * Calculate "Diferencial de Equipo" handicap distribution.
+ * Sum HCPs per team. The net difference goes to the highest-HCP player
+ * on the receiving team. All others get 0.
+ *
+ * @param teamAIds - [playerA1Id, playerA2Id]
+ * @param teamBIds - [playerB1Id, playerB2Id]
+ * @param hcpMap - Map from playerId to their base handicap
+ * @param recipientOverride - optional playerId to force as recipient when tied
+ * @returns Record<string, number> of teamHandicaps
+ */
+export const calcTeamDifferential = (
+  teamAIds: [string, string],
+  teamBIds: [string, string],
+  hcpMap: Record<string, number>,
+  recipientOverride?: string,
+): { diff: number; receivingTeam: 'A' | 'B' | 'none'; recipientPlayerId: string | null; teamHandicaps: Record<string, number>; needsTieBreak: boolean } => {
+  const hA1 = hcpMap[teamAIds[0]] ?? 0, hA2 = hcpMap[teamAIds[1]] ?? 0;
+  const hB1 = hcpMap[teamBIds[0]] ?? 0, hB2 = hcpMap[teamBIds[1]] ?? 0;
+  const sumA = hA1 + hA2, sumB = hB1 + hB2;
+  const diff = Math.abs(sumA - sumB);
+
+  const result: Record<string, number> = {};
+  [...teamAIds, ...teamBIds].forEach(id => { result[id] = 0; });
+
+  if (diff === 0) {
+    return { diff: 0, receivingTeam: 'none', recipientPlayerId: null, teamHandicaps: result, needsTieBreak: false };
+  }
+
+  const receivingTeam: 'A' | 'B' = sumA > sumB ? 'A' : 'B';
+  const receivingIds = receivingTeam === 'A' ? teamAIds : teamBIds;
+  const rH0 = hcpMap[receivingIds[0]] ?? 0, rH1 = hcpMap[receivingIds[1]] ?? 0;
+
+  let recipientId: string | null;
+  let needsTieBreak = false;
+
+  if (recipientOverride && receivingIds.includes(recipientOverride)) {
+    recipientId = recipientOverride;
+  } else if (rH0 !== rH1) {
+    recipientId = rH0 > rH1 ? receivingIds[0] : receivingIds[1];
+  } else {
+    // Tied — default to first player, but flag that tie-break needed
+    recipientId = receivingIds[0];
+    needsTieBreak = true;
+  }
+
+  result[recipientId] = diff;
+  return { diff, receivingTeam, recipientPlayerId: recipientId, teamHandicaps: result, needsTieBreak };
+};
+
+/**
+ * Calculate "Sliding de Equipo" handicap distribution.
+ * Cross-pair sliding values divided by 2.
+ *
+ * @param slidings - { ac, ad, bc, bd } where positive means A-side gives to that player
+ *   ac = strokes A1 gives C1, ad = strokes A1 gives D1, etc.
+ *   (negative means the reverse direction)
+ * @param teamAIds - [A1, A2]
+ * @param teamBIds - [C1, D1]
+ * @param halfPointMode - 'roundDown' or 'halfPoint'
+ * @returns teamHandicaps and halfStrokeHole info
+ */
+export const calcSlidingTeamDifferential = (
+  slidings: { ac: number; ad: number; bc: number; bd: number },
+  teamAIds: [string, string],
+  teamBIds: [string, string],
+  hcpMap: Record<string, number>,
+  halfPointMode: 'roundDown' | 'halfPoint' = 'roundDown',
+): { raw: number; rounded: number; hasHalf: boolean; receivingTeam: 'A' | 'B' | 'none'; recipientPlayerId: string | null; teamHandicaps: Record<string, number> } => {
+  // Total cross = sum of all slidings from A to B side
+  const totalAtoB = slidings.ac + slidings.ad + slidings.bc + slidings.bd;
+  // If positive, team A gives to team B overall; if negative, team B gives to team A
+  const raw = Math.abs(totalAtoB) / 2;
+  const rounded = halfPointMode === 'roundDown' ? Math.floor(raw) : Math.floor(raw);
+  const hasHalf = raw % 1 !== 0;
+
+  const result: Record<string, number> = {};
+  [...teamAIds, ...teamBIds].forEach(id => { result[id] = 0; });
+
+  const effectiveStrokes = halfPointMode === 'halfPoint' && hasHalf ? raw : rounded;
+
+  if (effectiveStrokes === 0 && !hasHalf) {
+    return { raw, rounded, hasHalf, receivingTeam: 'none', recipientPlayerId: null, teamHandicaps: result };
+  }
+
+  // Receiving team is the one that receives strokes (higher total sliding received)
+  const receivingTeam: 'A' | 'B' = totalAtoB < 0 ? 'A' : 'B';
+  const receivingIds = receivingTeam === 'A' ? teamAIds : teamBIds;
+
+  // The recipient is the player with the highest received sliding total
+  // For team B: check how much each received from team A
+  let recipientId: string;
+  if (receivingTeam === 'B') {
+    const cReceived = slidings.ac + slidings.bc;
+    const dReceived = slidings.ad + slidings.bd;
+    recipientId = cReceived >= dReceived ? teamBIds[0] : teamBIds[1];
+  } else {
+    // For team A receiving from B: we need the inverse slidings
+    // Since we only have A→B slidings, we infer B→A as negative
+    const a1Received = -(slidings.ac + slidings.ad);
+    const a2Received = -(slidings.bc + slidings.bd);
+    recipientId = a1Received >= a2Received ? teamAIds[0] : teamAIds[1];
+  }
+
+  result[recipientId] = halfPointMode === 'halfPoint' ? raw : rounded;
+  return { raw, rounded, hasHalf, receivingTeam, recipientPlayerId: recipientId, teamHandicaps: result };
+};
+
+/**
+ * Calculate strokes per hole with half-point support.
+ * The half point is assigned to the next hole in handicap index sequence
+ * after the integer strokes are distributed.
+ *
+ * @returns strokesPerHole (integer strokes only) and halfStrokeHole (hole number where half applies, or null)
+ */
+export const calculateStrokesPerHoleWithHalf = (
+  strokes: number,
+  hasHalf: boolean,
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1,
+): { strokesPerHole: number[]; halfStrokeHole: number | null } => {
+  const intStrokes = Math.floor(strokes);
+  const strokesPerHole = calculateStrokesPerHole(intStrokes, course, startingHole);
+
+  if (!hasHalf) {
+    return { strokesPerHole, halfStrokeHole: null };
+  }
+
+  // Find the next hole in handicap index sequence that didn't get a stroke
+  // Sort all holes by handicap index
+  const allHoles = [...course.holes].sort((a, b) => a.handicapIndex - b.handicapIndex);
+
+  // The half stroke goes to the hole with handicap index position = intStrokes + 1
+  // (i.e., the first hole that would have gotten a stroke if we had one more)
+  for (const hole of allHoles) {
+    if (strokesPerHole[hole.number - 1] === 0) {
+      return { strokesPerHole, halfStrokeHole: hole.number };
+    }
+  }
+
+  return { strokesPerHole, halfStrokeHole: null };
+};
