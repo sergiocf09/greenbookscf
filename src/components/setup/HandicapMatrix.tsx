@@ -36,6 +36,7 @@ interface HandicapMatrixProps {
   basePlayerId: string;
   roundPlayerIds: Map<string, string>;
   getStrokesForLocalPair: (localIdA: string, localIdB: string) => number;
+  getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
   setStrokesForLocalPair: (localIdA: string, localIdB: string, strokes: number) => Promise<boolean>;
   isLoading?: boolean;
 }
@@ -46,6 +47,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   basePlayerId,
   roundPlayerIds,
   getStrokesForLocalPair,
+  getLocalPairStrokeState,
   setStrokesForLocalPair,
   isLoading = false,
 }) => {
@@ -159,6 +161,9 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
     const key = `${rowId}::${colId}`;
     if (pendingChanges.has(key)) return pendingChanges.get(key)!;
+
+    const pairState = getLocalPairStrokeState?.(rowId, colId);
+    if (pairState?.hasExplicitOverride) return pairState.strokes;
 
     const persisted = getStrokesForLocalPair(rowId, colId);
 

@@ -22,6 +22,7 @@ interface BetSetupProps {
   isOrganizer?: boolean;
   /** Matrix strokes lookup — returns strokes A gives to B (positive = A gives) */
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+  getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
 }
 
 type GroupTab = 'inherited' | 'mygroup';
@@ -34,6 +35,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   userGroupId,
   isOrganizer = true,
   getStrokesForLocalPair,
+  getLocalPairStrokeState,
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
@@ -146,6 +148,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           onUpdateBet={activeUpdateBet}
           onUpdateConfig={activeOnChange}
           getStrokesForLocalPair={getStrokesForLocalPair}
+          getLocalPairStrokeState={getLocalPairStrokeState}
         />
       )}
       {activeCategory === 'grupal' && (

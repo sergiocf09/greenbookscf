@@ -463,6 +463,7 @@ const Index = () => {
     isLoading: isLoadingHandicaps,
     isLoaded: isHandicapsLoaded,
     getStrokesForLocalPair,
+    getLocalPairStrokeState,
     setStrokesForLocalPair,
     initializeHandicapsForNewPlayer,
     getBilateralHandicapsForEngine,
@@ -2804,6 +2805,7 @@ const Index = () => {
               userGroupId={userGid}
               isOrganizer={isOrg}
               getStrokesForLocalPair={getStrokesForLocalPair}
+              getLocalPairStrokeState={getLocalPairStrokeState}
             />
           );
         })()}
@@ -2816,6 +2818,7 @@ const Index = () => {
               basePlayerId={profile?.id || ''}
               roundPlayerIds={roundPlayerIds}
               getStrokesForLocalPair={getStrokesForLocalPair}
+              getLocalPairStrokeState={getLocalPairStrokeState}
               setStrokesForLocalPair={setStrokesForLocalPair}
               isLoading={isLoadingHandicaps}
             />
