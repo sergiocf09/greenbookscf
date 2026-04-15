@@ -1,6 +1,6 @@
 import { Player, PlayerScore, GolfCourse, SixesConfig, SixesHoleDetail, SixesSetResult } from '@/types/golf';
 import { BetSummary } from './shared';
-import { calculateStrokesPerHole } from '../handicapUtils';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '../handicapUtils';
 
 const SET_RANGES: Record<1|2|3, [number, number]> = { 1:[1,6], 2:[7,12], 3:[13,18] };
 
@@ -15,7 +15,6 @@ const getScore = (
   playerId: string, holeNumber: number, players: Player[],
   scores: Map<string, PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
   teamHandicaps?: Record<string, number>,
-  halfStrokeHole?: number | null,
 ): number | null => {
   const player = players.find(p => p.id === playerId);
   if (!player) return null;
@@ -25,8 +24,26 @@ const getScore = (
   const hcp = teamHandicaps?.[playerId] ?? player.handicap;
   const sp = calculateStrokesPerHole(Math.floor(hcp), course);
   let strokesReceived = sp[holeNumber - 1] ?? 0;
-  // Half-point logic: on the halfStrokeHole, don't add stroke yet — handled at hole resolution level
   return hs.strokes - strokesReceived;
+};
+
+/** Detect halfStrokeHole and receiving team from teamHandicaps */
+const detectHalfPoint = (
+  t1: [string, string], t2: [string, string],
+  teamHandicaps: Record<string, number> | undefined,
+  isHalfPointMode: boolean,
+  course: GolfCourse,
+): { halfStrokeHole: number | null; halfReceivingTeam: 'team1' | 'team2' | null } => {
+  if (!isHalfPointMode || !teamHandicaps) return { halfStrokeHole: null, halfReceivingTeam: null };
+  for (const pid of [...t1, ...t2]) {
+    const hcp = teamHandicaps[pid];
+    if (typeof hcp === 'number' && hcp % 1 !== 0) {
+      const result = calculateStrokesPerHoleWithHalf(hcp, true, course);
+      const team = t1.includes(pid) ? 'team1' as const : 'team2' as const;
+      return { halfStrokeHole: result.halfStrokeHole, halfReceivingTeam: team };
+    }
+  }
+  return { halfStrokeHole: null, halfReceivingTeam: null };
 };
 
 const resolveHole = (
@@ -34,6 +51,8 @@ const resolveHole = (
   players: Player[], scores: Map<string,PlayerScore[]>,
   course: GolfCourse, mode: SixesConfig['scoringMode'], useHandicap: boolean,
   teamHandicaps?: Record<string, number>,
+  halfStrokeHole?: number | null,
+  halfReceivingTeam?: 'team1' | 'team2' | null,
 ): SixesHoleDetail => {
   const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
   const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
@@ -51,21 +70,28 @@ const resolveHole = (
   const noData: SixesHoleDetail = { holeNumber, scoresByPlayer, team1Score: null, team2Score: null, lowBallWinner: null, highBallWinner: null, pointsTeam1: 0, pointsTeam2: 0, holeWinner: null };
   if (!t1v.length || !t2v.length) return noData;
 
+  const isHalfHole = halfStrokeHole === holeNumber && halfReceivingTeam != null;
+  const tieWinner = (tied: boolean): 'team1' | 'team2' | 'tied' => {
+    if (!tied) return 'tied';
+    if (isHalfHole) return halfReceivingTeam!;
+    return 'tied';
+  };
+
   if (mode === 'lowBall') {
     const s1 = Math.min(...t1v), s2 = Math.min(...t2v);
-    const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : 'tied';
+    const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : tieWinner(s1 === s2);
     return { holeNumber, scoresByPlayer, team1Score: s1, team2Score: s2, lowBallWinner: w, highBallWinner: null, pointsTeam1: w === 'team1' ? 1 : 0, pointsTeam2: w === 'team2' ? 1 : 0, holeWinner: w };
   }
   if (mode === 'stroke') {
     const s1 = t1v.reduce((a,b) => a+b, 0), s2 = t2v.reduce((a,b) => a+b, 0);
-    const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : 'tied';
+    const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : tieWinner(s1 === s2);
     return { holeNumber, scoresByPlayer, team1Score: s1, team2Score: s2, lowBallWinner: null, highBallWinner: null, pointsTeam1: w === 'team1' ? 1 : 0, pointsTeam2: w === 'team2' ? 1 : 0, holeWinner: w };
   }
   // lowHighBall
   const low1 = Math.min(...t1v), low2 = Math.min(...t2v);
   const high1 = Math.max(...t1v), high2 = Math.max(...t2v);
-  const lbw = low1 < low2 ? 'team1' : low2 < low1 ? 'team2' : 'tied';
-  const hbw = high1 < high2 ? 'team1' : high2 < high1 ? 'team2' : 'tied';
+  const lbw = low1 < low2 ? 'team1' : low2 < low1 ? 'team2' : tieWinner(low1 === low2);
+  const hbw = high1 < high2 ? 'team1' : high2 < high1 ? 'team2' : tieWinner(high1 === high2);
   const p1 = (lbw==='team1'?1:0)+(hbw==='team1'?1:0);
   const p2 = (lbw==='team2'?1:0)+(hbw==='team2'?1:0);
   const hw = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
@@ -78,12 +104,24 @@ export const buildSixesSetResults = (
   teamHandicaps?: Record<string, number>,
 ): SixesSetResult[] => {
   if (!config?.sets?.length) return [];
+  const isHalfPointMode = config.handicapConfig?.slidingHalfPointMode === 'halfPoint';
+  const effectiveTH = teamHandicaps ?? config.teamHandicaps;
+
   return ([1,2,3] as const).map(setNum => {
     const assignment = config.sets.find(s => s.setNumber === setNum);
     if (!assignment) return null;
     const [start, end] = SET_RANGES[setNum];
     const holes = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-    const details = holes.map(h => resolveHole(assignment.team1, assignment.team2, h, players, scores, course, config.scoringMode, config.useHandicap, teamHandicaps));
+
+    const { halfStrokeHole, halfReceivingTeam } = detectHalfPoint(
+      assignment.team1, assignment.team2, effectiveTH, isHalfPointMode, course
+    );
+
+    const details = holes.map(h => resolveHole(
+      assignment.team1, assignment.team2, h, players, scores, course,
+      config.scoringMode, config.useHandicap, effectiveTH,
+      halfStrokeHole, halfReceivingTeam,
+    ));
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);
     const winner = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
