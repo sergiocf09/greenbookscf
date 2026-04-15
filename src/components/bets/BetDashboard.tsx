@@ -5,7 +5,7 @@ import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
 import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, SnapshotPairSegmentResults, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { 
   calculateAllBets, 
@@ -525,9 +525,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         useTeamHandicaps?: boolean;
         teamHandicaps?: Record<string, number>;
         id?: string;
+        handicapConfig?: { mode?: string; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
       }
     ) => {
-      const { useTeamHandicaps, teamHandicaps, id } = opts ?? {};
+      const { useTeamHandicaps, teamHandicaps, id, handicapConfig } = opts ?? {};
 
       // Defensive: carritos config can store either `player.id` or `player.profileId`.
       // Normalize to the ids used by `scores/confirmedScores`.
@@ -541,8 +542,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const resolvedTeamB: [string, string] = [resolvePlayerId(teamB[0]), resolvePlayerId(teamB[1])];
 
       const getPlayerHandicapForCarritos = (playerId: string): number => {
-        // Prefer the handicap explicitly defined in the Carritos bet setup (teamHandicaps),
-        // even if the feature-flag `useTeamHandicaps` is not set (some older configs may omit it).
         const direct = teamHandicaps?.[playerId];
         if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
 
@@ -552,20 +551,35 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           if (typeof h === 'number' && Number.isFinite(h)) return h;
         }
 
-        // Back-compat: honor the toggle if present
         if (useTeamHandicaps) {
           const teamHcp = teamHandicaps?.[playerId];
           if (typeof teamHcp === 'number' && Number.isFinite(teamHcp)) return teamHcp;
         }
 
-        // Fallback to the player's round handicap stored in the players array
         return players.find((p) => p.id === playerId)?.handicap ?? 0;
       };
+
+      // Detect half-point hole for visual display
+      const isHalfPointMode = handicapConfig?.slidingHalfPointMode === 'halfPoint';
+      let halfStrokeHole: number | null = null;
+      let halfPlayerId: string | null = null;
+      if (isHalfPointMode) {
+        const allPids = [...new Set([...resolvedTeamA, ...resolvedTeamB])];
+        for (const pid of allPids) {
+          const hcp = getPlayerHandicapForCarritos(pid);
+          if (hcp % 1 !== 0) {
+            const result = calculateStrokesPerHoleWithHalf(hcp, true, course);
+            halfStrokeHole = result.halfStrokeHole;
+            halfPlayerId = pid;
+            break;
+          }
+        }
+      }
 
       const strokesReceivedByPlayer = new Map<string, number[]>();
       const allPlayers = [...new Set([...resolvedTeamA, ...resolvedTeamB])];
       allPlayers.forEach((pid) => {
-        strokesReceivedByPlayer.set(pid, calculateStrokesPerHole(getPlayerHandicapForCarritos(pid), course));
+        strokesReceivedByPlayer.set(pid, calculateStrokesPerHole(Math.floor(getPlayerHandicapForCarritos(pid)), course));
       });
 
       const getCarritosNet = (playerId: string, holeNum: number): number | null => {
@@ -581,7 +595,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       ): { gross: number; hcp: number; net: number } | null => {
         const score = confirmedScores.get(playerId)?.find((s) => s.holeNumber === holeNum);
         if (!score || typeof score.strokes !== 'number' || !Number.isFinite(score.strokes)) return null;
-        const hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
+        let hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
+        // Show half-point indicator on the halfStrokeHole
+        if (playerId === halfPlayerId && holeNum === halfStrokeHole && hcp === 0) {
+          hcp = 0.5;
+        }
         return { gross: score.strokes, hcp, net: score.strokes - hcp };
       };
 
@@ -825,12 +843,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // When carritosTeams array has entries, all carritos are managed there
     const hasCarritosTeams = (betConfig.carritosTeams?.length ?? 0) > 0;
     if (!hasCarritosTeams && betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
-      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps } = betConfig.carritos;
+      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps, handicapConfig } = betConfig.carritos;
       results.push(
         calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {
           id: undefined,
           useTeamHandicaps,
           teamHandicaps,
+          handicapConfig,
         })
       );
     }
@@ -843,6 +862,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             id: team.id,
             useTeamHandicaps: true,
             teamHandicaps: team.teamHandicaps,
+            handicapConfig: team.handicapConfig,
           })
         );
       }
@@ -2406,13 +2426,32 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           const strokesMap = new Map<string, number[]>();
           [...teamA, ...teamB].forEach(pid => {
-            strokesMap.set(pid, calculateStrokesPerHole(getHandicap(pid), course));
+            strokesMap.set(pid, calculateStrokesPerHole(Math.floor(getHandicap(pid)), course));
           });
+
+          // Detect half-point for Foursomes display
+          const isHalfPtMode = bet.handicapConfig?.slidingHalfPointMode === 'halfPoint';
+          let fpHalfHole: number | null = null;
+          let fpHalfPlayer: string | null = null;
+          if (isHalfPtMode) {
+            for (const pid of [...teamA, ...teamB]) {
+              const hcp = getHandicap(pid);
+              if (hcp % 1 !== 0) {
+                const res = calculateStrokesPerHoleWithHalf(hcp, true, course);
+                fpHalfHole = res.halfStrokeHole;
+                fpHalfPlayer = pid;
+                break;
+              }
+            }
+          }
           
           const getPlayerScore = (playerId: string, holeNum: number): { gross: number; hcp: number; net: number } | null => {
             const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
             if (!score || typeof score.strokes !== 'number') return null;
-            const hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            let hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            if (playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) {
+              hcp = 0.5;
+            }
             return { gross: score.strokes, hcp, net: score.strokes - hcp };
           };
           
