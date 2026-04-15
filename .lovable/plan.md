@@ -1,104 +1,132 @@
 
-# Plan: Correcciones y Nuevas Funcionalidades
 
-## Resumen de cambios solicitados
+# Plan: Fase 2 — Hándicaps editables en Sixes/Vegas + Modalidades de equipo
 
-Se identifican 6 temas: 2 bugs, 2 mejoras de UX, 1 mejora de funcionalidad, y 1 apuesta nueva.
+## Resumen
 
----
-
-## 1. BUG — Medal General no aparece en resultados sin scores
-
-**Problema**: `calculateMedalForPool` retorna `null` cuando `confirmedScores.length === 0` para todos los jugadores (línea 935 de GroupBetsCard.tsx). Skins Grupal sí aparece porque su resultado incluye estructura de hoyos vacíos.
-
-**Solución**: Cuando `medalGeneral.enabled` y hay al menos 2 jugadores, retornar un resultado con `hasValidScores: false` y `winners: []` en lugar de `null`. Esto hará que `hasGrupales` sea `true` y la tarjeta se renderice mostrando "Sin scores confirmados suficientes" (que ya lo maneja `MedalResultBlock` línea 547).
-
-**Archivos**: `src/components/bets/GroupBetsCard.tsx`
+Tres bloques de trabajo:
+1. **Sixes y Vegas: hándicaps editables + Base Cero / Full Hándicap** (confirmado con screenshots)
+2. **Modalidad "Diferencial de Equipo"** — suma de HCPs por pareja, diferencia neta a un solo jugador
+3. **Modalidad "Sliding de Equipo"** — cálculo cruzado entre parejas, dividido entre 2, con lógica de medio punto simplificada
 
 ---
 
-## 2. BUG — HandicapMatrix hereda diferencial al revés
+## Aclaración del medio punto (según instrucciones del usuario)
 
-**Problema**: En `getStrokesForCell` (línea 169), el cálculo es `rowPlayer.handicap - colPlayer.handicap`. Si Sergio tiene hcp 20 y Carlos hcp 17, la celda de Sergio→Carlos muestra +3 (Sergio da 3 golpes), pero en el golf Sergio RECIBE golpes porque tiene handicap más alto. La convención de la matriz es: positivo = row da golpes (desventaja para row).
+El medio punto se asigna al hoyo donde el stroke index del campo coincide con la posición del medio punto. Ejemplo: si el resultado es 3.5 strokes, el jugador recibe strokes completos en los hoyos con handicap index 1, 2, 3 y un **medio stroke** en el hoyo con handicap index 4. En ese hoyo específico:
+- **Si empata** el hoyo antes de aplicar el stroke → el medio se convierte en stroke completo y gana el hoyo
+- **Si pierde** el hoyo → el medio no aplica
+- En todos los demás hoyos, no hay efecto del medio punto
 
-**Solución**: Invertir el cálculo a `colPlayer.handicap - rowPlayer.handicap`. Si row tiene hcp mayor, el resultado será negativo (row recibe golpes = ventaja). Esto alinea con la convención de la matriz.
-
-**Archivos**: `src/components/setup/HandicapMatrix.tsx` (una sola línea)
-
----
-
-## 3. UX — Reubicar botón "Aplicar Sliding" y "Guardar"
-
-**Cambio**: Mover ambos botones de la esquina superior derecha del CardHeader a justo debajo del texto de descripción ("Cada renglón muestra cómo se ve..."). Cuando no hay cambios pendientes, solo aparece "Aplicar Sliding". Cuando hay cambios, aparece "Guardar" al mismo nivel.
-
-**Archivos**: `src/components/setup/HandicapMatrix.tsx`
+Esto se implementa con `calculateStrokesPerHole` existente: se distribuyen los strokes enteros normalmente, y se marca un flag `halfStrokeHole` indicando en qué hoyo hay medio punto.
 
 ---
 
-## 4. FEATURE — Botón "Base Cero" en apuestas de parejas
+## Cambio 1 — Tipos (`src/types/golf.ts`)
 
-**Contexto**: En cada apuesta de parejas (Foursomes, Carritos, Sixes, Vegas, Loba), los handicaps heredan del setup. El usuario quiere un botón por cada instancia de apuesta que calcule handicaps relativos al mínimo (el jugador con menor hcp queda en 0, los demás muestran la diferencia).
+Agregar a `SixesBetInstance` y `VegasBetInstance`:
+```ts
+teamHandicaps?: Record<string, number>;
+```
 
-**Implementación**:
-- Agregar un botón "Base Cero" en cada tarjeta de apuesta (TeamPressureCard, CarritosCard, etc.) junto al header de la apuesta.
-- Al presionar: encontrar el mínimo handicap entre los 4 jugadores seleccionados, restar ese mínimo a todos, y actualizar `teamHandicaps`.
-- Es un one-shot: el usuario puede seguir ajustando manualmente después.
+Crear un tipo compartido para las modalidades de hándicap de equipo (usado por todas las apuestas de parejas):
+```ts
+export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
+export interface TeamHandicapConfig {
+  mode: TeamHandicapMode;
+  diferencialRecipientOverride?: string; // playerId cuando ambos jugadores del equipo receptor empatan en HCP
+  slidingHalfPointMode?: 'roundDown' | 'halfPoint';
+}
+```
 
-**Archivos**: `src/components/setup/bets/ParejasBets.tsx`
-
----
-
-## 5. FEATURE — Medal General con Front 9 / Back 9 / Total 18
-
-**Cambio al setup**: Agregar un toggle/selector de segmentos (similar a Skins Grupal) con importes independientes para Front 9, Back 9, y Total 18. Default: solo Total 18 con $100.
-
-**Cambio al tipo**: Expandir `MedalGeneralBetConfig` con campos opcionales `frontAmount`, `backAmount`, `segmentMode` ('total' | 'segments'). Cuando `segmentMode === 'segments'`, calcular ganador por cada segmento independientemente.
-
-**Cambio al motor de cálculos**: Actualizar `calculateMedalGeneralBets` y `calculateMedalForPool` para calcular por segmento cuando la configuración lo requiera.
-
-**Cambio a resultados**: `MedalResultBlock` deberá mostrar hasta 3 resultados (Front, Back, Total) cuando está en modo segmentos.
-
-**Archivos**: `src/types/golf.ts`, `src/components/setup/bets/GrupalBets.tsx`, `src/components/bets/GroupBetsCard.tsx`, `src/lib/bets/medalGeneral.ts`, `src/components/setup/bets/defaultBetConfig.ts`
+Agregar `handicapConfig?: TeamHandicapConfig` a: `TeamPressuresBet`, `CarritosTeamBet`, `SixesBetInstance`, `VegasBetInstance`, y `WolfSetupConfig`.
 
 ---
 
-## 6. FEATURE — Nueva apuesta "Putts General"
+## Cambio 2 — Utilidad de cálculo (`src/lib/handicapUtils.ts`)
 
-**Descripción**: Idéntica a Medal General pero contando putts en lugar de golpes netos. Pool grupal, menor total de putts gana. Soporta los mismos segmentos (Front 9 / Back 9 / Total 18).
+Nuevas funciones:
 
-**Implementación**:
-- Nuevo tipo `PuttsGeneralBetConfig` en `golf.ts` (sin handicaps, solo amounts y segmentMode).
-- Nuevo calculador `calculatePuttsGeneralBets` en `src/lib/bets/puttsGeneral.ts`.
-- Agregar sección en `GrupalBets.tsx` justo debajo de Medal General.
-- Agregar al `GrupalParticipationMatrix`.
-- Agregar resultados en `GroupBetsCard.tsx`.
-- Agregar a `defaultBetConfig.ts` y al tipo `BetConfig`.
-- Agregar a `betCategories` en `golf.ts`.
+```ts
+// Diferencial de equipo: suma HCPs de cada pareja, diferencia al jugador de mayor HCP
+calcTeamDifferential(teamA: [hcp, hcp], teamB: [hcp, hcp])
+  → { diff, receivingTeam, recipientPlayerId, teamHandicaps }
 
-**Archivos**: Mismos que Medal General + nuevo archivo `src/lib/bets/puttsGeneral.ts`
+// Sliding de equipo: cruza A↔C, A↔D, B↔C, B↔D, suma, divide entre 2
+calcSlidingTeamDifferential(slidings: {ac, ad, bc, bd})
+  → { raw, rounded, hasHalf, halfStrokeHoleIndex?, receivingPlayerId, teamHandicaps }
+
+// Distribución de strokes con medio punto
+calculateStrokesPerHoleWithHalf(strokes: number, hasHalf: boolean, course, startingHole)
+  → { strokesPerHole: number[], halfStrokeHole: number | null }
+```
+
+La función `calculateStrokesPerHoleWithHalf` reutiliza `calculateStrokesPerHole` para los strokes enteros (`Math.floor(strokes)`) y determina el `halfStrokeHole` como el siguiente hoyo en la secuencia del handicap index donde no se recibió stroke completo.
 
 ---
 
-## Orden de implementación
+## Cambio 3 — UI Setup (`src/components/setup/bets/ParejasBets.tsx`)
 
-1. Bug: HandicapMatrix diferencial invertido (1 línea)
-2. Bug: Medal General visible sin scores
-3. UX: Reubicar botones Sliding/Guardar
-4. Feature: Base Cero en parejas
-5. Feature: Medal General con segmentos F9/B9/T18
-6. Feature: Putts General (nueva apuesta)
+### 3a — Hándicaps editables en Sixes y Vegas
+
+En `SixesBetCard` y `VegasBetCard`:
+- Pasar `bet.teamHandicaps ?? {}` a `TeamColumns`
+- `onUpdateHandicaps` actualiza `bet.teamHandicaps`
+- Agregar botón toggle Base Cero / Full Hándicap (misma lógica que ya existe en Foursomes/Carritos)
+
+### 3b — Selector de modalidad unificado
+
+Reemplazar el botón "Base Cero / Full Hándicap" en **todas** las apuestas de parejas con un selector tipo `Select`:
+
+```
+Modalidad HCP: [Individual ▾]
+  • Individual — cada jugador con su HCP del setup
+  • Base Cero — relativo al mínimo
+  • Diferencial Equipo — un solo jugador recibe la diferencia neta
+  • Sliding Equipo — basado en sliding bilateral (solo si hay datos)
+```
+
+Cuando se selecciona **Diferencial Equipo**:
+- Se calcula automáticamente y se muestra un mini resumen: "Jugador X recibe N golpes"
+- Si ambos jugadores del equipo receptor empatan en HCP, aparece un selector para elegir quién recibe
+- Los inputs de HCP se vuelven read-only
+
+Cuando se selecciona **Sliding Equipo**:
+- Se muestra el cálculo automático
+- Si hay medio punto, aparece toggle: "Redondear abajo" vs "Medio punto"
+- Mini explicación: "El medio punto aplica solo si empata el hoyo con handicap index N"
+
+---
+
+## Cambio 4 — Motores de cálculo
+
+### Sixes (`src/lib/bets/sixes.ts`)
+La función `getScore` actualmente usa `player.handicap` directamente. Modificar para aceptar `teamHandicaps?: Record<string, number>` desde la config y usarlo como override (misma lógica que `teamPressures.ts`). Agregar soporte para medio punto: en el hoyo marcado como `halfStrokeHole`, el stroke solo se aplica si el net score del jugador empata con su rival directo.
+
+### Vegas (`src/lib/bets/vegas.ts`)
+Misma modificación que Sixes.
+
+### TeamPressures y Carritos
+Ya soportan `teamHandicaps`. Solo agregar la lógica del medio punto.
+
+---
+
+## Cambio 5 — Defaults (`src/components/setup/bets/defaultBetConfig.ts`)
+
+Agregar `handicapConfig: { mode: 'individual' }` como default para las apuestas que lo usen.
+
+---
 
 ## Archivos afectados
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/components/setup/HandicapMatrix.tsx` | Bug #2, UX #3 |
-| `src/components/bets/GroupBetsCard.tsx` | Bug #1, Features #5 y #6 |
-| `src/types/golf.ts` | Features #5 y #6 |
-| `src/components/setup/bets/GrupalBets.tsx` | Features #5 y #6 |
-| `src/components/setup/bets/ParejasBets.tsx` | Feature #4 |
-| `src/components/setup/bets/defaultBetConfig.ts` | Features #5 y #6 |
-| `src/components/setup/bets/GrupalParticipationMatrix.tsx` | Feature #6 |
-| `src/lib/bets/medalGeneral.ts` | Feature #5 |
-| `src/lib/bets/puttsGeneral.ts` | Feature #6 (nuevo) |
-| `src/lib/bets/index.ts` | Feature #6 |
+| `src/types/golf.ts` | `TeamHandicapMode`, `TeamHandicapConfig`, `teamHandicaps` en Sixes/Vegas |
+| `src/lib/handicapUtils.ts` | `calcTeamDifferential`, `calcSlidingTeamDifferential`, `calculateStrokesPerHoleWithHalf` |
+| `src/components/setup/bets/ParejasBets.tsx` | HCPs editables en Sixes/Vegas, selector de modalidad unificado |
+| `src/lib/bets/sixes.ts` | Soporte `teamHandicaps` + medio punto |
+| `src/lib/bets/vegas.ts` | Soporte `teamHandicaps` + medio punto |
+| `src/lib/bets/teamPressures.ts` | Medio punto |
+| `src/lib/bets/carritos.ts` | Medio punto |
+| `src/components/setup/bets/defaultBetConfig.ts` | Defaults |
+
