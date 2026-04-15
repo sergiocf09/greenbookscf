@@ -1060,7 +1060,6 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   onRemove,
 }) => {
   return (
-  return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">{label}</Label>
