@@ -868,6 +868,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
             teamA={bet.teamA as [string, string]}
             teamB={bet.teamB as [string, string]}
+            bilateralHandicaps={config.bilateralHandicaps}
           />
         );
       })()}
@@ -1124,6 +1125,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
             teamA={teamA}
             teamB={teamB}
+            bilateralHandicaps={config.bilateralHandicaps}
           />
         );
       })()}
@@ -1350,6 +1352,7 @@ const SixesBetCard: React.FC<{
         onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
         teamA={set1?.team1}
         teamB={set1?.team2}
+        bilateralHandicaps={config.bilateralHandicaps}
       />
     )}
 
@@ -1567,6 +1570,7 @@ const VegasBetCard: React.FC<{
         onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
+        bilateralHandicaps={config.bilateralHandicaps}
       />
     )}
 
