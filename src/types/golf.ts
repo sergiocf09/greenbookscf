@@ -132,6 +132,15 @@ export type GroupBetOverride = {
   [K in keyof BetConfig]?: Partial<BetConfig[K]>;
 };
 
+// Team Handicap Modalities (shared across all pair bets)
+export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
+
+export interface TeamHandicapConfig {
+  mode: TeamHandicapMode;
+  diferencialRecipientOverride?: string; // playerId when both players tie in HCP
+  slidingHalfPointMode?: 'roundDown' | 'halfPoint'; // only when mode === 'slidingEquipo'
+}
+
 // Carritos team bet config
 export interface CarritosTeamBet {
   id: string;
@@ -804,19 +813,6 @@ export interface NinesSetupConfig {
 }
 
 // =====================================================
-// TEAM HANDICAP MODALITIES (shared across all pair bets)
-// =====================================================
-
-export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
-
-export interface TeamHandicapConfig {
-  mode: TeamHandicapMode;
-  diferencialRecipientOverride?: string; // playerId when both players tie in HCP
-  slidingHalfPointMode?: 'roundDown' | 'halfPoint'; // only when mode === 'slidingEquipo'
-}
-
-// =====================================================
-// MULTI-INSTANCE BET TYPES
 // =====================================================
 
 export interface SixesBetInstance {
