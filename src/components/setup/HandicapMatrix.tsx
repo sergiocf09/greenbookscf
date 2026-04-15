@@ -162,6 +162,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
     const key = `${rowId}::${colId}`;
     if (pendingChanges.has(key)) return pendingChanges.get(key)!;
+    if (savedChanges.has(key)) return savedChanges.get(key)!;
 
     const pairState = getLocalPairStrokeState?.(rowId, colId);
     if (pairState?.hasExplicitOverride) return pairState.strokes;
@@ -179,7 +180,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     return persisted;
-  }, [pendingChanges, getStrokesForLocalPair, allPlayers]);
+  }, [pendingChanges, savedChanges, getStrokesForLocalPair, allPlayers]);
 
   /** Set pending change for a cell (and its mirror) */
   const setCellStrokes = useCallback((rowId: string, colId: string, value: number) => {
