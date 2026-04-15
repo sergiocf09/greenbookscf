@@ -158,8 +158,21 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
     const key = `${rowId}::${colId}`;
     if (pendingChanges.has(key)) return pendingChanges.get(key)!;
-    return getStrokesForLocalPair(rowId, colId);
-  }, [pendingChanges, getStrokesForLocalPair]);
+
+    const persisted = getStrokesForLocalPair(rowId, colId);
+
+    // Fallback: if persisted is 0, show setup handicap differential instead
+    if (persisted === 0) {
+      const rowPlayer = allPlayers.find(p => p.id === rowId);
+      const colPlayer = allPlayers.find(p => p.id === colId);
+      if (rowPlayer && colPlayer) {
+        const diff = Math.round(rowPlayer.handicap - colPlayer.handicap);
+        return diff;
+      }
+    }
+
+    return persisted;
+  }, [pendingChanges, getStrokesForLocalPair, allPlayers]);
 
   /** Set pending change for a cell (and its mirror) */
   const setCellStrokes = useCallback((rowId: string, colId: string, value: number) => {
@@ -209,6 +222,31 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     else toast.error(`Error guardando ${errorCount} par(es)`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
+  /** Apply all sliding suggestions at once */
+  const applyAllSliding = useCallback(async () => {
+    const applied: Array<{ rowId: string; colId: string; strokes: number }> = [];
+
+    for (let i = 0; i < allPlayers.length; i++) {
+      for (let j = i + 1; j < allPlayers.length; j++) {
+        const a = allPlayers[i];
+        const b = allPlayers[j];
+        const sliding = getSlidingForPair(a.id, b.id);
+        if (sliding.hasSliding) {
+          setCellStrokes(a.id, b.id, sliding.strokes);
+          applied.push({ rowId: a.id, colId: b.id, strokes: sliding.strokes });
+        }
+      }
+    }
+
+    if (applied.length === 0) {
+      toast.info('No hay sliding histórico para ningún par');
+      return;
+    }
+
+    toast.success(`Sliding aplicado a ${applied.length} par(es) — guardando...`);
+    setTimeout(() => saveAllChanges(), 0);
+  }, [allPlayers, getSlidingForPair, setCellStrokes, saveAllChanges]);
+
   // --- Render ---
 
   if (isLoading) {
@@ -254,12 +292,26 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
               </CardDescription>
             </div>
-            {hasPendingChanges && (
-              <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                Guardar
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {slidingSuggestions.size > 0 && (
+                <Button
+                  onClick={applyAllSliding}
+                  disabled={saving}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Aplicar Sliding
+                </Button>
+              )}
+              {hasPendingChanges && (
+                <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
+                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Guardar
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
 
@@ -404,7 +456,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             {slidingSuggestions.size > 0 && (
               <div className="flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-amber-600" />
-                <span>Sliding sugerido</span>
+                <span>Sliding disponible — usa el botón arriba</span>
               </div>
             )}
           </div>
@@ -465,9 +517,6 @@ const HandicapCell: React.FC<HandicapCellProps> = ({
             <span className="text-[8px] leading-none mt-0.5 opacity-70">
               {isGiving ? 'da' : isReceiving ? 'rec' : ''}
             </span>
-            {slidingDiffers && (
-              <Sparkles className="h-2.5 w-2.5 text-amber-500 absolute -top-0.5 -right-0.5" />
-            )}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-3" align="center" side="top">
@@ -575,25 +624,6 @@ const CellEditor: React.FC<CellEditorProps> = ({
         </Button>
       </div>
 
-      {/* Sliding suggestion */}
-      {slidingDiffers && (
-        <div className="flex items-center justify-between p-2 rounded-md bg-amber-50 border border-amber-200">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-            <span className="text-[11px] text-amber-800">
-              Sliding: {sliding.strokes > 0 ? `Da ${sliding.strokes}` : sliding.strokes < 0 ? `Rec ${Math.abs(sliding.strokes)}` : 'Scratch'}
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-[11px] text-amber-700 hover:text-amber-800 hover:bg-amber-100 px-2"
-            onClick={onApplySliding}
-          >
-            Aplicar
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
