@@ -1,53 +1,67 @@
 
 
-# Plan: Sliding Calculation, UX, and Half-Point Visual Fixes
+# Fix: Half-Point Tie-Break Accuracy + HandicapMatrix Save Timing
 
-## Issues Identified
+## Problem Summary
 
-### 1. Sliding Team Calculation (may show 0.5 when result should be 1)
-The `calcSlidingTeamDifferential` in `src/lib/handicapUtils.ts` computes `raw = Math.abs(totalAtoB) / 2`. The user reports that for their team composition, the bilateral sum is 2, so the result should be 1 (integer), but the system shows 0.5. This could be caused by `getBilateralStrokes` returning unexpected values due to the fallback logic in `ParejasBets.tsx` (line 165-172 in HandicapMatrix uses a handicap differential fallback when persisted value is 0, which may not match the displayed matrix values). Will add logging and verify the bilateral values being passed to the calculation.
+Three distinct issues:
 
-### 2. Sliding Button UX: "Aplicar Sliding" label persists after applying
-After clicking "Aplicar Sliding" → "Guardar", the button reverts to "Aplicar Sliding" because `slidingSuggestions` state persists. Per the user's request, after sliding is applied, the button should change to show the "Full Handicap" option instead, giving a clear state transition.
+1. **Carritos engine** (`carritos.ts`): On the half-point hole, ALL ties (lowball, highball, combined) are blindly broken in favor of the receiving team — without checking if the half-point player is actually the one providing the low or high ball. The dashboard tooltip (`BetDashboard.tsx`) already has the correct check, but the **calculation engine** does not.
 
-**File:** `src/components/setup/HandicapMatrix.tsx`
-- Track a `slidingApplied` state flag
-- After applying sliding and saving, change the button label/action to "Aplicar Full Hándicap" (which resets handicaps to full individual mode)
-- When "Full Hándicap" is tapped, revert to full handicap values and re-show "Aplicar Sliding"
+2. **Sixes engine** (`sixes.ts`): Same issue in `lowHighBall` mode — `tieWinner()` blindly awards the tie to the receiving team without verifying player contribution.
 
-### 3. Foursomes Tooltip: Half-point reducing score incorrectly (5 → 4)
-In `BetDashboard.tsx` line 2468-2469, the `getPlayerScore` function for Foursomes sets `displayHcp = 0.5` which makes the dot appear, but the `net` calculation `score.strokes - hcp` uses the integer `hcp` (0), so `net = 5`. However, the bug is in lines 2483-2486 where AFTER the half-point is applied, the scores are re-fetched with `showHalf = true`, and the lowBall/highBall comparison uses the `.net` from these re-fetched values.
+3. **HandicapMatrix save timing** (`HandicapMatrix.tsx`): `applyAllSliding` calls `setCellStrokes` (which queues React state via `setPendingChanges`), then calls `saveAllChanges()` via `setTimeout(0)`. But `saveAllChanges` is a `useCallback` that captures `pendingChanges` from its closure — the stale value from before the state update. The save either saves nothing or saves old data.
 
-Wait -- re-reading: `net: score.strokes - hcp` where `hcp` is the integer (0), so net = 5. The lowBall comparison at line 2483 uses the FIRST call (without showHalf), so net is correct. But then line 2521-2524 re-fetches with `showHalf=true` for DISPLAY, and the display values have correct net.
+**Vegas** is already correct — it tracks `halfPlayerId` and only breaks ties when appropriate.
 
-The actual bug: lines 2509-2518 detect a tie between lowBall values (both are 4) and then apply `showHalf` to break it. BUT the half-point is on Fernando (who scored 5), NOT on the player who has the lowBall score (Sergio P scored 4). The tie-break should only apply if the half-point player's score IS the one creating the tie. Currently, it blindly breaks any tie on the half-point hole regardless of which player's score is involved.
+---
 
-**Fix in `BetDashboard.tsx` (Carritos ~line 694-704 and Foursomes ~line 2509-2518):**
-- When breaking a lowBall tie: only break it if the `halfPlayerId`'s net score equals the tied value (i.e., the half-point player IS the one with the low score)
-- When breaking a highBall tie: same logic
-- When breaking a combined tie: same logic
+## Fix 1: Carritos Engine — Track halfPlayerId and Validate Contribution
 
-### 4. Dot Color: Green instead of Black for half-point indicator
-The half-point dot should be green to distinguish it from regular handicap dots (black).
+**File**: `src/lib/bets/carritos.ts`
 
-**Files:**
-- `src/components/bets/CarritosResultsCard.tsx` (lines 36, 38, 46, 48)
-- `src/components/bets/SixesResultsCard.tsx` (line 249, 251)
-- `src/components/bets/VegasResultsCard.tsx` (line 384, 386)
+- Track `halfPlayerId` alongside `halfStrokeHole` and `halfReceivingTeam` (line 85-97).
+- In `getHolePoints` (line 114-141), before breaking a tie:
+  - **LowBall**: Only break if `halfPlayerId`'s net score equals `Math.min()` on their team (i.e., they ARE the low ball).
+  - **HighBall**: Only break if `halfPlayerId`'s net score equals `Math.max()` on their team (i.e., they ARE the high ball).
+  - **Combined**: Always applies (the .5 affects the team total regardless).
 
-For each dot, detect if the `hcp` value is exactly `0.5` (the half-point marker). If so, render with `bg-green-600` instead of `bg-foreground`. The existing `hcp > 0` condition already triggers for 0.5.
+## Fix 2: Sixes Engine — Track halfPlayerId in lowHighBall Mode
 
-### 5. Carritos: Already correct behavior, just visual refinement
-The user confirms Carritos calculates correctly (doesn't apply the advantage when the hole isn't tied). The only change needed is the green dot color (covered in item 4).
+**File**: `src/lib/bets/sixes.ts`
+
+- Extend `detectHalfPoint` (line 33-47) to also return `halfPlayerId`.
+- Pass `halfPlayerId` into `resolveSixesHole`.
+- In `lowHighBall` mode (line 103-111):
+  - For lowball tie: only break if halfPlayer's net IS `Math.min()` on their team.
+  - For highball tie: only break if halfPlayer's net IS `Math.max()` on their team.
+- For `lowBall`-only and `stroke`-only modes, the current logic is fine (single comparison).
+
+## Fix 3: HandicapMatrix — Fix Save Timing with useEffect
+
+**File**: `src/components/setup/HandicapMatrix.tsx`
+
+Replace the `setTimeout(() => saveAllChanges())` pattern with a `useEffect`-based approach:
+
+- Add a `pendingSaveRequested` state flag (`useState(false)`).
+- In `applyAllSliding`: after calling `setCellStrokes` for all pairs, set `pendingSaveRequested = true` (do NOT call `saveAllChanges` directly).
+- In "Aplicar Full Hándicap" handler: same pattern — set values, then `pendingSaveRequested = true`.
+- Add a `useEffect` that watches `[pendingSaveRequested, pendingChanges]`:
+  ```
+  if pendingSaveRequested && pendingChanges.size > 0:
+    call saveAllChanges()
+    set pendingSaveRequested = false
+    set slidingApplied accordingly
+  ```
+- This guarantees the save runs AFTER React has flushed the pending changes state.
+
+---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/lib/handicapUtils.ts` | Debug/verify `calcSlidingTeamDifferential` computation |
-| `src/components/setup/HandicapMatrix.tsx` | Track sliding-applied state; toggle button between "Aplicar Sliding" and "Aplicar Full Hándicap" |
-| `src/components/bets/BetDashboard.tsx` | Fix half-point tie-break to only apply when the half-point player's score creates the tie (both Carritos and Foursomes sections) |
-| `src/components/bets/CarritosResultsCard.tsx` | Green dot for half-point (hcp === 0.5) |
-| `src/components/bets/SixesResultsCard.tsx` | Green dot for half-point |
-| `src/components/bets/VegasResultsCard.tsx` | Green dot for half-point |
+| File | Change |
+|------|--------|
+| `src/lib/bets/carritos.ts` | Track `halfPlayerId`, validate low/high ball contribution before breaking tie |
+| `src/lib/bets/sixes.ts` | Return `halfPlayerId` from `detectHalfPoint`, validate in lowHighBall mode |
+| `src/components/setup/HandicapMatrix.tsx` | Replace `setTimeout` save with `useEffect` + `pendingSaveRequested` flag |
 
