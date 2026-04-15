@@ -525,6 +525,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         useTeamHandicaps?: boolean;
         teamHandicaps?: Record<string, number>;
         id?: string;
+        handicapConfig?: { mode?: string; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
       }
     ) => {
       const { useTeamHandicaps, teamHandicaps, id } = opts ?? {};
