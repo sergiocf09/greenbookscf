@@ -139,7 +139,7 @@ export const calculateCarritosBets = (
         const hA = Math.max(a1, a2), hB = Math.max(b1, b2);
         if (hA < hB) pA++;
         else if (hB < hA) pB++;
-        else if (isHalfHole && halfTeamNets && halfPlayerNet === Math.max(...halfTeamNets)) {
+        else if (isHalfHole && halfTeamNets && halfPlayerNet === Math.max(...halfTeamNets) && halfPlayerNet !== Math.min(...halfTeamNets)) {
           if (halfReceivingTeam === 'A') pA++; else pB++;
         }
       }
