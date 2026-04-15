@@ -920,18 +920,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { setResults, holeDisplays, winners, amount };
   }, [conejaParticipants, scores, course, betConfig, confirmedHoles]);
 
-  // Helper to calculate Medal General for a given player pool
-  const calculateMedalForPool = (pool: Player[]): MedalGeneralResult | null => {
+  // Helper to calculate Medal General for a given player pool and hole filter
+  const calculateMedalForPool = (pool: Player[], holeFilter: (h: number) => boolean = () => true, amountOverride?: number): MedalGeneralResult | null => {
     if (!betConfig.medalGeneral?.enabled || pool.length < 2) return null;
 
     const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
-    const amount = betConfig.medalGeneral.amount ?? 100;
+    const amount = amountOverride ?? betConfig.medalGeneral.amount ?? 100;
 
     const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number; groupId?: string }> = [];
 
     pool.forEach(player => {
       const playerScores = scores.get(player.id) || [];
-      const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
+      const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber));
       if (confirmedScores.length === 0) return;
 
       const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
