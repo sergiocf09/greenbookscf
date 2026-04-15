@@ -245,10 +245,24 @@ export type GroupBetScope = 'group' | 'global' | 'both';
 
 export interface MedalGeneralBetConfig {
   enabled: boolean;
-  amount: number; // Amount each loser pays to winner(s)
+  amount: number; // Amount each loser pays to winner(s) — used for total
+  frontAmount?: number;
+  backAmount?: number;
+  segmentMode?: 'total' | 'segments'; // 'total' = only total 18, 'segments' = front+back+total
   playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
   participantIds?: string[];
   scope?: GroupBetScope; // Multi-group scope (default: 'global')
+}
+
+// Putts General - Group bet for lowest putt total
+export interface PuttsGeneralBetConfig {
+  enabled: boolean;
+  amount: number; // Total 18
+  frontAmount?: number;
+  backAmount?: number;
+  segmentMode?: 'total' | 'segments';
+  participantIds?: string[];
+  scope?: GroupBetScope;
 }
 
 // Coneja - Group bet based on patas per hole and sets
@@ -440,6 +454,7 @@ export interface BetConfig {
   rayas: RayasBetConfig;
   carritos: CarritosBetConfig;
   medalGeneral: MedalGeneralBetConfig; // Group bet - lowest net total wins
+  puttsGeneral?: PuttsGeneralBetConfig; // Group bet - lowest putt total wins
   coneja: ConejaBetConfig; // Group bet - patas system per set of 6 holes
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
@@ -620,6 +635,7 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   zoologico: 'grupal', // NEW: Zoo bet
   skinsGrupal: 'grupal', // NEW: Group skins
   medalGeneral: 'grupal',
+  puttsGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
   // Sprint 3
