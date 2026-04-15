@@ -40,8 +40,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     return ids.filter(id => !players.find(p => p.id === id));
   }, [players, vegasConfig]);
 
-  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildVegasSetResults(players, scores, vegasConfig, course), [players, scores, vegasConfig, course, missingPlayerIds]);
-  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course), [players, scores, vegasConfig, course, missingPlayerIds]);
+  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildVegasSetResults(players, scores, vegasConfig, course, vegasConfig.teamHandicaps), [players, scores, vegasConfig, course, missingPlayerIds]);
+  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps), [players, scores, vegasConfig, course, missingPlayerIds]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
