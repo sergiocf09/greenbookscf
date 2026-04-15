@@ -85,6 +85,18 @@ interface RoundBetConfig {
     playerHandicaps: MedalGeneralPlayerConfig[];
     participantIds?: string[];
     scope?: 'group' | 'global' | 'both';
+    segmentMode?: 'total' | 'segments';
+    frontAmount?: number;
+    backAmount?: number;
+  };
+  puttsGeneral?: {
+    enabled: boolean;
+    amount: number;
+    frontAmount?: number;
+    backAmount?: number;
+    segmentMode?: 'total' | 'segments';
+    participantIds?: string[];
+    scope?: 'group' | 'global' | 'both';
   };
   coneja?: {
     enabled: boolean;
@@ -307,6 +319,16 @@ export const useBetConfigPersistence = ({
           playerHandicaps: dbConfig.medalGeneral.playerHandicaps ?? prev.medalGeneral.playerHandicaps,
           participantIds: 'participantIds' in dbConfig.medalGeneral ? dbConfig.medalGeneral.participantIds : prev.medalGeneral.participantIds,
           scope: dbConfig.medalGeneral.scope ?? prev.medalGeneral.scope,
+          segmentMode: dbConfig.medalGeneral.segmentMode ?? prev.medalGeneral.segmentMode,
+          frontAmount: dbConfig.medalGeneral.frontAmount ?? prev.medalGeneral.frontAmount,
+          backAmount: dbConfig.medalGeneral.backAmount ?? prev.medalGeneral.backAmount,
+        };
+      }
+
+      if (dbConfig.puttsGeneral) {
+        newConfig.puttsGeneral = {
+          ...prev.puttsGeneral,
+          ...dbConfig.puttsGeneral,
         };
       }
 
@@ -444,7 +466,11 @@ export const useBetConfigPersistence = ({
           playerHandicaps: config.medalGeneral.playerHandicaps,
           participantIds: config.medalGeneral.participantIds,
           scope: config.medalGeneral.scope,
+          segmentMode: config.medalGeneral.segmentMode,
+          frontAmount: config.medalGeneral.frontAmount,
+          backAmount: config.medalGeneral.backAmount,
         },
+        puttsGeneral: config.puttsGeneral,
         coneja: {
           enabled: config.coneja.enabled,
           amount: config.coneja.amount,

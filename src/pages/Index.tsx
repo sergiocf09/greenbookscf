@@ -2535,8 +2535,8 @@ const Index = () => {
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); if (v !== 'rankings') setRankingDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-14">
                 <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">Hándicaps</span></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
                 <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">Scorecard</span></TabsTrigger>
                 <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">Resultados</span></TabsTrigger>
               </TabsList>
