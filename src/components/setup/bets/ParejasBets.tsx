@@ -235,6 +235,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 playerOptions={foursomesOptions}
                 onUpdate={(updates) => updateTeamPressure(bet.id, updates)}
                 onRemove={() => removeTeamPressure(bet.id)}
+                bilateralHandicaps={config.bilateralHandicaps}
               />
             ))}
             <Button
@@ -297,6 +298,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 players={players}
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
+                bilateralHandicaps={config.bilateralHandicaps}
               />
             )}
 
@@ -317,6 +319,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
                 onRemove={() => removeCarritosTeam(team.id)}
+                bilateralHandicaps={config.bilateralHandicaps}
               />
             ))}
 
@@ -378,6 +381,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <>
             {config.sixesBets!.map((bet, idx) => (
               <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={sixesOptions}
+                bilateralHandicaps={config.bilateralHandicaps}
                 onUpdate={(updates) => {
                   const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, sixesBets: next });
@@ -445,6 +449,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <>
             {config.vegasBets!.map((bet, idx) => (
               <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={vegasOptions}
+                bilateralHandicaps={config.bilateralHandicaps}
                 onUpdate={(updates) => {
                   const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, vegasBets: next });
