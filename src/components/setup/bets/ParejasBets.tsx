@@ -795,6 +795,7 @@ interface TeamPressureCardProps {
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<TeamPressuresBet>) => void;
   onRemove: () => void;
+  bilateralHandicaps?: BilateralHandicap[];
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
