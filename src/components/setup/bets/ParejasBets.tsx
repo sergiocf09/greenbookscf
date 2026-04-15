@@ -51,6 +51,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   onToggleSection,
   onUpdateBet,
   onUpdateConfig,
+  getStrokesForLocalPair,
 }) => {
   const { profile } = useAuth();
   const playerOptions = useMemo(
