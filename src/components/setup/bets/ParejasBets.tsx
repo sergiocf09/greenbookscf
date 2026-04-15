@@ -1031,29 +1031,46 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">{label}</Label>
-        {onRemove && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Eliminar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+            onClick={() => {
+              const allIds = [...teamA, ...teamB].filter(Boolean);
+              if (allIds.length < 2) return;
+              const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+              const minHcp = Math.min(...hcps);
+              const newHandicaps: Record<string, number> = { ...teamHandicaps };
+              allIds.forEach(id => {
+                const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
+                newHandicaps[id] = Math.round(h - minHcp);
+              });
+              onUpdate({ teamHandicaps: newHandicaps });
+            }}>
+            Base Cero
+          </Button>
+          {onRemove && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       {/* Compact team columns */}
