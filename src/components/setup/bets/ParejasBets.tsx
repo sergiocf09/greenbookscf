@@ -41,6 +41,7 @@ interface ParejasBetsProps {
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig: (config: BetConfig) => void;
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 export const ParejasBets: React.FC<ParejasBetsProps> = ({
