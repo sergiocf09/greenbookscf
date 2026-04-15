@@ -41,6 +41,7 @@ interface ParejasBetsProps {
   onToggleSection: (section: string, open: boolean) => void;
   onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig: (config: BetConfig) => void;
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 export const ParejasBets: React.FC<ParejasBetsProps> = ({
@@ -50,6 +51,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   onToggleSection,
   onUpdateBet,
   onUpdateConfig,
+  getStrokesForLocalPair,
 }) => {
   const { profile } = useAuth();
   const playerOptions = useMemo(
@@ -236,6 +238,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 onUpdate={(updates) => updateTeamPressure(bet.id, updates)}
                 onRemove={() => removeTeamPressure(bet.id)}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
               />
             ))}
             <Button
@@ -299,6 +302,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
               />
             )}
 
@@ -382,6 +386,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {config.sixesBets!.map((bet, idx) => (
               <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={sixesOptions}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
                 onUpdate={(updates) => {
                   const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, sixesBets: next });
@@ -450,6 +455,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {config.vegasBets!.map((bet, idx) => (
               <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={vegasOptions}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
                 onUpdate={(updates) => {
                   const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, vegasBets: next });
@@ -801,6 +807,7 @@ interface TeamPressureCardProps {
   onUpdate: (updates: Partial<TeamPressuresBet>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
@@ -811,6 +818,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   onUpdate,
   onRemove,
   bilateralHandicaps,
+  getStrokesForLocalPair,
 }) => {
   return (
     <div className={cn(
@@ -877,6 +885,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             teamA={bet.teamA as [string, string]}
             teamB={bet.teamB as [string, string]}
             bilateralHandicaps={bilateralHandicaps}
+            getStrokesForLocalPair={getStrokesForLocalPair}
           />
         );
       })()}
@@ -1060,6 +1069,7 @@ interface CarritosCardProps {
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
   onRemove?: () => void;
   bilateralHandicaps?: BilateralHandicap[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1077,6 +1087,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   onUpdate,
   onRemove,
   bilateralHandicaps,
+  getStrokesForLocalPair,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -1137,6 +1148,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             teamA={teamA}
             teamB={teamB}
             bilateralHandicaps={bilateralHandicaps}
+            getStrokesForLocalPair={getStrokesForLocalPair}
           />
         );
       })()}
@@ -1202,28 +1214,35 @@ const HandicapModeSelector: React.FC<{
   teamA?: [string, string];
   teamB?: [string, string];
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, onUpdateBoth, teamA, teamB, bilateralHandicaps }) => {
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, onUpdateBoth, teamA, teamB, bilateralHandicaps, getStrokesForLocalPair }) => {
   const mode = handicapConfig?.mode ?? 'individual';
 
-  // Helper: get bilateral strokes A gives to B from bilateralHandicaps array
+  // Helper: get strokes A gives to B. Uses matrix values (getStrokesForLocalPair) first,
+  // then bilateralHandicaps, then falls back to handicap differences.
   const getBilateralStrokes = (aId: string, bId: string): number => {
-    if (!bilateralHandicaps || bilateralHandicaps.length === 0) {
-      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
-      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
-      return hcpA - hcpB;
+    // Priority 1: Matrix strokes (source of truth for sliding)
+    if (getStrokesForLocalPair) {
+      return getStrokesForLocalPair(aId, bId);
     }
-    const pair = bilateralHandicaps.find(
-      bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
-    );
-    if (!pair) {
-      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
-      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
-      return hcpA - hcpB;
+    // Priority 2: bilateralHandicaps from config
+    if (bilateralHandicaps && bilateralHandicaps.length > 0) {
+      const pair = bilateralHandicaps.find(
+        bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
+      );
+      if (pair) {
+        // pair stores: playerA has handicap X, playerB has handicap Y
+        // strokes A gives B = B's effective handicap - A's effective handicap
+        if (pair.playerAId === aId) {
+          return pair.playerBHandicap - pair.playerAHandicap;
+        }
+        return pair.playerAHandicap - pair.playerBHandicap;
+      }
     }
-    if (pair.playerAId === aId) {
-      return pair.playerAHandicap - pair.playerBHandicap;
-    }
-    return pair.playerBHandicap - pair.playerAHandicap;
+    // Fallback: handicap differences
+    const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
+    const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
+    return hcpB - hcpA; // positive = A gives to B (B has higher HCP = weaker)
   };
 
   // Single atomic update to avoid race conditions between handicapConfig and teamHandicaps
@@ -1305,7 +1324,8 @@ const SixesBetCard: React.FC<{
   onUpdate: (updates: Partial<SixesBetInstance>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => {
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair }) => {
   const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
   const allPlayerIds = set1 ? [...set1.team1, ...set1.team2].filter(Boolean) : [];
   const th = bet.teamHandicaps ?? {};
@@ -1372,6 +1392,7 @@ const SixesBetCard: React.FC<{
         teamA={set1?.team1}
         teamB={set1?.team2}
         bilateralHandicaps={bilateralHandicaps}
+        getStrokesForLocalPair={getStrokesForLocalPair}
       />
     )}
 
@@ -1489,7 +1510,8 @@ const VegasBetCard: React.FC<{
   onUpdate: (updates: Partial<VegasBetInstance>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => (
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
       <Label className="text-xs font-medium">Vegas {index + 1}</Label>
@@ -1592,6 +1614,7 @@ const VegasBetCard: React.FC<{
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
         bilateralHandicaps={bilateralHandicaps}
+        getStrokesForLocalPair={getStrokesForLocalPair}
       />
     )}
 

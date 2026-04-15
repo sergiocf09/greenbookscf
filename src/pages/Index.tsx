@@ -2803,6 +2803,7 @@ const Index = () => {
               hasMultipleGroups={hasMulti}
               userGroupId={userGid}
               isOrganizer={isOrg}
+              getStrokesForLocalPair={getStrokesForLocalPair}
             />
           );
         })()}

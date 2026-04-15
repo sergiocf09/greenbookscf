@@ -20,6 +20,8 @@ interface BetSetupProps {
   userGroupId?: string;
   /** Whether the current user is the round organizer */
   isOrganizer?: boolean;
+  /** Matrix strokes lookup — returns strokes A gives to B (positive = A gives) */
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 type GroupTab = 'inherited' | 'mygroup';
@@ -31,6 +33,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   hasMultipleGroups = false,
   userGroupId,
   isOrganizer = true,
+  getStrokesForLocalPair,
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
@@ -142,6 +145,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           onToggleSection={isReadOnly ? () => {} : toggleSection}
           onUpdateBet={activeUpdateBet}
           onUpdateConfig={activeOnChange}
+          getStrokesForLocalPair={getStrokesForLocalPair}
         />
       )}
       {activeCategory === 'grupal' && (
