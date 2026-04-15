@@ -952,12 +952,20 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       });
     });
 
-    if (playerNetScores.length < 2) return null;
+    // If not enough players have scores, return a placeholder so the card still renders
+    if (playerNetScores.length < 2) {
+      return {
+        enabled: true,
+        amount,
+        winners: [],
+        hasValidScores: false,
+      };
+    }
 
     const minNet = Math.min(...playerNetScores.map(p => p.netScore));
     const winners = playerNetScores.filter(p => p.netScore === minNet);
     const losersCount = playerNetScores.length - winners.length;
-    if (losersCount === 0) return null;
+    if (losersCount === 0) return { enabled: true, amount, winners: [], hasValidScores: true };
 
     const totalPot = losersCount * amount;
     const amountPerWinner = winners.length > 0 ? totalPot / winners.length : 0;

@@ -18,6 +18,7 @@ const GRUPAL_BETS = [
   { key: 'zoologico' as const, label: 'Zoológico' },
   { key: 'coneja' as const, label: 'Coneja' },
   { key: 'medalGeneral' as const, label: 'Medal Gral' },
+  { key: 'puttsGeneral' as const, label: 'Putts Gral' },
   { key: 'stableford' as const, label: 'Stableford' },
   { key: 'skinsGrupal' as const, label: 'Skins Grl' },
   { key: 'nines' as const, label: 'Nines' },

@@ -166,7 +166,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       const rowPlayer = allPlayers.find(p => p.id === rowId);
       const colPlayer = allPlayers.find(p => p.id === colId);
       if (rowPlayer && colPlayer) {
-        const diff = Math.round(rowPlayer.handicap - colPlayer.handicap);
+        const diff = Math.round(colPlayer.handicap - rowPlayer.handicap);
         return diff;
       }
     }
@@ -282,36 +282,32 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Hándicaps Bilaterales
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              {slidingSuggestions.size > 0 && (
-                <Button
-                  onClick={applyAllSliding}
-                  disabled={saving}
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Aplicar Sliding
-                </Button>
-              )}
-              {hasPendingChanges && (
-                <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
-                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Guardar
-                </Button>
-              )}
-            </div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Hándicaps Bilaterales
+          </CardTitle>
+          <CardDescription className="mt-1">
+            Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
+          </CardDescription>
+          <div className="flex gap-2 mt-2">
+            {slidingSuggestions.size > 0 && (
+              <Button
+                onClick={applyAllSliding}
+                disabled={saving}
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Aplicar Sliding
+              </Button>
+            )}
+            {hasPendingChanges && (
+              <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Guardar
+              </Button>
+            )}
           </div>
         </CardHeader>
 

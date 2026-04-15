@@ -14,6 +14,7 @@ export { calculateManchasBets } from './manchas';
 export { calculateCulebrasBets } from './culebras';
 export { calculatePinguinosBets } from './pinguinos';
 export { calculateMedalGeneralBets } from './medalGeneral';
+export { calculatePuttsGeneralBets } from './puttsGeneral';
 export { calculatePuttsBets } from './putts';
 export { calculateSideBets } from './sideBets';
 export { calculateStablefordBets } from './stableford';

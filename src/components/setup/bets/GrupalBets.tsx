@@ -237,7 +237,51 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onExpandChange={(open) => onToggleSection('medalGeneral', open)} color="gold"
           helpText="El jugador con el menor score neto total de los 18 hoyos gana y cobra la cantidad configurada a cada perdedor. En caso de empate, se divide. Cada jugador puede tener un handicap independiente para esta apuesta."
         >
-          <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
+          {/* Segment mode toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+            <div className="flex gap-1">
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { segmentMode: 'total' }); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  (config.medalGeneral?.segmentMode ?? 'total') === 'total'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                Solo Total 18
+              </button>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { segmentMode: 'segments' }); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  config.medalGeneral?.segmentMode === 'segments'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                F9 + B9 + Total
+              </button>
+            </div>
+          </div>
+
+          {/* Amounts based on segment mode */}
+          {config.medalGeneral?.segmentMode === 'segments' ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+                <AmountInput label="" value={config.medalGeneral?.frontAmount ?? 50} onChange={(v) => onUpdateBet('medalGeneral', { frontAmount: v })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+                <AmountInput label="" value={config.medalGeneral?.backAmount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { backAmount: v })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <AmountInput label="" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
+              </div>
+            </div>
+          ) : (
+            <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
+          )}
+
           {hasMultipleGroups && (
             <BetScopeSelector
               scope={config.medalGeneral?.scope ?? 'global'}
@@ -276,6 +320,65 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             </div>
           </CollapsibleSubSection>
           <p className="text-[9px] text-muted-foreground mt-2">El ganador (o ganadores en empate) cobra la cantidad a cada perdedor.</p>
+        </BetSection>
+      )}
+
+      {/* Putts General */}
+      {show('puttsGeneral') && (
+        <BetSection
+          id="puttsGeneral" title="Putts General ⛳" description="Grupal: menor total de putts gana"
+          enabled={(config as any).puttsGeneral?.enabled ?? false}
+          onToggle={(enabled) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, enabled } } as any)}
+          isExpanded={expandedSections.includes('puttsGeneral')}
+          onExpandChange={(open) => onToggleSection('puttsGeneral', open)} color="gold"
+          helpText="El jugador con el menor total de putts gana y cobra a cada perdedor. No usa hándicaps. Se puede configurar por Front 9, Back 9 y Total 18."
+        >
+          {/* Segment mode toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+            <div className="flex gap-1">
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, segmentMode: 'total' } } as any); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  ((config as any).puttsGeneral?.segmentMode ?? 'total') === 'total'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                Solo Total 18
+              </button>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, segmentMode: 'segments' } } as any); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  (config as any).puttsGeneral?.segmentMode === 'segments'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                F9 + B9 + Total
+              </button>
+            </div>
+          </div>
+
+          {/* Amounts based on segment mode */}
+          {(config as any).puttsGeneral?.segmentMode === 'segments' ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+                <AmountInput label="" value={(config as any).puttsGeneral?.frontAmount ?? 50} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, frontAmount: v } } as any)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+                <AmountInput label="" value={(config as any).puttsGeneral?.backAmount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, backAmount: v } } as any)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <AmountInput label="" value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
+              </div>
+            </div>
+          ) : (
+            <AmountInput label="Cantidad por jugador" value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
+          )}
+
+          <p className="text-[9px] text-muted-foreground mt-2">El ganador con menos putts totales cobra a cada perdedor. No aplica hándicap.</p>
         </BetSection>
       )}
 
