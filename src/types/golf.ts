@@ -142,7 +142,7 @@ export interface CarritosTeamBet {
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps?: Record<string, number>;
-  handicapConfig?: import('./golf').TeamHandicapConfig;
+  handicapConfig?: TeamHandicapConfig;
   enabled: boolean;
 }
 
