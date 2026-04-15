@@ -521,7 +521,29 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             };
             return (
               <div className="mt-2 space-y-1">
-                <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                  {(() => {
+                    const hcps = activeIds.map(pid => getHcp(pid));
+                    const fullHcps = activeIds.map(pid => players.find(p => p.id === pid)?.handicap ?? 0);
+                    const isBaseCero = hcps.some(h => h === 0) && hcps.some((h, i) => h !== fullHcps[i]);
+                    return (
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                        onClick={() => {
+                          if (isBaseCero) {
+                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: players.find(p => p.id === pid)?.handicap ?? 0 }));
+                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                          } else {
+                            const minHcp = Math.min(...fullHcps.map((_, i) => hcps[i]));
+                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: Math.round(getHcp(pid) - minHcp) }));
+                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                          }
+                        }}>
+                        {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+                      </Button>
+                    );
+                  })()}
+                </div>
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                   {activeIds.map(pid => {
                     const p = players.find(pl => pl.id === pid);
