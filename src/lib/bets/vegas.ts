@@ -1,6 +1,6 @@
 import { Player, PlayerScore, GolfCourse, VegasConfig, VegasHoleDetail, VegasSetResult } from '@/types/golf';
 import { BetSummary } from './shared';
-import { calculateStrokesPerHole } from '../handicapUtils';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '../handicapUtils';
 import { detectScoreBasedMarkers } from '../scoreDetection';
 
 // Número de 2 dígitos Las Vegas: menor primero.
@@ -50,12 +50,33 @@ const getVegasSegmentAmount = (config: VegasConfig, holeNumber: number): number 
   return config.set3Amount ?? config.valuePerPoint;
 };
 
+/** Detect halfStrokeHole and receiving team from teamHandicaps */
+const detectHalfPoint = (
+  t1: [string, string], t2: [string, string],
+  teamHandicaps: Record<string, number> | undefined,
+  isHalfPointMode: boolean,
+  course: GolfCourse,
+): { halfStrokeHole: number | null; halfReceivingTeam: 'team1' | 'team2' | null } => {
+  if (!isHalfPointMode || !teamHandicaps) return { halfStrokeHole: null, halfReceivingTeam: null };
+  for (const pid of [...t1, ...t2]) {
+    const hcp = teamHandicaps[pid];
+    if (typeof hcp === 'number' && hcp % 1 !== 0) {
+      const result = calculateStrokesPerHoleWithHalf(hcp, true, course);
+      const team = t1.includes(pid) ? 'team1' as const : 'team2' as const;
+      return { halfStrokeHole: result.halfStrokeHole, halfReceivingTeam: team };
+    }
+  }
+  return { halfStrokeHole: null, halfReceivingTeam: null };
+};
+
 const resolveVegasHole = (
   team1: [string,string], team2: [string,string],
   holeNumber: number, setNumber: 1|2|3|null,
   players: Player[], scores: Map<string,PlayerScore[]>,
   course: GolfCourse, config: VegasConfig,
   teamHandicaps?: Record<string, number>,
+  halfStrokeHole?: number | null,
+  halfReceivingTeam?: 'team1' | 'team2' | null,
 ): VegasHoleDetail => {
   const [pA, pB] = team1, [pC, pD] = team2;
   // Net scores used for Vegas number formation
@@ -88,7 +109,15 @@ const resolveVegasHole = (
   if (bT1 && !bT2) { n2e = n2 * 2; multiplierApplied = 'team2'; }
   else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
 
-  const diff = n2e - n1e;
+  let diff = n2e - n1e;
+
+  // Half-point tie-break: on the halfStrokeHole, if Vegas numbers are tied,
+  // the receiving team wins by 1 point
+  const isHalfHole = halfStrokeHole === holeNumber && halfReceivingTeam != null;
+  if (isHalfHole && diff === 0) {
+    diff = halfReceivingTeam === 'team1' ? 1 : -1;
+  }
+
   const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
 
@@ -113,6 +142,9 @@ export const buildVegasSetResults = (
   const { playerAId: A, playerBId: B, playerCId: C, playerDId: D } = config;
   if (!A || !B || !C || !D) return [];
 
+  const isHalfPointMode = config.handicapConfig?.slidingHalfPointMode === 'halfPoint';
+  const effectiveTH = teamHandicaps ?? config.teamHandicaps;
+
   const sets = config.variant === 'fixed'
     ? [{ setNumber: null as null, start: 1, end: 18, t1: [A,B] as [string,string], t2: [C,D] as [string,string] }]
     : [
@@ -122,8 +154,15 @@ export const buildVegasSetResults = (
       ];
 
   return sets.map(s => {
+    const { halfStrokeHole, halfReceivingTeam } = detectHalfPoint(
+      s.t1, s.t2, effectiveTH, isHalfPointMode, course
+    );
+
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
-    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config, teamHandicaps));
+    const details = holes.map(h => resolveVegasHole(
+      s.t1, s.t2, h, s.setNumber, players, scores, course, config, effectiveTH,
+      halfStrokeHole, halfReceivingTeam,
+    ));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
     const totalAmount = (() => {
       if (!config.useSegmentAmounts || config.variant !== 'fixed') {
