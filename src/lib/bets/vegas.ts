@@ -91,20 +91,36 @@ const resolveVegasHole = (
   const gC = getScore(pC, holeNumber, players, scores, course, false);
   const gD = getScore(pD, holeNumber, players, scores, course, false);
 
+  // Detect half-point player on this hole
+  const isHalfHoleHere = halfStrokeHole === holeNumber;
+  const halfPlayerId = isHalfHoleHere
+    ? [pA, pB, pC, pD].find(id => {
+        const hcp = teamHandicaps?.[id] ?? players.find(x => x.id === id)?.handicap ?? 0;
+        return typeof hcp === 'number' && hcp % 1 !== 0;
+      })
+    : undefined;
+
   const pd = (id: string, gross: number, net: number) => {
     const p = players.find(x => x.id === id);
     const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
     const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     let strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
+    let displayNet = net;
     // Show half-dot on the halfStrokeHole for the player receiving the half point
-    if (config.useHandicap && strokes === 0 && halfStrokeHole === holeNumber && typeof hcp === 'number' && hcp % 1 !== 0) {
+    if (config.useHandicap && strokes === 0 && id === halfPlayerId) {
       strokes = 0.5;
+      displayNet = net - 0.5; // e.g. 4 → 3.5 for visual reference
     }
-    return { gross, strokes, net };
+    return { gross, strokes, net: displayNet };
   };
   const dA = pd(pA, gA, sA), dB = pd(pB, gB, sB), dC = pd(pC, gC, sC), dD = pd(pD, gD, sD);
 
-  const n1 = formVegasNumber(sA, sB), n2 = formVegasNumber(sC, sD);
+  // Vegas number uses integer net scores; on the half-point hole, treat the .5 player as having one lower
+  const vegasNetA = halfPlayerId === pA ? sA - 1 : sA;
+  const vegasNetB = halfPlayerId === pB ? sB - 1 : sB;
+  const vegasNetC = halfPlayerId === pC ? sC - 1 : sC;
+  const vegasNetD = halfPlayerId === pD ? sD - 1 : sD;
+  const n1 = formVegasNumber(vegasNetA, vegasNetB), n2 = formVegasNumber(vegasNetC, vegasNetD);
   const bT1 = config.birdieMultiplier && hasBirdie([pA,pB], holeNumber, players, scores, course);
   const bT2 = config.birdieMultiplier && hasBirdie([pC,pD], holeNumber, players, scores, course);
 
@@ -113,14 +129,7 @@ const resolveVegasHole = (
   if (bT1 && !bT2) { n2e = n2 * 2; multiplierApplied = 'team2'; }
   else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
 
-  let diff = n2e - n1e;
-
-  // Half-point tie-break: on the halfStrokeHole, if Vegas numbers are tied,
-  // the receiving team wins by 1 point
-  const isHalfHole = halfStrokeHole === holeNumber && halfReceivingTeam != null;
-  if (isHalfHole && diff === 0) {
-    diff = halfReceivingTeam === 'team1' ? 1 : -1;
-  }
+  const diff = n2e - n1e;
 
   const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
