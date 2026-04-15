@@ -885,6 +885,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             teamA={bet.teamA as [string, string]}
             teamB={bet.teamB as [string, string]}
             bilateralHandicaps={bilateralHandicaps}
+            getStrokesForLocalPair={getStrokesForLocalPair}
           />
         );
       })()}
@@ -1147,6 +1148,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             teamA={teamA}
             teamB={teamB}
             bilateralHandicaps={bilateralHandicaps}
+            getStrokesForLocalPair={getStrokesForLocalPair}
           />
         );
       })()}
@@ -1390,6 +1392,7 @@ const SixesBetCard: React.FC<{
         teamA={set1?.team1}
         teamB={set1?.team2}
         bilateralHandicaps={bilateralHandicaps}
+        getStrokesForLocalPair={getStrokesForLocalPair}
       />
     )}
 
@@ -1611,6 +1614,7 @@ const VegasBetCard: React.FC<{
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
         bilateralHandicaps={bilateralHandicaps}
+        getStrokesForLocalPair={getStrokesForLocalPair}
       />
     )}
 
