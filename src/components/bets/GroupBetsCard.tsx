@@ -920,18 +920,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { setResults, holeDisplays, winners, amount };
   }, [conejaParticipants, scores, course, betConfig, confirmedHoles]);
 
-  // Helper to calculate Medal General for a given player pool
-  const calculateMedalForPool = (pool: Player[]): MedalGeneralResult | null => {
+  // Helper to calculate Medal General for a given player pool and hole filter
+  const calculateMedalForPool = (pool: Player[], holeFilter: (h: number) => boolean = () => true, amountOverride?: number): MedalGeneralResult | null => {
     if (!betConfig.medalGeneral?.enabled || pool.length < 2) return null;
 
     const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
-    const amount = betConfig.medalGeneral.amount ?? 100;
+    const amount = amountOverride ?? betConfig.medalGeneral.amount ?? 100;
 
     const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number; groupId?: string }> = [];
 
     pool.forEach(player => {
       const playerScores = scores.get(player.id) || [];
-      const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0);
+      const confirmedScores = playerScores.filter(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber));
       if (confirmedScores.length === 0) return;
 
       const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
@@ -2248,48 +2248,116 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           </>
         )}
 
-        {/* Medal General - Scope-aware rendering */}
-        {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (
-          <>
-            {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
-                  <span className="font-medium text-sm">Medal General</span>
-                  {hasMultipleGroups && medalScope !== 'global' && (
-                    <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      {medalScope === 'group' ? 'Grupo' : 'Ambas'}
-                    </span>
+        {/* Medal General - Scope-aware rendering with segment support */}
+        {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (() => {
+          const medalSegmentMode = betConfig.medalGeneral?.segmentMode ?? 'total';
+          const sameGroupPlayerIdSet = new Set(sameGroupPlayers.map(p => p.id));
+
+          const renderMedalScope = (pool: Player[], label?: string) => {
+            if (medalSegmentMode === 'segments') {
+              // Segmented: Front 9, Back 9, Total 18
+              const segments: Array<{ label: string; amount: number; result: MedalGeneralResult | null }> = [];
+              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 1 && h <= 9, betConfig.medalGeneral?.frontAmount ?? 0) });
+              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 10 && h <= 18, betConfig.medalGeneral?.backAmount ?? 0) });
+              segments.push({ label: 'Total 18', amount: betConfig.medalGeneral?.amount ?? 100, result: calculateMedalForPool(pool, () => true) });
+
+              return (
+                <div className="space-y-1.5">
+                  {label && <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>}
+                  {segments.map(seg => {
+                    if (seg.amount <= 0 && seg.label !== 'Total 18') return null;
+                    const r = seg.result;
+                    return (
+                      <div key={seg.label} className={cn(
+                        'rounded-lg p-3',
+                        !r || !r.hasValidScores || r.winners.length === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
+                      )}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                        </div>
+                        {!r || !r.hasValidScores ? (
+                          <span className="text-xs text-muted-foreground">Sin datos</span>
+                        ) : r.winners.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">Empate total</span>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                                <div className="flex items-center gap-1">
+                                  {r.winners.map((winner, idx) => (
+                                    <React.Fragment key={winner.playerId}>
+                                      {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                                      <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                                      <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
+                                      <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              </div>
+                              <span className={cn('font-bold text-sm', r.winners[0]?.amountWon > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                                {r.winners[0]?.amountWon > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.winners[0].amountWon)}` : '$0'}
+                              </span>
+                            </div>
+                            {r.winners.length > 1 && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                Empate - pot dividido entre {r.winners.length} jugadores
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Total-only mode: use existing MedalResultBlock
+            const result = calculateMedalForPool(pool);
+            if (!result) return null;
+            return (
+              <MedalResultBlock
+                result={result}
+                all18HolesConfirmed={all18HolesConfirmed}
+                basePlayerId={basePlayerId}
+                label={label}
+                sameGroupPlayerIds={sameGroupPlayerIdSet}
+              />
+            );
+          };
+
+          return (
+            <>
+              {(culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult) && <div className="border-t-2 border-primary/40" />}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    <span className="font-medium text-sm">Medal General</span>
+                    {hasMultipleGroups && medalScope !== 'global' && (
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {medalScope === 'group' ? 'Grupo' : 'Ambas'}
+                      </span>
+                    )}
+                    {medalSegmentMode === 'segments' && (
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                    )}
+                  </div>
+                  {medalSegmentMode !== 'segments' && (
+                    <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
+                
+                {/* Group result */}
+                {medalGeneralGroupResult && renderMedalScope(sameGroupPlayers, medalScope === 'both' ? 'Grupo' : undefined)}
+                
+                {/* Global result */}
+                {medalGeneralGlobalResult && renderMedalScope(players, medalScope === 'both' ? 'General' : undefined)}
               </div>
-              
-              {/* Group result */}
-              {medalGeneralGroupResult && (
-                <MedalResultBlock
-                  result={medalGeneralGroupResult}
-                  all18HolesConfirmed={all18HolesConfirmed}
-                  basePlayerId={basePlayerId}
-                  label={medalScope === 'both' ? 'Grupo' : undefined}
-                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
-                />
-              )}
-              
-              {/* Global result */}
-              {medalGeneralGlobalResult && (
-                <MedalResultBlock
-                  result={medalGeneralGlobalResult}
-                  all18HolesConfirmed={all18HolesConfirmed}
-                  basePlayerId={basePlayerId}
-                  label={medalScope === 'both' ? 'General' : undefined}
-                  sameGroupPlayerIds={new Set(sameGroupPlayers.map(p => p.id))}
-                />
-              )}
-            </div>
-          </>
-        )}
+            </>
+          );
+        })()}
 
         {/* Putts General */}
         {showGrupales && puttsGeneralEnabled && (() => {
