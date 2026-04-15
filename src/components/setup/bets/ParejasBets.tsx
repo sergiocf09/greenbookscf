@@ -783,21 +783,32 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">Foursome {index + 1}</Label>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-            onClick={() => {
-              const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
-              if (allIds.length < 2) return;
-              const hcps = allIds.map(id => bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-              const minHcp = Math.min(...hcps);
-              const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
-              allIds.forEach(id => {
-                const h = bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                newHandicaps[id] = Math.round(h - minHcp);
-              });
-              onUpdate({ teamHandicaps: newHandicaps });
-            }}>
-            Base Cero
-          </Button>
+          {(() => {
+            const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
+            const isBaseCero = allIds.length >= 2 && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
+            return (
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => {
+                  if (allIds.length < 2) return;
+                  if (isBaseCero) {
+                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
+                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  } else {
+                    const hcps = allIds.map(id => bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+                    const minHcp = Math.min(...hcps);
+                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
+                    allIds.forEach(id => {
+                      const h = bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
+                      newHandicaps[id] = Math.round(h - minHcp);
+                    });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  }
+                }}>
+                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+              </Button>
+            );
+          })()}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -1032,21 +1043,32 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">{label}</Label>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-            onClick={() => {
-              const allIds = [...teamA, ...teamB].filter(Boolean);
-              if (allIds.length < 2) return;
-              const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-              const minHcp = Math.min(...hcps);
-              const newHandicaps: Record<string, number> = { ...teamHandicaps };
-              allIds.forEach(id => {
-                const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                newHandicaps[id] = Math.round(h - minHcp);
-              });
-              onUpdate({ teamHandicaps: newHandicaps });
-            }}>
-            Base Cero
-          </Button>
+          {(() => {
+            const allIds = [...teamA, ...teamB].filter(Boolean);
+            const isBaseCero = allIds.length >= 2 && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
+            return (
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={() => {
+                  if (allIds.length < 2) return;
+                  if (isBaseCero) {
+                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
+                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  } else {
+                    const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+                    const minHcp = Math.min(...hcps);
+                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
+                    allIds.forEach(id => {
+                      const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
+                      newHandicaps[id] = Math.round(h - minHcp);
+                    });
+                    onUpdate({ teamHandicaps: newHandicaps });
+                  }
+                }}>
+                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
+              </Button>
+            );
+          })()}
           {onRemove && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
