@@ -54,7 +54,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
-  // slidingApplied is derived from comparing persisted values to sliding suggestions
+  // Track which changes have been saved but not yet confirmed by realtime
+  const [savedChanges, setSavedChanges] = useState<Map<string, number>>(new Map());
 
   const totalGroups = 1 + playerGroups.length;
 
