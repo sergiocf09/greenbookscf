@@ -17,6 +17,11 @@ export interface RoundHandicap {
   updatedAt: string;
 }
 
+export interface LocalPairStrokeState {
+  strokes: number;
+  hasExplicitOverride: boolean;
+}
+
 export interface HandicapPair {
   playerAId: string;
   playerBId: string;
@@ -224,6 +229,31 @@ export const useRoundHandicaps = ({
       return getStrokesForPair(rpIdA, rpIdB);
     },
     [toRoundPlayerId, getStrokesForPair]
+  );
+
+  const getLocalPairStrokeState = useCallback(
+    (localIdA: string, localIdB: string): LocalPairStrokeState => {
+      const rpIdA = toRoundPlayerId(localIdA);
+      const rpIdB = toRoundPlayerId(localIdB);
+
+      if (!rpIdA || !rpIdB) {
+        return { strokes: 0, hasExplicitOverride: false };
+      }
+
+      const [normA, normB, swapped] = normalizePair(rpIdA, rpIdB);
+      const key = `${normA}-${normB}`;
+      const handicap = handicaps.get(key);
+
+      if (!handicap) {
+        return { strokes: 0, hasExplicitOverride: false };
+      }
+
+      return {
+        strokes: swapped ? -handicap.strokesGivenByA : handicap.strokesGivenByA,
+        hasExplicitOverride: true,
+      };
+    },
+    [toRoundPlayerId, handicaps]
   );
 
   // Set strokes for a pair (using round_player IDs)
@@ -467,6 +497,7 @@ export const useRoundHandicaps = ({
     loadHandicaps,
     getStrokesForPair,
     getStrokesForLocalPair,
+    getLocalPairStrokeState,
     setStrokesForPair,
     setStrokesForLocalPair,
     getAllHandicapPairs,
