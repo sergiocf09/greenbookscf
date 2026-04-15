@@ -20,6 +20,8 @@ interface BetSetupProps {
   userGroupId?: string;
   /** Whether the current user is the round organizer */
   isOrganizer?: boolean;
+  /** Matrix strokes lookup — returns strokes A gives to B (positive = A gives) */
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 type GroupTab = 'inherited' | 'mygroup';
