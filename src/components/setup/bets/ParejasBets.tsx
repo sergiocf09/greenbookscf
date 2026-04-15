@@ -805,6 +805,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   playerOptions,
   onUpdate,
   onRemove,
+  bilateralHandicaps,
 }) => {
   return (
     <div className={cn(
@@ -869,7 +870,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
             teamA={bet.teamA as [string, string]}
             teamB={bet.teamB as [string, string]}
-            bilateralHandicaps={config.bilateralHandicaps}
+            bilateralHandicaps={bilateralHandicaps}
           />
         );
       })()}
