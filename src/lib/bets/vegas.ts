@@ -129,14 +129,7 @@ const resolveVegasHole = (
   if (bT1 && !bT2) { n2e = n2 * 2; multiplierApplied = 'team2'; }
   else if (bT2 && !bT1) { n1e = n1 * 2; multiplierApplied = 'team1'; }
 
-  let diff = n2e - n1e;
-
-  // Half-point tie-break: on the halfStrokeHole, if Vegas numbers are tied,
-  // the receiving team wins by 1 point
-  const isHalfHole = halfStrokeHole === holeNumber && halfReceivingTeam != null;
-  if (isHalfHole && diff === 0) {
-    diff = halfReceivingTeam === 'team1' ? 1 : -1;
-  }
+  const diff = n2e - n1e;
 
   const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
