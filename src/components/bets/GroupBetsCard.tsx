@@ -2294,26 +2294,35 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {/* Putts General */}
         {showGrupales && puttsGeneralEnabled && (() => {
           const puttsCfg = (betConfig as any).puttsGeneral;
-          const puttsAmount = puttsCfg?.amount ?? 100;
           const puttsSegmentMode = puttsCfg?.segmentMode ?? 'total';
 
-          // Calculate putts results using same pool logic as medal
-          const puttsPool = players;
-          const puttsPlayerResults: Array<{ playerId: string; name: string; initials: string; color: string; totalPutts: number }> = [];
-          puttsPool.forEach(player => {
-            const playerScores = scores.get(player.id) || [];
-            const confirmed = playerScores.filter(s => s.confirmed && s.strokes > 0 && s.putts != null);
-            if (confirmed.length === 0) return;
-            const total = confirmed.reduce((sum, s) => sum + (s.putts ?? 0), 0);
-            puttsPlayerResults.push({ playerId: player.id, name: player.name, initials: player.initials, color: player.color, totalPutts: total });
-          });
+          // Helper to compute putts winner for a hole range
+          const computePuttsSegment = (holeFilter: (h: number) => boolean, segAmount: number) => {
+            const results: Array<{ playerId: string; name: string; initials: string; color: string; totalPutts: number }> = [];
+            players.forEach(player => {
+              const playerScores = scores.get(player.id) || [];
+              const confirmed = playerScores.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+              if (confirmed.length === 0) return;
+              const total = confirmed.reduce((sum, s) => sum + (s.putts ?? 0), 0);
+              results.push({ playerId: player.id, name: player.name, initials: player.initials, color: player.color, totalPutts: total });
+            });
+            if (results.length < 2) return null;
+            const min = Math.min(...results.map(p => p.totalPutts));
+            const winners = results.filter(p => p.totalPutts === min);
+            const losersCount = results.length - winners.length;
+            if (losersCount === 0) return { winners, pot: 0, perWinner: 0 };
+            const pot = losersCount * segAmount;
+            return { winners, pot, perWinner: pot / winners.length };
+          };
 
-          const hasValidPutts = puttsPlayerResults.length >= 2;
-          const minPutts = hasValidPutts ? Math.min(...puttsPlayerResults.map(p => p.totalPutts)) : 0;
-          const puttsWinners = hasValidPutts ? puttsPlayerResults.filter(p => p.totalPutts === minPutts) : [];
-          const puttsLosersCount = puttsPlayerResults.length - puttsWinners.length;
-          const puttsPot = puttsLosersCount * puttsAmount;
-          const puttsPerWinner = puttsWinners.length > 0 ? puttsPot / puttsWinners.length : 0;
+          const segments: Array<{ label: string; amount: number; result: ReturnType<typeof computePuttsSegment> }> = [];
+          if (puttsSegmentMode === 'segments') {
+            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= 1 && h <= 9, puttsCfg?.frontAmount ?? 0) });
+            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= 10 && h <= 18, puttsCfg?.backAmount ?? 0) });
+          }
+          segments.push({ label: 'Total 18', amount: puttsCfg?.amount ?? 100, result: computePuttsSegment(() => true, puttsCfg?.amount ?? 100) });
+
+          const anyResult = segments.some(s => s.result);
 
           return (
             <>
@@ -2324,41 +2333,57 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <Trophy className="h-4 w-4 text-emerald-500" />
                     <span className="font-medium text-sm">Putts General</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">${puttsAmount} c/u</span>
                 </div>
 
-                {!hasValidPutts ? (
+                {!anyResult ? (
                   <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
                     Sin putts confirmados suficientes
                   </div>
                 ) : (
-                  <div className={cn(
-                    'rounded-lg p-3',
-                    puttsPerWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
-                  )}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
-                        <div className="flex items-center gap-1">
-                          {puttsWinners.map((winner, idx) => (
-                            <React.Fragment key={winner.playerId}>
-                              {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                              <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                              <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
-                              <span className="text-xs text-muted-foreground">(Putts: {winner.totalPutts})</span>
-                            </React.Fragment>
-                          ))}
+                  <div className="space-y-1.5">
+                    {segments.map(seg => {
+                      if (seg.amount <= 0 && puttsSegmentMode === 'segments' && seg.label !== 'Total 18') return null;
+                      const r = seg.result;
+                      return (
+                        <div key={seg.label} className={cn(
+                          'rounded-lg p-3',
+                          !r || r.perWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                          </div>
+                          {!r ? (
+                            <span className="text-xs text-muted-foreground">Sin datos</span>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                                  <div className="flex items-center gap-1">
+                                    {r.winners.map((winner, idx) => (
+                                      <React.Fragment key={winner.playerId}>
+                                        {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                                        <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                                        <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
+                                        <span className="text-xs text-muted-foreground">(Putts: {winner.totalPutts})</span>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </div>
+                                <span className={cn('font-bold text-sm', r.perWinner > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                                  {r.perWinner > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.perWinner)}` : '$0'}
+                                </span>
+                              </div>
+                              {r.winners.length > 1 && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Empate - pot dividido entre {r.winners.length} jugadores
+                                </p>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </div>
-                      <span className={cn('font-bold text-sm', puttsPerWinner > 0 ? 'text-green-600' : 'text-muted-foreground')}>
-                        {puttsPerWinner > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(puttsPerWinner)}` : '$0'}
-                      </span>
-                    </div>
-                    {puttsWinners.length > 1 && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Empate - pot dividido entre {puttsWinners.length} jugadores
-                      </p>
-                    )}
+                      );
+                    })}
                   </div>
                 )}
               </div>
