@@ -388,6 +388,7 @@ export interface TeamPressuresBet {
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly';
   enabled: boolean;
   continua?: boolean; // When true + matchOnly: single 18-hole match, early-win detection
+  handicapConfig?: TeamHandicapConfig;
   // Optional sub-modalities
   unitsConfig?: TeamPressureUnitsConfig;
   oyesesConfig?: TeamPressureOyesesConfig;
