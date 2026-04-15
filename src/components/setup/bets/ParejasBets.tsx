@@ -1037,6 +1037,7 @@ interface CarritosCardProps {
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
   players: Player[];
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
@@ -1044,6 +1045,20 @@ interface CarritosCardProps {
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
+  label,
+  teamA,
+  teamB,
+  frontAmount,
+  backAmount,
+  totalAmount,
+  scoringType,
+  teamHandicaps,
+  handicapConfig,
+  players,
+  playerOptions,
+  onUpdate,
+  onRemove,
+}) => {
   label,
   teamA,
   teamB,
@@ -1099,6 +1114,24 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
+
+      {/* Handicap Mode Selector */}
+      {(() => {
+        const allIds = [...teamA, ...teamB].filter(Boolean);
+        if (allIds.length < 4) return null;
+        return (
+          <HandicapModeSelector
+            allIds={allIds}
+            players={players}
+            teamHandicaps={teamHandicaps}
+            handicapConfig={handicapConfig}
+            onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+            onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+            teamA={teamA}
+            teamB={teamB}
+          />
+        );
+      })()}
 
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
