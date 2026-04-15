@@ -33,6 +33,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   hasMultipleGroups = false,
   userGroupId,
   isOrganizer = true,
+  getStrokesForLocalPair,
 }) => {
   const { profile } = useAuth();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
