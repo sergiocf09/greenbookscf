@@ -696,6 +696,7 @@ export interface WolfSetupConfig {
   playerOrder?: string[]; // Custom rotation order (player IDs)
   hole18Redemption?: boolean; // Allow biggest loser to take wolf on H18, solo, ×3
   playerHandicaps?: { playerId: string; handicap: number }[];
+  handicapConfig?: TeamHandicapConfig;
 }
 
 // =====================================================
