@@ -1503,17 +1503,31 @@ const VegasBetCard: React.FC<{
       <Label className="text-xs">Multiplicador Birdie (×2)</Label>
     </div>
 
+    {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
+    {bet.useHandicap && bet.playerAId && bet.playerBId && bet.playerCId && bet.playerDId && (
+      <HandicapModeSelector
+        allIds={[bet.playerAId, bet.playerBId, bet.playerCId, bet.playerDId]}
+        players={players}
+        teamHandicaps={bet.teamHandicaps ?? {}}
+        handicapConfig={bet.handicapConfig}
+        onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+        onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+        teamA={[bet.playerAId, bet.playerBId]}
+        teamB={[bet.playerCId, bet.playerDId]}
+      />
+    )}
+
     <div className="space-y-2">
       <Label className="text-[10px] font-semibold text-primary">Jugadores</Label>
       <TeamColumns
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
-        teamHandicaps={{}}
+        teamHandicaps={bet.useHandicap ? (bet.teamHandicaps ?? {}) : {}}
         players={players}
         playerOptions={playerOptions}
         onUpdateTeamA={([a, b]) => onUpdate({ playerAId: a, playerBId: b })}
         onUpdateTeamB={([c, d]) => onUpdate({ playerCId: c, playerDId: d })}
-        onUpdateHandicaps={() => {}}
+        onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
       />
       <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
     </div>
