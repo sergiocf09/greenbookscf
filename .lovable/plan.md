@@ -1,67 +1,44 @@
 
 
-# Fix: Half-Point Tie-Break Accuracy + HandicapMatrix Save Timing
+# Fix: Half-Point Breaking Both LowBall AND HighBall Ties
 
-## Problem Summary
+## Root Cause
 
-Three distinct issues:
+When both teammates have the same net score (e.g., both 4), `Math.min` and `Math.max` return the same value. Since `halfPlayerNet` equals both, the current code breaks **both** the lowball and highball ties — awarding 2 (or 3 with combined) points instead of just 1.
 
-1. **Carritos engine** (`carritos.ts`): On the half-point hole, ALL ties (lowball, highball, combined) are blindly broken in favor of the receiving team — without checking if the half-point player is actually the one providing the low or high ball. The dashboard tooltip (`BetDashboard.tsx`) already has the correct check, but the **calculation engine** does not.
+The half-point advantage means the player effectively scores 0.5 lower. This makes them the **low ball** contributor. They should NOT also be treated as the high ball contributor when both teammates tie.
 
-2. **Sixes engine** (`sixes.ts`): Same issue in `lowHighBall` mode — `tieWinner()` blindly awards the tie to the receiving team without verifying player contribution.
+## The Rule
 
-3. **HandicapMatrix save timing** (`HandicapMatrix.tsx`): `applyAllSliding` calls `setCellStrokes` (which queues React state via `setPendingChanges`), then calls `saveAllChanges()` via `setTimeout(0)`. But `saveAllChanges` is a `useCallback` that captures `pendingChanges` from its closure — the stale value from before the state update. The save either saves nothing or saves old data.
+- The half-point player's effective score is `net - 0.5`, making them always the **lower** contributor on their team.
+- **LowBall tie**: break it if `halfPlayerNet === Math.min(teamNets)` — the player IS the low ball. ✓
+- **HighBall tie**: break it ONLY if `halfPlayerNet === Math.max(teamNets)` **AND** `halfPlayerNet > Math.min(teamNets)` — i.e., the player is exclusively the high ball (different from teammate). If both teammates tied, the half-point player is the low ball, so high ball stays tied.
+- **Combined tie**: always break (the 0.5 affects the team total).
 
-**Vegas** is already correct — it tracks `halfPlayerId` and only breaks ties when appropriate.
+## Files to Fix (4 locations)
 
----
+### 1. `src/lib/bets/carritos.ts` (line 142)
+Add guard: `&& halfPlayerNet !== Math.min(...halfTeamNets)` to the highBall tie-break condition. This prevents breaking high ball when the player also equals the min (meaning both teammates tied).
 
-## Fix 1: Carritos Engine — Track halfPlayerId and Validate Contribution
+### 2. `src/lib/bets/sixes.ts` (line 120-123)
+Same fix in `highTieBreak()`: add check that `halfPlayerNet > Math.min(...halfPlayerTeamVals)`.
 
-**File**: `src/lib/bets/carritos.ts`
+### 3. `src/components/bets/BetDashboard.tsx` (line 715)
+Carritos tooltip: add guard to highball tie-break — only break if halfPlayerNet is exclusively the high value on the team.
 
-- Track `halfPlayerId` alongside `halfStrokeHole` and `halfReceivingTeam` (line 85-97).
-- In `getHolePoints` (line 114-141), before breaking a tie:
-  - **LowBall**: Only break if `halfPlayerId`'s net score equals `Math.min()` on their team (i.e., they ARE the low ball).
-  - **HighBall**: Only break if `halfPlayerId`'s net score equals `Math.max()` on their team (i.e., they ARE the high ball).
-  - **Combined**: Always applies (the .5 affects the team total regardless).
+### 4. `src/components/bets/BetDashboard.tsx` (line 2547)
+Foursomes tooltip: same guard for highball tie-break.
 
-## Fix 2: Sixes Engine — Track halfPlayerId in lowHighBall Mode
+## Concrete Change Pattern
 
-**File**: `src/lib/bets/sixes.ts`
+```typescript
+// BEFORE (all locations):
+if (highBallTied && halfPlayerNet === teamMax) { break tie }
 
-- Extend `detectHalfPoint` (line 33-47) to also return `halfPlayerId`.
-- Pass `halfPlayerId` into `resolveSixesHole`.
-- In `lowHighBall` mode (line 103-111):
-  - For lowball tie: only break if halfPlayer's net IS `Math.min()` on their team.
-  - For highball tie: only break if halfPlayer's net IS `Math.max()` on their team.
-- For `lowBall`-only and `stroke`-only modes, the current logic is fine (single comparison).
+// AFTER:
+if (highBallTied && halfPlayerNet === teamMax && halfPlayerNet !== teamMin) { break tie }
+// Only applies the .5 to high ball when the player is exclusively the high ball
+```
 
-## Fix 3: HandicapMatrix — Fix Save Timing with useEffect
-
-**File**: `src/components/setup/HandicapMatrix.tsx`
-
-Replace the `setTimeout(() => saveAllChanges())` pattern with a `useEffect`-based approach:
-
-- Add a `pendingSaveRequested` state flag (`useState(false)`).
-- In `applyAllSliding`: after calling `setCellStrokes` for all pairs, set `pendingSaveRequested = true` (do NOT call `saveAllChanges` directly).
-- In "Aplicar Full Hándicap" handler: same pattern — set values, then `pendingSaveRequested = true`.
-- Add a `useEffect` that watches `[pendingSaveRequested, pendingChanges]`:
-  ```
-  if pendingSaveRequested && pendingChanges.size > 0:
-    call saveAllChanges()
-    set pendingSaveRequested = false
-    set slidingApplied accordingly
-  ```
-- This guarantees the save runs AFTER React has flushed the pending changes state.
-
----
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/lib/bets/carritos.ts` | Track `halfPlayerId`, validate low/high ball contribution before breaking tie |
-| `src/lib/bets/sixes.ts` | Return `halfPlayerId` from `detectHalfPoint`, validate in lowHighBall mode |
-| `src/components/setup/HandicapMatrix.tsx` | Replace `setTimeout` save with `useEffect` + `pendingSaveRequested` flag |
+This is a minimal, targeted fix — 4 lines changed across 3 files.
 
