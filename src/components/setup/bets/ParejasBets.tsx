@@ -846,6 +846,24 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
 
+      {/* Handicap Mode Selector */}
+      {(() => {
+        const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
+        if (allIds.length < 4) return null;
+        return (
+          <HandicapModeSelector
+            allIds={allIds}
+            players={players}
+            teamHandicaps={bet.teamHandicaps}
+            handicapConfig={bet.handicapConfig}
+            onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+            onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+            teamA={bet.teamA as [string, string]}
+            teamB={bet.teamB as [string, string]}
+          />
+        );
+      })()}
+
       {/* Scoring type */}
       <div className="flex items-center justify-between">
         <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
