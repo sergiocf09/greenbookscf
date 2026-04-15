@@ -293,6 +293,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 totalAmount={config.carritos.totalAmount}
                 scoringType={config.carritos.scoringType}
                 teamHandicaps={config.carritos.teamHandicaps || {}}
+                handicapConfig={config.carritos.handicapConfig}
                 players={players}
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
@@ -311,6 +312,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 totalAmount={team.totalAmount}
                 scoringType={team.scoringType}
                 teamHandicaps={team.teamHandicaps || {}}
+                handicapConfig={team.handicapConfig}
                 players={players}
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => updateCarritosTeam(team.id, updates)}
@@ -523,26 +525,32 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
-                  {(() => {
-                    const hcps = activeIds.map(pid => getHcp(pid));
-                    const fullHcps = activeIds.map(pid => players.find(p => p.id === pid)?.handicap ?? 0);
-                    const isBaseCero = hcps.some(h => h === 0) && hcps.some((h, i) => h !== fullHcps[i]);
-                    return (
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-                        onClick={() => {
-                          if (isBaseCero) {
-                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: players.find(p => p.id === pid)?.handicap ?? 0 }));
-                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
-                          } else {
-                            const minHcp = Math.min(...fullHcps.map((_, i) => hcps[i]));
-                            const existing = activeIds.map(pid => ({ playerId: pid, handicap: Math.round(getHcp(pid) - minHcp) }));
-                            onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
-                          }
-                        }}>
-                        {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
-                      </Button>
-                    );
-                  })()}
+                  <Select
+                    value={(() => {
+                      const hcps = activeIds.map(pid => getHcp(pid));
+                      const fullHcps = activeIds.map(pid => players.find(p => p.id === pid)?.handicap ?? 0);
+                      const isBaseCero = hcps.some(h => h === 0) && hcps.some((h, i) => h !== fullHcps[i]);
+                      return isBaseCero ? 'baseCero' : 'individual';
+                    })()}
+                    onValueChange={(v) => {
+                      if (v === 'baseCero') {
+                        const fullHcps = activeIds.map(pid => players.find(p => p.id === pid)?.handicap ?? 0);
+                        const hcps = activeIds.map(pid => getHcp(pid));
+                        const minHcp = Math.min(...hcps);
+                        const existing = activeIds.map(pid => ({ playerId: pid, handicap: Math.round(getHcp(pid) - minHcp) }));
+                        onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                      } else {
+                        const existing = activeIds.map(pid => ({ playerId: pid, handicap: players.find(p => p.id === pid)?.handicap ?? 0 }));
+                        onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerHandicaps: existing } as any);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">Full Hándicap</SelectItem>
+                      <SelectItem value="baseCero">Base Cero</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                   {activeIds.map(pid => {
@@ -807,29 +815,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <div className="flex items-center gap-1">
           {(() => {
             const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
-            const isBaseCero = allIds.length >= 2 && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
-            return (
-              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-                onClick={() => {
-                  if (allIds.length < 2) return;
-                  if (isBaseCero) {
-                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
-                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
-                    onUpdate({ teamHandicaps: newHandicaps });
-                  } else {
-                    const hcps = allIds.map(id => bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-                    const minHcp = Math.min(...hcps);
-                    const newHandicaps: Record<string, number> = { ...bet.teamHandicaps };
-                    allIds.forEach(id => {
-                      const h = bet.teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                      newHandicaps[id] = Math.round(h - minHcp);
-                    });
-                    onUpdate({ teamHandicaps: newHandicaps });
-                  }
-                }}>
-                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
-              </Button>
-            );
+            if (allIds.length < 2) return null;
+            return null; // HandicapModeSelector rendered below
           })()}
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -866,6 +853,24 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
+
+      {/* Handicap Mode Selector */}
+      {(() => {
+        const allIds = [...bet.teamA, ...bet.teamB].filter(Boolean);
+        if (allIds.length < 4) return null;
+        return (
+          <HandicapModeSelector
+            allIds={allIds}
+            players={players}
+            teamHandicaps={bet.teamHandicaps}
+            handicapConfig={bet.handicapConfig}
+            onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+            onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+            teamA={bet.teamA as [string, string]}
+            teamB={bet.teamB as [string, string]}
+          />
+        );
+      })()}
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
@@ -1040,6 +1045,7 @@ interface CarritosCardProps {
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
   players: Player[];
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
@@ -1055,6 +1061,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   totalAmount,
   scoringType,
   teamHandicaps,
+  handicapConfig,
   players,
   playerOptions,
   onUpdate,
@@ -1065,32 +1072,6 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium">{label}</Label>
         <div className="flex items-center gap-1">
-          {(() => {
-            const allIds = [...teamA, ...teamB].filter(Boolean);
-            const isBaseCero = allIds.length >= 2 && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) === 0) && allIds.some(id => (teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0) !== (players.find(p => p.id === id)?.handicap ?? 0));
-            return (
-              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 px-2"
-                onClick={() => {
-                  if (allIds.length < 2) return;
-                  if (isBaseCero) {
-                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
-                    allIds.forEach(id => { newHandicaps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
-                    onUpdate({ teamHandicaps: newHandicaps });
-                  } else {
-                    const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
-                    const minHcp = Math.min(...hcps);
-                    const newHandicaps: Record<string, number> = { ...teamHandicaps };
-                    allIds.forEach(id => {
-                      const h = teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0;
-                      newHandicaps[id] = Math.round(h - minHcp);
-                    });
-                    onUpdate({ teamHandicaps: newHandicaps });
-                  }
-                }}>
-                {isBaseCero ? 'Full Hándicap' : 'Base Cero'}
-              </Button>
-            );
-          })()}
           {onRemove && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -1128,6 +1109,24 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
       />
+
+      {/* Handicap Mode Selector */}
+      {(() => {
+        const allIds = [...teamA, ...teamB].filter(Boolean);
+        if (allIds.length < 4) return null;
+        return (
+          <HandicapModeSelector
+            allIds={allIds}
+            players={players}
+            teamHandicaps={teamHandicaps}
+            handicapConfig={handicapConfig}
+            onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
+            onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
+            teamA={teamA}
+            teamB={teamB}
+          />
+        );
+      })()}
 
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
@@ -1189,7 +1188,7 @@ const HandicapModeSelector: React.FC<{
       allIds.forEach(id => { newHcps[id] = players.find(p => p.id === id)?.handicap ?? 0; });
       onUpdateHandicaps(newHcps);
     } else if (newMode === 'baseCero') {
-      const hcps = allIds.map(id => teamHandicaps[id] ?? players.find(p => p.id === id)?.handicap ?? 0);
+      const hcps = allIds.map(id => players.find(p => p.id === id)?.handicap ?? 0);
       const minHcp = Math.min(...hcps);
       const newHcps: Record<string, number> = {};
       allIds.forEach(id => {
@@ -1202,6 +1201,21 @@ const HandicapModeSelector: React.FC<{
       allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
       const { teamHandicaps: result } = calcTeamDifferentialFn(teamA, teamB, hcpMap, handicapConfig?.diferencialRecipientOverride);
       onUpdateHandicaps(result);
+    } else if (newMode === 'slidingEquipo' && teamA && teamB) {
+      const hcpMap: Record<string, number> = {};
+      allIds.forEach(id => { hcpMap[id] = players.find(p => p.id === id)?.handicap ?? 0; });
+      // Calculate cross-pair slidings from individual handicap differences
+      const slidings = {
+        ac: hcpMap[teamA[0]] - hcpMap[teamB[0]],
+        ad: hcpMap[teamA[0]] - hcpMap[teamB[1]],
+        bc: hcpMap[teamA[1]] - hcpMap[teamB[0]],
+        bd: hcpMap[teamA[1]] - hcpMap[teamB[1]],
+      };
+      const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, handicapConfig?.slidingHalfPointMode ?? 'roundDown');
+      onUpdateHandicaps(result.teamHandicaps);
+      if (result.hasHalf) {
+        onUpdateHandicapConfig({ ...newConfig, slidingHalfPointMode: handicapConfig?.slidingHalfPointMode ?? 'halfPoint' });
+      }
     }
   };
 
@@ -1211,7 +1225,7 @@ const HandicapModeSelector: React.FC<{
       <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
         <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="individual">Individual</SelectItem>
+          <SelectItem value="individual">Full Hándicap</SelectItem>
           <SelectItem value="baseCero">Base Cero</SelectItem>
           <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
           <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
@@ -1221,8 +1235,8 @@ const HandicapModeSelector: React.FC<{
   );
 };
 
-// Import the team differential function
-import { calcTeamDifferential as calcTeamDifferentialFn } from '@/lib/handicapUtils';
+// Import the team differential and sliding functions
+import { calcTeamDifferential as calcTeamDifferentialFn, calcSlidingTeamDifferential as calcSlidingTeamDifferentialFn } from '@/lib/handicapUtils';
 
 /* ─── Sixes Bet Card ─── */
 const SixesBetCard: React.FC<{

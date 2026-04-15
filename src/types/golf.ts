@@ -577,6 +577,7 @@ export interface CarritosBetConfig {
   useTeamHandicaps: boolean;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
   teamHandicaps?: Record<string, number>; // playerId -> handicap for carritos
+  handicapConfig?: TeamHandicapConfig;
 }
 
 // Round state
