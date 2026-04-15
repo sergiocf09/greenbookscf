@@ -1,5 +1,5 @@
 /**
- * HandicapMatrix - Compact Matrix for Bilateral Handicaps
+ * HandicapMatrix - Compact Matrix for Bilateral Handicaps (v3)
  * 
  * Shows a grid where rows and columns are players.
  * Reading direction: ROW player's perspective.
@@ -161,16 +161,20 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
    */
   const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
     const key = `${rowId}::${colId}`;
+    // 1. Pending manual edits (not yet saved)
     if (pendingChanges.has(key)) return pendingChanges.get(key)!;
+    // 2. Recently saved, waiting for realtime confirmation
     if (savedChanges.has(key)) return savedChanges.get(key)!;
 
+    // 3. Persisted in DB (via realtime sync)
     const pairState = getLocalPairStrokeState?.(rowId, colId);
     if (pairState?.hasExplicitOverride) return pairState.strokes;
 
     const persisted = getStrokesForLocalPair(rowId, colId);
 
-    // Fallback: if persisted is 0, show setup handicap differential instead
-    if (persisted === 0) {
+    // 4. Fallback to setup handicap diff ONLY if NO DB record exists
+    // (pairState?.hasExplicitOverride is false AND persisted is 0)
+    if (persisted === 0 && (!pairState || !pairState.hasExplicitOverride)) {
       const rowPlayer = allPlayers.find(p => p.id === rowId);
       const colPlayer = allPlayers.find(p => p.id === colId);
       if (rowPlayer && colPlayer) {
@@ -180,7 +184,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     return persisted;
-  }, [pendingChanges, savedChanges, getStrokesForLocalPair, allPlayers]);
+  }, [pendingChanges, savedChanges, getStrokesForLocalPair, getLocalPairStrokeState, allPlayers]);
 
   const stageBatchChanges = useCallback((changes: Array<{ rowId: string; colId: string; value: number }>) => {
     setPendingChanges(prev => {
