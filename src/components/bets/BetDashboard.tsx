@@ -2426,13 +2426,32 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           const strokesMap = new Map<string, number[]>();
           [...teamA, ...teamB].forEach(pid => {
-            strokesMap.set(pid, calculateStrokesPerHole(getHandicap(pid), course));
+            strokesMap.set(pid, calculateStrokesPerHole(Math.floor(getHandicap(pid)), course));
           });
+
+          // Detect half-point for Foursomes display
+          const isHalfPtMode = bet.handicapConfig?.slidingHalfPointMode === 'halfPoint';
+          let fpHalfHole: number | null = null;
+          let fpHalfPlayer: string | null = null;
+          if (isHalfPtMode) {
+            for (const pid of [...teamA, ...teamB]) {
+              const hcp = getHandicap(pid);
+              if (hcp % 1 !== 0) {
+                const res = calculateStrokesPerHoleWithHalf(hcp, true, course);
+                fpHalfHole = res.halfStrokeHole;
+                fpHalfPlayer = pid;
+                break;
+              }
+            }
+          }
           
           const getPlayerScore = (playerId: string, holeNum: number): { gross: number; hcp: number; net: number } | null => {
             const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
             if (!score || typeof score.strokes !== 'number') return null;
-            const hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            let hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            if (playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) {
+              hcp = 0.5;
+            }
             return { gross: score.strokes, hcp, net: score.strokes - hcp };
           };
           
