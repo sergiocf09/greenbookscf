@@ -1273,9 +1273,7 @@ const HandicapModeSelector: React.FC<{
       <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
       <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
         <SelectTrigger className="h-7 w-44 text-[11px]">
-          <SelectValue placeholder={HANDICAP_MODE_LABELS[mode] || 'Seleccionar'}>
-            {HANDICAP_MODE_LABELS[mode] || mode}
-          </SelectValue>
+          <SelectValue placeholder="Seleccionar" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="individual">Full Hándicap</SelectItem>
