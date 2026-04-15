@@ -591,13 +591,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
       const getCarritosHoleScore = (
         playerId: string,
-        holeNum: number
+        holeNum: number,
+        showHalfPoint = false
       ): { gross: number; hcp: number; net: number } | null => {
         const score = confirmedScores.get(playerId)?.find((s) => s.holeNumber === holeNum);
         if (!score || typeof score.strokes !== 'number' || !Number.isFinite(score.strokes)) return null;
         let hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
-        // Show half-point indicator on the halfStrokeHole
-        if (playerId === halfPlayerId && holeNum === halfStrokeHole && hcp === 0) {
+        // Show half-point indicator ONLY when a tie was broken
+        if (showHalfPoint && playerId === halfPlayerId && holeNum === halfStrokeHole && hcp === 0) {
           hcp = 0.5;
         }
         return { gross: score.strokes, hcp, net: score.strokes - hcp };
@@ -631,18 +632,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           pointsB: number;
         };
       } | null => {
-        const a1 = getCarritosHoleScore(resolvedTeamA[0], holeNum);
-        const a2 = getCarritosHoleScore(resolvedTeamA[1], holeNum);
-        const b1 = getCarritosHoleScore(resolvedTeamB[0], holeNum);
-        const b2 = getCarritosHoleScore(resolvedTeamB[1], holeNum);
+        const a1r = getCarritosHoleScore(resolvedTeamA[0], holeNum);
+        const a2r = getCarritosHoleScore(resolvedTeamA[1], holeNum);
+        const b1r = getCarritosHoleScore(resolvedTeamB[0], holeNum);
+        const b2r = getCarritosHoleScore(resolvedTeamB[1], holeNum);
 
         // Skip if not all four have a score for this hole
-        if (!a1 || !a2 || !b1 || !b2) return null;
+        if (!a1r || !a2r || !b1r || !b2r) return null;
 
-        const netA1 = a1.net;
-        const netA2 = a2.net;
-        const netB1 = b1.net;
-        const netB2 = b2.net;
+        const netA1 = a1r.net;
+        const netA2 = a2r.net;
+        const netB1 = b1r.net;
+        const netB2 = b2r.net;
 
         let pointsA = 0;
         let pointsB = 0;
@@ -692,6 +693,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           }
         }
 
+        // Only show .5 visual when a tie exists on the half-point hole
+        const hasTie = lowBallWinner === 'tie' || highBallWinner === 'tie' || combinedWinner === 'tie';
+        const showHalf = hasTie && holeNum === halfStrokeHole;
+        const a1 = showHalf ? getCarritosHoleScore(resolvedTeamA[0], holeNum, true) ?? a1r : a1r;
+        const a2 = showHalf ? getCarritosHoleScore(resolvedTeamA[1], holeNum, true) ?? a2r : a2r;
+        const b1 = showHalf ? getCarritosHoleScore(resolvedTeamB[0], holeNum, true) ?? b1r : b1r;
+        const b2 = showHalf ? getCarritosHoleScore(resolvedTeamB[1], holeNum, true) ?? b2r : b2r;
+
         return {
           pointsA,
           pointsB,
@@ -699,16 +708,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             holeNumber: holeNum,
             grossA1: a1.gross,
             hcpA1: a1.hcp,
-            netA1,
+            netA1: a1.net,
             grossA2: a2.gross,
             hcpA2: a2.hcp,
-            netA2,
+            netA2: a2.net,
             grossB1: b1.gross,
             hcpB1: b1.hcp,
-            netB1,
+            netB1: b1.net,
             grossB2: b2.gross,
             hcpB2: b2.hcp,
-            netB2,
+            netB2: b2.net,
             lowBallWinner,
             highBallWinner,
             combinedWinner,
@@ -2445,31 +2454,31 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             }
           }
           
-          const getPlayerScore = (playerId: string, holeNum: number): { gross: number; hcp: number; net: number } | null => {
+          const getPlayerScore = (playerId: string, holeNum: number, showHalf = false): { gross: number; hcp: number; net: number } | null => {
             const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
             if (!score || typeof score.strokes !== 'number') return null;
             let hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
-            if (playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) {
+            if (showHalf && playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) {
               hcp = 0.5;
             }
             return { gross: score.strokes, hcp, net: score.strokes - hcp };
           };
           
           const getHoleDetail = (holeNum: number) => {
-            const a1 = getPlayerScore(teamA[0], holeNum);
-            const a2 = getPlayerScore(teamA[1], holeNum);
-            const b1 = getPlayerScore(teamB[0], holeNum);
-            const b2 = getPlayerScore(teamB[1], holeNum);
+            const a1r = getPlayerScore(teamA[0], holeNum);
+            const a2r = getPlayerScore(teamA[1], holeNum);
+            const b1r = getPlayerScore(teamB[0], holeNum);
+            const b2r = getPlayerScore(teamB[1], holeNum);
             
-            if (!a1 || !a2 || !b1 || !b2) return null;
+            if (!a1r || !a2r || !b1r || !b2r) return null;
             
             let teamAPoints = 0;
             let teamBPoints = 0;
             
-            const lowA = Math.min(a1.net, a2.net);
-            const lowB = Math.min(b1.net, b2.net);
-            const highA = Math.max(a1.net, a2.net);
-            const highB = Math.max(b1.net, b2.net);
+            const lowA = Math.min(a1r.net, a2r.net);
+            const lowB = Math.min(b1r.net, b2r.net);
+            const highA = Math.max(a1r.net, a2r.net);
+            const highB = Math.max(b1r.net, b2r.net);
             
             let lowBallWinner: 'A' | 'B' | 'tie' | undefined;
             let highBallWinner: 'A' | 'B' | 'tie' | undefined;
@@ -2491,6 +2500,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             if (scoringType === 'highBall' && !highBallWinner) {
               // already handled above
             }
+
+            // Only show .5 visual when a tie exists on the half-point hole
+            const hasTie = lowBallWinner === 'tie' || highBallWinner === 'tie' || combinedWinner === 'tie';
+            const showHalf = hasTie && holeNum === fpHalfHole;
+            const a1 = showHalf ? getPlayerScore(teamA[0], holeNum, true) ?? a1r : a1r;
+            const a2 = showHalf ? getPlayerScore(teamA[1], holeNum, true) ?? a2r : a2r;
+            const b1 = showHalf ? getPlayerScore(teamB[0], holeNum, true) ?? b1r : b1r;
+            const b2 = showHalf ? getPlayerScore(teamB[1], holeNum, true) ?? b2r : b2r;
             
             return {
               holeNumber: holeNum,
