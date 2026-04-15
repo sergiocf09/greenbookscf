@@ -1,119 +1,69 @@
 
 
-# Plan: Fase 2 — Hándicaps editables en Sixes/Vegas + Modalidades de equipo
+# Plan: Correcciones Putts General, HandicapModeSelector unificado, y Sliding Equipo
 
-## Resumen
+## Resumen — 4 problemas a resolver
 
-Tres bloques de trabajo:
-1. **Sixes y Vegas: hándicaps editables + Base Cero / Full Hándicap** (confirmado con screenshots)
-2. **Modalidad "Diferencial de Equipo"** — suma de HCPs por pareja, diferencia neta a un solo jugador
-3. **Modalidad "Sliding de Equipo"** — cálculo cruzado entre parejas, dividido entre 2, con lógica de medio punto simplificada
-
----
-
-## Aclaración del medio punto (según instrucciones del usuario)
-
-El medio punto se asigna al hoyo donde el stroke index del campo coincide con la posición del medio punto. Ejemplo: si el resultado es 3.5 strokes, el jugador recibe strokes completos en los hoyos con handicap index 1, 2, 3 y un **medio stroke** en el hoyo con handicap index 4. En ese hoyo específico:
-- **Si empata** el hoyo antes de aplicar el stroke → el medio se convierte en stroke completo y gana el hoyo
-- **Si pierde** el hoyo → el medio no aplica
-- En todos los demás hoyos, no hay efecto del medio punto
-
-Esto se implementa con `calculateStrokesPerHole` existente: se distribuyen los strokes enteros normalmente, y se marca un flag `halfStrokeHole` indicando en qué hoyo hay medio punto.
+1. **Putts General no aparece en resultados** — La sección de rendering solo calcula `total`, no `segments`. Falta renderizar Front/Back/Total por separado cuando `segmentMode === 'segments'`.
+2. **Foursomes y Carritos** usan botón viejo "Base Cero / Full Hándicap" en lugar del `HandicapModeSelector` con las 4 modalidades.
+3. **Sliding Equipo** no tiene implementación — al seleccionarlo no ocurre nada. Debe leer los hándicaps de la matriz (HandicapMatrix) y aplicar la fórmula de dividir entre 2.
+4. **UX del selector**: "Individual" debe decir "Full Hándicap" y el `Select` debe mostrar claramente la opción seleccionada.
 
 ---
 
-## Cambio 1 — Tipos (`src/types/golf.ts`)
+## Cambio 1 — Putts General en resultados (GroupBetsCard.tsx)
 
-Agregar a `SixesBetInstance` y `VegasBetInstance`:
-```ts
-teamHandicaps?: Record<string, number>;
+**Problema**: La sección de Putts General (líneas 2293-2367) solo calcula el total de putts. Cuando `segmentMode === 'segments'`, debe calcular ganadores por Front 9, Back 9 y Total 18 por separado, con montos independientes.
+
+**Fix**: Replicar la lógica de Medal General por segmentos: filtrar scores por rango de hoyos (1-9, 10-18, 1-18), calcular ganador de cada segmento, mostrar hasta 3 bloques de resultado.
+
+---
+
+## Cambio 2 — HandicapModeSelector en Foursomes y Carritos (ParejasBets.tsx)
+
+**Problema**: `TeamPressureCard` (línea 808-833) y `CarritosCard` (línea 1068-1092) usan inline `isBaseCero` toggle. Sixes y Vegas ya usan `HandicapModeSelector`.
+
+**Fix**: Reemplazar el botón inline por `<HandicapModeSelector>` en ambas cards:
+- `TeamPressureCard`: pasar `bet.handicapConfig`, `bet.teamHandicaps`, `bet.teamA`, `bet.teamB`. `onUpdate` actualiza `teamHandicaps` y `handicapConfig`.
+- `CarritosCard`: mismo patrón. Requiere agregar `handicapConfig` como prop y pasarlo desde el padre.
+- También en **Loba** (Wolf, línea 526-543), reemplazar el toggle por `HandicapModeSelector` adaptado a su estructura de `playerHandicaps[]`.
+
+---
+
+## Cambio 3 — Sliding Equipo: implementación real (ParejasBets.tsx + handicapUtils.ts)
+
+**Problema**: `HandicapModeSelector.applyMode` no tiene caso para `slidingEquipo` (línea 1205 termina sin handler).
+
+**Solución simplificada** (según instrucción del usuario): usar los hándicaps que ya están en la matriz de handicaps (HandicapMatrix). Para acceder a estos datos desde ParejasBets:
+
+- La matriz de hándicaps almacena strokes por par de jugadores vía `sliding_current` y `getStrokesForCell`.
+- `HandicapModeSelector` necesita recibir un prop `matrixStrokes?: Record<string, number>` que mapee `playerId → playerId → strokes` (o los 4 sliding cruzados entre equipos).
+- Alternativamente (más simple): el `HandicapModeSelector` lee directamente de la **HandicapMatrix** existente en el state del padre. Dado que ParejasBets no tiene acceso, lo más pragmático es:
+  1. Tomar los hándicaps individuales que cada jugador tiene en la matriz (que ya están reflejados en `player.handicap` o en `teamHandicaps` cuando se aplicó sliding global).
+  2. Calcular los 4 cruces: A↔C, A↔D, B↔C, B↔D usando diferencias de hándicap.
+  3. Sumar los 4, dividir entre 2, y asignar al jugador con mayor hándicap recibido.
+  
+- Se usa `calcSlidingTeamDifferential` de `handicapUtils.ts` pasándole los slidings calculados a partir de los hándicaps individuales de cada jugador.
+
+**Lógica**: Cuando `slidingEquipo` se selecciona:
+```
+// Para cada par cruzado, el sliding es la diferencia de HCP
+const hcpA1 = player A1 handicap, hcpA2 = A2, hcpB1 = B1, hcpB2 = B2
+slidings = { ac: hcpA1 - hcpB1, ad: hcpA1 - hcpB2, bc: hcpA2 - hcpB1, bd: hcpA2 - hcpB2 }
+// Positivo = A le da golpes a B
+result = calcSlidingTeamDifferential(slidings, teamA, teamB, hcpMap)
+// result.teamHandicaps asigna los strokes al jugador receptor
 ```
 
-Crear un tipo compartido para las modalidades de hándicap de equipo (usado por todas las apuestas de parejas):
-```ts
-export type TeamHandicapMode = 'individual' | 'baseCero' | 'diferencialEquipo' | 'slidingEquipo';
-export interface TeamHandicapConfig {
-  mode: TeamHandicapMode;
-  diferencialRecipientOverride?: string; // playerId cuando ambos jugadores del equipo receptor empatan en HCP
-  slidingHalfPointMode?: 'roundDown' | 'halfPoint';
-}
-```
-
-Agregar `handicapConfig?: TeamHandicapConfig` a: `TeamPressuresBet`, `CarritosTeamBet`, `SixesBetInstance`, `VegasBetInstance`, y `WolfSetupConfig`.
+Cuando hay medio punto (`result.hasHalf`): se marca en `handicapConfig.slidingHalfPointMode` y se muestra un toggle.
 
 ---
 
-## Cambio 2 — Utilidad de cálculo (`src/lib/handicapUtils.ts`)
+## Cambio 4 — UX del selector (ParejasBets.tsx)
 
-Nuevas funciones:
-
-```ts
-// Diferencial de equipo: suma HCPs de cada pareja, diferencia al jugador de mayor HCP
-calcTeamDifferential(teamA: [hcp, hcp], teamB: [hcp, hcp])
-  → { diff, receivingTeam, recipientPlayerId, teamHandicaps }
-
-// Sliding de equipo: cruza A↔C, A↔D, B↔C, B↔D, suma, divide entre 2
-calcSlidingTeamDifferential(slidings: {ac, ad, bc, bd})
-  → { raw, rounded, hasHalf, halfStrokeHoleIndex?, receivingPlayerId, teamHandicaps }
-
-// Distribución de strokes con medio punto
-calculateStrokesPerHoleWithHalf(strokes: number, hasHalf: boolean, course, startingHole)
-  → { strokesPerHole: number[], halfStrokeHole: number | null }
-```
-
-La función `calculateStrokesPerHoleWithHalf` reutiliza `calculateStrokesPerHole` para los strokes enteros (`Math.floor(strokes)`) y determina el `halfStrokeHole` como el siguiente hoyo en la secuencia del handicap index donde no se recibió stroke completo.
-
----
-
-## Cambio 3 — UI Setup (`src/components/setup/bets/ParejasBets.tsx`)
-
-### 3a — Hándicaps editables en Sixes y Vegas
-
-En `SixesBetCard` y `VegasBetCard`:
-- Pasar `bet.teamHandicaps ?? {}` a `TeamColumns`
-- `onUpdateHandicaps` actualiza `bet.teamHandicaps`
-- Agregar botón toggle Base Cero / Full Hándicap (misma lógica que ya existe en Foursomes/Carritos)
-
-### 3b — Selector de modalidad unificado
-
-Reemplazar el botón "Base Cero / Full Hándicap" en **todas** las apuestas de parejas con un selector tipo `Select`:
-
-```
-Modalidad HCP: [Individual ▾]
-  • Individual — cada jugador con su HCP del setup
-  • Base Cero — relativo al mínimo
-  • Diferencial Equipo — un solo jugador recibe la diferencia neta
-  • Sliding Equipo — basado en sliding bilateral (solo si hay datos)
-```
-
-Cuando se selecciona **Diferencial Equipo**:
-- Se calcula automáticamente y se muestra un mini resumen: "Jugador X recibe N golpes"
-- Si ambos jugadores del equipo receptor empatan en HCP, aparece un selector para elegir quién recibe
-- Los inputs de HCP se vuelven read-only
-
-Cuando se selecciona **Sliding Equipo**:
-- Se muestra el cálculo automático
-- Si hay medio punto, aparece toggle: "Redondear abajo" vs "Medio punto"
-- Mini explicación: "El medio punto aplica solo si empata el hoyo con handicap index N"
-
----
-
-## Cambio 4 — Motores de cálculo
-
-### Sixes (`src/lib/bets/sixes.ts`)
-La función `getScore` actualmente usa `player.handicap` directamente. Modificar para aceptar `teamHandicaps?: Record<string, number>` desde la config y usarlo como override (misma lógica que `teamPressures.ts`). Agregar soporte para medio punto: en el hoyo marcado como `halfStrokeHole`, el stroke solo se aplica si el net score del jugador empata con su rival directo.
-
-### Vegas (`src/lib/bets/vegas.ts`)
-Misma modificación que Sixes.
-
-### TeamPressures y Carritos
-Ya soportan `teamHandicaps`. Solo agregar la lógica del medio punto.
-
----
-
-## Cambio 5 — Defaults (`src/components/setup/bets/defaultBetConfig.ts`)
-
-Agregar `handicapConfig: { mode: 'individual' }` como default para las apuestas que lo usen.
+- Renombrar `"Individual"` → `"Full Hándicap"` en el `SelectItem`.
+- Verificar que `SelectValue` muestra correctamente el texto seleccionado. El componente ShadcnUI `Select` ya maneja esto, pero confirmar que `value={mode}` corresponde al `SelectItem value`.
+- Asegurar que el texto visible cuando el menú está colapsado refleja la selección actual.
 
 ---
 
@@ -121,12 +71,6 @@ Agregar `handicapConfig: { mode: 'individual' }` como default para las apuestas 
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/types/golf.ts` | `TeamHandicapMode`, `TeamHandicapConfig`, `teamHandicaps` en Sixes/Vegas |
-| `src/lib/handicapUtils.ts` | `calcTeamDifferential`, `calcSlidingTeamDifferential`, `calculateStrokesPerHoleWithHalf` |
-| `src/components/setup/bets/ParejasBets.tsx` | HCPs editables en Sixes/Vegas, selector de modalidad unificado |
-| `src/lib/bets/sixes.ts` | Soporte `teamHandicaps` + medio punto |
-| `src/lib/bets/vegas.ts` | Soporte `teamHandicaps` + medio punto |
-| `src/lib/bets/teamPressures.ts` | Medio punto |
-| `src/lib/bets/carritos.ts` | Medio punto |
-| `src/components/setup/bets/defaultBetConfig.ts` | Defaults |
+| `src/components/bets/GroupBetsCard.tsx` | Putts General: rendering por segmentos F9/B9/T18 |
+| `src/components/setup/bets/ParejasBets.tsx` | HandicapModeSelector en Foursomes, Carritos y Loba; implementar `slidingEquipo`; rename "Individual" → "Full Hándicap" |
 
