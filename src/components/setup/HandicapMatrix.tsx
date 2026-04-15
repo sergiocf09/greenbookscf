@@ -54,7 +54,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
-  // slidingApplied is derived from comparing persisted values to sliding suggestions
+  // Track which changes have been saved but not yet confirmed by realtime
+  const [savedChanges, setSavedChanges] = useState<Map<string, number>>(new Map());
 
   const totalGroups = 1 + playerGroups.length;
 
@@ -161,6 +162,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const getStrokesForCell = useCallback((rowId: string, colId: string): number => {
     const key = `${rowId}::${colId}`;
     if (pendingChanges.has(key)) return pendingChanges.get(key)!;
+    if (savedChanges.has(key)) return savedChanges.get(key)!;
 
     const pairState = getLocalPairStrokeState?.(rowId, colId);
     if (pairState?.hasExplicitOverride) return pairState.strokes;
@@ -178,7 +180,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     return persisted;
-  }, [pendingChanges, getStrokesForLocalPair, allPlayers]);
+  }, [pendingChanges, savedChanges, getStrokesForLocalPair, allPlayers]);
 
   /** Set pending change for a cell (and its mirror) */
   const setCellStrokes = useCallback((rowId: string, colId: string, value: number) => {
@@ -193,6 +195,22 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
   const hasRoundPlayerIds = roundPlayerIds.size > 0;
   const hasPendingChanges = pendingChanges.size > 0;
+
+  // Clear savedChanges when realtime updates confirm the persisted values match
+  useEffect(() => {
+    if (savedChanges.size === 0) return;
+    const stillPending = new Map<string, number>();
+    for (const [key, expectedStrokes] of savedChanges.entries()) {
+      const [a, b] = key.split('::');
+      const persisted = getStrokesForLocalPair(a, b);
+      if (persisted !== expectedStrokes) {
+        stillPending.set(key, expectedStrokes);
+      }
+    }
+    if (stillPending.size !== savedChanges.size) {
+      setSavedChanges(stillPending);
+    }
+  }, [savedChanges, getStrokesForLocalPair]);
 
   /** Save all pending changes */
   const saveAllChanges = useCallback(async () => {
@@ -223,6 +241,14 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     setSaving(false);
+    // Move pending → saved (keep them visible to slidingApplied until realtime confirms)
+    setSavedChanges(prev => {
+      const next = new Map(prev);
+      for (const [key, strokes] of pendingChanges.entries()) {
+        next.set(key, strokes);
+      }
+      return next;
+    });
     setPendingChanges(new Map());
     if (errorCount === 0) toast.success(`${successCount} hándicap(s) guardado(s)`);
     else toast.error(`Error guardando ${errorCount} par(es)`);
@@ -234,24 +260,23 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
    */
   const slidingApplied = useMemo(() => {
     if (slidingSuggestions.size === 0) return false;
-    // Check each sliding pair: does the current persisted value match the suggestion?
     for (const [key, suggestion] of slidingSuggestions.entries()) {
       const [profileA, profileB] = key.split('::');
-      // Find local player IDs for these profiles
       const playerA = allPlayers.find(p => p.profileId === profileA);
       const playerB = allPlayers.find(p => p.profileId === profileB);
       if (!playerA || !playerB) continue;
 
-      // Check pending first, then persisted
-      const pendingKey = `${playerA.id}::${playerB.id}`;
+      // Check pending first, then saved (awaiting realtime), then persisted
+      const cellKey = `${playerA.id}::${playerB.id}`;
       let currentStrokes: number;
-      if (pendingChanges.has(pendingKey)) {
-        currentStrokes = pendingChanges.get(pendingKey)!;
+      if (pendingChanges.has(cellKey)) {
+        currentStrokes = pendingChanges.get(cellKey)!;
+      } else if (savedChanges.has(cellKey)) {
+        currentStrokes = savedChanges.get(cellKey)!;
       } else {
         currentStrokes = getStrokesForLocalPair(playerA.id, playerB.id);
       }
 
-      // Get expected sliding strokes from playerA's perspective
       const expectedStrokes = playerA.profileId === profileA
         ? suggestion.suggestedStrokes
         : -suggestion.suggestedStrokes;
@@ -259,7 +284,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       if (currentStrokes !== expectedStrokes) return false;
     }
     return true;
-  }, [slidingSuggestions, allPlayers, pendingChanges, getStrokesForLocalPair]);
+  }, [slidingSuggestions, allPlayers, pendingChanges, savedChanges, getStrokesForLocalPair]);
 
   /** Apply all sliding suggestions at once (stage only, no auto-save) */
   const applyAllSliding = useCallback(() => {
