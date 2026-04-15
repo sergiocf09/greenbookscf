@@ -147,14 +147,14 @@ export const buildSixesSetResults = (
     const [start, end] = SET_RANGES[setNum];
     const holes = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
-    const { halfStrokeHole, halfReceivingTeam } = detectHalfPoint(
+    const { halfStrokeHole, halfReceivingTeam, halfPlayerId } = detectHalfPoint(
       assignment.team1, assignment.team2, effectiveTH, isHalfPointMode, course
     );
 
     const details = holes.map(h => resolveHole(
       assignment.team1, assignment.team2, h, players, scores, course,
       config.scoringMode, config.useHandicap, effectiveTH,
-      halfStrokeHole, halfReceivingTeam,
+      halfStrokeHole, halfReceivingTeam, halfPlayerId,
     ));
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);

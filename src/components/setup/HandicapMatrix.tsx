@@ -229,8 +229,22 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
   /** Apply all sliding suggestions at once */
-  const applyAllSliding = useCallback(async () => {
-    const applied: Array<{ rowId: string; colId: string; strokes: number }> = [];
+  const [pendingSaveRequested, setPendingSaveRequested] = useState<'sliding' | 'full' | false>(false);
+
+  // Effect-based save: runs AFTER React has flushed pendingChanges
+  useEffect(() => {
+    if (!pendingSaveRequested || pendingChanges.size === 0) return;
+    const mode = pendingSaveRequested;
+    setPendingSaveRequested(false);
+    (async () => {
+      await saveAllChanges();
+      if (mode === 'sliding') setSlidingApplied(true);
+      else if (mode === 'full') setSlidingApplied(false);
+    })();
+  }, [pendingSaveRequested, pendingChanges, saveAllChanges]);
+
+  const applyAllSliding = useCallback(() => {
+    let applied = 0;
 
     for (let i = 0; i < allPlayers.length; i++) {
       for (let j = i + 1; j < allPlayers.length; j++) {
@@ -239,22 +253,19 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         const sliding = getSlidingForPair(a.id, b.id);
         if (sliding.hasSliding) {
           setCellStrokes(a.id, b.id, sliding.strokes);
-          applied.push({ rowId: a.id, colId: b.id, strokes: sliding.strokes });
+          applied++;
         }
       }
     }
 
-    if (applied.length === 0) {
+    if (applied === 0) {
       toast.info('No hay sliding histórico para ningún par');
       return;
     }
 
-    toast.success(`Sliding aplicado a ${applied.length} par(es) — guardando...`);
-    setTimeout(async () => {
-      await saveAllChanges();
-      setSlidingApplied(true);
-    }, 0);
-  }, [allPlayers, getSlidingForPair, setCellStrokes, saveAllChanges]);
+    toast.success(`Sliding aplicado a ${applied} par(es) — guardando...`);
+    setPendingSaveRequested('sliding');
+  }, [allPlayers, getSlidingForPair, setCellStrokes]);
 
   // --- Render ---
 
@@ -324,10 +335,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                     }
                   }
                   toast.success('Hándicaps completos aplicados — guardando...');
-                  setTimeout(async () => {
-                    await saveAllChanges();
-                    setSlidingApplied(false);
-                  }, 0);
+                  setPendingSaveRequested('full');
                 }}
                 disabled={saving}
                 size="sm"
