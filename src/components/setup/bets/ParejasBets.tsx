@@ -1312,6 +1312,18 @@ const VegasBetCard: React.FC<{
       </AlertDialog>
     </div>
 
+    {/* Modalidad FIRST */}
+    <div className="flex items-center justify-between">
+      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
+        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
+          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
     <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
     <div className="flex items-center gap-2">
@@ -1367,17 +1379,6 @@ const VegasBetCard: React.FC<{
     <div className="flex items-center gap-2">
       <Switch checked={bet.birdieMultiplier} onCheckedChange={(v) => onUpdate({ birdieMultiplier: v })} />
       <Label className="text-xs">Multiplicador Birdie (×2)</Label>
-    </div>
-
-    <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
-      <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
-        <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
-          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
-        </SelectContent>
-      </Select>
     </div>
 
     <div className="space-y-2">
