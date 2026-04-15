@@ -1059,20 +1059,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   onUpdate,
   onRemove,
 }) => {
-  label,
-  teamA,
-  teamB,
-  frontAmount,
-  backAmount,
-  totalAmount,
-  scoringType,
-  teamHandicaps,
-  handicapConfig,
-  players,
-  playerOptions,
-  onUpdate,
-  onRemove,
-}) => {
+  return (
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between">
