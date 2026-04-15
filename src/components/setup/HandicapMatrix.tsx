@@ -54,7 +54,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
-  const [slidingApplied, setSlidingApplied] = useState(false);
+  // slidingApplied is derived from comparing persisted values to sliding suggestions
 
   const totalGroups = 1 + playerGroups.length;
 
@@ -228,21 +228,40 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     else toast.error(`Error guardando ${errorCount} par(es)`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
-  /** Apply all sliding suggestions at once */
-  const [pendingSaveRequested, setPendingSaveRequested] = useState<'sliding' | 'full' | false>(false);
+  /**
+   * Derive slidingApplied from comparing persisted handicaps to sliding suggestions.
+   * If ALL pairs with sliding suggestions match their persisted value, sliding is "applied".
+   */
+  const slidingApplied = useMemo(() => {
+    if (slidingSuggestions.size === 0) return false;
+    // Check each sliding pair: does the current persisted value match the suggestion?
+    for (const [key, suggestion] of slidingSuggestions.entries()) {
+      const [profileA, profileB] = key.split('::');
+      // Find local player IDs for these profiles
+      const playerA = allPlayers.find(p => p.profileId === profileA);
+      const playerB = allPlayers.find(p => p.profileId === profileB);
+      if (!playerA || !playerB) continue;
 
-  // Effect-based save: runs AFTER React has flushed pendingChanges
-  useEffect(() => {
-    if (!pendingSaveRequested || pendingChanges.size === 0) return;
-    const mode = pendingSaveRequested;
-    setPendingSaveRequested(false);
-    (async () => {
-      await saveAllChanges();
-      if (mode === 'sliding') setSlidingApplied(true);
-      else if (mode === 'full') setSlidingApplied(false);
-    })();
-  }, [pendingSaveRequested, pendingChanges, saveAllChanges]);
+      // Check pending first, then persisted
+      const pendingKey = `${playerA.id}::${playerB.id}`;
+      let currentStrokes: number;
+      if (pendingChanges.has(pendingKey)) {
+        currentStrokes = pendingChanges.get(pendingKey)!;
+      } else {
+        currentStrokes = getStrokesForLocalPair(playerA.id, playerB.id);
+      }
 
+      // Get expected sliding strokes from playerA's perspective
+      const expectedStrokes = playerA.profileId === profileA
+        ? suggestion.suggestedStrokes
+        : -suggestion.suggestedStrokes;
+
+      if (currentStrokes !== expectedStrokes) return false;
+    }
+    return true;
+  }, [slidingSuggestions, allPlayers, pendingChanges, getStrokesForLocalPair]);
+
+  /** Apply all sliding suggestions at once (stage only, no auto-save) */
   const applyAllSliding = useCallback(() => {
     let applied = 0;
 
@@ -263,8 +282,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       return;
     }
 
-    toast.success(`Sliding aplicado a ${applied} par(es) — guardando...`);
-    setPendingSaveRequested('sliding');
+    toast.success(`Sliding aplicado a ${applied} par(es) — presiona Guardar para confirmar`);
   }, [allPlayers, getSlidingForPair, setCellStrokes]);
 
   // --- Render ---
@@ -334,8 +352,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                       setCellStrokes(a.id, b.id, diff);
                     }
                   }
-                  toast.success('Hándicaps completos aplicados — guardando...');
-                  setPendingSaveRequested('full');
+                  toast.success('Hándicaps completos aplicados — presiona Guardar para confirmar');
                 }}
                 disabled={saving}
                 size="sm"
