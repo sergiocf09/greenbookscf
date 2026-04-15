@@ -246,9 +246,9 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                               <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                                 <span className="truncate text-left">{getShortName(my.playerId)}</span>
                                 <span className="font-medium text-right px-1">{myDisplay}</span>
-                                <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                                <span className="flex items-center justify-center w-3">{myHasStroke && <span className={cn("h-2 w-2 rounded-full", (my.strokes === 0.5 || (my.net !== my.gross && Math.abs(my.gross - my.net) === 0.5)) ? "bg-green-600" : "bg-foreground")} />}</span>
                                 <span />
-                                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className={cn("h-2 w-2 rounded-full", (rv.strokes === 0.5 || (rv.net !== rv.gross && Math.abs(rv.gross - rv.net) === 0.5)) ? "bg-green-600" : "bg-foreground")} />}</span>
                                 <span className="font-medium text-left px-1">{rvDisplay}</span>
                                 <span className="truncate text-right">{getShortName(rv.playerId)}</span>
                               </div>

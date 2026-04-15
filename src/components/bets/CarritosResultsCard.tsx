@@ -33,9 +33,9 @@ const TeamHoleGrid: React.FC<{
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
       <span className="truncate text-left">{getName(teamAPlayers[0])}</span>
       <span className="font-medium text-right px-1">{detail.netA1}</span>
-      <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA1 > 0 && <span className={cn("h-2 w-2 rounded-full", detail.hcpA1 === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
       <span />
-      <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpB1 > 0 && <span className={cn("h-2 w-2 rounded-full", detail.hcpB1 === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
       <span className="font-medium text-left px-1">{detail.netB1}</span>
       <span className="truncate text-right">{getName(teamBPlayers[0])}</span>
     </div>
@@ -43,9 +43,9 @@ const TeamHoleGrid: React.FC<{
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
       <span className="truncate text-left">{getName(teamAPlayers[1])}</span>
       <span className="font-medium text-right px-1">{detail.netA2}</span>
-      <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpA2 > 0 && <span className={cn("h-2 w-2 rounded-full", detail.hcpA2 === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
       <span />
-      <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+      <span className="flex items-center justify-center w-3">{detail.hcpB2 > 0 && <span className={cn("h-2 w-2 rounded-full", detail.hcpB2 === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
       <span className="font-medium text-left px-1">{detail.netB2}</span>
       <span className="truncate text-right">{getName(teamBPlayers[1])}</span>
     </div>

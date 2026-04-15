@@ -1224,7 +1224,13 @@ const HandicapModeSelector: React.FC<{
   const getBilateralStrokes = (aId: string, bId: string): number => {
     // Priority 1: Matrix strokes (source of truth for sliding)
     if (getStrokesForLocalPair) {
-      return getStrokesForLocalPair(aId, bId);
+      const persisted = getStrokesForLocalPair(aId, bId);
+      // Consistent with HandicapMatrix display: when persisted is 0, fall back to handicap differential
+      // so the calculation matches what the user sees in the matrix
+      if (persisted !== 0) return persisted;
+      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
+      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
+      return Math.round(hcpB - hcpA);
     }
     // Priority 2: bilateralHandicaps from config
     if (bilateralHandicaps && bilateralHandicaps.length > 0) {
@@ -1232,8 +1238,6 @@ const HandicapModeSelector: React.FC<{
         bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
       );
       if (pair) {
-        // pair stores: playerA has handicap X, playerB has handicap Y
-        // strokes A gives B = B's effective handicap - A's effective handicap
         if (pair.playerAId === aId) {
           return pair.playerBHandicap - pair.playerAHandicap;
         }
@@ -1243,7 +1247,7 @@ const HandicapModeSelector: React.FC<{
     // Fallback: handicap differences
     const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
     const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
-    return hcpB - hcpA; // positive = A gives to B (B has higher HCP = weaker)
+    return hcpB - hcpA;
   };
 
   // Single atomic update to avoid race conditions between handicapConfig and teamHandicaps

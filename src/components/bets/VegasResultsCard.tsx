@@ -381,9 +381,9 @@ function renderHolePill(
               <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                 <span className="truncate text-left">{getShortName(myPids[i])}</span>
                 <span className="font-medium text-right px-1">{myS}</span>
-                <span className="flex items-center justify-center w-3">{myHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                <span className="flex items-center justify-center w-3">{myHasStroke && <span className={cn("h-2 w-2 rounded-full", (getStrokes(i, true) || 0) === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
                 <span />
-                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className="h-2 w-2 rounded-full bg-foreground" />}</span>
+                <span className="flex items-center justify-center w-3">{rvHasStroke && <span className={cn("h-2 w-2 rounded-full", (getStrokes(i, false) || 0) === 0.5 ? "bg-green-600" : "bg-foreground")} />}</span>
                 <span className="font-medium text-left px-1">{rvS}</span>
                 <span className="truncate text-right">{getShortName(rvPids[i])}</span>
               </div>

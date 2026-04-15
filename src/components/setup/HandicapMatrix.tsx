@@ -52,6 +52,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const [pendingChanges, setPendingChanges] = useState<Map<string, number>>(new Map());
   const [saving, setSaving] = useState(false);
   const [slidingSuggestions, setSlidingSuggestions] = useState<Map<string, SlidingSuggestion>>(new Map());
+  const [slidingApplied, setSlidingApplied] = useState(false);
 
   const totalGroups = 1 + playerGroups.length;
 
@@ -244,7 +245,10 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     toast.success(`Sliding aplicado a ${applied.length} par(es) — guardando...`);
-    setTimeout(() => saveAllChanges(), 0);
+    setTimeout(async () => {
+      await saveAllChanges();
+      setSlidingApplied(true);
+    }, 0);
   }, [allPlayers, getSlidingForPair, setCellStrokes, saveAllChanges]);
 
   // --- Render ---
@@ -290,7 +294,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
           </CardDescription>
           <div className="flex gap-2 mt-2">
-            {slidingSuggestions.size > 0 && (
+            {slidingSuggestions.size > 0 && !slidingApplied && (
               <Button
                 onClick={applyAllSliding}
                 disabled={saving}
@@ -300,6 +304,33 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Aplicar Sliding
+              </Button>
+            )}
+            {slidingApplied && slidingSuggestions.size > 0 && (
+              <Button
+                onClick={() => {
+                  // Reset to full handicap: apply handicap differentials
+                  for (let i = 0; i < allPlayers.length; i++) {
+                    for (let j = i + 1; j < allPlayers.length; j++) {
+                      const a = allPlayers[i];
+                      const b = allPlayers[j];
+                      const diff = Math.round(b.handicap - a.handicap);
+                      setCellStrokes(a.id, b.id, diff);
+                    }
+                  }
+                  toast.success('Hándicaps completos aplicados — guardando...');
+                  setTimeout(async () => {
+                    await saveAllChanges();
+                    setSlidingApplied(false);
+                  }, 0);
+                }}
+                disabled={saving}
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-primary text-primary hover:bg-primary/5"
+              >
+                <Users className="h-3.5 w-3.5" />
+                Aplicar Full Hándicap
               </Button>
             )}
             {hasPendingChanges && (
