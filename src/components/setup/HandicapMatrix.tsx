@@ -286,24 +286,45 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     else toast.error(`${successCount} hándicap(s) guardado(s), ${errorCount} par(es) con error`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
-  const applyFullHandicap = useCallback(() => {
-    const changes: Array<{ rowId: string; colId: string; value: number }> = [];
+  const applyFullHandicap = useCallback(async () => {
+    if (!hasRoundPlayerIds) {
+      toast.error('Jugadores aún no sincronizados. Espera un momento.');
+      return;
+    }
+    setSaving(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const newSaved = new Map<string, number>();
 
     for (let i = 0; i < allPlayers.length; i++) {
       for (let j = i + 1; j < allPlayers.length; j++) {
         const a = allPlayers[i];
         const b = allPlayers[j];
-        changes.push({
-          rowId: a.id,
-          colId: b.id,
-          value: Math.round(b.handicap - a.handicap),
-        });
+        const value = Math.round(b.handicap - a.handicap);
+        const success = await setStrokesForLocalPair(a.id, b.id, value);
+        if (success) {
+          successCount++;
+          newSaved.set(`${a.id}::${b.id}`, value);
+          newSaved.set(`${b.id}::${a.id}`, -value);
+        } else {
+          errorCount++;
+        }
       }
     }
 
-    stageBatchChanges(changes);
-    toast.success('Hándicaps completos aplicados — presiona Guardar para confirmar');
-  }, [allPlayers, stageBatchChanges]);
+    setSaving(false);
+    setPendingChanges(new Map());
+    if (newSaved.size > 0) {
+      setSavedChanges(prev => {
+        const next = new Map(prev);
+        for (const [k, v] of newSaved) next.set(k, v);
+        return next;
+      });
+    }
+
+    if (errorCount === 0) toast.success(`Full hándicap aplicado (${successCount} pares)`);
+    else toast.error(`${successCount} guardados, ${errorCount} con error`);
+  }, [allPlayers, hasRoundPlayerIds, setStrokesForLocalPair]);
 
   /**
    * Derive slidingApplied from comparing persisted handicaps to sliding suggestions.
@@ -328,29 +349,59 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     return true;
   }, [slidingSuggestions, allPlayers, getStrokesForCell]);
 
-  /** Apply all sliding suggestions at once (stage only, no auto-save) */
-  const applyAllSliding = useCallback(() => {
-    const changes: Array<{ rowId: string; colId: string; value: number }> = [];
+  /** Apply all sliding suggestions at once and auto-save */
+  const applyAllSliding = useCallback(async () => {
+    if (!hasRoundPlayerIds) {
+      toast.error('Jugadores aún no sincronizados. Espera un momento.');
+      return;
+    }
 
+    const pairs: Array<{ aId: string; bId: string; value: number }> = [];
     for (let i = 0; i < allPlayers.length; i++) {
       for (let j = i + 1; j < allPlayers.length; j++) {
         const a = allPlayers[i];
         const b = allPlayers[j];
         const sliding = getSlidingForPair(a.id, b.id);
         if (sliding.hasSliding) {
-          changes.push({ rowId: a.id, colId: b.id, value: sliding.strokes });
+          pairs.push({ aId: a.id, bId: b.id, value: sliding.strokes });
         }
       }
     }
 
-    if (changes.length === 0) {
+    if (pairs.length === 0) {
       toast.info('No hay sliding histórico para ningún par');
       return;
     }
 
-    stageBatchChanges(changes);
-    toast.success(`Sliding aplicado a ${changes.length} par(es) — presiona Guardar para confirmar`);
-  }, [allPlayers, getSlidingForPair, stageBatchChanges]);
+    setSaving(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const newSaved = new Map<string, number>();
+
+    for (const { aId, bId, value } of pairs) {
+      const success = await setStrokesForLocalPair(aId, bId, value);
+      if (success) {
+        successCount++;
+        newSaved.set(`${aId}::${bId}`, value);
+        newSaved.set(`${bId}::${aId}`, -value);
+      } else {
+        errorCount++;
+      }
+    }
+
+    setSaving(false);
+    setPendingChanges(new Map());
+    if (newSaved.size > 0) {
+      setSavedChanges(prev => {
+        const next = new Map(prev);
+        for (const [k, v] of newSaved) next.set(k, v);
+        return next;
+      });
+    }
+
+    if (errorCount === 0) toast.success(`Sliding aplicado y guardado (${successCount} pares)`);
+    else toast.error(`${successCount} guardados, ${errorCount} con error`);
+  }, [allPlayers, getSlidingForPair, hasRoundPlayerIds, setStrokesForLocalPair]);
 
   // --- Render ---
 
