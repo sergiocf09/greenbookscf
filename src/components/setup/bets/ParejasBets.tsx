@@ -1323,7 +1323,7 @@ const SixesBetCard: React.FC<{
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps }) => {
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair }) => {
   const set1 = (bet.sets ?? []).find(s => s.setNumber === 1);
   const allPlayerIds = set1 ? [...set1.team1, ...set1.team2].filter(Boolean) : [];
   const th = bet.teamHandicaps ?? {};
