@@ -74,7 +74,8 @@ const resolveHole = (
 
 export const buildSixesSetResults = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: SixesConfig, course: GolfCourse
+  config: SixesConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): SixesSetResult[] => {
   if (!config?.sets?.length) return [];
   return ([1,2,3] as const).map(setNum => {
@@ -82,7 +83,7 @@ export const buildSixesSetResults = (
     if (!assignment) return null;
     const [start, end] = SET_RANGES[setNum];
     const holes = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-    const details = holes.map(h => resolveHole(assignment.team1, assignment.team2, h, players, scores, course, config.scoringMode, config.useHandicap));
+    const details = holes.map(h => resolveHole(assignment.team1, assignment.team2, h, players, scores, course, config.scoringMode, config.useHandicap, teamHandicaps));
     const p1 = details.reduce((a, d) => a + d.pointsTeam1, 0);
     const p2 = details.reduce((a, d) => a + d.pointsTeam2, 0);
     const winner = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
