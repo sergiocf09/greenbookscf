@@ -63,11 +63,7 @@ const resolveHole = (
     const gross = hs?.strokes ?? 0;
     const hcp = teamHandicaps?.[id] ?? player.handicap;
     const sp = calculateStrokesPerHole(Math.floor(hcp), course);
-    let strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
-    // Show half-dot on the halfStrokeHole for the player receiving the half point
-    if (useHandicap && strokes === 0 && halfStrokeHole === holeNumber && typeof hcp === 'number' && hcp % 1 !== 0) {
-      strokes = 0.5;
-    }
+    const strokes = useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
     return { playerId: id, playerName: player.name, gross, strokes, net: gross - strokes, teamSide: (t1.includes(id) ? 'team1' : 'team2') as 'team1' | 'team2' };
   });
 
@@ -81,14 +77,26 @@ const resolveHole = (
     return 'tied';
   };
 
+  // Patch scoresByPlayer to show .5 visual ONLY when a tie was broken by half-point
+  const patchHalfPointVisual = () => {
+    if (!isHalfHole) return;
+    const entry = scoresByPlayer.find(s => {
+      const hcp = teamHandicaps?.[s.playerId] ?? players.find(p => p.id === s.playerId)?.handicap ?? 0;
+      return typeof hcp === 'number' && hcp % 1 !== 0 && s.strokes === 0;
+    });
+    if (entry) { entry.strokes = 0.5; entry.net = entry.gross - 0.5; }
+  };
+
   if (mode === 'lowBall') {
     const s1 = Math.min(...t1v), s2 = Math.min(...t2v);
     const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : tieWinner(s1 === s2);
+    if (s1 === s2 && w !== 'tied') patchHalfPointVisual();
     return { holeNumber, scoresByPlayer, team1Score: s1, team2Score: s2, lowBallWinner: w, highBallWinner: null, pointsTeam1: w === 'team1' ? 1 : 0, pointsTeam2: w === 'team2' ? 1 : 0, holeWinner: w };
   }
   if (mode === 'stroke') {
     const s1 = t1v.reduce((a,b) => a+b, 0), s2 = t2v.reduce((a,b) => a+b, 0);
     const w = s1 < s2 ? 'team1' : s2 < s1 ? 'team2' : tieWinner(s1 === s2);
+    if (s1 === s2 && w !== 'tied') patchHalfPointVisual();
     return { holeNumber, scoresByPlayer, team1Score: s1, team2Score: s2, lowBallWinner: null, highBallWinner: null, pointsTeam1: w === 'team1' ? 1 : 0, pointsTeam2: w === 'team2' ? 1 : 0, holeWinner: w };
   }
   // lowHighBall
@@ -99,6 +107,7 @@ const resolveHole = (
   const p1 = (lbw==='team1'?1:0)+(hbw==='team1'?1:0);
   const p2 = (lbw==='team2'?1:0)+(hbw==='team2'?1:0);
   const hw = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
+  if ((low1 === low2 && lbw !== 'tied') || (high1 === high2 && hbw !== 'tied')) patchHalfPointVisual();
   return { holeNumber, scoresByPlayer, team1Score: low1, team2Score: low2, lowBallWinner: lbw, highBallWinner: hbw, pointsTeam1: p1, pointsTeam2: p2, holeWinner: hw };
 };
 
