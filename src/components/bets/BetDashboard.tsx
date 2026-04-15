@@ -691,9 +691,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           }
         }
 
-        // Only show .5 visual when a tie exists on the half-point hole
+        // Only show .5 visual when a tie exists on the half-point hole AND the half-point breaks it
         const hasTie = lowBallWinner === 'tie' || highBallWinner === 'tie' || combinedWinner === 'tie';
-        const showHalf = hasTie && holeNum === halfStrokeHole;
+        const showHalf = hasTie && holeNum === halfStrokeHole && halfPlayerId !== null;
+
+        // When half-point breaks the tie, update winners to receiving team
+        if (showHalf) {
+          const receivingTeam: 'A' | 'B' = resolvedTeamA.includes(halfPlayerId!) ? 'A' : 'B';
+          if (lowBallWinner === 'tie') { lowBallWinner = receivingTeam; pointsA += receivingTeam === 'A' ? 1 : 0; pointsB += receivingTeam === 'B' ? 1 : 0; }
+          if (highBallWinner === 'tie') { highBallWinner = receivingTeam; pointsA += receivingTeam === 'A' ? 1 : 0; pointsB += receivingTeam === 'B' ? 1 : 0; }
+          if (combinedWinner === 'tie') { combinedWinner = receivingTeam; pointsA += receivingTeam === 'A' ? 1 : 0; pointsB += receivingTeam === 'B' ? 1 : 0; }
+        }
+
         const a1 = showHalf ? getCarritosHoleScore(resolvedTeamA[0], holeNum, true) ?? a1r : a1r;
         const a2 = showHalf ? getCarritosHoleScore(resolvedTeamA[1], holeNum, true) ?? a2r : a2r;
         const b1 = showHalf ? getCarritosHoleScore(resolvedTeamB[0], holeNum, true) ?? b1r : b1r;
@@ -2497,9 +2506,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               // already handled above
             }
 
-            // Only show .5 visual when a tie exists on the half-point hole
+            // Only show .5 visual when a tie exists on the half-point hole AND the half-point breaks it
             const hasTie = lowBallWinner === 'tie' || highBallWinner === 'tie' || combinedWinner === 'tie';
-            const showHalf = hasTie && holeNum === fpHalfHole;
+            const showHalf = hasTie && holeNum === fpHalfHole && fpHalfPlayer !== null;
+
+            // When half-point breaks the tie, update winners to receiving team
+            if (showHalf) {
+              const receivingTeam: 'A' | 'B' = teamA.includes(fpHalfPlayer!) ? 'A' : 'B';
+              if (lowBallWinner === 'tie') { lowBallWinner = receivingTeam; teamAPoints += receivingTeam === 'A' ? 1 : 0; teamBPoints += receivingTeam === 'B' ? 1 : 0; }
+              if (highBallWinner === 'tie') { highBallWinner = receivingTeam; teamAPoints += receivingTeam === 'A' ? 1 : 0; teamBPoints += receivingTeam === 'B' ? 1 : 0; }
+              if (combinedWinner === 'tie') { combinedWinner = receivingTeam; teamAPoints += receivingTeam === 'A' ? 1 : 0; teamBPoints += receivingTeam === 'B' ? 1 : 0; }
+            }
+
             const a1 = showHalf ? getPlayerScore(teamA[0], holeNum, true) ?? a1r : a1r;
             const a2 = showHalf ? getPlayerScore(teamA[1], holeNum, true) ?? a2r : a2r;
             const b1 = showHalf ? getPlayerScore(teamB[0], holeNum, true) ?? b1r : b1r;
