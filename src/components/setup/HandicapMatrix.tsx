@@ -222,6 +222,31 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     else toast.error(`Error guardando ${errorCount} par(es)`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
+  /** Apply all sliding suggestions at once */
+  const applyAllSliding = useCallback(async () => {
+    const applied: Array<{ rowId: string; colId: string; strokes: number }> = [];
+
+    for (let i = 0; i < allPlayers.length; i++) {
+      for (let j = i + 1; j < allPlayers.length; j++) {
+        const a = allPlayers[i];
+        const b = allPlayers[j];
+        const sliding = getSlidingForPair(a.id, b.id);
+        if (sliding.hasSliding) {
+          setCellStrokes(a.id, b.id, sliding.strokes);
+          applied.push({ rowId: a.id, colId: b.id, strokes: sliding.strokes });
+        }
+      }
+    }
+
+    if (applied.length === 0) {
+      toast.info('No hay sliding histórico para ningún par');
+      return;
+    }
+
+    toast.success(`Sliding aplicado a ${applied.length} par(es) — guardando...`);
+    setTimeout(() => saveAllChanges(), 0);
+  }, [allPlayers, getSlidingForPair, setCellStrokes, saveAllChanges]);
+
   // --- Render ---
 
   if (isLoading) {
