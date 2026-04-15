@@ -27,23 +27,23 @@ const getScore = (
   return hs.strokes - strokesReceived;
 };
 
-/** Detect halfStrokeHole and receiving team from teamHandicaps */
+/** Detect halfStrokeHole, receiving team, and half-point player from teamHandicaps */
 const detectHalfPoint = (
   t1: [string, string], t2: [string, string],
   teamHandicaps: Record<string, number> | undefined,
   isHalfPointMode: boolean,
   course: GolfCourse,
-): { halfStrokeHole: number | null; halfReceivingTeam: 'team1' | 'team2' | null } => {
-  if (!isHalfPointMode || !teamHandicaps) return { halfStrokeHole: null, halfReceivingTeam: null };
+): { halfStrokeHole: number | null; halfReceivingTeam: 'team1' | 'team2' | null; halfPlayerId: string | null } => {
+  if (!isHalfPointMode || !teamHandicaps) return { halfStrokeHole: null, halfReceivingTeam: null, halfPlayerId: null };
   for (const pid of [...t1, ...t2]) {
     const hcp = teamHandicaps[pid];
     if (typeof hcp === 'number' && hcp % 1 !== 0) {
       const result = calculateStrokesPerHoleWithHalf(hcp, true, course);
       const team = t1.includes(pid) ? 'team1' as const : 'team2' as const;
-      return { halfStrokeHole: result.halfStrokeHole, halfReceivingTeam: team };
+      return { halfStrokeHole: result.halfStrokeHole, halfReceivingTeam: team, halfPlayerId: pid };
     }
   }
-  return { halfStrokeHole: null, halfReceivingTeam: null };
+  return { halfStrokeHole: null, halfReceivingTeam: null, halfPlayerId: null };
 };
 
 const resolveHole = (
@@ -53,6 +53,7 @@ const resolveHole = (
   teamHandicaps?: Record<string, number>,
   halfStrokeHole?: number | null,
   halfReceivingTeam?: 'team1' | 'team2' | null,
+  halfPlayerId?: string | null,
 ): SixesHoleDetail => {
   const t1v = t1.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
   const t2v = t2.map(id => getScore(id, holeNumber, players, scores, course, useHandicap, teamHandicaps)).filter((s): s is number => s !== null);
@@ -102,8 +103,28 @@ const resolveHole = (
   // lowHighBall
   const low1 = Math.min(...t1v), low2 = Math.min(...t2v);
   const high1 = Math.max(...t1v), high2 = Math.max(...t2v);
-  const lbw = low1 < low2 ? 'team1' : low2 < low1 ? 'team2' : tieWinner(low1 === low2);
-  const hbw = high1 < high2 ? 'team1' : high2 < high1 ? 'team2' : tieWinner(high1 === high2);
+
+  // For lowHighBall, validate that half-point player contributes the specific ball before breaking tie
+  const halfPlayerTeamVals = isHalfHole && halfPlayerId
+    ? (halfReceivingTeam === 'team1' ? t1v : t2v)
+    : null;
+  const halfPlayerNet = isHalfHole && halfPlayerId
+    ? getScore(halfPlayerId, holeNumber, players, scores, course, useHandicap, teamHandicaps)
+    : null;
+
+  const lowTieBreak = (): 'team1' | 'team2' | 'tied' => {
+    if (!isHalfHole || !halfPlayerTeamVals || halfPlayerNet === null) return 'tied';
+    if (halfPlayerNet === Math.min(...halfPlayerTeamVals)) return halfReceivingTeam!;
+    return 'tied';
+  };
+  const highTieBreak = (): 'team1' | 'team2' | 'tied' => {
+    if (!isHalfHole || !halfPlayerTeamVals || halfPlayerNet === null) return 'tied';
+    if (halfPlayerNet === Math.max(...halfPlayerTeamVals)) return halfReceivingTeam!;
+    return 'tied';
+  };
+
+  const lbw = low1 < low2 ? 'team1' : low2 < low1 ? 'team2' : lowTieBreak();
+  const hbw = high1 < high2 ? 'team1' : high2 < high1 ? 'team2' : highTieBreak();
   const p1 = (lbw==='team1'?1:0)+(hbw==='team1'?1:0);
   const p2 = (lbw==='team2'?1:0)+(hbw==='team2'?1:0);
   const hw = p1 > p2 ? 'team1' : p2 > p1 ? 'team2' : 'tied';
