@@ -843,12 +843,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // When carritosTeams array has entries, all carritos are managed there
     const hasCarritosTeams = (betConfig.carritosTeams?.length ?? 0) > 0;
     if (!hasCarritosTeams && betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
-      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps } = betConfig.carritos;
+      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps, handicapConfig } = betConfig.carritos;
       results.push(
         calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {
           id: undefined,
           useTeamHandicaps,
           teamHandicaps,
+          handicapConfig,
         })
       );
     }
@@ -861,6 +862,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             id: team.id,
             useTeamHandicaps: true,
             teamHandicaps: team.teamHandicaps,
+            handicapConfig: team.handicapConfig,
           })
         );
       }
