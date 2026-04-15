@@ -5,7 +5,7 @@ import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
 import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, SnapshotPairSegmentResults, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { 
   calculateAllBets, 
