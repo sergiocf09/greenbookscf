@@ -97,11 +97,12 @@ export const buildSixesSetResults = (
 
 export const calculateSixesBets = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: SixesConfig, course: GolfCourse
+  config: SixesConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): BetSummary[] => {
   if (!config?.sets?.length) return [];
   const summaries: BetSummary[] = [];
-  buildSixesSetResults(players, scores, config, course).forEach(sr => {
+  buildSixesSetResults(players, scores, config, course, teamHandicaps).forEach(sr => {
     if (config.cobro === 'per_set') {
       if (!sr.setWinner || sr.setWinner === 'tied') return;
       const winners = [...(sr.setWinner === 'team1' ? sr.team1 : sr.team2)];

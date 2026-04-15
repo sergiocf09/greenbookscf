@@ -13,14 +13,16 @@ export const formVegasNumber = (s1: number, s2: number): number => {
 
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
-  scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean
+  scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
+  teamHandicaps?: Record<string, number>,
 ): number => {
   const player = players.find(p => p.id === playerId);
   if (!player) return 0;
   const hs = (scores.get(playerId) ?? []).find(s => s.confirmed && s.holeNumber === holeNumber);
   if (!hs?.strokes) return 0;
   if (!useHandicap) return hs.strokes;
-  const sp = calculateStrokesPerHole(player.handicap, course);
+  const hcp = teamHandicaps?.[playerId] ?? player.handicap;
+  const sp = calculateStrokesPerHole(Math.floor(hcp), course);
   return hs.strokes - (sp[holeNumber - 1] ?? 0);
 };
 
