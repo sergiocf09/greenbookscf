@@ -119,7 +119,7 @@ const resolveHole = (
   };
   const highTieBreak = (): 'team1' | 'team2' | 'tied' => {
     if (!isHalfHole || !halfPlayerTeamVals || halfPlayerNet === null) return 'tied';
-    if (halfPlayerNet === Math.max(...halfPlayerTeamVals)) return halfReceivingTeam!;
+    if (halfPlayerNet === Math.max(...halfPlayerTeamVals) && halfPlayerNet !== Math.min(...halfPlayerTeamVals)) return halfReceivingTeam!;
     return 'tied';
   };
 

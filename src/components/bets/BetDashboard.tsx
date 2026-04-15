@@ -712,7 +712,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             lowBallWinner = receivingTeam; pointsA += receivingTeam === 'A' ? 1 : 0; pointsB += receivingTeam === 'B' ? 1 : 0;
             showHalf = true;
           }
-          if (highBallWinner === 'tie' && halfPlayerNet === highTied) {
+          if (highBallWinner === 'tie' && halfPlayerNet === highTied && halfPlayerNet !== lowTied) {
             highBallWinner = receivingTeam; pointsA += receivingTeam === 'A' ? 1 : 0; pointsB += receivingTeam === 'B' ? 1 : 0;
             showHalf = true;
           }
@@ -2544,7 +2544,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 lowBallWinner = receivingTeam; teamAPoints += receivingTeam === 'A' ? 1 : 0; teamBPoints += receivingTeam === 'B' ? 1 : 0;
                 showHalf = true;
               }
-              if (highBallWinner === 'tie' && halfPlayerNet === highTiedVal) {
+              if (highBallWinner === 'tie' && halfPlayerNet === highTiedVal && halfPlayerNet !== lowTiedVal) {
                 highBallWinner = receivingTeam; teamAPoints += receivingTeam === 'A' ? 1 : 0; teamBPoints += receivingTeam === 'B' ? 1 : 0;
                 showHalf = true;
               }
