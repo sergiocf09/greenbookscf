@@ -1053,6 +1053,7 @@ interface CarritosCardProps {
   playerOptions: { value: string; label: string }[];
   onUpdate: (updates: Partial<CarritosTeamBet>) => void;
   onRemove?: () => void;
+  bilateralHandicaps?: BilateralHandicap[];
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1069,6 +1070,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   playerOptions,
   onUpdate,
   onRemove,
+  bilateralHandicaps,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -1127,7 +1129,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             onUpdateHandicapConfig={(cfg) => onUpdate({ handicapConfig: cfg })}
             teamA={teamA}
             teamB={teamB}
-            bilateralHandicaps={config.bilateralHandicaps}
+            bilateralHandicaps={bilateralHandicaps}
           />
         );
       })()}
