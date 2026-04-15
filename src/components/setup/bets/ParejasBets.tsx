@@ -238,6 +238,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 onUpdate={(updates) => updateTeamPressure(bet.id, updates)}
                 onRemove={() => removeTeamPressure(bet.id)}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
               />
             ))}
             <Button
@@ -301,6 +302,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 playerOptions={carritosOptions}
                 onUpdate={(updates) => onUpdateBet('carritos', updates)}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
               />
             )}
 
@@ -384,6 +386,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {config.sixesBets!.map((bet, idx) => (
               <SixesBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={sixesOptions}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
                 onUpdate={(updates) => {
                   const next = config.sixesBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, sixesBets: next });
@@ -452,6 +455,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {config.vegasBets!.map((bet, idx) => (
               <VegasBetCard key={bet.id} index={idx} bet={bet} players={players} playerOptions={vegasOptions}
                 bilateralHandicaps={config.bilateralHandicaps}
+                getStrokesForLocalPair={getStrokesForLocalPair}
                 onUpdate={(updates) => {
                   const next = config.vegasBets!.map(b => b.id === bet.id ? { ...b, ...updates } : b);
                   onUpdateConfig({ ...config, vegasBets: next });
@@ -803,6 +807,7 @@ interface TeamPressureCardProps {
   onUpdate: (updates: Partial<TeamPressuresBet>) => void;
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
