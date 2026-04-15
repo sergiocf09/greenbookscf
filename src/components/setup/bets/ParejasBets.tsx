@@ -1580,7 +1580,8 @@ const VegasBetCard: React.FC<{
   onRemove: () => void;
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
-}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair }) => (
+  getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
+}> = ({ index, bet, players, playerOptions, onUpdate, onRemove, bilateralHandicaps, getStrokesForLocalPair, getLocalPairStrokeState }) => (
   <div className={cn('space-y-3 p-3 rounded-lg', index > 0 ? 'border-t border-border mt-4 pt-4' : 'bg-muted/30')}>
     <div className="flex items-center justify-between">
       <Label className="text-xs font-medium">Vegas {index + 1}</Label>
@@ -1684,6 +1685,7 @@ const VegasBetCard: React.FC<{
         teamB={[bet.playerCId, bet.playerDId]}
         bilateralHandicaps={bilateralHandicaps}
         getStrokesForLocalPair={getStrokesForLocalPair}
+        getLocalPairStrokeState={getLocalPairStrokeState}
       />
     )}
 
