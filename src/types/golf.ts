@@ -719,6 +719,7 @@ export interface SixesConfig {
   set2Amount?: number;
   set3Amount?: number;
   teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface SixesHoleDetail {
@@ -763,6 +764,7 @@ export interface VegasConfig {
   set2Amount?: number;
   set3Amount?: number;
   teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
 export interface VegasHoleDetail {
