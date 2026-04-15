@@ -107,7 +107,8 @@ const resolveVegasHole = (
 
 export const buildVegasSetResults = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: VegasConfig, course: GolfCourse
+  config: VegasConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): VegasSetResult[] => {
   const { playerAId: A, playerBId: B, playerCId: C, playerDId: D } = config;
   if (!A || !B || !C || !D) return [];
@@ -122,7 +123,7 @@ export const buildVegasSetResults = (
 
   return sets.map(s => {
     const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
-    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config));
+    const details = holes.map(h => resolveVegasHole(s.t1, s.t2, h, s.setNumber, players, scores, course, config, teamHandicaps));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
     const totalAmount = (() => {
       if (!config.useSegmentAmounts || config.variant !== 'fixed') {
@@ -140,10 +141,11 @@ export const buildVegasSetResults = (
 
 export const calculateVegasBets = (
   players: Player[], scores: Map<string,PlayerScore[]>,
-  config: VegasConfig, course: GolfCourse
+  config: VegasConfig, course: GolfCourse,
+  teamHandicaps?: Record<string, number>,
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
-  buildVegasSetResults(players, scores, config, course).forEach(sr => {
+  buildVegasSetResults(players, scores, config, course, teamHandicaps).forEach(sr => {
     if (sr.winner === 'tied' || sr.totalAmount === 0) return;
     const winners = [...(sr.winner === 'team1' ? sr.team1 : sr.team2)];
     const losers  = [...(sr.winner === 'team1' ? sr.team2 : sr.team1)];
