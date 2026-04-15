@@ -105,12 +105,10 @@ const resolveVegasHole = (
     const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
     const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     let strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
-    let displayNet = net;
     if (showHalf && config.useHandicap && strokes === 0 && id === halfPlayerId) {
       strokes = 0.5;
-      displayNet = net - 0.5;
     }
-    return { gross, strokes, net: displayNet };
+    return { gross, strokes, net };
   };
 
   // Compute raw Vegas numbers without half-point offset

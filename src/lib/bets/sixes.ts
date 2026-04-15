@@ -84,7 +84,7 @@ const resolveHole = (
       const hcp = teamHandicaps?.[s.playerId] ?? players.find(p => p.id === s.playerId)?.handicap ?? 0;
       return typeof hcp === 'number' && hcp % 1 !== 0 && s.strokes === 0;
     });
-    if (entry) { entry.strokes = 0.5; entry.net = entry.gross - 0.5; }
+    if (entry) { entry.strokes = 0.5; }
   };
 
   if (mode === 'lowBall') {

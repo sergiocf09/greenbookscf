@@ -596,12 +596,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       ): { gross: number; hcp: number; net: number } | null => {
         const score = confirmedScores.get(playerId)?.find((s) => s.holeNumber === holeNum);
         if (!score || typeof score.strokes !== 'number' || !Number.isFinite(score.strokes)) return null;
-        let hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
-        // Show half-point indicator ONLY when a tie was broken
-        if (showHalfPoint && playerId === halfPlayerId && holeNum === halfStrokeHole && hcp === 0) {
-          hcp = 0.5;
-        }
-        return { gross: score.strokes, hcp, net: score.strokes - hcp };
+        const hcp = strokesReceivedByPlayer.get(playerId)?.[holeNum - 1] ?? 0;
+        // Show half-point dot indicator ONLY when a tie was broken (score stays unchanged)
+        const displayHcp = (showHalfPoint && playerId === halfPlayerId && holeNum === halfStrokeHole && hcp === 0) ? 0.5 : hcp;
+        return { gross: score.strokes, hcp: displayHcp, net: score.strokes - hcp };
       };
 
       const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
@@ -2457,11 +2455,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           const getPlayerScore = (playerId: string, holeNum: number, showHalf = false): { gross: number; hcp: number; net: number } | null => {
             const score = confirmedScores.get(playerId)?.find(s => s.holeNumber === holeNum);
             if (!score || typeof score.strokes !== 'number') return null;
-            let hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
-            if (showHalf && playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) {
-              hcp = 0.5;
-            }
-            return { gross: score.strokes, hcp, net: score.strokes - hcp };
+            const hcp = strokesMap.get(playerId)?.[holeNum - 1] || 0;
+            const displayHcp = (showHalf && playerId === fpHalfPlayer && holeNum === fpHalfHole && hcp === 0) ? 0.5 : hcp;
+            return { gross: score.strokes, hcp: displayHcp, net: score.strokes - hcp };
           };
           
           const getHoleDetail = (holeNum: number) => {
