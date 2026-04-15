@@ -54,14 +54,15 @@ const resolveVegasHole = (
   team1: [string,string], team2: [string,string],
   holeNumber: number, setNumber: 1|2|3|null,
   players: Player[], scores: Map<string,PlayerScore[]>,
-  course: GolfCourse, config: VegasConfig
+  course: GolfCourse, config: VegasConfig,
+  teamHandicaps?: Record<string, number>,
 ): VegasHoleDetail => {
   const [pA, pB] = team1, [pC, pD] = team2;
   // Net scores used for Vegas number formation
-  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap);
-  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap);
-  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap);
-  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap);
+  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
+  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
 
   // Raw gross scores for popover display
   const gA = getScore(pA, holeNumber, players, scores, course, false);
@@ -71,7 +72,8 @@ const resolveVegasHole = (
 
   const pd = (id: string, gross: number, net: number) => {
     const p = players.find(x => x.id === id);
-    const sp = calculateStrokesPerHole(p?.handicap ?? 0, course);
+    const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
+    const sp = calculateStrokesPerHole(Math.floor(hcp), course);
     const strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
     return { gross, strokes, net };
   };
