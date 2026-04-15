@@ -226,7 +226,7 @@ export const calcSlidingTeamDifferential = (
   const totalAtoB = slidings.ac + slidings.ad + slidings.bc + slidings.bd;
   // If positive, team A gives to team B overall; if negative, team B gives to team A
   const raw = Math.abs(totalAtoB) / 2;
-  const rounded = halfPointMode === 'roundDown' ? Math.floor(raw) : Math.floor(raw);
+  const rounded = Math.floor(raw);
   const hasHalf = raw % 1 !== 0;
 
   const result: Record<string, number> = {};
