@@ -487,7 +487,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
 
           <div className="flex items-center justify-between mt-2">
-            <Label className="text-[10px] font-semibold text-primary">Modo de scoring</Label>
+            <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
             <Select value={config.wolfSetup?.scoringMode ?? 'lowBall'}
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, scoringMode: v as WolfScoringMode } as any)}>
               <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
@@ -1153,7 +1153,7 @@ const SixesBetCard: React.FC<{
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
       <Select value={bet.scoringMode} onValueChange={(v) => onUpdate({ scoringMode: v as SixesScoringMode })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -1370,7 +1370,7 @@ const VegasBetCard: React.FC<{
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Variante</Label>
+      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
       <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
         <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>

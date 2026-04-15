@@ -1561,11 +1561,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return { front, back, participants, cfg };
   }, [betConfig.skinsGrupal, sameGroupPlayers, scores, course, players]);
 
+  const puttsGeneralEnabled = !!(betConfig as any).puttsGeneral?.enabled;
+
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult || puttsGeneralEnabled;
 
   const hasIndicators = !!(manchasSummary || unidadesSummary || oyesesSummary);
-  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult);
+  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult || puttsGeneralEnabled);
 
   if (renderSection === 'indicators') {
     if (!hasIndicators) return null;
@@ -2288,6 +2290,81 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             </div>
           </>
         )}
+
+        {/* Putts General */}
+        {showGrupales && puttsGeneralEnabled && (() => {
+          const puttsCfg = (betConfig as any).puttsGeneral;
+          const puttsAmount = puttsCfg?.amount ?? 100;
+          const puttsSegmentMode = puttsCfg?.segmentMode ?? 'total';
+
+          // Calculate putts results using same pool logic as medal
+          const puttsPool = players;
+          const puttsPlayerResults: Array<{ playerId: string; name: string; initials: string; color: string; totalPutts: number }> = [];
+          puttsPool.forEach(player => {
+            const playerScores = scores.get(player.id) || [];
+            const confirmed = playerScores.filter(s => s.confirmed && s.strokes > 0 && s.putts != null);
+            if (confirmed.length === 0) return;
+            const total = confirmed.reduce((sum, s) => sum + (s.putts ?? 0), 0);
+            puttsPlayerResults.push({ playerId: player.id, name: player.name, initials: player.initials, color: player.color, totalPutts: total });
+          });
+
+          const hasValidPutts = puttsPlayerResults.length >= 2;
+          const minPutts = hasValidPutts ? Math.min(...puttsPlayerResults.map(p => p.totalPutts)) : 0;
+          const puttsWinners = hasValidPutts ? puttsPlayerResults.filter(p => p.totalPutts === minPutts) : [];
+          const puttsLosersCount = puttsPlayerResults.length - puttsWinners.length;
+          const puttsPot = puttsLosersCount * puttsAmount;
+          const puttsPerWinner = puttsWinners.length > 0 ? puttsPot / puttsWinners.length : 0;
+
+          return (
+            <>
+              {(medalGeneralGroupResult || medalGeneralGlobalResult) && <div className="border-t-2 border-primary/40" />}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-emerald-500" />
+                    <span className="font-medium text-sm">Putts General</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">${puttsAmount} c/u</span>
+                </div>
+
+                {!hasValidPutts ? (
+                  <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+                    Sin putts confirmados suficientes
+                  </div>
+                ) : (
+                  <div className={cn(
+                    'rounded-lg p-3',
+                    puttsPerWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                        <div className="flex items-center gap-1">
+                          {puttsWinners.map((winner, idx) => (
+                            <React.Fragment key={winner.playerId}>
+                              {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                              <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                              <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
+                              <span className="text-xs text-muted-foreground">(Putts: {winner.totalPutts})</span>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                      <span className={cn('font-bold text-sm', puttsPerWinner > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                        {puttsPerWinner > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(puttsPerWinner)}` : '$0'}
+                      </span>
+                    </div>
+                    {puttsWinners.length > 1 && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Empate - pot dividido entre {puttsWinners.length} jugadores
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
         
         {/* Stableford - Scope-aware rendering */}
         {showGrupales && betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
