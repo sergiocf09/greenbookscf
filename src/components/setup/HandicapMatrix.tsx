@@ -182,6 +182,20 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     return persisted;
   }, [pendingChanges, savedChanges, getStrokesForLocalPair, allPlayers]);
 
+  const stageBatchChanges = useCallback((changes: Array<{ rowId: string; colId: string; value: number }>) => {
+    setPendingChanges(prev => {
+      const next = new Map(prev);
+
+      for (const { rowId, colId, value } of changes) {
+        const clamped = Math.max(-36, Math.min(36, value));
+        next.set(`${rowId}::${colId}`, clamped);
+        next.set(`${colId}::${rowId}`, -clamped);
+      }
+
+      return next;
+    });
+  }, []);
+
   /** Set pending change for a cell (and its mirror) */
   const setCellStrokes = useCallback((rowId: string, colId: string, value: number) => {
     const clamped = Math.max(-36, Math.min(36, value));
@@ -221,6 +235,8 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
     setSaving(true);
     const saved = new Set<string>();
+    const successfulPairs: Array<{ localA: string; localB: string; strokes: number }> = [];
+    const failedPending = new Map<string, number>();
     let successCount = 0;
     let errorCount = 0;
 
@@ -237,22 +253,57 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         a < b ? b : a,
         canonicalStrokes
       );
-      if (success) successCount++; else errorCount++;
+
+      if (success) {
+        successCount++;
+        successfulPairs.push({
+          localA: a < b ? a : b,
+          localB: a < b ? b : a,
+          strokes: canonicalStrokes,
+        });
+      } else {
+        errorCount++;
+        failedPending.set(`${a < b ? a : b}::${a < b ? b : a}`, canonicalStrokes);
+        failedPending.set(`${a < b ? b : a}::${a < b ? a : b}`, -canonicalStrokes);
+      }
     }
 
     setSaving(false);
-    // Move pending → saved (keep them visible to slidingApplied until realtime confirms)
-    setSavedChanges(prev => {
-      const next = new Map(prev);
-      for (const [key, strokes] of pendingChanges.entries()) {
-        next.set(key, strokes);
-      }
-      return next;
-    });
-    setPendingChanges(new Map());
+    if (successfulPairs.length > 0) {
+      setSavedChanges(prev => {
+        const next = new Map(prev);
+        for (const pair of successfulPairs) {
+          next.set(`${pair.localA}::${pair.localB}`, pair.strokes);
+          next.set(`${pair.localB}::${pair.localA}`, -pair.strokes);
+        }
+        return next;
+      });
+    }
+    setPendingChanges(failedPending);
+
     if (errorCount === 0) toast.success(`${successCount} hándicap(s) guardado(s)`);
-    else toast.error(`Error guardando ${errorCount} par(es)`);
+    else if (successCount === 0) toast.error(`Error guardando ${errorCount} par(es)`);
+    else toast.error(`${successCount} hándicap(s) guardado(s), ${errorCount} par(es) con error`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
+
+  const applyFullHandicap = useCallback(() => {
+    const changes: Array<{ rowId: string; colId: string; value: number }> = [];
+
+    for (let i = 0; i < allPlayers.length; i++) {
+      for (let j = i + 1; j < allPlayers.length; j++) {
+        const a = allPlayers[i];
+        const b = allPlayers[j];
+        changes.push({
+          rowId: a.id,
+          colId: b.id,
+          value: Math.round(b.handicap - a.handicap),
+        });
+      }
+    }
+
+    stageBatchChanges(changes);
+    toast.success('Hándicaps completos aplicados — presiona Guardar para confirmar');
+  }, [allPlayers, stageBatchChanges]);
 
   /**
    * Derive slidingApplied from comparing persisted handicaps to sliding suggestions.
@@ -266,16 +317,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       const playerB = allPlayers.find(p => p.profileId === profileB);
       if (!playerA || !playerB) continue;
 
-      // Check pending first, then saved (awaiting realtime), then persisted
-      const cellKey = `${playerA.id}::${playerB.id}`;
-      let currentStrokes: number;
-      if (pendingChanges.has(cellKey)) {
-        currentStrokes = pendingChanges.get(cellKey)!;
-      } else if (savedChanges.has(cellKey)) {
-        currentStrokes = savedChanges.get(cellKey)!;
-      } else {
-        currentStrokes = getStrokesForLocalPair(playerA.id, playerB.id);
-      }
+      const currentStrokes = getStrokesForCell(playerA.id, playerB.id);
 
       const expectedStrokes = playerA.profileId === profileA
         ? suggestion.suggestedStrokes
@@ -284,11 +326,11 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       if (currentStrokes !== expectedStrokes) return false;
     }
     return true;
-  }, [slidingSuggestions, allPlayers, pendingChanges, savedChanges, getStrokesForLocalPair]);
+  }, [slidingSuggestions, allPlayers, getStrokesForCell]);
 
   /** Apply all sliding suggestions at once (stage only, no auto-save) */
   const applyAllSliding = useCallback(() => {
-    let applied = 0;
+    const changes: Array<{ rowId: string; colId: string; value: number }> = [];
 
     for (let i = 0; i < allPlayers.length; i++) {
       for (let j = i + 1; j < allPlayers.length; j++) {
@@ -296,19 +338,19 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         const b = allPlayers[j];
         const sliding = getSlidingForPair(a.id, b.id);
         if (sliding.hasSliding) {
-          setCellStrokes(a.id, b.id, sliding.strokes);
-          applied++;
+          changes.push({ rowId: a.id, colId: b.id, value: sliding.strokes });
         }
       }
     }
 
-    if (applied === 0) {
+    if (changes.length === 0) {
       toast.info('No hay sliding histórico para ningún par');
       return;
     }
 
-    toast.success(`Sliding aplicado a ${applied} par(es) — presiona Guardar para confirmar`);
-  }, [allPlayers, getSlidingForPair, setCellStrokes]);
+    stageBatchChanges(changes);
+    toast.success(`Sliding aplicado a ${changes.length} par(es) — presiona Guardar para confirmar`);
+  }, [allPlayers, getSlidingForPair, stageBatchChanges]);
 
   // --- Render ---
 
@@ -367,18 +409,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             )}
             {slidingApplied && slidingSuggestions.size > 0 && (
               <Button
-                onClick={() => {
-                  // Reset to full handicap: apply handicap differentials
-                  for (let i = 0; i < allPlayers.length; i++) {
-                    for (let j = i + 1; j < allPlayers.length; j++) {
-                      const a = allPlayers[i];
-                      const b = allPlayers[j];
-                      const diff = Math.round(b.handicap - a.handicap);
-                      setCellStrokes(a.id, b.id, diff);
-                    }
-                  }
-                  toast.success('Hándicaps completos aplicados — presiona Guardar para confirmar');
-                }}
+                onClick={applyFullHandicap}
                 disabled={saving}
                 size="sm"
                 variant="outline"
