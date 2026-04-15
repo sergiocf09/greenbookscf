@@ -1204,28 +1204,35 @@ const HandicapModeSelector: React.FC<{
   teamA?: [string, string];
   teamB?: [string, string];
   bilateralHandicaps?: BilateralHandicap[];
-}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, onUpdateBoth, teamA, teamB, bilateralHandicaps }) => {
+  getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
+}> = ({ allIds, players, teamHandicaps, handicapConfig, onUpdateHandicaps, onUpdateHandicapConfig, onUpdateBoth, teamA, teamB, bilateralHandicaps, getStrokesForLocalPair }) => {
   const mode = handicapConfig?.mode ?? 'individual';
 
-  // Helper: get bilateral strokes A gives to B from bilateralHandicaps array
+  // Helper: get strokes A gives to B. Uses matrix values (getStrokesForLocalPair) first,
+  // then bilateralHandicaps, then falls back to handicap differences.
   const getBilateralStrokes = (aId: string, bId: string): number => {
-    if (!bilateralHandicaps || bilateralHandicaps.length === 0) {
-      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
-      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
-      return hcpA - hcpB;
+    // Priority 1: Matrix strokes (source of truth for sliding)
+    if (getStrokesForLocalPair) {
+      return getStrokesForLocalPair(aId, bId);
     }
-    const pair = bilateralHandicaps.find(
-      bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
-    );
-    if (!pair) {
-      const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
-      const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
-      return hcpA - hcpB;
+    // Priority 2: bilateralHandicaps from config
+    if (bilateralHandicaps && bilateralHandicaps.length > 0) {
+      const pair = bilateralHandicaps.find(
+        bh => (bh.playerAId === aId && bh.playerBId === bId) || (bh.playerAId === bId && bh.playerBId === aId)
+      );
+      if (pair) {
+        // pair stores: playerA has handicap X, playerB has handicap Y
+        // strokes A gives B = B's effective handicap - A's effective handicap
+        if (pair.playerAId === aId) {
+          return pair.playerBHandicap - pair.playerAHandicap;
+        }
+        return pair.playerAHandicap - pair.playerBHandicap;
+      }
     }
-    if (pair.playerAId === aId) {
-      return pair.playerAHandicap - pair.playerBHandicap;
-    }
-    return pair.playerBHandicap - pair.playerAHandicap;
+    // Fallback: handicap differences
+    const hcpA = players.find(p => p.id === aId)?.handicap ?? 0;
+    const hcpB = players.find(p => p.id === bId)?.handicap ?? 0;
+    return hcpB - hcpA; // positive = A gives to B (B has higher HCP = weaker)
   };
 
   // Single atomic update to avoid race conditions between handicapConfig and teamHandicaps
