@@ -1,44 +1,50 @@
 
 
-# Fix: Half-Point Breaking Both LowBall AND HighBall Ties
+# Fix: HandicapMatrix Sliding UX — Manual Save + Persistent Toggle
 
-## Root Cause
+## Problems
 
-When both teammates have the same net score (e.g., both 4), `Math.min` and `Math.max` return the same value. Since `halfPlayerNet` equals both, the current code breaks **both** the lowball and highball ties — awarding 2 (or 3 with combined) points instead of just 1.
+1. **Auto-save on "Aplicar Sliding"**: Currently, clicking "Aplicar Sliding" triggers an auto-save via `useEffect` + `pendingSaveRequested`. The user wants the sliding values to appear in the matrix as pending changes (orange ring), then manually click "Guardar" to confirm.
 
-The half-point advantage means the player effectively scores 0.5 lower. This makes them the **low ball** contributor. They should NOT also be treated as the high ball contributor when both teammates tie.
+2. **Same for "Aplicar Full Hándicap"**: Should also just stage changes, not auto-save.
 
-## The Rule
+3. **`slidingApplied` resets on refresh**: The toggle between "Aplicar Sliding" and "Aplicar Full Hándicap" is lost on page refresh because it's only in React state. After saving sliding values and refreshing, the button reverts to "Aplicar Sliding" even though sliding IS applied.
 
-- The half-point player's effective score is `net - 0.5`, making them always the **lower** contributor on their team.
-- **LowBall tie**: break it if `halfPlayerNet === Math.min(teamNets)` — the player IS the low ball. ✓
-- **HighBall tie**: break it ONLY if `halfPlayerNet === Math.max(teamNets)` **AND** `halfPlayerNet > Math.min(teamNets)` — i.e., the player is exclusively the high ball (different from teammate). If both teammates tied, the half-point player is the low ball, so high ball stays tied.
-- **Combined tie**: always break (the 0.5 affects the team total).
+4. **Manual edits + Guardar must persist**: If the user manually changes any cell after applying sliding (or from setup defaults), clicking "Guardar" must persist exactly what's shown — no reverting.
 
-## Files to Fix (4 locations)
+## Solution
 
-### 1. `src/lib/bets/carritos.ts` (line 142)
-Add guard: `&& halfPlayerNet !== Math.min(...halfTeamNets)` to the highBall tie-break condition. This prevents breaking high ball when the player also equals the min (meaning both teammates tied).
+### A. Remove auto-save `useEffect` (line 232-244)
+Delete the `pendingSaveRequested` state and the `useEffect` that auto-triggers `saveAllChanges()`. Instead:
+- `applyAllSliding`: Just call `setCellStrokes` for all pairs → pending changes appear → "Guardar" button shows. Set `slidingApplied = true` locally.
+- "Aplicar Full Hándicap" handler: Just call `setCellStrokes` for all pairs → pending changes appear → "Guardar" button shows. Set `slidingApplied = false` locally.
+- User clicks "Guardar" → calls existing `saveAllChanges()` which persists and clears `pendingChanges`.
 
-### 2. `src/lib/bets/sixes.ts` (line 120-123)
-Same fix in `highTieBreak()`: add check that `halfPlayerNet > Math.min(...halfPlayerTeamVals)`.
+### B. Detect sliding state on load (persist toggle across refresh)
+When sliding suggestions AND persisted handicaps are both loaded, compare them:
+- For each pair with a sliding suggestion, check if the persisted value matches the sliding value.
+- If **all** pairs with sliding match → `slidingApplied = true` (show "Aplicar Full Hándicap").
+- If **any** pair differs → `slidingApplied = false` (show "Aplicar Sliding").
 
-### 3. `src/components/bets/BetDashboard.tsx` (line 715)
-Carritos tooltip: add guard to highball tie-break — only break if halfPlayerNet is exclusively the high value on the team.
+This is computed via `useMemo` watching `[slidingSuggestions, handicaps loaded state, allPlayers]`. No localStorage needed — the truth is derived from comparing DB values to sliding suggestions.
 
-### 4. `src/components/bets/BetDashboard.tsx` (line 2547)
-Foursomes tooltip: same guard for highball tie-break.
+### C. Manual edit detection
+When the user manually edits a cell (via popover stepper), `setCellStrokes` already adds to `pendingChanges` → "Guardar" button appears. `saveAllChanges` already persists and clears. No change needed here — it already works correctly.
 
-## Concrete Change Pattern
+After a manual edit that changes a value away from sliding, the `useMemo` comparison will detect mismatch → button toggles to "Aplicar Sliding" (offering to re-apply).
 
-```typescript
-// BEFORE (all locations):
-if (highBallTied && halfPlayerNet === teamMax) { break tie }
+## Files to Modify
 
-// AFTER:
-if (highBallTied && halfPlayerNet === teamMax && halfPlayerNet !== teamMin) { break tie }
-// Only applies the .5 to high ball when the player is exclusively the high ball
-```
+| File | Change |
+|------|--------|
+| `src/components/setup/HandicapMatrix.tsx` | Remove `pendingSaveRequested` + useEffect auto-save. Add `useMemo` to derive `slidingApplied` from persisted vs. suggested values. Update `applyAllSliding` and "Full Hándicap" to only stage changes. |
 
-This is a minimal, targeted fix — 4 lines changed across 3 files.
+## Summary of UX Flow After Fix
+
+1. Matrix loads → shows persisted values (inherited from setup or previously saved).
+2. If sliding suggestions exist AND persisted values don't match → "Aplicar Sliding" button visible.
+3. User clicks "Aplicar Sliding" → values update visually (pending ring) → "Guardar" button appears.
+4. User clicks "Guardar" → persisted to DB → toast confirmation → "Aplicar Full Hándicap" button now visible.
+5. User manually edits a cell → "Guardar" appears → saves on click.
+6. Page refresh → `useMemo` re-derives sliding state from DB vs. suggestions → correct button shown.
 
