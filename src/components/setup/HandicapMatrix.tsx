@@ -260,24 +260,23 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
    */
   const slidingApplied = useMemo(() => {
     if (slidingSuggestions.size === 0) return false;
-    // Check each sliding pair: does the current persisted value match the suggestion?
     for (const [key, suggestion] of slidingSuggestions.entries()) {
       const [profileA, profileB] = key.split('::');
-      // Find local player IDs for these profiles
       const playerA = allPlayers.find(p => p.profileId === profileA);
       const playerB = allPlayers.find(p => p.profileId === profileB);
       if (!playerA || !playerB) continue;
 
-      // Check pending first, then persisted
-      const pendingKey = `${playerA.id}::${playerB.id}`;
+      // Check pending first, then saved (awaiting realtime), then persisted
+      const cellKey = `${playerA.id}::${playerB.id}`;
       let currentStrokes: number;
-      if (pendingChanges.has(pendingKey)) {
-        currentStrokes = pendingChanges.get(pendingKey)!;
+      if (pendingChanges.has(cellKey)) {
+        currentStrokes = pendingChanges.get(cellKey)!;
+      } else if (savedChanges.has(cellKey)) {
+        currentStrokes = savedChanges.get(cellKey)!;
       } else {
         currentStrokes = getStrokesForLocalPair(playerA.id, playerB.id);
       }
 
-      // Get expected sliding strokes from playerA's perspective
       const expectedStrokes = playerA.profileId === profileA
         ? suggestion.suggestedStrokes
         : -suggestion.suggestedStrokes;
@@ -285,7 +284,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       if (currentStrokes !== expectedStrokes) return false;
     }
     return true;
-  }, [slidingSuggestions, allPlayers, pendingChanges, getStrokesForLocalPair]);
+  }, [slidingSuggestions, allPlayers, pendingChanges, savedChanges, getStrokesForLocalPair]);
 
   /** Apply all sliding suggestions at once (stage only, no auto-save) */
   const applyAllSliding = useCallback(() => {
