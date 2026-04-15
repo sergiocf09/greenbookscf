@@ -145,6 +145,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
           onToggleSection={isReadOnly ? () => {} : toggleSection}
           onUpdateBet={activeUpdateBet}
           onUpdateConfig={activeOnChange}
+          getStrokesForLocalPair={getStrokesForLocalPair}
         />
       )}
       {activeCategory === 'grupal' && (
