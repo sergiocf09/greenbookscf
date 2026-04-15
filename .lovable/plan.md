@@ -1,50 +1,54 @@
 
 
-# Plan: Persistencia Putts General, Medal General por segmentos, Sliding Equipo y UX
+# Plan: Fix Sliding Equipo en Carritos + Toggle de Medio Punto
 
-## 6 problemas a resolver
+## Problemas identificados
 
-### 1. Putts General no persiste (useBetConfigPersistence.ts)
+### 1. Carritos additional teams no reciben `getStrokesForLocalPair`
+En línea 327, las `carritosTeams` adicionales no pasan `getStrokesForLocalPair` al `CarritosCard`. Solo el primary (línea 305) lo tiene. Sin esta prop, el `HandicapModeSelector` cae al fallback de diferencias de handicap base en vez de usar los valores reales de la matriz.
 
-`puttsGeneral` no está incluido ni en el save (`configToSave`) ni en el load (`loadBetConfig`). Se necesita:
-- **Save**: Agregar `puttsGeneral` al objeto `configToSave` (junto a `medalGeneral`, `stableford`, etc.)
-- **Load**: Agregar bloque `if (dbConfig.puttsGeneral)` para restaurar la config al cargar
+### 2. No existe toggle de medio punto cuando `hasHalf === true`
+Cuando el cálculo de Sliding Equipo produce un resultado con `.5` (ej: 1.5), no hay UI para que el usuario elija si jugar el medio punto o redondearlo hacia abajo. El `HandicapModeSelector` debe mostrar un toggle condicional que aparezca solo cuando `hasHalf` es `true`.
 
-### 2. Medal General — segmentMode no persiste ni se muestra por segmentos
+### 3. El cálculo `calcSlidingTeamDifferential` no diferencia correctamente `halfPoint` vs `roundDown`
+En línea 229 de `handicapUtils.ts`: `const rounded = halfPointMode === 'roundDown' ? Math.floor(raw) : Math.floor(raw)` — ambas ramas hacen lo mismo (`Math.floor`). La rama `halfPoint` debería preservar el valor `raw` (con decimal) para que el motor de cálculo lo use.
 
-**Persistencia**: `medalGeneral` en el save no incluye `segmentMode`, `frontAmount`, ni `backAmount`. Agregar estos 3 campos al objeto de save y al bloque de load.
+---
 
-**Dashboard de resultados** (GroupBetsCard.tsx): `calculateMedalForPool` solo calcula el total. Cuando `segmentMode === 'segments'`, debe calcular 3 resultados: Front 9 (hoyos 1-9), Back 9 (hoyos 10-18), Total 18 — exactamente igual que ya hace Putts General. Modificar la sección de rendering de Medal General para mostrar los 3 bloques de resultado con montos independientes cuando está en modo segments.
+## Cambios
 
-### 3. Sliding Equipo — cálculo incorrecto
+### A. `src/components/setup/bets/ParejasBets.tsx`
 
-**Bug**: `HandicapModeSelector` calcula slidings con `hcpMap[teamA[0]] - hcpMap[teamB[0]]` (diferencias de handicap del setup). Esto es INCORRECTO — debe usar los valores de la **matriz bilateral** (`sliding_current`), que ya están reflejados en `teamHandicaps` de la bet config o disponibles vía `bilateralHandicaps`.
+1. **Línea 327**: Agregar `getStrokesForLocalPair={getStrokesForLocalPair}` al `CarritosCard` de teams adicionales.
 
-**Fix**: El `HandicapModeSelector` necesita recibir un prop adicional `bilateralHandicaps` (o `slidingMatrix`) con los slidings reales. Para sliding equipo:
-- Leer los valores del sliding bilateral: qué da A1 a B1, A1 a B2, A2 a B1, A2 a B2
-- Estos valores ya están en `config.bilateralHandicaps` como `sliding_current`
-- Pasar `bilateralHandicaps` desde ParejasBets al `HandicapModeSelector`
-- Usar esos valores reales en vez de recalcular desde handicaps base
+2. **HandicapModeSelector (líneas 1300-1315)**: Después del `Select`, agregar un bloque condicional que muestre un toggle de medio punto:
+   - Solo aparece cuando `mode === 'slidingEquipo'` Y el cálculo tiene `hasHalf === true`
+   - Label: "Jugar medio punto"
+   - Switch: togglea `handicapConfig.slidingHalfPointMode` entre `'halfPoint'` y `'roundDown'`
+   - Al cambiar, recalcula los teamHandicaps con el nuevo modo
+   - Default: `'roundDown'` (redondeado hacia abajo)
 
-Ejemplo del usuario: SC→FO=+3, SC→SP=-3, CE→FO=+1, CE→SP=+1. Total=2, /2=1. Resultado: 1 golpe a Fernando (mayor sliding recibido en equipo B).
+3. Para detectar `hasHalf` sin recalcular todo, almacenar el resultado de `calcSlidingTeamDifferentialFn` en el render del selector (calcular una vez para mostrar el toggle, y usar el valor existente de `handicapConfig.slidingHalfPointMode`).
 
-### 4. UX del selector — valor seleccionado no visible
+### B. `src/lib/handicapUtils.ts`
 
-El `Select` de ShadcnUI con `SelectValue` debería mostrar el texto del item seleccionado automáticamente. El problema puede ser que `value={mode}` no coincide con el `SelectItem value` después de re-renders o que `handicapConfig` no se persiste correctamente en el state.
+4. **Línea 229**: Fix de la lógica duplicada:
+   ```typescript
+   // Antes (bug): ambas ramas iguales
+   const rounded = halfPointMode === 'roundDown' ? Math.floor(raw) : Math.floor(raw);
+   // Después:
+   const rounded = Math.floor(raw);
+   ```
+   La variable `rounded` siempre es `Math.floor(raw)`. La diferencia se aplica correctamente en líneas 235 y 260 con `effectiveStrokes` y `result[recipientId]`. Esto ya está bien — el `rounded` siempre es el floor, y `raw` se usa cuando `halfPoint`. Sin embargo, verificar que `result[recipientId] = halfPointMode === 'halfPoint' ? raw : rounded` funciona: cuando `raw = 1.5` y `halfPoint`, el handicap queda en `1.5`, lo cual se convierte en la lógica del medio punto en el motor de cálculo.
 
-**Fix**: Verificar que `handicapConfig` se incluye en `teamPressures.bets[].handicapConfig`, `carritosTeams[].handicapConfig`, `sixesBets[].handicapConfig`, `vegasBets[].handicapConfig` y `wolfSetup.handicapConfig` tanto en save como en load de `useBetConfigPersistence.ts`. Si estos campos ya se serializan con spread (`...dbConfig.wolfSetup`), verificar que no se pierden.
+### C. `src/lib/bets/carritos.ts`
 
-### 5. Reordenar tabs de navegación (Index.tsx)
+5. **Soporte de medio punto en el motor de cálculo**: El motor actual usa `calculateStrokesPerHole(getHandicap(pid), course)` con valores enteros. Cuando `teamHandicaps[pid]` es `1.5`, necesita:
+   - Usar `calculateStrokesPerHoleWithHalf` para obtener `strokesPerHole` (entero) + `halfStrokeHole`
+   - En `getNet`, en el `halfStrokeHole`, aplicar la regla: si hay empate en ese hoyo, el medio punto convierte el empate en victoria para el equipo que recibe
+   - Leer `handicapConfig` del config para saber si `slidingHalfPointMode === 'halfPoint'`
 
-Orden actual: Setup → Apuestas → Hándicaps → Scorecard → Resultados
-
-Nuevo orden: **Setup → Hándicaps → Apuestas → Scorecard → Resultados**
-
-Cambiar líneas 2537-2541 en Index.tsx para intercambiar las posiciones de los tabs `betsetup` y `handicaps`.
-
-### 6. Medal General — segmentMode persistence en save
-
-Agregar `segmentMode`, `frontAmount`, `backAmount` tanto al save como al load de `medalGeneral` en `useBetConfigPersistence.ts`.
+6. Agregar `handicapConfig` a la estructura interna `configs[]` para propagarlo desde `config.carritos.handicapConfig` y `team.handicapConfig`.
 
 ---
 
@@ -52,8 +56,7 @@ Agregar `segmentMode`, `frontAmount`, `backAmount` tanto al save como al load de
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/hooks/useBetConfigPersistence.ts` | Persistencia de `puttsGeneral`, `medalGeneral.segmentMode/frontAmount/backAmount`, verificar `handicapConfig` en team bets |
-| `src/components/bets/GroupBetsCard.tsx` | Medal General: rendering por segmentos F9/B9/T18 cuando `segmentMode === 'segments'` |
-| `src/components/setup/bets/ParejasBets.tsx` | Sliding Equipo: usar `bilateralHandicaps` reales; UX del selector |
-| `src/pages/Index.tsx` | Reordenar tabs: Setup → Hándicaps → Apuestas → Scorecard → Resultados |
+| `src/components/setup/bets/ParejasBets.tsx` | Prop `getStrokesForLocalPair` en carritos adicionales; toggle de medio punto en HandicapModeSelector |
+| `src/lib/handicapUtils.ts` | Verificar lógica (ya funcional, solo limpieza cosmética) |
+| `src/lib/bets/carritos.ts` | Soporte `halfStrokeHole` + `handicapConfig` para medio punto |
 
