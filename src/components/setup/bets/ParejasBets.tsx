@@ -1067,6 +1067,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   totalAmount,
   scoringType,
   teamHandicaps,
+  handicapConfig,
   players,
   playerOptions,
   onUpdate,
