@@ -240,8 +240,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                             if (!my || !rv) return null;
                             const myDisplay = my.gross > 0 ? my.net : '–';
                             const rvDisplay = rv.gross > 0 ? rv.net : '–';
-                            const myHasStroke = my.strokes > 0 && my.net !== my.gross;
-                            const rvHasStroke = rv.strokes > 0 && rv.net !== rv.gross;
+                            const myHasStroke = my.strokes > 0;
+                            const rvHasStroke = rv.strokes > 0;
                             return (
                               <div key={i} className="grid text-[15px] tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
                                 <span className="truncate text-left">{getShortName(my.playerId)}</span>

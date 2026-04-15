@@ -84,6 +84,7 @@ export const calculateCarritosBets = (
     const isHalfPointMode = cfg.handicapConfig?.slidingHalfPointMode === 'halfPoint';
     let halfStrokeHole: number | null = null;
     let halfReceivingTeam: 'A' | 'B' | null = null;
+    let halfPlayerId: string | null = null;
 
     const strokesMap = new Map<string, number[]>();
     [...new Set([...teamA, ...teamB])].forEach(pid => {
@@ -93,8 +94,8 @@ export const calculateCarritosBets = (
         const result = calculateStrokesPerHoleWithHalf(hcp, true, course);
         strokesMap.set(pid, result.strokesPerHole);
         halfStrokeHole = result.halfStrokeHole;
-        // The player with a .5 handicap is on the receiving team
         halfReceivingTeam = teamA.includes(pid) ? 'A' : 'B';
+        halfPlayerId = pid;
       } else {
         strokesMap.set(pid, calculateStrokesPerHole(Math.round(hcp), course));
       }
@@ -120,17 +121,27 @@ export const calculateCarritosBets = (
       // Half-point tie-break: on the halfStrokeHole, ties go to the receiving team
       const isHalfHole = halfStrokeHole === holeNum && halfReceivingTeam !== null;
 
+      // Determine half-point player's net on their team
+      const halfPlayerNet = halfPlayerId ? getNet(halfPlayerId, holeNum) : null;
+      const halfTeamNets: number[] | null = isHalfHole && halfPlayerId && halfPlayerNet !== null
+        ? (halfReceivingTeam === 'A' ? [a1, a2] : [b1, b2])
+        : null;
+
       if (includeLowBall) {
         const lA = Math.min(a1, a2), lB = Math.min(b1, b2);
         if (lA < lB) pA++;
         else if (lB < lA) pB++;
-        else if (isHalfHole) { if (halfReceivingTeam === 'A') pA++; else pB++; }
+        else if (isHalfHole && halfTeamNets && halfPlayerNet === Math.min(...halfTeamNets)) {
+          if (halfReceivingTeam === 'A') pA++; else pB++;
+        }
       }
       if (includeHighBall) {
         const hA = Math.max(a1, a2), hB = Math.max(b1, b2);
         if (hA < hB) pA++;
         else if (hB < hA) pB++;
-        else if (isHalfHole) { if (halfReceivingTeam === 'A') pA++; else pB++; }
+        else if (isHalfHole && halfTeamNets && halfPlayerNet === Math.max(...halfTeamNets)) {
+          if (halfReceivingTeam === 'A') pA++; else pB++;
+        }
       }
       if (includeCombined) {
         const cA = a1 + a2, cB = b1 + b2;
