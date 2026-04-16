@@ -14,6 +14,7 @@ import JoinRound from "./pages/JoinRound";
 import JoinByCode from "./pages/JoinByCode";
 import Leaderboards from "./pages/Leaderboards";
 import LeaderboardDetail from "./pages/LeaderboardDetail";
+import TeamsCupDetail from "./pages/TeamsCupDetail";
 import JoinLeaderboard from "./pages/JoinLeaderboard";
 import MoneyRankings from "./pages/MoneyRankings";
 import MoneyRankingDetail from "./pages/MoneyRankingDetail";
@@ -70,6 +71,7 @@ const AppRoutes = () => (
     <Route path="/join/:roundId" element={<JoinRound />} />
     <Route path="/join" element={<JoinByCode />} />
     <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
+    <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
     <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
     <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
     <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
