@@ -117,15 +117,7 @@ const Leaderboards = () => {
       <div className="p-4 max-w-lg mx-auto space-y-4">
         {/* Actions */}
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCupDialog(true)}
-            className="gap-1.5 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
-          >
-            🏆 Teams Cup
-          </Button>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Dialog open={showCreateDialog} onOpenChange={(v) => { setShowCreateDialog(v); if (!v) setCreateType(null); }}>
             <DialogTrigger asChild>
               <Button
                 className="flex-1 gap-2"
@@ -138,65 +130,104 @@ const Leaderboards = () => {
                   }
                 }}
               >
-                <Plus className="h-4 w-4" /> Crear Leaderboard
+                <Plus className="h-4 w-4" /> Crear Competencia
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Nuevo Leaderboard</DialogTitle>
+                <DialogTitle>Nueva Competencia</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Nombre *</Label>
-                  <Input
-                    placeholder="Ej: Torneo del Club"
-                    value={formName}
-                    onChange={e => setFormName(e.target.value)}
-                  />
+
+              {/* Step 0: Choose type */}
+              {createType === null && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">¿Qué tipo de competencia quieres crear?</p>
+                  <button
+                    onClick={() => setCreateType('standard')}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
+                  >
+                    <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+                    <div>
+                      <div className="font-medium text-sm">Leaderboard</div>
+                      <div className="text-xs text-muted-foreground">Tabla de posiciones individual (Medal, Stableford)</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCreateDialog(false);
+                      setShowCupDialog(true);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-colors text-left"
+                  >
+                    <span className="text-lg shrink-0">🏆</span>
+                    <div>
+                      <div className="font-medium text-sm">Teams Cup</div>
+                      <div className="text-xs text-muted-foreground">Competencia por equipos estilo Ryder Cup</div>
+                    </div>
+                  </button>
                 </div>
-                <div>
-                  <Label>Descripción</Label>
-                  <Input
-                    placeholder="Descripción breve (opcional)"
-                    value={formDescription}
-                    onChange={e => setFormDescription(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Fecha</Label>
-                  <Input
-                    type="date"
-                    value={formDate}
-                    onChange={e => setFormDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Modalidades *</Label>
-                  <div className="flex flex-col gap-2 mt-1">
-                    {[
-                      { key: 'gross', label: 'Medal Gross' },
-                      { key: 'net', label: 'Medal Neto' },
-                      { key: 'stableford', label: 'Stableford' },
-                    ].map(mode => (
-                      <label key={mode.key} className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={formModes.includes(mode.key)}
-                          onCheckedChange={() => toggleMode(mode.key)}
-                        />
-                        <span className="text-sm">{mode.label}</span>
-                      </label>
-                    ))}
+              )}
+
+              {/* Standard leaderboard form */}
+              {createType === 'standard' && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Nombre *</Label>
+                    <Input
+                      placeholder="Ej: Torneo del Club"
+                      value={formName}
+                      onChange={e => setFormName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Descripción</Label>
+                    <Input
+                      placeholder="Descripción breve (opcional)"
+                      value={formDescription}
+                      onChange={e => setFormDescription(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Fecha</Label>
+                    <Input
+                      type="date"
+                      value={formDate}
+                      onChange={e => setFormDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Modalidades *</Label>
+                    <div className="flex flex-col gap-2 mt-1">
+                      {[
+                        { key: 'gross', label: 'Medal Gross' },
+                        { key: 'net', label: 'Medal Neto' },
+                        { key: 'stableford', label: 'Stableford' },
+                      ].map(mode => (
+                        <label key={mode.key} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={formModes.includes(mode.key)}
+                            onCheckedChange={() => toggleMode(mode.key)}
+                          />
+                          <span className="text-sm">{mode.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setCreateType(null)}>
+                      ← Atrás
+                    </Button>
+                    <Button
+                      onClick={handleCreate}
+                      disabled={!formName.trim() || formModes.length === 0 || creating}
+                      className="flex-1"
+                    >
+                      {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Crear
+                    </Button>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleCreate} 
-                  disabled={!formName.trim() || formModes.length === 0 || creating}
-                  className="w-full"
-                >
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Crear
-                </Button>
-              </div>
+              )}
             </DialogContent>
           </Dialog>
 
