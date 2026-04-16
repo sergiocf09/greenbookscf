@@ -400,6 +400,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [isRoundLinked, setIsRoundLinked] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
+  const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null }>({ date: null, courseName: null });
 
   const activeRound = useActiveRoundForLink();
 
@@ -422,6 +424,47 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     return () => { cancelled = true; };
   }, [leaderboardId, activeRound.roundId]);
 
+  // Load linked-round meta (date + course name) to show in the header strip.
+  useEffect(() => {
+    let cancelled = false;
+    const loadMeta = async () => {
+      if (!leaderboardId) {
+        setLinkedRoundInfo({ date: null, courseName: null });
+        return;
+      }
+      const { data: linkRows } = await supabase
+        .from('leaderboard_rounds')
+        .select('round_id, added_at')
+        .eq('leaderboard_id', leaderboardId)
+        .order('added_at', { ascending: false })
+        .limit(1);
+      const linkedId = linkRows?.[0]?.round_id;
+      if (!linkedId) {
+        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null });
+        return;
+      }
+      const { data: round } = await supabase
+        .from('rounds')
+        .select('date, course_id')
+        .eq('id', linkedId)
+        .maybeSingle();
+      let courseName: string | null = null;
+      if (round?.course_id) {
+        const { data: course } = await supabase
+          .from('golf_courses')
+          .select('name')
+          .eq('id', round.course_id)
+          .maybeSingle();
+        courseName = course?.name ?? null;
+      }
+      if (!cancelled) {
+        setLinkedRoundInfo({ date: round?.date ?? null, courseName });
+      }
+    };
+    loadMeta();
+    return () => { cancelled = true; };
+  }, [leaderboardId, isRoundLinked]);
+
   const handleUnlinkRound = async () => {
     if (!leaderboardId || !activeRound.roundId) return;
     setUnlinking(true);
@@ -439,6 +482,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
       toast.success('Ronda desvinculada');
       setIsRoundLinked(false);
+      setShowUnlinkConfirm(false);
       await cup.fetchAll();
     } catch (err: any) {
       toast.error('Error al desvincular: ' + err.message);
@@ -482,20 +526,45 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
   };
 
-  const [localHcps, setLocalHcps] = useState<Map<string, number>>(new Map());
+  // ── Deferred assignment-panel state ─────────────────────
+  // Local team + hcp drafts. Nothing is written to the DB while the user
+  // taps around. On dialog close we diff & batch-save in a single call.
+  const [draftTeams, setDraftTeams] = useState<Map<string, string | null>>(new Map());
+  const [draftHcps, setDraftHcps] = useState<Map<string, number>>(new Map());
 
-  const handleHcpChange = (participantId: string, value: number) => {
-    setLocalHcps(prev => new Map(prev).set(participantId, value));
+  const getDraftTeam = (p: CupParticipant) =>
+    draftTeams.has(p.id) ? draftTeams.get(p.id)! : p.cup_team_id;
+  const getDraftHcp = (p: CupParticipant) =>
+    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.match_handicap;
+
+  const setDraftTeam = (id: string, teamId: string | null) =>
+    setDraftTeams(prev => new Map(prev).set(id, teamId));
+  const setDraftHcp = (id: string, value: number) =>
+    setDraftHcps(prev => new Map(prev).set(id, value));
+
+  const flushAssignDrafts = async () => {
+    const updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }> = [];
+    for (const p of cup.participants) {
+      const patch: { id: string; cup_team_id?: string | null; match_handicap?: number } = { id: p.id };
+      let dirty = false;
+      if (draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id) {
+        patch.cup_team_id = draftTeams.get(p.id)!;
+        dirty = true;
+      }
+      if (draftHcps.has(p.id) && draftHcps.get(p.id) !== p.match_handicap) {
+        patch.match_handicap = draftHcps.get(p.id)!;
+        dirty = true;
+      }
+      if (dirty) updates.push(patch);
+    }
+    if (updates.length > 0) {
+      await cup.batchUpdateParticipants(updates);
+      toast.success(`Cambios guardados (${updates.length})`);
+    }
+    setDraftTeams(new Map());
+    setDraftHcps(new Map());
   };
 
-  const commitHcp = (participantId: string) => {
-    const v = localHcps.get(participantId);
-    if (v === undefined) return;
-    const orig = cup.participants.find(p => p.id === participantId)?.match_handicap;
-    if (v !== orig) cup.updateMatchHandicap(participantId, v);
-  };
-
-  const getHcp = (p: CupParticipant) => localHcps.get(p.id) ?? p.match_handicap;
 
   if (cup.loading) {
     return (
