@@ -389,7 +389,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   return {
     teams, matches, participants, matchResults, standings,
     loading, fetchAll,
-    assignTeam, updateMatchHandicap, updateTeam,
+    assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
   };
