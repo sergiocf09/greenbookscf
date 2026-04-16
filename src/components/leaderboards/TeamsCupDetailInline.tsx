@@ -589,9 +589,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     .sort(byName);
 
   return (
-    <div className="space-y-3">
-      {/* Top bar: code chip + actions */}
-      <div className="flex items-center justify-between gap-2">
+    <div className="space-y-2">
+      {/* Top bar: code chip + actions (compact, hugs subheader) */}
+      <div className="-mt-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {event?.code && (
             <button
@@ -620,7 +620,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleUnlinkRound}
+              onClick={() => setShowUnlinkConfirm(true)}
               disabled={unlinking}
               aria-label="Desvincular ronda"
               title="Desvincular ronda"
@@ -645,11 +645,26 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </div>
       </div>
 
-      {/* Event title + meta */}
-      <div className="text-center space-y-1.5">
-        <h1 className="text-lg font-bold">{event?.name || 'Teams Cup'}</h1>
-        {event?.description && (
-          <p className="text-xs text-muted-foreground">{event.description}</p>
+      {/* Event title + meta (date + location, no description) */}
+      <div className="text-center space-y-1">
+        <h1 className="text-lg font-bold leading-tight">{event?.name || 'Teams Cup'}</h1>
+        {(linkedRoundInfo.date || linkedRoundInfo.courseName) && (
+          <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+            {linkedRoundInfo.date && (
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(linkedRoundInfo.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                })}
+              </span>
+            )}
+            {linkedRoundInfo.courseName && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {linkedRoundInfo.courseName}
+              </span>
+            )}
+          </div>
         )}
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <Badge variant="secondary" className="text-[10px]">
