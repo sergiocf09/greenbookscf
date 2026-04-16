@@ -19,6 +19,7 @@ import { LeaderboardDialog } from '@/components/LeaderboardDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
+import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
 import { StatsInlineView } from '@/pages/Stats';
 import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
@@ -155,8 +156,9 @@ const Index = () => {
   }, [scores]);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
+  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup'>('standard');
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
-  const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string; competition_type: string } | null>(null);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
@@ -516,11 +518,16 @@ const Index = () => {
       const leaderboardId = links[0].leaderboard_id;
       const { data: ev } = await supabase
         .from('leaderboard_events')
-        .select('id, name, code')
+        .select('id, name, code, competition_type')
         .eq('id', leaderboardId)
         .single();
       if (ev) {
-        setLinkedLeaderboardInfo({ id: ev.id, name: ev.name, code: ev.code });
+        setLinkedLeaderboardInfo({
+          id: ev.id,
+          name: ev.name,
+          code: ev.code,
+          competition_type: (ev as any).competition_type || 'standard',
+        });
       } else {
         setLinkedLeaderboardInfo(null);
       }
