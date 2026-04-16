@@ -967,42 +967,6 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               </div>
             );
           })()}
-
-            return (
-              <div className="space-y-3">
-                {partsNone.length > 0 && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
-                    <div className="space-y-2">{partsNone.map(renderRow)}</div>
-                  </div>
-                )}
-                {teamA && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-semibold" style={{ color: teamA.color }}>
-                      {teamA.name}
-                    </p>
-                    {partsA.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
-                    ) : (
-                      <div className="space-y-2">{partsA.map(renderRow)}</div>
-                    )}
-                  </div>
-                )}
-                {teamB && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-semibold" style={{ color: teamB.color }}>
-                      {teamB.name}
-                    </p>
-                    {partsB.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
-                    ) : (
-                      <div className="space-y-2">{partsB.map(renderRow)}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
           <Button className="w-full mt-3" onClick={() => setShowAssignPanel(false)}>
             Cerrar
           </Button>
