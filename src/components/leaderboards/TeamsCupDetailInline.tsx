@@ -590,49 +590,45 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
   return (
     <div className="space-y-2">
-      {/* Top bar: code chip + actions (compact, hugs subheader) */}
-      <div className="-mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0" />
-
-        <div className="flex items-center gap-1 shrink-0">
-          {activeRound.roundId && !isRoundLinked && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowLinkDialog(true)}
-              aria-label="Vincular ronda"
-              title="Vincular ronda activa"
-            >
-              <Link2 className="h-4 w-4" />
-            </Button>
-          )}
-          {activeRound.roundId && isRoundLinked && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowUnlinkConfirm(true)}
-              disabled={unlinking}
-              aria-label="Desvincular ronda"
-              title="Desvincular ronda"
-              className="text-destructive hover:text-destructive"
-            >
-              {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
-            <Share2 className="h-4 w-4" />
+      {/* Top bar: actions (centered, hugs subheader) */}
+      <div className="-mt-2 flex items-center justify-center gap-1">
+        {activeRound.roundId && !isRoundLinked && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowLinkDialog(true)}
+            aria-label="Vincular ronda"
+            title="Vincular ronda activa"
+          >
+            <Link2 className="h-4 w-4" />
           </Button>
-          {isCreator && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowSettings(true)}
-              aria-label="Configuración"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        )}
+        {activeRound.roundId && isRoundLinked && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowUnlinkConfirm(true)}
+            disabled={unlinking}
+            aria-label="Desvincular ronda"
+            title="Desvincular ronda"
+            className="text-destructive hover:text-destructive"
+          >
+            {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
+          <Share2 className="h-4 w-4" />
+        </Button>
+        {isCreator && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSettings(true)}
+            aria-label="Configuración"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Event title + meta (date + location, no description) */}
@@ -962,6 +958,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         match={editingMatch}
         teams={cup.teams}
         participants={cup.participants}
+        allMatches={cup.matches}
         defaultFormat={cupFormat}
         onClose={() => { setShowMatchEditor(false); setEditingMatch(null); }}
         onSave={async (params) => {
