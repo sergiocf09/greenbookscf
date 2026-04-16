@@ -312,6 +312,10 @@ export function useTeamsCup(leaderboardId: string | null) {
 
   const myParticipant = participants.find(p => p.profile_id === profile?.id) ?? null;
 
+  /**
+   * Match individual: el jugador con MAYOR hándicap recibe la diferencia de strokes.
+   * `advantage_side` = lado que RECIBE los strokes.
+   */
   const calcMatchHandicap = useCallback((
     partA: CupParticipant | undefined,
     partB: CupParticipant | undefined
@@ -319,8 +323,9 @@ export function useTeamsCup(leaderboardId: string | null) {
     if (!partA || !partB) return { strokes_advantage: 0, advantage_side: 'none' };
     const diff = partA.match_handicap - partB.match_handicap;
     if (diff === 0) return { strokes_advantage: 0, advantage_side: 'none' };
-    if (diff > 0) return { strokes_advantage: diff, advantage_side: 'b' };
-    return { strokes_advantage: Math.abs(diff), advantage_side: 'a' };
+    // El de mayor HCP recibe.
+    if (diff > 0) return { strokes_advantage: diff, advantage_side: 'a' };
+    return { strokes_advantage: Math.abs(diff), advantage_side: 'b' };
   }, []);
 
   /**
