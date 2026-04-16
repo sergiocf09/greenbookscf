@@ -40,8 +40,36 @@ const JoinLeaderboard = () => {
 
     const resolve = async () => {
       try {
+        // Look up the user's handicap from their most recent active round
+        // (either as organizer or as a participant) so it carries into the leaderboard.
+        let carriedHandicap = 0;
+        try {
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('id, current_handicap')
+            .eq('user_id', user!.id)
+            .maybeSingle();
+          if (profileRow?.id) {
+            const { data: rp } = await supabase
+              .from('round_players')
+              .select('handicap_for_round, joined_at, rounds!inner(status)')
+              .eq('profile_id', profileRow.id)
+              .in('rounds.status', ['in_progress', 'setup'])
+              .order('joined_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (rp?.handicap_for_round != null) {
+              carriedHandicap = Number(rp.handicap_for_round);
+            } else if (profileRow.current_handicap != null) {
+              carriedHandicap = Number(profileRow.current_handicap);
+            }
+          }
+        } catch {
+          // non-fatal — fall back to 0
+        }
+
         const { data: leaderboardId } = await supabase
-          .rpc('join_leaderboard_by_code', { p_code: code, p_handicap: 0 });
+          .rpc('join_leaderboard_by_code', { p_code: code, p_handicap: carriedHandicap });
         if (leaderboardId) {
           // Check if this is a Teams Cup
           const { data: eventData } = await supabase
