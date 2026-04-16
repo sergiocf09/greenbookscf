@@ -267,6 +267,141 @@ export type Database = {
           },
         ]
       }
+      cup_matches: {
+        Row: {
+          advantage_side: string
+          created_at: string
+          format: string
+          id: string
+          leaderboard_id: string
+          match_order: number
+          player_a1_id: string | null
+          player_a2_id: string | null
+          player_b1_id: string | null
+          player_b2_id: string | null
+          result_detail: string | null
+          result_override: boolean
+          result_type: string | null
+          round_id: string | null
+          status: string
+          strokes_advantage: number
+          updated_at: string
+        }
+        Insert: {
+          advantage_side?: string
+          created_at?: string
+          format?: string
+          id?: string
+          leaderboard_id: string
+          match_order?: number
+          player_a1_id?: string | null
+          player_a2_id?: string | null
+          player_b1_id?: string | null
+          player_b2_id?: string | null
+          result_detail?: string | null
+          result_override?: boolean
+          result_type?: string | null
+          round_id?: string | null
+          status?: string
+          strokes_advantage?: number
+          updated_at?: string
+        }
+        Update: {
+          advantage_side?: string
+          created_at?: string
+          format?: string
+          id?: string
+          leaderboard_id?: string
+          match_order?: number
+          player_a1_id?: string | null
+          player_a2_id?: string | null
+          player_b1_id?: string | null
+          player_b2_id?: string | null
+          result_detail?: string | null
+          result_override?: boolean
+          result_type?: string | null
+          round_id?: string | null
+          status?: string
+          strokes_advantage?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cup_matches_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_player_a1_id_fkey"
+            columns: ["player_a1_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_player_a2_id_fkey"
+            columns: ["player_a2_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_player_b1_id_fkey"
+            columns: ["player_b1_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_player_b2_id_fkey"
+            columns: ["player_b2_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cup_teams: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          leaderboard_id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          leaderboard_id: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          leaderboard_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cup_teams_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -556,8 +691,10 @@ export type Database = {
       leaderboard_events: {
         Row: {
           code: string
+          competition_type: string
           created_at: string
           created_by: string
+          cup_format: string | null
           description: string | null
           end_date: string | null
           id: string
@@ -571,8 +708,10 @@ export type Database = {
         }
         Insert: {
           code?: string
+          competition_type?: string
           created_at?: string
           created_by: string
+          cup_format?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -586,8 +725,10 @@ export type Database = {
         }
         Update: {
           code?: string
+          competition_type?: string
           created_at?: string
           created_by?: string
+          cup_format?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -611,6 +752,7 @@ export type Database = {
       }
       leaderboard_participants: {
         Row: {
+          cup_team_id: string | null
           guest_color: string | null
           guest_initials: string | null
           guest_name: string | null
@@ -619,10 +761,12 @@ export type Database = {
           is_active: boolean
           joined_at: string
           leaderboard_id: string
+          match_handicap: number
           profile_id: string | null
           source_round_id: string | null
         }
         Insert: {
+          cup_team_id?: string | null
           guest_color?: string | null
           guest_initials?: string | null
           guest_name?: string | null
@@ -631,10 +775,12 @@ export type Database = {
           is_active?: boolean
           joined_at?: string
           leaderboard_id: string
+          match_handicap?: number
           profile_id?: string | null
           source_round_id?: string | null
         }
         Update: {
+          cup_team_id?: string | null
           guest_color?: string | null
           guest_initials?: string | null
           guest_name?: string | null
@@ -643,10 +789,18 @@ export type Database = {
           is_active?: boolean
           joined_at?: string
           leaderboard_id?: string
+          match_handicap?: number
           profile_id?: string | null
           source_round_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leaderboard_participants_cup_team_fk"
+            columns: ["cup_team_id"]
+            isOneToOne: false
+            referencedRelation: "cup_teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leaderboard_participants_leaderboard_id_fkey"
             columns: ["leaderboard_id"]
@@ -1964,6 +2118,18 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      get_cup_match_result: {
+        Args: { p_match_id: string }
+        Returns: {
+          current_standing: string
+          holes_played: number
+          holes_remaining: number
+          match_closed: boolean
+          result_type: string
+          side_a_holes_won: number
+          side_b_holes_won: number
+        }[]
       }
       get_friend_handicap_ranking_stats: {
         Args: never
