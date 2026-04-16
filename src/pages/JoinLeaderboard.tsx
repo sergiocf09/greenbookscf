@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Trophy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import GreenBookLogo from '@/components/GreenBookLogo';
 
 const isStandalone = (): boolean =>
@@ -17,6 +19,12 @@ const JoinLeaderboard = () => {
   const [resolving, setResolving] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const standalone = isStandalone();
+
+  const [teamSelectData, setTeamSelectData] = useState<{
+    leaderboardId: string;
+    teams: { id: string; name: string; color: string }[];
+  } | null>(null);
+  const [assigningTeam, setAssigningTeam] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -35,7 +43,33 @@ const JoinLeaderboard = () => {
         const { data: leaderboardId } = await supabase
           .rpc('join_leaderboard_by_code', { p_code: code, p_handicap: 0 });
         if (leaderboardId) {
-          navigate(`/leaderboards/${leaderboardId}`, { replace: true });
+          // Check if this is a Teams Cup
+          const { data: eventData } = await supabase
+            .from('leaderboard_events')
+            .select('competition_type')
+            .eq('id', leaderboardId)
+            .single();
+
+          if (eventData?.competition_type === 'teams_cup') {
+            // Load teams for this cup
+            const { data: teamsData } = await supabase
+              .from('cup_teams')
+              .select('id, name, color')
+              .eq('leaderboard_id', leaderboardId)
+              .order('created_at');
+
+            if (teamsData && teamsData.length > 0) {
+              setTeamSelectData({ leaderboardId, teams: teamsData });
+              setResolving(false);
+              return; // Don't navigate yet — show team selection screen
+            }
+          }
+
+          // Standard leaderboard OR teams cup with no teams yet
+          const dest = eventData?.competition_type === 'teams_cup'
+            ? `/leaderboards/cup/${leaderboardId}`
+            : `/leaderboards/${leaderboardId}`;
+          navigate(dest, { replace: true });
         } else {
           setNotFound(true);
           setResolving(false);
@@ -45,8 +79,76 @@ const JoinLeaderboard = () => {
         setResolving(false);
       }
     };
+
     resolve();
   }, [code, user, authLoading, navigate]);
+
+  const handleTeamSelect = async (teamId: string | null) => {
+    if (!teamSelectData) return;
+    setAssigningTeam(true);
+    try {
+      if (teamId !== null) {
+        await supabase.rpc('assign_cup_team' as any, {
+          p_leaderboard_id: teamSelectData.leaderboardId,
+          p_team_id: teamId,
+        });
+      }
+      navigate(`/leaderboards/cup/${teamSelectData.leaderboardId}`, { replace: true });
+    } catch {
+      navigate(`/leaderboards/cup/${teamSelectData.leaderboardId}`, { replace: true });
+    } finally {
+      setAssigningTeam(false);
+    }
+  };
+
+  // Team selection screen for Teams Cup
+  if (teamSelectData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 p-6">
+        <GreenBookLogo height={64} />
+        <div className="text-center space-y-2">
+          <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+            🏆 Teams Cup
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            ¿A qué equipo perteneces?
+          </p>
+        </div>
+
+        <div className="w-full max-w-sm space-y-3">
+          {teamSelectData.teams.map((team) => (
+            <Card
+              key={team.id}
+              className="cursor-pointer hover:shadow-md transition-shadow border-2"
+              style={{ borderColor: team.color + '40' }}
+              onClick={() => !assigningTeam && handleTeamSelect(team.id)}
+            >
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-5 h-5 rounded-full"
+                    style={{ backgroundColor: team.color }}
+                  />
+                  <span className="font-semibold">{team.name}</span>
+                </div>
+                {assigningTeam
+                  ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  : <Badge variant="secondary">Seleccionar →</Badge>
+                }
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Button variant="ghost" size="sm" onClick={() => handleTeamSelect(null)}>
+          Entrar sin elegir equipo
+        </Button>
+        <p className="text-xs text-center text-muted-foreground max-w-xs">
+          El organizador también puede asignarte equipo desde el panel de la competencia.
+        </p>
+      </div>
+    );
+  }
 
   if (standalone || authLoading || resolving) {
     if (notFound) {
