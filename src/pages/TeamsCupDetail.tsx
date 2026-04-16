@@ -260,11 +260,51 @@ const TeamsCupDetail = () => {
   const { event, isCreator: isCreatorFlag } = useLeaderboardDetail(id || null);
   const isCreator = isCreatorFlag;
 
+  const queryClient = useQueryClient();
+
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showMatchEditor, setShowMatchEditor] = useState(false);
   const [editingMatch, setEditingMatch] = useState<CupMatch | null>(null);
   const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const copyCode = () => {
+    if (event?.code) {
+      navigator.clipboard.writeText(event.code);
+      toast.success('Código copiado');
+    }
+  };
+
+  const copyShareLink = () => {
+    if (event?.code) {
+      const url = `${window.location.origin}/leaderboards/join/${event.code}`;
+      navigator.clipboard.writeText(url);
+      toast.success('Link copiado');
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_events')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('Competencia eliminada');
+      queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+      navigate('/leaderboards');
+    } catch (err: any) {
+      toast.error('Error al eliminar: ' + err.message);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   // Local state for debounced handicap updates
   const hcpTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
