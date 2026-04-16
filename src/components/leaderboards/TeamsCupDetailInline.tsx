@@ -616,6 +616,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">
               {st.matches_total} matches · {st.matches_completed} completados
+              {st.has_in_progress && <span className="ml-1 italic">· en vivo</span>}
             </p>
           </CardContent>
         </Card>
