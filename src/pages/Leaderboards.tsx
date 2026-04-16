@@ -125,6 +125,7 @@ const Leaderboards = () => {
           >
             🏆 Teams Cup
           </Button>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button
                 className="flex-1 gap-2"
