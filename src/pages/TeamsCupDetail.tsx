@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut,
-  Check, X, Hash, Copy, Share2, Settings, RefreshCw,
+  Check, X, Hash, Copy, Share2, Settings, RefreshCw, Link2, Unlink,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -34,6 +34,8 @@ import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
+import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
+import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── CupMatchRow ─────────────────────────────────── */
 
@@ -268,6 +270,62 @@ const TeamsCupDetail = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [isRoundLinked, setIsRoundLinked] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
+  // Detect the user's active (non-completed) round to enable round linking
+  const activeRound = useActiveRoundForLink();
+
+  // Check whether the active round is already linked to this cup
+  React.useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!id || !activeRound.roundId) {
+        setIsRoundLinked(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('leaderboard_rounds')
+        .select('id')
+        .eq('leaderboard_id', id)
+        .eq('round_id', activeRound.roundId)
+        .maybeSingle();
+      if (!cancelled) setIsRoundLinked(!!data);
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [id, activeRound.roundId]);
+
+  const handleUnlinkRound = async () => {
+    if (!id || !activeRound.roundId) return;
+    setUnlinking(true);
+    try {
+      const roundId = activeRound.roundId;
+      // 1) Unlink
+      await supabase.from('leaderboard_rounds')
+        .delete().eq('leaderboard_id', id).eq('round_id', roundId);
+      // 2) Remove computed scores
+      await supabase.from('leaderboard_scores')
+        .delete().eq('leaderboard_id', id).eq('round_id', roundId);
+      // 3) Remove participants sourced from this round
+      await supabase.from('leaderboard_participants')
+        .delete().eq('leaderboard_id', id).eq('source_round_id', roundId);
+      // 4) Detach cup_matches that referenced this round
+      await supabase.from('cup_matches')
+        .update({ round_id: null, status: 'pending' } as any)
+        .eq('leaderboard_id', id).eq('round_id', roundId);
+
+      toast.success('Ronda desvinculada');
+      setIsRoundLinked(false);
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al desvincular: ' + err.message);
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
 
   const copyCode = () => {
     if (event?.code) {
@@ -419,6 +477,33 @@ const TeamsCupDetail = () => {
           </div>
         </div>
 
+        {/* ── Vincular ronda activa ─── */}
+        {activeRound.roundId && (
+          <div className="flex gap-2">
+            {!isRoundLinked ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+                onClick={() => setShowLinkDialog(true)}
+              >
+                <Link2 className="h-4 w-4" />
+                Vincular ronda activa
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2 text-destructive hover:text-destructive"
+                onClick={handleUnlinkRound}
+                disabled={unlinking}
+              >
+                {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
+                Desvincular ronda
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* ── Section 1: Global Scoreboard ─── */}
         {st ? (
@@ -696,6 +781,31 @@ const TeamsCupDetail = () => {
       />
 
       <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
+
+      {/* ── Link Round Dialog ─── */}
+      <LinkRoundToLeaderboardDialog
+        open={showLinkDialog}
+        onOpenChange={async (open) => {
+          setShowLinkDialog(open);
+          if (!open) {
+            if (id && activeRound.roundId) {
+              const { data } = await supabase
+                .from('leaderboard_rounds')
+                .select('id')
+                .eq('leaderboard_id', id)
+                .eq('round_id', activeRound.roundId)
+                .maybeSingle();
+              setIsRoundLinked(!!data);
+            }
+            await cup.fetchAll();
+          }
+        }}
+        roundId={activeRound.roundId}
+        players={activeRound.players}
+        playerGroups={activeRound.playerGroups}
+        profileId={profile?.id}
+        preselectedLeaderboardId={id}
+      />
 
       {/* ── Settings Dialog (creator only) ─── */}
       {isCreator && event && (
