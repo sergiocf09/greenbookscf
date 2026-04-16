@@ -9,7 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -143,9 +146,9 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
 
   return (
     <div className="space-y-2">
-      {/* Top bar: code left, share right */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      {/* Top bar: back + code chip + actions */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
             <ArrowLeft className="h-4 w-4" /> Leaderboards
           </Button>
@@ -158,9 +161,55 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             <Copy className="h-3 w-3 ml-0.5" />
           </button>
         </div>
-        <Button variant="ghost" size="icon" onClick={copyShareLink}>
-          <Share2 className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          {hasActiveRound && !isRoundLinked && onLinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onLinkRound}
+              aria-label="Vincular ronda"
+              title="Vincular ronda activa"
+            >
+              <Link2 className="h-4 w-4" />
+            </Button>
+          )}
+          {hasActiveRound && isRoundLinked && onUnlinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onUnlinkRound}
+              aria-label="Desvincular ronda"
+              title="Desvincular ronda"
+              className="text-destructive hover:text-destructive"
+            >
+              <Unlink className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
+            <Share2 className="h-4 w-4" />
+          </Button>
+          {isCreator && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Configuración">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
+                  <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Tournament name + mode on one line */}
@@ -174,45 +223,6 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </span>
       </div>
 
-      {/* Link/Unlink round buttons */}
-      {hasActiveRound && (
-        <div className="flex gap-2">
-          {!isRoundLinked && onLinkRound && (
-            <Button 
-              onClick={onLinkRound} 
-              variant="outline" 
-              size="sm" 
-              className="flex-1 gap-2"
-            >
-              <Link2 className="h-4 w-4" />
-              Vincular ronda
-            </Button>
-          )}
-          {isRoundLinked && onUnlinkRound && (
-            <Button 
-              onClick={onUnlinkRound} 
-              variant="outline" 
-              size="sm" 
-              className="flex-1 gap-2 text-destructive hover:text-destructive"
-            >
-              <Unlink className="h-4 w-4" />
-              Desvincular ronda
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Creator actions */}
-      {isCreator && (
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
-            <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
-          </Button>
-          <Button variant="destructive" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}>
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
-          </Button>
-        </div>
-      )}
 
       {/* Leaderboard table */}
       <Card>
