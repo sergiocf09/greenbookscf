@@ -29,6 +29,7 @@ export interface CupMatch {
   round_id: string | null;
   match_order: number;
   points_per_match: number;
+  stroke_receiver_player_id: string | null;
 }
 
 export interface CupHoleBreakdown {
