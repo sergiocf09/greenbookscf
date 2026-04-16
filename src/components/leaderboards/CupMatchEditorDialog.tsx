@@ -62,6 +62,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       setPlayerB2(match.player_b2_id);
       setStrokesAdvantage(match.strokes_advantage);
       setAdvantageSide(match.advantage_side);
+      setStrokeReceiverId(match.stroke_receiver_player_id ?? null);
+      setHcpManuallyEdited(true); // existing match: don't auto-overwrite
       setResultOverride(match.result_override);
       setResultType(match.result_type || '');
       setResultDetail(match.result_detail || '');
@@ -74,6 +76,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       setPlayerB2(null);
       setStrokesAdvantage(0);
       setAdvantageSide('none');
+      setStrokeReceiverId(null);
+      setHcpManuallyEdited(false);
       setResultOverride(false);
       setResultType('');
       setResultDetail('');
@@ -90,12 +94,39 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
     participants.filter(p => p.cup_team_id === teamB?.id), [participants, teamB]);
 
   const partA1 = participants.find(p => p.id === playerA1);
+  const partA2 = participants.find(p => p.id === playerA2);
   const partB1 = participants.find(p => p.id === playerB1);
+  const partB2 = participants.find(p => p.id === playerB2);
 
-  const suggested = useMemo(() => {
-    if (!partA1 || !partB1) return null;
-    return calcMatchHandicap(partA1, partB1);
-  }, [partA1, partB1, calcMatchHandicap]);
+  // Auto-compute handicap whenever players change (unless user manually edited).
+  useEffect(() => {
+    if (hcpManuallyEdited) return;
+    if (format === 'match_individual') {
+      if (!partA1 || !partB1) return;
+      const r = calcMatchHandicap(partA1, partB1);
+      setStrokesAdvantage(r.strokes_advantage);
+      setAdvantageSide(r.advantage_side);
+      setStrokeReceiverId(null);
+    } else {
+      if (!partA1 || !partA2 || !partB1 || !partB2) return;
+      const r = calcFourballHandicap(partA1, partA2, partB1, partB2);
+      setStrokesAdvantage(r.strokes_advantage);
+      setAdvantageSide(r.advantage_side);
+      setStrokeReceiverId(r.receiver_player_id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerA1, playerA2, playerB1, playerB2, format, hcpManuallyEdited]);
+
+  // Fourball: derive receiving pair + tie state for UI.
+  const fourballInfo = useMemo(() => {
+    if (format !== 'fourball' || advantageSide === 'none') return null;
+    const pair = advantageSide === 'a'
+      ? [partA1, partA2].filter(Boolean) as CupParticipant[]
+      : [partB1, partB2].filter(Boolean) as CupParticipant[];
+    if (pair.length !== 2) return null;
+    const tied = pair[0].match_handicap === pair[1].match_handicap;
+    return { pair, tied };
+  }, [format, advantageSide, partA1, partA2, partB1, partB2]);
 
   const handleSave = () => {
     const payload: Partial<CupMatch> = {
@@ -106,6 +137,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       player_b2_id: format === 'fourball' ? playerB2 : null,
       strokes_advantage: strokesAdvantage,
       advantage_side: advantageSide,
+      stroke_receiver_player_id: format === 'fourball' ? strokeReceiverId : null,
       result_override: resultOverride,
       result_type: resultOverride && resultType ? resultType as any : null,
       result_detail: resultOverride && resultDetail ? resultDetail : null,
