@@ -347,28 +347,80 @@ const TeamsCupDetail = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/leaderboards')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <GreenBookLogo height={24} />
         </div>
-        <GreenBookLogo height={24} />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.location.reload()}
+            aria-label="Actualizar"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={copyShareLink}
+            aria-label="Compartir"
+          >
+            <Share2 className="h-5 w-5" />
+          </Button>
+          {isCreator && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSettings(true)}
+              aria-label="Configuración"
+            >
+              <Settings className="h-5 w-5" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-              <User className="h-4 w-4 mr-2" /> Perfil
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                <User className="h-4 w-4 mr-2" /> Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="p-4 max-w-lg mx-auto space-y-4">
-        {/* Event name */}
-        <h1 className="text-lg font-bold text-center">{event?.name || 'Teams Cup'}</h1>
+        {/* Event header: name + code chip + format */}
+        <div className="text-center space-y-2">
+          <h1 className="text-lg font-bold">{event?.name || 'Teams Cup'}</h1>
+          {event?.description && (
+            <p className="text-xs text-muted-foreground">{event.description}</p>
+          )}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {event?.code && (
+              <button
+                onClick={copyCode}
+                className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors text-xs"
+              >
+                <Hash className="h-3 w-3" />
+                <span className="font-mono font-bold">{event.code}</span>
+                <Copy className="h-3 w-3 ml-1 text-muted-foreground" />
+              </button>
+            )}
+            <Badge variant="secondary" className="text-[10px]">
+              {cupFormat === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual'}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {cup.participants.length} jugadores
+            </Badge>
+          </div>
+        </div>
+
 
         {/* ── Section 1: Global Scoreboard ─── */}
         {st ? (
