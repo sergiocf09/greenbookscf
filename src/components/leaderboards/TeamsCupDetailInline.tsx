@@ -384,18 +384,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
   const cupFormat = (event as any)?.cup_format || 'match_individual';
 
-  const partsA = cup.participants.filter(p => p.cup_team_id === teamA?.id);
-  const partsB = cup.participants.filter(p => p.cup_team_id === teamB?.id);
-  const partsNone = cup.participants.filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id));
+  const byName = (a: CupParticipant, b: CupParticipant) =>
+    a.display_name.localeCompare(b.display_name, 'es', { sensitivity: 'base' });
+  const partsA = cup.participants.filter(p => p.cup_team_id === teamA?.id).sort(byName);
+  const partsB = cup.participants.filter(p => p.cup_team_id === teamB?.id).sort(byName);
+  const partsNone = cup.participants
+    .filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id))
+    .sort(byName);
 
   return (
     <div className="space-y-3">
-      {/* Top bar: back + code chip + actions */}
+      {/* Top bar: code chip + actions */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
-            <ArrowLeft className="h-4 w-4" /> Leaderboards
-          </Button>
           {event?.code && (
             <button
               onClick={copyCode}
