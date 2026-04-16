@@ -157,6 +157,86 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   );
 };
 
+/* ── EditableTeamName ────────────────────────────── */
+
+interface EditableTeamNameProps {
+  team: CupTeam | null;
+  fallback: string;
+  canEdit: boolean;
+  onSave: (newName: string) => void;
+  className?: string;
+  size?: 'sm' | 'md';
+}
+
+const EditableTeamName: React.FC<EditableTeamNameProps> = ({
+  team, fallback, canEdit, onSave, className, size = 'md',
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(team?.name || fallback);
+
+  React.useEffect(() => {
+    if (!editing) setDraft(team?.name || fallback);
+  }, [team?.name, fallback, editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && team && trimmed !== team.name) {
+      onSave(trimmed);
+    } else {
+      setDraft(team?.name || fallback);
+    }
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(team?.name || fallback);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 justify-center">
+        <Input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') cancel();
+          }}
+          className={cn('h-7 px-2 py-0 text-center', size === 'sm' ? 'text-xs' : 'text-sm')}
+          maxLength={20}
+        />
+        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={commit}>
+          <Check className="h-3.5 w-3.5 text-emerald-600" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={cancel}>
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={!canEdit}
+      onClick={() => canEdit && setEditing(true)}
+      className={cn(
+        'inline-flex items-center gap-1 group',
+        canEdit && 'cursor-pointer hover:opacity-80',
+        className,
+      )}
+      style={{ color: team?.color }}
+    >
+      <span className="truncate">{team?.name || fallback}</span>
+      {canEdit && (
+        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+      )}
+    </button>
+  );
+};
+
 /* ── TeamsCupDetail page ─────────────────────────── */
 
 const TeamsCupDetail = () => {
