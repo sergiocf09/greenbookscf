@@ -698,6 +698,48 @@ const TeamsCupDetail = () => {
       />
 
       <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
+
+      {/* ── Settings Dialog (creator only) ─── */}
+      {isCreator && event && (
+        <CupSettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          event={event as any}
+          onDeleteRequest={() => {
+            setShowSettings(false);
+            setShowDeleteConfirm(true);
+          }}
+          onSaved={async () => {
+            queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+            // Force a refresh of the local event by reloading
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* ── Delete Confirm ─── */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta competencia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los matches, equipos y participantes vinculados.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); handleDeleteEvent(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
