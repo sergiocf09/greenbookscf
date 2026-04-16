@@ -364,6 +364,6 @@ export function useTeamsCup(leaderboardId: string | null) {
     loading, fetchAll,
     assignTeam, updateMatchHandicap, updateTeam,
     createMatch, updateMatch, deleteMatch,
-    isCreator, myParticipant, calcMatchHandicap,
+    isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
   };
 }
