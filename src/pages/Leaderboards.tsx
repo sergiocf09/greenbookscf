@@ -251,12 +251,16 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(`/leaderboards/${ev.id}`)}
+                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex items-center gap-1.5">
                         <CardTitle className="text-base">{ev.name}</CardTitle>
+                        {(ev as any).competition_type === 'teams_cup' && (
+                          <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
+                        )}
+                      </div>
                         {ev.description && (
                           <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                         )}
@@ -303,7 +307,7 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors opacity-80"
-                  onClick={() => navigate(`/leaderboards/${ev.id}`)}
+                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="text-base">{ev.name}</CardTitle>
@@ -327,6 +331,7 @@ const Leaderboards = () => {
         open={showProfileDialog}
         onOpenChange={setShowProfileDialog}
       />
+      <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
     </div>
   );
 };
