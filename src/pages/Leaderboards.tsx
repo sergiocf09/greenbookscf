@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw } from 'lucide-react';
@@ -29,6 +31,7 @@ const Leaderboards = () => {
   const { canCreateLeaderboard } = useSubscription();
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -114,7 +117,14 @@ const Leaderboards = () => {
       <div className="p-4 max-w-lg mx-auto space-y-4">
         {/* Actions */}
         <div className="flex gap-2">
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCupDialog(true)}
+            className="gap-1.5 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+          >
+            🏆 Teams Cup
+          </Button>
             <DialogTrigger asChild>
               <Button
                 className="flex-1 gap-2"
