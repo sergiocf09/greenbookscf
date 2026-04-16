@@ -813,16 +813,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {partsA.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
               ) : partsA.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-medium truncate block">{p.display_name}</span>
-                    <span className="text-[10px] text-muted-foreground">Hcp: {p.match_handicap}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
+                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs font-semibold mb-1">
                 <EditableTeamName
                   team={teamB}
@@ -835,11 +835,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {partsB.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
               ) : partsB.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-medium truncate block">{p.display_name}</span>
-                    <span className="text-[10px] text-muted-foreground">Hcp: {p.match_handicap}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
+                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
                 </div>
               ))}
@@ -849,10 +849,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <div className="mt-3">
               <p className="text-xs font-semibold text-muted-foreground mb-1">Sin equipo asignado</p>
               {partsNone.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <span className="text-xs font-medium truncate">{p.display_name}</span>
-                  <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto">
+                  <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
+                  <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto shrink-0">
                     Pendiente
                   </Badge>
                 </div>
