@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName } from '@/lib/playerInput';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
@@ -27,6 +28,7 @@ import {
 import {
   Loader2, Plus, ChevronDown, Pencil, Trash2,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
+  Calendar, MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
@@ -72,7 +74,24 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     return participants.find(p => p.id === id);
   };
 
-  const renderSide = (ids: (string | null)[], teamColor: string) => (
+  // Determine which specific participant carries the stroke badge.
+  // Individual: only one player on the receiving side.
+  // Fourball: explicit `stroke_receiver_player_id`, falls back to higher-HCP of the receiving pair.
+  const strokeReceiverId: string | null = (() => {
+    if (match.strokes_advantage === 0 || match.advantage_side === 'none') return null;
+    if (match.format === 'match_individual') {
+      return match.advantage_side === 'a' ? match.player_a1_id : match.player_b1_id;
+    }
+    if (match.stroke_receiver_player_id) return match.stroke_receiver_player_id;
+    const ids = match.advantage_side === 'a'
+      ? [match.player_a1_id, match.player_a2_id]
+      : [match.player_b1_id, match.player_b2_id];
+    const pair = ids.map(id => getName(id)).filter(Boolean) as CupParticipant[];
+    if (pair.length === 0) return null;
+    return pair.reduce((hi, p) => p.match_handicap > hi.match_handicap ? p : hi).id;
+  })();
+
+  const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => (
     <div
       className="p-2 rounded-lg space-y-1 min-h-[52px] flex flex-col justify-center"
       style={{ backgroundColor: teamColor + '26' }}
@@ -80,10 +99,21 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
       {ids.filter(Boolean).map(id => {
         const p = getName(id);
         if (!p) return <span key={id} className="text-xs italic text-muted-foreground">— Sin asignar —</span>;
+        const isReceiver = strokeReceiverId === p.id && match.advantage_side === teamSide;
         return (
           <div key={p.id} className="flex items-start gap-1.5">
             <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-            <span className="text-xs font-medium leading-tight break-words min-w-0 flex-1">{p.display_name}</span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <span className="text-xs font-medium break-words block">{formatPlayerName(p.display_name)}</span>
+              {isReceiver && (
+                <span
+                  className="text-[10px] font-bold mt-0.5 inline-block"
+                  style={{ color: teamColor }}
+                >
+                  +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}
@@ -142,11 +172,6 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
           </>
         )}
       </div>
-      {match.strokes_advantage > 0 && (
-        <span className="text-[9px] text-muted-foreground mt-0.5">
-          {match.advantage_side === 'a' ? 'A' : 'B'} +{match.strokes_advantage}
-        </span>
-      )}
     </div>
   );
 
@@ -222,6 +247,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 {renderSide(
                   [match.player_a1_id, match.player_a2_id],
                   colorA,
+                  'a',
                 )}
                 <div className="text-center flex flex-col items-center justify-center">
                   {renderCenter()}
@@ -229,6 +255,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 {renderSide(
                   [match.player_b1_id, match.player_b2_id],
                   colorB,
+                  'b',
                 )}
               </button>
             </PopoverTrigger>
@@ -373,6 +400,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [isRoundLinked, setIsRoundLinked] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
+  const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null }>({ date: null, courseName: null });
 
   const activeRound = useActiveRoundForLink();
 
@@ -395,6 +424,47 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     return () => { cancelled = true; };
   }, [leaderboardId, activeRound.roundId]);
 
+  // Load linked-round meta (date + course name) to show in the header strip.
+  useEffect(() => {
+    let cancelled = false;
+    const loadMeta = async () => {
+      if (!leaderboardId) {
+        setLinkedRoundInfo({ date: null, courseName: null });
+        return;
+      }
+      const { data: linkRows } = await supabase
+        .from('leaderboard_rounds')
+        .select('round_id, added_at')
+        .eq('leaderboard_id', leaderboardId)
+        .order('added_at', { ascending: false })
+        .limit(1);
+      const linkedId = linkRows?.[0]?.round_id;
+      if (!linkedId) {
+        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null });
+        return;
+      }
+      const { data: round } = await supabase
+        .from('rounds')
+        .select('date, course_id')
+        .eq('id', linkedId)
+        .maybeSingle();
+      let courseName: string | null = null;
+      if (round?.course_id) {
+        const { data: course } = await supabase
+          .from('golf_courses')
+          .select('name')
+          .eq('id', round.course_id)
+          .maybeSingle();
+        courseName = course?.name ?? null;
+      }
+      if (!cancelled) {
+        setLinkedRoundInfo({ date: round?.date ?? null, courseName });
+      }
+    };
+    loadMeta();
+    return () => { cancelled = true; };
+  }, [leaderboardId, isRoundLinked]);
+
   const handleUnlinkRound = async () => {
     if (!leaderboardId || !activeRound.roundId) return;
     setUnlinking(true);
@@ -412,6 +482,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
       toast.success('Ronda desvinculada');
       setIsRoundLinked(false);
+      setShowUnlinkConfirm(false);
       await cup.fetchAll();
     } catch (err: any) {
       toast.error('Error al desvincular: ' + err.message);
@@ -455,20 +526,45 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
   };
 
-  const [localHcps, setLocalHcps] = useState<Map<string, number>>(new Map());
+  // ── Deferred assignment-panel state ─────────────────────
+  // Local team + hcp drafts. Nothing is written to the DB while the user
+  // taps around. On dialog close we diff & batch-save in a single call.
+  const [draftTeams, setDraftTeams] = useState<Map<string, string | null>>(new Map());
+  const [draftHcps, setDraftHcps] = useState<Map<string, number>>(new Map());
 
-  const handleHcpChange = (participantId: string, value: number) => {
-    setLocalHcps(prev => new Map(prev).set(participantId, value));
+  const getDraftTeam = (p: CupParticipant) =>
+    draftTeams.has(p.id) ? draftTeams.get(p.id)! : p.cup_team_id;
+  const getDraftHcp = (p: CupParticipant) =>
+    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.match_handicap;
+
+  const setDraftTeam = (id: string, teamId: string | null) =>
+    setDraftTeams(prev => new Map(prev).set(id, teamId));
+  const setDraftHcp = (id: string, value: number) =>
+    setDraftHcps(prev => new Map(prev).set(id, value));
+
+  const flushAssignDrafts = async () => {
+    const updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }> = [];
+    for (const p of cup.participants) {
+      const patch: { id: string; cup_team_id?: string | null; match_handicap?: number } = { id: p.id };
+      let dirty = false;
+      if (draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id) {
+        patch.cup_team_id = draftTeams.get(p.id)!;
+        dirty = true;
+      }
+      if (draftHcps.has(p.id) && draftHcps.get(p.id) !== p.match_handicap) {
+        patch.match_handicap = draftHcps.get(p.id)!;
+        dirty = true;
+      }
+      if (dirty) updates.push(patch);
+    }
+    if (updates.length > 0) {
+      await cup.batchUpdateParticipants(updates);
+      toast.success(`Cambios guardados (${updates.length})`);
+    }
+    setDraftTeams(new Map());
+    setDraftHcps(new Map());
   };
 
-  const commitHcp = (participantId: string) => {
-    const v = localHcps.get(participantId);
-    if (v === undefined) return;
-    const orig = cup.participants.find(p => p.id === participantId)?.match_handicap;
-    if (v !== orig) cup.updateMatchHandicap(participantId, v);
-  };
-
-  const getHcp = (p: CupParticipant) => localHcps.get(p.id) ?? p.match_handicap;
 
   if (cup.loading) {
     return (
@@ -493,9 +589,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     .sort(byName);
 
   return (
-    <div className="space-y-3">
-      {/* Top bar: code chip + actions */}
-      <div className="flex items-center justify-between gap-2">
+    <div className="space-y-2">
+      {/* Top bar: code chip + actions (compact, hugs subheader) */}
+      <div className="-mt-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {event?.code && (
             <button
@@ -524,7 +620,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleUnlinkRound}
+              onClick={() => setShowUnlinkConfirm(true)}
               disabled={unlinking}
               aria-label="Desvincular ronda"
               title="Desvincular ronda"
@@ -549,11 +645,26 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </div>
       </div>
 
-      {/* Event title + meta */}
-      <div className="text-center space-y-1.5">
-        <h1 className="text-lg font-bold">{event?.name || 'Teams Cup'}</h1>
-        {event?.description && (
-          <p className="text-xs text-muted-foreground">{event.description}</p>
+      {/* Event title + meta (date + location, no description) */}
+      <div className="text-center space-y-1">
+        <h1 className="text-lg font-bold leading-tight">{event?.name || 'Teams Cup'}</h1>
+        {(linkedRoundInfo.date || linkedRoundInfo.courseName) && (
+          <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+            {linkedRoundInfo.date && (
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(linkedRoundInfo.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                })}
+              </span>
+            )}
+            {linkedRoundInfo.courseName && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {linkedRoundInfo.courseName}
+              </span>
+            )}
+          </div>
         )}
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <Badge variant="secondary" className="text-[10px]">
@@ -702,16 +813,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {partsA.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
               ) : partsA.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-medium truncate block">{p.display_name}</span>
-                    <span className="text-[10px] text-muted-foreground">Hcp: {p.match_handicap}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
+                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs font-semibold mb-1">
                 <EditableTeamName
                   team={teamB}
@@ -724,11 +835,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {partsB.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
               ) : partsB.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-medium truncate block">{p.display_name}</span>
-                    <span className="text-[10px] text-muted-foreground">Hcp: {p.match_handicap}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
+                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
                 </div>
               ))}
@@ -738,10 +849,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <div className="mt-3">
               <p className="text-xs font-semibold text-muted-foreground mb-1">Sin equipo asignado</p>
               {partsNone.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                  <span className="text-xs font-medium truncate">{p.display_name}</span>
-                  <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto">
+                  <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
+                  <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto shrink-0">
                     Pendiente
                   </Badge>
                 </div>
@@ -751,77 +862,82 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ── Assignment Panel ─── */}
-      <Dialog open={showAssignPanel} onOpenChange={(open) => {
+      {/* ── Assignment Panel (deferred saves on close) ─── */}
+      <Dialog open={showAssignPanel} onOpenChange={async (open) => {
         if (!open) {
-          // Commit any pending edits when closing
-          localHcps.forEach((_v, id) => commitHcp(id));
+          await flushAssignDrafts();
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Asignar Equipos y Hándicaps</DialogTitle>
           </DialogHeader>
           {(() => {
-            const renderRow = (p: CupParticipant) => (
-              <div key={p.id} className="flex items-center gap-2 p-2 border rounded-lg">
-                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
-                <span className="text-sm font-medium truncate flex-1 min-w-0">{p.display_name}</span>
-                <div className="flex gap-1 shrink-0">
-                  {teamA && (
-                    <button
-                      onClick={() => cup.assignTeam(p.id, p.cup_team_id === teamA.id ? null : teamA.id)}
-                      className={cn(
-                        'w-7 h-7 rounded-md border-2 text-[10px] font-bold transition-all',
-                        p.cup_team_id === teamA.id ? 'text-white' : 'bg-transparent',
-                      )}
-                      style={{
-                        borderColor: teamA.color,
-                        backgroundColor: p.cup_team_id === teamA.id ? teamA.color : 'transparent',
-                        color: p.cup_team_id === teamA.id ? '#fff' : teamA.color,
-                      }}
-                    >
-                      A
-                    </button>
-                  )}
-                  {teamB && (
-                    <button
-                      onClick={() => cup.assignTeam(p.id, p.cup_team_id === teamB.id ? null : teamB.id)}
-                      className={cn(
-                        'w-7 h-7 rounded-md border-2 text-[10px] font-bold transition-all',
-                        p.cup_team_id === teamB.id ? 'text-white' : 'bg-transparent',
-                      )}
-                      style={{
-                        borderColor: teamB.color,
-                        backgroundColor: p.cup_team_id === teamB.id ? teamB.color : 'transparent',
-                        color: p.cup_team_id === teamB.id ? '#fff' : teamB.color,
-                      }}
-                    >
-                      B
-                    </button>
-                  )}
+            const renderRow = (p: CupParticipant) => {
+              const draftTeam = getDraftTeam(p);
+              return (
+                <div key={p.id} className="flex items-center gap-1.5 p-1.5 border rounded-lg min-w-0">
+                  <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
+                  <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
+                  <div className="flex gap-1 shrink-0">
+                    {teamA && (
+                      <button
+                        type="button"
+                        onClick={() => setDraftTeam(p.id, draftTeam === teamA.id ? null : teamA.id)}
+                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        style={{
+                          borderColor: teamA.color,
+                          backgroundColor: draftTeam === teamA.id ? teamA.color : 'transparent',
+                          color: draftTeam === teamA.id ? '#fff' : teamA.color,
+                        }}
+                      >
+                        A
+                      </button>
+                    )}
+                    {teamB && (
+                      <button
+                        type="button"
+                        onClick={() => setDraftTeam(p.id, draftTeam === teamB.id ? null : teamB.id)}
+                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        style={{
+                          borderColor: teamB.color,
+                          backgroundColor: draftTeam === teamB.id ? teamB.color : 'transparent',
+                          color: draftTeam === teamB.id ? '#fff' : teamB.color,
+                        }}
+                      >
+                        B
+                      </button>
+                    )}
+                  </div>
+                  <div className="shrink-0 w-12">
+                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">HCP</Label>
+                    <Input
+                      type="number"
+                      value={getDraftHcp(p)}
+                      onChange={e => setDraftHcp(p.id, parseInt(e.target.value) || 0)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                      className="w-12 h-7 px-1 text-center text-xs"
+                    />
+                  </div>
                 </div>
-                <div className="shrink-0">
-                  <Label className="text-[9px] text-muted-foreground block text-center">Hcp match</Label>
-                  <Input
-                    type="number"
-                    value={getHcp(p)}
-                    onChange={e => handleHcpChange(p.id, parseInt(e.target.value) || 0)}
-                    onBlur={() => commitHcp(p.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-14 h-7 text-center text-xs"
-                  />
-                </div>
-              </div>
-            );
+              );
+            };
+
+            // Build views from drafts so the user sees instant local feedback.
+            const draftPartsNone = cup.participants.filter(p => !getDraftTeam(p)).sort(byName);
+            const draftPartsA = teamA ? cup.participants.filter(p => getDraftTeam(p) === teamA.id).sort(byName) : [];
+            const draftPartsB = teamB ? cup.participants.filter(p => getDraftTeam(p) === teamB.id).sort(byName) : [];
 
             return (
               <div className="space-y-3">
-                {partsNone.length > 0 && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Los cambios se guardan al cerrar este panel.
+                </p>
+                {draftPartsNone.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
-                    <div className="space-y-2">{partsNone.map(renderRow)}</div>
+                    <div className="space-y-1.5">{draftPartsNone.map(renderRow)}</div>
                   </div>
                 )}
                 {teamA && (
@@ -829,10 +945,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <p className="text-xs font-semibold" style={{ color: teamA.color }}>
                       {teamA.name}
                     </p>
-                    {partsA.length === 0 ? (
+                    {draftPartsA.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
                     ) : (
-                      <div className="space-y-2">{partsA.map(renderRow)}</div>
+                      <div className="space-y-1.5">{draftPartsA.map(renderRow)}</div>
                     )}
                   </div>
                 )}
@@ -841,10 +957,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <p className="text-xs font-semibold" style={{ color: teamB.color }}>
                       {teamB.name}
                     </p>
-                    {partsB.length === 0 ? (
+                    {draftPartsB.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
                     ) : (
-                      <div className="space-y-2">{partsB.map(renderRow)}</div>
+                      <div className="space-y-1.5">{draftPartsB.map(renderRow)}</div>
                     )}
                   </div>
                 )}
@@ -938,6 +1054,31 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             >
               {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Unlink Round Confirm ─── */}
+      <AlertDialog open={showUnlinkConfirm} onOpenChange={setShowUnlinkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desvincular ronda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Al desvincular la ronda, todos los matches configurados perderán su
+              vínculo con los resultados en vivo y volverán a estado "pending".
+              Tendrás que volver a vincular y reconfigurar para evitar reprocesos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unlinking}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unlinking}
+              onClick={(e) => { e.preventDefault(); handleUnlinkRound(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {unlinking && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Desvincular
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

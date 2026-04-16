@@ -266,6 +266,28 @@ export function useTeamsCup(leaderboardId: string | null) {
     }
   }, [fetchAll]);
 
+  /**
+   * Persist multiple participant changes (team + handicap) in one network round-trip
+   * and refresh state once at the end. Used by the assign-teams panel to avoid
+   * UI flicker on every click.
+   */
+  const batchUpdateParticipants = useCallback(async (
+    updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }>
+  ) => {
+    if (updates.length === 0) return;
+    try {
+      await Promise.all(updates.map(u => {
+        const patch: any = {};
+        if ('cup_team_id' in u) patch.cup_team_id = u.cup_team_id;
+        if ('match_handicap' in u) patch.match_handicap = u.match_handicap;
+        return supabase.from('leaderboard_participants').update(patch).eq('id', u.id);
+      }));
+      await fetchAll();
+    } catch (err: any) {
+      toast.error('Error al guardar cambios: ' + err.message);
+    }
+  }, [fetchAll]);
+
   const createMatch = useCallback(async (params: Partial<CupMatch>) => {
     if (!leaderboardId) return null;
     try {
@@ -312,6 +334,10 @@ export function useTeamsCup(leaderboardId: string | null) {
 
   const myParticipant = participants.find(p => p.profile_id === profile?.id) ?? null;
 
+  /**
+   * Match individual: el jugador con MAYOR hándicap recibe la diferencia de strokes.
+   * `advantage_side` = lado que RECIBE los strokes.
+   */
   const calcMatchHandicap = useCallback((
     partA: CupParticipant | undefined,
     partB: CupParticipant | undefined
@@ -319,8 +345,9 @@ export function useTeamsCup(leaderboardId: string | null) {
     if (!partA || !partB) return { strokes_advantage: 0, advantage_side: 'none' };
     const diff = partA.match_handicap - partB.match_handicap;
     if (diff === 0) return { strokes_advantage: 0, advantage_side: 'none' };
-    if (diff > 0) return { strokes_advantage: diff, advantage_side: 'b' };
-    return { strokes_advantage: Math.abs(diff), advantage_side: 'a' };
+    // El de mayor HCP recibe.
+    if (diff > 0) return { strokes_advantage: diff, advantage_side: 'a' };
+    return { strokes_advantage: Math.abs(diff), advantage_side: 'b' };
   }, []);
 
   /**
@@ -362,7 +389,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   return {
     teams, matches, participants, matchResults, standings,
     loading, fetchAll,
-    assignTeam, updateMatchHandicap, updateTeam,
+    assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
   };
