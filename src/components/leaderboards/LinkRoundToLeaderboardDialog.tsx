@@ -27,7 +27,7 @@ interface LinkRoundToLeaderboardDialogProps {
   preselectedLeaderboardId?: string | null;
 }
 
-type Step = 'select-leaderboard' | 'select-participants';
+type Step = 'select-leaderboard' | 'select-participants' | 'select-cup-match';
 
 export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialogProps> = ({
   open,
@@ -49,6 +49,9 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
   const [handicaps, setHandicaps] = useState<Map<string, number>>(new Map());
   const [submitting, setSubmitting] = useState(false);
+  const [openMatches, setOpenMatches] = useState<any[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
 
   const {
     event: selectedEvent,
@@ -157,6 +160,29 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         if (insertErr) throw insertErr;
       }
 
+      // Check if Teams Cup → offer match linking
+      const { data: eventData } = await supabase
+        .from('leaderboard_events')
+        .select('competition_type')
+        .eq('id', selectedLeaderboardId)
+        .single();
+
+      if ((eventData as any)?.competition_type === 'teams_cup') {
+        const { data: matchesData } = await supabase
+          .from('cup_matches')
+          .select('id, format, player_a1_id, player_b1_id')
+          .eq('leaderboard_id', selectedLeaderboardId)
+          .is('round_id', null);
+
+        if (matchesData && matchesData.length > 0) {
+          setOpenMatches(matchesData);
+          setLinkingRoundId(roundId);
+          setStep('select-cup-match');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       toast.success('Ronda vinculada al leaderboard');
       onOpenChange(false);
     } catch (err: any) {
@@ -164,6 +190,24 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleLinkMatch = async () => {
+    if (selectedMatchId && linkingRoundId) {
+      await supabase.from('cup_matches')
+        .update({ round_id: linkingRoundId, status: 'active' } as any)
+        .eq('id', selectedMatchId);
+      toast.success('Ronda vinculada al match');
+    } else {
+      toast.success('Ronda vinculada al leaderboard');
+    }
+    onOpenChange(false);
+  };
+
+  const getMatchPlayerName = (participantId: string | null) => {
+    if (!participantId) return '—';
+    const part = existingParticipants.find(p => p.id === participantId);
+    return part?.display_name || '—';
   };
 
   const activeEvents = events.filter(e => e.status === 'active');
