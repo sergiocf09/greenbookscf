@@ -874,6 +874,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           }
         }}
         calcMatchHandicap={cup.calcMatchHandicap}
+        calcFourballHandicap={cup.calcFourballHandicap}
       />
 
       {/* ── Link Round Dialog ─── */}
