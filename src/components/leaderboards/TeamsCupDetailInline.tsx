@@ -592,18 +592,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     <div className="space-y-2">
       {/* Top bar: code chip + actions (compact, hugs subheader) */}
       <div className="-mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {event?.code && (
-            <button
-              onClick={copyCode}
-              className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors"
-            >
-              <Hash className="h-3 w-3" />
-              <span className="font-mono font-bold">{event.code}</span>
-              <Copy className="h-3 w-3 ml-0.5" />
-            </button>
-          )}
-        </div>
+        <div className="flex items-center gap-2 min-w-0" />
+
         <div className="flex items-center gap-1 shrink-0">
           {activeRound.roundId && !isRoundLinked && (
             <Button
