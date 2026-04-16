@@ -1058,6 +1058,31 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Unlink Round Confirm ─── */}
+      <AlertDialog open={showUnlinkConfirm} onOpenChange={setShowUnlinkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desvincular ronda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Al desvincular la ronda, todos los matches configurados perderán su
+              vínculo con los resultados en vivo y volverán a estado "pending".
+              Tendrás que volver a vincular y reconfigurar para evitar reprocesos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unlinking}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unlinking}
+              onClick={(e) => { e.preventDefault(); handleUnlinkRound(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {unlinking && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Desvincular
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
