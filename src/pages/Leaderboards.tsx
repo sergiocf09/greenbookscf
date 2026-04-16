@@ -32,6 +32,7 @@ const Leaderboards = () => {
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
+  const [createType, setCreateType] = useState<'standard' | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [joinCode, setJoinCode] = useState('');
