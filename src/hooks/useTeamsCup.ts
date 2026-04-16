@@ -28,6 +28,15 @@ export interface CupMatch {
   result_override: boolean;
   round_id: string | null;
   match_order: number;
+  points_per_match: number;
+}
+
+export interface CupHoleBreakdown {
+  hole: number;
+  side_a_net: number;
+  side_b_net: number;
+  hole_winner: 'a' | 'b' | 'halved';
+  running_a_up: number;
 }
 
 export interface CupMatchResult {
@@ -39,6 +48,7 @@ export interface CupMatchResult {
   current_standing: string;
   result_type: string;
   match_closed: boolean;
+  hole_breakdown: CupHoleBreakdown[];
 }
 
 export interface CupParticipant {
@@ -59,6 +69,7 @@ export interface CupStandings {
   points_b: number;
   matches_total: number;
   matches_completed: number;
+  has_in_progress: boolean;
 }
 
 export function useTeamsCup(leaderboardId: string | null) {
@@ -90,7 +101,10 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (partRes.error) throw partRes.error;
 
       const teamData = teamsRes.data as CupTeam[];
-      const matchData = matchesRes.data as CupMatch[];
+      const matchData = (matchesRes.data as any[]).map(m => ({
+        ...m,
+        points_per_match: m.points_per_match ?? 1,
+      })) as CupMatch[];
       const rawParts = partRes.data || [];
 
       // Enrich participants with profile data
@@ -130,20 +144,45 @@ export function useTeamsCup(leaderboardId: string | null) {
       await Promise.all(
         matchesNeedingResult.map(async (m) => {
           const { data } = await supabase.rpc('get_cup_match_result', { p_match_id: m.id });
-          if (data?.[0]) resultsMap.set(m.id, { match_id: m.id, ...data[0] });
+          if (data?.[0]) {
+            const row: any = data[0];
+            resultsMap.set(m.id, {
+              match_id: m.id,
+              holes_played: row.holes_played,
+              holes_remaining: row.holes_remaining,
+              side_a_holes_won: row.side_a_holes_won,
+              side_b_holes_won: row.side_b_holes_won,
+              current_standing: row.current_standing,
+              result_type: row.result_type,
+              match_closed: row.match_closed,
+              hole_breakdown: Array.isArray(row.hole_breakdown) ? row.hole_breakdown : [],
+            });
+          }
         })
       );
       setMatchResults(resultsMap);
 
-      // Calculate global standings
+      // Calculate global standings (closed + in-progress provisional)
       if (teamData.length === 2) {
-        let pointsA = 0, pointsB = 0, completed = 0;
+        let pointsA = 0, pointsB = 0, completed = 0, hasInProgress = false;
         for (const m of matchData) {
+          const pts = m.points_per_match ?? 1;
           const live = resultsMap.get(m.id);
-          const rtype = live?.match_closed ? live.result_type : m.result_type;
-          if (rtype === 'a_wins')  { pointsA += 1; completed++; }
-          else if (rtype === 'b_wins') { pointsB += 1; completed++; }
-          else if (rtype === 'halved') { pointsA += 0.5; pointsB += 0.5; completed++; }
+          // Final result if closed (or manual override)
+          const closed = live?.match_closed ?? false;
+          const rtype = closed ? live!.result_type : m.result_type;
+
+          if (rtype === 'a_wins')  { pointsA += pts; completed++; }
+          else if (rtype === 'b_wins') { pointsB += pts; completed++; }
+          else if (rtype === 'halved') { pointsA += pts / 2; pointsB += pts / 2; completed++; }
+          else if (live && live.holes_played > 0 && live.result_type === 'in_progress') {
+            // Provisional: leader gets full pts, AS = half each
+            hasInProgress = true;
+            const diff = live.side_a_holes_won - live.side_b_holes_won;
+            if (diff > 0) pointsA += pts;
+            else if (diff < 0) pointsB += pts;
+            else { pointsA += pts / 2; pointsB += pts / 2; }
+          }
         }
         setStandings({
           team_a: teamData[0] ?? null,
@@ -152,6 +191,7 @@ export function useTeamsCup(leaderboardId: string | null) {
           points_b: pointsB,
           matches_total: matchData.length,
           matches_completed: completed,
+          has_in_progress: hasInProgress,
         });
       }
     } catch (err: any) {

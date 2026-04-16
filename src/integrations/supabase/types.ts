@@ -279,6 +279,7 @@ export type Database = {
           player_a2_id: string | null
           player_b1_id: string | null
           player_b2_id: string | null
+          points_per_match: number
           result_detail: string | null
           result_override: boolean
           result_type: string | null
@@ -298,6 +299,7 @@ export type Database = {
           player_a2_id?: string | null
           player_b1_id?: string | null
           player_b2_id?: string | null
+          points_per_match?: number
           result_detail?: string | null
           result_override?: boolean
           result_type?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           player_a2_id?: string | null
           player_b1_id?: string | null
           player_b2_id?: string | null
+          points_per_match?: number
           result_detail?: string | null
           result_override?: boolean
           result_type?: string | null
@@ -2123,6 +2126,7 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: {
           current_standing: string
+          hole_breakdown: Json
           holes_played: number
           holes_remaining: number
           match_closed: boolean

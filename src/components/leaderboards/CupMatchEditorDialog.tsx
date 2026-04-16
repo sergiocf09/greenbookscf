@@ -40,6 +40,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
   const [resultOverride, setResultOverride] = useState(false);
   const [resultType, setResultType] = useState<'a_wins' | 'b_wins' | 'halved' | ''>('');
   const [resultDetail, setResultDetail] = useState('');
+  const [pointsPerMatch, setPointsPerMatch] = useState<number>(1);
 
   useEffect(() => {
     if (match) {
@@ -53,6 +54,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       setResultOverride(match.result_override);
       setResultType(match.result_type || '');
       setResultDetail(match.result_detail || '');
+      setPointsPerMatch(match.points_per_match ?? 1);
     } else {
       setFormat(defaultFormat);
       setPlayerA1(null);
@@ -64,6 +66,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       setResultOverride(false);
       setResultType('');
       setResultDetail('');
+      setPointsPerMatch(1);
     }
   }, [match, defaultFormat, open]);
 
@@ -95,6 +98,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       result_override: resultOverride,
       result_type: resultOverride && resultType ? resultType as any : null,
       result_detail: resultOverride && resultDetail ? resultDetail : null,
+      points_per_match: pointsPerMatch,
     };
     onSave(payload);
     onClose();
@@ -192,6 +196,22 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Points per match */}
+          <div>
+            <Label className="text-xs">Puntos del match</Label>
+            <Input
+              type="number"
+              min={0}
+              step={0.5}
+              value={pointsPerMatch}
+              onChange={e => setPointsPerMatch(parseFloat(e.target.value) || 0)}
+              className="h-8 text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Empate (AS) reparte la mitad a cada equipo.
+            </p>
           </div>
 
           {/* Result override */}
