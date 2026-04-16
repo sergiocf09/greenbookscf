@@ -350,7 +350,36 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
-            )
+          )}
+
+          {step === 'select-cup-match' && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                ¿Vincular esta ronda a algún match de la Teams Cup?
+              </p>
+              {openMatches.map((m: any) => (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedMatchId(m.id === selectedMatchId ? null : m.id)}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                    selectedMatchId === m.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="text-sm">
+                    <span className="font-medium">{getMatchPlayerName(m.player_a1_id)}</span>
+                    <span className="text-muted-foreground mx-1.5">vs</span>
+                    <span className="font-medium">{getMatchPlayerName(m.player_b1_id)}</span>
+                  </div>
+                  {selectedMatchId === m.id && <Check className="h-4 w-4 text-primary" />}
+                </button>
+              ))}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={handleLinkMatch}>
+                  {selectedMatchId ? 'Vincular al match' : 'No vincular ahora'}
+                </Button>
+              </div>
+            </div>
+          )
           )}
         </div>
       </DialogContent>
