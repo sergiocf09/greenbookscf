@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings } from 'lucide-react';
+import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -146,12 +146,9 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
 
   return (
     <div className="space-y-2">
-      {/* Top bar: back + code chip + actions */}
+      {/* Top bar: code chip + actions */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
-            <ArrowLeft className="h-4 w-4" /> Leaderboards
-          </Button>
           <button
             onClick={copyCode}
             className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors"
