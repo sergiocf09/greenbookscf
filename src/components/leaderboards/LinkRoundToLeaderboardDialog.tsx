@@ -350,6 +350,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
+            )
           )}
 
           {step === 'select-cup-match' && (
@@ -379,7 +380,6 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                 </Button>
               </div>
             </div>
-          )
           )}
         </div>
       </DialogContent>
