@@ -22,6 +22,7 @@ interface Props {
     name: string;
     description: string | null;
     cup_format?: string | null;
+    rules_json?: any;
   };
   onSaved: () => void | Promise<void>;
   onDeleteRequest: () => void;
@@ -35,6 +36,9 @@ export const CupSettingsDialog: React.FC<Props> = ({
   const [format, setFormat] = useState<CupFormat>(
     (event.cup_format as CupFormat) || 'match_individual'
   );
+  const [defaultPoints, setDefaultPoints] = useState<number>(
+    Number(event.rules_json?.default_points_per_match ?? 1)
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
       setName(event.name);
       setDescription(event.description || '');
       setFormat((event.cup_format as CupFormat) || 'match_individual');
+      setDefaultPoints(Number(event.rules_json?.default_points_per_match ?? 1));
     }
   }, [open, event]);
 
@@ -52,12 +57,17 @@ export const CupSettingsDialog: React.FC<Props> = ({
     }
     setSaving(true);
     try {
+      const newRules = {
+        ...(event.rules_json || {}),
+        default_points_per_match: defaultPoints,
+      };
       const { error } = await supabase
         .from('leaderboard_events')
         .update({
           name: name.trim(),
           description: description.trim() || null,
           cup_format: format,
+          rules_json: newRules,
         } as any)
         .eq('id', event.id);
       if (error) throw error;
@@ -111,6 +121,20 @@ export const CupSettingsDialog: React.FC<Props> = ({
             </Select>
             <p className="text-[11px] text-muted-foreground mt-1">
               Aplica como valor por defecto para nuevos matches.
+            </p>
+          </div>
+
+          <div>
+            <Label>Puntos por defecto por match</Label>
+            <Input
+              type="number"
+              min={0}
+              step={0.5}
+              value={defaultPoints}
+              onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Cada match nuevo se crea con este valor. Empate (AS) reparte la mitad a cada equipo.
             </p>
           </div>
 
