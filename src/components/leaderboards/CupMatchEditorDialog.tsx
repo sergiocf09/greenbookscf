@@ -24,6 +24,15 @@ interface Props {
     strokes_advantage: number;
     advantage_side: 'a' | 'b' | 'none';
   };
+  calcFourballHandicap: (
+    a1: CupParticipant | undefined, a2: CupParticipant | undefined,
+    b1: CupParticipant | undefined, b2: CupParticipant | undefined,
+  ) => {
+    strokes_advantage: number;
+    advantage_side: 'a' | 'b' | 'none';
+    receiver_player_id: string | null;
+    receiver_tied: boolean;
+  };
 }
 
 export const CupMatchEditorDialog: React.FC<Props> = ({
