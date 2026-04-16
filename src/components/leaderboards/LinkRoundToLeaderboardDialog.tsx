@@ -84,10 +84,10 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const handleJoinByCode = useCallback(async () => {
     if (!joinCode.trim()) return;
     setSearching(true);
-    const eventId = await joinByCode(joinCode.trim());
+    const result = await joinByCode(joinCode.trim());
     setSearching(false);
-    if (eventId) {
-      handleSelectLeaderboard(eventId);
+    if (result) {
+      handleSelectLeaderboard(result.id);
     }
   }, [joinCode, joinByCode, handleSelectLeaderboard]);
 
