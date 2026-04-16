@@ -2558,6 +2558,9 @@ const Index = () => {
         <button
           onClick={() => {
             setLeaderboardDetailId(linkedLeaderboardInfo.id);
+            setLeaderboardDetailType(
+              linkedLeaderboardInfo.competition_type === 'teams_cup' ? 'teams_cup' : 'standard'
+            );
             setView('leaderboards');
           }}
           className="w-full bg-amber-500/10 border-b border-amber-500/30 hover:bg-amber-500/20 transition-colors"
@@ -3067,128 +3070,138 @@ const Index = () => {
         {/* Leaderboards View */}
         {view === 'leaderboards' && (
           leaderboardDetailId ? (
-            <LeaderboardDetailInline
-              leaderboardId={leaderboardDetailId}
-              onBack={() => setLeaderboardDetailId(null)}
-              hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
-              isRoundLinked={isRoundLinkedToLeaderboard}
-              onLinkRound={() => {
-                setPreselectedLeaderboardId(leaderboardDetailId);
-                openDialog('linkLeaderboard');
-              }}
-              onUnlinkRound={async () => {
-                if (!roundState.id || !leaderboardDetailId) return;
-                try {
-                  const roundId = roundState.id;
-                  const leaderboardId = leaderboardDetailId;
+            leaderboardDetailType === 'teams_cup' ? (
+              <TeamsCupDetailInline
+                leaderboardId={leaderboardDetailId}
+                onBack={() => setLeaderboardDetailId(null)}
+              />
+            ) : (
+              <LeaderboardDetailInline
+                leaderboardId={leaderboardDetailId}
+                onBack={() => setLeaderboardDetailId(null)}
+                hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+                isRoundLinked={isRoundLinkedToLeaderboard}
+                onLinkRound={() => {
+                  setPreselectedLeaderboardId(leaderboardDetailId);
+                  openDialog('linkLeaderboard');
+                }}
+                onUnlinkRound={async () => {
+                  if (!roundState.id || !leaderboardDetailId) return;
+                  try {
+                    const roundId = roundState.id;
+                    const leaderboardId = leaderboardDetailId;
 
-                  // 1) Unlink the round
-                  const { error: linkError } = await supabase
-                    .from('leaderboard_rounds')
-                    .delete()
-                    .eq('leaderboard_id', leaderboardId)
-                    .eq('round_id', roundId);
-                  if (linkError) throw linkError;
+                    // 1) Unlink the round
+                    const { error: linkError } = await supabase
+                      .from('leaderboard_rounds')
+                      .delete()
+                      .eq('leaderboard_id', leaderboardId)
+                      .eq('round_id', roundId);
+                    if (linkError) throw linkError;
 
-                  // 2) Remove any computed/persisted leaderboard scores for that round
-                  const { error: scoresError } = await supabase
-                    .from('leaderboard_scores')
-                    .delete()
-                    .eq('leaderboard_id', leaderboardId)
-                    .eq('round_id', roundId);
-                  if (scoresError) throw scoresError;
+                    // 2) Remove any computed/persisted leaderboard scores for that round
+                    const { error: scoresError } = await supabase
+                      .from('leaderboard_scores')
+                      .delete()
+                      .eq('leaderboard_id', leaderboardId)
+                      .eq('round_id', roundId);
+                    if (scoresError) throw scoresError;
 
-                  // 3) Remove participants that belong ONLY to the unlinked round
-                  const { data: removedRps, error: removedErr } = await supabase
-                    .from('round_players')
-                    .select('profile_id, guest_name')
-                    .eq('round_id', roundId);
-                  if (removedErr) throw removedErr;
-
-                  const removedProfileIds = Array.from(
-                    new Set((removedRps || []).map((r) => r.profile_id).filter(Boolean) as string[])
-                  );
-                  const removedGuestNames = Array.from(
-                    new Set((removedRps || []).map((r) => r.guest_name).filter(Boolean) as string[])
-                  );
-
-                  const { data: remainingLinks, error: remainingErr } = await supabase
-                    .from('leaderboard_rounds')
-                    .select('round_id')
-                    .eq('leaderboard_id', leaderboardId);
-                  if (remainingErr) throw remainingErr;
-
-                  const remainingRoundIds = (remainingLinks || []).map((l) => l.round_id).filter(Boolean) as string[];
-                  const stillProfileIds = new Set<string>();
-                  const stillGuestNames = new Set<string>();
-
-                  if (remainingRoundIds.length > 0) {
-                    const { data: stillRps, error: stillErr } = await supabase
+                    // 3) Remove participants that belong ONLY to the unlinked round
+                    const { data: removedRps, error: removedErr } = await supabase
                       .from('round_players')
                       .select('profile_id, guest_name')
-                      .in('round_id', remainingRoundIds);
-                    if (stillErr) throw stillErr;
+                      .eq('round_id', roundId);
+                    if (removedErr) throw removedErr;
 
-                    for (const r of (stillRps || [])) {
-                      if (r.profile_id) stillProfileIds.add(r.profile_id);
-                      if (r.guest_name) stillGuestNames.add(r.guest_name);
+                    const removedProfileIds = Array.from(
+                      new Set((removedRps || []).map((r) => r.profile_id).filter(Boolean) as string[])
+                    );
+                    const removedGuestNames = Array.from(
+                      new Set((removedRps || []).map((r) => r.guest_name).filter(Boolean) as string[])
+                    );
+
+                    const { data: remainingLinks, error: remainingErr } = await supabase
+                      .from('leaderboard_rounds')
+                      .select('round_id')
+                      .eq('leaderboard_id', leaderboardId);
+                    if (remainingErr) throw remainingErr;
+
+                    const remainingRoundIds = (remainingLinks || []).map((l) => l.round_id).filter(Boolean) as string[];
+                    const stillProfileIds = new Set<string>();
+                    const stillGuestNames = new Set<string>();
+
+                    if (remainingRoundIds.length > 0) {
+                      const { data: stillRps, error: stillErr } = await supabase
+                        .from('round_players')
+                        .select('profile_id, guest_name')
+                        .in('round_id', remainingRoundIds);
+                      if (stillErr) throw stillErr;
+
+                      for (const r of (stillRps || [])) {
+                        if (r.profile_id) stillProfileIds.add(r.profile_id);
+                        if (r.guest_name) stillGuestNames.add(r.guest_name);
+                      }
                     }
-                  }
 
-                  // Remove participants sourced from this round ONLY if they're not present in any other linked round
-                  const { data: sourcedParts, error: sourcedErr } = await supabase
-                    .from('leaderboard_participants')
-                    .select('id, profile_id, guest_name')
-                    .eq('leaderboard_id', leaderboardId)
-                    .eq('source_round_id', roundId);
-                  if (sourcedErr) throw sourcedErr;
-
-                  const sourcedIdsToDelete = (sourcedParts || [])
-                    .filter((p) => {
-                      if (p.profile_id) return !stillProfileIds.has(p.profile_id);
-                      if (p.guest_name) return !stillGuestNames.has(p.guest_name);
-                      return true;
-                    })
-                    .map((p) => p.id);
-
-                  if (sourcedIdsToDelete.length > 0) {
-                    const { error } = await supabase
+                    // Remove participants sourced from this round ONLY if they're not present in any other linked round
+                    const { data: sourcedParts, error: sourcedErr } = await supabase
                       .from('leaderboard_participants')
-                      .delete()
-                      .in('id', sourcedIdsToDelete);
-                    if (error) throw error;
-                  }
-
-                  const profileIdsToDelete = removedProfileIds.filter((id) => !stillProfileIds.has(id));
-                  if (profileIdsToDelete.length > 0) {
-                    const { error } = await supabase
-                      .from('leaderboard_participants')
-                      .delete()
+                      .select('id, profile_id, guest_name')
                       .eq('leaderboard_id', leaderboardId)
-                      .in('profile_id', profileIdsToDelete);
-                    if (error) throw error;
-                  }
+                      .eq('source_round_id', roundId);
+                    if (sourcedErr) throw sourcedErr;
 
-                  const guestNamesToDelete = removedGuestNames.filter((n) => !stillGuestNames.has(n));
-                  if (guestNamesToDelete.length > 0) {
-                    const { error } = await supabase
-                      .from('leaderboard_participants')
-                      .delete()
-                      .eq('leaderboard_id', leaderboardId)
-                      .in('guest_name', guestNamesToDelete);
-                    if (error) throw error;
-                  }
+                    const sourcedIdsToDelete = (sourcedParts || [])
+                      .filter((p) => {
+                        if (p.profile_id) return !stillProfileIds.has(p.profile_id);
+                        if (p.guest_name) return !stillGuestNames.has(p.guest_name);
+                        return true;
+                      })
+                      .map((p) => p.id);
 
-                  setIsRoundLinkedToLeaderboard(false);
-                  toast.success('Ronda desvinculada del leaderboard');
-                } catch (err: any) {
-                  toast.error('Error al desvincular: ' + err.message);
-                }
-              }}
-            />
+                    if (sourcedIdsToDelete.length > 0) {
+                      const { error } = await supabase
+                        .from('leaderboard_participants')
+                        .delete()
+                        .in('id', sourcedIdsToDelete);
+                      if (error) throw error;
+                    }
+
+                    const profileIdsToDelete = removedProfileIds.filter((id) => !stillProfileIds.has(id));
+                    if (profileIdsToDelete.length > 0) {
+                      const { error } = await supabase
+                        .from('leaderboard_participants')
+                        .delete()
+                        .eq('leaderboard_id', leaderboardId)
+                        .in('profile_id', profileIdsToDelete);
+                      if (error) throw error;
+                    }
+
+                    const guestNamesToDelete = removedGuestNames.filter((n) => !stillGuestNames.has(n));
+                    if (guestNamesToDelete.length > 0) {
+                      const { error } = await supabase
+                        .from('leaderboard_participants')
+                        .delete()
+                        .eq('leaderboard_id', leaderboardId)
+                        .in('guest_name', guestNamesToDelete);
+                      if (error) throw error;
+                    }
+
+                    setIsRoundLinkedToLeaderboard(false);
+                    toast.success('Ronda desvinculada del leaderboard');
+                  } catch (err: any) {
+                    toast.error('Error al desvincular: ' + err.message);
+                  }
+                }}
+              />
+            )
           ) : (
             <LeaderboardsInlineView
-              onNavigateToDetail={(id) => setLeaderboardDetailId(id)}
+              onNavigateToDetail={(id, type) => {
+                setLeaderboardDetailId(id);
+                setLeaderboardDetailType(type === 'teams_cup' ? 'teams_cup' : 'standard');
+              }}
             />
           )
         )}
