@@ -247,6 +247,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 {renderSide(
                   [match.player_a1_id, match.player_a2_id],
                   colorA,
+                  'a',
                 )}
                 <div className="text-center flex flex-col items-center justify-center">
                   {renderCenter()}
@@ -254,6 +255,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 {renderSide(
                   [match.player_b1_id, match.player_b2_id],
                   colorB,
+                  'b',
                 )}
               </button>
             </PopoverTrigger>
