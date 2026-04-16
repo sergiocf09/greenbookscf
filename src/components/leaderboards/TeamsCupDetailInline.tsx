@@ -652,13 +652,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       </Collapsible>
 
       {/* ── Assignment Panel ─── */}
-      <Dialog open={showAssignPanel} onOpenChange={setShowAssignPanel}>
+      <Dialog open={showAssignPanel} onOpenChange={(open) => {
+        if (!open) {
+          // Commit any pending edits when closing
+          localHcps.forEach((_v, id) => commitHcp(id));
+        }
+        setShowAssignPanel(open);
+      }}>
         <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Asignar Equipos y Hándicaps</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
-            {cup.participants.map(p => (
+          {(() => {
+            const renderRow = (p: CupParticipant) => (
               <div key={p.id} className="flex items-center gap-2 p-2 border rounded-lg">
                 <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
                 <span className="text-sm font-medium truncate flex-1 min-w-0">{p.display_name}</span>
@@ -702,13 +708,50 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     type="number"
                     value={getHcp(p)}
                     onChange={e => handleHcpChange(p.id, parseInt(e.target.value) || 0)}
+                    onBlur={() => commitHcp(p.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     className="w-14 h-7 text-center text-xs"
                   />
                 </div>
               </div>
-            ))}
-          </div>
-          <Button className="w-full mt-2" onClick={() => setShowAssignPanel(false)}>
+            );
+
+            return (
+              <div className="space-y-3">
+                {partsNone.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
+                    <div className="space-y-2">{partsNone.map(renderRow)}</div>
+                  </div>
+                )}
+                {teamA && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamA.color }}>
+                      {teamA.name}
+                    </p>
+                    {partsA.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-2">{partsA.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
+                {teamB && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamB.color }}>
+                      {teamB.name}
+                    </p>
+                    {partsB.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-2">{partsB.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          <Button className="w-full mt-3" onClick={() => setShowAssignPanel(false)}>
             Cerrar
           </Button>
         </DialogContent>
