@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
+import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult, CupFormat } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,9 +16,19 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut, Check, X } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut,
+  Check, X, Hash, Copy, Share2, Settings, RefreshCw,
+} from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
