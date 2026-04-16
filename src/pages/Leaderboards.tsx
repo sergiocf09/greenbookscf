@@ -74,11 +74,15 @@ const Leaderboards = () => {
 
   const handleJoin = async () => {
     if (!joinCode.trim()) return;
-    const eventId = await joinByCode(joinCode.trim());
-    if (eventId) {
+    const result = await joinByCode(joinCode.trim());
+    if (result) {
       setShowJoinDialog(false);
       setJoinCode('');
-      navigate(`/leaderboards/${eventId}`);
+      navigate(
+        result.competition_type === 'teams_cup'
+          ? `/leaderboards/cup/${result.id}`
+          : `/leaderboards/${result.id}`
+      );
     }
   };
 

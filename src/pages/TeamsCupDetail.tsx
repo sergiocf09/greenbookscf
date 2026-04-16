@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +18,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut, Check, X } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut,
+  Check, X, Hash, Copy, Share2, Settings, RefreshCw,
+} from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -23,6 +33,7 @@ import { cn } from '@/lib/utils';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
+import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 
 /* ── CupMatchRow ─────────────────────────────────── */
 
@@ -247,11 +258,51 @@ const TeamsCupDetail = () => {
   const { event, isCreator: isCreatorFlag } = useLeaderboardDetail(id || null);
   const isCreator = isCreatorFlag;
 
+  const queryClient = useQueryClient();
+
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showMatchEditor, setShowMatchEditor] = useState(false);
   const [editingMatch, setEditingMatch] = useState<CupMatch | null>(null);
   const [showAssignPanel, setShowAssignPanel] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const copyCode = () => {
+    if (event?.code) {
+      navigator.clipboard.writeText(event.code);
+      toast.success('Código copiado');
+    }
+  };
+
+  const copyShareLink = () => {
+    if (event?.code) {
+      const url = `${window.location.origin}/leaderboards/join/${event.code}`;
+      navigator.clipboard.writeText(url);
+      toast.success('Link copiado');
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_events')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('Competencia eliminada');
+      queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+      navigate('/leaderboards');
+    } catch (err: any) {
+      toast.error('Error al eliminar: ' + err.message);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   // Local state for debounced handicap updates
   const hcpTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -294,28 +345,80 @@ const TeamsCupDetail = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/leaderboards')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <GreenBookLogo height={24} />
         </div>
-        <GreenBookLogo height={24} />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.location.reload()}
+            aria-label="Actualizar"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={copyShareLink}
+            aria-label="Compartir"
+          >
+            <Share2 className="h-5 w-5" />
+          </Button>
+          {isCreator && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSettings(true)}
+              aria-label="Configuración"
+            >
+              <Settings className="h-5 w-5" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-              <User className="h-4 w-4 mr-2" /> Perfil
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+                <User className="h-4 w-4 mr-2" /> Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="p-4 max-w-lg mx-auto space-y-4">
-        {/* Event name */}
-        <h1 className="text-lg font-bold text-center">{event?.name || 'Teams Cup'}</h1>
+        {/* Event header: name + code chip + format */}
+        <div className="text-center space-y-2">
+          <h1 className="text-lg font-bold">{event?.name || 'Teams Cup'}</h1>
+          {event?.description && (
+            <p className="text-xs text-muted-foreground">{event.description}</p>
+          )}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {event?.code && (
+              <button
+                onClick={copyCode}
+                className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md hover:bg-muted/80 transition-colors text-xs"
+              >
+                <Hash className="h-3 w-3" />
+                <span className="font-mono font-bold">{event.code}</span>
+                <Copy className="h-3 w-3 ml-1 text-muted-foreground" />
+              </button>
+            )}
+            <Badge variant="secondary" className="text-[10px]">
+              {cupFormat === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual'}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {cup.participants.length} jugadores
+            </Badge>
+          </div>
+        </div>
+
 
         {/* ── Section 1: Global Scoreboard ─── */}
         {st ? (
@@ -593,6 +696,48 @@ const TeamsCupDetail = () => {
       />
 
       <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
+
+      {/* ── Settings Dialog (creator only) ─── */}
+      {isCreator && event && (
+        <CupSettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          event={event as any}
+          onDeleteRequest={() => {
+            setShowSettings(false);
+            setShowDeleteConfirm(true);
+          }}
+          onSaved={async () => {
+            queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+            // Force a refresh of the local event by reloading
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* ── Delete Confirm ─── */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta competencia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los matches, equipos y participantes vinculados.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); handleDeleteEvent(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

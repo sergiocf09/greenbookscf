@@ -131,7 +131,7 @@ export function useLeaderboards() {
     }
   }, [profile, queryClient]);
 
-  const joinByCode = useCallback(async (code: string) => {
+  const joinByCode = useCallback(async (code: string): Promise<{ id: string; competition_type: string } | null> => {
     try {
       const { data: leaderboardId, error } = await supabase
         .rpc('join_leaderboard_by_code', {
@@ -143,7 +143,16 @@ export function useLeaderboards() {
         toast.error('No se encontró un leaderboard con ese código');
         return null;
       }
-      return leaderboardId as string;
+      // Detect competition type so callers can route to /leaderboards/cup/:id when needed
+      const { data: ev } = await supabase
+        .from('leaderboard_events')
+        .select('competition_type')
+        .eq('id', leaderboardId)
+        .single();
+      return {
+        id: leaderboardId as string,
+        competition_type: (ev as any)?.competition_type || 'standard',
+      };
     } catch (err: any) {
       toast.error('Error: ' + err.message);
       return null;

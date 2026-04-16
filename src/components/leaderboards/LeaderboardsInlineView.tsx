@@ -65,11 +65,15 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
 
   const handleJoin = async () => {
     if (!joinCode.trim()) return;
-    const eventId = await joinByCode(joinCode.trim());
-    if (eventId) {
+    const result = await joinByCode(joinCode.trim());
+    if (result) {
       setShowJoinDialog(false);
       setJoinCode('');
-      onNavigateToDetail(eventId);
+      if (result.competition_type === 'teams_cup') {
+        navigate(`/leaderboards/cup/${result.id}`);
+      } else {
+        onNavigateToDetail(result.id);
+      }
     }
   };
 
