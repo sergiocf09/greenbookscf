@@ -285,6 +285,7 @@ export type Database = {
           result_type: string | null
           round_id: string | null
           status: string
+          stroke_receiver_player_id: string | null
           strokes_advantage: number
           updated_at: string
         }
@@ -305,6 +306,7 @@ export type Database = {
           result_type?: string | null
           round_id?: string | null
           status?: string
+          stroke_receiver_player_id?: string | null
           strokes_advantage?: number
           updated_at?: string
         }
@@ -325,6 +327,7 @@ export type Database = {
           result_type?: string | null
           round_id?: string | null
           status?: string
+          stroke_receiver_player_id?: string | null
           strokes_advantage?: number
           updated_at?: string
         }
@@ -369,6 +372,13 @@ export type Database = {
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cup_matches_stroke_receiver_player_id_fkey"
+            columns: ["stroke_receiver_player_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_participants"
             referencedColumns: ["id"]
           },
         ]
