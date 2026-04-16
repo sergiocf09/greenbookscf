@@ -862,70 +862,111 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </CollapsibleContent>
       </Collapsible>
 
-      {/* ── Assignment Panel ─── */}
-      <Dialog open={showAssignPanel} onOpenChange={(open) => {
+      {/* ── Assignment Panel (deferred saves on close) ─── */}
+      <Dialog open={showAssignPanel} onOpenChange={async (open) => {
         if (!open) {
-          // Commit any pending edits when closing
-          localHcps.forEach((_v, id) => commitHcp(id));
+          await flushAssignDrafts();
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Asignar Equipos y Hándicaps</DialogTitle>
           </DialogHeader>
           {(() => {
-            const renderRow = (p: CupParticipant) => (
-              <div key={p.id} className="flex items-center gap-2 p-2 border rounded-lg">
-                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
-                <span className="text-sm font-medium truncate flex-1 min-w-0">{p.display_name}</span>
-                <div className="flex gap-1 shrink-0">
-                  {teamA && (
-                    <button
-                      onClick={() => cup.assignTeam(p.id, p.cup_team_id === teamA.id ? null : teamA.id)}
-                      className={cn(
-                        'w-7 h-7 rounded-md border-2 text-[10px] font-bold transition-all',
-                        p.cup_team_id === teamA.id ? 'text-white' : 'bg-transparent',
-                      )}
-                      style={{
-                        borderColor: teamA.color,
-                        backgroundColor: p.cup_team_id === teamA.id ? teamA.color : 'transparent',
-                        color: p.cup_team_id === teamA.id ? '#fff' : teamA.color,
-                      }}
-                    >
-                      A
-                    </button>
-                  )}
-                  {teamB && (
-                    <button
-                      onClick={() => cup.assignTeam(p.id, p.cup_team_id === teamB.id ? null : teamB.id)}
-                      className={cn(
-                        'w-7 h-7 rounded-md border-2 text-[10px] font-bold transition-all',
-                        p.cup_team_id === teamB.id ? 'text-white' : 'bg-transparent',
-                      )}
-                      style={{
-                        borderColor: teamB.color,
-                        backgroundColor: p.cup_team_id === teamB.id ? teamB.color : 'transparent',
-                        color: p.cup_team_id === teamB.id ? '#fff' : teamB.color,
-                      }}
-                    >
-                      B
-                    </button>
-                  )}
+            const renderRow = (p: CupParticipant) => {
+              const draftTeam = getDraftTeam(p);
+              return (
+                <div key={p.id} className="flex items-center gap-1.5 p-1.5 border rounded-lg min-w-0">
+                  <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
+                  <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
+                  <div className="flex gap-1 shrink-0">
+                    {teamA && (
+                      <button
+                        type="button"
+                        onClick={() => setDraftTeam(p.id, draftTeam === teamA.id ? null : teamA.id)}
+                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        style={{
+                          borderColor: teamA.color,
+                          backgroundColor: draftTeam === teamA.id ? teamA.color : 'transparent',
+                          color: draftTeam === teamA.id ? '#fff' : teamA.color,
+                        }}
+                      >
+                        A
+                      </button>
+                    )}
+                    {teamB && (
+                      <button
+                        type="button"
+                        onClick={() => setDraftTeam(p.id, draftTeam === teamB.id ? null : teamB.id)}
+                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        style={{
+                          borderColor: teamB.color,
+                          backgroundColor: draftTeam === teamB.id ? teamB.color : 'transparent',
+                          color: draftTeam === teamB.id ? '#fff' : teamB.color,
+                        }}
+                      >
+                        B
+                      </button>
+                    )}
+                  </div>
+                  <div className="shrink-0 w-12">
+                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">HCP</Label>
+                    <Input
+                      type="number"
+                      value={getDraftHcp(p)}
+                      onChange={e => setDraftHcp(p.id, parseInt(e.target.value) || 0)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                      className="w-12 h-7 px-1 text-center text-xs"
+                    />
+                  </div>
                 </div>
-                <div className="shrink-0">
-                  <Label className="text-[9px] text-muted-foreground block text-center">Hcp match</Label>
-                  <Input
-                    type="number"
-                    value={getHcp(p)}
-                    onChange={e => handleHcpChange(p.id, parseInt(e.target.value) || 0)}
-                    onBlur={() => commitHcp(p.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-14 h-7 text-center text-xs"
-                  />
-                </div>
+              );
+            };
+
+            // Build views from drafts so the user sees instant local feedback.
+            const draftPartsNone = cup.participants.filter(p => !getDraftTeam(p)).sort(byName);
+            const draftPartsA = teamA ? cup.participants.filter(p => getDraftTeam(p) === teamA.id).sort(byName) : [];
+            const draftPartsB = teamB ? cup.participants.filter(p => getDraftTeam(p) === teamB.id).sort(byName) : [];
+
+            return (
+              <div className="space-y-3">
+                <p className="text-[10px] text-muted-foreground italic">
+                  Los cambios se guardan al cerrar este panel.
+                </p>
+                {draftPartsNone.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
+                    <div className="space-y-1.5">{draftPartsNone.map(renderRow)}</div>
+                  </div>
+                )}
+                {teamA && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamA.color }}>
+                      {teamA.name}
+                    </p>
+                    {draftPartsA.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-1.5">{draftPartsA.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
+                {teamB && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamB.color }}>
+                      {teamB.name}
+                    </p>
+                    {draftPartsB.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-1.5">{draftPartsB.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
               </div>
             );
+          })()}
 
             return (
               <div className="space-y-3">
