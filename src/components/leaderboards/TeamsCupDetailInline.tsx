@@ -756,17 +756,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </div>
 
         {cup.matches.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">No hay matches configurados aún</p>
-            {isCreator && (
-              <Button
-                className="mt-3 gap-1"
-                onClick={() => { setEditingMatch(null); setShowMatchEditor(true); }}
-              >
-                <Plus className="h-4 w-4" /> Crear primer match
-              </Button>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground italic py-1">
+            Aún no hay matches. Usa <span className="font-medium">+ Agregar Match</span> para crear el primero.
+          </p>
         ) : (
           <div className="space-y-2">
             {cup.matches.map(m => (
