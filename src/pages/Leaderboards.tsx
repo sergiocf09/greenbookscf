@@ -255,12 +255,13 @@ const Leaderboards = () => {
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <CardTitle className="text-base">{ev.name}</CardTitle>
-                        {(ev as any).competition_type === 'teams_cup' && (
-                          <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
-                        )}
-                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <CardTitle className="text-base">{ev.name}</CardTitle>
+                          {(ev as any).competition_type === 'teams_cup' && (
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
+                          )}
+                        </div>
                         {ev.description && (
                           <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                         )}
