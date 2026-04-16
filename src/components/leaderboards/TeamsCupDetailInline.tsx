@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { supabase } from '@/integrations/supabase/client';
@@ -356,7 +356,6 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
   };
 
-  const hcpTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const [localHcps, setLocalHcps] = useState<Map<string, number>>(new Map());
 
   const handleHcpChange = (participantId: string, value: number) => {
