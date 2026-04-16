@@ -477,6 +477,33 @@ const TeamsCupDetail = () => {
           </div>
         </div>
 
+        {/* ── Vincular ronda activa ─── */}
+        {activeRound.roundId && (
+          <div className="flex gap-2">
+            {!isRoundLinked ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+                onClick={() => setShowLinkDialog(true)}
+              >
+                <Link2 className="h-4 w-4" />
+                Vincular ronda activa
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2 text-destructive hover:text-destructive"
+                onClick={handleUnlinkRound}
+                disabled={unlinking}
+              >
+                {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
+                Desvincular ronda
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* ── Section 1: Global Scoreboard ─── */}
         {st ? (
