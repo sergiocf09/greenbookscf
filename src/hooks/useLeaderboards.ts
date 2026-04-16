@@ -393,18 +393,28 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
   const linkRound = useCallback(async (roundId: string) => {
     if (!leaderboardId || !profile) return;
     try {
-      const { error } = await supabase
+      // Idempotent: skip if already linked
+      const { data: existing } = await supabase
         .from('leaderboard_rounds')
-        .insert({
-          leaderboard_id: leaderboardId,
-          round_id: roundId,
-          added_by: profile.id,
-        });
-      if (error) throw error;
-      toast.success('Ronda vinculada al leaderboard');
+        .select('id')
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', roundId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabase
+          .from('leaderboard_rounds')
+          .insert({
+            leaderboard_id: leaderboardId,
+            round_id: roundId,
+            added_by: profile.id,
+          });
+        if (error) throw error;
+      }
       await fetchDetail();
     } catch (err: any) {
       toast.error('Error al vincular ronda: ' + err.message);
+      throw err;
     }
   }, [leaderboardId, profile, fetchDetail]);
 

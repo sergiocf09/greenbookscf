@@ -109,7 +109,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     setSubmitting(true);
 
     try {
-      // Link the round first
+      // Link the round first (idempotent)
       await linkRound(roundId);
 
       // Fetch fresh participants from backend (avoid stale state when re-linking)
@@ -121,42 +121,58 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
       if (partsErr) throw partsErr;
 
       const current = currentParts ?? [];
+      const existingProfileIds = new Set(current.map((p: any) => p.profile_id).filter(Boolean));
+      const existingGuestNames = new Set(
+        current.filter((p: any) => !p.profile_id && p.guest_name).map((p: any) => p.guest_name)
+      );
 
-      // Build batch of new participants (filter out already-existing ones)
-      const newRows: Array<{
-        leaderboard_id: string;
-        profile_id: string | null;
-        guest_name: string | null;
-        guest_initials: string | null;
-        guest_color: string | null;
-        handicap_for_leaderboard: number;
-        source_round_id: string;
-      }> = [];
+      // Build batch of new participants — split profile-based vs guest-based
+      const profileRows: any[] = [];
+      const guestRows: any[] = [];
 
       for (const player of allPlayers) {
         if (!selectedPlayerIds.has(player.id)) continue;
 
-        const alreadyExists = current.some(
-          (p: any) => p.profile_id === player.profileId || (p.guest_name && p.guest_name === player.name)
-        );
-        if (alreadyExists) continue;
-
-        newRows.push({
-          leaderboard_id: selectedLeaderboardId,
-          profile_id: player.profileId || null,
-          guest_name: player.profileId ? null : player.name,
-          guest_initials: player.profileId ? null : player.initials,
-          guest_color: player.profileId ? null : player.color,
-          handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
-          source_round_id: roundId,
-        });
+        if (player.profileId) {
+          if (existingProfileIds.has(player.profileId)) continue;
+          profileRows.push({
+            leaderboard_id: selectedLeaderboardId,
+            profile_id: player.profileId,
+            guest_name: null,
+            guest_initials: null,
+            guest_color: null,
+            handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
+            source_round_id: roundId,
+          });
+        } else {
+          if (existingGuestNames.has(player.name)) continue;
+          guestRows.push({
+            leaderboard_id: selectedLeaderboardId,
+            profile_id: null,
+            guest_name: player.name,
+            guest_initials: player.initials,
+            guest_color: player.color,
+            handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
+            source_round_id: roundId,
+          });
+        }
       }
 
-      // Single batch insert instead of sequential calls
-      if (newRows.length > 0) {
+      // Use upsert with ignoreDuplicates to handle race conditions safely
+      if (profileRows.length > 0) {
         const { error: insertErr } = await supabase
           .from('leaderboard_participants')
-          .insert(newRows);
+          .upsert(profileRows, {
+            onConflict: 'leaderboard_id,profile_id',
+            ignoreDuplicates: true,
+          });
+        if (insertErr) throw insertErr;
+      }
+
+      if (guestRows.length > 0) {
+        const { error: insertErr } = await supabase
+          .from('leaderboard_participants')
+          .insert(guestRows);
         if (insertErr) throw insertErr;
       }
 
