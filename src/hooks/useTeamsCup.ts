@@ -266,6 +266,28 @@ export function useTeamsCup(leaderboardId: string | null) {
     }
   }, [fetchAll]);
 
+  /**
+   * Persist multiple participant changes (team + handicap) in one network round-trip
+   * and refresh state once at the end. Used by the assign-teams panel to avoid
+   * UI flicker on every click.
+   */
+  const batchUpdateParticipants = useCallback(async (
+    updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }>
+  ) => {
+    if (updates.length === 0) return;
+    try {
+      await Promise.all(updates.map(u => {
+        const patch: any = {};
+        if ('cup_team_id' in u) patch.cup_team_id = u.cup_team_id;
+        if ('match_handicap' in u) patch.match_handicap = u.match_handicap;
+        return supabase.from('leaderboard_participants').update(patch).eq('id', u.id);
+      }));
+      await fetchAll();
+    } catch (err: any) {
+      toast.error('Error al guardar cambios: ' + err.message);
+    }
+  }, [fetchAll]);
+
   const createMatch = useCallback(async (params: Partial<CupMatch>) => {
     if (!leaderboardId) return null;
     try {
