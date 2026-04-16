@@ -466,9 +466,15 @@ const TeamsCupDetail = () => {
               </div>
               {/* Team B */}
               <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: teamB?.color }}>
-                  {teamB?.name || 'Equipo B'}
-                </p>
+                <div className="text-xs font-semibold mb-1">
+                  <EditableTeamName
+                    team={teamB}
+                    fallback="Equipo B"
+                    canEdit={isCreator}
+                    onSave={(name) => teamB && cup.updateTeam(teamB.id, { name })}
+                    size="sm"
+                  />
+                </div>
                 {partsB.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
                 ) : partsB.map(p => (
