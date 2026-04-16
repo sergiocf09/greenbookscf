@@ -27,7 +27,7 @@ interface LinkRoundToLeaderboardDialogProps {
   preselectedLeaderboardId?: string | null;
 }
 
-type Step = 'select-leaderboard' | 'select-participants';
+type Step = 'select-leaderboard' | 'select-participants' | 'select-cup-match';
 
 export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialogProps> = ({
   open,
@@ -49,6 +49,9 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
   const [handicaps, setHandicaps] = useState<Map<string, number>>(new Map());
   const [submitting, setSubmitting] = useState(false);
+  const [openMatches, setOpenMatches] = useState<any[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
 
   const {
     event: selectedEvent,
@@ -157,6 +160,29 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         if (insertErr) throw insertErr;
       }
 
+      // Check if Teams Cup → offer match linking
+      const { data: eventData } = await supabase
+        .from('leaderboard_events')
+        .select('competition_type')
+        .eq('id', selectedLeaderboardId)
+        .single();
+
+      if ((eventData as any)?.competition_type === 'teams_cup') {
+        const { data: matchesData } = await supabase
+          .from('cup_matches')
+          .select('id, format, player_a1_id, player_b1_id')
+          .eq('leaderboard_id', selectedLeaderboardId)
+          .is('round_id', null);
+
+        if (matchesData && matchesData.length > 0) {
+          setOpenMatches(matchesData);
+          setLinkingRoundId(roundId);
+          setStep('select-cup-match');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       toast.success('Ronda vinculada al leaderboard');
       onOpenChange(false);
     } catch (err: any) {
@@ -164,6 +190,24 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleLinkMatch = async () => {
+    if (selectedMatchId && linkingRoundId) {
+      await supabase.from('cup_matches')
+        .update({ round_id: linkingRoundId, status: 'active' } as any)
+        .eq('id', selectedMatchId);
+      toast.success('Ronda vinculada al match');
+    } else {
+      toast.success('Ronda vinculada al leaderboard');
+    }
+    onOpenChange(false);
+  };
+
+  const getMatchPlayerName = (participantId: string | null) => {
+    if (!participantId) return '—';
+    const part = existingParticipants.find(p => p.id === participantId);
+    return part?.display_name || '—';
   };
 
   const activeEvents = events.filter(e => e.status === 'active');
@@ -307,6 +351,35 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             )
+          )}
+
+          {step === 'select-cup-match' && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                ¿Vincular esta ronda a algún match de la Teams Cup?
+              </p>
+              {openMatches.map((m: any) => (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedMatchId(m.id === selectedMatchId ? null : m.id)}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
+                    selectedMatchId === m.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="text-sm">
+                    <span className="font-medium">{getMatchPlayerName(m.player_a1_id)}</span>
+                    <span className="text-muted-foreground mx-1.5">vs</span>
+                    <span className="font-medium">{getMatchPlayerName(m.player_b1_id)}</span>
+                  </div>
+                  {selectedMatchId === m.id && <Check className="h-4 w-4 text-primary" />}
+                </button>
+              ))}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={handleLinkMatch}>
+                  {selectedMatchId ? 'Vincular al match' : 'No vincular ahora'}
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       </DialogContent>

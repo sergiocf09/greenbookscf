@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw } from 'lucide-react';
@@ -29,6 +31,7 @@ const Leaderboards = () => {
   const { canCreateLeaderboard } = useSubscription();
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -114,6 +117,14 @@ const Leaderboards = () => {
       <div className="p-4 max-w-lg mx-auto space-y-4">
         {/* Actions */}
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCupDialog(true)}
+            className="gap-1.5 border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+          >
+            🏆 Teams Cup
+          </Button>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button
@@ -240,12 +251,17 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(`/leaderboards/${ev.id}`)}
+                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-base">{ev.name}</CardTitle>
+                        <div className="flex items-center gap-1.5">
+                          <CardTitle className="text-base">{ev.name}</CardTitle>
+                          {(ev as any).competition_type === 'teams_cup' && (
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
+                          )}
+                        </div>
                         {ev.description && (
                           <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                         )}
@@ -292,7 +308,7 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors opacity-80"
-                  onClick={() => navigate(`/leaderboards/${ev.id}`)}
+                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="text-base">{ev.name}</CardTitle>
@@ -316,6 +332,7 @@ const Leaderboards = () => {
         open={showProfileDialog}
         onOpenChange={setShowProfileDialog}
       />
+      <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
     </div>
   );
 };
