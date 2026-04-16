@@ -15,7 +15,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut, Check, X } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -157,6 +157,86 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   );
 };
 
+/* ── EditableTeamName ────────────────────────────── */
+
+interface EditableTeamNameProps {
+  team: CupTeam | null;
+  fallback: string;
+  canEdit: boolean;
+  onSave: (newName: string) => void;
+  className?: string;
+  size?: 'sm' | 'md';
+}
+
+const EditableTeamName: React.FC<EditableTeamNameProps> = ({
+  team, fallback, canEdit, onSave, className, size = 'md',
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(team?.name || fallback);
+
+  React.useEffect(() => {
+    if (!editing) setDraft(team?.name || fallback);
+  }, [team?.name, fallback, editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && team && trimmed !== team.name) {
+      onSave(trimmed);
+    } else {
+      setDraft(team?.name || fallback);
+    }
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(team?.name || fallback);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 justify-center">
+        <Input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') cancel();
+          }}
+          className={cn('h-7 px-2 py-0 text-center', size === 'sm' ? 'text-xs' : 'text-sm')}
+          maxLength={20}
+        />
+        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={commit}>
+          <Check className="h-3.5 w-3.5 text-emerald-600" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={cancel}>
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={!canEdit}
+      onClick={() => canEdit && setEditing(true)}
+      className={cn(
+        'inline-flex items-center gap-1 group',
+        canEdit && 'cursor-pointer hover:opacity-80',
+        className,
+      )}
+      style={{ color: team?.color }}
+    >
+      <span className="truncate">{team?.name || fallback}</span>
+      {canEdit && (
+        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+      )}
+    </button>
+  );
+};
+
 /* ── TeamsCupDetail page ─────────────────────────── */
 
 const TeamsCupDetail = () => {
@@ -242,17 +322,27 @@ const TeamsCupDetail = () => {
           <Card>
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <div className="text-center flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: st.team_a?.color }}>
-                    {st.team_a?.name}
-                  </p>
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-sm font-semibold">
+                    <EditableTeamName
+                      team={st.team_a}
+                      fallback="Equipo A"
+                      canEdit={isCreator}
+                      onSave={(name) => st.team_a && cup.updateTeam(st.team_a.id, { name })}
+                    />
+                  </div>
                   <p className="text-4xl font-bold mt-1">{st.points_a}</p>
                 </div>
                 <span className="text-xl text-muted-foreground font-light mx-3">—</span>
-                <div className="text-center flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: st.team_b?.color }}>
-                    {st.team_b?.name}
-                  </p>
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-sm font-semibold">
+                    <EditableTeamName
+                      team={st.team_b}
+                      fallback="Equipo B"
+                      canEdit={isCreator}
+                      onSave={(name) => st.team_b && cup.updateTeam(st.team_b.id, { name })}
+                    />
+                  </div>
                   <p className="text-4xl font-bold mt-1">{st.points_b}</p>
                 </div>
               </div>
@@ -353,9 +443,15 @@ const TeamsCupDetail = () => {
             <div className="grid grid-cols-2 gap-3">
               {/* Team A */}
               <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: teamA?.color }}>
-                  {teamA?.name || 'Equipo A'}
-                </p>
+                <div className="text-xs font-semibold mb-1">
+                  <EditableTeamName
+                    team={teamA}
+                    fallback="Equipo A"
+                    canEdit={isCreator}
+                    onSave={(name) => teamA && cup.updateTeam(teamA.id, { name })}
+                    size="sm"
+                  />
+                </div>
                 {partsA.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
                 ) : partsA.map(p => (
@@ -370,9 +466,15 @@ const TeamsCupDetail = () => {
               </div>
               {/* Team B */}
               <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: teamB?.color }}>
-                  {teamB?.name || 'Equipo B'}
-                </p>
+                <div className="text-xs font-semibold mb-1">
+                  <EditableTeamName
+                    team={teamB}
+                    fallback="Equipo B"
+                    canEdit={isCreator}
+                    onSave={(name) => teamB && cup.updateTeam(teamB.id, { name })}
+                    size="sm"
+                  />
+                </div>
                 {partsB.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
                 ) : partsB.map(p => (

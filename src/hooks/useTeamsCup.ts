@@ -165,6 +165,19 @@ export function useTeamsCup(leaderboardId: string | null) {
 
   // ── Mutations ─────────────────────────────────────────────
 
+  const updateTeam = useCallback(async (teamId: string, updates: Partial<Pick<CupTeam, 'name' | 'color'>>) => {
+    try {
+      const { error } = await supabase
+        .from('cup_teams')
+        .update(updates)
+        .eq('id', teamId);
+      if (error) throw error;
+      await fetchAll();
+    } catch (err: any) {
+      toast.error('Error al actualizar equipo: ' + err.message);
+    }
+  }, [fetchAll]);
+
   const assignTeam = useCallback(async (participantId: string, teamId: string | null) => {
     try {
       const { error } = await supabase
@@ -251,7 +264,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   return {
     teams, matches, participants, matchResults, standings,
     loading, fetchAll,
-    assignTeam, updateMatchHandicap,
+    assignTeam, updateMatchHandicap, updateTeam,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap,
   };
