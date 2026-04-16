@@ -322,17 +322,27 @@ const TeamsCupDetail = () => {
           <Card>
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <div className="text-center flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: st.team_a?.color }}>
-                    {st.team_a?.name}
-                  </p>
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-sm font-semibold">
+                    <EditableTeamName
+                      team={st.team_a}
+                      fallback="Equipo A"
+                      canEdit={isCreator}
+                      onSave={(name) => st.team_a && cup.updateTeam(st.team_a.id, { name })}
+                    />
+                  </div>
                   <p className="text-4xl font-bold mt-1">{st.points_a}</p>
                 </div>
                 <span className="text-xl text-muted-foreground font-light mx-3">—</span>
-                <div className="text-center flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: st.team_b?.color }}>
-                    {st.team_b?.name}
-                  </p>
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-sm font-semibold">
+                    <EditableTeamName
+                      team={st.team_b}
+                      fallback="Equipo B"
+                      canEdit={isCreator}
+                      onSave={(name) => st.team_b && cup.updateTeam(st.team_b.id, { name })}
+                    />
+                  </div>
                   <p className="text-4xl font-bold mt-1">{st.points_b}</p>
                 </div>
               </div>
