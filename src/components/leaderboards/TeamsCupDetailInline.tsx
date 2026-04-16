@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
+import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult, CupHoleBreakdown } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,11 +18,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Loader2, Plus, ChevronDown, ChevronUp, Pencil, Trash2,
+  Loader2, Plus, ChevronDown, Pencil, Trash2,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,6 +33,19 @@ import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDi
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
+
+/* ── helpers ─────────────────────────────────────── */
+
+/**
+ * Convert a "running A-up" delta into match-play notation:
+ *   3 → '3UP', -2 → '2DN', 0 → 'AS'
+ * (perspective is always Team A; UI flips color based on sign)
+ */
+function formatRunning(delta: number): string {
+  if (delta === 0) return 'AS';
+  if (delta > 0) return `${delta}UP`;
+  return `${Math.abs(delta)}DN`;
+}
 
 /* ── CupMatchRow ─────────────────────────────────── */
 
@@ -46,9 +62,10 @@ interface MatchRowProps {
 const CupMatchRow: React.FC<MatchRowProps> = ({
   match, teams, participants, result, isCreator, onEdit, onDelete,
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const teamA = teams[0];
   const teamB = teams[1];
+  const colorA = teamA?.color || '#3B82F6';
+  const colorB = teamB?.color || '#ef4444';
 
   const getName = (id: string | null) => {
     if (!id) return null;
@@ -57,7 +74,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
 
   const renderSide = (ids: (string | null)[], teamColor: string) => (
     <div
-      className="p-2 rounded-lg space-y-1 min-h-[48px] flex flex-col justify-center"
+      className="p-2 rounded-lg space-y-1 min-h-[52px] flex flex-col justify-center"
       style={{ backgroundColor: teamColor + '26' }}
     >
       {ids.filter(Boolean).map(id => {
@@ -76,59 +93,117 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     </div>
   );
 
-  const rtype = result?.match_closed ? result.result_type : (match.result_type || (result ? 'in_progress' : 'pending'));
-  const standing = result?.current_standing || 'VS';
   const closed = result?.match_closed ?? false;
   const holesPlayed = result?.holes_played ?? 0;
+  const diff = result ? (result.side_a_holes_won - result.side_b_holes_won) : 0;
+  const rtype = closed ? result!.result_type : (match.result_type || (result ? result.result_type : 'pending'));
 
-  const renderCenter = () => {
-    const colorA = teamA?.color || '#3B82F6';
-    const colorB = teamB?.color || '#ef4444';
+  let centerColor: string = 'hsl(var(--muted-foreground))';
+  if (rtype === 'a_wins' || (rtype === 'in_progress' && diff > 0)) centerColor = colorA;
+  else if (rtype === 'b_wins' || (rtype === 'in_progress' && diff < 0)) centerColor = colorB;
 
-    if (rtype === 'pending' && holesPlayed === 0) {
-      return <span className="text-xs text-muted-foreground">VS</span>;
-    }
+  let centerText = 'VS';
+  if (rtype !== 'pending' && (holesPlayed > 0 || closed)) {
+    centerText = formatRunning(diff);
+  }
 
-    let standingColor = 'hsl(var(--muted-foreground))';
-    let standingText = standing;
+  const pts = match.points_per_match ?? 1;
+  const breakdown: CupHoleBreakdown[] = result?.hole_breakdown ?? [];
+  const hasBreakdown = breakdown.length > 0;
 
-    if (rtype === 'a_wins' || (rtype === 'in_progress' && standing.startsWith('A'))) {
-      standingColor = colorA;
-      standingText = standing.replace(/^A\s*/, '');
-    } else if (rtype === 'b_wins' || (rtype === 'in_progress' && standing.startsWith('B'))) {
-      standingColor = colorB;
-      standingText = standing.replace(/^B\s*/, '');
-    } else if (rtype === 'halved' || standing === 'AS') {
-      standingText = 'AS';
-    }
-
-    return (
-      <div className="flex flex-col items-center gap-0.5">
-        <span
-          className={cn('text-sm font-bold leading-tight', closed && 'text-base')}
-          style={{ color: standingColor }}
-        >
-          {standingText}
+  const renderCenter = () => (
+    <div className="flex flex-col items-center gap-0.5 leading-none">
+      <span
+        className="text-2xl font-extrabold tracking-tight"
+        style={{ color: centerColor }}
+      >
+        {centerText}
+      </span>
+      {!closed && holesPlayed > 0 && (
+        <span className="text-[9px] text-muted-foreground mt-0.5">thru {holesPlayed}</span>
+      )}
+      {closed && result?.current_standing && centerText !== 'AS' && (
+        <span className="text-[9px] font-semibold mt-0.5" style={{ color: centerColor }}>
+          {result.current_standing.replace(/^[AB]\s*/, 'Final ')}
         </span>
-        {!closed && holesPlayed > 0 && (
-          <span className="text-[9px] text-muted-foreground">{holesPlayed}/18</span>
+      )}
+      <div className="text-[10px] mt-0.5">
+        {(rtype === 'a_wins' || (!closed && rtype === 'in_progress' && diff > 0)) && (
+          <span style={{ color: colorA }}>{pts}pt{pts !== 1 ? 's' : ''}</span>
         )}
-        <div className="text-[10px]">
-          {rtype === 'a_wins' && <span style={{ color: colorA }}>1pt</span>}
-          {rtype === 'b_wins' && <span style={{ color: colorB }}>1pt</span>}
-          {rtype === 'halved' && (
-            <>
-              <span style={{ color: colorA }}>½</span>
-              <span className="text-muted-foreground"> · </span>
-              <span style={{ color: colorB }}>½</span>
-            </>
-          )}
+        {(rtype === 'b_wins' || (!closed && rtype === 'in_progress' && diff < 0)) && (
+          <span style={{ color: colorB }}>{pts}pt{pts !== 1 ? 's' : ''}</span>
+        )}
+        {(rtype === 'halved' || (!closed && rtype === 'in_progress' && diff === 0 && holesPlayed > 0)) && (
+          <>
+            <span style={{ color: colorA }}>{pts / 2}</span>
+            <span className="text-muted-foreground"> · </span>
+            <span style={{ color: colorB }}>{pts / 2}</span>
+          </>
+        )}
+      </div>
+      {match.strokes_advantage > 0 && (
+        <span className="text-[9px] text-muted-foreground mt-0.5">
+          {match.advantage_side === 'a' ? 'A' : 'B'} +{match.strokes_advantage}
+        </span>
+      )}
+    </div>
+  );
+
+  const renderHoleCell = (h: CupHoleBreakdown) => {
+    const text = formatRunning(h.running_a_up);
+    const color =
+      h.running_a_up > 0 ? colorA :
+      h.running_a_up < 0 ? colorB :
+      'hsl(var(--muted-foreground))';
+    return (
+      <div
+        key={h.hole}
+        className="flex flex-col items-center justify-center rounded p-1 bg-muted/40"
+      >
+        <span className="text-[9px] text-muted-foreground leading-none">{h.hole}</span>
+        <span className="text-[10px] font-bold leading-tight mt-0.5" style={{ color }}>
+          {text}
+        </span>
+      </div>
+    );
+  };
+
+  const renderTooltipBody = () => {
+    if (!hasBreakdown) {
+      return (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          Sin hoyos jugados todavía.
+        </p>
+      );
+    }
+    const byHole = new Map(breakdown.map(b => [b.hole, b]));
+    const front = Array.from({ length: 9 }, (_, i) => i + 1);
+    const back = Array.from({ length: 9 }, (_, i) => i + 10);
+    const placeholder = (n: number) => (
+      <div key={n} className="flex flex-col items-center justify-center rounded p-1 bg-muted/20">
+        <span className="text-[9px] text-muted-foreground leading-none">{n}</span>
+        <span className="text-[10px] text-muted-foreground/60 leading-tight mt-0.5">—</span>
+      </div>
+    );
+    return (
+      <div className="space-y-2">
+        <div className="grid grid-cols-9 gap-1">
+          {front.map(n => byHole.has(n) ? renderHoleCell(byHole.get(n)!) : placeholder(n))}
         </div>
-        {match.strokes_advantage > 0 && (
-          <span className="text-[9px] text-muted-foreground">
-            {match.advantage_side === 'a' ? 'A' : 'B'} +{match.strokes_advantage}
+        <div className="grid grid-cols-9 gap-1">
+          {back.map(n => byHole.has(n) ? renderHoleCell(byHole.get(n)!) : placeholder(n))}
+        </div>
+        <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground pt-1 border-t">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: colorA }} />
+            {teamA?.name || 'Equipo A'}
           </span>
-        )}
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: colorB }} />
+            {teamB?.name || 'Equipo B'}
+          </span>
+        </div>
       </div>
     );
   };
@@ -136,36 +211,60 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-2">
-        <button
-          type="button"
-          onClick={() => setExpanded(v => !v)}
-          className="w-full text-left"
-          aria-expanded={expanded}
-        >
-          <div className="grid grid-cols-[1fr_72px_1fr] gap-1 items-stretch">
-            {renderSide(
-              [match.player_a1_id, match.player_a2_id],
-              teamA?.color || '#3B82F6',
-            )}
-            <div className="text-center flex flex-col items-center justify-center">
-              {renderCenter()}
+        <div className="flex items-stretch gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex-1 text-left grid grid-cols-[1fr_68px_1fr] gap-1 items-stretch hover:opacity-95 transition-opacity min-w-0"
+                aria-label="Ver detalle por hoyo"
+              >
+                {renderSide(
+                  [match.player_a1_id, match.player_a2_id],
+                  colorA,
+                )}
+                <div className="text-center flex flex-col items-center justify-center">
+                  {renderCenter()}
+                </div>
+                {renderSide(
+                  [match.player_b1_id, match.player_b2_id],
+                  colorB,
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[320px] p-3" align="center">
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-center">
+                  Estado por hoyo
+                </div>
+                {renderTooltipBody()}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {isCreator && (
+            <div className="flex flex-col gap-1 shrink-0 justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onEdit}
+                aria-label="Editar match"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={onDelete}
+                aria-label="Eliminar match"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            {renderSide(
-              [match.player_b1_id, match.player_b2_id],
-              teamB?.color || '#ef4444',
-            )}
-          </div>
-        </button>
-        {expanded && isCreator && (
-          <div className="flex justify-end gap-1 mt-2 pt-2 border-t border-border/40">
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={onEdit}>
-              <Pencil className="h-3 w-3" /> Editar
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" onClick={onDelete}>
-              <Trash2 className="h-3 w-3" /> Eliminar
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
