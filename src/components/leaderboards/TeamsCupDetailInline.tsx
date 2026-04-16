@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +22,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2,
+  Loader2, Plus, ChevronDown, ChevronUp, Pencil, Trash2,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,7 @@ interface MatchRowProps {
 const CupMatchRow: React.FC<MatchRowProps> = ({
   match, teams, participants, result, isCreator, onEdit, onDelete,
 }) => {
+  const [expanded, setExpanded] = useState(false);
   const teamA = teams[0];
   const teamB = teams[1];
 
@@ -63,9 +64,9 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
         const p = getName(id);
         if (!p) return <span key={id} className="text-xs italic text-muted-foreground">— Sin asignar —</span>;
         return (
-          <div key={p.id} className="flex items-center gap-1.5">
+          <div key={p.id} className="flex items-start gap-1.5">
             <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-            <span className="text-xs font-medium truncate">{p.display_name}</span>
+            <span className="text-xs font-medium leading-tight break-words min-w-0 flex-1">{p.display_name}</span>
           </div>
         );
       })}
@@ -75,15 +76,16 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     </div>
   );
 
-  const rtype = result?.match_closed ? result.result_type : (match.result_type || 'pending');
+  const rtype = result?.match_closed ? result.result_type : (match.result_type || (result ? 'in_progress' : 'pending'));
   const standing = result?.current_standing || 'VS';
   const closed = result?.match_closed ?? false;
+  const holesPlayed = result?.holes_played ?? 0;
 
   const renderCenter = () => {
     const colorA = teamA?.color || '#3B82F6';
     const colorB = teamB?.color || '#ef4444';
 
-    if (rtype === 'pending' || (!result && !match.result_type)) {
+    if (rtype === 'pending' && holesPlayed === 0) {
       return <span className="text-xs text-muted-foreground">VS</span>;
     }
 
@@ -103,13 +105,13 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     return (
       <div className="flex flex-col items-center gap-0.5">
         <span
-          className={cn('text-sm font-bold', closed && 'text-base')}
+          className={cn('text-sm font-bold leading-tight', closed && 'text-base')}
           style={{ color: standingColor }}
         >
           {standingText}
         </span>
-        {rtype === 'halved' && (
-          <span className="text-[10px] text-muted-foreground">½ + ½</span>
+        {!closed && holesPlayed > 0 && (
+          <span className="text-[9px] text-muted-foreground">{holesPlayed}/18</span>
         )}
         <div className="text-[10px]">
           {rtype === 'a_wins' && <span style={{ color: colorA }}>1pt</span>}
@@ -134,25 +136,32 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-2">
-        <div className="grid grid-cols-[1fr_80px_1fr] gap-1 items-center">
-          {renderSide(
-            [match.player_a1_id, match.player_a2_id],
-            teamA?.color || '#3B82F6',
-          )}
-          <div className="text-center flex flex-col items-center justify-center">
-            {renderCenter()}
+        <button
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          className="w-full text-left"
+          aria-expanded={expanded}
+        >
+          <div className="grid grid-cols-[1fr_72px_1fr] gap-1 items-stretch">
+            {renderSide(
+              [match.player_a1_id, match.player_a2_id],
+              teamA?.color || '#3B82F6',
+            )}
+            <div className="text-center flex flex-col items-center justify-center">
+              {renderCenter()}
+            </div>
+            {renderSide(
+              [match.player_b1_id, match.player_b2_id],
+              teamB?.color || '#ef4444',
+            )}
           </div>
-          {renderSide(
-            [match.player_b1_id, match.player_b2_id],
-            teamB?.color || '#ef4444',
-          )}
-        </div>
-        {isCreator && (
-          <div className="flex justify-end gap-1 mt-1">
-            <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={onEdit}>
+        </button>
+        {expanded && isCreator && (
+          <div className="flex justify-end gap-1 mt-2 pt-2 border-t border-border/40">
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={onEdit}>
               <Pencil className="h-3 w-3" /> Editar
             </Button>
-            <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-destructive" onClick={onDelete}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" onClick={onDelete}>
               <Trash2 className="h-3 w-3" /> Eliminar
             </Button>
           </div>
@@ -347,16 +356,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
   };
 
-  const hcpTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const [localHcps, setLocalHcps] = useState<Map<string, number>>(new Map());
 
   const handleHcpChange = (participantId: string, value: number) => {
     setLocalHcps(prev => new Map(prev).set(participantId, value));
-    const existing = hcpTimers.current.get(participantId);
-    if (existing) clearTimeout(existing);
-    hcpTimers.current.set(participantId, setTimeout(() => {
-      cup.updateMatchHandicap(participantId, value);
-    }, 1000));
+  };
+
+  const commitHcp = (participantId: string) => {
+    const v = localHcps.get(participantId);
+    if (v === undefined) return;
+    const orig = cup.participants.find(p => p.id === participantId)?.match_handicap;
+    if (v !== orig) cup.updateMatchHandicap(participantId, v);
   };
 
   const getHcp = (p: CupParticipant) => localHcps.get(p.id) ?? p.match_handicap;
@@ -375,18 +385,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
   const cupFormat = (event as any)?.cup_format || 'match_individual';
 
-  const partsA = cup.participants.filter(p => p.cup_team_id === teamA?.id);
-  const partsB = cup.participants.filter(p => p.cup_team_id === teamB?.id);
-  const partsNone = cup.participants.filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id));
+  const byName = (a: CupParticipant, b: CupParticipant) =>
+    a.display_name.localeCompare(b.display_name, 'es', { sensitivity: 'base' });
+  const partsA = cup.participants.filter(p => p.cup_team_id === teamA?.id).sort(byName);
+  const partsB = cup.participants.filter(p => p.cup_team_id === teamB?.id).sort(byName);
+  const partsNone = cup.participants
+    .filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id))
+    .sort(byName);
 
   return (
     <div className="space-y-3">
-      {/* Top bar: back + code chip + actions */}
+      {/* Top bar: code chip + actions */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
-            <ArrowLeft className="h-4 w-4" /> Leaderboards
-          </Button>
           {event?.code && (
             <button
               onClick={copyCode}
@@ -641,13 +652,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       </Collapsible>
 
       {/* ── Assignment Panel ─── */}
-      <Dialog open={showAssignPanel} onOpenChange={setShowAssignPanel}>
+      <Dialog open={showAssignPanel} onOpenChange={(open) => {
+        if (!open) {
+          // Commit any pending edits when closing
+          localHcps.forEach((_v, id) => commitHcp(id));
+        }
+        setShowAssignPanel(open);
+      }}>
         <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Asignar Equipos y Hándicaps</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
-            {cup.participants.map(p => (
+          {(() => {
+            const renderRow = (p: CupParticipant) => (
               <div key={p.id} className="flex items-center gap-2 p-2 border rounded-lg">
                 <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
                 <span className="text-sm font-medium truncate flex-1 min-w-0">{p.display_name}</span>
@@ -691,13 +708,50 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     type="number"
                     value={getHcp(p)}
                     onChange={e => handleHcpChange(p.id, parseInt(e.target.value) || 0)}
+                    onBlur={() => commitHcp(p.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     className="w-14 h-7 text-center text-xs"
                   />
                 </div>
               </div>
-            ))}
-          </div>
-          <Button className="w-full mt-2" onClick={() => setShowAssignPanel(false)}>
+            );
+
+            return (
+              <div className="space-y-3">
+                {partsNone.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
+                    <div className="space-y-2">{partsNone.map(renderRow)}</div>
+                  </div>
+                )}
+                {teamA && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamA.color }}>
+                      {teamA.name}
+                    </p>
+                    {partsA.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-2">{partsA.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
+                {teamB && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold" style={{ color: teamB.color }}>
+                      {teamB.name}
+                    </p>
+                    {partsB.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                    ) : (
+                      <div className="space-y-2">{partsB.map(renderRow)}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          <Button className="w-full mt-3" onClick={() => setShowAssignPanel(false)}>
             Cerrar
           </Button>
         </DialogContent>

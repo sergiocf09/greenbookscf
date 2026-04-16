@@ -176,7 +176,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         if (insertErr) throw insertErr;
       }
 
-      // Check if Teams Cup → offer match linking
+      // Check if Teams Cup → auto-link round to ALL unlinked matches so live results compute
       const { data: eventData } = await supabase
         .from('leaderboard_events')
         .select('competition_type')
@@ -184,18 +184,14 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         .single();
 
       if ((eventData as any)?.competition_type === 'teams_cup') {
-        const { data: matchesData } = await supabase
+        const { error: cupErr } = await supabase
           .from('cup_matches')
-          .select('id, format, player_a1_id, player_b1_id')
+          .update({ round_id: roundId, status: 'active' } as any)
           .eq('leaderboard_id', selectedLeaderboardId)
           .is('round_id', null);
-
-        if (matchesData && matchesData.length > 0) {
-          setOpenMatches(matchesData);
-          setLinkingRoundId(roundId);
-          setStep('select-cup-match');
-          setSubmitting(false);
-          return;
+        if (cupErr) {
+          // Non-fatal: still consider the leaderboard linked
+          console.warn('No se pudieron vincular automáticamente todos los matches:', cupErr);
         }
       }
 
