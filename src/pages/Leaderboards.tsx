@@ -131,7 +131,7 @@ const Leaderboards = () => {
                   }
                 }}
               >
-                <Plus className="h-4 w-4" /> Crear Competencia
+                <Plus className="h-4 w-4" /> Crear Leaderboard
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
