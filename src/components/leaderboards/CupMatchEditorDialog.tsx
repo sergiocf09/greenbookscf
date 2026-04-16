@@ -192,30 +192,52 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Suggested handicap */}
-          {suggested && (playerA1 && playerB1) && (
-            <div className="bg-muted/50 rounded-lg p-2 text-xs space-y-1">
-              <p className="text-muted-foreground">
-                Hándicap sugerido:{' '}
-                {suggested.strokes_advantage === 0
-                  ? 'Scratch'
-                  : `${suggested.advantage_side === 'a' ? teamA?.name : teamB?.name} recibe ${suggested.strokes_advantage} golpes`}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 text-xs"
-                onClick={() => {
-                  setStrokesAdvantage(suggested.strokes_advantage);
-                  setAdvantageSide(suggested.advantage_side);
-                }}
+          {/* Auto-computed handicap summary */}
+          <div className="bg-muted/50 rounded-lg p-2 text-xs space-y-1">
+            <p className="text-muted-foreground">
+              {format === 'match_individual' ? 'Cálculo automático (diferencia de HCP):' : 'Cálculo automático (Full HCP — suma por pareja):'}
+            </p>
+            <p className="font-medium">
+              {advantageSide === 'none' || strokesAdvantage === 0
+                ? 'Scratch (0 golpes)'
+                : `${advantageSide === 'a' ? teamA?.name : teamB?.name} recibe ${strokesAdvantage} ${strokesAdvantage === 1 ? 'golpe' : 'golpes'}`}
+            </p>
+            {hcpManuallyEdited && (
+              <button
+                type="button"
+                className="text-[11px] underline text-muted-foreground hover:text-foreground"
+                onClick={() => setHcpManuallyEdited(false)}
               >
-                Aplicar
-              </Button>
+                ↺ Restaurar cálculo automático
+              </button>
+            )}
+          </div>
+
+          {/* Fourball: tie-breaker for who in the receiving pair carries strokes */}
+          {format === 'fourball' && fourballInfo && strokesAdvantage > 0 && (
+            <div>
+              <Label className="text-xs">
+                {fourballInfo.tied
+                  ? '¿Quién lleva los strokes? (HCP empatados)'
+                  : 'Lleva los strokes (mayor HCP de la pareja)'}
+              </Label>
+              <Select
+                value={strokeReceiverId || (fourballInfo.pair[0]?.id ?? '')}
+                onValueChange={v => { setStrokeReceiverId(v); setHcpManuallyEdited(true); }}
+              >
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {fourballInfo.pair.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.display_name} (HCP: {p.match_handicap})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
-          {/* Manual handicap */}
+          {/* Manual handicap override */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Golpes de ventaja</Label>
@@ -224,13 +246,13 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 min={0}
                 max={36}
                 value={strokesAdvantage}
-                onChange={e => setStrokesAdvantage(parseInt(e.target.value) || 0)}
+                onChange={e => { setStrokesAdvantage(parseInt(e.target.value) || 0); setHcpManuallyEdited(true); }}
                 className="h-8 text-sm"
               />
             </div>
             <div>
               <Label className="text-xs">¿Quién recibe?</Label>
-              <Select value={advantageSide} onValueChange={v => setAdvantageSide(v as any)}>
+              <Select value={advantageSide} onValueChange={v => { setAdvantageSide(v as any); setHcpManuallyEdited(true); }}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Scratch</SelectItem>
