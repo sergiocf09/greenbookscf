@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult, CupFormat } from '@/hooks/useTeamsCup';
+import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,15 +16,12 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import {
   ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut,
   Check, X, Hash, Copy, Share2, Settings, RefreshCw,
