@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { formatPlayerName } from '@/lib/playerInput';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
@@ -27,6 +28,7 @@ import {
 import {
   Loader2, Plus, ChevronDown, Pencil, Trash2,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
+  Calendar, MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
