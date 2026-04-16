@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
+import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,7 +24,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const navigate = useNavigate();
   const { events, loading, createEvent, joinByCode } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [createType, setCreateType] = useState<'standard' | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -69,11 +73,26 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
     }
   };
 
+  const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
+    if (competitionType === 'teams_cup') {
+      navigate(`/leaderboards/cup/${eventId}`);
+      return;
+    }
+
+    onNavigateToDetail(eventId);
+  };
+
   return (
     <div className="space-y-4">
       {/* Actions */}
       <div className="flex gap-2">
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <Dialog
+          open={showCreateDialog}
+          onOpenChange={(v) => {
+            setShowCreateDialog(v);
+            if (!v) setCreateType(null);
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="flex-1 gap-2">
               <Plus className="h-4 w-4" /> Crear Leaderboard
@@ -81,60 +100,109 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Nuevo Leaderboard</DialogTitle>
+              <DialogTitle>Nueva Competencia</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Nombre *</Label>
-                <Input
-                  placeholder="Ej: Torneo del Club"
-                  value={formName}
-                  onChange={e => setFormName(e.target.value)}
-                />
+            {createType === null && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  ¿Qué tipo de competencia quieres crear?
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setCreateType('standard')}
+                  className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3">
+                    <Trophy className="h-5 w-5 text-primary" />
+                    <div>
+                      <div className="font-medium text-foreground">Leaderboard</div>
+                      <div className="text-sm text-muted-foreground">
+                        Tabla de posiciones individual (Medal, Stableford)
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateDialog(false);
+                    setCreateType(null);
+                    setShowCupDialog(true);
+                  }}
+                  className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg leading-none">🏆</span>
+                    <div>
+                      <div className="font-medium text-foreground">Teams Cup</div>
+                      <div className="text-sm text-muted-foreground">
+                        Competencia por equipos estilo Ryder Cup
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
-              <div>
-                <Label>Descripción</Label>
-                <Input
-                  placeholder="Descripción breve (opcional)"
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Fecha</Label>
-                <Input
-                  type="date"
-                  value={formDate}
-                  onChange={e => setFormDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Modalidades *</Label>
-                <div className="flex flex-col gap-2 mt-1">
-                  {[
-                    { key: 'gross', label: 'Medal Gross' },
-                    { key: 'net', label: 'Medal Neto' },
-                    { key: 'stableford', label: 'Stableford' },
-                  ].map(mode => (
-                    <label key={mode.key} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={formModes.includes(mode.key)}
-                        onCheckedChange={() => toggleMode(mode.key)}
-                      />
-                      <span className="text-sm">{mode.label}</span>
-                    </label>
-                  ))}
+            )}
+
+            {createType === 'standard' && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input
+                    placeholder="Ej: Torneo del Club"
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                  />
                 </div>
+                <div>
+                  <Label>Descripción</Label>
+                  <Input
+                    placeholder="Descripción breve (opcional)"
+                    value={formDescription}
+                    onChange={e => setFormDescription(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Fecha</Label>
+                  <Input
+                    type="date"
+                    value={formDate}
+                    onChange={e => setFormDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Modalidades *</Label>
+                  <div className="mt-1 flex flex-col gap-2">
+                    {[
+                      { key: 'gross', label: 'Medal Gross' },
+                      { key: 'net', label: 'Medal Neto' },
+                      { key: 'stableford', label: 'Stableford' },
+                    ].map(mode => (
+                      <label key={mode.key} className="flex cursor-pointer items-center gap-2">
+                        <Checkbox
+                          checked={formModes.includes(mode.key)}
+                          onCheckedChange={() => toggleMode(mode.key)}
+                        />
+                        <span className="text-sm">{mode.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
+                  ← Atrás
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={!formName.trim() || formModes.length === 0 || creating}
+                  className="w-full"
+                >
+                  {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Crear
+                </Button>
               </div>
-              <Button
-                onClick={handleCreate}
-                disabled={!formName.trim() || formModes.length === 0 || creating}
-                className="w-full"
-              >
-                {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Crear
-              </Button>
-            </div>
+            )}
           </DialogContent>
         </Dialog>
 
@@ -189,12 +257,19 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
               <Card
                 key={ev.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => onNavigateToDetail(ev.id)}
+                onClick={() => handleOpenEvent(ev.id, (ev as any).competition_type)}
               >
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-base">{ev.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">{ev.name}</CardTitle>
+                        {(ev as any).competition_type === 'teams_cup' && (
+                          <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
+                            TEAMS CUP
+                          </Badge>
+                        )}
+                      </div>
                       {ev.description && (
                         <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                       )}
@@ -241,10 +316,17 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
               <Card
                 key={ev.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors opacity-80"
-                onClick={() => onNavigateToDetail(ev.id)}
+                onClick={() => handleOpenEvent(ev.id, (ev as any).competition_type)}
               >
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-base">{ev.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{ev.name}</CardTitle>
+                    {(ev as any).competition_type === 'teams_cup' && (
+                      <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
+                        TEAMS CUP
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0">
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -259,6 +341,8 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
           )}
         </TabsContent>
       </Tabs>
+
+      <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
     </div>
   );
 };
