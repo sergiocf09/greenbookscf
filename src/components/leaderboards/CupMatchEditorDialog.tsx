@@ -37,7 +37,7 @@ interface Props {
 
 export const CupMatchEditorDialog: React.FC<Props> = ({
   open, leaderboardId, match, teams, participants, defaultFormat,
-  onClose, onSave, calcMatchHandicap,
+  onClose, onSave, calcMatchHandicap, calcFourballHandicap,
 }) => {
   const [format, setFormat] = useState<CupFormat>(defaultFormat);
   const [playerA1, setPlayerA1] = useState<string | null>(null);
@@ -46,6 +46,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
   const [playerB2, setPlayerB2] = useState<string | null>(null);
   const [strokesAdvantage, setStrokesAdvantage] = useState(0);
   const [advantageSide, setAdvantageSide] = useState<'a' | 'b' | 'none'>('none');
+  const [strokeReceiverId, setStrokeReceiverId] = useState<string | null>(null);
+  const [hcpManuallyEdited, setHcpManuallyEdited] = useState(false);
   const [resultOverride, setResultOverride] = useState(false);
   const [resultType, setResultType] = useState<'a_wins' | 'b_wins' | 'halved' | ''>('');
   const [resultDetail, setResultDetail] = useState('');
