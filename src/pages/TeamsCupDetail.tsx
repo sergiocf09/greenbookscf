@@ -270,6 +270,62 @@ const TeamsCupDetail = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [isRoundLinked, setIsRoundLinked] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
+
+  // Detect the user's active (non-completed) round to enable round linking
+  const activeRound = useActiveRoundForLink();
+
+  // Check whether the active round is already linked to this cup
+  React.useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!id || !activeRound.roundId) {
+        setIsRoundLinked(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('leaderboard_rounds')
+        .select('id')
+        .eq('leaderboard_id', id)
+        .eq('round_id', activeRound.roundId)
+        .maybeSingle();
+      if (!cancelled) setIsRoundLinked(!!data);
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [id, activeRound.roundId]);
+
+  const handleUnlinkRound = async () => {
+    if (!id || !activeRound.roundId) return;
+    setUnlinking(true);
+    try {
+      const roundId = activeRound.roundId;
+      // 1) Unlink
+      await supabase.from('leaderboard_rounds')
+        .delete().eq('leaderboard_id', id).eq('round_id', roundId);
+      // 2) Remove computed scores
+      await supabase.from('leaderboard_scores')
+        .delete().eq('leaderboard_id', id).eq('round_id', roundId);
+      // 3) Remove participants sourced from this round
+      await supabase.from('leaderboard_participants')
+        .delete().eq('leaderboard_id', id).eq('source_round_id', roundId);
+      // 4) Detach cup_matches that referenced this round
+      await supabase.from('cup_matches')
+        .update({ round_id: null, status: 'pending' } as any)
+        .eq('leaderboard_id', id).eq('round_id', roundId);
+
+      toast.success('Ronda desvinculada');
+      setIsRoundLinked(false);
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al desvincular: ' + err.message);
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
 
   const copyCode = () => {
     if (event?.code) {
