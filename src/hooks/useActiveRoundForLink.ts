@@ -108,9 +108,9 @@ export function useActiveRoundForLink() {
 
       const enrichedGroups: PlayerGroup[] = (groupsRes.data || []).map(g => ({
         id: g.id,
-        groupNumber: g.group_number,
-        playerIds: enrichedPlayers.filter(p => p.groupId === g.id).map(p => p.id),
-      } as PlayerGroup));
+        name: `Grupo ${g.group_number}`,
+        players: enrichedPlayers.filter(p => (p as any).groupId === g.id),
+      }));
 
       setRoundId(activeRoundId);
       setPlayers(enrichedPlayers);
