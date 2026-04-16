@@ -2570,9 +2570,6 @@ const Index = () => {
             <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 truncate">
               {linkedLeaderboardInfo.name}
             </span>
-            <span className="text-[10px] font-mono text-amber-600/70 dark:text-amber-500/70">
-              #{linkedLeaderboardInfo.code}
-            </span>
           </div>
         </button>
       )}

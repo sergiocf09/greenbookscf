@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { formatPlayerName } from '@/lib/playerInput';
 import type { CupMatch, CupFormat, CupTeam, CupParticipant } from '@/hooks/useTeamsCup';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   match: CupMatch | null;
   teams: CupTeam[];
   participants: CupParticipant[];
+  allMatches?: CupMatch[];
   defaultFormat: CupFormat;
   onClose: () => void;
   onSave: (params: Partial<CupMatch>) => void;
@@ -36,7 +38,7 @@ interface Props {
 }
 
 export const CupMatchEditorDialog: React.FC<Props> = ({
-  open, leaderboardId, match, teams, participants, defaultFormat,
+  open, leaderboardId, match, teams, participants, allMatches = [], defaultFormat,
   onClose, onSave, calcMatchHandicap, calcFourballHandicap,
 }) => {
   const [format, setFormat] = useState<CupFormat>(defaultFormat);
@@ -98,6 +100,39 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
   const partB1 = participants.find(p => p.id === playerB1);
   const partB2 = participants.find(p => p.id === playerB2);
 
+  // Compute "match number" for the header.
+  // - Editing existing match → use its position (1-based) in allMatches.
+  // - New match → next available number = existing count + 1.
+  const matchNumber = useMemo(() => {
+    if (match) {
+      const idx = allMatches.findIndex(m => m.id === match.id);
+      return idx >= 0 ? idx + 1 : allMatches.length + 1;
+    }
+    return allMatches.length + 1;
+  }, [match, allMatches]);
+
+  // Build a map of participant_id → array of team sides where they're already used
+  // (excluding the current match being edited). Used to render colored dot indicators.
+  const assignmentMap = useMemo(() => {
+    const map = new Map<string, Array<'a' | 'b'>>();
+    for (const m of allMatches) {
+      if (match && m.id === match.id) continue;
+      const aIds = [m.player_a1_id, m.player_a2_id].filter(Boolean) as string[];
+      const bIds = [m.player_b1_id, m.player_b2_id].filter(Boolean) as string[];
+      aIds.forEach(id => {
+        const arr = map.get(id) || [];
+        if (!arr.includes('a')) arr.push('a');
+        map.set(id, arr);
+      });
+      bIds.forEach(id => {
+        const arr = map.get(id) || [];
+        if (!arr.includes('b')) arr.push('b');
+        map.set(id, arr);
+      });
+    }
+    return map;
+  }, [allMatches, match]);
+
   // Auto-compute handicap whenever players change (unless user manually edited).
   useEffect(() => {
     if (hcpManuallyEdited) return;
@@ -147,6 +182,24 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
     onClose();
   };
 
+  // Renders a colored dot for each team this player is already assigned to.
+  const renderAssignmentDots = (playerId: string) => {
+    const sides = assignmentMap.get(playerId);
+    if (!sides || sides.length === 0) return null;
+    return (
+      <span className="inline-flex items-center gap-0.5 ml-1">
+        {sides.map(side => (
+          <span
+            key={side}
+            className="inline-block w-2 h-2 rounded-full"
+            style={{ backgroundColor: side === 'a' ? (teamA?.color || '#3B82F6') : (teamB?.color || '#ef4444') }}
+            title={`Ya asignado al ${side === 'a' ? teamA?.name : teamB?.name}`}
+          />
+        ))}
+      </span>
+    );
+  };
+
   const renderPlayerSelect = (
     label: string,
     value: string | null,
@@ -164,7 +217,10 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           <SelectItem value="__none">— Sin asignar —</SelectItem>
           {pool.map(p => (
             <SelectItem key={p.id} value={p.id}>
-              {p.display_name} (Hcp: {p.match_handicap})
+              <span className="inline-flex items-center">
+                {formatPlayerName(p.display_name)} (Hcp: {p.match_handicap})
+                {renderAssignmentDots(p.id)}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -172,23 +228,40 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
     </div>
   );
 
+  const teamALabel = teamA?.name || 'Equipo A';
+  const teamBLabel = teamB?.name || 'Equipo B';
+
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{match ? 'Editar Match' : 'Nuevo Match'}</DialogTitle>
+          <DialogTitle>
+            {match ? `Editar Match ${matchNumber}` : `Nuevo Match ${matchNumber}`}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Players */}
+          {/* Players — labels show team name + match number */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              {renderPlayerSelect('Jugador A1', playerA1, setPlayerA1, partsA, teamA?.color || '#3B82F6')}
-              {format === 'fourball' && renderPlayerSelect('Jugador A2', playerA2, setPlayerA2, partsA, teamA?.color || '#3B82F6')}
+              {renderPlayerSelect(
+                format === 'fourball' ? `${teamALabel} (Match ${matchNumber}) · 1` : `${teamALabel} (Match ${matchNumber})`,
+                playerA1, setPlayerA1, partsA, teamA?.color || '#3B82F6',
+              )}
+              {format === 'fourball' && renderPlayerSelect(
+                `${teamALabel} (Match ${matchNumber}) · 2`,
+                playerA2, setPlayerA2, partsA, teamA?.color || '#3B82F6',
+              )}
             </div>
             <div className="space-y-2">
-              {renderPlayerSelect('Jugador B1', playerB1, setPlayerB1, partsB, teamB?.color || '#ef4444')}
-              {format === 'fourball' && renderPlayerSelect('Jugador B2', playerB2, setPlayerB2, partsB, teamB?.color || '#ef4444')}
+              {renderPlayerSelect(
+                format === 'fourball' ? `${teamBLabel} (Match ${matchNumber}) · 1` : `${teamBLabel} (Match ${matchNumber})`,
+                playerB1, setPlayerB1, partsB, teamB?.color || '#ef4444',
+              )}
+              {format === 'fourball' && renderPlayerSelect(
+                `${teamBLabel} (Match ${matchNumber}) · 2`,
+                playerB2, setPlayerB2, partsB, teamB?.color || '#ef4444',
+              )}
             </div>
           </div>
 
@@ -200,7 +273,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
             <p className="font-medium">
               {advantageSide === 'none' || strokesAdvantage === 0
                 ? 'Scratch (0 golpes)'
-                : `${advantageSide === 'a' ? teamA?.name : teamB?.name} recibe ${strokesAdvantage} ${strokesAdvantage === 1 ? 'golpe' : 'golpes'}`}
+                : `${advantageSide === 'a' ? teamALabel : teamBLabel} recibe ${strokesAdvantage} ${strokesAdvantage === 1 ? 'golpe' : 'golpes'}`}
             </p>
             {hcpManuallyEdited && (
               <button
@@ -229,7 +302,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 <SelectContent>
                   {fourballInfo.pair.map(p => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.display_name} (HCP: {p.match_handicap})
+                      {formatPlayerName(p.display_name)} (HCP: {p.match_handicap})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -247,7 +320,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 max={36}
                 value={strokesAdvantage}
                 onChange={e => { setStrokesAdvantage(parseInt(e.target.value) || 0); setHcpManuallyEdited(true); }}
-                className="h-8 text-sm"
+                className="h-8 text-sm text-center"
               />
             </div>
             <div>
@@ -256,8 +329,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Scratch</SelectItem>
-                  <SelectItem value="a">{teamA?.name || 'Equipo A'}</SelectItem>
-                  <SelectItem value="b">{teamB?.name || 'Equipo B'}</SelectItem>
+                  <SelectItem value="a">{teamALabel}</SelectItem>
+                  <SelectItem value="b">{teamBLabel}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -291,8 +364,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 <Select value={resultType} onValueChange={v => setResultType(v as any)}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="a_wins">A gana</SelectItem>
-                    <SelectItem value="b_wins">B gana</SelectItem>
+                    <SelectItem value="a_wins">{teamALabel} gana</SelectItem>
+                    <SelectItem value="b_wins">{teamBLabel} gana</SelectItem>
                     <SelectItem value="halved">Empate (AS)</SelectItem>
                   </SelectContent>
                 </Select>
