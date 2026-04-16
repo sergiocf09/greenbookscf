@@ -361,11 +361,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
   const handleHcpChange = (participantId: string, value: number) => {
     setLocalHcps(prev => new Map(prev).set(participantId, value));
-    const existing = hcpTimers.current.get(participantId);
-    if (existing) clearTimeout(existing);
-    hcpTimers.current.set(participantId, setTimeout(() => {
-      cup.updateMatchHandicap(participantId, value);
-    }, 1000));
+  };
+
+  const commitHcp = (participantId: string) => {
+    const v = localHcps.get(participantId);
+    if (v === undefined) return;
+    const orig = cup.participants.find(p => p.id === participantId)?.match_handicap;
+    if (v !== orig) cup.updateMatchHandicap(participantId, v);
   };
 
   const getHcp = (p: CupParticipant) => localHcps.get(p.id) ?? p.match_handicap;
