@@ -54,7 +54,7 @@ const JoinLeaderboard = () => {
               .from('round_players')
               .select('handicap_for_round, joined_at, rounds!inner(status)')
               .eq('profile_id', profileRow.id)
-              .eq('rounds.status', 'active')
+              .in('rounds.status', ['in_progress', 'setup'])
               .order('joined_at', { ascending: false })
               .limit(1)
               .maybeSingle();
