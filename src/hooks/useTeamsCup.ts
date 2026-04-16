@@ -323,6 +323,42 @@ export function useTeamsCup(leaderboardId: string | null) {
     return { strokes_advantage: Math.abs(diff), advantage_side: 'a' };
   }, []);
 
+  /**
+   * Fourball: HCP equipo = HCP_j1 + HCP_j2.
+   * Ventaja = |team_a_total - team_b_total|, la recibe el equipo de mayor combinado.
+   * Dentro de la pareja receptora, los strokes los lleva el jugador de mayor HCP individual.
+   * Si empatan, retorna receiver_id = null para que la UI pida decisión.
+   */
+  const calcFourballHandicap = useCallback((
+    a1: CupParticipant | undefined, a2: CupParticipant | undefined,
+    b1: CupParticipant | undefined, b2: CupParticipant | undefined,
+  ): {
+    strokes_advantage: number;
+    advantage_side: 'a' | 'b' | 'none';
+    receiver_player_id: string | null;
+    receiver_tied: boolean;
+  } => {
+    if (!a1 || !a2 || !b1 || !b2) {
+      return { strokes_advantage: 0, advantage_side: 'none', receiver_player_id: null, receiver_tied: false };
+    }
+    const totalA = a1.match_handicap + a2.match_handicap;
+    const totalB = b1.match_handicap + b2.match_handicap;
+    const diff = totalA - totalB;
+    if (diff === 0) {
+      return { strokes_advantage: 0, advantage_side: 'none', receiver_player_id: null, receiver_tied: false };
+    }
+    const advantage_side: 'a' | 'b' = diff > 0 ? 'a' : 'b';
+    const pair = advantage_side === 'a' ? [a1, a2] : [b1, b2];
+    const tied = pair[0].match_handicap === pair[1].match_handicap;
+    const receiver_player_id = tied ? null : (pair[0].match_handicap > pair[1].match_handicap ? pair[0].id : pair[1].id);
+    return {
+      strokes_advantage: Math.abs(diff),
+      advantage_side,
+      receiver_player_id,
+      receiver_tied: tied,
+    };
+  }, []);
+
   return {
     teams, matches, participants, matchResults, standings,
     loading, fetchAll,
