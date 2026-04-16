@@ -15,7 +15,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut, Check, X } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
