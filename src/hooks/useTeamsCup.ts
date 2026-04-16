@@ -85,7 +85,7 @@ export function useTeamsCup(leaderboardId: string | null) {
     if (!leaderboardId) return;
     setLoading(true);
     try {
-      const [teamsRes, matchesRes, partRes] = await Promise.all([
+      const [teamsRes, matchesRes, partRes, linkedRoundsRes] = await Promise.all([
         supabase.from('cup_teams').select('*')
           .eq('leaderboard_id', leaderboardId).order('created_at'),
         supabase.from('cup_matches').select('*')
@@ -94,6 +94,11 @@ export function useTeamsCup(leaderboardId: string | null) {
           .select('id, profile_id, handicap_for_leaderboard, match_handicap, cup_team_id, is_active, guest_name, guest_initials, guest_color')
           .eq('leaderboard_id', leaderboardId)
           .eq('is_active', true),
+        supabase.from('leaderboard_rounds')
+          .select('round_id, added_at')
+          .eq('leaderboard_id', leaderboardId)
+          .order('added_at', { ascending: false })
+          .limit(1),
       ]);
 
       if (teamsRes.error) throw teamsRes.error;
@@ -101,11 +106,27 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (partRes.error) throw partRes.error;
 
       const teamData = teamsRes.data as CupTeam[];
-      const matchData = (matchesRes.data as any[]).map(m => ({
+      let matchData = (matchesRes.data as any[]).map(m => ({
         ...m,
         points_per_match: m.points_per_match ?? 1,
       })) as CupMatch[];
       const rawParts = partRes.data || [];
+
+      // ── Backfill: if a round is linked to this leaderboard and any
+      // matches have no round_id, auto-assign so live results can compute.
+      const linkedRoundId = linkedRoundsRes.data?.[0]?.round_id ?? null;
+      if (linkedRoundId) {
+        const orphanIds = matchData.filter(m => !m.round_id).map(m => m.id);
+        if (orphanIds.length > 0) {
+          await supabase
+            .from('cup_matches')
+            .update({ round_id: linkedRoundId, status: 'active' } as any)
+            .in('id', orphanIds);
+          matchData = matchData.map(m =>
+            orphanIds.includes(m.id) ? { ...m, round_id: linkedRoundId, status: 'active' as const } : m
+          );
+        }
+      }
 
       // Enrich participants with profile data
       const profileIds = rawParts.filter(p => p.profile_id).map(p => p.profile_id!);

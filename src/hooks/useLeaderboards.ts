@@ -411,6 +411,15 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
           });
         if (error) throw error;
       }
+
+      // Auto-assign round_id to any cup_matches in this leaderboard
+      // that don't yet have a round linked. Lets results compute immediately.
+      await supabase
+        .from('cup_matches')
+        .update({ round_id: roundId, status: 'active' } as any)
+        .eq('leaderboard_id', leaderboardId)
+        .is('round_id', null);
+
       await fetchDetail();
     } catch (err: any) {
       toast.error('Error al vincular ronda: ' + err.message);
