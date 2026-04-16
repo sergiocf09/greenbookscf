@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   ArrowLeft, Loader2, Plus, ChevronDown, Pencil, Trash2, User, LogOut,
-  Check, X, Hash, Copy, Share2, Settings, RefreshCw,
+  Check, X, Hash, Copy, Share2, Settings, RefreshCw, Link2, Unlink,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -34,6 +34,8 @@ import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
+import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
+import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── CupMatchRow ─────────────────────────────────── */
 
