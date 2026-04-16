@@ -782,6 +782,31 @@ const TeamsCupDetail = () => {
 
       <ProfileDialog open={showProfileDialog} onOpenChange={setShowProfileDialog} />
 
+      {/* ── Link Round Dialog ─── */}
+      <LinkRoundToLeaderboardDialog
+        open={showLinkDialog}
+        onOpenChange={async (open) => {
+          setShowLinkDialog(open);
+          if (!open) {
+            if (id && activeRound.roundId) {
+              const { data } = await supabase
+                .from('leaderboard_rounds')
+                .select('id')
+                .eq('leaderboard_id', id)
+                .eq('round_id', activeRound.roundId)
+                .maybeSingle();
+              setIsRoundLinked(!!data);
+            }
+            await cup.fetchAll();
+          }
+        }}
+        roundId={activeRound.roundId}
+        players={activeRound.players}
+        playerGroups={activeRound.playerGroups}
+        profileId={profile?.id}
+        preselectedLeaderboardId={id}
+      />
+
       {/* ── Settings Dialog (creator only) ─── */}
       {isCreator && event && (
         <CupSettingsDialog
