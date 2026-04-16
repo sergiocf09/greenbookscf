@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface LeaderboardsInlineViewProps {
-  onNavigateToDetail: (leaderboardId: string) => void;
+  onNavigateToDetail: (leaderboardId: string, competitionType?: string | null) => void;
 }
 
 export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
@@ -69,21 +69,12 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
     if (result) {
       setShowJoinDialog(false);
       setJoinCode('');
-      if (result.competition_type === 'teams_cup') {
-        navigate(`/leaderboards/cup/${result.id}`);
-      } else {
-        onNavigateToDetail(result.id);
-      }
+      onNavigateToDetail(result.id, result.competition_type);
     }
   };
 
   const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
-    if (competitionType === 'teams_cup') {
-      navigate(`/leaderboards/cup/${eventId}`);
-      return;
-    }
-
-    onNavigateToDetail(eventId);
+    onNavigateToDetail(eventId, competitionType);
   };
 
   return (
