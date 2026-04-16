@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
+import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 
 /* ── CupMatchRow ─────────────────────────────────── */
 
