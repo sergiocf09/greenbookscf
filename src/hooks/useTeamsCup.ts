@@ -264,7 +264,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   return {
     teams, matches, participants, matchResults, standings,
     loading, fetchAll,
-    assignTeam, updateMatchHandicap,
+    assignTeam, updateMatchHandicap, updateTeam,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap,
   };
