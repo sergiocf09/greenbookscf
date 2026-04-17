@@ -564,12 +564,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     for (const p of cup.participants) {
       const patch: { id: string; cup_team_id?: string | null; match_handicap?: number } = { id: p.id };
       let dirty = false;
-      if (draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id) {
+      const teamChanged = draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id;
+      const effectiveHcp = draftHcps.has(p.id)
+        ? draftHcps.get(p.id)!
+        : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard);
+
+      if (teamChanged) {
         patch.cup_team_id = draftTeams.get(p.id)!;
         dirty = true;
       }
-      if (draftHcps.has(p.id) && draftHcps.get(p.id) !== p.match_handicap) {
-        patch.match_handicap = draftHcps.get(p.id)!;
+      if ((draftHcps.has(p.id) || teamChanged) && effectiveHcp !== p.match_handicap) {
+        patch.match_handicap = effectiveHcp;
         dirty = true;
       }
       if (dirty) updates.push(patch);
