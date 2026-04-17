@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { PlayerNameTwoLine } from '@/components/leaderboards/PlayerNameTwoLine';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -92,10 +92,8 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     return pair.reduce((hi, p) => p.match_handicap > hi.match_handicap ? p : hi).id;
   })();
 
-  // Build a per-match display map for player names.
-  // Default: "FirstName FirstSurname". Only when two participants share the
-  // same first+first-surname combo do we extend the conflicting players with
-  // their second surname (or its initial via PlayerNameTwoLine truncation).
+  // Players involved in this match — used to scope avatar-initials
+  // disambiguation to the 4 (or 2) players actually shown in this row.
   const matchParticipants = React.useMemo(() => {
     return [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
       .map(id => getName(id))
@@ -103,74 +101,60 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id, participants]);
 
-  const displayNameMap = React.useMemo(() => {
-    const map = new Map<string, string>();
-    const tokens = matchParticipants.map(p => {
-      const parts = formatPlayerName(p.display_name).split(/\s+/).filter(Boolean);
-      return { id: p.id, parts };
-    });
-    // Group by "first + firstSurname" key.
-    const groups = new Map<string, typeof tokens>();
-    tokens.forEach(t => {
-      const key = (t.parts[0] || '') + '|' + (t.parts[1] || '');
-      const arr = groups.get(key) || [];
-      arr.push(t);
-      groups.set(key, arr);
-    });
-    tokens.forEach(t => {
-      const key = (t.parts[0] || '') + '|' + (t.parts[1] || '');
-      const collides = (groups.get(key)?.length ?? 0) > 1;
-      // No collision → first + first surname only.
-      // Collision → keep up to 3 tokens; PlayerNameTwoLine will shrink tail if needed.
-      const display = collides
-        ? t.parts.slice(0, 3).join(' ')
-        : t.parts.slice(0, 2).join(' ');
-      map.set(t.id, display);
-    });
-    return map;
+  // Disambiguation lives on the AVATAR (2 → 3 initials when needed).
+  // Names always render as "First + first surname" (clean and consistent).
+  const initialsMap = React.useMemo(() => {
+    return disambiguateInitials(
+      matchParticipants.map(p => ({
+        id: p.id,
+        name: p.display_name,
+        initials: p.initials,
+      })) as any,
+    );
   }, [matchParticipants]);
 
   const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => {
     const filledIds = ids.filter(Boolean) as string[];
-    // Reserve room at the bottom for the strokes badge so player rows stay
-    // aligned with the opposite side regardless of who receives strokes.
-    const sideHasReceiver = filledIds.some(
-      id => strokeReceiverId === id && match.advantage_side === teamSide,
-    );
     return (
       <div
-        className="relative p-2 rounded-lg min-h-[68px] flex flex-col justify-center min-w-0"
+        className="p-2 rounded-lg min-h-[68px] flex flex-col justify-center min-w-0"
         style={{ backgroundColor: teamColor + '26' }}
       >
-        <div className={cn('flex flex-col gap-1.5', sideHasReceiver && 'pb-3.5')}>
+        <div className="flex flex-col gap-1.5">
           {filledIds.length === 0 && (
             <span className="text-xs italic text-muted-foreground">— Sin asignar —</span>
           )}
           {filledIds.map(id => {
             const p = getName(id);
             if (!p) return null;
+            const isReceiver = strokeReceiverId === p.id && match.advantage_side === teamSide;
+            const displayInitials = initialsMap.get(p.id) || p.initials;
             return (
               <div key={p.id} className="flex items-center gap-1.5 min-w-0">
-                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                <PlayerAvatar
+                  initials={displayInitials}
+                  background={p.avatar_color}
+                  size="xs"
+                  className="border"
+                />
                 <div className="min-w-0 flex-1 leading-tight">
                   <PlayerNameTwoLine
                     name={p.display_name}
-                    displayOverride={displayNameMap.get(p.id)}
                     className="text-[13px] font-medium"
                   />
+                  {isReceiver && (
+                    <span
+                      className="block text-[10px] font-bold leading-none mt-0.5"
+                      style={{ color: teamColor }}
+                    >
+                      +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-        {sideHasReceiver && (
-          <span
-            className="absolute left-0 right-0 bottom-1 text-center text-[10px] font-bold leading-none"
-            style={{ color: teamColor }}
-          >
-            +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
-          </span>
-        )}
       </div>
     );
   };
