@@ -354,7 +354,7 @@ const Index = () => {
     setView('setup');
     setCurrentHole(1);
     setRoundShareData(null);
-    setLinkedLeaderboardInfo(null);
+    setLinkedLeaderboards([]);
     setLeaderboardDetailId(null);
     setIsRoundLinkedToLeaderboard(false);
   }, [roundState.id, setRoundState, setPlayers, setScores, setConfirmedHoles, setSelectedCourseId, setBetConfig, setPlayerGroups, setRoundPlayerIds]);
@@ -499,37 +499,37 @@ const Index = () => {
     checkLink();
   }, [leaderboardDetailId, roundState.id]);
 
-  // Detect which leaderboard the current round is linked to (for quick-access badge)
+  // Detect ALL leaderboards the current round is linked to (for quick-access banner)
   useEffect(() => {
     if (!roundState.id) {
-      setLinkedLeaderboardInfo(null);
+      setLinkedLeaderboards([]);
       return;
     }
     const fetchLinked = async () => {
       const { data: links } = await supabase
         .from('leaderboard_rounds')
         .select('leaderboard_id')
-        .eq('round_id', roundState.id)
-        .limit(1);
+        .eq('round_id', roundState.id);
       if (!links || links.length === 0) {
-        setLinkedLeaderboardInfo(null);
+        setLinkedLeaderboards([]);
         return;
       }
-      const leaderboardId = links[0].leaderboard_id;
-      const { data: ev } = await supabase
+      const ids = links.map(l => l.leaderboard_id);
+      const { data: evs } = await supabase
         .from('leaderboard_events')
         .select('id, name, code, competition_type')
-        .eq('id', leaderboardId)
-        .single();
-      if (ev) {
-        setLinkedLeaderboardInfo({
-          id: ev.id,
-          name: ev.name,
-          code: ev.code,
-          competition_type: (ev as any).competition_type || 'standard',
-        });
+        .in('id', ids);
+      if (evs && evs.length > 0) {
+        setLinkedLeaderboards(
+          evs.map((ev: any) => ({
+            id: ev.id,
+            name: ev.name,
+            code: ev.code,
+            competition_type: ev.competition_type || 'standard',
+          }))
+        );
       } else {
-        setLinkedLeaderboardInfo(null);
+        setLinkedLeaderboards([]);
       }
     };
     fetchLinked();
@@ -2553,25 +2553,46 @@ const Index = () => {
         </div>
       )}
 
-      {/* Leaderboard Quick-Access Banner */}
-      {linkedLeaderboardInfo && isRoundStarted && roundState.status !== 'completed' && view !== 'leaderboards' && (
-        <button
-          onClick={() => {
-            setLeaderboardDetailId(linkedLeaderboardInfo.id);
-            setLeaderboardDetailType(
-              linkedLeaderboardInfo.competition_type === 'teams_cup' ? 'teams_cup' : 'standard'
-            );
-            setView('leaderboards');
-          }}
-          className="w-full bg-amber-500/10 border-b border-amber-500/30 hover:bg-amber-500/20 transition-colors"
-        >
-          <div className="max-w-md mx-auto flex items-center justify-center gap-2 py-1.5 px-4">
-            <Trophy className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 truncate">
-              {linkedLeaderboardInfo.name}
-            </span>
+      {/* Leaderboard Quick-Access Banner — distributes evenly when round is linked to multiple */}
+      {linkedLeaderboards.length > 0 && isRoundStarted && roundState.status !== 'completed' && view !== 'leaderboards' && (
+        <div className="w-full bg-amber-500/10 border-b border-amber-500/30">
+          <div className="max-w-md mx-auto flex items-stretch divide-x divide-amber-500/30">
+            {linkedLeaderboards.map((lb) => {
+              // Abbreviate name when sharing the row with siblings: keep first letter
+              // of each word, fall back to full name when there's only one leaderboard.
+              const isMulti = linkedLeaderboards.length > 1;
+              const displayName = isMulti && lb.name.length > 14
+                ? lb.name
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map(w => w[0]?.toUpperCase() ?? '')
+                    .join('')
+                    .slice(0, 6)
+                : lb.name;
+              return (
+                <button
+                  key={lb.id}
+                  onClick={() => {
+                    setLeaderboardDetailId(lb.id);
+                    setLeaderboardDetailType(
+                      lb.competition_type === 'teams_cup' ? 'teams_cup' : 'standard'
+                    );
+                    setView('leaderboards');
+                  }}
+                  className="flex-1 min-w-0 hover:bg-amber-500/20 transition-colors"
+                  title={lb.name}
+                >
+                  <div className="flex items-center justify-center gap-1.5 py-1.5 px-2">
+                    <Trophy className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 truncate">
+                      {displayName}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </button>
+        </div>
       )}
 
       {/* Main Content */}
