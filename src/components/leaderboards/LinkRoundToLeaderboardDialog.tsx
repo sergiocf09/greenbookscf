@@ -182,6 +182,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
             guest_initials: null,
             guest_color: null,
             handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
+            match_handicap: handicaps.get(player.id) ?? player.handicap,
             source_round_id: roundId,
           });
         } else {
@@ -193,6 +194,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
             guest_initials: player.initials,
             guest_color: player.color,
             handicap_for_leaderboard: handicaps.get(player.id) ?? player.handicap,
+            match_handicap: handicaps.get(player.id) ?? player.handicap,
             source_round_id: roundId,
           });
         }

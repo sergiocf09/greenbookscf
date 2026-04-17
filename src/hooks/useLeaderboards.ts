@@ -368,6 +368,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
           guest_initials: params.guest_initials || null,
           guest_color: params.guest_color || null,
           handicap_for_leaderboard: params.handicap_for_leaderboard,
+          match_handicap: params.handicap_for_leaderboard,
           source_round_id: params.source_round_id || null,
         });
       if (error) throw error;
