@@ -12,7 +12,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Trash2, Save } from 'lucide-react';
-import type { CupFormat } from '@/hooks/useTeamsCup';
+import type { CupFormat, CupTeam } from '@/hooks/useTeamsCup';
+
+const TEAM_COLORS = [
+  { hex: '#ef4444', label: 'Rojo' },
+  { hex: '#3B82F6', label: 'Azul' },
+  { hex: '#22c55e', label: 'Verde' },
+  { hex: '#f97316', label: 'Naranja' },
+  { hex: '#8b5cf6', label: 'Morado' },
+];
 
 interface Props {
   open: boolean;
@@ -24,12 +32,17 @@ interface Props {
     cup_format?: string | null;
     rules_json?: any;
   };
+  teams: CupTeam[];
+  onUpdateTeam: (
+    teamId: string,
+    updates: Partial<Pick<CupTeam, 'name' | 'color'>>,
+  ) => Promise<void> | void;
   onSaved: () => void | Promise<void>;
   onDeleteRequest: () => void;
 }
 
 export const CupSettingsDialog: React.FC<Props> = ({
-  open, onOpenChange, event, onSaved, onDeleteRequest,
+  open, onOpenChange, event, teams, onUpdateTeam, onSaved, onDeleteRequest,
 }) => {
   const [name, setName] = useState(event.name);
   const [description, setDescription] = useState(event.description || '');
@@ -39,6 +52,13 @@ export const CupSettingsDialog: React.FC<Props> = ({
   const [defaultPoints, setDefaultPoints] = useState<number>(
     Number(event.rules_json?.default_points_per_match ?? 1)
   );
+
+  // Local team draft state — flushed on Save
+  const [teamAName, setTeamAName] = useState(teams[0]?.name ?? 'Equipo A');
+  const [teamAColor, setTeamAColor] = useState(teams[0]?.color ?? '#3B82F6');
+  const [teamBName, setTeamBName] = useState(teams[1]?.name ?? 'Equipo B');
+  const [teamBColor, setTeamBColor] = useState(teams[1]?.color ?? '#ef4444');
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,8 +67,12 @@ export const CupSettingsDialog: React.FC<Props> = ({
       setDescription(event.description || '');
       setFormat((event.cup_format as CupFormat) || 'match_individual');
       setDefaultPoints(Number(event.rules_json?.default_points_per_match ?? 1));
+      setTeamAName(teams[0]?.name ?? 'Equipo A');
+      setTeamAColor(teams[0]?.color ?? '#3B82F6');
+      setTeamBName(teams[1]?.name ?? 'Equipo B');
+      setTeamBColor(teams[1]?.color ?? '#ef4444');
     }
-  }, [open, event]);
+  }, [open, event, teams]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -71,6 +95,25 @@ export const CupSettingsDialog: React.FC<Props> = ({
         } as any)
         .eq('id', event.id);
       if (error) throw error;
+
+      // Persist team changes only when something actually changed
+      const teamA = teams[0];
+      const teamB = teams[1];
+      if (teamA) {
+        const patch: Partial<Pick<CupTeam, 'name' | 'color'>> = {};
+        const nA = teamAName.trim() || 'Equipo A';
+        if (nA !== teamA.name) patch.name = nA;
+        if (teamAColor !== teamA.color) patch.color = teamAColor;
+        if (Object.keys(patch).length > 0) await onUpdateTeam(teamA.id, patch);
+      }
+      if (teamB) {
+        const patch: Partial<Pick<CupTeam, 'name' | 'color'>> = {};
+        const nB = teamBName.trim() || 'Equipo B';
+        if (nB !== teamB.name) patch.name = nB;
+        if (teamBColor !== teamB.color) patch.color = teamBColor;
+        if (Object.keys(patch).length > 0) await onUpdateTeam(teamB.id, patch);
+      }
+
       toast.success('Cambios guardados');
       onOpenChange(false);
       await onSaved();
@@ -81,9 +124,32 @@ export const CupSettingsDialog: React.FC<Props> = ({
     }
   };
 
+  const renderColorPicker = (
+    selected: string,
+    onPick: (hex: string) => void,
+  ) => (
+    <div className="flex gap-1.5 mt-1">
+      {TEAM_COLORS.map(c => (
+        <button
+          key={c.hex}
+          type="button"
+          onClick={() => onPick(c.hex)}
+          aria-label={c.label}
+          className="w-7 h-7 rounded-full transition-all"
+          style={{
+            backgroundColor: c.hex,
+            boxShadow: selected === c.hex
+              ? '0 0 0 2px hsl(var(--background)), 0 0 0 4px ' + c.hex
+              : 'none',
+          }}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurar competencia</DialogTitle>
         </DialogHeader>
@@ -137,6 +203,43 @@ export const CupSettingsDialog: React.FC<Props> = ({
               Cada match nuevo se crea con este valor. Empate (AS) reparte la mitad a cada equipo.
             </p>
           </div>
+
+          {/* Team editor (name + color) */}
+          {(teams[0] || teams[1]) && (
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground">Equipos</p>
+              <div className="grid grid-cols-2 gap-3">
+                {teams[0] && (
+                  <div>
+                    <Label className="text-xs" style={{ color: teamAColor }}>
+                      Equipo A
+                    </Label>
+                    <Input
+                      value={teamAName}
+                      onChange={e => setTeamAName(e.target.value)}
+                      maxLength={20}
+                      className="h-8 text-sm"
+                    />
+                    {renderColorPicker(teamAColor, setTeamAColor)}
+                  </div>
+                )}
+                {teams[1] && (
+                  <div>
+                    <Label className="text-xs" style={{ color: teamBColor }}>
+                      Equipo B
+                    </Label>
+                    <Input
+                      value={teamBName}
+                      onChange={e => setTeamBName(e.target.value)}
+                      maxLength={20}
+                      className="h-8 text-sm"
+                    />
+                    {renderColorPicker(teamBColor, setTeamBColor)}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 pt-2 border-t">
             <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
