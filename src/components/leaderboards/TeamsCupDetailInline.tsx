@@ -116,7 +116,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                   initials={displayInitials}
                   background={p.avatar_color}
                   size="xs"
-                  className="border"
+                  className="border-0"
                 />
                 <div className="min-w-0 flex-1 leading-tight">
                   <PlayerNameTwoLine
