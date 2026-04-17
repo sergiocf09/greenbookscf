@@ -583,6 +583,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   };
 
 
+  // Initials disambiguation across ALL leaderboard participants so that
+  // homonymous players (e.g. several "Alejandro S...") get distinct avatars
+  // (ASU / ASA / ASB) regardless of which match they appear in.
+  const initialsMap = React.useMemo(() => {
+    return disambiguateInitials(
+      cup.participants.map(p => ({
+        id: p.id,
+        name: p.display_name,
+        initials: p.initials,
+      })) as any,
+    );
+  }, [cup.participants]);
+
   if (cup.loading) {
     return (
       <div className="flex justify-center py-12">
@@ -605,18 +618,6 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     .filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id))
     .sort(byName);
 
-  // Initials disambiguation across ALL leaderboard participants so that
-  // homonymous players (e.g. several "Alejandro S...") get distinct avatars
-  // (ASU / ASA / ASB) regardless of which match they appear in.
-  const initialsMap = React.useMemo(() => {
-    return disambiguateInitials(
-      cup.participants.map(p => ({
-        id: p.id,
-        name: p.display_name,
-        initials: p.initials,
-      })) as any,
-    );
-  }, [cup.participants]);
 
   return (
     <div className="space-y-2">
