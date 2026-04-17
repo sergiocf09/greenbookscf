@@ -58,12 +58,14 @@ interface MatchRowProps {
   participants: CupParticipant[];
   result: CupMatchResult | undefined;
   isCreator: boolean;
+  /** Initials map disambiguated across ALL leaderboard participants. */
+  initialsMap: Map<string, string>;
   onEdit: () => void;
   onDelete: () => void;
 }
 
 const CupMatchRow: React.FC<MatchRowProps> = ({
-  match, teams, participants, result, isCreator, onEdit, onDelete,
+  match, teams, participants, result, isCreator, initialsMap, onEdit, onDelete,
 }) => {
   const teamA = teams[0];
   const teamB = teams[1];
@@ -91,27 +93,6 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     if (pair.length === 0) return null;
     return pair.reduce((hi, p) => p.match_handicap > hi.match_handicap ? p : hi).id;
   })();
-
-  // Players involved in this match — used to scope avatar-initials
-  // disambiguation to the 4 (or 2) players actually shown in this row.
-  const matchParticipants = React.useMemo(() => {
-    return [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
-      .map(id => getName(id))
-      .filter(Boolean) as CupParticipant[];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id, participants]);
-
-  // Disambiguation lives on the AVATAR (2 → 3 initials when needed).
-  // Names always render as "First + first surname" (clean and consistent).
-  const initialsMap = React.useMemo(() => {
-    return disambiguateInitials(
-      matchParticipants.map(p => ({
-        id: p.id,
-        name: p.display_name,
-        initials: p.initials,
-      })) as any,
-    );
-  }, [matchParticipants]);
 
   const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => {
     const filledIds = ids.filter(Boolean) as string[];
@@ -602,6 +583,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   };
 
 
+  // Initials disambiguation across ALL leaderboard participants so that
+  // homonymous players (e.g. several "Alejandro S...") get distinct avatars
+  // (ASU / ASA / ASB) regardless of which match they appear in.
+  const initialsMap = React.useMemo(() => {
+    return disambiguateInitials(
+      cup.participants.map(p => ({
+        id: p.id,
+        name: p.display_name,
+        initials: p.initials,
+      })) as any,
+    );
+  }, [cup.participants]);
+
   if (cup.loading) {
     return (
       <div className="flex justify-center py-12">
@@ -623,6 +617,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const partsNone = cup.participants
     .filter(p => !p.cup_team_id || (teamA && teamB && p.cup_team_id !== teamA.id && p.cup_team_id !== teamB.id))
     .sort(byName);
+
 
   return (
     <div className="space-y-2">
@@ -812,6 +807,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   participants={cup.participants}
                   result={cup.matchResults.get(m.id)}
                   isCreator={isCreator}
+                  initialsMap={initialsMap}
                   onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
                   onDelete={() => cup.deleteMatch(m.id)}
                 />

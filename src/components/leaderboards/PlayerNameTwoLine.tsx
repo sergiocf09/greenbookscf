@@ -36,32 +36,25 @@ export const PlayerNameTwoLine: React.FC<Props> = ({
   maxCharsPerLine = 12,
 }) => {
   const source = displayOverride ?? formatPlayerName(name);
-  const parts = source.trim().split(/\s+/).filter(Boolean);
+  const allParts = source.trim().split(/\s+/).filter(Boolean);
 
-  if (parts.length === 0) return null;
-  if (parts.length === 1) {
-    return <span className={cn('block leading-tight break-words', className)}>{parts[0]}</span>;
+  if (allParts.length === 0) return null;
+  if (allParts.length === 1) {
+    return <span className={cn('block leading-tight break-words', className)}>{allParts[0]}</span>;
   }
 
-  const first = parts[0];
-  const tail = parts.slice(1);
-  let tailLine = tail.join(' ');
+  // Strict: only first name + first surname. Disambiguation lives on the avatar.
+  const first = allParts[0];
+  let surname = allParts[1];
 
-  if (tailLine.length > maxCharsPerLine) {
-    // Collapse the LAST token to its initial; if still too long, collapse all.
-    const head = tail.slice(0, -1);
-    const last = tail[tail.length - 1];
-    const lastInitial = last.charAt(0).toUpperCase() + '.';
-    tailLine = [...head, lastInitial].join(' ').trim();
-    if (tailLine.length > maxCharsPerLine) {
-      tailLine = tail.map(t => t.charAt(0).toUpperCase() + '.').join(' ');
-    }
+  if (surname.length > maxCharsPerLine) {
+    surname = surname.charAt(0).toUpperCase() + '.';
   }
 
   return (
     <span className={cn('block leading-tight', className)}>
       <span className="block truncate">{first}</span>
-      <span className="block truncate">{tailLine}</span>
+      <span className="block truncate">{surname}</span>
     </span>
   );
 };
