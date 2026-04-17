@@ -208,7 +208,12 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
     teamColor: string,
   ) => (
     <div>
-      <Label className="text-xs" style={{ color: teamColor }}>{label}</Label>
+      <Label
+        className="text-xs block text-center font-semibold"
+        style={{ color: teamColor }}
+      >
+        {label}
+      </Label>
       <Select value={value || '__none'} onValueChange={v => onChange(v === '__none' ? null : v)}>
         <SelectTrigger className="h-8 text-sm">
           <SelectValue placeholder="Seleccionar" />
@@ -235,31 +240,31 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {match ? `Editar Match ${matchNumber}` : `Nuevo Match ${matchNumber}`}
+          <DialogTitle className="text-center">
+            Match {matchNumber}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Players — labels show team name + match number */}
+          {/* Players — labels show team name only (match number is in the dialog title) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               {renderPlayerSelect(
-                format === 'fourball' ? `${teamALabel} (Match ${matchNumber}) · 1` : `${teamALabel} (Match ${matchNumber})`,
+                format === 'fourball' ? `${teamALabel} · 1` : teamALabel,
                 playerA1, setPlayerA1, partsA, teamA?.color || '#3B82F6',
               )}
               {format === 'fourball' && renderPlayerSelect(
-                `${teamALabel} (Match ${matchNumber}) · 2`,
+                `${teamALabel} · 2`,
                 playerA2, setPlayerA2, partsA, teamA?.color || '#3B82F6',
               )}
             </div>
             <div className="space-y-2">
               {renderPlayerSelect(
-                format === 'fourball' ? `${teamBLabel} (Match ${matchNumber}) · 1` : `${teamBLabel} (Match ${matchNumber})`,
+                format === 'fourball' ? `${teamBLabel} · 1` : teamBLabel,
                 playerB1, setPlayerB1, partsB, teamB?.color || '#ef4444',
               )}
               {format === 'fourball' && renderPlayerSelect(
-                `${teamBLabel} (Match ${matchNumber}) · 2`,
+                `${teamBLabel} · 2`,
                 playerB2, setPlayerB2, partsB, teamB?.color || '#ef4444',
               )}
             </div>
