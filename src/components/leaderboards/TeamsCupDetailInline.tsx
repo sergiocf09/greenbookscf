@@ -92,40 +92,49 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     return pair.reduce((hi, p) => p.match_handicap > hi.match_handicap ? p : hi).id;
   })();
 
-  const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => (
-    <div
-      className="p-2 rounded-lg space-y-1 min-h-[52px] flex flex-col justify-center min-w-0"
-      style={{ backgroundColor: teamColor + '26' }}
-    >
-      {ids.filter(Boolean).map(id => {
-        const p = getName(id);
-        if (!p) return <span key={id} className="text-xs italic text-muted-foreground">— Sin asignar —</span>;
-        const isReceiver = strokeReceiverId === p.id && match.advantage_side === teamSide;
-        return (
-          <div key={p.id} className="flex items-start gap-1.5 min-w-0">
-            <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-            <div className="min-w-0 flex-1 leading-tight">
-              <PlayerNameTwoLine
-                name={p.display_name}
-                className="text-xs font-medium"
-              />
-              {isReceiver && (
-                <span
-                  className="text-[10px] font-bold mt-0.5 inline-block"
-                  style={{ color: teamColor }}
-                >
-                  +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
-                </span>
-              )}
-            </div>
-          </div>
-        );
-      })}
-      {ids.every(id => !id) && (
-        <span className="text-xs italic text-muted-foreground">— Sin asignar —</span>
-      )}
-    </div>
-  );
+  const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => {
+    const filledIds = ids.filter(Boolean) as string[];
+    // Reserve room at the bottom for the strokes badge so player rows stay
+    // aligned with the opposite side regardless of who receives strokes.
+    const sideHasReceiver = filledIds.some(
+      id => strokeReceiverId === id && match.advantage_side === teamSide,
+    );
+    return (
+      <div
+        className="relative p-2 rounded-lg min-h-[64px] flex flex-col items-stretch min-w-0"
+        style={{ backgroundColor: teamColor + '26' }}
+      >
+        <div className={cn('flex flex-col gap-1', sideHasReceiver && 'pb-3.5')}>
+          {filledIds.length === 0 && (
+            <span className="text-xs italic text-muted-foreground">— Sin asignar —</span>
+          )}
+          {filledIds.map(id => {
+            const p = getName(id);
+            if (!p) return null;
+            return (
+              <div key={p.id} className="flex items-start gap-1.5 min-w-0">
+                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                <div className="min-w-0 flex-1 leading-tight">
+                  <PlayerNameTwoLine
+                    name={p.display_name}
+                    className="text-xs font-medium"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {sideHasReceiver && (
+          <span
+            className="absolute left-0 right-0 bottom-1 text-center text-[10px] font-bold leading-none"
+            style={{ color: teamColor }}
+          >
+            +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   const closed = result?.match_closed ?? false;
   const holesPlayed = result?.holes_played ?? 0;
