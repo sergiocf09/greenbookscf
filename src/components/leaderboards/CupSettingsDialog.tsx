@@ -176,12 +176,12 @@ export const CupSettingsDialog: React.FC<Props> = ({
             />
           </div>
 
-          {/* Formato + Puntos por match en una sola línea */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          {/* Formato + Puntos por match en una sola línea (formato más ancho) */}
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="min-w-0">
               <Label>Formato de juego</Label>
               <Select value={format} onValueChange={(v) => setFormat(v as CupFormat)}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,14 +190,15 @@ export const CupSettingsDialog: React.FC<Props> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Puntos por match</Label>
+            <div className="w-20">
+              <Label className="whitespace-nowrap">Pts P/Match</Label>
               <Input
                 type="number"
                 min={0}
                 step={0.5}
                 value={defaultPoints}
                 onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
+                className="text-center px-1"
               />
             </div>
           </div>
