@@ -341,27 +341,27 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Points per match */}
-          <div>
-            <Label className="text-xs">Puntos del match</Label>
-            <Input
-              type="number"
-              min={0}
-              step={0.5}
-              value={pointsPerMatch}
-              onChange={e => setPointsPerMatch(parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm"
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Empate (AS) reparte la mitad a cada equipo.
-            </p>
+          {/* Points per match + Result override (compact row) */}
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs whitespace-nowrap">Pts P/Match</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                value={pointsPerMatch}
+                onChange={e => setPointsPerMatch(parseFloat(e.target.value) || 0)}
+                className="h-8 text-sm text-center px-1 w-14"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs whitespace-nowrap">Resultado manual</Label>
+              <Switch checked={resultOverride} onCheckedChange={setResultOverride} />
+            </div>
           </div>
-
-          {/* Result override */}
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Ingresar resultado manualmente</Label>
-            <Switch checked={resultOverride} onCheckedChange={setResultOverride} />
-          </div>
+          <p className="text-[10px] text-muted-foreground -mt-2">
+            Empate (AS) reparte la mitad a cada equipo.
+          </p>
           {resultOverride && (
             <div className="grid grid-cols-2 gap-3">
               <div>
