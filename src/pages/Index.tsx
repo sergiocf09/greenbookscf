@@ -499,6 +499,27 @@ const Index = () => {
     checkLink();
   }, [leaderboardDetailId, roundState.id]);
 
+  // Always resolve the correct competition_type from DB when a leaderboard detail
+  // is opened. This protects against stale/missing type values from any entry
+  // point (banner, list, deep-link, restored session) and guarantees that
+  // teams_cup leaderboards render TeamsCupDetailInline instead of the
+  // standard view.
+  useEffect(() => {
+    if (!leaderboardDetailId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('leaderboard_events')
+        .select('competition_type')
+        .eq('id', leaderboardDetailId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const resolved = (data as any).competition_type === 'teams_cup' ? 'teams_cup' : 'standard';
+      setLeaderboardDetailType(prev => (prev === resolved ? prev : resolved));
+    })();
+    return () => { cancelled = true; };
+  }, [leaderboardDetailId]);
+
   // Detect ALL leaderboards the current round is linked to (for quick-access banner)
   useEffect(() => {
     if (!roundState.id) {
