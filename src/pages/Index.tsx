@@ -158,7 +158,7 @@ const Index = () => {
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
   const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup'>('standard');
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
-  const [linkedLeaderboardInfo, setLinkedLeaderboardInfo] = useState<{ id: string; name: string; code: string; competition_type: string } | null>(null);
+  const [linkedLeaderboards, setLinkedLeaderboards] = useState<Array<{ id: string; name: string; code: string; competition_type: string }>>([]);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [roundShareData, setRoundShareData] = useState<Omit<RoundShareImageProps, 'open' | 'onClose'> | null>(null);
