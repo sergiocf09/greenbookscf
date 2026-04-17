@@ -198,18 +198,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       // Remove from local state
       setRounds(prev => prev.filter(r => r.id !== roundToDelete.id));
       toast.success('Ronda eliminada y balances actualizados');
-    } catch (err: any) {
+    } catch (err) {
       devError('Error deleting round:', err);
-      const msg = String(err?.message || '');
-      if (msg.includes('Only organizer')) {
-        toast.error('Solo el organizador puede eliminar esta ronda.');
-      } else if (msg.includes('Not authenticated')) {
-        toast.error('Sesión expirada. Inicia sesión de nuevo.');
-      } else if (msg.includes('Round not found')) {
-        toast.error('La ronda ya no existe.');
-      } else {
-        toast.error(`Error al eliminar la ronda: ${msg || 'desconocido'}`);
-      }
+      toast.error('Error al eliminar la ronda. Solo el organizador puede eliminarla.');
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);
