@@ -142,17 +142,39 @@ export function useTeamsCup(leaderboardId: string | null) {
 
       const enrichedParts: CupParticipant[] = rawParts.map(p => {
         const prof = p.profile_id ? profileMap[p.profile_id] : null;
+        const hcpForLb = p.handicap_for_leaderboard ?? 0;
+        const rawMatchHcp = p.match_handicap ?? 0;
+        // Effective match handicap: if not yet set (0), fall back to the
+        // leaderboard handicap carried from the round setup. This keeps the UI
+        // consistent across the assignment panel, participants list, and match
+        // editor — so users never see "0" for a player who has a real HCP.
+        const effectiveMatchHcp = rawMatchHcp !== 0 ? rawMatchHcp : hcpForLb;
         return {
           id: p.id,
           profile_id: p.profile_id,
           display_name: prof?.display_name ?? p.guest_name ?? 'Jugador',
           initials: prof?.initials ?? p.guest_initials ?? '??',
           avatar_color: prof?.avatar_color ?? p.guest_color ?? '#3B82F6',
-          handicap_for_leaderboard: p.handicap_for_leaderboard ?? 0,
-          match_handicap: p.match_handicap ?? 0,
+          handicap_for_leaderboard: hcpForLb,
+          match_handicap: effectiveMatchHcp,
           cup_team_id: p.cup_team_id,
         };
       });
+
+      // Backfill: persist the effective match_handicap for any participant
+      // whose stored value is 0 but whose leaderboard handicap is non-zero.
+      // Done in the background (no await) so the UI renders immediately.
+      const toBackfill = rawParts.filter(p =>
+        (p.match_handicap ?? 0) === 0 && (p.handicap_for_leaderboard ?? 0) !== 0
+      );
+      if (toBackfill.length > 0) {
+        Promise.all(toBackfill.map(p =>
+          supabase
+            .from('leaderboard_participants')
+            .update({ match_handicap: p.handicap_for_leaderboard })
+            .eq('id', p.id)
+        )).catch(err => console.warn('match_handicap backfill failed:', err));
+      }
 
       setTeams(teamData);
       setMatches(matchData);
