@@ -352,6 +352,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                   {allPlayers.map(player => {
                     const isSelected = selectedPlayerIds.has(player.id);
                     const hcp = handicaps.get(player.id) ?? player.handicap;
+                    const alreadyIn = existingKeys.has(playerKey(player));
 
                     return (
                       <div
@@ -368,7 +369,14 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                           size="sm"
                           isLoggedInUser={player.profileId === profileId}
                         />
-                        <span className="flex-1 text-sm font-medium truncate">{player.name}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium truncate block">{player.name}</span>
+                          {alreadyIn && (
+                            <span className="text-[10px] text-muted-foreground italic">
+                              Ya está en este leaderboard
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-muted-foreground">Hcp:</span>
                           <Input
