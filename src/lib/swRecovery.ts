@@ -23,19 +23,6 @@ let recoveryInFlight = false;
 
 export async function recoverFromStaleServiceWorker(reason?: string): Promise<void> {
   if (recoveryInFlight) return;
-
-  // Skip recovery in preview/iframe contexts: there the "Failed to fetch"
-  // is caused by the Lovable preview proxy, not by a stale Service Worker,
-  // and recargar provoca un loop sin resolver nada.
-  const inIframe = (() => {
-    try { return window.self !== window.top; } catch { return true; }
-  })();
-  const host = window.location.hostname;
-  const isProductionHost = host === 'golfgreenbookscf.com' || host === 'www.golfgreenbookscf.com';
-  if (inIframe || !isProductionHost) {
-    return;
-  }
-
   recoveryInFlight = true;
   try {
     // Marcador para evitar bucles infinitos de recarga
