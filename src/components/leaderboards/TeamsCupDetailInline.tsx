@@ -92,6 +92,44 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     return pair.reduce((hi, p) => p.match_handicap > hi.match_handicap ? p : hi).id;
   })();
 
+  // Build a per-match display map for player names.
+  // Default: "FirstName FirstSurname". Only when two participants share the
+  // same first+first-surname combo do we extend the conflicting players with
+  // their second surname (or its initial via PlayerNameTwoLine truncation).
+  const matchParticipants = React.useMemo(() => {
+    return [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
+      .map(id => getName(id))
+      .filter(Boolean) as CupParticipant[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id, participants]);
+
+  const displayNameMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    const tokens = matchParticipants.map(p => {
+      const parts = formatPlayerName(p.display_name).split(/\s+/).filter(Boolean);
+      return { id: p.id, parts };
+    });
+    // Group by "first + firstSurname" key.
+    const groups = new Map<string, typeof tokens>();
+    tokens.forEach(t => {
+      const key = (t.parts[0] || '') + '|' + (t.parts[1] || '');
+      const arr = groups.get(key) || [];
+      arr.push(t);
+      groups.set(key, arr);
+    });
+    tokens.forEach(t => {
+      const key = (t.parts[0] || '') + '|' + (t.parts[1] || '');
+      const collides = (groups.get(key)?.length ?? 0) > 1;
+      // No collision → first + first surname only.
+      // Collision → keep up to 3 tokens; PlayerNameTwoLine will shrink tail if needed.
+      const display = collides
+        ? t.parts.slice(0, 3).join(' ')
+        : t.parts.slice(0, 2).join(' ');
+      map.set(t.id, display);
+    });
+    return map;
+  }, [matchParticipants]);
+
   const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => {
     const filledIds = ids.filter(Boolean) as string[];
     // Reserve room at the bottom for the strokes badge so player rows stay
@@ -101,10 +139,10 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     );
     return (
       <div
-        className="relative p-2 rounded-lg min-h-[64px] flex flex-col items-stretch min-w-0"
+        className="relative p-2 rounded-lg min-h-[68px] flex flex-col justify-center min-w-0"
         style={{ backgroundColor: teamColor + '26' }}
       >
-        <div className={cn('flex flex-col gap-1', sideHasReceiver && 'pb-3.5')}>
+        <div className={cn('flex flex-col gap-1.5', sideHasReceiver && 'pb-3.5')}>
           {filledIds.length === 0 && (
             <span className="text-xs italic text-muted-foreground">— Sin asignar —</span>
           )}
@@ -112,12 +150,13 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
             const p = getName(id);
             if (!p) return null;
             return (
-              <div key={p.id} className="flex items-start gap-1.5 min-w-0">
+              <div key={p.id} className="flex items-center gap-1.5 min-w-0">
                 <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                 <div className="min-w-0 flex-1 leading-tight">
                   <PlayerNameTwoLine
                     name={p.display_name}
-                    className="text-xs font-medium"
+                    displayOverride={displayNameMap.get(p.id)}
+                    className="text-[13px] font-medium"
                   />
                 </div>
               </div>
