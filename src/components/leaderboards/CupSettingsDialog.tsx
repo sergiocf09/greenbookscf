@@ -20,6 +20,8 @@ const TEAM_COLORS = [
   { hex: '#22c55e', label: 'Verde' },
   { hex: '#f97316', label: 'Naranja' },
   { hex: '#8b5cf6', label: 'Morado' },
+  { hex: '#0B6B3A', label: 'Verde Augusta' },
+  { hex: '#C9A227', label: 'Dorado Augusta' },
 ];
 
 interface Props {
@@ -174,34 +176,30 @@ export const CupSettingsDialog: React.FC<Props> = ({
             />
           </div>
 
-          <div>
-            <Label>Formato de juego</Label>
-            <Select value={format} onValueChange={(v) => setFormat(v as CupFormat)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="match_individual">Match Play Individual</SelectItem>
-                <SelectItem value="fourball">Fourball (Best Ball)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Aplica como valor por defecto para nuevos matches.
-            </p>
-          </div>
-
-          <div>
-            <Label>Puntos por defecto por match</Label>
-            <Input
-              type="number"
-              min={0}
-              step={0.5}
-              value={defaultPoints}
-              onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
-            />
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Cada match nuevo se crea con este valor. Empate (AS) reparte la mitad a cada equipo.
-            </p>
+          {/* Formato + Puntos por match en una sola línea */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Formato de juego</Label>
+              <Select value={format} onValueChange={(v) => setFormat(v as CupFormat)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="match_individual">Match Play Individual</SelectItem>
+                  <SelectItem value="fourball">Fourball (Best Ball)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Puntos por match</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                value={defaultPoints}
+                onChange={(e) => setDefaultPoints(parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
 
           {/* Team editor (name + color) */}
