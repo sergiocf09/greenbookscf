@@ -100,14 +100,28 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: getAuthRedirectUrl('/reset-password'),
-    });
-    if (error) {
-      toast.error('Error al enviar correo', { description: error.message });
-    } else {
-      toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
-      setForgotMode(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: getAuthRedirectUrl('/reset-password'),
+      });
+      if (error) {
+        if (isLikelyStaleSWError(error)) {
+          toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+          await recoverFromStaleServiceWorker('forgot');
+          return;
+        }
+        toast.error('Error al enviar correo', { description: error.message });
+      } else {
+        toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
+        setForgotMode(false);
+      }
+    } catch (err) {
+      if (isLikelyStaleSWError(err)) {
+        toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+        await recoverFromStaleServiceWorker('forgot-throw');
+        return;
+      }
+      toast.error('Error al enviar correo');
     }
     setIsLoading(false);
   };
@@ -119,11 +133,25 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await signUp(email, password, displayName);
-    if (error) {
-      toast.error('Error al registrarse', { description: error.message });
-    } else {
-      toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
+    try {
+      const { error } = await signUp(email, password, displayName);
+      if (error) {
+        if (isLikelyStaleSWError(error)) {
+          toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+          await recoverFromStaleServiceWorker('signup');
+          return;
+        }
+        toast.error('Error al registrarse', { description: error.message });
+      } else {
+        toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
+      }
+    } catch (err) {
+      if (isLikelyStaleSWError(err)) {
+        toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+        await recoverFromStaleServiceWorker('signup-throw');
+        return;
+      }
+      toast.error('Error al registrarse');
     }
     setIsLoading(false);
   };
