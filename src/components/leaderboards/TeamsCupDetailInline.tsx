@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName } from '@/lib/playerInput';
+import { PlayerNameTwoLine } from '@/components/leaderboards/PlayerNameTwoLine';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
@@ -93,7 +94,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
 
   const renderSide = (ids: (string | null)[], teamColor: string, teamSide: 'a' | 'b') => (
     <div
-      className="p-2 rounded-lg space-y-1 min-h-[52px] flex flex-col justify-center"
+      className="p-2 rounded-lg space-y-1 min-h-[52px] flex flex-col justify-center min-w-0"
       style={{ backgroundColor: teamColor + '26' }}
     >
       {ids.filter(Boolean).map(id => {
@@ -101,10 +102,13 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
         if (!p) return <span key={id} className="text-xs italic text-muted-foreground">— Sin asignar —</span>;
         const isReceiver = strokeReceiverId === p.id && match.advantage_side === teamSide;
         return (
-          <div key={p.id} className="flex items-start gap-1.5">
+          <div key={p.id} className="flex items-start gap-1.5 min-w-0">
             <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
             <div className="min-w-0 flex-1 leading-tight">
-              <span className="text-xs font-medium break-words block">{formatPlayerName(p.display_name)}</span>
+              <PlayerNameTwoLine
+                name={p.display_name}
+                className="text-xs font-medium"
+              />
               {isReceiver && (
                 <span
                   className="text-[10px] font-bold mt-0.5 inline-block"
