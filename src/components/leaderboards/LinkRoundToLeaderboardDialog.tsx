@@ -44,8 +44,25 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const [joinCode, setJoinCode] = useState('');
   const [searching, setSearching] = useState(false);
 
-  // Participant selection
-  const allPlayers = getAllPlayersFromAllGroups(players, playerGroups);
+  // Participant selection — deduplicate the player list so the same person
+  // appearing in multiple groups (e.g. when the round is also linked to
+  // another leaderboard whose participants overlap) is only shown once.
+  // Key by profileId when available, otherwise by lower-cased trimmed name.
+  const allPlayers = React.useMemo(() => {
+    const raw = getAllPlayersFromAllGroups(players, playerGroups);
+    const seen = new Set<string>();
+    const out: typeof raw = [];
+    for (const p of raw) {
+      const key = p.profileId
+        ? `pid:${p.profileId}`
+        : `name:${(p.name || '').trim().toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(p);
+    }
+    return out;
+  }, [players, playerGroups]);
+
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
   const [handicaps, setHandicaps] = useState<Map<string, number>>(new Map());
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +77,24 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     linkRound,
   } = useLeaderboardDetail(selectedLeaderboardId);
 
-  // Reset on open
+  // Build a quick-lookup of who is already a participant in the selected
+  // leaderboard so we can pre-deselect them (avoids accidentally adding
+  // duplicates and gives the user a clear "already here" signal).
+  const existingKeys = React.useMemo(() => {
+    const s = new Set<string>();
+    for (const ep of existingParticipants) {
+      if (ep.profile_id) s.add(`pid:${ep.profile_id}`);
+      else if (ep.display_name) s.add(`name:${ep.display_name.trim().toLowerCase()}`);
+    }
+    return s;
+  }, [existingParticipants]);
+
+  const playerKey = (p: { profileId?: string | null; name: string }) =>
+    p.profileId
+      ? `pid:${p.profileId}`
+      : `name:${(p.name || '').trim().toLowerCase()}`;
+
+  // Reset on open — pre-select only those NOT already in the leaderboard.
   useEffect(() => {
     if (open) {
       if (preselectedLeaderboardId) {
@@ -71,10 +105,16 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         setSelectedLeaderboardId(null);
       }
       setJoinCode('');
-      setSelectedPlayerIds(new Set(allPlayers.map(p => p.id)));
+      setSelectedPlayerIds(
+        new Set(
+          allPlayers
+            .filter(p => !existingKeys.has(playerKey(p)))
+            .map(p => p.id),
+        ),
+      );
       setHandicaps(new Map(allPlayers.map(p => [p.id, p.handicap])));
     }
-  }, [open]);
+  }, [open, allPlayers, existingKeys, preselectedLeaderboardId]);
 
   const handleSelectLeaderboard = useCallback((leaderboardId: string) => {
     setSelectedLeaderboardId(leaderboardId);

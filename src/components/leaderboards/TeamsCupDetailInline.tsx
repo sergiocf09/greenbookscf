@@ -620,9 +620,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
 
   return (
-    <div className="space-y-2">
-      {/* Top bar: actions (centered, hugs subheader) */}
-      <div className="-mt-2 flex items-center justify-center gap-1">
+    <div className="space-y-3">
+      {/* Top bar: actions (centered, sits comfortably below subheader) */}
+      <div className="flex items-center justify-center gap-1">
         {activeRound.roundId && !isRoundLinked && (
           <Button
             variant="ghost"
@@ -945,7 +945,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <Label className="text-[9px] text-muted-foreground block text-center leading-none">HCP</Label>
                     <Input
                       type="number"
-                      value={getDraftHcp(p)}
+                      value={
+                        // Show match_handicap if user already touched it (draft) or if it's non-zero;
+                        // otherwise fall back to handicap_for_leaderboard (the value carried from setup).
+                        draftHcps.has(p.id)
+                          ? draftHcps.get(p.id)!
+                          : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard)
+                      }
                       onChange={e => setDraftHcp(p.id, parseInt(e.target.value) || 0)}
                       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                       className="w-12 h-7 px-1 text-center text-xs"
@@ -1056,6 +1062,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           open={showSettings}
           onOpenChange={setShowSettings}
           event={event as any}
+          teams={cup.teams}
+          onUpdateTeam={(teamId, updates) => cup.updateTeam(teamId, updates)}
           onDeleteRequest={() => {
             setShowSettings(false);
             setShowDeleteConfirm(true);
