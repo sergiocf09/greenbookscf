@@ -807,6 +807,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   participants={cup.participants}
                   result={cup.matchResults.get(m.id)}
                   isCreator={isCreator}
+                  initialsMap={initialsMap}
                   onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
                   onDelete={() => cup.deleteMatch(m.id)}
                 />
