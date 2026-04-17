@@ -623,6 +623,18 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
           <Share2 className="h-4 w-4" />
         </Button>
+        {event?.code && (
+          <button
+            type="button"
+            onClick={copyCode}
+            className="inline-flex items-center gap-1 h-8 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
+            aria-label="Copiar código"
+            title="Copiar código del leaderboard"
+          >
+            <Hash className="h-3 w-3 text-muted-foreground" />
+            <span className="font-semibold tracking-wide">{event.code}</span>
+          </button>
+        )}
         {isCreator && (
           <Button
             variant="ghost"
@@ -751,18 +763,27 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </p>
         ) : (
           <div className="space-y-2">
-            {cup.matches.map(m => (
-              <CupMatchRow
-                key={m.id}
-                match={m}
-                teams={cup.teams}
-                participants={cup.participants}
-                result={cup.matchResults.get(m.id)}
-                isCreator={isCreator}
-                onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
-                onDelete={() => cup.deleteMatch(m.id)}
-              />
-            ))}
+            {[...cup.matches]
+              .sort((a, b) => {
+                // Most-advanced match (more holes played) shown first.
+                // Tie-break by original match_order (creation order).
+                const ha = cup.matchResults.get(a.id)?.holes_played ?? 0;
+                const hb = cup.matchResults.get(b.id)?.holes_played ?? 0;
+                if (hb !== ha) return hb - ha;
+                return (a.match_order ?? 0) - (b.match_order ?? 0);
+              })
+              .map(m => (
+                <CupMatchRow
+                  key={m.id}
+                  match={m}
+                  teams={cup.teams}
+                  participants={cup.participants}
+                  result={cup.matchResults.get(m.id)}
+                  isCreator={isCreator}
+                  onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
+                  onDelete={() => cup.deleteMatch(m.id)}
+                />
+              ))}
           </div>
         )}
       </div>
