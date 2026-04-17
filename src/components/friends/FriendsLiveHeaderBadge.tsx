@@ -44,22 +44,27 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
   const { liveRounds, refresh } = useFriendsLive();
   const [open, setOpen] = useState(false);
 
-  if (liveRounds.length === 0) return null;
+  const hasLive = liveRounds.length > 0;
 
   return (
     <>
-      {/* Badge en el header */}
+      {/* Badge en el header — siempre visible para mostrar el contador */}
       <button
         type="button"
-        onClick={() => { refresh(); setOpen(true); }}
+        onClick={() => { refresh(); if (hasLive) setOpen(true); }}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 transition-colors border border-white/20"
       >
         <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-80" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+          {hasLive && (
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-80" />
+          )}
+          <span className={cn(
+            'relative inline-flex rounded-full h-2 w-2',
+            hasLive ? 'bg-green-400' : 'bg-primary-foreground/30',
+          )} />
         </span>
         <span className="text-[10px] text-primary-foreground/80 leading-none">
-          Rondas en Vivo
+          En Vivo
         </span>
         <span className="text-xs font-semibold text-primary-foreground leading-none">
           {liveRounds.length}
