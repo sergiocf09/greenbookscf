@@ -26,6 +26,35 @@ if (isInIframe || isDevOrPreviewHost) {
   }
 }
 
+// Auto-recovery: si una llamada a Supabase falla con TypeError "Failed to fetch"
+// (típico de un Service Worker viejo interceptando tras un deploy), desregistra
+// SW + limpia caches + recarga. Esto desbloquea jugadores con la PWA cacheada.
+const SUPABASE_HOST = "fudkywbthxspmvgcmhrn.supabase.co";
+const origFetch = window.fetch.bind(window);
+window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  try {
+    return await origFetch(input as any, init);
+  } catch (err) {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.toString()
+        : (input as Request).url;
+    const isSupabase = typeof url === "string" && url.includes(SUPABASE_HOST);
+    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+    const looksStale =
+      msg.includes("failed to fetch") ||
+      msg.includes("networkerror") ||
+      msg.includes("load failed");
+    if (isSupabase && looksStale) {
+      const { recoverFromStaleServiceWorker } = await import("./lib/swRecovery");
+      void recoverFromStaleServiceWorker("global-fetch");
+    }
+    throw err;
+  }
+};
+
 initSentry();
 
 createRoot(document.getElementById("root")!).render(
