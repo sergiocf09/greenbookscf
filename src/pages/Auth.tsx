@@ -14,6 +14,7 @@ import { Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
 import { getAuthRedirectOrigin, getAuthRedirectUrl } from '@/lib/authRedirect';
+import { isLikelyStaleSWError, recoverFromStaleServiceWorker } from '@/lib/swRecovery';
 
 const Auth = () => {
   const { theme, setTheme } = useTheme();
@@ -46,6 +47,11 @@ const Auth = () => {
         redirect_uri: getAuthRedirectOrigin(),
       });
       if (result.error) {
+        if (isLikelyStaleSWError(result.error)) {
+          toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+          await recoverFromStaleServiceWorker('google-signin');
+          return;
+        }
         toast.error('Error al iniciar con Google', { description: String(result.error) });
         setIsGoogleLoading(false);
         return;
@@ -54,6 +60,11 @@ const Auth = () => {
         toast.success('¡Bienvenido!');
       }
     } catch (err) {
+      if (isLikelyStaleSWError(err)) {
+        toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+        await recoverFromStaleServiceWorker('google-signin-throw');
+        return;
+      }
       toast.error('Error al iniciar con Google');
     }
     setIsGoogleLoading(false);
@@ -64,6 +75,11 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
+      if (isLikelyStaleSWError(error)) {
+        toast.message('Actualizando la app…', { description: 'Limpiando caché y recargando.' });
+        await recoverFromStaleServiceWorker('signin');
+        return;
+      }
       toast.error('Error al iniciar sesión', { description: error.message });
     } else {
       toast.success('¡Bienvenido!');
