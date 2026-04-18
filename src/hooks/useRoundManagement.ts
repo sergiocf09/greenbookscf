@@ -1927,10 +1927,56 @@ export const useRoundManagement = ({
 
         // Recalculate USGA Handicap Index for each registered player (parallel per player)
         // Also insert handicap_history with traceability data
+        //
+        // FIX (Apr-2026): Compute the CURRENT round's metrics IN MEMORY (not from DB),
+        // because the round status is still 'in_progress' here and would be excluded by
+        // the historical query (rounds.status = 'completed'). This guarantees:
+        //   - handicap_history persists tee_color, slope_rating, course_rating, gross,
+        //     adjusted_gross_score and differential for the round just closed.
+        //   - The new Handicap Index includes the round just closed.
         const registeredPlayers = sanitizedPlayers.filter(p => p.profileId && isUuid(p.profileId));
+
+        // Pre-fetch course holes for the CURRENT round (single course)
+        const currentCourseId = course?.id;
+        const currentCourseHoles = currentCourseId ? await getCourseHolesCached(currentCourseId) : [];
+
+        // Helper: compute current-round trace for one registered player using in-memory state
+        const computeCurrentRoundTrace = async (player: typeof sanitizedPlayers[number]) => {
+          if (!currentCourseId || !currentCourseHoles || currentCourseHoles.length < 18) return null;
+          const playerScores = confirmedScoresForClose.get(player.id) || [];
+          if (playerScores.length < 18) return null;
+
+          const tee = (player as any).teeColor || roundState.teeColor || 'white';
+          const td = await getCourseTeeCached(currentCourseId, tee);
+          const cr = td?.course_rating || 72;
+          const sr = td?.slope_rating || 113;
+
+          const holePars = currentCourseHoles.map((h: any) => h.par);
+          const holeStrokesArr: (number | null)[] = new Array(18).fill(null);
+          for (const s of playerScores) {
+            if (s.holeNumber >= 1 && s.holeNumber <= 18) holeStrokesArr[s.holeNumber - 1] = s.strokes;
+          }
+
+          const minCourse = {
+            id: currentCourseId, name: course?.name || '', location: '',
+            holes: currentCourseHoles.map((h: any) => ({ number: h.hole_number, par: h.par, handicapIndex: h.stroke_index })),
+          } as any;
+
+          const sph = calcSPH(Number(player.handicap) || 0, minCourse);
+          const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
+          const diff = calculateDifferential(ags, cr, sr);
+          const gross = playerScores.reduce((sum, s) => sum + (Number(s.strokes) || 0), 0);
+
+          return { diff, ags, gross, cr, sr, tee };
+        };
+
         await Promise.all(
           registeredPlayers.map(async (player) => {
             try {
+              // Compute trace for the round currently being closed (in memory)
+              const currentTrace = await computeCurrentRoundTrace(player);
+
+              // Fetch historical completed rounds (current round still in_progress is excluded)
               const { data: rpHistory } = await supabase
                 .from('round_players')
                 .select(`id, tee_color, handicap_for_round,
@@ -1940,19 +1986,12 @@ export const useRoundManagement = ({
                 .order('rounds(date)', { ascending: false })
                 .limit(20);
 
-              if (!rpHistory?.length) return;
-
               const diffs: number[] = [];
-              // Track this round's differential data for traceability
-              let thisRoundDiff: number | null = null;
-              let thisRoundAGS: number | null = null;
-              let thisRoundGross: number | null = null;
-              let thisRoundCR: number | null = null;
-              let thisRoundSR: number | null = null;
-              let thisRoundTee: string | null = null;
+              if (currentTrace) diffs.push(currentTrace.diff);
 
-              for (const rp of rpHistory) {
+              for (const rp of rpHistory || []) {
                 const rd = (rp as any).rounds;
+                if (rd.id === roundState.id) continue; // safety: avoid double-count
                 const crs = rd.golf_courses;
                 const tee = (rp as any).tee_color || rd.tee_color || 'white';
                 const hcpUsed = Number((rp as any).handicap_for_round) || 0;
@@ -1988,31 +2027,21 @@ export const useRoundManagement = ({
                 const ags = calculateAdjustedGrossScore(holeStrokesArr, holePars, sph);
                 const diff = calculateDifferential(ags, cr, sr);
                 diffs.push(diff);
-
-                // Capture data for the current round being closed
-                if (rd.id === roundState.id) {
-                  thisRoundDiff = diff;
-                  thisRoundAGS = ags;
-                  thisRoundGross = hs.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
-                  thisRoundCR = cr;
-                  thisRoundSR = sr;
-                  thisRoundTee = tee;
-                }
               }
 
               const newIndex = calcHI(diffs);
 
-              // Insert handicap_history with traceability data
+              // Insert handicap_history with traceability data from in-memory current round
               await supabase.from('handicap_history').insert({
                 profile_id: player.profileId!,
                 handicap: newIndex ?? player.handicap,
                 round_id: roundState.id,
-                differential: thisRoundDiff,
-                adjusted_gross_score: thisRoundAGS,
-                gross_score: thisRoundGross,
-                course_rating: thisRoundCR,
-                slope_rating: thisRoundSR,
-                tee_color: thisRoundTee,
+                differential: currentTrace?.diff ?? null,
+                adjusted_gross_score: currentTrace?.ags ?? null,
+                gross_score: currentTrace?.gross ?? null,
+                course_rating: currentTrace?.cr ?? null,
+                slope_rating: currentTrace?.sr ?? null,
+                tee_color: currentTrace?.tee ?? null,
               });
 
               if (newIndex !== null && Number.isFinite(newIndex) && newIndex >= 0 && newIndex <= 54) {
