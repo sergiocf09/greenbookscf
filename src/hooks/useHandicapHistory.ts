@@ -45,6 +45,7 @@ export const useHandicapHistory = (profileId: string | null) => {
       }
 
       // === TRY MATERIALIZED TABLE FIRST ===
+      // Fetch a wider window so we can dedupe by round_id and still keep the most recent 20 rounds.
       const { data: matData, error: matError } = await supabase
         .from('handicap_history')
         .select(`
@@ -59,23 +60,33 @@ export const useHandicapHistory = (profileId: string | null) => {
         .not('round_id', 'is', null)
         .not('differential', 'is', null)
         .order('recorded_at', { ascending: false })
-        .limit(20);
+        .limit(200);
 
       if (!matError && matData && matData.length > 0) {
-        const entries: HandicapHistoryEntry[] = matData
-          .filter((row: any) => row.rounds && row.differential != null)
-          .map((row: any) => ({
-            roundId: row.round_id,
-            date: row.rounds.date,
-            courseName: row.rounds.golf_courses?.name || 'Desconocido',
-            teeColor: row.tee_color || 'white',
-            totalStrokes: row.gross_score || 0,
-            adjustedGrossScore: row.adjusted_gross_score || row.gross_score || 0,
-            courseRating: Number(row.course_rating) || 72,
-            slopeRating: Number(row.slope_rating) || 113,
-            differential: Number(row.differential),
-            handicapAtTime: Number(row.handicap),
-          }));
+        // Deduplicate by round_id — keep the most recent record per round
+        // (rows are already sorted by recorded_at desc, so the first one we see wins).
+        const seenRoundIds = new Set<string>();
+        const dedupedRows: any[] = [];
+        for (const row of matData as any[]) {
+          if (!row.rounds || row.differential == null || !row.round_id) continue;
+          if (seenRoundIds.has(row.round_id)) continue;
+          seenRoundIds.add(row.round_id);
+          dedupedRows.push(row);
+          if (dedupedRows.length >= 20) break;
+        }
+
+        const entries: HandicapHistoryEntry[] = dedupedRows.map((row: any) => ({
+          roundId: row.round_id,
+          date: row.rounds.date,
+          courseName: row.rounds.golf_courses?.name || 'Desconocido',
+          teeColor: row.tee_color || 'white',
+          totalStrokes: row.gross_score || 0,
+          adjustedGrossScore: row.adjusted_gross_score || row.gross_score || 0,
+          courseRating: Number(row.course_rating) || 72,
+          slopeRating: Number(row.slope_rating) || 113,
+          differential: Number(row.differential),
+          handicapAtTime: Number(row.handicap),
+        }));
 
         if (entries.length > 0) {
           const differentialValues = entries.map(e => e.differential);
