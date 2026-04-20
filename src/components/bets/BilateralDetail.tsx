@@ -1441,9 +1441,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const genericValue = type === 'units'
       ? (betConfig.units.valuePerGenericUnit ?? standardValue)
       : (betConfig.manchas.valuePerGenericMancha ?? standardValue);
+
+    // Compute active units advantage for this pair (only relevant for 'units')
+    const unitsOverride = type === 'units'
+      ? betConfig.betOverrides?.find(
+          o => o.betType === 'Unidades' &&
+            ((o.playerAId === player.id && o.playerBId === rival.id) ||
+             (o.playerAId === rival.id && o.playerBId === player.id))
+        )
+      : undefined;
+    const isUnitsInverted = unitsOverride?.playerAId === rival.id;
+    const activeAdvantage = unitsOverride?.unitsAdvantage
+      ? (isUnitsInverted ? -(unitsOverride.unitsAdvantage) : unitsOverride.unitsAdvantage)
+      : 0;
     
     return (
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
+        {type === 'units' && activeAdvantage !== 0 && (
+          <div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-amber-500/10 border border-amber-500/30">
+            <span className="font-semibold text-amber-700">Ventaja:</span>
+            <span className="text-foreground">
+              {activeAdvantage > 0
+                ? `Tú das ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
+                : `Rival da ${Math.abs(activeAdvantage)} unidad${Math.abs(activeAdvantage) !== 1 ? 'es' : ''}`}
+            </span>
+            <span className="ml-auto font-bold tabular-nums">
+              × ${standardValue} = {activeAdvantage > 0 ? '-' : '+'}${fmtMoney(Math.abs(activeAdvantage * standardValue))}
+            </span>
+          </div>
+        )}
         {allDetails.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {allDetails.map((d, i) => {
