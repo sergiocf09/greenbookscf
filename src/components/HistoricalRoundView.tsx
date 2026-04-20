@@ -17,6 +17,9 @@ import { filterSnapshotByGroup, filterSnapshotCrossGroup, snapshotHasCrossGroupD
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 
 interface PlayerScoreData {
