@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Minus, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
-  initialValues?: { front?: number; back?: number; total?: number };
+  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number };
   betConfig: BetConfig;
-  onSave: (overrides: { front?: number; back?: number; total?: number }) => void;
+  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number }) => void;
   onClose: () => void;
 }
 
@@ -77,12 +78,14 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   const [frontAmount, setFrontAmount] = useState(initialValues?.front ?? segmentConfig.front ?? 0);
   const [backAmount, setBackAmount] = useState(initialValues?.back ?? segmentConfig.back ?? 0);
   const [totalAmount, setTotalAmount] = useState(initialValues?.total ?? segmentConfig.total ?? 0);
+  const [unitsAdvantage, setUnitsAdvantage] = useState(initialValues?.unitsAdvantage ?? 0);
 
   // When switching bet type (or reopening dialog), rehydrate from the per-pair overrides.
   React.useEffect(() => {
     setFrontAmount(initialValues?.front ?? segmentConfig.front ?? 0);
     setBackAmount(initialValues?.back ?? segmentConfig.back ?? 0);
     setTotalAmount(initialValues?.total ?? segmentConfig.total ?? 0);
+    setUnitsAdvantage(initialValues?.unitsAdvantage ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betType]);
 
@@ -95,6 +98,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       ...(hasFront && { front: frontAmount }),
       ...(hasBack && { back: backAmount }),
       ...(hasTotal && { total: totalAmount }),
+      ...(betType === 'units' && { unitsAdvantage }),
     });
   };
 
@@ -145,7 +149,55 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           </div>
         </div>
       )}
-      
+
+      {betType === 'units' && (
+        <div className="space-y-2 pt-3 border-t border-border/50">
+          <Label className="text-sm font-semibold">Ventaja de Unidades</Label>
+          <p className="text-xs text-muted-foreground">
+            Unidades fijas que un jugador otorga al otro para equilibrar.
+            El que da ventaja empieza debiendo ese número de unidades.
+          </p>
+          <div className="text-xs text-center text-muted-foreground italic">
+            {unitsAdvantage === 0
+              ? '— Sin ventaja —'
+              : unitsAdvantage > 0
+                ? `Tú das ${unitsAdvantage} unidad${unitsAdvantage !== 1 ? 'es' : ''}`
+                : `Rival da ${Math.abs(unitsAdvantage)} unidad${Math.abs(unitsAdvantage) !== 1 ? 'es' : ''}`}
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setUnitsAdvantage(v => v - 1)}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <div className={cn(
+              'min-w-[80px] text-center text-2xl font-bold tabular-nums',
+              unitsAdvantage > 0 ? 'text-destructive'
+                : unitsAdvantage < 0 ? 'text-green-600'
+                : 'text-muted-foreground'
+            )}>
+              {unitsAdvantage === 0 ? '—' : (unitsAdvantage > 0 ? `+${unitsAdvantage}` : `${unitsAdvantage}`)}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setUnitsAdvantage(v => v + 1)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center">
+            + = tú das ventaja · − = rival te da ventaja · 0 = sin ventaja
+          </p>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">
         Valores originales: {hasFront && `Front $${segmentConfig.front}`} {hasBack && `Back $${segmentConfig.back}`} {hasTotal && `${hasFront || hasBack ? 'Total' : ''} $${segmentConfig.total}`}
       </p>

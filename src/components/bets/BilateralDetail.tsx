@@ -1441,9 +1441,35 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const genericValue = type === 'units'
       ? (betConfig.units.valuePerGenericUnit ?? standardValue)
       : (betConfig.manchas.valuePerGenericMancha ?? standardValue);
+
+    // Compute active units advantage for this pair (only relevant for 'units')
+    const unitsOverride = type === 'units'
+      ? betConfig.betOverrides?.find(
+          o => o.betType === 'Unidades' &&
+            ((o.playerAId === player.id && o.playerBId === rival.id) ||
+             (o.playerAId === rival.id && o.playerBId === player.id))
+        )
+      : undefined;
+    const isUnitsInverted = unitsOverride?.playerAId === rival.id;
+    const activeAdvantage = unitsOverride?.unitsAdvantage
+      ? (isUnitsInverted ? -(unitsOverride.unitsAdvantage) : unitsOverride.unitsAdvantage)
+      : 0;
     
     return (
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
+        {type === 'units' && activeAdvantage !== 0 && (
+          <div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-amber-500/10 border border-amber-500/30">
+            <span className="font-semibold text-amber-700">Ventaja:</span>
+            <span className="text-foreground">
+              {activeAdvantage > 0
+                ? `Tú das ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
+                : `Rival da ${Math.abs(activeAdvantage)} unidad${Math.abs(activeAdvantage) !== 1 ? 'es' : ''}`}
+            </span>
+            <span className="ml-auto font-bold tabular-nums">
+              × ${standardValue} = {activeAdvantage > 0 ? '-' : '+'}${fmtMoney(Math.abs(activeAdvantage * standardValue))}
+            </span>
+          </div>
+        )}
         {allDetails.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {allDetails.map((d, i) => {
@@ -2919,6 +2945,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   return {
                     total: byLabel('Match Play') ?? ((betConfig as any).matchPlay?.amount ?? 50),
                   };
+                case 'units': {
+                  const unitOverride = betConfig.betOverrides?.find(
+                    o => o.betType === 'Unidades' &&
+                      ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                       (o.playerAId === rival.id && o.playerBId === player.id))
+                  );
+                  const isInverted = unitOverride?.playerAId === rival.id;
+                  return {
+                    total: unitOverride?.amountOverride ?? betConfig.units.valuePerPoint,
+                    unitsAdvantage: isInverted
+                      ? -(unitOverride?.unitsAdvantage ?? 0)
+                      : (unitOverride?.unitsAdvantage ?? 0),
+                  };
+                }
                 default:
                   return undefined;
               }
@@ -2992,9 +3032,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   // Engine uses per-hole labels like "Oyes (Hole X)".
                   upsert('Oyes', overrides.total);
                   break;
-                case 'units':
+                case 'units': {
                   upsert('Unidades', overrides.total);
+                  // Also persist unitsAdvantage on the same override row
+                  if (overrides.unitsAdvantage !== undefined) {
+                    const existingUnitIdx = nextOverrides.findIndex(
+                      o => o.betType === 'Unidades' &&
+                        ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                         (o.playerAId === rival.id && o.playerBId === player.id))
+                    );
+                    if (existingUnitIdx >= 0) {
+                      // If stored with reversed pair order, negate before saving
+                      const isInverted = nextOverrides[existingUnitIdx].playerAId === rival.id;
+                      nextOverrides[existingUnitIdx] = {
+                        ...nextOverrides[existingUnitIdx],
+                        unitsAdvantage: isInverted ? -overrides.unitsAdvantage : overrides.unitsAdvantage,
+                      };
+                    } else if (overrides.unitsAdvantage !== 0) {
+                      nextOverrides.push({
+                        playerAId: player.id,
+                        playerBId: rival.id,
+                        betType: 'Unidades',
+                        enabled: true,
+                        unitsAdvantage: overrides.unitsAdvantage,
+                      });
+                    }
+                  }
                   break;
+                }
                 case 'manchas':
                   upsert('Manchas', overrides.total);
                   break;

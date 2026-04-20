@@ -124,6 +124,10 @@ export interface BetOverride {
   betType: string; // 'medal_front', 'skins_back', etc.
   enabled: boolean;
   amountOverride?: number;
+  unitsAdvantage?: number; // Fixed units advantage that playerA gives to playerB
+                           // Positive = A gives advantage to B (A starts owing N units)
+                           // Negative = B gives advantage to A
+                           // 0 or undefined = no advantage
 }
 
 // Per-group bet override: partial config that overrides the organizer's template for a specific group
@@ -366,6 +370,8 @@ export interface TeamPressureUnitsConfig {
   enabled: boolean;
   valuePerUnit: number;
   enabledMarkers: (keyof MarkerState)[]; // Which markers count as units
+  unitsAdvantage?: number;        // Fixed units advantage
+  unitsAdvantageTeam?: 'a' | 'b' | 'none'; // Which team GIVES the advantage
 }
 
 // Team Pressure Oyeses sub-modality config
