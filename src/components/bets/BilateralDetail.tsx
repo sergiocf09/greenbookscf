@@ -733,7 +733,30 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         },
       });
     }
-    
+
+    // Match Play — independiente de Presiones, fila propia con resultado X&Y / UP / AS
+    if (resolvedCfg.matchPlay?.enabled && bothParticipate(undefined, 'matchPlay' as any)) {
+      groups.push({
+        key: 'matchPlay',
+        label: 'Match Play',
+        configKey: 'matchPlay',
+        segments: [
+          { label: 'Total 18', key: 'matchplay_total', overrideLabel: 'Match Play' },
+        ],
+        getTotal: () => groupedSummaries['Match Play']?.total || 0,
+        getSegmentData: () => {
+          const summary = groupedSummaries['Match Play'];
+          const description = summary?.details?.[0]?.description || '—';
+          return {
+            playerNet: 0,
+            rivalNet: 0,
+            amount: summary?.total || 0,
+            description,
+          };
+        },
+      });
+    }
+
     // Skins
     if (bothParticipate(undefined, 'skins')) {
       groups.push({

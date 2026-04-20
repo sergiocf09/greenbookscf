@@ -9,6 +9,7 @@ export * from './shared';
 // Individual bet calculators
 export { calculateMedalBets } from './medal';
 export { calculatePressureBets, getPressureEvolution, type PressureHoleState, type PressureEvolution } from './pressures';
+export { calculateMatchPlayBets } from './matchPlay';
 export { calculateUnitsBets } from './units';
 export { calculateManchasBets } from './manchas';
 export { calculateCulebrasBets } from './culebras';

@@ -455,6 +455,7 @@ export interface SkinsGrupalBetConfig {
 export interface BetConfig {
   medal: MedalBetConfig;
   pressures: PressureBetConfig;
+  matchPlay: MatchPlayBetConfig;
   skins: SkinsBetConfig;
   caros: CarosBetConfig;
   oyeses: OyesesBetConfig;
@@ -513,6 +514,15 @@ export interface PressureBetConfig {
   totalAmount: number; // Match 18 bet amount
   onlyMatch?: boolean; // When true, no secondary pressures open (only main bet per nine)
   continua?: boolean; // When true + onlyMatch: single 18-hole match (no 9-hole split), early-win detection
+  participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
+}
+
+// Match Play - Individual bilateral 18-hole continuous match (independent of Presiones)
+export interface MatchPlayBetConfig {
+  enabled: boolean;
+  amount: number;       // Monto por match ganado
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
