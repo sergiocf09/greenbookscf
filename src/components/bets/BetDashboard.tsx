@@ -3339,7 +3339,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               ? 0
                               : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
                             const label = frontMainTied
-                              ? 'Carry →B9'
+                              ? 'Carry'
                               : matchMoney !== 0
                                 ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}`
                                 : '$0';
