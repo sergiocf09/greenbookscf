@@ -6,10 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings } from 'lucide-react';
+import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings, CheckCircle, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -36,7 +40,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   isRoundLinked,
 }) => {
   const { profile } = useAuth();
-  const { event, participants, standings, loading, fetchDetail, isCreator } = useLeaderboardDetail(leaderboardId);
+  const { event, participants, standings, loading, fetchDetail, isCreator, closeLeaderboard, reopenLeaderboard } = useLeaderboardDetail(leaderboardId);
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
   const [showRenameDialog, setShowRenameDialog] = useState(false);
@@ -197,6 +201,47 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {isCreator && event && (
+            event.status === 'active' ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Cerrar competencia
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Cerrar esta competencia?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Pasará a Historial. Los resultados quedan guardados y
+                      se pueden consultar. Puedes reactivarla si es necesario.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={closeLeaderboard}>
+                      Cerrar competencia
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground text-xs gap-1.5"
+                onClick={reopenLeaderboard}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Reactivar competencia
+              </Button>
+            )
           )}
         </div>
       </div>

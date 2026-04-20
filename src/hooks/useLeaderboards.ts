@@ -159,7 +159,31 @@ export function useLeaderboards() {
     }
   }, [profile]);
 
-  return { events, loading, fetchEvents, createEvent, joinByCode };
+  const closeLeaderboard = useCallback(async (leaderboardId: string) => {
+    try {
+      const { error } = await supabase.rpc('close_leaderboard',
+        { p_leaderboard_id: leaderboardId });
+      if (error) throw error;
+      toast.success('Competencia cerrada y movida a Historial');
+      queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    }
+  }, [queryClient]);
+
+  const reopenLeaderboard = useCallback(async (leaderboardId: string) => {
+    try {
+      const { error } = await supabase.rpc('reopen_leaderboard',
+        { p_leaderboard_id: leaderboardId });
+      if (error) throw error;
+      toast.success('Competencia reactivada');
+      queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    }
+  }, [queryClient]);
+
+  return { events, loading, fetchEvents, createEvent, joinByCode, closeLeaderboard, reopenLeaderboard };
 }
 
 export function useLeaderboardDetail(leaderboardId: string | null) {
@@ -475,6 +499,28 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
   const isCreator = event?.created_by === profile?.id;
 
+  const closeLeaderboard = useCallback(async () => {
+    if (!leaderboardId) return;
+    try {
+      const { error } = await supabase.rpc('close_leaderboard',
+        { p_leaderboard_id: leaderboardId });
+      if (error) throw error;
+      toast.success('Competencia cerrada');
+      await fetchDetail();
+    } catch (err: any) { toast.error(err.message); }
+  }, [leaderboardId, fetchDetail]);
+
+  const reopenLeaderboard = useCallback(async () => {
+    if (!leaderboardId) return;
+    try {
+      const { error } = await supabase.rpc('reopen_leaderboard',
+        { p_leaderboard_id: leaderboardId });
+      if (error) throw error;
+      toast.success('Competencia reactivada');
+      await fetchDetail();
+    } catch (err: any) { toast.error(err.message); }
+  }, [leaderboardId, fetchDetail]);
+
   return {
     event,
     participants,
@@ -488,5 +534,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     linkRound,
     unlinkRound,
     checkRoundLinked,
+    closeLeaderboard,
+    reopenLeaderboard,
   };
 }
