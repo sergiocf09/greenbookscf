@@ -3151,9 +3151,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Front 9</span>
-                        <span className={cn('text-xs font-bold tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {frontBetsDisplay}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-xs tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {frontBetsDisplay}
+                          </span>
+                          {(() => {
+                            const frontNetBets = displayFrontBets.filter(b => b > 0).length
+                              - displayFrontBets.filter(b => b < 0).length;
+                            const frontMoney = frontNetBets * bet.frontAmount;
+                            if (frontMoney === 0) return null;
+                            return (
+                              <span className={cn('text-xs font-bold tabular-nums',
+                                frontMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                                {frontMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontMoney))}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <div className="grid grid-cols-9 gap-1">
                           {displayFrontDetails.map((detail, idx) => {
@@ -3218,9 +3232,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Back 9</span>
-                        <span className={cn('text-xs font-bold tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {backBetsDisplay}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-xs tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {backBetsDisplay}
+                          </span>
+                          {(() => {
+                            const frontMainTied = displayFrontBets[0] === 0;
+                            const backNetBets = displayBackBets.filter(b => b > 0).length
+                              - displayBackBets.filter(b => b < 0).length;
+                            // ── CARRY LOGIC: si Front main terminó empatado,
+                            // el Back vale Front×2 + Total18 (el Match18 se absorbe aquí)
+                            const effectiveBackAmount = frontMainTied
+                              ? (2 * bet.frontAmount + bet.totalAmount)
+                              : bet.backAmount;
+                            const backMoney = backNetBets * effectiveBackAmount;
+                            if (backMoney === 0 && !frontMainTied) return null;
+                            return (
+                              <div className="flex items-center gap-1">
+                                {frontMainTied && (
+                                  <span className="text-[10px] text-amber-600 font-medium">
+                                    Carry ×{fmtMoney(effectiveBackAmount)}
+                                  </span>
+                                )}
+                                {backMoney !== 0 && (
+                                  <span className={cn('text-xs font-bold tabular-nums',
+                                    backMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                                    {backMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backMoney))}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <div className="grid grid-cols-9 gap-1">
                           {displayBackDetails.map((detail, idx) => {
@@ -3288,18 +3331,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {total18 >= 0 ? '+' : ''}{total18}
                           </span>
-                          <span className={cn('text-xs font-bold tabular-nums', 
-                            (() => {
-                              const matchMoney = (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney > 0 ? 'text-green-600' : matchMoney < 0 ? 'text-destructive' : 'text-muted-foreground';
-                            })()
-                          )}>
-                            {(() => {
-                              const frontMainTied = displayFrontBets[0] === 0;
-                              const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}` : (frontMainTied ? 'Carry' : '$0');
-                            })()}
-                          </span>
+                          {(() => {
+                            const frontMainTied = displayFrontBets[0] === 0;
+                            // Cuando hay carry, el Match18 queda absorbido en el Back.
+                            // No hay pago adicional de Total 18.
+                            const matchMoney = frontMainTied
+                              ? 0
+                              : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
+                            const label = frontMainTied
+                              ? 'Carry →B9'
+                              : matchMoney !== 0
+                                ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}`
+                                : '$0';
+                            const color = frontMainTied
+                              ? 'text-amber-600'
+                              : matchMoney > 0 ? 'text-green-600'
+                              : matchMoney < 0 ? 'text-destructive'
+                              : 'text-muted-foreground';
+                            return (
+                              <span className={cn('text-xs font-bold tabular-nums', color)}>
+                                {label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
