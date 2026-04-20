@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Minus, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
-  initialValues?: { front?: number; back?: number; total?: number };
+  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number };
   betConfig: BetConfig;
-  onSave: (overrides: { front?: number; back?: number; total?: number }) => void;
+  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number }) => void;
   onClose: () => void;
 }
 
@@ -77,12 +78,14 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   const [frontAmount, setFrontAmount] = useState(initialValues?.front ?? segmentConfig.front ?? 0);
   const [backAmount, setBackAmount] = useState(initialValues?.back ?? segmentConfig.back ?? 0);
   const [totalAmount, setTotalAmount] = useState(initialValues?.total ?? segmentConfig.total ?? 0);
+  const [unitsAdvantage, setUnitsAdvantage] = useState(initialValues?.unitsAdvantage ?? 0);
 
   // When switching bet type (or reopening dialog), rehydrate from the per-pair overrides.
   React.useEffect(() => {
     setFrontAmount(initialValues?.front ?? segmentConfig.front ?? 0);
     setBackAmount(initialValues?.back ?? segmentConfig.back ?? 0);
     setTotalAmount(initialValues?.total ?? segmentConfig.total ?? 0);
+    setUnitsAdvantage(initialValues?.unitsAdvantage ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betType]);
 
@@ -95,6 +98,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       ...(hasFront && { front: frontAmount }),
       ...(hasBack && { back: backAmount }),
       ...(hasTotal && { total: totalAmount }),
+      ...(betType === 'units' && { unitsAdvantage }),
     });
   };
 
