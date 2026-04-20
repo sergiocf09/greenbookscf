@@ -1000,6 +1000,73 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Ventaja de Unidades (foursome) */}
+              <div className="space-y-1.5 pt-2 border-t border-border/30">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Ventaja de Unidades</Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={bet.unitsConfig?.unitsAdvantageTeam ?? 'none'}
+                    onValueChange={(v) => onUpdate({
+                      unitsConfig: {
+                        ...bet.unitsConfig!,
+                        unitsAdvantageTeam: v as 'a' | 'b' | 'none',
+                        unitsAdvantage: v === 'none' ? 0 : (bet.unitsConfig?.unitsAdvantage ?? 1),
+                      },
+                    })}
+                  >
+                    <SelectTrigger className="h-7 text-[11px] flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Sin ventaja —</SelectItem>
+                      <SelectItem value="a">Equipo A da ventaja</SelectItem>
+                      <SelectItem value="b">Equipo B da ventaja</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(bet.unitsConfig?.unitsAdvantageTeam === 'a' || bet.unitsConfig?.unitsAdvantageTeam === 'b') && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => onUpdate({
+                          unitsConfig: {
+                            ...bet.unitsConfig!,
+                            unitsAdvantage: Math.max(1, (bet.unitsConfig?.unitsAdvantage ?? 1) - 1),
+                          },
+                        })}
+                      >
+                        −
+                      </Button>
+                      <span className="min-w-[32px] text-center text-sm font-bold tabular-nums">
+                        {bet.unitsConfig?.unitsAdvantage ?? 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => onUpdate({
+                          unitsConfig: {
+                            ...bet.unitsConfig!,
+                            unitsAdvantage: (bet.unitsConfig?.unitsAdvantage ?? 1) + 1,
+                          },
+                        })}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {(bet.unitsConfig?.unitsAdvantageTeam === 'a' || bet.unitsConfig?.unitsAdvantageTeam === 'b') && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Equipo {bet.unitsConfig.unitsAdvantageTeam === 'a' ? 'A' : 'B'} empieza con
+                    {' '}-{bet.unitsConfig.unitsAdvantage ?? 1} unidades en este foursome.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
