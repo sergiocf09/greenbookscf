@@ -112,6 +112,9 @@ interface CarritosResultsCardProps {
     moneyA: number;
     moneyB: number;
     amount: number;
+    frontAmount?: number;
+    backAmount?: number;
+    totalAmount?: number;
     id?: string;
   };
   players: Player[];
