@@ -2915,6 +2915,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     front: byLabel('Putts Front 9') ?? (betConfig.putts?.frontAmount ?? 50),
                     back: byLabel('Putts Back 9') ?? (betConfig.putts?.backAmount ?? 50),
                   };
+                case 'matchPlay':
+                  return {
+                    total: byLabel('Match Play') ?? ((betConfig as any).matchPlay?.amount ?? 50),
+                  };
                 default:
                   return undefined;
               }
@@ -2999,6 +3003,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   break;
                 case 'pinguinos':
                   upsert('Pinguinos', overrides.total);
+                  break;
+                case 'matchPlay':
+                  upsert('Match Play', overrides.total);
                   break;
               }
 

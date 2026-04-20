@@ -66,6 +66,8 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           front: betConfig.putts?.frontAmount ?? 50,
           back: betConfig.putts?.backAmount ?? 50,
         };
+      case 'matchPlay':
+        return { total: (betConfig as any).matchPlay?.amount ?? 50 };
       default: 
         return {};
     }
