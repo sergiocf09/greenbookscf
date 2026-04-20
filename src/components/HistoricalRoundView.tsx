@@ -50,7 +50,28 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   course,
 }) => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'scorecard' | 'bets'>('scorecard');
+  const currentUserProfileId = profile?.id ?? null;
+  const [activeTab, setActiveTab] = useState<'scorecard' | 'bets' | 'leaderboards'>('scorecard');
+
+  type RoundLeaderboard = {
+    id: string;
+    name: string;
+    competition_type: string;
+    status: string;
+    myPosition: number | null;
+    myNetVsPar: number | null;
+    myGrossTotal: number | null;
+    totalParticipants: number;
+    topStandings: Array<{
+      display_name: string;
+      initials: string;
+      avatar_color: string;
+      netVsPar: number;
+      grossTotal: number;
+      isMe: boolean;
+    }>;
+  };
+  const [roundLeaderboards, setRoundLeaderboards] = useState<RoundLeaderboard[]>([]);
   const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSnapshot, setHasSnapshot] = useState(false);
