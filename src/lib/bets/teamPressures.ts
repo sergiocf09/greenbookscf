@@ -136,7 +136,13 @@ export const calculateTeamPressuresBets = (
         };
         const unitsA = countUnitsForTeam(teamA);
         const unitsB = countUnitsForTeam(teamB);
-        unitsMoney = (unitsA - unitsB) * bet.unitsConfig.valuePerUnit;
+        const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
+        const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
+        // The team that GIVES the advantage starts "owing" that number of units
+        const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
+                           : unitsAdvTeam === 'b' ?  unitsAdv
+                           : 0;
+        unitsMoney = ((unitsA - unitsB) + netAdvantage) * bet.unitsConfig.valuePerUnit;
       }
 
       let oyesesMoney = 0;
@@ -230,8 +236,13 @@ export const calculateTeamPressuresBets = (
       };
       const unitsA = countUnitsForTeam(teamA);
       const unitsB = countUnitsForTeam(teamB);
-      unitsMoney = (unitsA - unitsB) * bet.unitsConfig.valuePerUnit;
-      devLog(`[TeamPressures:Units] bet=${bet.id} unitsA=${unitsA} unitsB=${unitsB} money=${unitsMoney}`);
+      const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
+      const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
+      const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
+                         : unitsAdvTeam === 'b' ?  unitsAdv
+                         : 0;
+      unitsMoney = ((unitsA - unitsB) + netAdvantage) * bet.unitsConfig.valuePerUnit;
+      devLog(`[TeamPressures:Units] bet=${bet.id} unitsA=${unitsA} unitsB=${unitsB} adv=${netAdvantage} money=${unitsMoney}`);
     }
 
     // Team Oyeses sub-modality
