@@ -48,6 +48,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [renaming, setRenaming] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closeConfirmText, setCloseConfirmText] = useState('');
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -204,33 +206,15 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
           {isCreator && event && (
             event.status === 'active' ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Cerrar competencia
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Cerrar esta competencia?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Pasará a Historial. Los resultados quedan guardados y
-                      se pueden consultar. Puedes reactivarla si es necesario.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={closeLeaderboard}>
-                      Cerrar competencia
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+                onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
+              >
+                <CheckCircle className="h-3.5 w-3.5" />
+                Cerrar competencia
+              </Button>
             ) : (
               <Button
                 variant="ghost"
