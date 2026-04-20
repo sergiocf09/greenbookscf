@@ -2079,6 +2079,10 @@ export type Database = {
       can_access_full_history: { Args: never; Returns: boolean }
       can_create_round_as_organizer: { Args: never; Returns: boolean }
       cleanup_expired_guest_sessions: { Args: never; Returns: undefined }
+      close_leaderboard: {
+        Args: { p_leaderboard_id: string }
+        Returns: boolean
+      }
       convert_ghost_to_profile: {
         Args: { p_auth_uid: string; p_session_id: string }
         Returns: string
@@ -2389,6 +2393,10 @@ export type Database = {
       }
       rebuild_snapshot_balances_from_ledger: { Args: never; Returns: Json }
       rebuild_snapshot_bilateral_handicaps: { Args: never; Returns: Json }
+      reopen_leaderboard: {
+        Args: { p_leaderboard_id: string }
+        Returns: boolean
+      }
       reset_round_for_reclose: {
         Args: { p_round_id: string }
         Returns: undefined
