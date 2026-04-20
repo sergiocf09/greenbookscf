@@ -112,6 +112,9 @@ interface CarritosResultsCardProps {
     moneyA: number;
     moneyB: number;
     amount: number;
+    frontAmount?: number;
+    backAmount?: number;
+    totalAmount?: number;
     id?: string;
   };
   players: Player[];
@@ -337,9 +340,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium">Front 9</span>
-              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetFront))}>
-                {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetFront))}>
+                  {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
+                </span>
+                {(() => {
+                  const frontAmt = results.frontAmount ?? 0;
+                  const frontMoney = (baseTeamNetFront > 0 ? 1 : baseTeamNetFront < 0 ? -1 : 0) * frontAmt;
+                  if (frontMoney === 0) return null;
+                  return (
+                    <span className={cn('text-xs font-bold tabular-nums',
+                      frontMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                      {frontMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontMoney))}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
             <div className="grid grid-cols-9 gap-1">
                 {baseNetByHoleFront.map((net, idx) => {
@@ -400,9 +416,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium">Back 9</span>
-              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetBack))}>
-                {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetBack))}>
+                  {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
+                </span>
+                {(() => {
+                  const backAmt = results.backAmount ?? 0;
+                  const backMoney = (baseTeamNetBack > 0 ? 1 : baseTeamNetBack < 0 ? -1 : 0) * backAmt;
+                  if (backMoney === 0) return null;
+                  return (
+                    <span className={cn('text-xs font-bold tabular-nums',
+                      backMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                      {backMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backMoney))}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
             <div className="grid grid-cols-9 gap-1">
                 {baseNetByHoleBack.map((net, idx) => {
@@ -462,9 +491,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               {/* Total */}
               <div className="flex items-center justify-between border-t border-border/50 pt-2">
                 <span className="text-xs font-medium">Total 18</span>
-                <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
-                  {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-sm tabular-nums', getNetTone(baseTeamNetTotal))}>
+                    {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+                  </span>
+                  {(() => {
+                    const totalAmt = results.totalAmount ?? 0;
+                    const totalMoney = (baseTeamNetTotal > 0 ? 1 : baseTeamNetTotal < 0 ? -1 : 0) * totalAmt;
+                    if (totalMoney === 0) return null;
+                    return (
+                      <span className={cn('text-sm font-bold tabular-nums',
+                        totalMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                        {totalMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalMoney))}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 
