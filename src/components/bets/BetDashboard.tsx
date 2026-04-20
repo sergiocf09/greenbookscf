@@ -3331,18 +3331,29 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {total18 >= 0 ? '+' : ''}{total18}
                           </span>
-                          <span className={cn('text-xs font-bold tabular-nums', 
-                            (() => {
-                              const matchMoney = (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney > 0 ? 'text-green-600' : matchMoney < 0 ? 'text-destructive' : 'text-muted-foreground';
-                            })()
-                          )}>
-                            {(() => {
-                              const frontMainTied = displayFrontBets[0] === 0;
-                              const matchMoney = frontMainTied ? 0 : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
-                              return matchMoney !== 0 ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}` : (frontMainTied ? 'Carry' : '$0');
-                            })()}
-                          </span>
+                          {(() => {
+                            const frontMainTied = displayFrontBets[0] === 0;
+                            // Cuando hay carry, el Match18 queda absorbido en el Back.
+                            // No hay pago adicional de Total 18.
+                            const matchMoney = frontMainTied
+                              ? 0
+                              : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
+                            const label = frontMainTied
+                              ? 'Carry →B9'
+                              : matchMoney !== 0
+                                ? `${matchMoney >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(matchMoney))}`
+                                : '$0';
+                            const color = frontMainTied
+                              ? 'text-amber-600'
+                              : matchMoney > 0 ? 'text-green-600'
+                              : matchMoney < 0 ? 'text-destructive'
+                              : 'text-muted-foreground';
+                            return (
+                              <span className={cn('text-xs font-bold tabular-nums', color)}>
+                                {label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
