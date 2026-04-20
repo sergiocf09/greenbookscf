@@ -384,6 +384,38 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Close competition confirmation dialog */}
+      <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+            <DialogDescription>
+              Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
+              Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={closeConfirmText}
+            onChange={(e) => setCloseConfirmText(e.target.value)}
+            placeholder="Escribe CERRAR"
+            className="uppercase"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button
+              disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
+              onClick={async () => {
+                await closeLeaderboard();
+                setShowCloseConfirm(false);
+                setCloseConfirmText('');
+              }}
+            >
+              Cerrar competencia
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
