@@ -2850,10 +2850,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       countForTeam(resolvedTeamB, hitsB);
                       hitsA.sort((a, b) => a.holeNumber - b.holeNumber);
                       hitsB.sort((a, b) => a.holeNumber - b.holeNumber);
-                      const diff = hitsA.length - hitsB.length;
-                      const money = diff * (bet.unitsConfig.valuePerUnit || 0);
-                      return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, money };
-                    })();
+                       const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
+                       const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
+                       // Equipo que DA empieza debiendo (negativo para él)
+                       const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
+                                          : unitsAdvTeam === 'b' ?  unitsAdv
+                                          : 0;
+                       const diff = hitsA.length - hitsB.length;
+                       const adjustedDiff = diff + netAdvantage;
+                       const money = adjustedDiff * (bet.unitsConfig.valuePerUnit || 0);
+                       return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, adjustedDiff, money, unitsAdv, unitsAdvTeam, netAdvantage };
+                     })();
 
                     // ── Build Oyeses detail ──
                     const oyesesDetail = (() => {
@@ -2949,7 +2956,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     </div>
                                     {/* Summary */}
                                     <div className="border-t border-border pt-1 space-y-0.5">
-                                      <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{unitsDetail.diff}</span></p>
+                                      <p className="flex justify-between"><span>Diferencial unidades</span><span className="tabular-nums font-semibold">{unitsDetail.diff >= 0 ? `+${unitsDetail.diff}` : unitsDetail.diff}</span></p>
+                                      {unitsDetail.unitsAdv > 0 && unitsDetail.unitsAdvTeam !== 'none' && (
+                                        <p className="flex justify-between text-[10px]">
+                                          <span className="text-muted-foreground">
+                                            Ventaja: Equipo {unitsDetail.unitsAdvTeam === 'a' ? 'A' : 'B'} da {unitsDetail.unitsAdv}
+                                          </span>
+                                          <span className={cn('tabular-nums font-medium', unitsDetail.netAdvantage > 0 ? 'text-green-600' : 'text-destructive')}>
+                                            {unitsDetail.netAdvantage > 0 ? `+${unitsDetail.netAdvantage}` : unitsDetail.netAdvantage}
+                                          </span>
+                                        </p>
+                                      )}
+                                      {unitsDetail.netAdvantage !== 0 && (
+                                        <p className="flex justify-between"><span>Diferencial ajustado</span><span className="tabular-nums font-semibold">{unitsDetail.adjustedDiff >= 0 ? `+${unitsDetail.adjustedDiff}` : unitsDetail.adjustedDiff}</span></p>
+                                      )}
                                       <p className="flex justify-between"><span>Valor unidad</span><span className="tabular-nums">${bet.unitsConfig?.valuePerUnit}</span></p>
                                       <p className="flex justify-between font-semibold">
                                         <span>Resultado</span>
