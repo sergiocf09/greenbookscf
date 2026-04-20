@@ -184,6 +184,13 @@ interface RoundBetConfig {
   vegasBets?: any[];
   ninesBets?: any[];
   parejasExcluded?: Record<string, string[]>;
+  matchPlay?: {
+    enabled: boolean;
+    amount: number;
+    participantIds?: string[];
+    oneVsAll?: boolean;
+    anchorPlayerId?: string;
+  };
 }
 
 export const useBetConfigPersistence = ({
@@ -416,6 +423,13 @@ export const useBetConfigPersistence = ({
       if ('vegasBets' in dbConfig) newConfig.vegasBets = dbConfig.vegasBets;
       if ('ninesBets' in dbConfig) newConfig.ninesBets = dbConfig.ninesBets;
       if ('parejasExcluded' in dbConfig) newConfig.parejasExcluded = dbConfig.parejasExcluded;
+
+      if (dbConfig.matchPlay) {
+        (newConfig as any).matchPlay = {
+          ...((prev as any).matchPlay ?? {}),
+          ...dbConfig.matchPlay,
+        };
+      }
       
       return newConfig;
     });
@@ -518,6 +532,7 @@ export const useBetConfigPersistence = ({
         vegasBets: config.vegasBets,
         ninesBets: config.ninesBets,
         parejasExcluded: config.parejasExcluded,
+        matchPlay: (config as any).matchPlay,
       };
 
       // Concurrency guard: check updated_at before writing
