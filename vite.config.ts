@@ -31,11 +31,8 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        additionalManifestEntries: [
-          { url: "/", revision: Date.now().toString() },
-        ],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
@@ -48,15 +45,26 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
+            urlPattern: ({ request }) => request.destination === "document",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-cache-v3",
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+            },
+          },
+          {
             urlPattern: ({ request }) =>
-              request.destination === "document" ||
               request.destination === "script" ||
               request.destination === "style" ||
               request.destination === "font",
             handler: "NetworkFirst",
             options: {
-              cacheName: "static-assets-cache-v2",
-              networkTimeoutSeconds: 3,
+              cacheName: "static-assets-cache-v3",
+              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
