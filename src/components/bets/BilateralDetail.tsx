@@ -2477,6 +2477,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // - Only one bet was opened (initial) AND that bet is tied (+0)
                         // If there are multiple lines (e.g., +1 -1), show actual results even if net is $0
                         const isPressures = group.key === 'pressures';
+                        const isMatchPlay = group.key === 'matchPlay';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
                         const isSkinsGrupal = group.key === 'skinsGrupal';
@@ -2503,9 +2504,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const skinsEvolution = isSkins && !isHistorical
                           ? getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
+                        const matchPlayEvolution = isMatchPlay && !isHistorical
+                          ? getMatchPlayEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
+                          : null;
 
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
+                        const matchPlaySegmentData = matchPlayEvolution?.total;
 
                         // Check if continua mode is active for this pair
                         const pairKeyEv = [player.id, rival.id].sort().join('_');
@@ -2517,6 +2522,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                         // In HISTORICAL mode, NEVER recalculate — description from snapshot is the only source.
                         const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
+                        const matchPlayFallback = isMatchPlay && !isHistorical ? (matchPlaySegmentData?.finalDisplay ?? '') : '';
 
                         // Add Carry label ONLY for Front 9 when main line finished tied (live mode only).
                         const descAlreadyHasCarry = pressureDesc.toLowerCase().includes('carry');
@@ -2528,6 +2534,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureDisplay = pressureDisplayRaw === '—'
                           ? '—'
                           : `${pressureDisplayRaw}${carrySuffix}`;
+
+                        const matchPlayDisplay = ((pressureDesc || matchPlayFallback || '—').trim()) || '—';
+
 
                         // Zoológico segments only show the animal label (no "X vs X" comparison).
                         // En histórico: Presiones muestra su description. El resto no tiene segments (segments=[]).
