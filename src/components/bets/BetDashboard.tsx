@@ -3232,9 +3232,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Back 9</span>
-                        <span className={cn('text-xs font-bold tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {backBetsDisplay}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-xs tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {backBetsDisplay}
+                          </span>
+                          {(() => {
+                            const frontMainTied = displayFrontBets[0] === 0;
+                            const backNetBets = displayBackBets.filter(b => b > 0).length
+                              - displayBackBets.filter(b => b < 0).length;
+                            // ── CARRY LOGIC: si Front main terminó empatado,
+                            // el Back vale Front×2 + Total18 (el Match18 se absorbe aquí)
+                            const effectiveBackAmount = frontMainTied
+                              ? (2 * bet.frontAmount + bet.totalAmount)
+                              : bet.backAmount;
+                            const backMoney = backNetBets * effectiveBackAmount;
+                            if (backMoney === 0 && !frontMainTied) return null;
+                            return (
+                              <div className="flex items-center gap-1">
+                                {frontMainTied && (
+                                  <span className="text-[10px] text-amber-600 font-medium">
+                                    Carry ×{fmtMoney(effectiveBackAmount)}
+                                  </span>
+                                )}
+                                {backMoney !== 0 && (
+                                  <span className={cn('text-xs font-bold tabular-nums',
+                                    backMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                                    {backMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backMoney))}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <div className="grid grid-cols-9 gap-1">
                           {displayBackDetails.map((detail, idx) => {
