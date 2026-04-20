@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MarkerState, markerInfo, BetOverride } from '@/types/golf';
 import { SnapshotPairBreakdowns, SnapshotPairSegmentResults } from '@/lib/roundSnapshot';
-import { BetSummary, getPressureEvolution, getSkinsEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
+import { BetSummary, getPressureEvolution, getSkinsEvolution, getMatchPlayEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
 import { fmtMoney } from '@/lib/formatMoney';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
