@@ -1,6 +1,6 @@
 // Fecha de activación del paywall — cambiar aquí para adelantar o retrasar
 // CST México (UTC-6)
-export const PAYWALL_ACTIVE_DATE = new Date('2026-05-01T00:00:00-06:00');
+  export const PAYWALL_ACTIVE_DATE = new Date('2026-06-13T00:00:00-06:00');
 
 export function isPaywallActive(): boolean {
   return new Date() >= PAYWALL_ACTIVE_DATE;
