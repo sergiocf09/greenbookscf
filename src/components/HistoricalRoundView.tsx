@@ -577,8 +577,8 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets')}>
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'scorecard' | 'bets' | 'leaderboards')}>
+        <TabsList className={`grid w-full ${roundLeaderboards.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="scorecard" className="text-sm">
             <LayoutGrid className="h-4 w-4 mr-1.5" />
             Scorecard
@@ -587,6 +587,12 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             <Trophy className="h-4 w-4 mr-1.5" />
             Apuestas
           </TabsTrigger>
+          {roundLeaderboards.length > 0 && (
+            <TabsTrigger value="leaderboards" className="text-sm">
+              <Trophy className="h-4 w-4 mr-1.5" />
+              Competencias
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="scorecard" className="mt-4">
