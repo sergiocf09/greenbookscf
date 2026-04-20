@@ -1,64 +1,61 @@
 
-## Dictamen: Persistencia de tees y cálculo de handicap
 
-### Lo que encontré (validado en BD producción)
+## Dictamen: por qué la app publicada no muestra los cambios
 
-**Bug crítico #1 — `handicap_history` se guarda con TODOS los campos de trazabilidad en NULL**
+### Causa raíz
 
-Validé en la BD: las últimas ~30 inserciones a `handicap_history` tienen `tee_color`, `slope_rating`, `course_rating`, `gross_score`, `adjusted_gross_score` y `differential` todos en `NULL`. Solo se guarda el índice final.
+La app tiene **PWA con Service Worker activado en producción** (`vite.config.ts` con `VitePWA` + `registerType: "autoUpdate"` + `skipWaiting: true`). El guard en `src/main.tsx` deliberadamente **mantiene el Service Worker activo SOLO en `golfgreenbookscf.com`** y lo desinstala en cualquier otro host. Esto crea dos problemas combinados:
 
-Causa raíz en `useRoundManagement.ts` líneas 1934–2000: la consulta filtra por `rounds.status = 'completed'`, pero la ronda actual aún está en `setup`/`in_progress` cuando esto corre. El bloque `if (rd.id === roundState.id)` (línea 1993) **nunca matchea**, así que `thisRoundDiff/AGS/Gross/CR/SR/Tee` se quedan en `null`. Después (línea 2126) recién se marca `completed`. El orden de operaciones está invertido.
+**Problema 1 — Caché de Workbox sirviendo bundles viejos**
+La estrategia `NetworkFirst` con `cleanupOutdatedCaches: true` debería actualizar, pero el cache `static-assets-cache-v2` tiene un `networkTimeoutSeconds: 3` muy corto. En redes móviles lentas (4G/datos), el SW responde con la versión vieja del bundle JS antes de que termine la descarga del nuevo, y como JS importa por hash, sigue cargando módulos viejos en cadena.
 
-**Bug crítico #2 — Tee del organizador no se persiste al crear la ronda**
+**Problema 2 — `additionalManifestEntries` con `revision: Date.now()`**
+```ts
+additionalManifestEntries: [{ url: "/", revision: Date.now().toString() }]
+```
+Esto hace que **cada build genere un revision diferente para `/`**, lo cual es correcto, PERO Workbox lo precachea. Si el usuario abre la PWA instalada (modo standalone iOS), el SW viejo sigue sirviendo el `/` viejo desde precache hasta que se actualice, y la actualización requiere cerrar TODAS las pestañas/instancias de la app.
 
-La función `create_round` en BD (migración 20260128024928) inserta `round_players` SIN `tee_color`. Validé en BD que varios `round_players` tienen `tee_color = NULL` mientras que `rounds.tee_color` puede ser distinto al que jugó el jugador.
+**Problema 3 — iOS PWA no libera SW al "desinstalar"**
+Cuando borraste la app de la pantalla de inicio en iOS, el Service Worker registrado en Safari **sigue vivo** asociado al origen `golfgreenbookscf.com`. Borrar caché del navegador en iOS no siempre desregistra SWs de PWAs ya instaladas previamente. Por eso ves la versión vieja incluso después de "limpiar todo".
 
-Ejemplo real (12-abr-2026): el organizador Sergio CF jugó tees azules pero su `round_players.tee_color` es NULL. Otro caso (12-abr-2026): Carlos Echevarría tiene `player_tee=blue` pero `round_tee=white` — el cálculo USGA del histórico cae al fallback `round.tee_color = white` para Sergio CF, usando un Slope incorrecto.
+### Por qué el preview/desarrollo sí funciona
 
-**Bug crítico #3 — El recálculo del Index nuevo usa el mismo dato sucio**
+El guard en `main.tsx` desregistra SW y borra caches en cualquier host que NO sea `golfgreenbookscf.com`. Por eso preview y `greenbookscf.lovable.app` siempre muestran lo último.
 
-Como la ronda recién cerrada todavía aparece como no-completed, no se incluye en la lista de las últimas 20 rondas usadas para `calcHI(diffs)`. El nuevo `current_handicap` se calcula con el set anterior (sin la ronda recién jugada).
+---
 
-### Plan de corrección
+## Plan de solución
 
-**1) Reordenar el cierre de ronda (`useRoundManagement.ts`)**
+### Cambio 1 — `src/main.tsx`: forzar actualización al detectar SW viejo
 
-Marcar `rounds.status = 'completed'` **antes** del bloque de `handicap_history`. Si falla algún paso posterior, revertir solo ese paso (ya hay try/catch granular). Esto asegura que:
-- La ronda recién cerrada se incluye en las últimas 20 para el nuevo Index.
-- El bloque `if (rd.id === roundState.id)` matchea y persiste todos los campos de trazabilidad (tee, slope, rating, gross, AGS, diff).
+Agregar lógica que, en producción (`golfgreenbookscf.com`), escuche el evento `controllerchange` del SW y haga `window.location.reload()` automático cuando detecte que un nuevo SW tomó control. Esto hace que el primer load tras un deploy muestre la versión vieja por ~1 segundo y luego recargue sola con la versión nueva.
 
-Alternativa más segura: en vez de mover el UPDATE, calcular los datos de la ronda actual **directamente** (no depender de que aparezca en el query), y dejar el resto del histórico tal cual. Esto evita riesgos de cambio de orden en la pipeline de cierre.
+### Cambio 2 — `vite.config.ts`: subir el timeout y endurecer el caché
 
-**Recomiendo la alternativa**: calcular la ronda actual con los datos ya en memoria (`sanitizedPlayers`, `confirmedScoresForClose`, `course`, `roundState.teeColor` por jugador) y luego unirla al histórico para `calcHI`. Es determinista y no depende del estado en BD.
+- Cambiar `networkTimeoutSeconds: 3` → `10` en `static-assets-cache-v2` para dar tiempo a descargar bundles nuevos en redes lentas.
+- Eliminar `additionalManifestEntries` con `Date.now()` (genera precache problemático del HTML root).
+- Cambiar el handler del `document` request a `NetworkFirst` con timeout corto pero **sin precache del root**, así el HTML siempre se valida contra red.
+- Renombrar el cache a `static-assets-cache-v3` para forzar invalidación total del cache viejo en dispositivos con la versión actual.
 
-**2) Corregir `create_round` para persistir el tee del organizador**
+### Cambio 3 — Mecanismo de "kill switch" de emergencia
 
-Migración: agregar `tee_color := COALESCE(p_tee_color, 'white')` al INSERT de `round_players`. Garantiza que desde el inicio cada jugador tiene su tee explícito en su fila.
+Agregar al inicio de `main.tsx` (solo en `golfgreenbookscf.com`) un check de versión: si `localStorage.appVersion` no coincide con una constante hardcodeada en el bundle, desregistrar SW + borrar caches + recargar. Esto te da un botón rojo: cada vez que necesites garantizar que TODOS los usuarios reciban una versión nueva sí o sí, incrementas la constante `APP_VERSION` y se autolimpia en todos los dispositivos al primer load.
 
-**3) Backfill de datos históricos**
+### Cambio 4 — Acción inmediata para tu dispositivo (manual, no requiere código)
 
-Script de migración que para cada `round_players` con `tee_color IS NULL` lo setea al `rounds.tee_color` correspondiente (es lo que el cálculo asume hoy como fallback, pero lo materializa explícitamente para no perder integridad si después se cambia el default de la ronda).
+Mientras se publican los cambios anteriores, en tu iPhone:
+1. Safari → Ajustes → Avanzado → Datos de sitios web → buscar `golfgreenbookscf.com` → Eliminar.
+2. Esto SÍ desregistra el SW (a diferencia de borrar historial general).
+3. Recarga la app.
 
-**4) Backfill opcional de `handicap_history` traceability (NULL → calculado)**
+### Archivos a modificar
 
-Para cada fila de `handicap_history` con `tee_color IS NULL` y `round_id` no nulo, recomputar `gross_score`, `AGS`, `differential`, `course_rating`, `slope_rating` y `tee_color` desde `hole_scores` + `round_players.tee_color` + `course_tees`. Esto rehidrata el módulo de hándicap (Stats, HandicapHistoryView) con datos reales en vez de mostrar `--`.
+- `src/main.tsx` — agregar listener `controllerchange` + version kill switch
+- `vite.config.ts` — ajustar workbox config (timeout, cache name, quitar `additionalManifestEntries`)
 
-**5) Validación post-fix**
+### Resultado esperado
 
-Después de cerrar una ronda nueva, verificar en BD:
-- `round_players.tee_color` tiene valor (no NULL) para el organizador y todos los jugadores.
-- `handicap_history` recién insertado tiene `tee_color`, `slope_rating`, `course_rating`, `gross_score`, `adjusted_gross_score`, `differential` poblados.
-- El nuevo `current_handicap` incluye la ronda recién cerrada en su cálculo.
+- Tras publicar este fix una sola vez, los próximos deploys serán visibles en máximo 1 recarga (el SW detecta nueva versión, toma control, dispara recarga automática).
+- El kill switch queda disponible para forzar updates urgentes incrementando `APP_VERSION`.
+- El cache viejo `static-assets-cache-v2` se elimina automáticamente al cambiar a `v3`.
 
-### Archivos a tocar
-
-- `src/hooks/useRoundManagement.ts` — calcular la ronda actual en memoria antes del query histórico, mergear al diffs[] y al insert de `handicap_history`.
-- Migración SQL: `create_round` actualizada para escribir `tee_color` del organizador.
-- Migración SQL: backfill de `round_players.tee_color` desde `rounds.tee_color`.
-- Migración SQL: backfill de `handicap_history` con campos de trazabilidad recomputados (consulta SELECT + UPDATE sobre rondas con scoring confirmado).
-
-### Notas
-
-- El `roundSnapshot.ts` ya persiste `teeColor` por jugador (línea 273), así que el snapshot histórico está OK.
-- `useUSGAHandicap.ts` y `useHandicapHistory.ts` ya usan `rp.tee_color` como fuente principal con fallback a `round.tee_color`. El fix lo deja completamente determinista.
-- El fix #1 también resuelve que el módulo "Hándicap Index Calculado" muestre la ronda recién cerrada de inmediato al volver al perfil.
