@@ -79,37 +79,34 @@ export const calculateUnitsBets = (
 
         const unitsAdv = getUnitsAdvantage(playerA.id, playerB.id);
 
-        // Unidades estándar
+        // Unidades estándar (sin aplicar ventaja todavía)
         const stdA = countStandardUnits(playerA.id);
         const stdB = countStandardUnits(playerB.id);
-        // unitsAdv positive = A gives advantage to B → subtract from (A - B)
-        const diffStd = (stdA - stdB) - unitsAdv;
-        if (diffStd !== 0) {
-          const amount = diffStd * valueStandard;
-          const advSuffixA = unitsAdv !== 0
-            ? ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'rival' : 'tú'})`
-            : '';
-          const advSuffixB = unitsAdv !== 0
-            ? ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'tú' : 'rival'})`
-            : '';
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount, segment: 'total', description: `${stdA} vs ${stdB} unidades${advSuffixA}`, units: Math.abs(diffStd), baseUnitAmount: valueStandard });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -amount, segment: 'total', description: `${stdB} vs ${stdA} unidades${advSuffixB}`, units: Math.abs(diffStd), baseUnitAmount: valueStandard });
+        const diffStdRaw = stdA - stdB;
+        if (diffStdRaw !== 0) {
+          const amount = diffStdRaw * valueStandard;
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount, segment: 'total', description: `${stdA} vs ${stdB} unidades`, units: Math.abs(diffStdRaw), baseUnitAmount: valueStandard });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -amount, segment: 'total', description: `${stdB} vs ${stdA} unidades`, units: Math.abs(diffStdRaw), baseUnitAmount: valueStandard });
         }
 
-        // Unidades genéricas
+        // Unidades genéricas (sin aplicar ventaja todavía)
         const genA = countGenericUnits(playerA.id);
         const genB = countGenericUnits(playerB.id);
-        const diffGen = (genA - genB) - unitsAdv;
-        if (diffGen !== 0) {
-          const amountGen = diffGen * valueGeneric;
-          const advSuffixA = unitsAdv !== 0
-            ? ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'rival' : 'tú'})`
-            : '';
-          const advSuffixB = unitsAdv !== 0
-            ? ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'tú' : 'rival'})`
-            : '';
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount: amountGen, segment: 'total', description: `${genA} vs ${genB} unidades genéricas${advSuffixA}`, units: Math.abs(diffGen), baseUnitAmount: valueGeneric });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -amountGen, segment: 'total', description: `${genB} vs ${genA} unidades genéricas${advSuffixB}`, units: Math.abs(diffGen), baseUnitAmount: valueGeneric });
+        const diffGenRaw = genA - genB;
+        if (diffGenRaw !== 0) {
+          const amountGen = diffGenRaw * valueGeneric;
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount: amountGen, segment: 'total', description: `${genA} vs ${genB} unidades genéricas`, units: Math.abs(diffGenRaw), baseUnitAmount: valueGeneric });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -amountGen, segment: 'total', description: `${genB} vs ${genA} unidades genéricas`, units: Math.abs(diffGenRaw), baseUnitAmount: valueGeneric });
+        }
+
+        // Ventaja de unidades: aplicar UNA SOLA VEZ como ajuste fijo al total (no por bucket).
+        // unitsAdv positivo = A da ventaja a B → A pierde unitsAdv * valueStandard
+        if (unitsAdv !== 0) {
+          const advAmount = -unitsAdv * valueStandard; // monto para A
+          const advSuffixA = ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'rival' : 'tú'})`;
+          const advSuffixB = ` (ventaja: ${Math.abs(unitsAdv)} → ${unitsAdv > 0 ? 'tú' : 'rival'})`;
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Unidades', amount: advAmount, segment: 'total', description: `Ventaja${advSuffixA}`, units: Math.abs(unitsAdv), baseUnitAmount: valueStandard });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Unidades', amount: -advAmount, segment: 'total', description: `Ventaja${advSuffixB}`, units: Math.abs(unitsAdv), baseUnitAmount: valueStandard });
         }
       }
     }
