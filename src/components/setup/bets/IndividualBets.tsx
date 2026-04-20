@@ -288,6 +288,31 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         </BetSection>
       )}
 
+      {/* Match Play - independiente de Presiones */}
+      {show('matchPlay') && (
+        <BetSection
+          id="matchPlay"
+          title="Match Play"
+          description="Match play bilateral 18 hoyos (independiente)"
+          enabled={config.matchPlay?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('matchPlay' as any, { enabled })}
+          isExpanded={expandedSections.includes('matchPlay')}
+          onExpandChange={(open) => onToggleSection('matchPlay', open)}
+          helpText="Match play individual a 18 hoyos. Se lleva el acumulado de hoyos ganados hoyo a hoyo. El resultado se expresa como 3&2 (ganó con 3 de ventaja y 2 por jugar), 1 UP (ganó al 18) o AS (empate). Se juega con el handicap bilateral configurado en la pantalla de hándicaps."
+        >
+          <AmountInput
+            label="Monto por match"
+            value={config.matchPlay?.amount ?? 50}
+            onChange={(v) => onUpdateBet('matchPlay' as any, { amount: v })}
+          />
+          <p className="text-[9px] text-muted-foreground mt-2">
+            Match continuo del hoyo 1 al 18. Se define cuando la ventaja
+            supera los hoyos restantes (ej: 3&2) o al terminar el hoyo 18.
+            Corre independiente de Presiones — se pueden activar ambas.
+          </p>
+        </BetSection>
+      )}
+
       {/* Rayas */}
       {show('rayas') && (
         <BetSection
