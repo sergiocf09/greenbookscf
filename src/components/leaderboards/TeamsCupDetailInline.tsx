@@ -29,7 +29,7 @@ import {
 import {
   Loader2, Plus, ChevronDown, Pencil, Trash2,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
-  Calendar, MapPin,
+  Calendar, MapPin, CheckCircle, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
@@ -404,7 +404,7 @@ interface Props {
 export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack }) => {
   const { profile } = useAuth();
   const cup = useTeamsCup(leaderboardId);
-  const { event, isCreator } = useLeaderboardDetail(leaderboardId);
+  const { event, isCreator, closeLeaderboard, reopenLeaderboard } = useLeaderboardDetail(leaderboardId);
   const queryClient = useQueryClient();
 
   const [showMatchEditor, setShowMatchEditor] = useState(false);
@@ -676,6 +676,47 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           >
             <Settings className="h-4 w-4" />
           </Button>
+        )}
+        {isCreator && event && (
+          event.status === 'active' ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Cerrar competencia
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Cerrar esta competencia?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Pasará a Historial. Los resultados quedan guardados y
+                    se pueden consultar. Puedes reactivarla si es necesario.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={closeLeaderboard}>
+                    Cerrar competencia
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground text-xs gap-1.5"
+              onClick={reopenLeaderboard}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Reactivar competencia
+            </Button>
+          )
         )}
       </div>
 
