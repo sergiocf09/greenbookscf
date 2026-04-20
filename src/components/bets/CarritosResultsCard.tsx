@@ -491,9 +491,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               {/* Total */}
               <div className="flex items-center justify-between border-t border-border/50 pt-2">
                 <span className="text-xs font-medium">Total 18</span>
-                <span className={cn('text-sm font-bold tabular-nums', getNetTone(baseTeamNetTotal))}>
-                  {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={cn('text-sm tabular-nums', getNetTone(baseTeamNetTotal))}>
+                    {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+                  </span>
+                  {(() => {
+                    const totalAmt = results.totalAmount ?? 0;
+                    const totalMoney = (baseTeamNetTotal > 0 ? 1 : baseTeamNetTotal < 0 ? -1 : 0) * totalAmt;
+                    if (totalMoney === 0) return null;
+                    return (
+                      <span className={cn('text-sm font-bold tabular-nums',
+                        totalMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                        {totalMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalMoney))}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 
