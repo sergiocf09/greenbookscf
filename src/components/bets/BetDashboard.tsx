@@ -3151,9 +3151,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Front 9</span>
-                        <span className={cn('text-xs font-bold tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {frontBetsDisplay}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('text-xs tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                            {frontBetsDisplay}
+                          </span>
+                          {(() => {
+                            const frontNetBets = displayFrontBets.filter(b => b > 0).length
+                              - displayFrontBets.filter(b => b < 0).length;
+                            const frontMoney = frontNetBets * bet.frontAmount;
+                            if (frontMoney === 0) return null;
+                            return (
+                              <span className={cn('text-xs font-bold tabular-nums',
+                                frontMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                                {frontMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontMoney))}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <div className="grid grid-cols-9 gap-1">
                           {displayFrontDetails.map((detail, idx) => {
