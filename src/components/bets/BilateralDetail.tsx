@@ -516,7 +516,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       // ── Putts — total único, sin desplegable ───────────────────────────────
       const puttsFront = getAmt('Putts Front 9');
       const puttsBack  = getAmt('Putts Back 9');
-      const puttsSum   = puttsFront + puttsBack;
+      const puttsTotal18 = getAmt('Putts Total');
+      const puttsSum   = puttsFront + puttsBack + puttsTotal18;
       if (puttsSum !== 0) {
         groups.push({
           key: 'hist_putts', label: 'Putts', configKey: 'putts',
@@ -2619,7 +2620,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || isMatchPlay || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || isMatchPlay || isPutts) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -2809,20 +2810,20 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     const totalR = holes.reduce((s, x) => s + x.pR, 0);
                                     return (
                                       <div className="space-y-2">
-                                        <div className="flex items-center justify-between gap-4">
-                                          <span className="font-medium text-sm">Putts {segment.label}</span>
-                                          <span className="text-xs text-muted-foreground">{getShortName(player)} vs {getShortName(rival)}</span>
-                                        </div>
+                                        <div className="font-medium text-sm">Putts {segment.label}</div>
                                         <div className="overflow-x-auto">
                                           <div className="min-w-max">
-                                            {/* Hole numbers */}
-                                            <div className="flex gap-0.5">
+                                            {/* Hole numbers row (with left spacer for name column) */}
+                                            <div className="flex gap-0.5 items-center">
+                                              <div className="w-16 shrink-0" />
                                               {holes.map(x => (
                                                 <div key={x.h} className="w-7 text-center text-[8px] text-muted-foreground">{x.h}</div>
                                               ))}
+                                              <div className="w-9 text-center text-[8px] text-muted-foreground font-semibold">Tot</div>
                                             </div>
-                                            {/* Player putts row */}
-                                            <div className="flex gap-0.5">
+                                            {/* Player row: name left + putts per hole + total */}
+                                            <div className="flex gap-0.5 items-center mt-0.5">
+                                              <div className="w-16 shrink-0 text-[10px] font-medium truncate pr-1">{getShortName(player)}</div>
                                               {holes.map(x => (
                                                 <div key={x.h} className={cn(
                                                   'w-7 h-6 flex items-center justify-center text-[10px] font-bold rounded',
@@ -2833,9 +2834,18 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                                   {x.pP}
                                                 </div>
                                               ))}
+                                              <div className={cn(
+                                                'w-9 h-6 flex items-center justify-center text-[10px] font-bold rounded',
+                                                totalP < totalR ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                totalP > totalR ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {totalP}
+                                              </div>
                                             </div>
-                                            {/* Rival putts row */}
-                                            <div className="flex gap-0.5">
+                                            {/* Rival row: name left + putts per hole + total */}
+                                            <div className="flex gap-0.5 items-center mt-0.5">
+                                              <div className="w-16 shrink-0 text-[10px] font-medium truncate pr-1">{getShortName(rival)}</div>
                                               {holes.map(x => (
                                                 <div key={x.h} className={cn(
                                                   'w-7 h-6 flex items-center justify-center text-[10px] font-bold rounded',
@@ -2846,14 +2856,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                                   {x.pR}
                                                 </div>
                                               ))}
+                                              <div className={cn(
+                                                'w-9 h-6 flex items-center justify-center text-[10px] font-bold rounded',
+                                                totalR < totalP ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                totalR > totalP ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {totalR}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                        <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
-                                          <span>{getShortName(player)}: <span className={cn('font-bold', totalP < totalR ? 'text-green-600' : totalP > totalR ? 'text-destructive' : '')}>{totalP}</span></span>
-                                          <span className="text-muted-foreground">vs</span>
-                                          <span>{getShortName(rival)}: <span className={cn('font-bold', totalR < totalP ? 'text-green-600' : totalR > totalP ? 'text-destructive' : '')}>{totalR}</span></span>
-                                          <span className="text-muted-foreground">putts</span>
                                         </div>
                                       </div>
                                     );
@@ -2940,6 +2952,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   return {
                     front: byLabel('Putts Front 9') ?? (betConfig.putts?.frontAmount ?? 50),
                     back: byLabel('Putts Back 9') ?? (betConfig.putts?.backAmount ?? 50),
+                    total: byLabel('Putts Total') ?? (betConfig.putts?.totalAmount ?? 0),
                   };
                 case 'matchPlay':
                   return {
@@ -3024,6 +3037,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'putts':
                   upsert('Putts Front 9', overrides.front);
                   upsert('Putts Back 9', overrides.back);
+                  upsert('Putts Total', overrides.total);
                   break;
                 case 'caros':
                   upsert('Caros', overrides.total);
