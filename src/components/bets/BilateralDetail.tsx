@@ -2558,6 +2558,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   )}>
                                     {pressureDisplay}
                                   </span>
+                                ) : isMatchPlay ? (
+                                  <span className={cn(
+                                    'font-semibold cursor-pointer hover:underline',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
+                                    {matchPlayDisplay}
+                                  </span>
                                 ) : (
                                   <>
                                     <span className={cn(
