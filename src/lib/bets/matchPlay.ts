@@ -62,7 +62,19 @@ export const calculateMatchPlayBets = (
         playerA, playerB, scores, course, bilateralHandicaps
       );
 
-      const amount = config.matchPlay?.amount ?? 50;
+      // Per-pair amount override (set from BilateralDetail editor)
+      const overrides = config.betOverrides;
+      const overrideMatch = overrides?.find((o) => {
+        const samePair =
+          (o.playerAId === playerA.id && o.playerBId === playerB.id) ||
+          (o.playerAId === playerB.id && o.playerBId === playerA.id);
+        return samePair && o.betType?.toLowerCase() === 'match play';
+      });
+      const overrideAmount =
+        typeof overrideMatch?.amountOverride === 'number' && Number.isFinite(overrideMatch.amountOverride)
+          ? overrideMatch.amountOverride
+          : undefined;
+      const amount = overrideAmount ?? config.matchPlay?.amount ?? 50;
 
       // Hole-by-hole: track balance (positive = A leads)
       let balance = 0;
