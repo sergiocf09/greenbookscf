@@ -47,6 +47,7 @@ export type { ZoologicoAnimalResult } from './bets/zoologico';
 export { calculateSkinsGrupalBets } from './bets/skinsGrupal';
 export { getSkinsEvolution } from './bets/skinsEvolution';
 export type { SkinsHoleState, SkinsEvolution } from './bets/skinsEvolution';
+export { getMatchPlayEvolution } from './bets/matchPlayEvolution';
 export {
   getPlayerBalance,
   getBilateralBalance,

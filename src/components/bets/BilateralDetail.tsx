@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MarkerState, markerInfo, BetOverride } from '@/types/golf';
 import { SnapshotPairBreakdowns, SnapshotPairSegmentResults } from '@/lib/roundSnapshot';
-import { BetSummary, getPressureEvolution, getSkinsEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
+import { BetSummary, getPressureEvolution, getSkinsEvolution, getMatchPlayEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
 import { fmtMoney } from '@/lib/formatMoney';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
@@ -2477,6 +2477,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         // - Only one bet was opened (initial) AND that bet is tied (+0)
                         // If there are multiple lines (e.g., +1 -1), show actual results even if net is $0
                         const isPressures = group.key === 'pressures';
+                        const isMatchPlay = group.key === 'matchPlay';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
                         const isSkinsGrupal = group.key === 'skinsGrupal';
@@ -2503,9 +2504,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const skinsEvolution = isSkins && !isHistorical
                           ? getSkinsEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
                           : null;
+                        const matchPlayEvolution = isMatchPlay && !isHistorical
+                          ? getMatchPlayEvolution(player, rival, confirmedScores, course, effectiveBetConfig, effectiveBetConfig.bilateralHandicaps, startingHole)
+                          : null;
 
                         const pressureSegmentData = pressureEvolution?.[segmentType];
                         const skinsSegmentData = skinsEvolution?.[segmentType];
+                        const matchPlaySegmentData = matchPlayEvolution?.total;
 
                         // Check if continua mode is active for this pair
                         const pairKeyEv = [player.id, rival.id].sort().join('_');
@@ -2517,6 +2522,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 
                         // In HISTORICAL mode, NEVER recalculate — description from snapshot is the only source.
                         const pressureFallback = isPressures && !isHistorical ? (pressureSegmentData?.finalDisplay ?? '') : '';
+                        const matchPlayFallback = isMatchPlay && !isHistorical ? (matchPlaySegmentData?.finalDisplay ?? '') : '';
 
                         // Add Carry label ONLY for Front 9 when main line finished tied (live mode only).
                         const descAlreadyHasCarry = pressureDesc.toLowerCase().includes('carry');
@@ -2528,6 +2534,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const pressureDisplay = pressureDisplayRaw === '—'
                           ? '—'
                           : `${pressureDisplayRaw}${carrySuffix}`;
+
+                        const matchPlayDisplay = ((pressureDesc || matchPlayFallback || '—').trim()) || '—';
+
 
                         // Zoológico segments only show the animal label (no "X vs X" comparison).
                         // En histórico: Presiones muestra su description. El resto no tiene segments (segments=[]).
@@ -2548,6 +2557,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
                                   )}>
                                     {pressureDisplay}
+                                  </span>
+                                ) : isMatchPlay ? (
+                                  <span className={cn(
+                                    'font-semibold cursor-pointer hover:underline',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
+                                    {matchPlayDisplay}
                                   </span>
                                 ) : (
                                   <>
@@ -2577,7 +2593,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || isMatchPlay || (isPutts && segmentType !== 'total')) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -2585,6 +2601,53 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[95vw] max-w-md p-3" side="top">
+                                  {isMatchPlay && matchPlayEvolution && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between gap-4">
+                                        <span className="font-medium text-sm">Match Play 18</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {getShortName(player)} vs {getShortName(rival)}
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <div className="grid grid-cols-9 gap-1">
+                                          {matchPlayEvolution.front.holes.map((hole) => (
+                                            <div key={hole.holeNumber} className="flex flex-col items-center">
+                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                              <div className={cn(
+                                                'w-full h-8 flex items-center justify-center text-[10px] font-bold rounded',
+                                                hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
+                                                hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {hole.display || 'AS'}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <div className="grid grid-cols-9 gap-1">
+                                          {matchPlayEvolution.back.holes.map((hole) => (
+                                            <div key={hole.holeNumber} className="flex flex-col items-center">
+                                              <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
+                                              <div className={cn(
+                                                'w-full h-8 flex items-center justify-center text-[10px] font-bold rounded',
+                                                hole.inactive ? 'bg-muted/30 text-muted-foreground/40' :
+                                                hole.bets[0] > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' :
+                                                hole.bets[0] < 0 ? 'bg-red-100 dark:bg-red-900/30 text-destructive' :
+                                                'bg-muted/50 text-muted-foreground'
+                                              )}>
+                                                {hole.display || 'AS'}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <div className="text-[10px] text-center pt-1 border-t border-border/50">
+                                        Final: <span className="font-bold">{matchPlayEvolution.total.finalDisplay}</span>
+                                      </div>
+                                    </div>
+                                  )}
                                   {isPressures && pressureSegmentData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
