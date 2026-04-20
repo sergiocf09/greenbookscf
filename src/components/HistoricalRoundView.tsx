@@ -732,7 +732,6 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                         {idx + 1}.
                       </span>
                       <PlayerAvatar
-                        name={s.display_name}
                         initials={s.initials}
                         background={s.avatar_color}
                         size="sm"
