@@ -1129,7 +1129,37 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Unlink Round Confirm ─── */}
+      {/* ── Close Competition Confirm (typed CERRAR) ─── */}
+      <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
+            Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+          </p>
+          <Input
+            value={closeConfirmText}
+            onChange={(e) => setCloseConfirmText(e.target.value)}
+            placeholder="Escribe CERRAR"
+            className="uppercase"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button
+              disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
+              onClick={async () => {
+                await closeLeaderboard();
+                setShowCloseConfirm(false);
+                setCloseConfirmText('');
+              }}
+            >
+              Cerrar competencia
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={showUnlinkConfirm} onOpenChange={setShowUnlinkConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
