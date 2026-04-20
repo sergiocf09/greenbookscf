@@ -65,6 +65,7 @@ import { devError, devLog, devWarn } from '@/lib/logger';
 import { expandMarkerStateToRows } from '@/lib/markerPersistence';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
@@ -2341,204 +2342,33 @@ const Index = () => {
       </AlertDialog>
 
       {/* Header */}
-      <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-        <div className="max-w-md mx-auto flex items-center">
-          {/* Left: Logo */}
-          <div className="flex items-center flex-shrink-0">
-            <GreenBookLogo height={72} variant="header" />
-          </div>
-          
-          {/* Center: Hole Info or Live Badge */}
-          <div className="flex-1 flex justify-center">
-            {view !== 'setup' && course && currentHoleInfo ? (
-              <div className="text-center">
-                <p className="text-xl font-bold text-primary-foreground">Hoyo {currentHole}</p>
-                <p className="text-sm font-bold text-primary-foreground/90">
-                  Par {holePar} • SI {holeStrokeIndex}
-                  {holeYards && <span> • {holeYards} yds</span>}
-                </p>
-                <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
-              </div>
-            ) : view === 'setup' ? (
-              <FriendsLiveHeaderBadge />
-            ) : (view === 'leaderboards' || view === 'rankings' || view === 'stats') ? (
-              <Badge variant="secondary" className="bg-primary-foreground/15 text-primary-foreground border-0 text-sm px-3 py-1">
-                {view === 'leaderboards' ? 'Leaderboards' : view === 'rankings' ? 'Rankings' : 'Estadísticas'}
-              </Badge>
-            ) : null}
-          </div>
-          
-           {/* Right: Friends + Help/Refresh + Profile Menu */}
-           <div className="flex items-center flex-shrink-0 gap-1">
-             {/* Friends Button - only show in setup view */}
-             {view === 'setup' && (
-               <Button 
-                 variant="ghost" 
-                 size="icon" 
-                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-                 onClick={() => openDialog('friends')}
-               >
-                 <Users className="h-5 w-5" />
-               </Button>
-             )}
-             {/* Help + Refresh stacked vertically */}
-             <div className="flex flex-col items-center -space-y-1">
-               {view !== 'leaderboards' && view !== 'rankings' && view !== 'stats' && (
-                 <Button 
-                   variant="ghost" 
-                   size="icon" 
-                   className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
-                   onClick={() => openDialog('help')}
-                 >
-                   <HelpCircle className="h-7 w-7" />
-                 </Button>
-               )}
-               <Button 
-                 variant="ghost" 
-                 size="icon" 
-                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
-                 onClick={() => window.location.reload()}
-               >
-                 <RefreshCw className="h-4 w-4" />
-               </Button>
-             </div>
-
-
-            {user?.is_anonymous ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
-                onClick={() => navigate('/auth', { state: { returnTo: '/' } })}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            ) : (
-            <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  {profile?.initials ? (
-                    <div className="relative">
-                      {/* Match header look & feel: green ring + subtle gold accent */}
-                      <div className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-primary to-accent opacity-80" />
-                      <div className="relative rounded-full bg-background p-0.5">
-                        <PlayerAvatar
-                          initials={profile.initials}
-                          background={profile.avatar_color || "#3B82F6"}
-                          size="md"
-                          className="shadow-sm"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openDialog('profileMenuHelp')}>
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  ¿Qué hay en este menú?
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                  {theme === 'dark'
-                    ? <Sun className="h-4 w-4 mr-2" />
-                    : <Moon className="h-4 w-4 mr-2" />}
-                  {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <div className="px-2 py-1.5">
-                  <p className="font-medium text-sm">{profile?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => openDialog('profile')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/join')}>
-                  <Hash className="h-4 w-4 mr-2" />
-                  Unirse con Código
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setView('leaderboards')}>
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Leaderboards
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setView('rankings')}>
-                  <TrendingDown className="h-4 w-4 mr-2" />
-                  Rankings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openDialog('history')}>
-                  <History className="h-4 w-4 mr-2" />
-                  Historial de Rondas
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    // Best-effort repair: if the latest completed round has a snapshot but is missing
-                    // persisted balances/ledger (e.g. a past partial close), rebuild from snapshot.
-                    try {
-                      const { data: latestCompleted, error } = await supabase
-                        .from('rounds')
-                        .select('id')
-                        .eq('status', 'completed')
-                        .order('updated_at', { ascending: false })
-                        .limit(1)
-                        .maybeSingle();
-
-                      if (!error && latestCompleted?.id) {
-                        await supabase.rpc('rebuild_round_financials_from_snapshot', {
-                          p_round_id: latestCompleted.id,
-                        });
-                      }
-                    } catch (e) {
-                      // Silent: if repair fails, we still open the dialog and let it load normally.
-                      devError('Balances repair attempt failed:', e);
-                    }
-
-                    openDialog('balances');
-                  }}
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Balances Históricos
-                </DropdownMenuItem>
-                {pendingRounds && pendingRounds.length > 0 && (
-                  <DropdownMenuItem onClick={() => openDialog('pendingRound')}>
-                    <Play className="h-4 w-4 mr-2 text-destructive" />
-                    <span>Rondas Pendientes</span>
-                    <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => { setProfileMenuOpen(false); setView('stats'); }}>
-                  <BarChart2 className="h-4 w-4 mr-2" />
-                  Estadísticas
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openDialog('handicap')}>
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Calcular Handicap
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openDialog('handicapHistory')}>
-                  <TrendingDown className="h-4 w-4 mr-2" />
-                  Historial de Handicap
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Cerrar Sesión
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <div className="flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground">
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:underline">Términos</a>
-                  <span>·</span>
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacidad</a>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            )}
-          </div>
-
-          <ProfileDialog open={dialogs.profile} onOpenChange={(v: boolean) => setDialog('profile', v)} />
-        </div>
-      </header>
+      <AppHeader
+        view={view}
+        course={course}
+        currentHole={currentHole}
+        currentHoleInfo={currentHoleInfo}
+        holePar={holePar}
+        holeStrokeIndex={holeStrokeIndex}
+        holeYards={holeYards}
+        user={user}
+        profile={profile}
+        theme={theme}
+        profileMenuOpen={profileMenuOpen}
+        pendingRounds={pendingRounds}
+        isRoundStarted={isRoundStarted}
+        roundState={roundState}
+        linkedLeaderboards={linkedLeaderboards}
+        onSetView={setView}
+        onSetTheme={setTheme}
+        onSetProfileMenuOpen={setProfileMenuOpen}
+        onOpenDialog={(name) => openDialog(name as DialogName)}
+        onNavigate={navigate}
+        onSignOut={signOut}
+        onSetLeaderboardDetailId={setLeaderboardDetailId}
+        onSetLeaderboardDetailType={setLeaderboardDetailType}
+        onSetRankingDetailId={setRankingDetailId}
+      />
+      <ProfileDialog open={dialogs.profile} onOpenChange={(v: boolean) => setDialog('profile', v)} />
 
       {/* Guest registration banner */}
       {user?.is_anonymous && (
