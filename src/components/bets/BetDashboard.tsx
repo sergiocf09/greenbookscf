@@ -2850,10 +2850,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       countForTeam(resolvedTeamB, hitsB);
                       hitsA.sort((a, b) => a.holeNumber - b.holeNumber);
                       hitsB.sort((a, b) => a.holeNumber - b.holeNumber);
-                      const diff = hitsA.length - hitsB.length;
-                      const money = diff * (bet.unitsConfig.valuePerUnit || 0);
-                      return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, money };
-                    })();
+                       const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
+                       const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
+                       // Equipo que DA empieza debiendo (negativo para él)
+                       const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
+                                          : unitsAdvTeam === 'b' ?  unitsAdv
+                                          : 0;
+                       const diff = hitsA.length - hitsB.length;
+                       const adjustedDiff = diff + netAdvantage;
+                       const money = adjustedDiff * (bet.unitsConfig.valuePerUnit || 0);
+                       return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, adjustedDiff, money, unitsAdv, unitsAdvTeam, netAdvantage };
+                     })();
 
                     // ── Build Oyeses detail ──
                     const oyesesDetail = (() => {
