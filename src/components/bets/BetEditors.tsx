@@ -149,7 +149,55 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           </div>
         </div>
       )}
-      
+
+      {betType === 'units' && (
+        <div className="space-y-2 pt-3 border-t border-border/50">
+          <Label className="text-sm font-semibold">Ventaja de Unidades</Label>
+          <p className="text-xs text-muted-foreground">
+            Unidades fijas que un jugador otorga al otro para equilibrar.
+            El que da ventaja empieza debiendo ese número de unidades.
+          </p>
+          <div className="text-xs text-center text-muted-foreground italic">
+            {unitsAdvantage === 0
+              ? '— Sin ventaja —'
+              : unitsAdvantage > 0
+                ? `Tú das ${unitsAdvantage} unidad${unitsAdvantage !== 1 ? 'es' : ''}`
+                : `Rival da ${Math.abs(unitsAdvantage)} unidad${Math.abs(unitsAdvantage) !== 1 ? 'es' : ''}`}
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setUnitsAdvantage(v => v - 1)}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <div className={cn(
+              'min-w-[80px] text-center text-2xl font-bold tabular-nums',
+              unitsAdvantage > 0 ? 'text-destructive'
+                : unitsAdvantage < 0 ? 'text-green-600'
+                : 'text-muted-foreground'
+            )}>
+              {unitsAdvantage === 0 ? '—' : (unitsAdvantage > 0 ? `+${unitsAdvantage}` : `${unitsAdvantage}`)}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setUnitsAdvantage(v => v + 1)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center">
+            + = tú das ventaja · − = rival te da ventaja · 0 = sin ventaja
+          </p>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">
         Valores originales: {hasFront && `Front $${segmentConfig.front}`} {hasBack && `Back $${segmentConfig.back}`} {hasTotal && `${hasFront || hasBack ? 'Total' : ''} $${segmentConfig.total}`}
       </p>
