@@ -340,9 +340,22 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium">Front 9</span>
-              <span className={cn('text-xs font-bold tabular-nums', getNetTone(baseTeamNetFront))}>
-                {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetFront))}>
+                  {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
+                </span>
+                {(() => {
+                  const frontAmt = results.frontAmount ?? 0;
+                  const frontMoney = (baseTeamNetFront > 0 ? 1 : baseTeamNetFront < 0 ? -1 : 0) * frontAmt;
+                  if (frontMoney === 0) return null;
+                  return (
+                    <span className={cn('text-xs font-bold tabular-nums',
+                      frontMoney > 0 ? 'text-green-600' : 'text-destructive')}>
+                      {frontMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontMoney))}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
             <div className="grid grid-cols-9 gap-1">
                 {baseNetByHoleFront.map((net, idx) => {
