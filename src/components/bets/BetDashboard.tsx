@@ -871,6 +871,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         moneyA,
         moneyB: -moneyA,
         amount: frontAmount + backAmount + totalAmount,
+        frontAmount,
+        backAmount,
+        totalAmount,
         id,
       };
     };
