@@ -48,6 +48,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [renaming, setRenaming] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closeConfirmText, setCloseConfirmText] = useState('');
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -204,33 +206,15 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
           {isCreator && event && (
             event.status === 'active' ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Cerrar competencia
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Cerrar esta competencia?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Pasará a Historial. Los resultados quedan guardados y
-                      se pueden consultar. Puedes reactivarla si es necesario.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={closeLeaderboard}>
-                      Cerrar competencia
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+                onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
+              >
+                <CheckCircle className="h-3.5 w-3.5" />
+                Cerrar competencia
+              </Button>
             ) : (
               <Button
                 variant="ghost"
@@ -397,6 +381,38 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
             <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close competition confirmation dialog */}
+      <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+            <DialogDescription>
+              Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
+              Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={closeConfirmText}
+            onChange={(e) => setCloseConfirmText(e.target.value)}
+            placeholder="Escribe CERRAR"
+            className="uppercase"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button
+              disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
+              onClick={async () => {
+                await closeLeaderboard();
+                setShowCloseConfirm(false);
+                setCloseConfirmText('');
+              }}
+            >
+              Cerrar competencia
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

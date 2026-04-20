@@ -419,6 +419,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [unlinking, setUnlinking] = useState(false);
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null }>({ date: null, courseName: null });
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [closeConfirmText, setCloseConfirmText] = useState('');
 
   const activeRound = useActiveRoundForLink();
 
@@ -679,33 +681,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         )}
         {isCreator && event && (
           event.status === 'active' ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Cerrar competencia
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Cerrar esta competencia?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Pasará a Historial. Los resultados quedan guardados y
-                    se pueden consultar. Puedes reactivarla si es necesario.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={closeLeaderboard}>
-                    Cerrar competencia
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+              onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
+            >
+              <CheckCircle className="h-3.5 w-3.5" />
+              Cerrar competencia
+            </Button>
           ) : (
             <Button
               variant="ghost"
@@ -1145,7 +1129,37 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Unlink Round Confirm ─── */}
+      {/* ── Close Competition Confirm (typed CERRAR) ─── */}
+      <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
+            Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+          </p>
+          <Input
+            value={closeConfirmText}
+            onChange={(e) => setCloseConfirmText(e.target.value)}
+            placeholder="Escribe CERRAR"
+            className="uppercase"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button
+              disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
+              onClick={async () => {
+                await closeLeaderboard();
+                setShowCloseConfirm(false);
+                setCloseConfirmText('');
+              }}
+            >
+              Cerrar competencia
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={showUnlinkConfirm} onOpenChange={setShowUnlinkConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
