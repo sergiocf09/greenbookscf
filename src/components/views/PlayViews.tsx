@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BetSetup } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
