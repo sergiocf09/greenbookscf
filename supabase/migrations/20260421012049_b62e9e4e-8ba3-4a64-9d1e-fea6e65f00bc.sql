@@ -1,0 +1,1 @@
+DELETE FROM public.rounds WHERE id = 'ceb7f4e1-7c7a-4144-8c33-14f703f0621e';
