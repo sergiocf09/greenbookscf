@@ -1,32 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
-import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
-import { PlayerScoreInput } from '@/components/scoring/PlayerScoreInput';
-import { ScoringView } from '@/components/scoring/ScoringView';
-import { PlayerSetup } from '@/components/setup/PlayerSetup';
-import { CourseSelect } from '@/components/setup/CourseSelect';
-import { BetSetup, defaultBetConfig } from '@/components/setup/BetSetup';
-import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer, lazy, Suspense } from 'react';
 import { Scorecard } from '@/components/scorecard/Scorecard';
-import { BetDashboard } from '@/components/bets/BetDashboard';
-import { RoundHistory, CloneRoundData, FullCloneRoundData } from '@/components/RoundHistory';
-import { HandicapCalculator } from '@/components/HandicapCalculator';
-import { HistoricalRoundView } from '@/components/HistoricalRoundView';
-import { HistoricalBalances } from '@/components/HistoricalBalances';
-import { HandicapHistoryView } from '@/components/profile/HandicapHistoryView';
-import { ShareRoundDialog } from '@/components/ShareRoundDialog';
+import { CloneRoundData, FullCloneRoundData } from '@/components/RoundHistory';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
-import { LeaderboardDialog } from '@/components/LeaderboardDialog';
-import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
-import { StatsInlineView } from '@/pages/Stats';
-import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
-import { QuickScoreEntry } from '@/components/scoring/QuickScoreEntry';
+const StatsInlineView = lazy(() => import('@/pages/Stats').then(m => ({ default: m.StatsInlineView })));
+const MoneyRankingDetail = lazy(() => import('@/pages/MoneyRankingDetail'));
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
+import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useRoundManagement } from '@/hooks/useRoundManagement';
 import { useRealtimeScores } from '@/hooks/useRealtimeScores';
@@ -35,69 +20,42 @@ import { useRoundHandicaps } from '@/hooks/useRoundHandicaps';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Settings, LayoutGrid, Trophy, Users, LogOut, User, Check, CheckCircle2, Calendar as CalendarIcon, Share2, Lock, Play, Loader2, History, Calculator, Hash, Sliders, DollarSign, UserPlus, Receipt, Dices, RefreshCw, TrendingDown, HelpCircle, Sun, Moon, BarChart2 } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { Settings, Trophy, Loader2, Dices, RefreshCw } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRound } from '@/contexts/RoundContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { expandMarkerStateToRows } from '@/lib/markerPersistence';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
-import GreenBookLogo from '@/components/GreenBookLogo';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
-import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
-import ContextualHelp from '@/components/help/ContextualHelp';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { CloseAttemptDialog } from '@/components/close/CloseAttemptDialog';
 import { UpgradeModal } from '@/components/UpgradeModal';
-import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBadge';
-import { CloseRoundConfirmDialog } from '@/components/close/CloseRoundConfirmDialog';
 import { RoundShareImage, RoundShareImageProps } from '@/components/share/RoundShareImage';
-import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
-import { FriendsDialog } from '@/components/friends/FriendsDialog';
-import { AddFromFriendsDialog } from '@/components/friends/AddFromFriendsDialog';
 import { Friend } from '@/hooks/useFriends';
 import { GuestConversionScreen } from '@/components/guest/GuestRoundClosedListener';
 import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
@@ -2688,10 +2646,12 @@ const Index = () => {
         {/* Rankings View */}
         {view === 'rankings' && (
           rankingDetailId ? (
-            <MoneyRankingDetail
-              inlineId={rankingDetailId}
-              onBack={() => setRankingDetailId(null)}
-            />
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <MoneyRankingDetail
+                inlineId={rankingDetailId}
+                onBack={() => setRankingDetailId(null)}
+              />
+            </Suspense>
           ) : (
             <RankingsInlineView
               onNavigateToDetail={(id) => setRankingDetailId(id)}
@@ -2701,7 +2661,9 @@ const Index = () => {
 
         {/* Stats View */}
         {view === 'stats' && (
-          <StatsInlineView />
+          <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+            <StatsInlineView />
+          </Suspense>
         )}
       </main>
 

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,22 +8,25 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { RoundProvider } from "@/contexts/RoundContext";
 import Index from "./pages/Index";
-import Stats from "./pages/Stats";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import JoinRound from "./pages/JoinRound";
 import JoinByCode from "./pages/JoinByCode";
-import Leaderboards from "./pages/Leaderboards";
-import LeaderboardDetail from "./pages/LeaderboardDetail";
-import TeamsCupDetail from "./pages/TeamsCupDetail";
 import JoinLeaderboard from "./pages/JoinLeaderboard";
-import MoneyRankings from "./pages/MoneyRankings";
-import MoneyRankingDetail from "./pages/MoneyRankingDetail";
 import NotFound from "./pages/NotFound";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
 import { Loader2 } from "lucide-react";
+
+// Lazy-loaded heavy routes (separate chunks)
+const Stats              = lazy(() => import("./pages/Stats"));
+const TeamsCupDetail     = lazy(() => import("./pages/TeamsCupDetail"));
+const MoneyRankingDetail = lazy(() => import("./pages/MoneyRankingDetail"));
+const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
+const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
+const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
+
 
 const queryClient = new QueryClient();
 
@@ -65,23 +69,25 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/join/:roundId" element={<JoinRound />} />
-    <Route path="/join" element={<JoinByCode />} />
-    <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
-    <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
-    <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
-    <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
-    <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
-    <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
-    <Route path="/terms" element={<TermsOfService />} />
-    <Route path="/privacy" element={<PrivacyPolicy />} />
-    <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
-    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+  <Suspense fallback={<Spinner />}>
+    <Routes>
+      <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/join/:roundId" element={<JoinRound />} />
+      <Route path="/join" element={<JoinByCode />} />
+      <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
+      <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
+      <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
+      <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
+      <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
+      <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </Suspense>
 );
 
 const App = () => (
