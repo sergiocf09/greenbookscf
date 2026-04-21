@@ -33,6 +33,7 @@ import {
 import { Settings, Trophy, Loader2, Dices, RefreshCw } from 'lucide-react';
 import CoinDollarIcon from '@/components/icons/CoinDollarIcon';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRound } from '@/contexts/RoundContext';
 import { format } from 'date-fns';
