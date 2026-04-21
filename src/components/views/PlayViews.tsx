@@ -41,7 +41,7 @@ interface PlayViewsProps {
   playerGroups: PlayerGroup[];
   course: GolfCourse | null;
   scores: Map<string, PlayerScore[]>;
-  confirmedHoles: Map<string, Set<number>>;
+  confirmedHoles: Set<number>;
   betConfig: BetConfig;
   currentHole: number;
   roundState: {
