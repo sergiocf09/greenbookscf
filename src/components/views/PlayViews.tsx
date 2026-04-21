@@ -83,7 +83,7 @@ interface PlayViewsProps {
 
   // Scoring helpers
   setCurrentHole: (h: number) => void;
-  isHoleConfirmed: (playerId: string, holeNumber: number) => boolean;
+  isHoleConfirmed: (holeNumber: number) => boolean;
   confirmHole: (holeNumber: number, playerIds?: string[]) => void;
   updateScore: (...args: unknown[]) => void;
 
