@@ -67,6 +67,8 @@ import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
+import { SetupView } from '@/components/views/SetupView';
+import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard';
@@ -2450,394 +2452,88 @@ const Index = () => {
       {/* Main Content */}
       <main className="max-w-md mx-auto p-4 space-y-4" {...swipeHandlers}>
         {view === 'setup' && (
-          <>
-            {/* Date Picker */}
-            <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
-              <span className="text-sm font-medium">Fecha de la Ronda</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !roundState.date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(roundState.date, "d 'de' MMMM, yyyy", { locale: es })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={roundState.date}
-                    onSelect={(date) => date && setRoundDate(date)}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <CourseSelect 
-              selectedCourseId={selectedCourseId} 
-              onChange={setSelectedCourseId}
-              teeColor={teeColor}
-              onTeeColorChange={handleTeeColorChange}
-              startingHole={startingHole}
-              onStartingHoleChange={setStartingHole}
-              enabled={enableCourseCatalog}
-            />
-            <PlayerSetup 
-              players={players} 
-              onChange={handlePlayersChange} 
-              maxPlayers={6}
-              showAddGroupButton={true}
-              onAddGroupClick={handleAddGroup}
-              courseId={selectedCourseId}
-              defaultTeeColor={teeColor}
-              onAddFromFriendsClick={() => {
-                setAddFriendsTargetGroupId(null); // null = main group
-                openDialog('addFromFriends');
-              }}
-              organizerProfileId={roundState.organizerProfileId}
-            />
-            
-            {/* Additional Groups */}
-            {playerGroups.map((group, idx) => (
-              <div key={group.id} className="space-y-2">
-                <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
-                  <span className="text-sm font-medium">{group.name}</span>
-                  {/* Only organizer can delete groups */}
-                  {profile?.id === roundState.organizerProfileId && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-destructive hover:text-destructive"
-                        >
-                          Eliminar
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar {group.name}?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Se eliminarán todos los jugadores y scores de este grupo. Esta acción no se puede deshacer.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={async () => {
-                              if (roundState.id) {
-                                try {
-                                  const { error: rpErr } = await supabase
-                                    .from('round_players')
-                                    .delete()
-                                    .eq('group_id', group.id);
-                                  if (rpErr) throw rpErr;
-                                  const { error: rgErr } = await supabase
-                                    .from('round_groups')
-                                    .delete()
-                                    .eq('id', group.id);
-                                  if (rgErr) throw rgErr;
-                                } catch (err: any) {
-                                  devError('Error deleting group from DB:', err);
-                                  toast.error('Error al eliminar grupo');
-                                  return;
-                                }
-                              }
-                              const groupPlayerIds = new Set(group.players.map(p => p.id));
-                              setScores(prev => {
-                                const next = new Map(prev);
-                                groupPlayerIds.forEach(id => next.delete(id));
-                                return next;
-                              });
-                              setRoundPlayerIds(prev => {
-                                const next = new Map(prev);
-                                groupPlayerIds.forEach(id => {
-                                  next.delete(id);
-                                  const player = group.players.find(p => p.id === id);
-                                  if (player?.profileId) next.delete(player.profileId);
-                                });
-                                return next;
-                              });
-                              setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
-                              toast.success(`${group.name} eliminado`);
-                            }}
-                          >
-                            Eliminar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-                <PlayerSetup
-                  players={group.players}
-                  onChange={(newPlayers) => {
-                    void handleGroupPlayersChange(group.id, newPlayers);
-                  }}
-                  maxPlayers={6}
-                  courseId={selectedCourseId}
-                  defaultTeeColor={teeColor}
-                  onAddFromFriendsClick={() => {
-                    setAddFriendsTargetGroupId(group.id);
-                    openDialog('addFromFriends');
-                  }}
-                  organizerProfileId={roundState.organizerProfileId}
-                />
-              </div>
-            ))}
-            
-            {/* Share Options Button - show after round is created */}
-            {roundState.id && (
-              <Button 
-                variant="outline" 
-                onClick={() => openDialog('share')}
-                className="w-full"
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Invitar Jugadores (Link, QR, Código)
-              </Button>
-            )}
-
-            {/* Handicap Definition Button - show when 2+ players */}
-            {players.length >= 2 && roundState.id && (
-              <Button 
-                variant="outline" 
-                onClick={() => setView('handicaps')}
-                className="w-full"
-              >
-                <Sliders className="h-4 w-4 mr-2" />
-                Definir Hándicaps entre Jugadores
-              </Button>
-            )}
-
-            {/* Bet setup moved to header icon/dialog */}
-            
-            {/* Action Buttons */}
-            <div className="space-y-2">
-              {/* Create Round button - shows when no round exists yet */}
-              {!roundState.id && (
-                <Button 
-                  onClick={handleCreateRound} 
-                  disabled={!canCreateRound || isLoading} 
-                  className="w-full"
-                  variant="outline"
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Crear Ronda y Obtener Link, QR & Código
-                </Button>
-              )}
-
-              {/* Start Scoring button */}
-              {!isRoundStarted ? (
-                <Button 
-                  onClick={handleStartRound} 
-                  disabled={!canStartScoring || isLoading} 
-                  className="w-full"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Iniciar Ronda
-                </Button>
-              ) : (
-                <>
-                  <Button 
-                    onClick={handleContinueRound}
-                    className="w-full"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Continuar Ronda
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    disabled
-                    className="w-full opacity-50"
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Ronda Iniciada
-                  </Button>
-                </>
-              )}
-            </div>
-          </>
-        )}
-
-        {view === 'betsetup' && (() => {
-          const isOrg = profile?.id === roundState.organizerProfileId;
-          const hasMulti = playerGroups.length > 0;
-          const userGid = roundState.groupId || undefined;
-          // Secondary group users see their own group's players
-          const isSecondary = hasMulti && !isOrg && !!userGid;
-          const myGroupPlayers = isSecondary
-            ? (playerGroups.find(g => g.id === userGid)?.players || players)
-            : players;
-          return (
-            <BetSetup
-              config={betConfig}
-              onChange={setBetConfig}
-              players={myGroupPlayers}
-              hasMultipleGroups={hasMulti}
-              userGroupId={userGid}
-              isOrganizer={isOrg}
-              getStrokesForLocalPair={getStrokesForLocalPair}
-              getLocalPairStrokeState={getLocalPairStrokeState}
-            />
-          );
-        })()}
-
-         {view === 'handicaps' && (
-          <>
-            <HandicapMatrix
-              players={players}
-              playerGroups={playerGroups}
-              basePlayerId={profile?.id || ''}
-              roundPlayerIds={roundPlayerIds}
-              getStrokesForLocalPair={getStrokesForLocalPair}
-              getLocalPairStrokeState={getLocalPairStrokeState}
-              setStrokesForLocalPair={setStrokesForLocalPair}
-              isLoading={isLoadingHandicaps}
-            />
-            <div className="border-t border-border my-4" />
-            <h3 className="text-sm font-semibold mb-2">Ranking de Hándicap</h3>
-            <HandicapRankingView roundId={roundState.id} />
-          </>
-        )}
-
-        {view === 'scoring' && course && (
-          <ErrorBoundary context="ScoringView">
-          <ScoringView
+          <SetupView
             players={players}
             playerGroups={playerGroups}
             course={course}
-            currentHole={currentHole}
-            setCurrentHole={setCurrentHole}
+            selectedCourseId={selectedCourseId}
+            teeColor={teeColor}
+            startingHole={startingHole}
+            roundState={roundState}
+            profile={profile}
+            isRoundStarted={isRoundStarted}
+            isLoading={isLoading}
+            canCreateRound={canCreateRound}
+            canStartScoring={canStartScoring}
+            enableCourseCatalog={enableCourseCatalog}
+            roundPlayerIds={roundPlayerIds}
+            onCourseChange={setSelectedCourseId}
+            onTeeColorChange={handleTeeColorChange}
+            onStartingHoleChange={setStartingHole}
+            onPlayersChange={handlePlayersChange}
+            onAddGroup={handleAddGroup}
+            onGroupPlayersChange={handleGroupPlayersChange}
+            onAddFromFriendsClick={(groupId) => {
+              setAddFriendsTargetGroupId(groupId);
+              openDialog('addFromFriends');
+            }}
+            onOpenDialog={openDialog}
+            onSetView={setView}
+            onCreateRound={handleCreateRound}
+            onStartRound={handleStartRound}
+            onContinueRound={handleContinueRound}
+            setRoundDate={setRoundDate}
+            setScores={setScores}
+            setRoundPlayerIds={setRoundPlayerIds}
+            setPlayerGroups={setPlayerGroups}
+          />
+        )}
+
+        {(['betsetup','handicaps','scoring','scorecard','bets'] as const).includes(view as 'betsetup'|'handicaps'|'scoring'|'scorecard'|'bets') && (
+          <PlayViews
+            view={view}
+            players={players}
+            playerGroups={playerGroups}
+            course={course}
             scores={scores}
             confirmedHoles={confirmedHoles}
+            betConfig={betConfig}
+            currentHole={currentHole}
+            roundState={roundState}
+            profile={profile}
+            startingHole={startingHole}
+            roundPlayerIds={roundPlayerIds}
+            isRoundStarted={isRoundStarted}
+            isLoadingHandicaps={isLoadingHandicaps}
+            isLoading={isLoading}
+            isClosing={isClosing}
+            holePar={holePar}
+            wolfHook={wolf}
+            sixesHook={sixes}
+            vegasHook={vegas}
+            ninesHook={nines}
+            dialogs={dialogs}
+            setDialog={setDialog}
+            getStrokesForLocalPair={getStrokesForLocalPair}
+            getLocalPairStrokeState={getLocalPairStrokeState}
+            setStrokesForLocalPair={setStrokesForLocalPair}
+            getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
+            getStrokeIndicators={getStrokeIndicators}
+            setCurrentHole={setCurrentHole}
             isHoleConfirmed={isHoleConfirmed}
             confirmHole={confirmHole}
             updateScore={updateScore}
-            betConfig={betConfig}
-            holePar={holePar}
-            profile={profile}
-            onAddSideBet={(bet) => {
-              setBetConfig(prev => ({
-                ...prev,
-                sideBets: {
-                  ...prev.sideBets,
-                  enabled: true,
-                  bets: [...(prev.sideBets?.bets || []), bet],
-                },
-              }));
-            }}
-            onUpdateSideBet={(bet) => {
-              setBetConfig(prev => ({
-                ...prev,
-                sideBets: {
-                  ...prev.sideBets,
-                  bets: (prev.sideBets?.bets || []).map(b => b.id === bet.id ? bet : b),
-                },
-              }));
-            }}
-            onDeleteSideBet={(betId) => {
-              setBetConfig(prev => ({
-                ...prev,
-                sideBets: {
-                  ...prev.sideBets,
-                  bets: (prev.sideBets?.bets || []).filter(b => b.id !== betId),
-                },
-              }));
-            }}
-            onAddZooEvent={(event) => {
-              setBetConfig(prev => ({
-                ...prev,
-                zoologico: {
-                  ...prev.zoologico,
-                  events: [...(prev.zoologico?.events || []), event],
-                },
-              }));
-            }}
-            onUpdateZooEvent={(event) => {
-              setBetConfig(prev => ({
-                ...prev,
-                zoologico: {
-                  ...prev.zoologico,
-                  events: (prev.zoologico?.events || []).map(e => e.id === event.id ? event : e),
-                },
-              }));
-            }}
-            onDeleteZooEvent={(eventId) => {
-              setBetConfig(prev => ({
-                ...prev,
-                zoologico: {
-                  ...prev.zoologico,
-                  events: (prev.zoologico?.events || []).filter(e => e.id !== eventId),
-                },
-              }));
-            }}
-            wolfConfig={wolf.wolfConfig ?? undefined}
-            wolfHoleStates={wolf.holeStates}
-            currentUserId={profile?.id ?? undefined}
-            isOrganizer={profile?.id === roundState.organizerProfileId}
-            onWolfDecision={async (holeNumber, partnerIds, wentSolo) => {
-              const wolfId = wolf.getCurrentWolfId(holeNumber) ?? '';
-              await wolf.saveDecision(holeNumber, wolfId, partnerIds, wentSolo);
-            }}
-            onWolfResolve={async (holeNumber, result) => {
-              await wolf.resolveHole(holeNumber, result);
-            }}
-            onWolfRevert={async (holeNumber) => {
-              await wolf.revertDecision(holeNumber);
-            }}
-            onWolfRecalculate={async (holeNumber) => {
-              await wolf.recalculateHole(holeNumber);
-            }}
-            sixesConfig={sixes.sixesConfig ?? undefined}
-            
+            setBetConfig={setBetConfig}
+            setCurrentBetSummaries={setCurrentBetSummaries}
+            setQuickScorePlayer={setQuickScorePlayer}
+            onOpenDialog={openDialog}
+            onSetView={setView}
+            onResetRoundForReclose={resetRoundForReclose}
+            onStartNewRound={startNewRound}
           />
-          </ErrorBoundary>
         )}
 
-
-        {view === 'scorecard' && course && (
-          <>
-            <ErrorBoundary context="Scorecard">
-            <Scorecard 
-              players={players} 
-              course={course} 
-              scores={scores} 
-              currentHole={currentHole} 
-              onHoleClick={h => { setCurrentHole(h); setView('scoring'); }}
-              basePlayerId={profile?.id}
-              getStrokeIndicators={getStrokeIndicators}
-              confirmedHoles={confirmedHoles}
-              onAddPlayerClick={() => openDialog('addPlayer')}
-              startingHole={startingHole}
-              onLeaderboardClick={() => openDialog('leaderboard')}
-              playerGroups={playerGroups}
-              onQuickScoreClick={(player) => setQuickScorePlayer(player)}
-            />
-            
-            <LeaderboardDialog
-              open={dialogs.leaderboard}
-              onOpenChange={(v: boolean) => setDialog('leaderboard', v)}
-              players={players}
-              playerGroups={playerGroups}
-              scores={scores}
-              course={course}
-              confirmedHoles={confirmedHoles}
-              betConfig={betConfig}
-              basePlayerId={profile?.id}
-            />
-          </ErrorBoundary>
-          </>
-        )}
-
-{roundState.id && (
+        {roundState.id && (
           <AddPlayerFromScorecardDialog
             open={dialogs.addPlayer}
             onOpenChange={(v: boolean) => setDialog('addPlayer', v)}
@@ -2848,93 +2544,6 @@ const Index = () => {
             currentPlayerCount={players.length + playerGroups.reduce((sum, g) => sum + g.players.length, 0)}
             maxPlayersRecommended={6}
           />
-        )}
-
-        {view === 'bets' && course && (
-          <>
-            <ErrorBoundary context="BetDashboard">
-            <BetDashboard
-              players={players}
-              scores={scores}
-              betConfig={betConfig}
-              course={course}
-              basePlayerId={profile?.id}
-              confirmedHoles={confirmedHoles}
-              onBetConfigChange={setBetConfig}
-              onBetSummariesChange={setCurrentBetSummaries}
-              startingHole={startingHole}
-              playerGroups={playerGroups}
-              getStrokesForLocalPair={getStrokesForLocalPair}
-              setStrokesForLocalPair={setStrokesForLocalPair}
-              getBilateralHandicapsForEngine={getBilateralHandicapsForEngine}
-              wolfHook={wolf}
-              sixesHook={sixes}
-              vegasHook={vegas}
-              ninesHook={nines}
-            />
-            </ErrorBoundary>
-            
-            {/* Close Scorecard Button - only visible to organizer */}
-            {isRoundStarted && roundState.status !== 'completed' && (
-              <>
-                {profile?.id === roundState.organizerProfileId ? (
-                  <Button 
-                    variant="destructive"
-                    onClick={() => openDialog('closeConfirm')}
-                    disabled={isLoading || isClosing}
-                    className="w-full mt-4"
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Cerrar Tarjeta y Guardar
-                  </Button>
-                ) : (
-                  <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
-                    Solo el organizador puede cerrar la tarjeta
-                  </div>
-                )}
-              </>
-            )}
-            
-            {roundState.status === 'completed' && (
-              <div className="space-y-4">
-                <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
-                  <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                  Tarjeta cerrada y guardada
-                </div>
-                {profile?.id === roundState.organizerProfileId && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Re-abrir para re-cerrar
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Re-abrir ronda?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esto eliminará el snapshot, ledger y historial de sliding actuales. Podrás cerrar la ronda nuevamente con los datos corregidos.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => resetRoundForReclose()}>
-                          Confirmar re-apertura
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-                <Button 
-                  onClick={startNewRound}
-                  className="w-full"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Iniciar Nueva Ronda
-                </Button>
-              </div>
-            )}
-          </>
         )}
 
         {/* Leaderboards View */}
