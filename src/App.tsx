@@ -69,23 +69,25 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => (
-  <Routes>
-    <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/join/:roundId" element={<JoinRound />} />
-    <Route path="/join" element={<JoinByCode />} />
-    <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
-    <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
-    <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
-    <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
-    <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
-    <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
-    <Route path="/terms" element={<TermsOfService />} />
-    <Route path="/privacy" element={<PrivacyPolicy />} />
-    <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
-    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+  <Suspense fallback={<Spinner />}>
+    <Routes>
+      <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/join/:roundId" element={<JoinRound />} />
+      <Route path="/join" element={<JoinByCode />} />
+      <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
+      <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
+      <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
+      <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
+      <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />
+      <Route path="/rankings/:id" element={<ProtectedRoute><MoneyRankingDetail /></ProtectedRoute>} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </Suspense>
 );
 
 const App = () => (
