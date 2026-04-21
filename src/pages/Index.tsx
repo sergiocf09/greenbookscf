@@ -2646,10 +2646,12 @@ const Index = () => {
         {/* Rankings View */}
         {view === 'rankings' && (
           rankingDetailId ? (
-            <MoneyRankingDetail
-              inlineId={rankingDetailId}
-              onBack={() => setRankingDetailId(null)}
-            />
+            <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+              <MoneyRankingDetail
+                inlineId={rankingDetailId}
+                onBack={() => setRankingDetailId(null)}
+              />
+            </Suspense>
           ) : (
             <RankingsInlineView
               onNavigateToDetail={(id) => setRankingDetailId(id)}
@@ -2659,7 +2661,9 @@ const Index = () => {
 
         {/* Stats View */}
         {view === 'stats' && (
-          <StatsInlineView />
+          <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+            <StatsInlineView />
+          </Suspense>
         )}
       </main>
 
