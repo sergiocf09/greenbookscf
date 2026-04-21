@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,22 +8,25 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { RoundProvider } from "@/contexts/RoundContext";
 import Index from "./pages/Index";
-import Stats from "./pages/Stats";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import JoinRound from "./pages/JoinRound";
 import JoinByCode from "./pages/JoinByCode";
-import Leaderboards from "./pages/Leaderboards";
-import LeaderboardDetail from "./pages/LeaderboardDetail";
-import TeamsCupDetail from "./pages/TeamsCupDetail";
 import JoinLeaderboard from "./pages/JoinLeaderboard";
-import MoneyRankings from "./pages/MoneyRankings";
-import MoneyRankingDetail from "./pages/MoneyRankingDetail";
 import NotFound from "./pages/NotFound";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
 import { Loader2 } from "lucide-react";
+
+// Lazy-loaded heavy routes (separate chunks)
+const Stats              = lazy(() => import("./pages/Stats"));
+const TeamsCupDetail     = lazy(() => import("./pages/TeamsCupDetail"));
+const MoneyRankingDetail = lazy(() => import("./pages/MoneyRankingDetail"));
+const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
+const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
+const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
+
 
 const queryClient = new QueryClient();
 
