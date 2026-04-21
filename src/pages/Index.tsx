@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer, lazy, Suspense } from 'react';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { CloneRoundData, FullCloneRoundData } from '@/components/RoundHistory';
 import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components/scorecard/AddPlayerFromScorecardDialog';
@@ -6,8 +6,8 @@ import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsIn
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
-import { StatsInlineView } from '@/pages/Stats';
-import MoneyRankingDetail from '@/pages/MoneyRankingDetail';
+const StatsInlineView = lazy(() => import('@/pages/Stats').then(m => ({ default: m.StatsInlineView })));
+const MoneyRankingDetail = lazy(() => import('@/pages/MoneyRankingDetail'));
 import { ScoringFAB } from '@/components/scoring/ScoringFAB';
 import { Player, PlayerScore, BetConfig, GolfCourse, HoleInfo, PlayerGroup } from '@/types/golf';
 import { defaultMarkerState } from '@/types/golf';
