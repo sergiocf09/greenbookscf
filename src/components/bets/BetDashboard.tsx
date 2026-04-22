@@ -1527,15 +1527,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   };
 
   // Get team pressures balance for a specific player (total from all team pressure bets)
-  const getTeamPressuresBalanceForPlayer = (playerId: string): number => {
+  const getTeamPressuresBalanceForPlayer = (playerId: string, betId?: string): number => {
     if (isHistorical) {
       // In historical mode, read from betSummaries (derived from snapshot ledger)
       return betSummaries
-        .filter(s => s.playerId === playerId && (s.betType === 'Presiones Parejas' || s.betType === 'Presiones Pareja'))
+        .filter(s =>
+          s.playerId === playerId &&
+          (s.betType === 'Presiones Parejas' || s.betType === 'Presiones Pareja') &&
+          (!betId || s.betId === betId)
+        )
         .reduce((sum, s) => sum + s.amount, 0);
     }
     return betSummaries
-      .filter(s => s.playerId === playerId && s.betType === 'Presiones Parejas' && !isTeamBetDisabled(s.betId || ''))
+      .filter(s =>
+        s.playerId === playerId &&
+        s.betType === 'Presiones Parejas' &&
+        (!betId || s.betId === betId) &&
+        !isTeamBetDisabled(s.betId || '')
+      )
       .reduce((sum, s) => sum + s.amount, 0);
   };
 
@@ -2434,10 +2443,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           if (!allMembers.some(id => dpIds.has(id))) return null;
         }
 
-        // Use getTeamPressuresBalanceForPlayer to get the base player's balance directly
-        // (betId filter was broken — calculateTeamPressuresBets doesn't assign betId to summaries)
+        // Use only this Foursome bet so the card header matches its own Front/Back/Total detail.
         const basePlayerForBalance = basePlayer?.id || '';
-        const baseTeamBalance = getTeamPressuresBalanceForPlayer(basePlayerForBalance);
+        const baseTeamBalance = getTeamPressuresBalanceForPlayer(basePlayerForBalance, bet.id);
         
         const getPlayer = (id: string) => allPlayersForCalculations.find(p => p.id === id);
         const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
