@@ -66,8 +66,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
 }
 
 export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Sentry.ErrorBoundary
-    fallback={({ error, resetError }) => (
+  <ErrorBoundary
+    context="route"
+    fallback={(
       <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 bg-background">
         <AlertTriangle className="h-16 w-16 text-destructive" />
         <div className="text-center space-y-2 max-w-md">
@@ -77,11 +78,11 @@ export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ ch
           </p>
           {import.meta.env.DEV && (
             <pre className="mt-4 p-3 bg-muted rounded text-xs text-left overflow-auto max-h-40">
-              {String(error)}
+              Revisa la consola para más detalles.
             </pre>
           )}
         </div>
-        <Button variant="outline" onClick={resetError}>
+        <Button variant="outline" onClick={() => window.location.reload()}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Reintentar
         </Button>
@@ -89,5 +90,5 @@ export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ ch
     )}
   >
     {children}
-  </Sentry.ErrorBoundary>
+  </ErrorBoundary>
 );
