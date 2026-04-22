@@ -7,6 +7,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 
+const RechartsLine = Line as unknown as React.ComponentType<any>;
+const RechartsXAxis = XAxis as unknown as React.ComponentType<any>;
+const RechartsYAxis = YAxis as unknown as React.ComponentType<any>;
+const RechartsTooltip = Tooltip as unknown as React.ComponentType<any>;
+const RechartsReferenceLine = ReferenceLine as unknown as React.ComponentType<any>;
+
 interface HandicapHistoryViewProps {
   profileId: string | null;
   playerName?: string;
@@ -121,27 +127,27 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           <p className="text-xs font-medium text-muted-foreground mb-2">Tendencia de Diferenciales</p>
           <ResponsiveContainer width="100%" height={140}>
             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-              <XAxis
+              <RechartsXAxis
                 dataKey="date"
                 tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis
+              <RechartsYAxis
                 tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 tickLine={false}
                 axisLine={false}
                 domain={['dataMin - 2', 'dataMax + 2']}
               />
               {handicapIndex !== null && (
-                <ReferenceLine
+                <RechartsReferenceLine
                   y={handicapIndex}
                   stroke="hsl(var(--primary))"
                   strokeDasharray="4 4"
                   strokeOpacity={0.5}
                 />
               )}
-              <Tooltip
+              <RechartsTooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -150,7 +156,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
                 }}
                 formatter={(value: number) => [value.toFixed(1), 'Diferencial']}
               />
-              <Line
+              <RechartsLine
                 type="monotone"
                 dataKey="differential"
                 stroke="hsl(var(--primary))"
