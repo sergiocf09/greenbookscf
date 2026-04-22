@@ -2443,15 +2443,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           if (!allMembers.some(id => dpIds.has(id))) return null;
         }
 
-        // Use only this Foursome bet so the card header matches its own Front/Back/Total detail.
-        const basePlayerForBalance = basePlayer?.id || '';
-        const baseTeamBalance = getTeamPressuresBalanceForPlayer(basePlayerForBalance, bet.id);
+        const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
+        const basePlayerInBet = basePlayer?.id && [...resolvedTeamA, ...resolvedTeamB].includes(basePlayer.id);
+        const perspectivePlayerId = basePlayerInBet
+          ? basePlayer!.id
+          : [...resolvedTeamA, ...resolvedTeamB].find(id => displayPlayerIds.has(id)) ?? resolvedTeamA[0];
+
+        // Use only this Foursome bet from the same perspective as the card detail.
+        const baseTeamBalance = getTeamPressuresBalanceForPlayer(perspectivePlayerId, bet.id);
         
         const getPlayer = (id: string) => allPlayersForCalculations.find(p => p.id === id);
         const teamAPlayers = [getPlayer(resolvedTeamA[0]), getPlayer(resolvedTeamA[1])].filter(Boolean) as Player[];
         const teamBPlayers = [getPlayer(resolvedTeamB[0]), getPlayer(resolvedTeamB[1])].filter(Boolean) as Player[];
         
-        const isBaseInTeamA = resolvedTeamA.includes(basePlayer?.id || '');
+        const isBaseInTeamA = resolvedTeamA.includes(perspectivePlayerId);
         
         if (teamAPlayers.length < 2 || teamBPlayers.length < 2) return null;
         
