@@ -855,16 +855,21 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   <button
                     key={round.roundId}
                     onClick={() => onViewRound?.(round.roundId)}
-                    className="w-full px-2 py-1.5 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                    className="w-full overflow-hidden px-2 py-1.5 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left"
                   >
-                    <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                      <span className="text-xs text-muted-foreground flex-shrink-0 w-[58px]">
+                    <div className="grid grid-cols-[58px_24px_minmax(0,1fr)_max-content] items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                      <span className="text-xs text-muted-foreground">
                         {format(parseLocalDate(round.date), "dd MMM yy", { locale: es })}
                       </span>
-                      <span className="font-bold text-sm flex-shrink-0 w-[24px] text-center">{round.score}</span>
-                      <span className="text-xs truncate min-w-0">{round.courseName}</span>
+                      <span className="font-bold text-sm text-center">{round.score}</span>
+                      <span
+                        className={cn('truncate min-w-0', round.courseName.length > 28 ? 'text-[11px]' : 'text-xs')}
+                        title={round.courseName}
+                      >
+                        {round.courseName}
+                      </span>
                       <span className={cn(
-                        'font-bold text-sm ml-auto flex-shrink-0',
+                        'font-bold text-sm text-right tabular-nums',
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' :
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
