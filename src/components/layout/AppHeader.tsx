@@ -31,6 +31,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
+import { formatPlayerName } from '@/lib/playerInput';
 
 export type AppView =
   | 'setup'
@@ -229,7 +230,7 @@ export function AppHeader(props: AppHeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">
-                  <p className="font-medium text-sm">{profile?.display_name}</p>
+                  <p className="font-medium text-sm">{formatPlayerName(profile?.display_name || '')}</p>
                   <p className="text-xs text-muted-foreground">HCP: {profile?.current_handicap}</p>
                 </div>
                 <DropdownMenuSeparator />

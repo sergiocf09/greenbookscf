@@ -737,7 +737,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                         size="sm"
                       />
                       <span className="text-sm flex-1 min-w-0 truncate">
-                        {s.display_name}
+                        {formatPlayerName(s.display_name)}
                         {s.isMe && (
                           <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
                         )}

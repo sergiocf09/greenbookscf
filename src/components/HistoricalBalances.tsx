@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
 import { isValidSnapshot, RoundSnapshot, SnapshotLedgerEntry } from '@/lib/roundSnapshot';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface RivalBalance {
   id: string;
@@ -336,7 +337,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           balances.push({
             id: key,
-            rivalName,
+            rivalName: formatPlayerName(rivalName),
             rivalInitials,
             rivalColor,
             isGuest: data.isGuest,
