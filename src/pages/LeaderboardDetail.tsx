@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Settings, Refres
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
+import { formatPlayerName } from '@/lib/playerInput';
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -210,7 +211,7 @@ const LeaderboardDetail = () => {
                               isLoggedInUser={entry.participant.profile_id === profile?.id}
                             />
                             <span className="font-semibold text-sm truncate">
-                              {entry.participant.display_name}
+                              {formatPlayerName(entry.participant.display_name)}
                             </span>
                           </div>
                         </td>

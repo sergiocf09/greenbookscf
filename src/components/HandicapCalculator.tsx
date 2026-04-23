@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useUSGAHandicap } from '@/hooks/useUSGAHandicap';
 import { getNumDifferentialsToUse } from '@/lib/usgaHandicap';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface HandicapCalculatorProps {
   onClose?: () => void;
@@ -48,7 +49,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       <div className="flex items-center justify-between">
         <div>
           {profile?.display_name && (
-            <p className="text-sm text-muted-foreground">{profile.display_name}</p>
+            <p className="text-sm text-muted-foreground">{formatPlayerName(profile.display_name)}</p>
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

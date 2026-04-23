@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
+import { formatPlayerName } from '@/lib/playerInput';
 
 interface PlayerScoreData {
   playerId: string;
@@ -737,7 +738,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                         size="sm"
                       />
                       <span className="text-sm flex-1 min-w-0 truncate">
-                        {s.display_name}
+                        {formatPlayerName(s.display_name)}
                         {s.isMe && (
                           <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
                         )}

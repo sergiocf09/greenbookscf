@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { formatPlayerName } from '@/lib/playerInput';
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -312,7 +313,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                             isLoggedInUser={entry.participant.profile_id === profile?.id}
                           />
                           <span className="font-semibold text-sm truncate">
-                            {entry.participant.display_name}
+                            {formatPlayerName(entry.participant.display_name)}
                           </span>
                         </div>
                       </td>
