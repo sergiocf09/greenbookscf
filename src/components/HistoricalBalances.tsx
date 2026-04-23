@@ -560,22 +560,22 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </Button>
 
         {/* Rival header */}
-        <div className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 p-4 bg-card border border-border rounded-lg overflow-hidden">
+          <div className="flex items-center gap-3 min-w-0">
             <PlayerAvatar 
               initials={selectedRival.rivalInitials} 
               background={selectedRival.rivalColor}
               size="lg"
             />
-            <div>
-              <p className="font-semibold">{selectedRival.rivalName}</p>
+            <div className="min-w-0">
+              <p className="font-semibold truncate">{selectedRival.rivalName}</p>
               <p className="text-xs text-muted-foreground">
                 {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <div className={cn(
-            'text-2xl font-bold flex items-center gap-1',
+            'text-2xl font-bold flex items-center gap-1 shrink-0 tabular-nums',
             selectedRival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
             selectedRival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
@@ -617,14 +617,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="w-full px-3 py-2 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors text-left space-y-0.5"
                   >
                     {/* Line 1: Date · Club · $Result */}
-                    <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                    <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_max-content] items-center gap-1.5 whitespace-nowrap overflow-hidden">
                       <span className="text-xs text-muted-foreground flex-shrink-0">
                         {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
                       </span>
                       <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
-                      <span className="text-sm truncate min-w-0">{round.courseName}</span>
+                      <span className="text-sm truncate min-w-0 overflow-hidden">{round.courseName}</span>
                       <span className={cn(
-                        'font-bold text-sm ml-auto flex-shrink-0',
+                        'font-bold text-sm justify-self-end shrink-0 tabular-nums',
                         round.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
                         round.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
