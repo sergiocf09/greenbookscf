@@ -74,12 +74,9 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
 
       {/* Calculated Handicap Display */}
       <div className="bg-primary/10 rounded-xl p-4 text-center">
-        <p className="text-sm text-muted-foreground mb-1">Handicap Index Calculado</p>
+        <p className="text-sm text-muted-foreground mb-1">Handicap Index</p>
         <p className="text-4xl font-bold text-primary">
           {handicapIndex !== null ? handicapIndex : '--'}
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Basado en {numToUse} mejores de {totalRounds} rondas
         </p>
       </div>
 
