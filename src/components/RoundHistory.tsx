@@ -507,7 +507,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
         <ScrollArea className="h-[400px]">
           <div className="space-y-2 pr-2">
             {rounds.map((round) => (
@@ -524,7 +524,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
                   </span>
                   <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
-                  <span className="text-xs truncate min-w-0">{round.courseName}</span>
+                  <span className="text-xs truncate min-w-0" title={round.courseName}>
+                    {round.courseName.length > 27 ? `${round.courseName.slice(0, 26)}…` : round.courseName}
+                  </span>
                   <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">{round.totalStrokes}</span>
                   {expandedRound === round.id ? (
                     <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
