@@ -550,7 +550,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="flex gap-1.5 flex-nowrap">
                         {round.isOrganizer && (
                           <Button
                             variant="outline"
@@ -559,17 +559,6 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             onClick={(e) => handleDeleteClick(e, round)}
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {round.isOrganizer && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 flex-shrink-0 h-9 w-9"
-                            onClick={(e) => handleReopenClick(e, round)}
-                            disabled={reopening}
-                          >
-                            <RefreshCw className={cn("h-4 w-4", reopening && "animate-spin")} />
                           </Button>
                         )}
                         {onCloneRound && (
@@ -591,7 +580,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 min-w-0 px-2"
+                          className="flex-1 min-w-0 px-2 whitespace-nowrap"
                           onClick={(e) => handleViewRound(e, round)}
                           disabled={loadingScorecard === round.id}
                         >
@@ -600,24 +589,35 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                           ) : (
                             <Eye className="h-4 w-4 mr-1 flex-shrink-0" />
                           )}
-                          <span className="truncate">Ver Tarjeta</span>
+                          Ver Tarjeta
                         </Button>
                       </div>
-                      {/* Full clone button - only for organizers, centered */}
-                      {round.isOrganizer && onCloneFullRound && (
-                        <div className="flex justify-center">
+                      {/* Bottom row: Duplicar con scores + Reabrir, centered */}
+                      {round.isOrganizer && (
+                        <div className="flex justify-center gap-2">
+                          {onCloneFullRound && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => handleCloneFullRound(e, round)}
+                              disabled={loadingClone === `full-${round.id}` || loadingClone === round.id}
+                            >
+                              {loadingClone === `full-${round.id}` ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Copy className="h-4 w-4 mr-1" />
+                              )}
+                              Duplicar con scores
+                            </Button>
+                          )}
                           <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={(e) => handleCloneFullRound(e, round)}
-                            disabled={loadingClone === `full-${round.id}` || loadingClone === round.id}
+                            variant="outline"
+                            size="icon"
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 flex-shrink-0 h-9 w-9"
+                            onClick={(e) => handleReopenClick(e, round)}
+                            disabled={reopening}
                           >
-                            {loadingClone === `full-${round.id}` ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                              <Copy className="h-4 w-4 mr-1" />
-                            )}
-                            Duplicar con scores
+                            <RefreshCw className={cn("h-4 w-4", reopening && "animate-spin")} />
                           </Button>
                         </div>
                       )}
