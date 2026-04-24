@@ -85,38 +85,36 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
 
       {/* Best vs Worst counting differential */}
       {bestUsed && worstUsed && (
-        <div className={cn(
-          "bg-muted/50 rounded-lg p-3 grid gap-3",
-          sameRound ? "grid-cols-1 text-center" : "grid-cols-2"
-        )}>
-          <div className={sameRound ? "" : ""}>
-            <p className="text-xs text-muted-foreground">
-              {sameRound ? "Único diferencial usado" : "Mejor contante"}
+        <div className="bg-muted/50 rounded-lg p-3">
+          <div className="grid grid-cols-3 items-center gap-2">
+            <p className="text-xs text-muted-foreground text-left">Mejor</p>
+            <p className="text-xs font-medium text-center">
+              {numToUse} de {totalRounds}
             </p>
+            <p className="text-xs text-muted-foreground text-right">Peor</p>
+
             <p className={cn(
-              "font-semibold text-lg",
+              "font-semibold text-lg text-left",
               bestUsed.differential < 0 ? "text-green-600" : ""
             )}>
               {formatDiff(bestUsed.differential)}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground text-center">rondas usadas</p>
+            <p className={cn(
+              "font-semibold text-lg text-right",
+              worstUsed.differential < 0 ? "text-green-600" : ""
+            )}>
+              {formatDiff(worstUsed.differential)}
+            </p>
+
+            <p className="text-xs text-muted-foreground text-left">
               {formatShortDate(bestUsed.date)} · {bestUsed.totalStrokes} gross
             </p>
+            <p />
+            <p className="text-xs text-muted-foreground text-right">
+              {formatShortDate(worstUsed.date)} · {worstUsed.totalStrokes} gross
+            </p>
           </div>
-          {!sameRound && (
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Peor contante</p>
-              <p className={cn(
-                "font-semibold text-lg",
-                worstUsed.differential < 0 ? "text-green-600" : ""
-              )}>
-                {formatDiff(worstUsed.differential)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatShortDate(worstUsed.date)} · {worstUsed.totalStrokes} gross
-              </p>
-            </div>
-          )}
         </div>
       )}
 
