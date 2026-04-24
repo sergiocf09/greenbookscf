@@ -623,7 +623,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       </span>
                       <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
                       <span className="text-sm truncate min-w-0 overflow-hidden" title={round.courseName}>
-                        {round.courseName.length > 30 ? `${round.courseName.slice(0, 29)}…` : round.courseName}
+                        {round.courseName.length > 27 ? `${round.courseName.slice(0, 26)}…` : round.courseName}
                       </span>
                       <span className={cn(
                         'font-bold text-sm justify-self-end shrink-0 tabular-nums',
