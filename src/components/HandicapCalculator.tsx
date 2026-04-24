@@ -108,11 +108,11 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
             </p>
 
             <p className="text-xs text-muted-foreground text-left">
-              {formatShortDate(bestUsed.date)} · {bestUsed.totalStrokes} gross
+              {formatShortDate(bestUsed.date)} · {bestUsed.totalStrokes}
             </p>
             <p />
             <p className="text-xs text-muted-foreground text-right">
-              {formatShortDate(worstUsed.date)} · {worstUsed.totalStrokes} gross
+              {formatShortDate(worstUsed.date)} · {worstUsed.totalStrokes}
             </p>
           </div>
         </div>
