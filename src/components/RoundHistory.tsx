@@ -536,13 +536,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                 </button>
 
                 {expandedRound === round.id && (
-                  <div className="px-3 pb-2 pt-1 border-t border-border/50 space-y-2">
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {round.courseLocation}
+                  <div className="px-3 pb-2 pt-1 border-t border-border/50 space-y-2 overflow-hidden">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 flex-wrap">
+                      <span className="flex items-center gap-1 min-w-0">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{round.courseLocation}</span>
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 flex-shrink-0">
                         <Users className="h-3 w-3" />
                         {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
                       </span>
@@ -550,12 +550,12 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5 flex-wrap">
                         {round.isOrganizer && (
                           <Button
                             variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 h-9 w-9"
                             onClick={(e) => handleDeleteClick(e, round)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -564,8 +564,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         {round.isOrganizer && (
                           <Button
                             variant="outline"
-                            size="sm"
-                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 flex-shrink-0"
+                            size="icon"
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 flex-shrink-0 h-9 w-9"
                             onClick={(e) => handleReopenClick(e, round)}
                             disabled={reopening}
                           >
@@ -576,31 +576,31 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1"
+                            className="flex-1 min-w-0 px-2"
                             onClick={(e) => handleCloneRound(e, round)}
                             disabled={loadingClone === round.id || loadingClone === `full-${round.id}`}
                           >
                             {loadingClone === round.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin flex-shrink-0" />
                             ) : (
-                              <Copy className="h-4 w-4 mr-1" />
+                              <Copy className="h-4 w-4 mr-1 flex-shrink-0" />
                             )}
-                            Duplicar
+                            <span className="truncate">Duplicar</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 min-w-0 px-2"
                           onClick={(e) => handleViewRound(e, round)}
                           disabled={loadingScorecard === round.id}
                         >
                           {loadingScorecard === round.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin flex-shrink-0" />
                           ) : (
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-4 w-4 mr-1 flex-shrink-0" />
                           )}
-                          Ver Tarjeta
+                          <span className="truncate">Ver Tarjeta</span>
                         </Button>
                       </div>
                       {/* Full clone button - only for organizers, centered */}
