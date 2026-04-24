@@ -547,7 +547,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   // Detail view for a specific rival
   if (selectedRival) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 w-full max-w-full overflow-hidden">
         {/* Back button */}
         <Button 
           variant="ghost" 
@@ -560,28 +560,28 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </Button>
 
         {/* Rival header */}
-        <div className="flex items-center justify-between gap-3 p-4 bg-card border border-border rounded-lg overflow-hidden">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-between gap-2 p-3 bg-card border border-border rounded-lg overflow-hidden max-w-full">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <PlayerAvatar 
               initials={selectedRival.rivalInitials} 
               background={selectedRival.rivalColor}
               size="lg"
             />
-            <div className="min-w-0">
-              <p className="font-semibold truncate">{selectedRival.rivalName}</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold truncate text-sm">{selectedRival.rivalName}</p>
+              <p className="text-xs text-muted-foreground truncate">
                 {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <div className={cn(
-            'text-2xl font-bold flex items-center gap-1 shrink-0 tabular-nums',
+            'text-lg font-bold flex items-center gap-0.5 shrink-0 tabular-nums',
             selectedRival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
             selectedRival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}>
-            {selectedRival.netAmount > 0 && <TrendingUp className="h-5 w-5" />}
-            {selectedRival.netAmount < 0 && <TrendingDown className="h-5 w-5" />}
-            {selectedRival.netAmount === 0 && <Minus className="h-5 w-5" />}
+            {selectedRival.netAmount > 0 && <TrendingUp className="h-4 w-4" />}
+            {selectedRival.netAmount < 0 && <TrendingDown className="h-4 w-4" />}
+            {selectedRival.netAmount === 0 && <Minus className="h-4 w-4" />}
             ${fmtMoney(Math.abs(selectedRival.netAmount))}
           </div>
         </div>
