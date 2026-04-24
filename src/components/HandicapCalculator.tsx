@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, TrendingDown, TrendingUp, Minus, Info, Loader2 } from 'lucide-react';
+import { Calculator, Info, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useUSGAHandicap } from '@/hooks/useUSGAHandicap';
@@ -44,6 +44,20 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
   const numToUse = getNumDifferentialsToUse(differentials.length);
   const usedRoundIds = new Set(sortedByDiff.slice(0, numToUse).map(d => d.roundId));
 
+  // Best (lowest differential) and worst (highest) rounds among the counting set
+  const usedRounds = differentials.filter(d => usedRoundIds.has(d.roundId));
+  const bestUsed = usedRounds.length > 0
+    ? usedRounds.reduce((p, c) => (c.differential < p.differential ? c : p))
+    : null;
+  const worstUsed = usedRounds.length > 0
+    ? usedRounds.reduce((p, c) => (c.differential > p.differential ? c : p))
+    : null;
+  const sameRound = bestUsed && worstUsed && bestUsed.roundId === worstUsed.roundId;
+
+  const formatDiff = (d: number) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`;
+  const formatShortDate = (date: string) =>
+    parseLocalDate(date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -69,37 +83,40 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
         </p>
       </div>
 
-      {/* Current vs Calculated */}
-      {profile && handicapIndex !== null && (
-        <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Handicap Actual</p>
-            <p className="font-semibold">{profile.current_handicap}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {handicapIndex < profile.current_handicap ? (
-              <TrendingDown className="h-5 w-5 text-green-500" />
-            ) : handicapIndex > profile.current_handicap ? (
-              <TrendingUp className="h-5 w-5 text-orange-500" />
-            ) : (
-              <Minus className="h-5 w-5 text-muted-foreground" />
-            )}
-            <span className={cn(
-              "font-medium",
-              handicapIndex < profile.current_handicap ? "text-green-500" :
-              handicapIndex > profile.current_handicap ? "text-orange-500" : ""
+      {/* Best vs Worst counting differential */}
+      {bestUsed && worstUsed && (
+        <div className={cn(
+          "bg-muted/50 rounded-lg p-3 grid gap-3",
+          sameRound ? "grid-cols-1 text-center" : "grid-cols-2"
+        )}>
+          <div className={sameRound ? "" : ""}>
+            <p className="text-xs text-muted-foreground">
+              {sameRound ? "Único diferencial usado" : "Mejor contante"}
+            </p>
+            <p className={cn(
+              "font-semibold text-lg",
+              bestUsed.differential < 0 ? "text-green-600" : ""
             )}>
-              {handicapIndex < profile.current_handicap ? 
-                `-${(profile.current_handicap - handicapIndex).toFixed(1)}` :
-                handicapIndex > profile.current_handicap ?
-                `+${(handicapIndex - profile.current_handicap).toFixed(1)}` :
-                'Sin cambio'}
-            </span>
+              {formatDiff(bestUsed.differential)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {formatShortDate(bestUsed.date)} · {bestUsed.totalStrokes} gross
+            </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Nuevo</p>
-            <p className="font-semibold text-primary">{handicapIndex}</p>
-          </div>
+          {!sameRound && (
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Peor contante</p>
+              <p className={cn(
+                "font-semibold text-lg",
+                worstUsed.differential < 0 ? "text-green-600" : ""
+              )}>
+                {formatDiff(worstUsed.differential)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatShortDate(worstUsed.date)} · {worstUsed.totalStrokes} gross
+              </p>
+            </div>
+          )}
         </div>
       )}
 
