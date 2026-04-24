@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, TrendingDown, TrendingUp, Minus, Info, Loader2 } from 'lucide-react';
+import { Calculator, Info, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { useUSGAHandicap } from '@/hooks/useUSGAHandicap';
