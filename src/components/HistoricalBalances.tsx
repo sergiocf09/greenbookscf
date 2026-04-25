@@ -3,9 +3,9 @@
  * 
  * Displays the accumulated historical balance of bets for the logged-in user.
  * 
- * CRITICAL: Calculates ALL balances directly from round_snapshots ledger entries,
- * applying betOverrides (cancelled bets) to match the General Table logic exactly.
- * Does NOT rely on pre-calculated vsBalances or player_vs_player table.
+ * CRITICAL: Historical totals are read from round_snapshots.balances, the same
+ * immutable source used by the historical detail view. It does NOT rely on
+ * recalculated ledger entries, vsBalances from live tables, or player_vs_player.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -182,6 +182,21 @@ const calculateNetFromLedger = (
     total += amount;
   }
   return total;
+};
+
+const getSnapshotVsBalance = (
+  snap: RoundSnapshot,
+  playerId: string,
+  rivalId: string
+): number => {
+  const playerBalance = snap.balances.find((b: any) => b.playerId === playerId);
+  const vsBalance = playerBalance?.vsBalances.find((vb: any) => vb.rivalId === rivalId);
+  return Number(vsBalance?.netAmount) || 0;
+};
+
+const getSnapshotTotalBalance = (snap: RoundSnapshot, playerId: string): number => {
+  const playerBalance = snap.balances.find((b: any) => b.playerId === playerId);
+  return Number(playerBalance?.totalNet) || 0;
 };
 
 export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBalancesProps>(({ 
