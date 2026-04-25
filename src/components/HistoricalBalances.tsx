@@ -268,19 +268,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           completedCount++;
 
-          const betOverrides = snap.betConfig?.betOverrides;
-
-          // Calculate net vs each other player using ledger + overrides
+          // Read net vs each other player from immutable snapshot balances.
           for (const rival of snap.players) {
             if (rival.id === userPlayer.id) continue;
 
-            const net = calculateNetFromLedger(
-              snap.ledger,
-              betOverrides,
-              userPlayer.id,
-              rival.id,
-              snap.players
-            );
+            const net = getSnapshotVsBalance(snap, userPlayer.id, rival.id);
 
             // Build a stable key for this rival across rounds.
             // Guests use roundId+name to avoid merging different guests with the same name.
@@ -423,14 +415,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         if (!rivalPlayer) continue;
 
-        // Calculate net from ledger with overrides
-        const netAmount = calculateNetFromLedger(
-          snap.ledger,
-          snap.betConfig?.betOverrides,
-          userPlayer.id,
-          rivalPlayer.id,
-          snap.players
-        );
+        const netAmount = getSnapshotVsBalance(snap, userPlayer.id, rivalPlayer.id);
 
         // Gross scores
         const userScores = snap.scores[userPlayer.id] || [];
@@ -508,19 +493,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       const userScores = snap.scores[userPlayer.id] || [];
       const score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
 
-      // Recalculate net from ledger applying betOverrides (matches "Vs Rivales" logic)
-      const betOverrides = snap.betConfig?.betOverrides;
-      let netAmount = 0;
-      for (const rival of snap.players) {
-        if (rival.id === userPlayer.id) continue;
-        netAmount += calculateNetFromLedger(
-          snap.ledger,
-          betOverrides,
-          userPlayer.id,
-          rival.id,
-          snap.players
-        );
-      }
+      const netAmount = getSnapshotTotalBalance(snap, userPlayer.id);
 
       rows.push({
         roundId: snap.roundId,
