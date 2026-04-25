@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
-import { isValidSnapshot, RoundSnapshot, SnapshotLedgerEntry } from '@/lib/roundSnapshot';
+import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 import { formatPlayerName } from '@/lib/playerInput';
 
 interface RivalBalance {
@@ -77,112 +77,6 @@ interface MyRoundRow {
   score: number;
   netAmount: number;
 }
-
-// ────────────────────────────────────────────────────
-// Override filtering logic (mirrors BetDashboard exactly)
-// ────────────────────────────────────────────────────
-
-const getCategoryKey = (betType: string): string => {
-  if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
-  if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
-  if (betType.startsWith('Skins')) return 'skins';
-  if (betType.startsWith('Rayas')) return 'rayas';
-  if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
-  if (betType.includes('Pingüino') || betType === 'Pingüinos') return 'pinguinos';
-  if (betType.startsWith('Zoológico')) return 'zoologico';
-  if (betType === 'Caros') return 'caros';
-  if (betType === 'Oyes') return 'oyeses';
-  if (betType === 'Unidades') return 'units';
-  if (betType === 'Manchas') return 'manchas';
-  if (betType === 'Culebras') return 'culebras';
-  if (betType === 'Coneja') return 'coneja';
-  if (betType === 'Medal General') return 'medalGeneral';
-  if (betType === 'Side Bet') return 'sideBets';
-  if (betType === 'Stableford') return 'stableford';
-  if (betType.startsWith('Carritos')) return 'carritos';
-  if (betType === 'Presiones Parejas') return 'teamPressures';
-  return betType;
-};
-
-const categoryToLabel = (key: string): string => {
-  switch (key) {
-    case 'medal': return 'Medal';
-    case 'pressures': return 'Presiones';
-    case 'skins': return 'Skins';
-    case 'caros': return 'Caros';
-    case 'oyeses': return 'Oyes';
-    case 'units': return 'Unidades';
-    case 'manchas': return 'Manchas';
-    case 'culebras': return 'Culebras';
-    case 'pinguinos': return 'Pingüinos';
-    case 'rayas': return 'Rayas';
-    case 'medalGeneral': return 'Medal General';
-    case 'coneja': return 'Coneja';
-    case 'putts': return 'Putts';
-    case 'sideBets': return 'Side Bet';
-    case 'stableford': return 'Stableford';
-    case 'zoologico': return 'Zoológico';
-    case 'carritos': return 'Carritos';
-    case 'teamPressures': return 'Foursome';
-    default: return key;
-  }
-};
-
-/**
- * Calculate the net amount for a player vs rival from a snapshot's ledger,
- * applying betOverrides to exclude cancelled bets.
- * This mirrors getCorrectedBilateralBalance in BetDashboard (historical mode).
- */
-const calculateNetFromLedger = (
-  ledger: SnapshotLedgerEntry[],
-  betOverrides: any[] | undefined,
-  playerId: string,
-  rivalId: string,
-  allPlayers: any[]
-): number => {
-  // Build bet summaries (winner positive, loser negative) for this pair only
-  const pairEntries: { betType: string; amount: number }[] = [];
-  for (const entry of ledger) {
-    if (entry.amount <= 0) continue;
-
-    if (entry.toPlayerId === playerId && entry.fromPlayerId === rivalId) {
-      pairEntries.push({ betType: entry.betType, amount: entry.amount });
-    } else if (entry.fromPlayerId === playerId && entry.toPlayerId === rivalId) {
-      pairEntries.push({ betType: entry.betType, amount: -entry.amount });
-    }
-  }
-
-  // Group by category
-  const grouped = new Map<string, number>();
-  for (const e of pairEntries) {
-    const cat = getCategoryKey(e.betType);
-    grouped.set(cat, (grouped.get(cat) || 0) + e.amount);
-  }
-
-  // Helper to match player IDs (id or profileId)
-  const matchesPlayer = (overrideId: string, pId: string): boolean => {
-    if (overrideId === pId) return true;
-    const p = allPlayers.find((x: any) => x.id === pId);
-    if (p?.profileId && overrideId === p.profileId) return true;
-    const pByProfile = allPlayers.find((x: any) => x.profileId === pId);
-    if (pByProfile && overrideId === pByProfile.id) return true;
-    return false;
-  };
-
-  let total = 0;
-  for (const [catKey, amount] of grouped) {
-    const label = categoryToLabel(catKey);
-    const override = (betOverrides || []).find(
-      (o: any) =>
-        (o.betType === label || o.betType === catKey) &&
-        ((matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
-          (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId)))
-    );
-    if (override?.enabled === false) continue;
-    total += amount;
-  }
-  return total;
-};
 
 const getSnapshotVsBalance = (
   snap: RoundSnapshot,
