@@ -3,9 +3,9 @@
  * 
  * Displays the accumulated historical balance of bets for the logged-in user.
  * 
- * CRITICAL: Calculates ALL balances directly from round_snapshots ledger entries,
- * applying betOverrides (cancelled bets) to match the General Table logic exactly.
- * Does NOT rely on pre-calculated vsBalances or player_vs_player table.
+ * CRITICAL: Historical totals are read from round_snapshots.balances, the same
+ * immutable source used by the historical detail view. It does NOT rely on
+ * recalculated ledger entries, vsBalances from live tables, or player_vs_player.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
-import { isValidSnapshot, RoundSnapshot, SnapshotLedgerEntry } from '@/lib/roundSnapshot';
+import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 import { formatPlayerName } from '@/lib/playerInput';
 
 interface RivalBalance {
@@ -78,110 +78,19 @@ interface MyRoundRow {
   netAmount: number;
 }
 
-// ────────────────────────────────────────────────────
-// Override filtering logic (mirrors BetDashboard exactly)
-// ────────────────────────────────────────────────────
-
-const getCategoryKey = (betType: string): string => {
-  if (betType.startsWith('Medal') && betType !== 'Medal General') return 'medal';
-  if (betType.startsWith('Presiones') && betType !== 'Presiones Parejas') return 'pressures';
-  if (betType.startsWith('Skins')) return 'skins';
-  if (betType.startsWith('Rayas')) return 'rayas';
-  if (betType === 'Putts' || betType.startsWith('Putts')) return 'putts';
-  if (betType.includes('Pingüino') || betType === 'Pingüinos') return 'pinguinos';
-  if (betType.startsWith('Zoológico')) return 'zoologico';
-  if (betType === 'Caros') return 'caros';
-  if (betType === 'Oyes') return 'oyeses';
-  if (betType === 'Unidades') return 'units';
-  if (betType === 'Manchas') return 'manchas';
-  if (betType === 'Culebras') return 'culebras';
-  if (betType === 'Coneja') return 'coneja';
-  if (betType === 'Medal General') return 'medalGeneral';
-  if (betType === 'Side Bet') return 'sideBets';
-  if (betType === 'Stableford') return 'stableford';
-  if (betType.startsWith('Carritos')) return 'carritos';
-  if (betType === 'Presiones Parejas') return 'teamPressures';
-  return betType;
-};
-
-const categoryToLabel = (key: string): string => {
-  switch (key) {
-    case 'medal': return 'Medal';
-    case 'pressures': return 'Presiones';
-    case 'skins': return 'Skins';
-    case 'caros': return 'Caros';
-    case 'oyeses': return 'Oyes';
-    case 'units': return 'Unidades';
-    case 'manchas': return 'Manchas';
-    case 'culebras': return 'Culebras';
-    case 'pinguinos': return 'Pingüinos';
-    case 'rayas': return 'Rayas';
-    case 'medalGeneral': return 'Medal General';
-    case 'coneja': return 'Coneja';
-    case 'putts': return 'Putts';
-    case 'sideBets': return 'Side Bet';
-    case 'stableford': return 'Stableford';
-    case 'zoologico': return 'Zoológico';
-    case 'carritos': return 'Carritos';
-    case 'teamPressures': return 'Foursome';
-    default: return key;
-  }
-};
-
-/**
- * Calculate the net amount for a player vs rival from a snapshot's ledger,
- * applying betOverrides to exclude cancelled bets.
- * This mirrors getCorrectedBilateralBalance in BetDashboard (historical mode).
- */
-const calculateNetFromLedger = (
-  ledger: SnapshotLedgerEntry[],
-  betOverrides: any[] | undefined,
+const getSnapshotVsBalance = (
+  snap: RoundSnapshot,
   playerId: string,
-  rivalId: string,
-  allPlayers: any[]
+  rivalId: string
 ): number => {
-  // Build bet summaries (winner positive, loser negative) for this pair only
-  const pairEntries: { betType: string; amount: number }[] = [];
-  for (const entry of ledger) {
-    if (entry.amount <= 0) continue;
+  const playerBalance = snap.balances.find((b: any) => b.playerId === playerId);
+  const vsBalance = playerBalance?.vsBalances.find((vb: any) => vb.rivalId === rivalId);
+  return Number(vsBalance?.netAmount) || 0;
+};
 
-    if (entry.toPlayerId === playerId && entry.fromPlayerId === rivalId) {
-      pairEntries.push({ betType: entry.betType, amount: entry.amount });
-    } else if (entry.fromPlayerId === playerId && entry.toPlayerId === rivalId) {
-      pairEntries.push({ betType: entry.betType, amount: -entry.amount });
-    }
-  }
-
-  // Group by category
-  const grouped = new Map<string, number>();
-  for (const e of pairEntries) {
-    const cat = getCategoryKey(e.betType);
-    grouped.set(cat, (grouped.get(cat) || 0) + e.amount);
-  }
-
-  // Helper to match player IDs (id or profileId)
-  const matchesPlayer = (overrideId: string, pId: string): boolean => {
-    if (overrideId === pId) return true;
-    const p = allPlayers.find((x: any) => x.id === pId);
-    if (p?.profileId && overrideId === p.profileId) return true;
-    const pByProfile = allPlayers.find((x: any) => x.profileId === pId);
-    if (pByProfile && overrideId === pByProfile.id) return true;
-    return false;
-  };
-
-  let total = 0;
-  for (const [catKey, amount] of grouped) {
-    const label = categoryToLabel(catKey);
-    const override = (betOverrides || []).find(
-      (o: any) =>
-        (o.betType === label || o.betType === catKey) &&
-        ((matchesPlayer(o.playerAId, playerId) && matchesPlayer(o.playerBId, rivalId)) ||
-          (matchesPlayer(o.playerAId, rivalId) && matchesPlayer(o.playerBId, playerId)))
-    );
-    if (override?.enabled === false) continue;
-    total += amount;
-  }
-  return total;
+const getSnapshotTotalBalance = (snap: RoundSnapshot, playerId: string): number => {
+  const playerBalance = snap.balances.find((b: any) => b.playerId === playerId);
+  return Number(playerBalance?.totalNet) || 0;
 };
 
 export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBalancesProps>(({ 
@@ -253,19 +162,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           completedCount++;
 
-          const betOverrides = snap.betConfig?.betOverrides;
-
-          // Calculate net vs each other player using ledger + overrides
+          // Read net vs each other player from immutable snapshot balances.
           for (const rival of snap.players) {
             if (rival.id === userPlayer.id) continue;
 
-            const net = calculateNetFromLedger(
-              snap.ledger,
-              betOverrides,
-              userPlayer.id,
-              rival.id,
-              snap.players
-            );
+            const net = getSnapshotVsBalance(snap, userPlayer.id, rival.id);
 
             // Build a stable key for this rival across rounds.
             // Guests use roundId+name to avoid merging different guests with the same name.
@@ -408,14 +309,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         if (!rivalPlayer) continue;
 
-        // Calculate net from ledger with overrides
-        const netAmount = calculateNetFromLedger(
-          snap.ledger,
-          snap.betConfig?.betOverrides,
-          userPlayer.id,
-          rivalPlayer.id,
-          snap.players
-        );
+        const netAmount = getSnapshotVsBalance(snap, userPlayer.id, rivalPlayer.id);
 
         // Gross scores
         const userScores = snap.scores[userPlayer.id] || [];
@@ -493,19 +387,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       const userScores = snap.scores[userPlayer.id] || [];
       const score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
 
-      // Recalculate net from ledger applying betOverrides (matches "Vs Rivales" logic)
-      const betOverrides = snap.betConfig?.betOverrides;
-      let netAmount = 0;
-      for (const rival of snap.players) {
-        if (rival.id === userPlayer.id) continue;
-        netAmount += calculateNetFromLedger(
-          snap.ledger,
-          betOverrides,
-          userPlayer.id,
-          rival.id,
-          snap.players
-        );
-      }
+      const netAmount = getSnapshotTotalBalance(snap, userPlayer.id);
 
       rows.push({
         roundId: snap.roundId,
