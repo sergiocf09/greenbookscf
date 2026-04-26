@@ -1420,7 +1420,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const holesWithData = holeSummaries.filter(h => h.hasData).length;
 
     return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData, activePlayers };
-  }, [betConfig.oyeses, scores, course, sameGroupPlayers]);
+  }, [betConfig, scores, course, sameGroupPlayers]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
