@@ -32,6 +32,7 @@ import { WolfResultsCard } from '@/components/bets/WolfResultsCard';
 import { SixesResultsCard } from '@/components/bets/SixesResultsCard';
 import { VegasResultsCard } from '@/components/bets/VegasResultsCard';
 import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
+import { getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -1365,20 +1366,19 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
     if (activePlayers.length < 2) return null;
 
-    const playerConfigs = betConfig.oyeses?.playerConfigs || [];
-    // CRITICAL: Filter configs to only active participants to prevent a sangron config
-    // from a non-participant from poisoning the fallback. Default is ALWAYS 'acumulados'.
-    const activePlayerIds = new Set(activePlayers.map(p => p.id));
-    const activeConfigs = playerConfigs.filter(c => activePlayerIds.has(c.playerId));
+    const activePairs: Array<[Player, Player]> = [];
+    for (let i = 0; i < activePlayers.length; i++) {
+      for (let j = i + 1; j < activePlayers.length; j++) {
+        activePairs.push([activePlayers[i], activePlayers[j]]);
+      }
+    }
 
-    const getEffectiveModality = (playerId: string): 'acumulados' | 'sangron' => {
-      const found = activeConfigs.find(c => c.playerId === playerId);
-      if (found?.enabled && found.modality === 'sangron') return 'sangron';
-      return 'acumulados'; // Default fallback is always acumulados
-    };
+    const standaloneOyesEnabled = betConfig.oyeses?.enabled === true;
+    const rayasOyesEnabled = betConfig.rayas?.enabled === true && (betConfig.rayas.segments?.oyes?.enabled ?? true);
+    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'acumulados');
+    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'sangron');
 
-    const hasAcumulados = activePlayers.some(p => getEffectiveModality(p.id) === 'acumulados');
-    const hasSangron = activePlayers.some(p => getEffectiveModality(p.id) === 'sangron');
+    if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
@@ -1420,7 +1420,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const holesWithData = holeSummaries.filter(h => h.hasData).length;
 
     return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData, activePlayers };
-  }, [betConfig.oyeses, scores, course, sameGroupPlayers]);
+  }, [betConfig, scores, course, sameGroupPlayers]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
