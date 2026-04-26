@@ -32,6 +32,7 @@ import { WolfResultsCard } from '@/components/bets/WolfResultsCard';
 import { SixesResultsCard } from '@/components/bets/SixesResultsCard';
 import { VegasResultsCard } from '@/components/bets/VegasResultsCard';
 import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
+import { getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
