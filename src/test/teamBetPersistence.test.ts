@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
 import { BetConfig } from '@/types/golf';
 import {
+  assertNoCanceledTeamBetLedgerEntries,
+  getCanceledTeamBetLedgerViolations,
   isSixesSettlementActive,
   isVegasSettlementActive,
   isWolfSettlementActive,
@@ -84,5 +86,47 @@ describe('team bet persistence guards', () => {
     expect(isWolfSettlementActive(config)).toBe(false);
     expect(isSixesSettlementActive(config)).toBe(false);
     expect(isVegasSettlementActive(config)).toBe(false);
+  });
+
+  it('detects recreated ledger rows by canceled bet type', () => {
+    const config = baseConfig();
+    config.disabledTeamBetIds = [TEAM_SETTLEMENT_BET_IDS.wolf, TEAM_SETTLEMENT_BET_IDS.sixes, TEAM_SETTLEMENT_BET_IDS.vegas];
+    const ledger = [
+      { fromPlayerId: 'p2', toPlayerId: 'p1', amount: 100, betType: 'Wolf' },
+      { fromPlayerId: 'p3', toPlayerId: 'p1', amount: 50, betType: 'Sixes' },
+      { fromPlayerId: 'p4', toPlayerId: 'p2', amount: 25, betType: 'Vegas' },
+    ];
+
+    const violations = getCanceledTeamBetLedgerViolations(config, ledger);
+
+    expect(violations).toHaveLength(3);
+    expect(violations[0]).toContain('Wolf');
+    expect(violations[1]).toContain('Sixes');
+    expect(violations[2]).toContain('Vegas');
+  });
+
+  it('detects recreated ledger rows by canceled bet pair', () => {
+    const config = baseConfig();
+    config.betOverrides = [{ playerAId: 'p1', playerBId: 'p2', betType: 'Vegas', enabled: false }];
+    const ledger = [
+      { fromPlayerId: 'p2', toPlayerId: 'p1', amount: 100, betType: 'Vegas' },
+      { fromPlayerId: 'p4', toPlayerId: 'p3', amount: 100, betType: 'Vegas' },
+    ];
+
+    const violations = getCanceledTeamBetLedgerViolations(config, ledger);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain('p2::p1');
+  });
+
+  it('throws before snapshot persistence if canceled team ledger rows are present', () => {
+    const config = baseConfig();
+    config.sixesBets = [];
+
+    expect(() =>
+      assertNoCanceledTeamBetLedgerEntries(config, [
+        { fromPlayerId: 'p2', toPlayerId: 'p1', amount: 100, betType: 'Sixes' },
+      ])
+    ).toThrow(/Canceled team bet ledger validation failed/);
   });
 });
