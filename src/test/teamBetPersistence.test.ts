@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
-import { BetConfig } from '@/types/golf';
+import { BetConfig, GolfCourse, Player, PlayerScore, SixesConfig, VegasConfig } from '@/types/golf';
+import { calculateSixesBets } from '@/lib/bets/sixes';
+import { calculateVegasBets } from '@/lib/bets/vegas';
 import {
   assertNoCanceledTeamBetLedgerEntries,
   getCanceledTeamBetLedgerViolations,
@@ -40,6 +42,38 @@ const baseConfig = (): BetConfig => ({
     },
   ],
 });
+
+const players: Player[] = [
+  { id: 'p1', name: 'A', initials: 'A', color: '#000', handicap: 0 },
+  { id: 'p2', name: 'B', initials: 'B', color: '#000', handicap: 0 },
+  { id: 'p3', name: 'C', initials: 'C', color: '#000', handicap: 0 },
+  { id: 'p4', name: 'D', initials: 'D', color: '#000', handicap: 0 },
+];
+
+const course: GolfCourse = {
+  id: 'c1',
+  name: 'Test',
+  location: 'Test',
+  holes: Array.from({ length: 18 }, (_, index) => ({
+    number: index + 1,
+    par: 4,
+    handicapIndex: index + 1,
+  })),
+};
+
+const scores = new Map<string, PlayerScore[]>(players.map((p) => [
+  p.id,
+  Array.from({ length: 18 }, (_, index) => ({
+    playerId: p.id,
+    holeNumber: index + 1,
+    strokes: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
+    putts: 2,
+    markers: defaultBetConfig as any,
+    strokesReceived: 0,
+    netScore: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
+    confirmed: true,
+  })),
+]));
 
 describe('team bet persistence guards', () => {
   it('keeps Vegas, Sixes and Loba active only when setup/matrix are present', () => {
