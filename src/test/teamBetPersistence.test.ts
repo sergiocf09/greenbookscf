@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
-import { BetConfig, GolfCourse, Player, PlayerScore, SixesConfig, VegasConfig } from '@/types/golf';
+import { BetConfig, GolfCourse, Player, PlayerScore, SixesConfig, VegasConfig, defaultMarkerState } from '@/types/golf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
 import {
@@ -68,7 +68,7 @@ const scores = new Map<string, PlayerScore[]>(players.map((p) => [
     holeNumber: index + 1,
     strokes: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
     putts: 2,
-    markers: defaultBetConfig as any,
+    markers: defaultMarkerState,
     strokesReceived: 0,
     netScore: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
     confirmed: true,
