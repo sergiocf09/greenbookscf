@@ -16,6 +16,7 @@ import { calculateWolfBets } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
 import { calculateNinesBets } from '@/lib/bets/nines';
+import { isSixesSettlementActive, isVegasSettlementActive, isWolfSettlementActive } from '@/lib/teamBetPersistence';
 import type { WolfConfig, WolfHoleState, SixesConfig, VegasConfig, NinesConfig } from '@/types/golf';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { parseLocalDate } from '@/lib/dateUtils';
@@ -1373,9 +1374,7 @@ export const useRoundManagement = ({
           supabase.from('wolf_config').select('*').eq('round_id', rId).maybeSingle(),
           supabase.from('wolf_hole_state').select('*').eq('round_id', rId).order('hole_number'),
         ]);
-        const disabledTeamBetIds = normalizedBetConfig.disabledTeamBetIds || [];
-
-        if (wolfCfgRow && wolfStates && normalizedBetConfig.wolfSetup?.enabled === true && !disabledTeamBetIds.includes('wolf-primary')) {
+        if (wolfCfgRow && wolfStates && isWolfSettlementActive(normalizedBetConfig)) {
           const wolfConfig: WolfConfig = {
             roundId: wolfCfgRow.round_id,
             amountPerHole: wolfCfgRow.amount_per_hole,
@@ -1411,9 +1410,7 @@ export const useRoundManagement = ({
         ]);
         if (
           sixesCfgRow &&
-          (normalizedBetConfig.sixesEnabled ?? ((normalizedBetConfig.sixesBets ?? []).length > 0)) &&
-          (normalizedBetConfig.sixesBets ?? []).length > 0 &&
-          !disabledTeamBetIds.includes('sixes-primary')
+          isSixesSettlementActive(normalizedBetConfig)
         ) {
           const sixesConfig: SixesConfig = {
             roundId: sixesCfgRow.round_id,
@@ -1440,9 +1437,7 @@ export const useRoundManagement = ({
           .from('vegas_config').select('*').eq('round_id', rId).maybeSingle();
         if (
           vegasCfgRow &&
-          (normalizedBetConfig.vegasEnabled ?? ((normalizedBetConfig.vegasBets ?? []).length > 0)) &&
-          (normalizedBetConfig.vegasBets ?? []).length > 0 &&
-          !disabledTeamBetIds.includes('vegas-primary')
+          isVegasSettlementActive(normalizedBetConfig)
         ) {
           const vegasConfig: VegasConfig = {
             roundId: vegasCfgRow.round_id,
