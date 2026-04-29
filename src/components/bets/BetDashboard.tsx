@@ -81,6 +81,7 @@ import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
+import { isSixesSettlementActive, isVegasSettlementActive, isWolfSettlementActive } from '@/lib/teamBetPersistence';
 import { calculateNinesBets } from '@/lib/bets/nines';
 import { calculateWolfBets } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
@@ -407,44 +408,35 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return calculateNinesBets(allPlayersForCalculations, confirmedScores, cfg, course);
   }, [isHistorical, ninesHook?.ninesConfig, allPlayersForCalculations, confirmedScores, course]);
 
-  const disabledTeamBetIds = effectiveBetConfig.disabledTeamBetIds || [];
-  const isWolfSettlementActive =
-    effectiveBetConfig.wolfSetup?.enabled === true &&
-    !disabledTeamBetIds.includes('wolf-primary');
-  const isSixesSettlementActive =
-    (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) &&
-    (effectiveBetConfig.sixesBets ?? []).length > 0 &&
-    !disabledTeamBetIds.includes('sixes-primary');
-  const isVegasSettlementActive =
-    (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) &&
-    (effectiveBetConfig.vegasBets ?? []).length > 0 &&
-    !disabledTeamBetIds.includes('vegas-primary');
+  const wolfSettlementActive = isWolfSettlementActive(effectiveBetConfig);
+  const sixesSettlementActive = isSixesSettlementActive(effectiveBetConfig);
+  const vegasSettlementActive = isVegasSettlementActive(effectiveBetConfig);
 
   // Wolf summaries (team bet — Balance General pattern)
   const wolfBetSummaries = useMemo(() => {
     if (isHistorical || !wolfHook?.wolfConfig || !wolfHook.holeStates) return [];
-    if (!isWolfSettlementActive) return [];
+    if (!wolfSettlementActive) return [];
     const wolfPlayers = (wolfHook.wolfConfig.participantIds?.length ?? 0) > 0
       ? allPlayersForCalculations.filter(p => wolfHook.wolfConfig!.participantIds!.includes(p.id))
       : allPlayersForCalculations;
     return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates, confirmedScores, course);
-  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, isWolfSettlementActive, confirmedScores, course]);
+  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, wolfSettlementActive, confirmedScores, course]);
 
   // Sixes summaries
   const sixesBetSummaries = useMemo(() => {
     if (isHistorical || !sixesHook?.sixesConfig) return [];
-    if (!isSixesSettlementActive) return [];
+    if (!sixesSettlementActive) return [];
     const th = effectiveBetConfig.sixesBets?.[0]?.teamHandicaps;
     return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course, th);
-  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets, isSixesSettlementActive]);
+  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets, sixesSettlementActive]);
 
   // Vegas summaries
   const vegasBetSummaries = useMemo(() => {
     if (isHistorical || !vegasHook?.vegasConfig) return [];
-    if (!isVegasSettlementActive) return [];
+    if (!vegasSettlementActive) return [];
     const th = effectiveBetConfig.vegasBets?.[0]?.teamHandicaps;
     return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th);
-  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets, isVegasSettlementActive]);
+  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets, vegasSettlementActive]);
 
   const betSummaries = useMemo(
     () => isHistorical
