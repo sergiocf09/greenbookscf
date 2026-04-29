@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
-import { BetConfig } from '@/types/golf';
+import { BetConfig, GolfCourse, Player, PlayerScore, SixesConfig, VegasConfig, defaultMarkerState } from '@/types/golf';
+import { calculateSixesBets } from '@/lib/bets/sixes';
+import { calculateVegasBets } from '@/lib/bets/vegas';
 import {
   assertNoCanceledTeamBetLedgerEntries,
   getCanceledTeamBetLedgerViolations,
@@ -40,6 +42,38 @@ const baseConfig = (): BetConfig => ({
     },
   ],
 });
+
+const players: Player[] = [
+  { id: 'p1', name: 'A', initials: 'A', color: '#000', handicap: 0 },
+  { id: 'p2', name: 'B', initials: 'B', color: '#000', handicap: 0 },
+  { id: 'p3', name: 'C', initials: 'C', color: '#000', handicap: 0 },
+  { id: 'p4', name: 'D', initials: 'D', color: '#000', handicap: 0 },
+];
+
+const course: GolfCourse = {
+  id: 'c1',
+  name: 'Test',
+  location: 'Test',
+  holes: Array.from({ length: 18 }, (_, index) => ({
+    number: index + 1,
+    par: 4,
+    handicapIndex: index + 1,
+  })),
+};
+
+const scores = new Map<string, PlayerScore[]>(players.map((p) => [
+  p.id,
+  Array.from({ length: 18 }, (_, index) => ({
+    playerId: p.id,
+    holeNumber: index + 1,
+    strokes: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
+    putts: 2,
+    markers: defaultMarkerState,
+    strokesReceived: 0,
+    netScore: index === 0 && (p.id === 'p1' || p.id === 'p2') ? 5 : 4,
+    confirmed: true,
+  })),
+]));
 
 describe('team bet persistence guards', () => {
   it('keeps Vegas, Sixes and Loba active only when setup/matrix are present', () => {
@@ -128,5 +162,50 @@ describe('team bet persistence guards', () => {
         { fromPlayerId: 'p2', toPlayerId: 'p1', amount: 100, betType: 'Sixes' },
       ])
     ).toThrow(/Canceled team bet ledger validation failed/);
+  });
+
+  it('uses persisted Sixes team handicaps so close-engine totals match the dashboard totals', () => {
+    const sixesConfig: SixesConfig = {
+      roundId: 'r1',
+      scoringMode: 'lowBall',
+      cobro: 'per_hole',
+      amount: 90,
+      useHandicap: true,
+      sets: [{ setNumber: 1, team1: ['p1', 'p2'], team2: ['p3', 'p4'] }],
+      teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
+    };
+
+    const dbOnlySixesConfig = { ...sixesConfig, teamHandicaps: undefined, handicapConfig: undefined };
+    const dashboardSummaries = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
+    const closeEngineWithoutPersistedHandicaps = calculateSixesBets(players, scores, dbOnlySixesConfig, course);
+    const closeEngineWithPersistedHandicaps = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
+
+    expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBeGreaterThan(0);
+    expect(closeEngineWithoutPersistedHandicaps).not.toEqual(dashboardSummaries);
+    expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
+  });
+
+  it('uses persisted Vegas team handicaps so close-engine totals match the dashboard totals', () => {
+    const vegasConfig: VegasConfig = {
+      roundId: 'r1',
+      valuePerPoint: 10,
+      useHandicap: true,
+      birdieMultiplier: false,
+      variant: 'fixed',
+      playerAId: 'p1',
+      playerBId: 'p2',
+      playerCId: 'p3',
+      playerDId: 'p4',
+      teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
+    };
+
+    const dbOnlyVegasConfig = { ...vegasConfig, teamHandicaps: undefined, handicapConfig: undefined };
+    const dashboardSummaries = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
+    const closeEngineWithoutPersistedHandicaps = calculateVegasBets(players, scores, dbOnlyVegasConfig, course);
+    const closeEngineWithPersistedHandicaps = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
+
+    expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBeGreaterThan(0);
+    expect(closeEngineWithoutPersistedHandicaps).not.toEqual(dashboardSummaries);
+    expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
   });
 });

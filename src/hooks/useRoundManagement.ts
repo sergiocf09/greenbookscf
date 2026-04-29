@@ -1375,6 +1375,7 @@ export const useRoundManagement = ({
           supabase.from('wolf_hole_state').select('*').eq('round_id', rId).order('hole_number'),
         ]);
         if (wolfCfgRow && wolfStates && isWolfSettlementActive(normalizedBetConfig)) {
+          const wolfSetupForClose = normalizedBetConfig.wolfSetup;
           const wolfConfig: WolfConfig = {
             roundId: wolfCfgRow.round_id,
             amountPerHole: wolfCfgRow.amount_per_hole,
@@ -1384,7 +1385,7 @@ export const useRoundManagement = ({
             carryover: wolfCfgRow.carryover,
             playerOrder: wolfCfgRow.player_order ?? [],
             participantIds: wolfCfgRow.participant_ids ?? [],
-            playerHandicaps: (wolfCfgRow.player_handicaps as any) ?? [],
+            playerHandicaps: wolfSetupForClose?.playerHandicaps ?? (wolfCfgRow.player_handicaps as any) ?? [],
           };
           const holeStates: WolfHoleState[] = (wolfStates as any[]).map(s => ({
             roundId: s.round_id,
@@ -1412,6 +1413,7 @@ export const useRoundManagement = ({
           sixesCfgRow &&
           isSixesSettlementActive(normalizedBetConfig)
         ) {
+          const sixesBetInstanceForClose = normalizedBetConfig.sixesBets?.[0];
           const sixesConfig: SixesConfig = {
             roundId: sixesCfgRow.round_id,
             scoringMode: sixesCfgRow.scoring_mode as SixesConfig['scoringMode'],
@@ -1427,8 +1429,10 @@ export const useRoundManagement = ({
               team1: [s.team1_player1_id, s.team1_player2_id] as [string, string],
               team2: [s.team2_player1_id, s.team2_player2_id] as [string, string],
             })),
+            teamHandicaps: sixesBetInstanceForClose?.teamHandicaps,
+            handicapConfig: sixesBetInstanceForClose?.handicapConfig,
           };
-          sprint3Summaries.push(...calculateSixesBets(sanitizedPlayers, confirmedScoresForClose, sixesConfig, course));
+          sprint3Summaries.push(...calculateSixesBets(sanitizedPlayers, confirmedScoresForClose, sixesConfig, course, sixesBetInstanceForClose?.teamHandicaps));
           devLog(`[CLOSE] Sixes: ${sprint3Summaries.filter(s => s.betType === 'Sixes' && s.amount > 0).length} winning entries`);
         }
 
@@ -1439,6 +1443,7 @@ export const useRoundManagement = ({
           vegasCfgRow &&
           isVegasSettlementActive(normalizedBetConfig)
         ) {
+          const vegasBetInstanceForClose = normalizedBetConfig.vegasBets?.[0];
           const vegasConfig: VegasConfig = {
             roundId: vegasCfgRow.round_id,
             valuePerPoint: vegasCfgRow.value_per_point,
@@ -1455,8 +1460,10 @@ export const useRoundManagement = ({
             set1Amount: vegasCfgRow.set1_amount ?? undefined,
             set2Amount: vegasCfgRow.set2_amount ?? undefined,
             set3Amount: vegasCfgRow.set3_amount ?? undefined,
+            teamHandicaps: vegasBetInstanceForClose?.teamHandicaps,
+            handicapConfig: vegasBetInstanceForClose?.handicapConfig,
           };
-          sprint3Summaries.push(...calculateVegasBets(sanitizedPlayers, confirmedScoresForClose, vegasConfig, course));
+          sprint3Summaries.push(...calculateVegasBets(sanitizedPlayers, confirmedScoresForClose, vegasConfig, course, vegasBetInstanceForClose?.teamHandicaps));
           devLog(`[CLOSE] Vegas: ${sprint3Summaries.filter(s => s.betType === 'Vegas' && s.amount > 0).length} winning entries`);
         }
 
