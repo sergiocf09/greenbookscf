@@ -17,6 +17,7 @@
 
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { BetSummary } from './betCalculations';
+import { assertNoCanceledTeamBetLedgerEntries } from './teamBetPersistence';
 
 // Structure of a player in the snapshot
 export interface SnapshotPlayer {
@@ -344,6 +345,8 @@ export function generateRoundSnapshot(
       });
     }
   }
+
+  assertNoCanceledTeamBetLedgerEntries(betConfig, ledger, players);
 
   // Calculate player balances
   const balanceMap = new Map<string, { total: number; vs: Map<string, number> }>();
