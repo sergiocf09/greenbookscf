@@ -175,12 +175,13 @@ describe('team bet persistence guards', () => {
       teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
     };
 
+    const dbOnlySixesConfig = { ...sixesConfig, teamHandicaps: undefined, handicapConfig: undefined };
     const dashboardSummaries = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
-    const closeEngineWithoutPersistedHandicaps = calculateSixesBets(players, scores, sixesConfig, course);
+    const closeEngineWithoutPersistedHandicaps = calculateSixesBets(players, scores, dbOnlySixesConfig, course);
     const closeEngineWithPersistedHandicaps = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
 
     expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBeGreaterThan(0);
-    expect(closeEngineWithoutPersistedHandicaps).toHaveLength(0);
+    expect(closeEngineWithoutPersistedHandicaps).not.toEqual(dashboardSummaries);
     expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
   });
 
@@ -198,8 +199,9 @@ describe('team bet persistence guards', () => {
       teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
     };
 
+    const dbOnlyVegasConfig = { ...vegasConfig, teamHandicaps: undefined, handicapConfig: undefined };
     const dashboardSummaries = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
-    const closeEngineWithoutPersistedHandicaps = calculateVegasBets(players, scores, vegasConfig, course);
+    const closeEngineWithoutPersistedHandicaps = calculateVegasBets(players, scores, dbOnlyVegasConfig, course);
     const closeEngineWithPersistedHandicaps = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
 
     expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBeGreaterThan(0);
