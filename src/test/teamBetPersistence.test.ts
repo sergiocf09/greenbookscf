@@ -163,4 +163,47 @@ describe('team bet persistence guards', () => {
       ])
     ).toThrow(/Canceled team bet ledger validation failed/);
   });
+
+  it('uses persisted Sixes team handicaps so close-engine totals match the dashboard totals', () => {
+    const sixesConfig: SixesConfig = {
+      roundId: 'r1',
+      scoringMode: 'lowBall',
+      cobro: 'per_hole',
+      amount: 90,
+      useHandicap: true,
+      sets: [{ setNumber: 1, team1: ['p1', 'p2'], team2: ['p3', 'p4'] }],
+      teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
+    };
+
+    const dashboardSummaries = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
+    const closeEngineWithoutPersistedHandicaps = calculateSixesBets(players, scores, sixesConfig, course);
+    const closeEngineWithPersistedHandicaps = calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps);
+
+    expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBe(90);
+    expect(closeEngineWithoutPersistedHandicaps).toHaveLength(0);
+    expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
+  });
+
+  it('uses persisted Vegas team handicaps so close-engine totals match the dashboard totals', () => {
+    const vegasConfig: VegasConfig = {
+      roundId: 'r1',
+      valuePerPoint: 10,
+      useHandicap: true,
+      birdieMultiplier: false,
+      variant: 'fixed',
+      playerAId: 'p1',
+      playerBId: 'p2',
+      playerCId: 'p3',
+      playerDId: 'p4',
+      teamHandicaps: { p1: 18, p2: 18, p3: 0, p4: 0 },
+    };
+
+    const dashboardSummaries = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
+    const closeEngineWithoutPersistedHandicaps = calculateVegasBets(players, scores, vegasConfig, course);
+    const closeEngineWithPersistedHandicaps = calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps);
+
+    expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBe(60);
+    expect(closeEngineWithoutPersistedHandicaps).toHaveLength(0);
+    expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
+  });
 });
