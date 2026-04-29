@@ -407,31 +407,44 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     return calculateNinesBets(allPlayersForCalculations, confirmedScores, cfg, course);
   }, [isHistorical, ninesHook?.ninesConfig, allPlayersForCalculations, confirmedScores, course]);
 
+  const disabledTeamBetIds = effectiveBetConfig.disabledTeamBetIds || [];
+  const isWolfSettlementActive =
+    effectiveBetConfig.wolfSetup?.enabled === true &&
+    !disabledTeamBetIds.includes('wolf-primary');
+  const isSixesSettlementActive =
+    (effectiveBetConfig.sixesEnabled ?? ((effectiveBetConfig.sixesBets ?? []).length > 0)) &&
+    (effectiveBetConfig.sixesBets ?? []).length > 0 &&
+    !disabledTeamBetIds.includes('sixes-primary');
+  const isVegasSettlementActive =
+    (effectiveBetConfig.vegasEnabled ?? ((effectiveBetConfig.vegasBets ?? []).length > 0)) &&
+    (effectiveBetConfig.vegasBets ?? []).length > 0 &&
+    !disabledTeamBetIds.includes('vegas-primary');
+
   // Wolf summaries (team bet — Balance General pattern)
   const wolfBetSummaries = useMemo(() => {
     if (isHistorical || !wolfHook?.wolfConfig || !wolfHook.holeStates) return [];
-    if (effectiveBetConfig.wolfSetup?.enabled !== true) return [];
+    if (!isWolfSettlementActive) return [];
     const wolfPlayers = (wolfHook.wolfConfig.participantIds?.length ?? 0) > 0
       ? allPlayersForCalculations.filter(p => wolfHook.wolfConfig!.participantIds!.includes(p.id))
       : allPlayersForCalculations;
     return calculateWolfBets(wolfPlayers, wolfHook.wolfConfig, wolfHook.holeStates, confirmedScores, course);
-  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, effectiveBetConfig.wolfSetup?.enabled, confirmedScores, course]);
+  }, [isHistorical, wolfHook?.wolfConfig, wolfHook?.holeStates, allPlayersForCalculations, isWolfSettlementActive, confirmedScores, course]);
 
   // Sixes summaries
   const sixesBetSummaries = useMemo(() => {
     if (isHistorical || !sixesHook?.sixesConfig) return [];
-    if ((effectiveBetConfig.sixesBets ?? []).length === 0) return [];
+    if (!isSixesSettlementActive) return [];
     const th = effectiveBetConfig.sixesBets?.[0]?.teamHandicaps;
     return calculateSixesBets(allPlayersForCalculations, confirmedScores, sixesHook.sixesConfig, course, th);
-  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets]);
+  }, [isHistorical, sixesHook?.sixesConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.sixesBets, isSixesSettlementActive]);
 
   // Vegas summaries
   const vegasBetSummaries = useMemo(() => {
     if (isHistorical || !vegasHook?.vegasConfig) return [];
-    if ((effectiveBetConfig.vegasBets ?? []).length === 0) return [];
+    if (!isVegasSettlementActive) return [];
     const th = effectiveBetConfig.vegasBets?.[0]?.teamHandicaps;
     return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th);
-  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets]);
+  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets, isVegasSettlementActive]);
 
   const betSummaries = useMemo(
     () => isHistorical
@@ -923,10 +936,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // between teams), which is exactly what generateRoundSnapshot expects.
   useEffect(() => {
     if (isHistorical) return; // Historical view reads from snapshot – do not re-emit
-    if (!betConfig.carritos.enabled) return; // Guard: skip emission when carritos disabled
 
     const carritosSummaries: BetSummary[] = [];
-    allCarritosResults.forEach((result, idx) => {
+    if (betConfig.carritos.enabled) allCarritosResults.forEach((result, idx) => {
       const carritosId = result.id || `carritos-${idx}`;
       if ((betConfig.disabledTeamBetIds || []).includes(carritosId)) return;
 

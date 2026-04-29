@@ -1373,7 +1373,9 @@ export const useRoundManagement = ({
           supabase.from('wolf_config').select('*').eq('round_id', rId).maybeSingle(),
           supabase.from('wolf_hole_state').select('*').eq('round_id', rId).order('hole_number'),
         ]);
-        if (wolfCfgRow && wolfStates && normalizedBetConfig.wolfSetup?.enabled === true) {
+        const disabledTeamBetIds = normalizedBetConfig.disabledTeamBetIds || [];
+
+        if (wolfCfgRow && wolfStates && normalizedBetConfig.wolfSetup?.enabled === true && !disabledTeamBetIds.includes('wolf-primary')) {
           const wolfConfig: WolfConfig = {
             roundId: wolfCfgRow.round_id,
             amountPerHole: wolfCfgRow.amount_per_hole,
@@ -1407,7 +1409,12 @@ export const useRoundManagement = ({
           supabase.from('sixes_config').select('*').eq('round_id', rId).maybeSingle(),
           supabase.from('sixes_sets').select('*').eq('round_id', rId).order('set_number'),
         ]);
-        if (sixesCfgRow && (normalizedBetConfig.sixesBets ?? []).length > 0) {
+        if (
+          sixesCfgRow &&
+          (normalizedBetConfig.sixesEnabled ?? ((normalizedBetConfig.sixesBets ?? []).length > 0)) &&
+          (normalizedBetConfig.sixesBets ?? []).length > 0 &&
+          !disabledTeamBetIds.includes('sixes-primary')
+        ) {
           const sixesConfig: SixesConfig = {
             roundId: sixesCfgRow.round_id,
             scoringMode: sixesCfgRow.scoring_mode as SixesConfig['scoringMode'],
@@ -1431,7 +1438,12 @@ export const useRoundManagement = ({
         // ── VEGAS ─────────────────────────────────────────────────────────────
         const { data: vegasCfgRow } = await supabase
           .from('vegas_config').select('*').eq('round_id', rId).maybeSingle();
-        if (vegasCfgRow && (normalizedBetConfig.vegasBets ?? []).length > 0) {
+        if (
+          vegasCfgRow &&
+          (normalizedBetConfig.vegasEnabled ?? ((normalizedBetConfig.vegasBets ?? []).length > 0)) &&
+          (normalizedBetConfig.vegasBets ?? []).length > 0 &&
+          !disabledTeamBetIds.includes('vegas-primary')
+        ) {
           const vegasConfig: VegasConfig = {
             roundId: vegasCfgRow.round_id,
             valuePerPoint: vegasCfgRow.value_per_point,
