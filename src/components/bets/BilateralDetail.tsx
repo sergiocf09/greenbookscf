@@ -88,6 +88,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
+  const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
   
   const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
   const shortNamesLocal = useMemo(() => disambiguateShortNames(allPlayers), [allPlayers]);
@@ -1851,13 +1852,46 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     ) : group.key === 'oyeses' ? (
                       // Oyeses detail - show proximity order per player per hole
                       (() => {
+                        // ---- Detect which modalities have data for THIS pair ----
+                        // Acumulado data sources:
+                        //  - any Par 3 with oyesProximity for either player
+                        //  - any 'Rayas Oyes' summary whose description does NOT include "(Sangrón)"
+                        // Sangrón data sources:
+                        //  - any Par 3 with oyesProximitySangron for either player
+                        //  - any 'Rayas Oyes' summary whose description includes "(Sangrón)"
+                        //  - the pair's effective Oyes modality is 'sangron'
+                        const par3Numbers = course.holes.filter(h => h.par === 3).map(h => h.number);
+                        const playerScoresArr = confirmedScores.get(player.id) || [];
+                        const rivalScoresArr = confirmedScores.get(rival.id) || [];
+                        const hasAcumuladoData = par3Numbers.some(hn => {
+                          const sA = playerScoresArr.find(s => s.holeNumber === hn);
+                          const sB = rivalScoresArr.find(s => s.holeNumber === hn);
+                          return (sA?.oyesProximity ?? null) !== null || (sB?.oyesProximity ?? null) !== null;
+                        });
+                        const hasSangronData = par3Numbers.some(hn => {
+                          const sA = playerScoresArr.find(s => s.holeNumber === hn);
+                          const sB = rivalScoresArr.find(s => s.holeNumber === hn);
+                          return (sA?.oyesProximitySangron ?? null) !== null || (sB?.oyesProximitySangron ?? null) !== null;
+                        });
+                        const rayasOyesSummaries = groupedSummaries['Rayas Oyes']?.details || [];
+                        const hasRayasOyesSangron = rayasOyesSummaries.some(d => (d.description || '').includes('Sangrón'));
+                        const hasRayasOyesAcumulado = rayasOyesSummaries.some(d => !(d.description || '').includes('Sangrón'));
+                        const pairOyesModality = getOyesModalityForPair(effectiveBetConfig, player.id, rival.id);
+                        const showAcumulado = hasAcumuladoData || hasRayasOyesAcumulado || pairOyesModality === 'acumulados';
+                        const showSangron = hasSangronData || hasRayasOyesSangron || pairOyesModality === 'sangron';
+                        const showTabs = showAcumulado && showSangron;
+                        // Active modality for the table view
+                        const activeModality: 'acumulados' | 'sangron' = showTabs
+                          ? oyesTab
+                          : (showSangron && !showAcumulado ? 'sangron' : 'acumulados');
                         // Use confirmedScores for display to match calculation
                         const oyesesData = getOyesesDisplayData(
                           player.id,
                           rival.id,
                           confirmedScores,
                           effectiveBetConfig,
-                          course
+                          course,
+                          showTabs ? activeModality : undefined
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
@@ -1870,7 +1904,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           course
                         );
                         
-                        if (playerAHoles.length === 0) {
+                        if (playerAHoles.length === 0 && !showTabs) {
                           return (
                             <div className="px-4 py-2 pl-10 bg-background/50 text-xs text-muted-foreground">
                               Sin datos de Oyeses registrados
@@ -1889,7 +1923,45 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         
                         return (
                           <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
-                            {/* Zapato toggle for Oyeses - above detail */}
+                            {/* Modality tabs (only when both modalities have data for this pair) */}
+                            {showTabs && (
+                              <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                                <button
+                                  type="button"
+                                  onClick={() => setOyesTab('acumulados')}
+                                  className={cn(
+                                    "flex-1 py-1 px-2 text-[11px] font-medium rounded-md transition-all",
+                                    activeModality === 'acumulados'
+                                      ? "bg-background shadow text-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Acumulado
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setOyesTab('sangron')}
+                                  className={cn(
+                                    "flex-1 py-1 px-2 text-[11px] font-medium rounded-md transition-all",
+                                    activeModality === 'sangron'
+                                      ? "bg-background shadow text-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Sangrón
+                                </button>
+                              </div>
+                            )}
+                            {/* Mode hint when only one modality applies but it's Sangrón */}
+                            {!showTabs && activeModality === 'sangron' && (
+                              <div className="text-[10px] text-muted-foreground">Modalidad Sangrón</div>
+                            )}
+                            {/* Empty state for the active tab */}
+                            {playerAHoles.length === 0 && (
+                              <div className="text-xs text-muted-foreground py-2">
+                                Sin datos de Oyeses {activeModality === 'sangron' ? 'Sangrón' : 'Acumulado'} registrados
+                              </div>
+                            )}
                             {!isHistorical && onBetConfigChange && (
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium">Zapato</span>

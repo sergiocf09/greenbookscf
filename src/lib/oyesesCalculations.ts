@@ -210,32 +210,43 @@ export const getOyesesDisplayData = (
   playerBId: string,
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  /** Optional override to force display in a specific modality (for tabs in dashboard) */
+  forceModality?: OyesModality
 ): { playerAHoles: OyesHoleDisplay[]; playerBHoles: OyesHoleDisplay[] } => {
   const playerAHoles: OyesHoleDisplay[] = [];
   const playerBHoles: OyesHoleDisplay[] = [];
   
-  if (!config.oyeses.enabled) return { playerAHoles, playerBHoles };
+  // When forcing a modality (display-only for dashboard tabs), bypass the
+  // per-player enabled/modality checks so we can render proximities even if
+  // the individual Oyes bet isn't configured for this exact modality.
+  if (!config.oyeses?.enabled && !forceModality) return { playerAHoles, playerBHoles };
   
-  const amount = config.oyeses.amount;
+  const amount = config.oyeses?.amount ?? 0;
   
   // Find Par 3 holes
   const par3Holes = course.holes
     .filter(h => h.par === 3)
     .map(h => h.number);
   
-  const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
-  const cfgB = getEffectiveOyesesPlayerConfig(playerBId, config);
-  const modalityA = cfgA.enabled ? cfgA.modality : null;
-  const modalityB = cfgB.enabled ? cfgB.modality : null;
+  let pairModality: OyesModality;
   
-  if (!modalityA || !modalityB) return { playerAHoles, playerBHoles };
-  
-  // Determine the pair's effective modality
-  const pairKey = [playerAId, playerBId].sort().join('_');
-  const pairOverride = config.oyesPairModalityOverrides?.[pairKey];
-  const pairModality: OyesModality = pairOverride
-    ?? ((modalityA === modalityB) ? modalityA : 'sangron');
+  if (forceModality) {
+    pairModality = forceModality;
+  } else {
+    const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
+    const cfgB = getEffectiveOyesesPlayerConfig(playerBId, config);
+    const modalityA = cfgA.enabled ? cfgA.modality : null;
+    const modalityB = cfgB.enabled ? cfgB.modality : null;
+    
+    if (!modalityA || !modalityB) return { playerAHoles, playerBHoles };
+    
+    // Determine the pair's effective modality
+    const pairKey = [playerAId, playerBId].sort().join('_');
+    const pairOverride = config.oyesPairModalityOverrides?.[pairKey];
+    pairModality = pairOverride
+      ?? ((modalityA === modalityB) ? modalityA : 'sangron');
+  }
   
   let accumulated = 0;
   
