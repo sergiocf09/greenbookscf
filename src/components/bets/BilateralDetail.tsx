@@ -1852,13 +1852,46 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     ) : group.key === 'oyeses' ? (
                       // Oyeses detail - show proximity order per player per hole
                       (() => {
+                        // ---- Detect which modalities have data for THIS pair ----
+                        // Acumulado data sources:
+                        //  - any Par 3 with oyesProximity for either player
+                        //  - any 'Rayas Oyes' summary whose description does NOT include "(Sangrón)"
+                        // Sangrón data sources:
+                        //  - any Par 3 with oyesProximitySangron for either player
+                        //  - any 'Rayas Oyes' summary whose description includes "(Sangrón)"
+                        //  - the pair's effective Oyes modality is 'sangron'
+                        const par3Numbers = course.holes.filter(h => h.par === 3).map(h => h.number);
+                        const playerScoresArr = confirmedScores.get(player.id) || [];
+                        const rivalScoresArr = confirmedScores.get(rival.id) || [];
+                        const hasAcumuladoData = par3Numbers.some(hn => {
+                          const sA = playerScoresArr.find(s => s.holeNumber === hn);
+                          const sB = rivalScoresArr.find(s => s.holeNumber === hn);
+                          return (sA?.oyesProximity ?? null) !== null || (sB?.oyesProximity ?? null) !== null;
+                        });
+                        const hasSangronData = par3Numbers.some(hn => {
+                          const sA = playerScoresArr.find(s => s.holeNumber === hn);
+                          const sB = rivalScoresArr.find(s => s.holeNumber === hn);
+                          return (sA?.oyesProximitySangron ?? null) !== null || (sB?.oyesProximitySangron ?? null) !== null;
+                        });
+                        const rayasOyesSummaries = groupedSummaries['Rayas Oyes']?.details || [];
+                        const hasRayasOyesSangron = rayasOyesSummaries.some(d => (d.description || '').includes('Sangrón'));
+                        const hasRayasOyesAcumulado = rayasOyesSummaries.some(d => !(d.description || '').includes('Sangrón'));
+                        const pairOyesModality = getOyesModalityForPair(effectiveBetConfig, player.id, rival.id);
+                        const showAcumulado = hasAcumuladoData || hasRayasOyesAcumulado || pairOyesModality === 'acumulados';
+                        const showSangron = hasSangronData || hasRayasOyesSangron || pairOyesModality === 'sangron';
+                        const showTabs = showAcumulado && showSangron;
+                        // Active modality for the table view
+                        const activeModality: 'acumulados' | 'sangron' = showTabs
+                          ? oyesTab
+                          : (showSangron && !showAcumulado ? 'sangron' : 'acumulados');
                         // Use confirmedScores for display to match calculation
                         const oyesesData = getOyesesDisplayData(
                           player.id,
                           rival.id,
                           confirmedScores,
                           effectiveBetConfig,
-                          course
+                          course,
+                          showTabs ? activeModality : undefined
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
