@@ -54,12 +54,16 @@ const analyzeActiveModalities = (
   let hasSangron = false;
   
   // Check standalone Oyeses bet
-  if (config.oyeses?.enabled && config.oyeses.playerConfigs) {
-    for (const pc of config.oyeses.playerConfigs) {
-      if (pc.enabled) {
-        if (pc.modality === 'sangron') hasSangron = true;
-        else hasAcumulado = true;
-      }
+  if (config.oyeses?.enabled) {
+    const participantIds = config.oyeses.participantIds ?? players.map(p => p.id);
+    const playerConfigs = config.oyeses.playerConfigs ?? [];
+    for (const pid of participantIds) {
+      const pc = playerConfigs.find(c => c.playerId === pid);
+      if (pc && pc.enabled === false) continue;
+      // Default modality is 'acumulados' when no per-player config exists
+      const modality = pc?.modality ?? 'acumulados';
+      if (modality === 'sangron') hasSangron = true;
+      else hasAcumulado = true;
     }
   }
   
