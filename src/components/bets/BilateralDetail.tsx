@@ -1923,7 +1923,45 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         
                         return (
                           <div className="px-4 py-3 pl-10 bg-background/50 space-y-3">
-                            {/* Zapato toggle for Oyeses - above detail */}
+                            {/* Modality tabs (only when both modalities have data for this pair) */}
+                            {showTabs && (
+                              <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                                <button
+                                  type="button"
+                                  onClick={() => setOyesTab('acumulados')}
+                                  className={cn(
+                                    "flex-1 py-1 px-2 text-[11px] font-medium rounded-md transition-all",
+                                    activeModality === 'acumulados'
+                                      ? "bg-background shadow text-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Acumulado
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setOyesTab('sangron')}
+                                  className={cn(
+                                    "flex-1 py-1 px-2 text-[11px] font-medium rounded-md transition-all",
+                                    activeModality === 'sangron'
+                                      ? "bg-background shadow text-foreground"
+                                      : "text-muted-foreground hover:text-foreground"
+                                  )}
+                                >
+                                  Sangrón
+                                </button>
+                              </div>
+                            )}
+                            {/* Mode hint when only one modality applies but it's Sangrón */}
+                            {!showTabs && activeModality === 'sangron' && (
+                              <div className="text-[10px] text-muted-foreground">Modalidad Sangrón</div>
+                            )}
+                            {/* Empty state for the active tab */}
+                            {playerAHoles.length === 0 && (
+                              <div className="text-xs text-muted-foreground py-2">
+                                Sin datos de Oyeses {activeModality === 'sangron' ? 'Sangrón' : 'Acumulado'} registrados
+                              </div>
+                            )}
                             {!isHistorical && onBetConfigChange && (
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium">Zapato</span>
