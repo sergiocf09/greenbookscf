@@ -828,22 +828,31 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
     
     // Oyeses (before Units as per spec)
-    if (bothParticipate(undefined, 'oyeses')) {
+    // Show the chip when EITHER:
+    //  - both play the standalone Oyeses bet, OR
+    //  - both play Rayas with the Oyes segment enabled (so a player like Raúl
+    //    who only plays Rayas Oyes-Sangrón still sees results in the chip).
+    const rayasOyesSegmentEnabled = effectiveBetConfig.rayas?.enabled !== false &&
+      effectiveBetConfig.rayas?.segments?.oyes?.enabled !== false;
+    const showOyesChip = bothParticipate(undefined, 'oyeses') ||
+      (rayasOyesSegmentEnabled && bothParticipate(effectiveBetConfig.rayas?.participantIds, 'rayas'));
+    if (showOyesChip) {
       groups.push({
         key: 'oyeses',
         label: 'Oyes',
         configKey: 'oyeses',
         segments: [{ label: 'Par 3s', key: 'oyeses_detail' }],
-        getTotal: () => groupedSummaries['Oyes']?.total || 0,
+        getTotal: () => (groupedSummaries['Oyes']?.total || 0) + (groupedSummaries['Rayas Oyes']?.total || 0),
         getSegmentData: () => {
           const oyesSummary = groupedSummaries['Oyes'];
-          const details = oyesSummary?.details || [];
+          const rayasOyesSummary = groupedSummaries['Rayas Oyes'];
+          const details = [...(oyesSummary?.details || []), ...(rayasOyesSummary?.details || [])];
           const wins = details.filter(d => d.amount > 0).length;
           const losses = details.filter(d => d.amount < 0).length;
           return { 
             playerNet: wins, 
             rivalNet: losses, 
-            amount: oyesSummary?.total || 0 
+            amount: (oyesSummary?.total || 0) + (rayasOyesSummary?.total || 0)
           };
         },
       });
