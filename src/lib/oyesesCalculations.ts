@@ -262,8 +262,16 @@ export const getOyesesDisplayData = (
     const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
     const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
 
-    const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
-    const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
+    // Sangrón fallback: when no explicit Sangrón value is captured for a player,
+    // mirror the Acumulado value (matches OyesesDialog inheritance behavior).
+    // This handles cases where most players capture in Acumulado and only one
+    // (e.g., Raúl) differs in Sangrón.
+    const proximityA = pairModality === 'sangron'
+      ? (proximitySangronA ?? proximityAcumuladoA)
+      : proximityAcumuladoA;
+    const proximityB = pairModality === 'sangron'
+      ? (proximitySangronB ?? proximityAcumuladoB)
+      : proximityAcumuladoB;
     
     let holeA: OyesHoleDisplay = {
       holeNumber: holeNum,
@@ -414,8 +422,14 @@ export const calculateOyesesBets = (
         const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
         const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
 
-        const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
-        const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
+        // Sangrón fallback: mirror Acumulado when no explicit Sangrón is captured
+        // (matches OyesesDialog inheritance behavior).
+        const proximityA = pairModality === 'sangron'
+          ? (proximitySangronA ?? proximityAcumuladoA)
+          : proximityAcumuladoA;
+        const proximityB = pairModality === 'sangron'
+          ? (proximitySangronB ?? proximityAcumuladoB)
+          : proximityAcumuladoB;
         
          if (pairModality === 'acumulados') {
            // In Acumulados, the hole counts as played even if both miss (carry).
