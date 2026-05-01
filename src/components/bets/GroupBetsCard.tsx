@@ -1362,8 +1362,23 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const oyesesSummary = useMemo(() => {
     if (sameGroupPlayers.length < 2) return null;
 
-    // Use resolveGroupParticipants for proper participant resolution (handles profileId/id mismatch)
-    const activePlayers = resolveGroupParticipants(betConfig.oyeses?.participantIds);
+    const standaloneOyesEnabled = betConfig.oyeses?.enabled === true;
+    const rayasOyesEnabled = betConfig.rayas?.enabled === true && (betConfig.rayas.segments?.oyes?.enabled ?? true);
+
+    if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
+
+    // Oyeses can be played directly OR as the Oyes segment inside Rayas.
+    // The indicator must include both populations so Rayas-only Sangrón players appear here.
+    const standalonePlayers = standaloneOyesEnabled
+      ? resolveGroupParticipants(betConfig.oyeses?.participantIds)
+      : [];
+    const rayasOyesPlayers = rayasOyesEnabled
+      ? resolveGroupParticipants(betConfig.rayas?.participantIds)
+      : [];
+    const activePlayers = [...standalonePlayers, ...rayasOyesPlayers].filter(
+      (player, index, arr) => arr.findIndex(p => p.id === player.id) === index
+    );
+
     if (activePlayers.length < 2) return null;
 
     const activePairs: Array<[Player, Player]> = [];
@@ -1373,12 +1388,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       }
     }
 
-    const standaloneOyesEnabled = betConfig.oyeses?.enabled === true;
-    const rayasOyesEnabled = betConfig.rayas?.enabled === true && (betConfig.rayas.segments?.oyes?.enabled ?? true);
     const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'acumulados');
     const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'sangron');
-
-    if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
