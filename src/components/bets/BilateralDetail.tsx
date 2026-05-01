@@ -88,6 +88,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   onComputedBalance,
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
+  const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
   
   const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
   const shortNamesLocal = useMemo(() => disambiguateShortNames(allPlayers), [allPlayers]);
