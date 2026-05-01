@@ -262,8 +262,16 @@ export const getOyesesDisplayData = (
     const proximitySangronA = scoreA?.oyesProximitySangron ?? null;
     const proximitySangronB = scoreB?.oyesProximitySangron ?? null;
 
-    const proximityA = pairModality === 'sangron' ? proximitySangronA : proximityAcumuladoA;
-    const proximityB = pairModality === 'sangron' ? proximitySangronB : proximityAcumuladoB;
+    // Sangrón fallback: when no explicit Sangrón value is captured for a player,
+    // mirror the Acumulado value (matches OyesesDialog inheritance behavior).
+    // This handles cases where most players capture in Acumulado and only one
+    // (e.g., Raúl) differs in Sangrón.
+    const proximityA = pairModality === 'sangron'
+      ? (proximitySangronA ?? proximityAcumuladoA)
+      : proximityAcumuladoA;
+    const proximityB = pairModality === 'sangron'
+      ? (proximitySangronB ?? proximityAcumuladoB)
+      : proximityAcumuladoB;
     
     let holeA: OyesHoleDisplay = {
       holeNumber: holeNum,
