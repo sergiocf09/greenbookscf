@@ -1904,7 +1904,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           course
                         );
                         
-                        if (playerAHoles.length === 0) {
+                        if (playerAHoles.length === 0 && !showTabs) {
                           return (
                             <div className="px-4 py-2 pl-10 bg-background/50 text-xs text-muted-foreground">
                               Sin datos de Oyeses registrados
