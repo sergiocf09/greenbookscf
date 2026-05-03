@@ -1201,24 +1201,25 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.id]);
 
-  // Handle global tee color change - propagate to all players without explicit tee
+  // Handle global tee color change - propagate ONLY to players without an explicit tee.
+  // Players that already have a tee defined (individual selection) MUST be preserved,
+  // even if their tee happens to match the previous global default. Otherwise re-opening
+  // the round would lose per-player tee selections after any global tee change.
   const handleTeeColorChange = useCallback((newTeeColor: 'blue' | 'white' | 'yellow' | 'red') => {
     setTeeColor(newTeeColor);
-    
-    // Update all players that don't have an explicit tee set (or have the old default)
-    // When round is active, also persist to database
+
+    // Only inherit when teeColor is unset
     const updatedPlayers = players.map(p => ({
       ...p,
-      teeColor: p.teeColor === teeColor || !p.teeColor ? newTeeColor : p.teeColor,
+      teeColor: p.teeColor ? p.teeColor : newTeeColor,
     }));
-    
+
     setPlayers(updatedPlayers);
-    
+
     // Persist tee changes to database if round exists
     if (roundState.id) {
       for (const player of updatedPlayers) {
         const originalPlayer = players.find(p => p.id === player.id);
-        // Only update if tee actually changed
         if (originalPlayer && originalPlayer.teeColor !== player.teeColor) {
           const rpId = roundPlayerIds.get(player.id);
           if (rpId) {
@@ -1235,18 +1236,18 @@ const Index = () => {
         }
       }
     }
-    
-    // Also update player groups
+
+    // Also update player groups (preserve individual selections)
     if (playerGroups.length > 0) {
       setPlayerGroups(prevGroups => prevGroups.map(group => ({
         ...group,
         players: group.players.map(p => ({
           ...p,
-          teeColor: p.teeColor === teeColor || !p.teeColor ? newTeeColor : p.teeColor,
+          teeColor: p.teeColor ? p.teeColor : newTeeColor,
         })),
       })));
     }
-  }, [teeColor, players, setPlayers, roundState.id, roundPlayerIds, playerGroups, setPlayerGroups]);
+  }, [players, setPlayers, roundState.id, roundPlayerIds, playerGroups, setPlayerGroups]);
 
   // Handle player removal - delete from database for persistence
   const handleRemovePlayer = useCallback(async (playerId: string) => {
