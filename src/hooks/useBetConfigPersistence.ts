@@ -191,6 +191,15 @@ interface RoundBetConfig {
     oneVsAll?: boolean;
     anchorPlayerId?: string;
   };
+  bloques?: {
+    enabled: boolean;
+    holesPerBlock: 2 | 3 | 6;
+    amountPerBlock: number;
+    carryOverOnTie: boolean;
+    participantIds?: string[];
+    oneVsAll?: boolean;
+    anchorPlayerId?: string;
+  };
 }
 
 export const useBetConfigPersistence = ({
@@ -430,7 +439,14 @@ export const useBetConfigPersistence = ({
           ...dbConfig.matchPlay,
         };
       }
-      
+
+      if (dbConfig.bloques) {
+        (newConfig as any).bloques = {
+          ...((prev as any).bloques ?? {}),
+          ...dbConfig.bloques,
+        };
+      }
+
       return newConfig;
     });
   }, [setBetConfig]);
@@ -533,6 +549,7 @@ export const useBetConfigPersistence = ({
         ninesBets: config.ninesBets,
         parejasExcluded: config.parejasExcluded,
         matchPlay: (config as any).matchPlay,
+        bloques: (config as any).bloques,
       };
 
       // Concurrency guard: check updated_at before writing
