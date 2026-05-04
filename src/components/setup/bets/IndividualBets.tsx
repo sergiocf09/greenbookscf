@@ -313,7 +313,60 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         </BetSection>
       )}
 
-      {/* Rayas */}
+      {/* Bloques */}
+      {show('bloques') && (
+        <BetSection
+          id="bloques"
+          title="Bloques"
+          description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${18 / (config.bloques?.holesPerBlock ?? 3)} bloques`}
+          enabled={config.bloques?.enabled ?? false}
+          onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}
+          isExpanded={expandedSections.includes('bloques')}
+          onExpandChange={(open) => onToggleSection('bloques', open)}
+          helpText="Mini-medal por bloques. La suma neta de los hoyos del bloque define al ganador. Bloques de 3 hoyos por defecto (6 bloques). Configurable a 2 o 6 hoyos. Si un bloque queda empatado puede acumular su valor al siguiente."
+        >
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Hoyos por bloque</Label>
+              <div className="flex gap-1">
+                {([2, 3, 6] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onUpdateBet('bloques' as any, { holesPerBlock: n })}
+                    className={cn(
+                      'flex-1 px-2 py-1.5 text-xs rounded transition-colors',
+                      (config.bloques?.holesPerBlock ?? 3) === n
+                        ? 'bg-primary text-primary-foreground font-medium'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    )}
+                  >
+                    {n} hoyos
+                    <span className="block text-[9px] opacity-70">({18 / n} bloques)</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <AmountInput
+              label="Importe por bloque"
+              value={config.bloques?.amountPerBlock ?? 100}
+              onChange={(v) => onUpdateBet('bloques' as any, { amountPerBlock: v })}
+            />
+
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Acumula en empate</Label>
+              <Switch
+                checked={config.bloques?.carryOverOnTie ?? true}
+                onCheckedChange={(checked) => onUpdateBet('bloques' as any, { carryOverOnTie: checked })}
+              />
+            </div>
+            <p className="text-[9px] text-muted-foreground">
+              Si está activo, el bloque empatado suma su importe al siguiente. Puede encadenarse.
+            </p>
+          </div>
+        </BetSection>
+      )}
       {show('rayas') && (
         <BetSection
           id="rayas" title="Rayas" description="Agregador: Skins + Unidades + Oyes + Medal"
