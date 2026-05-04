@@ -771,12 +771,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         bloquesAmount = groupedSummaries['Bloques']?.total || 0;
         bloquesDesc = groupedSummaries['Bloques']?.details?.[0]?.description || '—';
       } else {
+        const bloquesOverride = getBetOverride('bloques');
+        const effectiveAmt = bloquesOverride?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
         bloquesDetail = calculateBloquesForPair(
           player, rival, confirmedScores, course, effectiveBetConfig,
           effectiveBetConfig.bilateralHandicaps,
           startingHole,
           effectiveBetConfig.bloques.holesPerBlock,
-          effectiveBetConfig.bloques.amountPerBlock,
+          effectiveAmt,
           effectiveBetConfig.bloques.carryOverOnTie
         );
 
