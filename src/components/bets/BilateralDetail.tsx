@@ -3014,6 +3014,64 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                     );
                                   })()}
+                                  {isBloques && (() => {
+                                    const bloquesData = (group as any).bloquesDetail as BloqueResult[] | undefined;
+                                    if (!bloquesData || bloquesData.length === 0) {
+                                      return <span className="text-xs text-muted-foreground">Sin datos</span>;
+                                    }
+                                    const total = bloquesData.filter(b => b.resolved).reduce((sum, b) => {
+                                      if (b.winnerId === player.id) return sum + b.amountAtStake;
+                                      if (b.winnerId === rival.id) return sum - b.amountAtStake;
+                                      return sum;
+                                    }, 0);
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-medium text-sm">Bloques</span>
+                                          <span className="text-[10px] text-muted-foreground">
+                                            {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                                          </span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          {bloquesData.map((blk) => {
+                                            if (!blk.resolved) {
+                                              return (
+                                                <div key={blk.blockNumber} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/30">
+                                                  <span className="text-muted-foreground">B{blk.blockNumber} (h{blk.startHole}-{blk.endHole})</span>
+                                                  <span className="text-muted-foreground/70">Pendiente</span>
+                                                </div>
+                                              );
+                                            }
+                                            const playerWon = blk.winnerId === player.id;
+                                            const isTie = blk.winnerId === null;
+                                            const colorCls = isTie ? 'text-amber-600' : playerWon ? 'text-green-600' : 'text-destructive';
+                                            return (
+                                              <div key={blk.blockNumber} className={cn('flex items-center justify-between text-xs px-2 py-1 rounded', blk.isCarry ? 'ring-1 ring-amber-400/50 bg-amber-50/40 dark:bg-amber-950/20' : 'bg-muted/30')}>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-semibold">B{blk.blockNumber}</span>
+                                                  <span className="text-muted-foreground text-[10px]">h{blk.startHole}-{blk.endHole}</span>
+                                                  {blk.isCarry && <span className="text-[9px] text-amber-600">+carry</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-muted-foreground tabular-nums text-[10px]">{blk.playerNetSum} vs {blk.rivalNetSum}</span>
+                                                  <span className={cn('font-bold tabular-nums', colorCls)}>
+                                                    {isTie ? `=$${blk.amountAtStake}` : playerWon ? `+$${blk.amountAtStake}` : `-$${blk.amountAtStake}`}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                                          <span className="text-xs font-medium">Total Bloques</span>
+                                          <span className={cn('text-sm font-bold tabular-nums',
+                                            total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                            {total > 0 ? `+$${total}` : total < 0 ? `-$${Math.abs(total)}` : '$0'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </PopoverContent>
                               </Popover>
                             ) : (
