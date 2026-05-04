@@ -3463,12 +3463,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               effectiveBetConfig.bloques
             )) continue;
 
+            // Per-pair amount override
+            const pairOv = effectiveBetConfig.betOverrides?.find(o => {
+              const matchesPair = ((o.playerAId === pA.id || o.playerAId === pA.profileId) && (o.playerBId === pB.id || o.playerBId === pB.profileId))
+                || ((o.playerAId === pB.id || o.playerAId === pB.profileId) && (o.playerBId === pA.id || o.playerBId === pA.profileId));
+              return matchesPair && (o.betType === 'Bloques' || o.betType === 'bloques');
+            });
+            if (pairOv?.enabled === false) continue;
+            const effAmt = pairOv?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
+
             const blocks = calculateBloquesForPair(
               pA, pB, confirmedScores, course, effectiveBetConfig,
               effectiveBetConfig.bilateralHandicaps,
               startingHole,
               effectiveBetConfig.bloques.holesPerBlock,
-              effectiveBetConfig.bloques.amountPerBlock,
+              effAmt,
               effectiveBetConfig.bloques.carryOverOnTie
             );
 
