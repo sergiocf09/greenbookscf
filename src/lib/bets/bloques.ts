@@ -138,7 +138,7 @@ export const calculateBloquesBets = (
         ((oA === playerA.id || oA === playerA.profileId) && (oB === playerB.id || oB === playerB.profileId)) ||
         ((oA === playerB.id || oA === playerB.profileId) && (oB === playerA.id || oB === playerA.profileId));
       const pairOverride = config.betOverrides?.find(o =>
-        (o.betType === 'Bloques' || o.betType === 'bloques') && matchesPair(o.playerAId, o.playerBId)
+        (o.betType === 'Modalidad' || o.betType === 'bloques') && matchesPair(o.playerAId, o.playerBId)
       );
       if (pairOverride?.enabled === false) continue;
       const amountPerBlock = pairOverride?.amountOverride ?? config.bloques.amountPerBlock;
@@ -176,13 +176,13 @@ export const calculateBloquesBets = (
 
       summaries.push({
         playerId: playerA.id, vsPlayer: playerB.id,
-        betType: 'Bloques', amount: amountA, segment: 'total',
+        betType: 'Modalidad', amount: amountA, segment: 'total',
         description: descA,
         baseUnitAmount: amountPerBlock, multiplier: 1,
       });
       summaries.push({
         playerId: playerB.id, vsPlayer: playerA.id,
-        betType: 'Bloques', amount: -amountA, segment: 'total',
+        betType: 'Modalidad', amount: -amountA, segment: 'total',
         description: descB,
         baseUnitAmount: amountPerBlock, multiplier: 1,
       });
