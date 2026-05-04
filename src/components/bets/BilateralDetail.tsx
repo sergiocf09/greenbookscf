@@ -1914,6 +1914,47 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       </div>
                     ) : group.key === 'units' || group.key === 'manchas' ? (
                       renderMarkerDetail(group.key === 'units' ? 'units' : 'manchas')
+                    ) : group.key === 'bloques' ? (
+                      (() => {
+                        const bloquesData = (group as any).bloquesDetail as BloqueResult[] | undefined;
+                        if (!bloquesData || bloquesData.length === 0) {
+                          return <div className="px-4 py-3 text-xs text-muted-foreground">Sin datos</div>;
+                        }
+                        const bh = effectiveBetConfig.bilateralHandicaps?.find(h =>
+                          (h.playerAId === player.id && h.playerBId === rival.id) ||
+                          (h.playerAId === rival.id && h.playerBId === player.id)
+                        );
+                        let hcpA = 0; let hcpB = 0;
+                        if (bh) {
+                          const aFirst = bh.playerAId === player.id;
+                          hcpA = aFirst ? bh.playerAHandicap : bh.playerBHandicap;
+                          hcpB = aFirst ? bh.playerBHandicap : bh.playerAHandicap;
+                        }
+                        const getStrokes = (pid: string, hole: number): number | null => {
+                          const arr = confirmedScores.get(pid) || [];
+                          const s = arr.find(x => x.holeNumber === hole);
+                          return s && s.strokes > 0 ? s.strokes : null;
+                        };
+                        return (
+                          <div className="px-4 py-3 bg-background/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium">Bloques</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                              </span>
+                            </div>
+                            <BloquesStrip
+                              playerA={player}
+                              playerB={rival}
+                              blocks={bloquesData}
+                              course={course}
+                              handicapA={hcpA}
+                              handicapB={hcpB}
+                              getStrokes={getStrokes}
+                            />
+                          </div>
+                        );
+                      })()
                     ) : group.key === 'oyeses' ? (
                       // Oyeses detail - show proximity order per player per hole
                       (() => {
