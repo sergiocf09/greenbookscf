@@ -5,15 +5,16 @@ import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { DollarSign, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
-  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number };
+  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number; carryOverOnTie?: boolean };
   betConfig: BetConfig;
-  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number }) => void;
+  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number; carryOverOnTie?: boolean }) => void;
   onClose: () => void;
 }
 
