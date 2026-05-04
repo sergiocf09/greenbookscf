@@ -3442,7 +3442,116 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         renderSection="grupales"
       />
 
-      {/* Sprint 3 — Wolf / Sixes / Vegas / Nines Results Cards */}
+      {/* Bloques — bilateral mini-medal por bloques (debajo de Coneja) */}
+      {effectiveBetConfig.bloques?.enabled && !isHistorical && (() => {
+        const groupPlayers = displayPlayers;
+        const bloquesPairs: Array<{
+          playerA: Player; playerB: Player;
+          blocks: BloqueResult[];
+          totalForA: number;
+        }> = [];
+
+        for (let i = 0; i < groupPlayers.length; i++) {
+          for (let j = i + 1; j < groupPlayers.length; j++) {
+            const pA = groupPlayers[i];
+            const pB = groupPlayers[j];
+
+            if (!bothParticipateGlobal(
+              effectiveBetConfig.bloques?.participantIds,
+              pA.id, pB.id,
+              effectiveBetConfig.bloques
+            )) continue;
+
+            const blocks = calculateBloquesForPair(
+              pA, pB, confirmedScores, course, effectiveBetConfig,
+              effectiveBetConfig.bilateralHandicaps,
+              startingHole,
+              effectiveBetConfig.bloques.holesPerBlock,
+              effectiveBetConfig.bloques.amountPerBlock,
+              effectiveBetConfig.bloques.carryOverOnTie
+            );
+
+            const totalForA = blocks.filter(b => b.resolved).reduce((sum, b) => {
+              if (b.winnerId === pA.id) return sum + b.amountAtStake;
+              if (b.winnerId === pB.id) return sum - b.amountAtStake;
+              return sum;
+            }, 0);
+
+            if (blocks.some(b => b.resolved)) {
+              bloquesPairs.push({ playerA: pA, playerB: pB, blocks, totalForA });
+            }
+          }
+        }
+
+        if (bloquesPairs.length === 0) return null;
+
+        return (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">
+                  Bloques
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                    {effectiveBetConfig.bloques.carryOverOnTie && ' · acumula'}
+                  </span>
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {bloquesPairs.map((pair) => (
+                <div key={`${pair.playerA.id}-${pair.playerB.id}`} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      <PlayerAvatar initials={pair.playerA.initials} background={pair.playerA.color} size="sm" />
+                      <span className="font-medium">{formatPlayerName(pair.playerA.name)}</span>
+                      <span className="text-muted-foreground">vs</span>
+                      <PlayerAvatar initials={pair.playerB.initials} background={pair.playerB.color} size="sm" />
+                      <span className="font-medium">{formatPlayerName(pair.playerB.name)}</span>
+                    </div>
+                    <span className={cn('text-sm font-bold tabular-nums',
+                      pair.totalForA > 0 ? 'text-green-600' : pair.totalForA < 0 ? 'text-destructive' : 'text-muted-foreground'
+                    )}>
+                      {pair.totalForA > 0 ? `+$${pair.totalForA}`
+                        : pair.totalForA < 0 ? `-$${Math.abs(pair.totalForA)}`
+                        : '$0'}
+                    </span>
+                  </div>
+                  <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${pair.blocks.length}, minmax(0, 1fr))` }}>
+                    {pair.blocks.map((blk) => {
+                      const isTie = blk.resolved && blk.winnerId === null;
+                      const aWon = blk.resolved && blk.winnerId === pair.playerA.id;
+                      const bgCls = !blk.resolved
+                        ? 'bg-muted/30 text-muted-foreground/50'
+                        : isTie
+                          ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+                          : aWon
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+                      return (
+                        <div key={blk.blockNumber} className={cn(
+                          'flex flex-col items-center justify-center py-1.5 rounded text-[10px] font-medium',
+                          bgCls,
+                          blk.isCarry && 'ring-1 ring-amber-400/60'
+                        )}>
+                          <span className="font-bold">B{blk.blockNumber}</span>
+                          <span className="tabular-nums text-[9px]">
+                            {!blk.resolved ? '—'
+                              : isTie ? `=$${blk.amountAtStake}`
+                              : aWon ? `+$${blk.amountAtStake}`
+                              : `-$${blk.amountAtStake}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Sprint 3 — Wolf */}
       {(wolfHook?.isActive && wolfHook.wolfConfig || (isHistorical && effectiveBetConfig.wolfSetup?.enabled)) &&
         effectiveBetConfig.wolfSetup?.enabled === true && (() => {
