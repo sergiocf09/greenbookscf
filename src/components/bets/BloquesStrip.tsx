@@ -28,12 +28,14 @@ interface Props {
   basePlayerId?: string;
   /** All players in scope so initials are disambiguated app-wide. */
   allPlayers?: Player[];
+  /** When false, tied blocks lose stake (no carry); UI shows "===" instead of amount. */
+  carryOverOnTie?: boolean;
   className?: string;
 }
 
 export const BloquesStrip: React.FC<Props> = ({
   playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes,
-  basePlayerId, allPlayers, className,
+  basePlayerId, allPlayers, carryOverOnTie = true, className,
 }) => {
   const strokesA = calculateStrokesPerHole(handicapA, course);
   const strokesB = calculateStrokesPerHole(handicapB, course);
