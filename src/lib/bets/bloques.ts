@@ -176,13 +176,13 @@ export const calculateBloquesBets = (
 
       summaries.push({
         playerId: playerA.id, vsPlayer: playerB.id,
-        betType: 'Bloques', amount: amountA, segment: 'total',
+        betType: 'Modalidad', amount: amountA, segment: 'total',
         description: descA,
         baseUnitAmount: amountPerBlock, multiplier: 1,
       });
       summaries.push({
         playerId: playerB.id, vsPlayer: playerA.id,
-        betType: 'Bloques', amount: -amountA, segment: 'total',
+        betType: 'Modalidad', amount: -amountA, segment: 'total',
         description: descB,
         baseUnitAmount: amountPerBlock, multiplier: 1,
       });

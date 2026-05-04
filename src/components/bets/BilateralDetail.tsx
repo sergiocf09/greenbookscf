@@ -770,8 +770,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       let bloquesDetail: BloqueResult[] = [];
 
       if (isHistorical) {
-        bloquesAmount = groupedSummaries['Bloques']?.total || 0;
-        bloquesDesc = groupedSummaries['Bloques']?.details?.[0]?.description || '—';
+        bloquesAmount = groupedSummaries['Modalidad']?.total || 0;
+        bloquesDesc = groupedSummaries['Modalidad']?.details?.[0]?.description || '—';
       } else {
         const bloquesOverride = getBetOverride('bloques');
         const effectiveAmt = bloquesOverride?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
@@ -1948,7 +1948,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium">Modalidad</span>
                               <span className="text-[10px] text-muted-foreground">
-                                {effCarry && 'Carry   '}{effectiveBetConfig.bloques.holesPerBlock} Hoyos   ${effAmt} p/bloque
+                                {`${effCarry ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt} p/bloque`}
                               </span>
                             </div>
                             <BloquesStrip
@@ -3096,7 +3096,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         <div className="flex items-center justify-between">
                                           <span className="font-medium text-sm">Modalidad</span>
                                           <span className="text-[10px] text-muted-foreground">
-                                            {effCarry2 && 'Carry   '}{effectiveBetConfig.bloques.holesPerBlock} Hoyos   ${effAmt2} p/bloque
+                                            {`${effCarry2 ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt2} p/bloque`}
                                           </span>
                                         </div>
                                         <BloquesStrip
@@ -3342,10 +3342,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                   upsert('Match Play', overrides.total);
                   break;
                 case 'bloques': {
-                  upsert('Bloques', overrides.total);
+                  upsert('Modalidad', overrides.total);
                   if (overrides.carryOverOnTie !== undefined) {
                     const idx = nextOverrides.findIndex(
-                      o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                      o => (o.betType === 'Modalidad' || o.betType === 'bloques') &&
                         ((o.playerAId === player.id && o.playerBId === rival.id) ||
                          (o.playerAId === rival.id && o.playerBId === player.id))
                     );
@@ -3355,7 +3355,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       nextOverrides.push({
                         playerAId: player.id,
                         playerBId: rival.id,
-                        betType: 'Bloques',
+                        betType: 'Modalidad',
                         enabled: true,
                         carryOverOnTie: overrides.carryOverOnTie,
                       });
