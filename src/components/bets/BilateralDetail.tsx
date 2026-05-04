@@ -2643,6 +2643,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isMatchPlay = group.key === 'matchPlay';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
+                        const isBloques = group.key === 'bloques';
                         const isSkinsGrupal = group.key === 'skinsGrupal';
                         const pressureDesc = data.description || '';
                         
