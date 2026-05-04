@@ -3218,7 +3218,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 }
                 case 'bloques': {
                   const bloquesOverride = betConfig.betOverrides?.find(
-                    o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                    o => (o.betType === 'Modalidad' || o.betType === 'bloques') &&
                       ((o.playerAId === player.id && o.playerBId === rival.id) ||
                        (o.playerAId === rival.id && o.playerBId === player.id))
                   );
