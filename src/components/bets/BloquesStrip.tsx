@@ -143,10 +143,10 @@ export const BloquesStrip: React.FC<Props> = ({
                       Bloque {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
                     </p>
                     <span className={cn('font-bold tabular-nums',
-                      isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
+                      isTie ? (carryOverOnTie ? 'text-amber-600' : 'text-muted-foreground') : aWon ? 'text-green-600' : 'text-destructive'
                     )}>
                       {isTie
-                        ? `=$${fmtMoney(blk.amountAtStake)}`
+                        ? (carryOverOnTie ? `=$${fmtMoney(blk.amountAtStake)}` : '===')
                         : aWon
                           ? `+$${fmtMoney(blk.amountAtStake)}`
                           : `-$${fmtMoney(blk.amountAtStake)}`}
