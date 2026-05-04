@@ -369,3 +369,54 @@ export function PlayViews(props: PlayViewsProps) {
     </>
   );
 }
+
+function CloseRoundSection({
+  onOpenDialog,
+  isLoading,
+  isClosing,
+}: {
+  onOpenDialog: () => void;
+  isLoading: boolean;
+  isClosing: boolean;
+}) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const [showJumpBanner, setShowJumpBanner] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('jump_to_close_after_restore') === '1') {
+      sessionStorage.removeItem('jump_to_close_after_restore');
+      setShowJumpBanner(true);
+      // Delay scroll until layout settles
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, []);
+
+  return (
+    <div ref={sectionRef} className="mt-4 space-y-3">
+      {showJumpBanner && (
+        <Alert className="border-amber-500/40 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">
+            Cierra tu tarjeta aquí abajo
+          </AlertTitle>
+          <AlertDescription className="text-amber-700/90 dark:text-amber-400/90">
+            Para cerrar oficialmente tu ronda, usa el botón rojo de abajo
+            (deberás escribir <strong>CERRAR</strong> para confirmar). Esto
+            sella el resultado y libera a los demás jugadores.
+          </AlertDescription>
+        </Alert>
+      )}
+      <Button
+        variant="destructive"
+        onClick={onOpenDialog}
+        disabled={isLoading || isClosing}
+        className="w-full"
+      >
+        <Lock className="h-4 w-4 mr-2" />
+        Cerrar Tarjeta y Guardar
+      </Button>
+    </div>
+  );
+}
