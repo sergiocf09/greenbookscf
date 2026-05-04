@@ -62,6 +62,7 @@ import { groupPlayersByGroup, resolveParticipantsForGroup } from './bets/shared'
 import { calculateMedalBets } from './bets/medal';
 import { calculatePressureBets } from './bets/pressures';
 import { calculateMatchPlayBets } from './bets/matchPlay';
+import { calculateBloquesBets } from './bets/bloques';
 import { calculateUnitsBets } from './bets/units';
 import { calculateManchasBets } from './bets/manchas';
 import { calculateCulebrasBets } from './bets/culebras';
