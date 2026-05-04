@@ -1958,6 +1958,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               getStrokes={getStrokes}
                               basePlayerId={basePlayerId}
                               allPlayers={allPlayers}
+                              carryOverOnTie={(() => {
+                                const o = effectiveBetConfig.betOverrides?.find(x =>
+                                  (x.betType === 'Bloques' || x.betType === 'bloques') &&
+                                  (((x.playerAId === player.id || x.playerAId === player.profileId) && (x.playerBId === rival.id || x.playerBId === rival.profileId)) ||
+                                   ((x.playerAId === rival.id || x.playerAId === rival.profileId) && (x.playerBId === player.id || x.playerBId === player.profileId)))
+                                );
+                                return o?.carryOverOnTie ?? effectiveBetConfig.bloques?.carryOverOnTie ?? true;
+                              })()}
                             />
                           </div>
                         );
@@ -3102,6 +3110,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           getStrokes={getStrokes}
                                           basePlayerId={basePlayerId}
                                           allPlayers={allPlayers}
+                                          carryOverOnTie={(() => {
+                                            const o = effectiveBetConfig.betOverrides?.find(x =>
+                                              (x.betType === 'Bloques' || x.betType === 'bloques') &&
+                                              (((x.playerAId === player.id || x.playerAId === player.profileId) && (x.playerBId === rival.id || x.playerBId === rival.profileId)) ||
+                                               ((x.playerAId === rival.id || x.playerAId === rival.profileId) && (x.playerBId === player.id || x.playerBId === player.profileId)))
+                                            );
+                                            return o?.carryOverOnTie ?? effectiveBetConfig.bloques?.carryOverOnTie ?? true;
+                                          })()}
                                         />
                                       </div>
                                     );

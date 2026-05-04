@@ -85,7 +85,14 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
     dragInfo.current = null;
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
     if (info?.moved && pos) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch { /* ignore */ }
+      // Snap horizontally to nearest edge for less obstruction
+      const margin = 8;
+      const maxX = window.innerWidth - FAB_SIZE - margin;
+      const centerX = pos.x + FAB_SIZE / 2;
+      const snappedX = centerX < window.innerWidth / 2 ? margin : maxX;
+      const snapped = clampToViewport(snappedX, pos.y);
+      setPos(snapped);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapped)); } catch { /* ignore */ }
       setDragging(false);
     } else {
       setDragging(false);
@@ -113,10 +120,10 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
       onPointerUp={onPointerUp}
       onPointerCancel={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ } dragInfo.current = null; setDragging(false); }}
       className={cn(
-        'fixed z-50 flex items-center justify-center rounded-full shadow-lg transition-colors',
+        'fixed z-50 flex items-center justify-center rounded-full shadow-lg',
         'bg-primary text-primary-foreground hover:bg-primary/90',
         'h-14 w-14 select-none cursor-grab',
-        dragging && 'cursor-grabbing scale-105 shadow-2xl',
+        dragging ? 'cursor-grabbing scale-105 shadow-2xl transition-colors' : 'transition-all duration-200 ease-out',
         isOnBetsView && !dragging && 'opacity-90',
         !positioned && 'safe-bottom',
       )}
