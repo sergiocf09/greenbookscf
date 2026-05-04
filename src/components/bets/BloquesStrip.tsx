@@ -116,9 +116,9 @@ export const BloquesStrip: React.FC<Props> = ({
               )}
             >
               <span className="font-bold">B{blk.blockNumber}</span>
-              <span className="tabular-nums text-[9px]">
+              <span className={cn('tabular-nums text-[9px]', isTie && !carryOverOnTie && 'text-muted-foreground')}>
                 {!blk.resolved ? '—'
-                  : isTie ? `=$${fmtMoney(blk.amountAtStake)}`
+                  : isTie ? (carryOverOnTie ? `=$${fmtMoney(blk.amountAtStake)}` : '===')
                   : aWon ? `+$${fmtMoney(blk.amountAtStake)}`
                   : `-$${fmtMoney(blk.amountAtStake)}`}
               </span>
