@@ -28,12 +28,14 @@ interface Props {
   basePlayerId?: string;
   /** All players in scope so initials are disambiguated app-wide. */
   allPlayers?: Player[];
+  /** Effective carry-on-tie for this pair (override > group > base). When false, tied blocks are neutralized (gray + dashes). */
+  carryOverOnTie?: boolean;
   className?: string;
 }
 
 export const BloquesStrip: React.FC<Props> = ({
   playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes,
-  basePlayerId, allPlayers, className,
+  basePlayerId, allPlayers, carryOverOnTie = true, className,
 }) => {
   const strokesA = calculateStrokesPerHole(handicapA, course);
   const strokesB = calculateStrokesPerHole(handicapB, course);
