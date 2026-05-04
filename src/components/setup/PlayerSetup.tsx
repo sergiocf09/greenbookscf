@@ -498,18 +498,15 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                   onClick={async () => {
                     const newVal = !player.isAdmin;
                     updatePlayer(player.id, { isAdmin: newVal });
-                    // Persist to DB if this player is already mapped to a round_player row
-                    try {
-                      const { error } = await supabase
-                        .from('round_players')
-                        .update({ is_admin: newVal })
-                        .eq('round_id', (player as any).roundId ?? undefined as any) // best-effort scope
-                        .eq('profile_id', player.profileId!);
-                      if (error) {
-                        // Fallback: update by profile only across this round_players is too broad,
-                        // so silently ignore — value will be saved when player is persisted.
-                      }
-                    } catch { /* noop */ }
+                    if (roundId && player.profileId) {
+                      try {
+                        await supabase
+                          .from('round_players')
+                          .update({ is_admin: newVal })
+                          .eq('round_id', roundId)
+                          .eq('profile_id', player.profileId);
+                      } catch { /* persisted at insert if not yet mapped */ }
+                    }
                   }}
                   className={cn(
                     'inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border transition-colors',
