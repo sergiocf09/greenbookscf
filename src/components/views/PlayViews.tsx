@@ -1,4 +1,5 @@
-import { Lock, RefreshCw, CheckCircle2, Play } from 'lucide-react';
+import { Lock, RefreshCw, CheckCircle2, Play, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -11,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { BetSetup } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
@@ -310,15 +312,11 @@ export function PlayViews(props: PlayViewsProps) {
           {isRoundStarted && roundState.status !== 'completed' && (
             <>
               {profile?.id === roundState.organizerProfileId ? (
-                <Button
-                  variant="destructive"
-                  onClick={() => onOpenDialog('closeConfirm')}
-                  disabled={isLoading || isClosing}
-                  className="w-full mt-4"
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Cerrar Tarjeta y Guardar
-                </Button>
+                <CloseRoundSection
+                  onOpenDialog={() => onOpenDialog('closeConfirm')}
+                  isLoading={isLoading}
+                  isClosing={isClosing}
+                />
               ) : (
                 <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
                   Solo el organizador puede cerrar la tarjeta
