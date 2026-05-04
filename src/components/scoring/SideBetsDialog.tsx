@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SideBet, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 import { DollarSign, Plus, X, Check, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { disambiguateInitials } from '@/lib/playerInput';
 
 interface SideBetsDialogProps {
   players: Player[];
