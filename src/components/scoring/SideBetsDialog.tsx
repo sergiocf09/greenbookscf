@@ -118,9 +118,14 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
   const canSubmit = winners.length > 0 && losers.length > 0 && amount > 0;
 
+  const disambiguatedAbbrs = useMemo(() => disambiguateInitials(players), [players]);
+  const getAbbr = (p: Player) => disambiguatedAbbrs.get(p.id) || p.initials;
+  const isBase = (p: Player) =>
+    !!basePlayerId && (p.id === basePlayerId || p.profileId === basePlayerId);
+
   const getPlayerName = (id: string) => {
     const player = players.find(p => p.id === id);
-    return player?.name.split(' ')[0] || 'Desconocido';
+    return player ? getAbbr(player) : '—';
   };
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
