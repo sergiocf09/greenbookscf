@@ -107,6 +107,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       ...(hasBack && { back: backAmount }),
       ...(hasTotal && { total: totalAmount }),
       ...(betType === 'units' && { unitsAdvantage }),
+      ...(betType === 'bloques' && { carryOverOnTie }),
     });
   };
 
