@@ -135,6 +135,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Stableford';
         case 'teamPressures':
           return 'Foursome';
+        case 'bloques':
+          return 'Bloques';
         default:
           return label;
       }
