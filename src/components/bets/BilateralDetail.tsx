@@ -813,6 +813,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         } as any);
       }
     }
+
+    // Skins
+    if (bothParticipate(undefined, 'skins')) {
       groups.push({
         key: 'skins',
         label: 'Skins',
