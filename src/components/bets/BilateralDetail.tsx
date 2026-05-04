@@ -2729,6 +2729,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   )}>
                                     {matchPlayDisplay}
                                   </span>
+                                ) : isBloques ? (
+                                  <span className={cn(
+                                    'font-semibold cursor-pointer hover:underline',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
+                                    {data.description || '—'}
+                                  </span>
                                 ) : (
                                   <>
                                     <span className={cn(
