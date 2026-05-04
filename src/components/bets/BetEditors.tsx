@@ -5,15 +5,16 @@ import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { DollarSign, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Bet Amount Editor Component - Shows front/back/total for each bet type
 interface BetAmountEditorProps {
   betType: string;
-  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number };
+  initialValues?: { front?: number; back?: number; total?: number; unitsAdvantage?: number; carryOverOnTie?: boolean };
   betConfig: BetConfig;
-  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number }) => void;
+  onSave: (overrides: { front?: number; back?: number; total?: number; unitsAdvantage?: number; carryOverOnTie?: boolean }) => void;
   onClose: () => void;
 }
 
@@ -82,6 +83,9 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   const [backAmount, setBackAmount] = useState(initialValues?.back ?? segmentConfig.back ?? 0);
   const [totalAmount, setTotalAmount] = useState(initialValues?.total ?? segmentConfig.total ?? 0);
   const [unitsAdvantage, setUnitsAdvantage] = useState(initialValues?.unitsAdvantage ?? 0);
+  const [carryOverOnTie, setCarryOverOnTie] = useState<boolean>(
+    initialValues?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie ?? true
+  );
 
   // When switching bet type (or reopening dialog), rehydrate from the per-pair overrides.
   React.useEffect(() => {
@@ -89,6 +93,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
     setBackAmount(initialValues?.back ?? segmentConfig.back ?? 0);
     setTotalAmount(initialValues?.total ?? segmentConfig.total ?? 0);
     setUnitsAdvantage(initialValues?.unitsAdvantage ?? 0);
+    setCarryOverOnTie(initialValues?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie ?? true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betType]);
 
@@ -102,6 +107,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       ...(hasBack && { back: backAmount }),
       ...(hasTotal && { total: totalAmount }),
       ...(betType === 'units' && { unitsAdvantage }),
+      ...(betType === 'bloques' && { carryOverOnTie }),
     });
   };
 
@@ -197,6 +203,23 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           </div>
           <p className="text-[10px] text-muted-foreground text-center">
             + = tú das ventaja · − = rival te da ventaja · 0 = sin ventaja
+          </p>
+        </div>
+      )}
+
+      {betType === 'bloques' && (
+        <div className="space-y-2 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-semibold">Carry en empate</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Si un bloque empata, su importe se acumula al siguiente.
+              </p>
+            </div>
+            <Switch checked={carryOverOnTie} onCheckedChange={setCarryOverOnTie} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Default global: <strong>{betConfig.bloques?.carryOverOnTie ? 'Activado' : 'Desactivado'}</strong>
           </p>
         </div>
       )}

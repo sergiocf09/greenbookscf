@@ -4,12 +4,14 @@
  * - Horizontal strip of blocks; click opens a Popover with a mini-scorecard
  *   matching the visual style used by Carritos / Foursomes detail popovers.
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Player, GolfCourse } from '@/types/golf';
 import { BloqueResult } from '@/lib/bets/bloques';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { fmtMoney } from '@/lib/formatMoney';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { disambiguateInitials } from '@/lib/playerInput';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -22,15 +24,27 @@ interface Props {
   handicapB?: number;
   /** Score lookup by player id → array of {holeNumber, strokes} */
   getStrokes: (playerId: string, hole: number) => number | null;
-  /** Perspective: balances are reported from the playerA point of view. */
+  /** Used to apply Augusta colors only to the logged-in user's avatar. */
+  basePlayerId?: string;
+  /** All players in scope so initials are disambiguated app-wide. */
+  allPlayers?: Player[];
   className?: string;
 }
 
 export const BloquesStrip: React.FC<Props> = ({
-  playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes, className,
+  playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes,
+  basePlayerId, allPlayers, className,
 }) => {
   const strokesA = calculateStrokesPerHole(handicapA, course);
   const strokesB = calculateStrokesPerHole(handicapB, course);
+
+  const disambiguated = useMemo(
+    () => disambiguateInitials(allPlayers && allPlayers.length > 0 ? allPlayers : [playerA, playerB]),
+    [allPlayers, playerA, playerB]
+  );
+  const getAbbr = (p: Player) => disambiguated.get(p.id) || p.initials;
+  const isBase = (p: Player) =>
+    !!basePlayerId && (p.id === basePlayerId || p.profileId === basePlayerId);
 
   const wonA: BloqueResult[] = [];
   const wonB: BloqueResult[] = [];
@@ -147,7 +161,7 @@ export const BloquesStrip: React.FC<Props> = ({
                   <div className="rounded border border-border/60 overflow-hidden">
                     <div
                       className="grid bg-muted/40 text-[10px] font-medium"
-                      style={{ gridTemplateColumns: `minmax(60px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                      style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
                     >
                       <div className="px-2 py-1">Hoyo</div>
                       {holes.map(h => (
@@ -157,7 +171,7 @@ export const BloquesStrip: React.FC<Props> = ({
                     </div>
                     <div
                       className="grid text-[11px]"
-                      style={{ gridTemplateColumns: `minmax(60px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                      style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
                     >
                       <div className="px-2 py-1 text-muted-foreground">Par</div>
                       {holes.map(h => {
@@ -169,8 +183,8 @@ export const BloquesStrip: React.FC<Props> = ({
                       </div>
                     </div>
                     {[
-                      { p: playerA, strokes: strokesA, sumKey: 'A' as const },
-                      { p: playerB, strokes: strokesB, sumKey: 'B' as const },
+                      { p: playerA, strokes: strokesA },
+                      { p: playerB, strokes: strokesB },
                     ].map(row => {
                       let sumNet = 0;
                       const cells = holes.map(h => {
@@ -185,14 +199,15 @@ export const BloquesStrip: React.FC<Props> = ({
                         <div
                           key={row.p.id}
                           className="grid text-[11px] border-t border-border/40"
-                          style={{ gridTemplateColumns: `minmax(60px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                          style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
                         >
-                          <div className="px-2 py-1 flex items-center gap-1 truncate">
-                            <span
-                              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ background: row.p.color }}
+                          <div className="px-2 py-1 flex items-center gap-1.5 truncate">
+                            <PlayerAvatar
+                              initials={getAbbr(row.p)}
+                              background={row.p.color}
+                              size="xs"
+                              isLoggedInUser={isBase(row.p)}
                             />
-                            <span className="truncate">{row.p.initials}</span>
                           </div>
                           {cells.map(c => (
                             <div key={c.h} className="text-center py-1 tabular-nums relative">

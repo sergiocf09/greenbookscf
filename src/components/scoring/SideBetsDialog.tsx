@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SideBet, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 import { DollarSign, Plus, X, Check, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { disambiguateInitials } from '@/lib/playerInput';
 
 interface SideBetsDialogProps {
   players: Player[];
@@ -117,9 +118,14 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
   const canSubmit = winners.length > 0 && losers.length > 0 && amount > 0;
 
+  const disambiguatedAbbrs = useMemo(() => disambiguateInitials(players), [players]);
+  const getAbbr = (p: Player) => disambiguatedAbbrs.get(p.id) || p.initials;
+  const isBase = (p: Player) =>
+    !!basePlayerId && (p.id === basePlayerId || p.profileId === basePlayerId);
+
   const getPlayerName = (id: string) => {
     const player = players.find(p => p.id === id);
-    return player?.name.split(' ')[0] || 'Desconocido';
+    return player ? getAbbr(player) : '—';
   };
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
@@ -211,24 +217,21 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
                   <button
                     key={player.id}
                     onClick={() => toggleWinner(player.id)}
+                    aria-label={`Ganador ${getAbbr(player)}`}
                     className={cn(
-                      'flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs font-medium transition-all border',
-                      isSelected 
-                        ? 'bg-green-600 text-white border-green-600'
-                        : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                      'flex items-center gap-1 p-1 rounded-full transition-all border',
+                      isSelected
+                        ? 'bg-green-600/15 border-green-600'
+                        : 'bg-transparent border-border hover:bg-muted/60'
                     )}
                   >
-                    <div 
-                      className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
-                      style={{ 
-                        backgroundColor: isSelected ? 'white' : player.color, 
-                        color: isSelected ? player.color : 'white' 
-                      }}
-                    >
-                      {player.initials}
-                    </div>
-                    {player.name.split(' ')[0]}
-                    {isSelected && <Check className="h-3 w-3" />}
+                    <PlayerAvatar
+                      initials={getAbbr(player)}
+                      background={player.color}
+                      size="sm"
+                      isLoggedInUser={isBase(player)}
+                    />
+                    {isSelected && <Check className="h-3 w-3 text-green-600 mr-0.5" />}
                   </button>
                 );
               })}
@@ -247,26 +250,23 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
                     key={player.id}
                     onClick={() => toggleLoser(player.id)}
                     disabled={isWinner}
+                    aria-label={`Perdedor ${getAbbr(player)}`}
                     className={cn(
-                      'flex items-center gap-1.5 px-2 py-1.5 rounded-full text-xs font-medium transition-all border',
-                      isSelected 
-                        ? 'bg-destructive text-destructive-foreground border-destructive'
+                      'flex items-center gap-1 p-1 rounded-full transition-all border',
+                      isSelected
+                        ? 'bg-destructive/15 border-destructive'
                         : isWinner
-                          ? 'opacity-30 cursor-not-allowed bg-muted border-border'
-                          : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                          ? 'opacity-30 cursor-not-allowed border-border'
+                          : 'bg-transparent border-border hover:bg-muted/60'
                     )}
                   >
-                    <div 
-                      className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold"
-                      style={{ 
-                        backgroundColor: isSelected ? 'white' : player.color, 
-                        color: isSelected ? 'hsl(var(--destructive))' : 'white' 
-                      }}
-                    >
-                      {player.initials}
-                    </div>
-                    {player.name.split(' ')[0]}
-                    {isSelected && <X className="h-3 w-3" />}
+                    <PlayerAvatar
+                      initials={getAbbr(player)}
+                      background={player.color}
+                      size="sm"
+                      isLoggedInUser={isBase(player)}
+                    />
+                    {isSelected && <X className="h-3 w-3 text-destructive mr-0.5" />}
                   </button>
                 );
               })}

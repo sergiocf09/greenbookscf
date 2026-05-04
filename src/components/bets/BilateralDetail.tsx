@@ -135,6 +135,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Stableford';
         case 'teamPressures':
           return 'Foursome';
+        case 'bloques':
+          return 'Bloques';
         default:
           return label;
       }
@@ -773,13 +775,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       } else {
         const bloquesOverride = getBetOverride('bloques');
         const effectiveAmt = bloquesOverride?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
+        const effectiveCarry = bloquesOverride?.carryOverOnTie ?? effectiveBetConfig.bloques.carryOverOnTie;
         bloquesDetail = calculateBloquesForPair(
           player, rival, confirmedScores, course, effectiveBetConfig,
           effectiveBetConfig.bilateralHandicaps,
           startingHole,
           effectiveBetConfig.bloques.holesPerBlock,
           effectiveAmt,
-          effectiveBetConfig.bloques.carryOverOnTie
+          effectiveCarry
         );
 
         const wonByPlayer: number[] = [];
@@ -1953,6 +1956,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               handicapA={hcpA}
                               handicapB={hcpB}
                               getStrokes={getStrokes}
+                              basePlayerId={basePlayerId}
+                              allPlayers={allPlayers}
                             />
                           </div>
                         );
@@ -3095,6 +3100,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           handicapA={hcpA}
                                           handicapB={hcpB}
                                           getStrokes={getStrokes}
+                                          basePlayerId={basePlayerId}
+                                          allPlayers={allPlayers}
                                         />
                                       </div>
                                     );
@@ -3199,6 +3206,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     unitsAdvantage: isInverted
                       ? -(unitOverride?.unitsAdvantage ?? 0)
                       : (unitOverride?.unitsAdvantage ?? 0),
+                  };
+                }
+                case 'bloques': {
+                  const bloquesOverride = betConfig.betOverrides?.find(
+                    o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                      ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                       (o.playerAId === rival.id && o.playerBId === player.id))
+                  );
+                  return {
+                    total: bloquesOverride?.amountOverride ?? betConfig.bloques?.amountPerBlock ?? 100,
+                    carryOverOnTie: bloquesOverride?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie,
                   };
                 }
                 default:
@@ -3315,6 +3333,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'matchPlay':
                   upsert('Match Play', overrides.total);
                   break;
+                case 'bloques': {
+                  upsert('Bloques', overrides.total);
+                  if (overrides.carryOverOnTie !== undefined) {
+                    const idx = nextOverrides.findIndex(
+                      o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                        ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                         (o.playerAId === rival.id && o.playerBId === player.id))
+                    );
+                    if (idx >= 0) {
+                      nextOverrides[idx] = { ...nextOverrides[idx], carryOverOnTie: overrides.carryOverOnTie };
+                    } else {
+                      nextOverrides.push({
+                        playerAId: player.id,
+                        playerBId: rival.id,
+                        betType: 'Bloques',
+                        enabled: true,
+                        carryOverOnTie: overrides.carryOverOnTie,
+                      });
+                    }
+                  }
+                  break;
+                }
               }
 
               onBetConfigChange({ ...betConfig, betOverrides: nextOverrides });

@@ -128,6 +128,7 @@ export interface BetOverride {
                            // Positive = A gives advantage to B (A starts owing N units)
                            // Negative = B gives advantage to A
                            // 0 or undefined = no advantage
+  carryOverOnTie?: boolean; // Per-pair override for Bloques carry behavior
 }
 
 // Per-group bet override: partial config that overrides the organizer's template for a specific group

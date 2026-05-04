@@ -142,13 +142,14 @@ export const calculateBloquesBets = (
       );
       if (pairOverride?.enabled === false) continue;
       const amountPerBlock = pairOverride?.amountOverride ?? config.bloques.amountPerBlock;
+      const carryOverOnTie = pairOverride?.carryOverOnTie ?? config.bloques.carryOverOnTie;
 
       const blocks = calculateBloquesForPair(
         playerA, playerB, scores, course, config,
         bilateralHandicaps, startingHole,
         config.bloques.holesPerBlock,
         amountPerBlock,
-        config.bloques.carryOverOnTie
+        carryOverOnTie
       );
 
       let amountA = 0;
