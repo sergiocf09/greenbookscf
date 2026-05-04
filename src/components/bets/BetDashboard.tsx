@@ -3499,54 +3499,44 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {bloquesPairs.map((pair) => (
-                <div key={`${pair.playerA.id}-${pair.playerB.id}`} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      <PlayerAvatar initials={pair.playerA.initials} background={pair.playerA.color} size="sm" />
-                      <span className="font-medium">{formatPlayerName(pair.playerA.name)}</span>
-                      <span className="text-muted-foreground">vs</span>
-                      <PlayerAvatar initials={pair.playerB.initials} background={pair.playerB.color} size="sm" />
-                      <span className="font-medium">{formatPlayerName(pair.playerB.name)}</span>
-                    </div>
-                    <span className={cn('text-sm font-bold tabular-nums',
-                      pair.totalForA > 0 ? 'text-green-600' : pair.totalForA < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {pair.totalForA > 0 ? `+$${pair.totalForA}`
-                        : pair.totalForA < 0 ? `-$${Math.abs(pair.totalForA)}`
-                        : '$0'}
-                    </span>
+              {bloquesPairs.map((pair) => {
+                // Resolve bilateral handicap for this pair
+                const bh = effectiveBetConfig.bilateralHandicaps?.find(h =>
+                  (h.playerAId === pair.playerA.id && h.playerBId === pair.playerB.id) ||
+                  (h.playerAId === pair.playerB.id && h.playerBId === pair.playerA.id)
+                );
+                let hcpA = 0; let hcpB = 0;
+                if (bh) {
+                  const aFirst = bh.playerAId === pair.playerA.id;
+                  hcpA = aFirst ? bh.playerAHandicap : bh.playerBHandicap;
+                  hcpB = aFirst ? bh.playerBHandicap : bh.playerAHandicap;
+                }
+                const getStrokes = (pid: string, hole: number): number | null => {
+                  const arr = confirmedScores.get(pid) || [];
+                  const s = arr.find(x => x.holeNumber === hole);
+                  return s && s.strokes > 0 ? s.strokes : null;
+                };
+                return (
+                <div key={`${pair.playerA.id}-${pair.playerB.id}`} className="space-y-2 pb-2 border-b border-border/30 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-2 text-sm">
+                    <PlayerAvatar initials={pair.playerA.initials} background={pair.playerA.color} size="sm" />
+                    <span className="font-medium">{formatPlayerName(pair.playerA.name)}</span>
+                    <span className="text-muted-foreground">vs</span>
+                    <PlayerAvatar initials={pair.playerB.initials} background={pair.playerB.color} size="sm" />
+                    <span className="font-medium">{formatPlayerName(pair.playerB.name)}</span>
                   </div>
-                  <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${pair.blocks.length}, minmax(0, 1fr))` }}>
-                    {pair.blocks.map((blk) => {
-                      const isTie = blk.resolved && blk.winnerId === null;
-                      const aWon = blk.resolved && blk.winnerId === pair.playerA.id;
-                      const bgCls = !blk.resolved
-                        ? 'bg-muted/30 text-muted-foreground/50'
-                        : isTie
-                          ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-                          : aWon
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
-                      return (
-                        <div key={blk.blockNumber} className={cn(
-                          'flex flex-col items-center justify-center py-1.5 rounded text-[10px] font-medium',
-                          bgCls,
-                          blk.isCarry && 'ring-1 ring-amber-400/60'
-                        )}>
-                          <span className="font-bold">B{blk.blockNumber}</span>
-                          <span className="tabular-nums text-[9px]">
-                            {!blk.resolved ? '—'
-                              : isTie ? `=$${blk.amountAtStake}`
-                              : aWon ? `+$${blk.amountAtStake}`
-                              : `-$${blk.amountAtStake}`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <BloquesStrip
+                    playerA={pair.playerA}
+                    playerB={pair.playerB}
+                    blocks={pair.blocks}
+                    course={course}
+                    handicapA={hcpA}
+                    handicapB={hcpB}
+                    getStrokes={getStrokes}
+                  />
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         );
