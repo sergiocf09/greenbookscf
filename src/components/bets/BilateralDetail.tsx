@@ -1946,7 +1946,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div className="px-4 py-3 bg-background/50">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-medium">Bloques</span>
+                              <span className="text-xs font-medium">Modalidad</span>
                               <span className="text-[10px] text-muted-foreground">
                                 {`${effCarry ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt} p/bloque`}
                               </span>
@@ -3094,7 +3094,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     return (
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                          <span className="font-medium text-sm">Bloques</span>
+                                          <span className="font-medium text-sm">Modalidad</span>
                                           <span className="text-[10px] text-muted-foreground">
                                             {`${effCarry2 ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt2} p/bloque`}
                                           </span>
