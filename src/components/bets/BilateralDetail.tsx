@@ -10,6 +10,7 @@ import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculati
 import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { calculateBloquesForPair, type BloqueResult } from '@/lib/bets/bloques';
+import { BloquesStrip } from './BloquesStrip';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
