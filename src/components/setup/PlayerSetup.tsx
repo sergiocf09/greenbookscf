@@ -48,6 +48,7 @@ interface PlayerSetupProps {
   courseId?: string | null; // Current course for Course Handicap calculation
   onAddFromFriendsClick?: () => void; // Callback to open friends dialog
   organizerProfileId?: string | null; // Profile ID of the round organizer - cannot be deleted
+  roundId?: string | null; // Active round id (used to persist co-admin flag)
 }
 
 export const PlayerSetup: React.FC<PlayerSetupProps> = ({
@@ -63,6 +64,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   courseId = null,
   onAddFromFriendsClick,
   organizerProfileId = null,
+  roundId = null,
 }) => {
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
