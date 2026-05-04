@@ -86,8 +86,8 @@ export const BloquesStrip: React.FC<Props> = ({
           </span>
         </div>
         {tiedResolved.length > 0 && (
-          <div className="text-[11px] text-amber-600">
-            Empate: {renderList(tiedResolved)}
+          <div className={cn('text-[11px]', carryOverOnTie ? 'text-amber-600' : 'text-muted-foreground')}>
+            Empate{!carryOverOnTie && ' (no cuenta)'}: {renderList(tiedResolved)}
           </div>
         )}
       </div>
