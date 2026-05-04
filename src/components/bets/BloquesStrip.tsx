@@ -96,14 +96,17 @@ export const BloquesStrip: React.FC<Props> = ({
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${blocks.length}, minmax(0, 1fr))` }}>
         {blocks.map(blk => {
           const isTie = blk.resolved && blk.winnerId === null;
+          const isNeutralizedTie = isTie && !carryOverOnTie;
           const aWon = blk.resolved && blk.winnerId === playerA.id;
           const bgCls = !blk.resolved
             ? 'bg-muted/30 text-muted-foreground/60'
-            : isTie
-              ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-              : aWon
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+            : isNeutralizedTie
+              ? 'bg-muted/60 text-muted-foreground'
+              : isTie
+                ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+                : aWon
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
 
           const pill = (
             <button
@@ -118,6 +121,7 @@ export const BloquesStrip: React.FC<Props> = ({
               <span className="font-bold">B{blk.blockNumber}</span>
               <span className="tabular-nums text-[9px]">
                 {!blk.resolved ? '—'
+                  : isNeutralizedTie ? '—'
                   : isTie ? `=$${fmtMoney(blk.amountAtStake)}`
                   : aWon ? `+$${fmtMoney(blk.amountAtStake)}`
                   : `-$${fmtMoney(blk.amountAtStake)}`}
