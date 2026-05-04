@@ -70,6 +70,8 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
         };
       case 'matchPlay':
         return { total: (betConfig as any).matchPlay?.amount ?? 50 };
+      case 'bloques':
+        return { total: (betConfig as any).bloques?.amountPerBlock ?? 100 };
       default: 
         return {};
     }
