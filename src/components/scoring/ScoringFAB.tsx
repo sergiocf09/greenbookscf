@@ -120,10 +120,10 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
       onPointerUp={onPointerUp}
       onPointerCancel={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ } dragInfo.current = null; setDragging(false); }}
       className={cn(
-        'fixed z-50 flex items-center justify-center rounded-full shadow-lg transition-colors',
+        'fixed z-50 flex items-center justify-center rounded-full shadow-lg',
         'bg-primary text-primary-foreground hover:bg-primary/90',
         'h-14 w-14 select-none cursor-grab',
-        dragging && 'cursor-grabbing scale-105 shadow-2xl',
+        dragging ? 'cursor-grabbing scale-105 shadow-2xl transition-colors' : 'transition-all duration-200 ease-out',
         isOnBetsView && !dragging && 'opacity-90',
         !positioned && 'safe-bottom',
       )}
