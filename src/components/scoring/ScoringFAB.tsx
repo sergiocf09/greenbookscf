@@ -85,7 +85,14 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
     dragInfo.current = null;
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
     if (info?.moved && pos) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pos)); } catch { /* ignore */ }
+      // Snap horizontally to nearest edge for less obstruction
+      const margin = 8;
+      const maxX = window.innerWidth - FAB_SIZE - margin;
+      const centerX = pos.x + FAB_SIZE / 2;
+      const snappedX = centerX < window.innerWidth / 2 ? margin : maxX;
+      const snapped = clampToViewport(snappedX, pos.y);
+      setPos(snapped);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapped)); } catch { /* ignore */ }
       setDragging(false);
     } else {
       setDragging(false);
