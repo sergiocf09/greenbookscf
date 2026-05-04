@@ -22,6 +22,7 @@ import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVa
 import { RayasSegmentPopover } from './RayasSegmentPopover';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { calculateBloquesForPair, type BloqueResult } from '@/lib/bets/bloques';
+import { BloquesStrip } from './BloquesStrip';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { GroupBetsCard, getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { GroupSelector, getPlayersForGroup, getAllPlayersFromAllGroups } from '@/components/GroupSelector';
