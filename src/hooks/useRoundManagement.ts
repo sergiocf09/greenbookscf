@@ -2256,6 +2256,7 @@ export const useRoundManagement = ({
             profile_id: player.profileId,
             handicap_for_round: player.handicap || 0,
             is_organizer: false,
+            is_admin: !!player.isAdmin,
             tee_color: player.teeColor || roundState.teeColor || 'white',
           })
           .select('id')
