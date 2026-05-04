@@ -3326,6 +3326,28 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 case 'matchPlay':
                   upsert('Match Play', overrides.total);
                   break;
+                case 'bloques': {
+                  upsert('Bloques', overrides.total);
+                  if (overrides.carryOverOnTie !== undefined) {
+                    const idx = nextOverrides.findIndex(
+                      o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                        ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                         (o.playerAId === rival.id && o.playerBId === player.id))
+                    );
+                    if (idx >= 0) {
+                      nextOverrides[idx] = { ...nextOverrides[idx], carryOverOnTie: overrides.carryOverOnTie };
+                    } else {
+                      nextOverrides.push({
+                        playerAId: player.id,
+                        playerBId: rival.id,
+                        betType: 'Bloques',
+                        enabled: true,
+                        carryOverOnTie: overrides.carryOverOnTie,
+                      });
+                    }
+                  }
+                  break;
+                }
               }
 
               onBetConfigChange({ ...betConfig, betOverrides: nextOverrides });
