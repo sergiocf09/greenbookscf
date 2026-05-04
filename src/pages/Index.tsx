@@ -2238,15 +2238,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AlertDialog open={dialogs.pendingRound && pendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
+      <AlertDialog open={dialogs.pendingRound && visiblePendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
             <AlertDialogDescription>
-              Encontramos rondas sin “Cerrar Tarjeta”. Elige cuál quieres restaurar o cerrar.
+              Encontramos rondas sin “Cerrar Tarjeta”. Elige cómo continuar.
 
               <div className="mt-3 space-y-2">
-                {pendingRounds.map((r) => {
+                {visiblePendingRounds.map((r) => {
                   const s = pendingRoundSummaries.get(r.roundId);
                   return (
                     <div key={r.roundId} className="border border-border rounded-lg p-3 bg-card">
@@ -2254,6 +2254,11 @@ const Index = () => {
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-foreground">
                             {s?.courseName ?? 'Campo'}
+                            {r.isOrganizer ? (
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Organizador</span>
+                            ) : (
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Participante</span>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {r.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
@@ -2276,17 +2281,30 @@ const Index = () => {
                           >
                             Restaurar
                           </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              closeDialog('pendingRound');
-                              void handleClosePendingRoundPermanently(r.roundId);
-                            }}
-                          >
-                            Cerrar
-                          </Button>
+                          {r.isOrganizer ? (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                closeDialog('pendingRound');
+                                handleRestoreAndJumpToClose(r.roundId);
+                              }}
+                            >
+                              Cerrar tarjeta
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                handleHidePendingRoundLocally(r.roundId);
+                              }}
+                            >
+                              Ocultar de mi vista
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
