@@ -773,13 +773,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       } else {
         const bloquesOverride = getBetOverride('bloques');
         const effectiveAmt = bloquesOverride?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
+        const effectiveCarry = bloquesOverride?.carryOverOnTie ?? effectiveBetConfig.bloques.carryOverOnTie;
         bloquesDetail = calculateBloquesForPair(
           player, rival, confirmedScores, course, effectiveBetConfig,
           effectiveBetConfig.bilateralHandicaps,
           startingHole,
           effectiveBetConfig.bloques.holesPerBlock,
           effectiveAmt,
-          effectiveBetConfig.bloques.carryOverOnTie
+          effectiveCarry
         );
 
         const wonByPlayer: number[] = [];
