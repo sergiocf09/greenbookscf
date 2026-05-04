@@ -760,8 +760,59 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       });
     }
 
-    // Skins
-    if (bothParticipate(undefined, 'skins')) {
+    // Bloques — bilateral mini-medal por bloques
+    if (resolvedCfg.bloques?.enabled && bothParticipate(undefined, 'bloques' as any)) {
+      let bloquesAmount = 0;
+      let bloquesDesc = '—';
+      let bloquesDetail: BloqueResult[] = [];
+
+      if (isHistorical) {
+        bloquesAmount = groupedSummaries['Bloques']?.total || 0;
+        bloquesDesc = groupedSummaries['Bloques']?.details?.[0]?.description || '—';
+      } else {
+        bloquesDetail = calculateBloquesForPair(
+          player, rival, confirmedScores, course, effectiveBetConfig,
+          effectiveBetConfig.bilateralHandicaps,
+          startingHole,
+          effectiveBetConfig.bloques.holesPerBlock,
+          effectiveBetConfig.bloques.amountPerBlock,
+          effectiveBetConfig.bloques.carryOverOnTie
+        );
+
+        const wonByPlayer: number[] = [];
+        const tied: number[] = [];
+        for (const blk of bloquesDetail) {
+          if (!blk.resolved) continue;
+          if (blk.winnerId === player.id) { bloquesAmount += blk.amountAtStake; wonByPlayer.push(blk.blockNumber); }
+          else if (blk.winnerId === rival.id) { bloquesAmount -= blk.amountAtStake; }
+          else { tied.push(blk.blockNumber); }
+        }
+
+        const parts: string[] = [];
+        if (wonByPlayer.length > 0) parts.push(`B${wonByPlayer.join(',')}`);
+        if (tied.length > 0) parts.push(`Empate B${tied.join(',')}`);
+        bloquesDesc = parts.join(' · ') || '—';
+      }
+
+      if (bloquesAmount !== 0 || bloquesDetail.some(b => b.resolved)) {
+        groups.push({
+          key: 'bloques',
+          label: 'Bloques',
+          configKey: 'bloques',
+          segments: [
+            { label: 'Total 18', key: 'bloques_total', overrideLabel: 'Bloques' },
+          ],
+          getTotal: () => bloquesAmount,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: bloquesAmount,
+            description: bloquesDesc,
+          }),
+          bloquesDetail,
+        } as any);
+      }
+    }
       groups.push({
         key: 'skins',
         label: 'Skins',
