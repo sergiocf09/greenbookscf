@@ -462,6 +462,7 @@ export interface BetConfig {
   medal: MedalBetConfig;
   pressures: PressureBetConfig;
   matchPlay: MatchPlayBetConfig;
+  bloques: BloquesBetConfig;
   skins: SkinsBetConfig;
   caros: CarosBetConfig;
   oyeses: OyesesBetConfig;
