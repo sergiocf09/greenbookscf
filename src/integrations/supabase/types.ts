@@ -1411,6 +1411,7 @@ export type Database = {
           guest_name: string | null
           handicap_for_round: number
           id: string
+          is_admin: boolean
           is_organizer: boolean
           joined_at: string
           profile_id: string | null
@@ -1424,6 +1425,7 @@ export type Database = {
           guest_name?: string | null
           handicap_for_round: number
           id?: string
+          is_admin?: boolean
           is_organizer?: boolean
           joined_at?: string
           profile_id?: string | null
@@ -1437,6 +1439,7 @@ export type Database = {
           guest_name?: string | null
           handicap_for_round?: number
           id?: string
+          is_admin?: boolean
           is_organizer?: boolean
           joined_at?: string
           profile_id?: string | null
@@ -2345,6 +2348,7 @@ export type Database = {
         }[]
       }
       get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
+      is_group_admin: { Args: { p_group_id: string }; Returns: boolean }
       is_money_ranking_creator: {
         Args: { p_ranking_id: string }
         Returns: boolean
@@ -2354,6 +2358,7 @@ export type Database = {
         Returns: boolean
       }
       is_own_profile: { Args: { p_profile_id: string }; Returns: boolean }
+      is_round_admin: { Args: { p_round_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
       join_leaderboard_by_code: {
