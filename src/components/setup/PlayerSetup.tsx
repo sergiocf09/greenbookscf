@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, X, User, Users2, Calculator, UserPlus, Loader2 } from 'lucide-react';
+import { Plus, X, User, Users2, Calculator, UserPlus, Loader2, Shield, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -485,6 +485,43 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                 </Button>
               )}
             </div>
+
+            {/* Co-admin toggle: visible only for the organizer (us) on registered, non-organizer players */}
+            {profile && organizerProfileId === profile.id
+              && !isPlayerOrganizer(player)
+              && player.profileId && (
+              <div className="pl-10 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const newVal = !player.isAdmin;
+                    updatePlayer(player.id, { isAdmin: newVal });
+                    // Persist to DB if this player is already mapped to a round_player row
+                    try {
+                      const { error } = await supabase
+                        .from('round_players')
+                        .update({ is_admin: newVal })
+                        .eq('round_id', (player as any).roundId ?? undefined as any) // best-effort scope
+                        .eq('profile_id', player.profileId!);
+                      if (error) {
+                        // Fallback: update by profile only across this round_players is too broad,
+                        // so silently ignore — value will be saved when player is persisted.
+                      }
+                    } catch { /* noop */ }
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border transition-colors',
+                    player.isAdmin
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400'
+                      : 'bg-muted border-border text-muted-foreground hover:bg-muted/70'
+                  )}
+                  title="Permite a este jugador capturar scores de su grupo"
+                >
+                  {player.isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
+                  {player.isAdmin ? 'Co-administrador del grupo' : 'Marcar como co-administrador'}
+                </button>
+              </div>
+            )}
 
             {/* Row 2: Tee + HCP + USGA calc */}
             <div className="flex items-center gap-2 pl-10">
