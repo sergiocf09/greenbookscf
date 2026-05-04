@@ -147,13 +147,15 @@ export const BloquesStrip: React.FC<Props> = ({
                       Bloque {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
                     </p>
                     <span className={cn('font-bold tabular-nums',
-                      isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
+                      isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
                     )}>
-                      {isTie
-                        ? `=$${fmtMoney(blk.amountAtStake)}`
-                        : aWon
-                          ? `+$${fmtMoney(blk.amountAtStake)}`
-                          : `-$${fmtMoney(blk.amountAtStake)}`}
+                      {isNeutralizedTie
+                        ? '— (no cuenta)'
+                        : isTie
+                          ? `=$${fmtMoney(blk.amountAtStake)}`
+                          : aWon
+                            ? `+$${fmtMoney(blk.amountAtStake)}`
+                            : `-$${fmtMoney(blk.amountAtStake)}`}
                     </span>
                   </div>
 
