@@ -1068,40 +1068,49 @@ const Index = () => {
     startNewRound();
   }, [startNewRound]);
 
-  const handleClosePendingRoundPermanently = useCallback(async (roundId: string) => {
-
-    try {
-      // Mark round as completed. This is a minimal "close" without rebuilding local state.
-      const { error: roundErr } = await supabase
-        .from('rounds')
-        .update({ status: 'completed' })
-        .eq('id', roundId);
-
-      if (roundErr) throw roundErr;
-
-      // Best-effort: set existing hole scores as confirmed (so they count as "final")
-      const { data: rpIds, error: rpErr } = await supabase
-        .from('round_players')
-        .select('id')
-        .eq('round_id', roundId);
-
-      if (!rpErr && rpIds?.length) {
-        await supabase
-          .from('hole_scores')
-          .update({ confirmed: true })
-          .in('round_player_id', rpIds.map((r) => r.id));
-      }
-
-      toast.success('Tarjeta cerrada');
-
-      // Continue clean
-      sessionStorage.setItem('skip_restore_once', '1');
-      window.location.reload();
-    } catch (e: any) {
-      devError('Error closing pending round:', e);
-      toast.error('No se pudo cerrar la tarjeta (requiere ser organizador)');
-    }
+  // Organizer flow: restore the round and jump to the close section in BetDashboard.
+  const handleRestoreAndJumpToClose = useCallback((roundId: string) => {
+    sessionStorage.setItem('restore_round_id', roundId);
+    sessionStorage.setItem('jump_to_close_after_restore', '1');
+    sessionStorage.setItem('initial_view_after_restore', 'bets');
+    window.location.reload();
   }, []);
+
+  // Participant flow: locally hide a pending round so it stops cluttering the UI.
+  const hiddenPendingKey = profile?.id ? `gb_hidden_pending_rounds_${profile.id}` : null;
+  const [hiddenPendingIds, setHiddenPendingIds] = useState<string[]>(() => {
+    try {
+      const k = profile?.id ? `gb_hidden_pending_rounds_${profile.id}` : null;
+      if (!k) return [];
+      return JSON.parse(localStorage.getItem(k) ?? '[]');
+    } catch { return []; }
+  });
+  useEffect(() => {
+    if (!hiddenPendingKey) return;
+    try {
+      setHiddenPendingIds(JSON.parse(localStorage.getItem(hiddenPendingKey) ?? '[]'));
+    } catch { /* noop */ }
+  }, [hiddenPendingKey]);
+
+  const handleHidePendingRoundLocally = useCallback((roundId: string) => {
+    if (!hiddenPendingKey) return;
+    try {
+      const cur: string[] = JSON.parse(localStorage.getItem(hiddenPendingKey) ?? '[]');
+      if (!cur.includes(roundId)) cur.push(roundId);
+      localStorage.setItem(hiddenPendingKey, JSON.stringify(cur));
+      setHiddenPendingIds(cur);
+      toast.success('Tarjeta ocultada de tu vista', {
+        description: 'Solo el organizador puede cerrarla oficialmente.',
+      });
+    } catch (e) {
+      devError('hide pending round failed', e);
+    }
+  }, [hiddenPendingKey]);
+
+  const visiblePendingRounds = useMemo(
+    () => pendingRounds.filter(r => !hiddenPendingIds.includes(r.roundId)),
+    [pendingRounds, hiddenPendingIds]
+  );
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
