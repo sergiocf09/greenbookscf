@@ -2343,7 +2343,7 @@ const Index = () => {
         profile={profile}
         theme={theme}
         profileMenuOpen={profileMenuOpen}
-        pendingRounds={pendingRounds}
+        pendingRounds={visiblePendingRounds}
         isRoundStarted={isRoundStarted}
         roundState={roundState}
         linkedLeaderboards={linkedLeaderboards}
