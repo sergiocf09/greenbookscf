@@ -83,6 +83,9 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   const [backAmount, setBackAmount] = useState(initialValues?.back ?? segmentConfig.back ?? 0);
   const [totalAmount, setTotalAmount] = useState(initialValues?.total ?? segmentConfig.total ?? 0);
   const [unitsAdvantage, setUnitsAdvantage] = useState(initialValues?.unitsAdvantage ?? 0);
+  const [carryOverOnTie, setCarryOverOnTie] = useState<boolean>(
+    initialValues?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie ?? true
+  );
 
   // When switching bet type (or reopening dialog), rehydrate from the per-pair overrides.
   React.useEffect(() => {
@@ -90,6 +93,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
     setBackAmount(initialValues?.back ?? segmentConfig.back ?? 0);
     setTotalAmount(initialValues?.total ?? segmentConfig.total ?? 0);
     setUnitsAdvantage(initialValues?.unitsAdvantage ?? 0);
+    setCarryOverOnTie(initialValues?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie ?? true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betType]);
 
