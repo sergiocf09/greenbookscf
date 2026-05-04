@@ -1940,12 +1940,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           const s = arr.find(x => x.holeNumber === hole);
                           return s && s.strokes > 0 ? s.strokes : null;
                         };
+                        const bloquesOv = getBetOverride('bloques');
+                        const effAmt = bloquesOv?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
+                        const effCarry = bloquesOv?.carryOverOnTie ?? effectiveBetConfig.bloques.carryOverOnTie;
                         return (
                           <div className="px-4 py-3 bg-background/50">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium">Bloques</span>
                               <span className="text-[10px] text-muted-foreground">
-                                {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                                {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effAmt}/bloque · {effCarry ? 'acumula' : 'sin acumular'}
                               </span>
                             </div>
                             <BloquesStrip
@@ -1958,6 +1961,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               getStrokes={getStrokes}
                               basePlayerId={basePlayerId}
                               allPlayers={allPlayers}
+                              carryOverOnTie={effCarry}
                             />
                           </div>
                         );
@@ -3084,12 +3088,15 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       const s = arr.find(x => x.holeNumber === hole);
                                       return s && s.strokes > 0 ? s.strokes : null;
                                     };
+                                    const bloquesOv2 = getBetOverride('bloques');
+                                    const effAmt2 = bloquesOv2?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
+                                    const effCarry2 = bloquesOv2?.carryOverOnTie ?? effectiveBetConfig.bloques.carryOverOnTie;
                                     return (
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between">
                                           <span className="font-medium text-sm">Bloques</span>
                                           <span className="text-[10px] text-muted-foreground">
-                                            {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                                            {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effAmt2}/bloque · {effCarry2 ? 'acumula' : 'sin acumular'}
                                           </span>
                                         </div>
                                         <BloquesStrip
@@ -3102,6 +3109,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           getStrokes={getStrokes}
                                           basePlayerId={basePlayerId}
                                           allPlayers={allPlayers}
+                                          carryOverOnTie={effCarry2}
                                         />
                                       </div>
                                     );

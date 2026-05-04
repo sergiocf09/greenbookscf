@@ -28,12 +28,14 @@ interface Props {
   basePlayerId?: string;
   /** All players in scope so initials are disambiguated app-wide. */
   allPlayers?: Player[];
+  /** Effective carry-on-tie for this pair (override > group > base). When false, tied blocks are neutralized (gray + dashes). */
+  carryOverOnTie?: boolean;
   className?: string;
 }
 
 export const BloquesStrip: React.FC<Props> = ({
   playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes,
-  basePlayerId, allPlayers, className,
+  basePlayerId, allPlayers, carryOverOnTie = true, className,
 }) => {
   const strokesA = calculateStrokesPerHole(handicapA, course);
   const strokesB = calculateStrokesPerHole(handicapB, course);
@@ -84,8 +86,8 @@ export const BloquesStrip: React.FC<Props> = ({
           </span>
         </div>
         {tiedResolved.length > 0 && (
-          <div className="text-[11px] text-amber-600">
-            Empate: {renderList(tiedResolved)}
+          <div className={cn('text-[11px]', carryOverOnTie ? 'text-amber-600' : 'text-muted-foreground')}>
+            Empate{!carryOverOnTie && ' (no cuenta)'}: {renderList(tiedResolved)}
           </div>
         )}
       </div>
@@ -94,14 +96,17 @@ export const BloquesStrip: React.FC<Props> = ({
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${blocks.length}, minmax(0, 1fr))` }}>
         {blocks.map(blk => {
           const isTie = blk.resolved && blk.winnerId === null;
+          const isNeutralizedTie = isTie && !carryOverOnTie;
           const aWon = blk.resolved && blk.winnerId === playerA.id;
           const bgCls = !blk.resolved
             ? 'bg-muted/30 text-muted-foreground/60'
-            : isTie
-              ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-              : aWon
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+            : isNeutralizedTie
+              ? 'bg-muted/60 text-muted-foreground'
+              : isTie
+                ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+                : aWon
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
 
           const pill = (
             <button
@@ -116,6 +121,7 @@ export const BloquesStrip: React.FC<Props> = ({
               <span className="font-bold">B{blk.blockNumber}</span>
               <span className="tabular-nums text-[9px]">
                 {!blk.resolved ? '—'
+                  : isNeutralizedTie ? '—'
                   : isTie ? `=$${fmtMoney(blk.amountAtStake)}`
                   : aWon ? `+$${fmtMoney(blk.amountAtStake)}`
                   : `-$${fmtMoney(blk.amountAtStake)}`}
@@ -141,13 +147,15 @@ export const BloquesStrip: React.FC<Props> = ({
                       Bloque {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
                     </p>
                     <span className={cn('font-bold tabular-nums',
-                      isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
+                      isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
                     )}>
-                      {isTie
-                        ? `=$${fmtMoney(blk.amountAtStake)}`
-                        : aWon
-                          ? `+$${fmtMoney(blk.amountAtStake)}`
-                          : `-$${fmtMoney(blk.amountAtStake)}`}
+                      {isNeutralizedTie
+                        ? '— (no cuenta)'
+                        : isTie
+                          ? `=$${fmtMoney(blk.amountAtStake)}`
+                          : aWon
+                            ? `+$${fmtMoney(blk.amountAtStake)}`
+                            : `-$${fmtMoney(blk.amountAtStake)}`}
                     </span>
                   </div>
 
