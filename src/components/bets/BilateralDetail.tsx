@@ -3201,6 +3201,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       : (unitOverride?.unitsAdvantage ?? 0),
                   };
                 }
+                case 'bloques': {
+                  const bloquesOverride = betConfig.betOverrides?.find(
+                    o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+                      ((o.playerAId === player.id && o.playerBId === rival.id) ||
+                       (o.playerAId === rival.id && o.playerBId === player.id))
+                  );
+                  return {
+                    total: bloquesOverride?.amountOverride ?? betConfig.bloques?.amountPerBlock ?? 100,
+                    carryOverOnTie: bloquesOverride?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie,
+                  };
+                }
                 default:
                   return undefined;
               }
