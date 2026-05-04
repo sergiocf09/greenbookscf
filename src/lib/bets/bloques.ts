@@ -133,11 +133,21 @@ export const calculateBloquesBets = (
       if (playerA.groupId && playerB.groupId && playerA.groupId !== playerB.groupId) continue;
       if (!shouldCalculatePair(config.bloques, playerA.id, playerB.id)) continue;
 
+      // Per-pair override: amount per block & enabled flag
+      const matchesPair = (oA: string, oB: string) =>
+        ((oA === playerA.id || oA === playerA.profileId) && (oB === playerB.id || oB === playerB.profileId)) ||
+        ((oA === playerB.id || oA === playerB.profileId) && (oB === playerA.id || oB === playerA.profileId));
+      const pairOverride = config.betOverrides?.find(o =>
+        (o.betType === 'Bloques' || o.betType === 'bloques') && matchesPair(o.playerAId, o.playerBId)
+      );
+      if (pairOverride?.enabled === false) continue;
+      const amountPerBlock = pairOverride?.amountOverride ?? config.bloques.amountPerBlock;
+
       const blocks = calculateBloquesForPair(
         playerA, playerB, scores, course, config,
         bilateralHandicaps, startingHole,
         config.bloques.holesPerBlock,
-        config.bloques.amountPerBlock,
+        amountPerBlock,
         config.bloques.carryOverOnTie
       );
 
@@ -167,13 +177,13 @@ export const calculateBloquesBets = (
         playerId: playerA.id, vsPlayer: playerB.id,
         betType: 'Bloques', amount: amountA, segment: 'total',
         description: descA,
-        baseUnitAmount: config.bloques.amountPerBlock, multiplier: 1,
+        baseUnitAmount: amountPerBlock, multiplier: 1,
       });
       summaries.push({
         playerId: playerB.id, vsPlayer: playerA.id,
         betType: 'Bloques', amount: -amountA, segment: 'total',
         description: descB,
-        baseUnitAmount: config.bloques.amountPerBlock, multiplier: 1,
+        baseUnitAmount: amountPerBlock, multiplier: 1,
       });
     }
   }
