@@ -10,6 +10,7 @@ export * from './shared';
 export { calculateMedalBets } from './medal';
 export { calculatePressureBets, getPressureEvolution, type PressureHoleState, type PressureEvolution } from './pressures';
 export { calculateMatchPlayBets } from './matchPlay';
+export { calculateBloquesBets, calculateBloquesForPair, type BloqueResult } from './bloques';
 export { calculateUnitsBets } from './units';
 export { calculateManchasBets } from './manchas';
 export { calculateCulebrasBets } from './culebras';

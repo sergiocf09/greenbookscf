@@ -9,6 +9,7 @@ import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVa
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
+import { calculateBloquesForPair, type BloqueResult } from '@/lib/bets/bloques';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
@@ -757,6 +758,60 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           };
         },
       });
+    }
+
+    // Bloques — bilateral mini-medal por bloques
+    if (resolvedCfg.bloques?.enabled && bothParticipate(undefined, 'bloques' as any)) {
+      let bloquesAmount = 0;
+      let bloquesDesc = '—';
+      let bloquesDetail: BloqueResult[] = [];
+
+      if (isHistorical) {
+        bloquesAmount = groupedSummaries['Bloques']?.total || 0;
+        bloquesDesc = groupedSummaries['Bloques']?.details?.[0]?.description || '—';
+      } else {
+        bloquesDetail = calculateBloquesForPair(
+          player, rival, confirmedScores, course, effectiveBetConfig,
+          effectiveBetConfig.bilateralHandicaps,
+          startingHole,
+          effectiveBetConfig.bloques.holesPerBlock,
+          effectiveBetConfig.bloques.amountPerBlock,
+          effectiveBetConfig.bloques.carryOverOnTie
+        );
+
+        const wonByPlayer: number[] = [];
+        const tied: number[] = [];
+        for (const blk of bloquesDetail) {
+          if (!blk.resolved) continue;
+          if (blk.winnerId === player.id) { bloquesAmount += blk.amountAtStake; wonByPlayer.push(blk.blockNumber); }
+          else if (blk.winnerId === rival.id) { bloquesAmount -= blk.amountAtStake; }
+          else { tied.push(blk.blockNumber); }
+        }
+
+        const parts: string[] = [];
+        if (wonByPlayer.length > 0) parts.push(`B${wonByPlayer.join(',')}`);
+        if (tied.length > 0) parts.push(`Empate B${tied.join(',')}`);
+        bloquesDesc = parts.join(' · ') || '—';
+      }
+
+      if (bloquesAmount !== 0 || bloquesDetail.some(b => b.resolved)) {
+        groups.push({
+          key: 'bloques',
+          label: 'Bloques',
+          configKey: 'bloques',
+          segments: [
+            { label: 'Total 18', key: 'bloques_total', overrideLabel: 'Bloques' },
+          ],
+          getTotal: () => bloquesAmount,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: bloquesAmount,
+            description: bloquesDesc,
+          }),
+          bloquesDetail,
+        } as any);
+      }
     }
 
     // Skins
@@ -2588,6 +2643,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         const isMatchPlay = group.key === 'matchPlay';
                         const isSkins = group.key === 'skins';
                         const isPutts = group.key === 'putts';
+                        const isBloques = group.key === 'bloques';
                         const isSkinsGrupal = group.key === 'skinsGrupal';
                         const pressureDesc = data.description || '';
                         
@@ -2673,6 +2729,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   )}>
                                     {matchPlayDisplay}
                                   </span>
+                                ) : isBloques ? (
+                                  <span className={cn(
+                                    'font-semibold cursor-pointer hover:underline',
+                                    data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                                  )}>
+                                    {data.description || '—'}
+                                  </span>
                                 ) : (
                                   <>
                                     <span className={cn(
@@ -2701,7 +2764,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div key={segment.key} className="relative flex items-center justify-between px-4 py-2 pl-10 bg-background/50">
                             {/* Popover de hoyos solo en modo VIVO — en histórico se muestra descripción plana del snapshot */}
-                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || isMatchPlay || isPutts) && !isSkinsGrupal && !isHistorical ? (
+                            {((isPressures && (segmentType !== 'total' || isContinua)) || isSkins || isMatchPlay || isPutts || isBloques) && !isSkinsGrupal && !isHistorical ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
@@ -2947,6 +3010,64 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                               </div>
                                             </div>
                                           </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                  {isBloques && (() => {
+                                    const bloquesData = (group as any).bloquesDetail as BloqueResult[] | undefined;
+                                    if (!bloquesData || bloquesData.length === 0) {
+                                      return <span className="text-xs text-muted-foreground">Sin datos</span>;
+                                    }
+                                    const total = bloquesData.filter(b => b.resolved).reduce((sum, b) => {
+                                      if (b.winnerId === player.id) return sum + b.amountAtStake;
+                                      if (b.winnerId === rival.id) return sum - b.amountAtStake;
+                                      return sum;
+                                    }, 0);
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className="font-medium text-sm">Bloques</span>
+                                          <span className="text-[10px] text-muted-foreground">
+                                            {effectiveBetConfig.bloques.holesPerBlock} hoyos · ${effectiveBetConfig.bloques.amountPerBlock}/bloque
+                                          </span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          {bloquesData.map((blk) => {
+                                            if (!blk.resolved) {
+                                              return (
+                                                <div key={blk.blockNumber} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/30">
+                                                  <span className="text-muted-foreground">B{blk.blockNumber} (h{blk.startHole}-{blk.endHole})</span>
+                                                  <span className="text-muted-foreground/70">Pendiente</span>
+                                                </div>
+                                              );
+                                            }
+                                            const playerWon = blk.winnerId === player.id;
+                                            const isTie = blk.winnerId === null;
+                                            const colorCls = isTie ? 'text-amber-600' : playerWon ? 'text-green-600' : 'text-destructive';
+                                            return (
+                                              <div key={blk.blockNumber} className={cn('flex items-center justify-between text-xs px-2 py-1 rounded', blk.isCarry ? 'ring-1 ring-amber-400/50 bg-amber-50/40 dark:bg-amber-950/20' : 'bg-muted/30')}>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-semibold">B{blk.blockNumber}</span>
+                                                  <span className="text-muted-foreground text-[10px]">h{blk.startHole}-{blk.endHole}</span>
+                                                  {blk.isCarry && <span className="text-[9px] text-amber-600">+carry</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-muted-foreground tabular-nums text-[10px]">{blk.playerNetSum} vs {blk.rivalNetSum}</span>
+                                                  <span className={cn('font-bold tabular-nums', colorCls)}>
+                                                    {isTie ? `=$${blk.amountAtStake}` : playerWon ? `+$${blk.amountAtStake}` : `-$${blk.amountAtStake}`}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                                          <span className="text-xs font-medium">Total Bloques</span>
+                                          <span className={cn('text-sm font-bold tabular-nums',
+                                            total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                                            {total > 0 ? `+$${total}` : total < 0 ? `-$${Math.abs(total)}` : '$0'}
+                                          </span>
                                         </div>
                                       </div>
                                     );

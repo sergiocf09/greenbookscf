@@ -462,6 +462,7 @@ export interface BetConfig {
   medal: MedalBetConfig;
   pressures: PressureBetConfig;
   matchPlay: MatchPlayBetConfig;
+  bloques: BloquesBetConfig;
   skins: SkinsBetConfig;
   caros: CarosBetConfig;
   oyeses: OyesesBetConfig;
@@ -529,6 +530,17 @@ export interface PressureBetConfig {
 export interface MatchPlayBetConfig {
   enabled: boolean;
   amount: number;       // Monto por match ganado
+  participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
+}
+
+// Bloques - Bilateral medal por bloques de N hoyos (2, 3 o 6)
+export interface BloquesBetConfig {
+  enabled: boolean;
+  holesPerBlock: 2 | 3 | 6;
+  amountPerBlock: number;
+  carryOverOnTie: boolean;
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;

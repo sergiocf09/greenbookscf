@@ -62,6 +62,7 @@ import { groupPlayersByGroup, resolveParticipantsForGroup } from './bets/shared'
 import { calculateMedalBets } from './bets/medal';
 import { calculatePressureBets } from './bets/pressures';
 import { calculateMatchPlayBets } from './bets/matchPlay';
+import { calculateBloquesBets } from './bets/bloques';
 import { calculateUnitsBets } from './bets/units';
 import { calculateManchasBets } from './bets/manchas';
 import { calculateCulebrasBets } from './bets/culebras';
@@ -132,6 +133,7 @@ export const calculateAllBets = (
     ...calculateMedalBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculatePressureBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMatchPlayBets(players, scores, config, course, bilateralHandicaps, startingHole),
+    ...calculateBloquesBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateCarosBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateOyesesBets(players, scores, config, course),
