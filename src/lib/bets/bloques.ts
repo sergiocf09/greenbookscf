@@ -138,7 +138,7 @@ export const calculateBloquesBets = (
         ((oA === playerA.id || oA === playerA.profileId) && (oB === playerB.id || oB === playerB.profileId)) ||
         ((oA === playerB.id || oA === playerB.profileId) && (oB === playerA.id || oB === playerA.profileId));
       const pairOverride = config.betOverrides?.find(o =>
-        (o.betType === 'Bloques' || o.betType === 'bloques') && matchesPair(o.playerAId, o.playerBId)
+        (o.betType === 'Modalidad' || o.betType === 'bloques') && matchesPair(o.playerAId, o.playerBId)
       );
       if (pairOverride?.enabled === false) continue;
       const amountPerBlock = pairOverride?.amountOverride ?? config.bloques.amountPerBlock;
