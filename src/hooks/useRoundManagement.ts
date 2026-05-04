@@ -51,6 +51,7 @@ export interface PendingRoundInfo {
   courseName?: string;
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
   startingHole: 1 | 10;
+  isOrganizer: boolean;
 }
 
 interface UseRoundManagementProps {
@@ -307,7 +308,7 @@ export const useRoundManagement = ({
         const roundIds = [...new Set(roundPlayers.map(rp => rp.round_id))];
         const { data: rounds, error: roundsError } = await supabase
           .from('rounds')
-          .select('id, status, date, course_id, tee_color, starting_hole, updated_at, golf_courses(name)')
+          .select('id, status, date, course_id, tee_color, starting_hole, updated_at, organizer_id, golf_courses(name)')
           .in('id', roundIds)
           .in('status', ['setup', 'in_progress'])
           .order('updated_at', { ascending: false })
@@ -327,6 +328,7 @@ export const useRoundManagement = ({
           courseName: r.golf_courses?.name ?? undefined,
           teeColor: r.tee_color as any,
           startingHole: (r.starting_hole === 10 ? 10 : 1) as 1 | 10,
+          isOrganizer: r.organizer_id === profile.id,
         }));
 
         setPendingRounds(mappedPending);
@@ -391,7 +393,7 @@ export const useRoundManagement = ({
           const allRoundPlayers = await retry<any[]>(() =>
             supabase
               .from('round_players')
-              .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color, tee_color')
+              .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color, tee_color, is_admin')
               .eq('round_id', activeRound.id) as any
           );
 
@@ -487,6 +489,7 @@ export const useRoundManagement = ({
               teeColor: rp.tee_color || undefined,
               groupId: rp.group_id || undefined,
               isFounder: profileData?.is_founder ?? false,
+              isAdmin: !!rp.is_admin,
             };
             
             // Add to restoredPlayers for score restoration
@@ -693,7 +696,7 @@ export const useRoundManagement = ({
           // Fetch the round info
           const { data: roundRow, error } = await supabase
             .from('rounds')
-            .select('id, status, date, course_id, tee_color, starting_hole, golf_courses(name)')
+            .select('id, status, date, course_id, tee_color, starting_hole, organizer_id, golf_courses(name)')
             .eq('id', newRoundId)
             .in('status', ['setup', 'in_progress'])
             .maybeSingle();
@@ -708,6 +711,7 @@ export const useRoundManagement = ({
             courseName: (roundRow as any).golf_courses?.name ?? undefined,
             teeColor: roundRow.tee_color as any,
             startingHole: (roundRow.starting_hole === 10 ? 10 : 1) as 1 | 10,
+            isOrganizer: (roundRow as any).organizer_id === profile.id,
           };
 
           setPendingRounds(prev => {
@@ -2253,6 +2257,7 @@ export const useRoundManagement = ({
             profile_id: player.profileId,
             handicap_for_round: player.handicap || 0,
             is_organizer: false,
+            is_admin: !!player.isAdmin,
             tee_color: player.teeColor || roundState.teeColor || 'white',
           })
           .select('id')

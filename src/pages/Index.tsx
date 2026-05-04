@@ -1068,40 +1068,49 @@ const Index = () => {
     startNewRound();
   }, [startNewRound]);
 
-  const handleClosePendingRoundPermanently = useCallback(async (roundId: string) => {
-
-    try {
-      // Mark round as completed. This is a minimal "close" without rebuilding local state.
-      const { error: roundErr } = await supabase
-        .from('rounds')
-        .update({ status: 'completed' })
-        .eq('id', roundId);
-
-      if (roundErr) throw roundErr;
-
-      // Best-effort: set existing hole scores as confirmed (so they count as "final")
-      const { data: rpIds, error: rpErr } = await supabase
-        .from('round_players')
-        .select('id')
-        .eq('round_id', roundId);
-
-      if (!rpErr && rpIds?.length) {
-        await supabase
-          .from('hole_scores')
-          .update({ confirmed: true })
-          .in('round_player_id', rpIds.map((r) => r.id));
-      }
-
-      toast.success('Tarjeta cerrada');
-
-      // Continue clean
-      sessionStorage.setItem('skip_restore_once', '1');
-      window.location.reload();
-    } catch (e: any) {
-      devError('Error closing pending round:', e);
-      toast.error('No se pudo cerrar la tarjeta (requiere ser organizador)');
-    }
+  // Organizer flow: restore the round and jump to the close section in BetDashboard.
+  const handleRestoreAndJumpToClose = useCallback((roundId: string) => {
+    sessionStorage.setItem('restore_round_id', roundId);
+    sessionStorage.setItem('jump_to_close_after_restore', '1');
+    sessionStorage.setItem('initial_view_after_restore', 'bets');
+    window.location.reload();
   }, []);
+
+  // Participant flow: locally hide a pending round so it stops cluttering the UI.
+  const hiddenPendingKey = profile?.id ? `gb_hidden_pending_rounds_${profile.id}` : null;
+  const [hiddenPendingIds, setHiddenPendingIds] = useState<string[]>(() => {
+    try {
+      const k = profile?.id ? `gb_hidden_pending_rounds_${profile.id}` : null;
+      if (!k) return [];
+      return JSON.parse(localStorage.getItem(k) ?? '[]');
+    } catch { return []; }
+  });
+  useEffect(() => {
+    if (!hiddenPendingKey) return;
+    try {
+      setHiddenPendingIds(JSON.parse(localStorage.getItem(hiddenPendingKey) ?? '[]'));
+    } catch { /* noop */ }
+  }, [hiddenPendingKey]);
+
+  const handleHidePendingRoundLocally = useCallback((roundId: string) => {
+    if (!hiddenPendingKey) return;
+    try {
+      const cur: string[] = JSON.parse(localStorage.getItem(hiddenPendingKey) ?? '[]');
+      if (!cur.includes(roundId)) cur.push(roundId);
+      localStorage.setItem(hiddenPendingKey, JSON.stringify(cur));
+      setHiddenPendingIds(cur);
+      toast.success('Tarjeta ocultada de tu vista', {
+        description: 'Solo el organizador puede cerrarla oficialmente.',
+      });
+    } catch (e) {
+      devError('hide pending round failed', e);
+    }
+  }, [hiddenPendingKey]);
+
+  const visiblePendingRounds = useMemo(
+    () => pendingRounds.filter(r => !hiddenPendingIds.includes(r.roundId)),
+    [pendingRounds, hiddenPendingIds]
+  );
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
@@ -1750,7 +1759,21 @@ const Index = () => {
   // Start scoring (can do with 1 player for solo tracking)
   const handleStartRound = async () => {
     if (!course || !selectedCourseId) return;
-    
+
+    // Multi-group: each non-organizer group must have at least one co-administrator
+    if (playerGroups && playerGroups.length > 0) {
+      const groupsMissingAdmin = playerGroups.filter(g => {
+        if (!g.players || g.players.length === 0) return false; // empty group; skip
+        return !g.players.some(p => p.profileId && p.isAdmin);
+      });
+      if (groupsMissingAdmin.length > 0) {
+        toast.error('Designa al menos un co-administrador en cada grupo adicional', {
+          description: `Falta en: ${groupsMissingAdmin.map(g => g.name).join(', ')}. Solo el organizador o un co-admin del grupo podrán capturar scores.`,
+        });
+        return;
+      }
+    }
+
     let activeRoundId = roundState.id;
 
     // Create round in database first if not exists
@@ -1761,7 +1784,7 @@ const Index = () => {
       // Wait for useEffect to persist unmapped players
       await new Promise(resolve => setTimeout(resolve, 200));
     }
-    
+
     // Initialize scores and start — pass explicit roundId to avoid stale state
     initializeScores();
     const success = await startRoundInDb(activeRoundId);
@@ -2229,15 +2252,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AlertDialog open={dialogs.pendingRound && pendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
+      <AlertDialog open={dialogs.pendingRound && visiblePendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
             <AlertDialogDescription>
-              Encontramos rondas sin “Cerrar Tarjeta”. Elige cuál quieres restaurar o cerrar.
+              Encontramos rondas sin “Cerrar Tarjeta”. Elige cómo continuar.
 
               <div className="mt-3 space-y-2">
-                {pendingRounds.map((r) => {
+                {visiblePendingRounds.map((r) => {
                   const s = pendingRoundSummaries.get(r.roundId);
                   return (
                     <div key={r.roundId} className="border border-border rounded-lg p-3 bg-card">
@@ -2245,6 +2268,11 @@ const Index = () => {
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-foreground">
                             {s?.courseName ?? 'Campo'}
+                            {r.isOrganizer ? (
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Organizador</span>
+                            ) : (
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Participante</span>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {r.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
@@ -2267,17 +2295,30 @@ const Index = () => {
                           >
                             Restaurar
                           </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              closeDialog('pendingRound');
-                              void handleClosePendingRoundPermanently(r.roundId);
-                            }}
-                          >
-                            Cerrar
-                          </Button>
+                          {r.isOrganizer ? (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                closeDialog('pendingRound');
+                                handleRestoreAndJumpToClose(r.roundId);
+                              }}
+                            >
+                              Cerrar tarjeta
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                handleHidePendingRoundLocally(r.roundId);
+                              }}
+                            >
+                              Ocultar de mi vista
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2316,7 +2357,7 @@ const Index = () => {
         profile={profile}
         theme={theme}
         profileMenuOpen={profileMenuOpen}
-        pendingRounds={pendingRounds}
+        pendingRounds={visiblePendingRounds}
         isRoundStarted={isRoundStarted}
         roundState={roundState}
         linkedLeaderboards={linkedLeaderboards}

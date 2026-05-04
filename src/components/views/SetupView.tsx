@@ -142,6 +142,7 @@ export function SetupView(props: SetupViewProps) {
         defaultTeeColor={teeColor}
         onAddFromFriendsClick={() => onAddFromFriendsClick(null)}
         organizerProfileId={roundState.organizerProfileId}
+        roundId={roundState.id}
       />
 
       {/* Additional Groups */}
@@ -226,6 +227,7 @@ export function SetupView(props: SetupViewProps) {
             defaultTeeColor={teeColor}
             onAddFromFriendsClick={() => onAddFromFriendsClick(group.id)}
             organizerProfileId={roundState.organizerProfileId}
+            roundId={roundState.id}
           />
         </div>
       ))}

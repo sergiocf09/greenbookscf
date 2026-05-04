@@ -1,4 +1,5 @@
-import { Lock, RefreshCw, CheckCircle2, Play } from 'lucide-react';
+import { Lock, RefreshCw, CheckCircle2, Play, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -11,7 +12,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useIsRoundAdmin } from '@/hooks/useIsRoundAdmin';
 import { BetSetup } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
@@ -113,8 +116,23 @@ export function PlayViews(props: PlayViewsProps) {
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
   } = props;
 
+  const adminInfo = useIsRoundAdmin(roundState.id);
+  const myGroupCanEdit = adminInfo.canEditGroup(roundState.groupId);
+  const showReadOnlyBanner = isRoundStarted && !adminInfo.loading && !myGroupCanEdit && (view === 'scoring' || view === 'handicaps');
+
   return (
     <>
+      {showReadOnlyBanner && (
+        <Alert className="mb-3 border-amber-500/40 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">Modo solo lectura</AlertTitle>
+          <AlertDescription className="text-amber-700/90 dark:text-amber-400/90 text-xs">
+            Solo el organizador o un co-administrador de tu grupo pueden capturar
+            scores y editar handicaps. Las apuestas bilaterales (lápiz / X) sí se
+            pueden editar normalmente desde el dashboard.
+          </AlertDescription>
+        </Alert>
+      )}
       {view === 'betsetup' && (() => {
         const isOrg = profile?.id === roundState.organizerProfileId;
         const hasMulti = playerGroups.length > 0;
@@ -310,15 +328,11 @@ export function PlayViews(props: PlayViewsProps) {
           {isRoundStarted && roundState.status !== 'completed' && (
             <>
               {profile?.id === roundState.organizerProfileId ? (
-                <Button
-                  variant="destructive"
-                  onClick={() => onOpenDialog('closeConfirm')}
-                  disabled={isLoading || isClosing}
-                  className="w-full mt-4"
-                >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Cerrar Tarjeta y Guardar
-                </Button>
+                <CloseRoundSection
+                  onOpenDialog={() => onOpenDialog('closeConfirm')}
+                  isLoading={isLoading}
+                  isClosing={isClosing}
+                />
               ) : (
                 <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
                   Solo el organizador puede cerrar la tarjeta
@@ -369,5 +383,56 @@ export function PlayViews(props: PlayViewsProps) {
         </>
       )}
     </>
+  );
+}
+
+function CloseRoundSection({
+  onOpenDialog,
+  isLoading,
+  isClosing,
+}: {
+  onOpenDialog: () => void;
+  isLoading: boolean;
+  isClosing: boolean;
+}) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const [showJumpBanner, setShowJumpBanner] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('jump_to_close_after_restore') === '1') {
+      sessionStorage.removeItem('jump_to_close_after_restore');
+      setShowJumpBanner(true);
+      // Delay scroll until layout settles
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, []);
+
+  return (
+    <div ref={sectionRef} className="mt-4 space-y-3">
+      {showJumpBanner && (
+        <Alert className="border-amber-500/40 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">
+            Cierra tu tarjeta aquí abajo
+          </AlertTitle>
+          <AlertDescription className="text-amber-700/90 dark:text-amber-400/90">
+            Para cerrar oficialmente tu ronda, usa el botón rojo de abajo
+            (deberás escribir <strong>CERRAR</strong> para confirmar). Esto
+            sella el resultado y libera a los demás jugadores.
+          </AlertDescription>
+        </Alert>
+      )}
+      <Button
+        variant="destructive"
+        onClick={onOpenDialog}
+        disabled={isLoading || isClosing}
+        className="w-full"
+      >
+        <Lock className="h-4 w-4 mr-2" />
+        Cerrar Tarjeta y Guardar
+      </Button>
+    </div>
   );
 }
