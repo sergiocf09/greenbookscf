@@ -133,6 +133,7 @@ export const calculateAllBets = (
     ...calculateMedalBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculatePressureBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMatchPlayBets(players, scores, config, course, bilateralHandicaps, startingHole),
+    ...calculateBloquesBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateCarosBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateOyesesBets(players, scores, config, course),
