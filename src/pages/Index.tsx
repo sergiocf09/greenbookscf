@@ -1759,7 +1759,21 @@ const Index = () => {
   // Start scoring (can do with 1 player for solo tracking)
   const handleStartRound = async () => {
     if (!course || !selectedCourseId) return;
-    
+
+    // Multi-group: each non-organizer group must have at least one co-administrator
+    if (playerGroups && playerGroups.length > 0) {
+      const groupsMissingAdmin = playerGroups.filter(g => {
+        if (!g.players || g.players.length === 0) return false; // empty group; skip
+        return !g.players.some(p => p.profileId && p.isAdmin);
+      });
+      if (groupsMissingAdmin.length > 0) {
+        toast.error('Designa al menos un co-administrador en cada grupo adicional', {
+          description: `Falta en: ${groupsMissingAdmin.map(g => g.name).join(', ')}. Solo el organizador o un co-admin del grupo podrán capturar scores.`,
+        });
+        return;
+      }
+    }
+
     let activeRoundId = roundState.id;
 
     // Create round in database first if not exists
@@ -1770,7 +1784,7 @@ const Index = () => {
       // Wait for useEffect to persist unmapped players
       await new Promise(resolve => setTimeout(resolve, 200));
     }
-    
+
     // Initialize scores and start — pass explicit roundId to avoid stale state
     initializeScores();
     const success = await startRoundInDb(activeRoundId);
