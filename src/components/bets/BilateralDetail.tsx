@@ -3100,6 +3100,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           handicapA={hcpA}
                                           handicapB={hcpB}
                                           getStrokes={getStrokes}
+                                          basePlayerId={basePlayerId}
+                                          allPlayers={allPlayers}
                                         />
                                       </div>
                                     );
