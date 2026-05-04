@@ -444,16 +444,51 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             key={player.id}
             className="bg-card border border-border rounded-lg p-2 space-y-1"
           >
-            {/* Row 1: Avatar + Name + Delete */}
-            <div className="flex items-center gap-2">
-              <PlayerAvatar
-                initials={disambiguatedInitials.get(player.id) || player.initials}
-                background={player.color || ''}
-                size="md"
-                isLoggedInUser={!!(profile && (player.profileId === profile.id || player.id.startsWith('organizer')))}
-              />
-              
-              <div className="flex-1 min-w-0">
+            {/* Row 1: Avatar (+ co-admin micro toggle) + Name + Delete */}
+            <div className="flex items-start gap-2">
+              <div className="flex flex-col items-center gap-0.5 w-8 shrink-0">
+                <PlayerAvatar
+                  initials={disambiguatedInitials.get(player.id) || player.initials}
+                  background={player.color || ''}
+                  size="md"
+                  isLoggedInUser={!!(profile && (player.profileId === profile.id || player.id.startsWith('organizer')))}
+                />
+                {profile && organizerProfileId === profile.id
+                  && !isPlayerOrganizer(player)
+                  && player.profileId && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const newVal = !player.isAdmin;
+                      updatePlayer(player.id, { isAdmin: newVal });
+                      if (roundId && player.profileId) {
+                        try {
+                          await supabase
+                            .from('round_players')
+                            .update({ is_admin: newVal })
+                            .eq('round_id', roundId)
+                            .eq('profile_id', player.profileId);
+                        } catch { /* noop */ }
+                      }
+                    }}
+                    className="flex flex-col items-center leading-none"
+                    title={player.isAdmin ? 'Co-admin: puede capturar scores del grupo' : 'Marcar como co-admin del grupo'}
+                    aria-label="Co-administrador del grupo"
+                  >
+                    {player.isAdmin
+                      ? <ShieldCheck className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                      : <Shield className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground" />}
+                    <span className={cn(
+                      'text-[8px] mt-0.5',
+                      player.isAdmin ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground/70'
+                    )}>
+                      co-admin
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 pt-0.5">
                 <Input
                   value={player.name || ''}
                   maxLength={100}
