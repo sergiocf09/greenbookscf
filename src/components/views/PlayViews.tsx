@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useIsRoundAdmin } from '@/hooks/useIsRoundAdmin';
 import { BetSetup } from '@/components/setup/BetSetup';
 import { HandicapMatrix } from '@/components/setup/HandicapMatrix';
 import { HandicapRankingView } from '@/components/handicap/HandicapRankingView';
@@ -115,8 +116,23 @@ export function PlayViews(props: PlayViewsProps) {
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
   } = props;
 
+  const adminInfo = useIsRoundAdmin(roundState.id);
+  const myGroupCanEdit = adminInfo.canEditGroup(roundState.groupId);
+  const showReadOnlyBanner = isRoundStarted && !adminInfo.loading && !myGroupCanEdit && (view === 'scoring' || view === 'handicaps');
+
   return (
     <>
+      {showReadOnlyBanner && (
+        <Alert className="mb-3 border-amber-500/40 bg-amber-500/10">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">Modo solo lectura</AlertTitle>
+          <AlertDescription className="text-amber-700/90 dark:text-amber-400/90 text-xs">
+            Solo el organizador o un co-administrador de tu grupo pueden capturar
+            scores y editar handicaps. Las apuestas bilaterales (lápiz / X) sí se
+            pueden editar normalmente desde el dashboard.
+          </AlertDescription>
+        </Alert>
+      )}
       {view === 'betsetup' && (() => {
         const isOrg = profile?.id === roundState.organizerProfileId;
         const hasMulti = playerGroups.length > 0;
