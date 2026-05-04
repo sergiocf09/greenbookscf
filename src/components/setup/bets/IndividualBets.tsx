@@ -317,7 +317,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('bloques') && (
         <BetSection
           id="bloques"
-          title="Modalidad"
+          title="Bloques"
           description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${18 / (config.bloques?.holesPerBlock ?? 3)} bloques`}
           enabled={config.bloques?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}

@@ -23,7 +23,7 @@ const INDIVIDUAL_BETS = [
   { key: 'manchas' as const, label: 'Manchas' },
   { key: 'putts' as const, label: 'Putts' },
   { key: 'matchPlay' as const, label: 'Match Play' },
-  { key: 'bloques' as const, label: 'Modalidad' },
+  { key: 'bloques' as const, label: 'Bloques' },
   { key: 'rayas' as const, label: 'Rayas' },
 ] as const;
 
