@@ -534,6 +534,17 @@ export interface MatchPlayBetConfig {
   anchorPlayerId?: string;
 }
 
+// Bloques - Bilateral medal por bloques de N hoyos (2, 3 o 6)
+export interface BloquesBetConfig {
+  enabled: boolean;
+  holesPerBlock: 2 | 3 | 6;
+  amountPerBlock: number;
+  carryOverOnTie: boolean;
+  participantIds?: string[];
+  oneVsAll?: boolean;
+  anchorPlayerId?: string;
+}
+
 export interface SkinsBetConfig {
   enabled: boolean;
   frontValue: number;
