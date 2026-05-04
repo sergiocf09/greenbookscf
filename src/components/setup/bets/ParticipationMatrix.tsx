@@ -23,6 +23,7 @@ const INDIVIDUAL_BETS = [
   { key: 'manchas' as const, label: 'Manchas' },
   { key: 'putts' as const, label: 'Putts' },
   { key: 'matchPlay' as const, label: 'Match Play' },
+  { key: 'bloques' as const, label: 'Bloques' },
   { key: 'rayas' as const, label: 'Rayas' },
 ] as const;
 
@@ -30,7 +31,7 @@ type IndividualBetKey = typeof INDIVIDUAL_BETS[number]['key'];
 
 /** Bet keys that support oneVsAll mode */
 const ONE_VS_ALL_ELIGIBLE: IndividualBetKey[] = [
-  'medal', 'pressures', 'skins', 'caros', 'units', 'manchas', 'putts', 'matchPlay', 'rayas',
+  'medal', 'pressures', 'skins', 'caros', 'units', 'manchas', 'putts', 'matchPlay', 'bloques', 'rayas',
 ];
 
 /** Get valid participant IDs for a bet, filtering stale IDs */
