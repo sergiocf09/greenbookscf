@@ -168,25 +168,25 @@ export const BloquesStrip: React.FC<Props> = ({
                   {/* Mini-scorecard */}
                   <div className="rounded border border-border/60 overflow-hidden">
                     <div
-                      className="grid bg-muted/40 text-[10px] font-medium"
-                      style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                      className="grid bg-muted/40 text-[11px] font-medium"
+                      style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
                     >
-                      <div className="px-2 py-1">Hoyo</div>
+                      <div className="px-2 py-1.5">Hoyo</div>
                       {holes.map(h => (
-                        <div key={h} className="text-center py-1">{h}</div>
+                        <div key={h} className="text-center py-1.5">{h}</div>
                       ))}
-                      <div className="text-center py-1">Σ</div>
+                      <div className="text-center py-1.5">Σ</div>
                     </div>
                     <div
-                      className="grid text-[11px]"
-                      style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                      className="grid text-[13px]"
+                      style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
                     >
-                      <div className="px-2 py-1 text-muted-foreground">Par</div>
+                      <div className="px-2 py-1.5 text-muted-foreground text-[11px]">Par</div>
                       {holes.map(h => {
                         const par = course.holes[h - 1]?.par ?? 4;
-                        return <div key={h} className="text-center py-1 text-muted-foreground tabular-nums">{par}</div>;
+                        return <div key={h} className="text-center py-1.5 text-muted-foreground tabular-nums">{par}</div>;
                       })}
-                      <div className="text-center py-1 text-muted-foreground tabular-nums">
+                      <div className="text-center py-1.5 text-muted-foreground tabular-nums">
                         {holes.reduce((s, h) => s + (course.holes[h - 1]?.par ?? 4), 0)}
                       </div>
                     </div>
@@ -206,19 +206,19 @@ export const BloquesStrip: React.FC<Props> = ({
                       return (
                         <div
                           key={row.p.id}
-                          className="grid text-[11px] border-t border-border/40"
-                          style={{ gridTemplateColumns: `minmax(64px,1fr) repeat(${holes.length}, minmax(0,1fr)) 42px` }}
+                          className="grid text-[14px] border-t border-border/40 items-center"
+                          style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
                         >
-                          <div className="px-2 py-1 flex items-center gap-1.5 truncate">
+                          <div className="px-2 py-1.5 flex items-center gap-1.5 truncate">
                             <PlayerAvatar
                               initials={getAbbr(row.p)}
                               background={row.p.color}
-                              size="xs"
+                              size="md"
                               isLoggedInUser={isBase(row.p)}
                             />
                           </div>
                           {cells.map(c => (
-                            <div key={c.h} className="text-center py-1 tabular-nums relative">
+                            <div key={c.h} className="text-center py-1.5 tabular-nums relative font-semibold">
                               {c.net === null ? (
                                 <span className="text-muted-foreground/60">–</span>
                               ) : (
@@ -229,7 +229,7 @@ export const BloquesStrip: React.FC<Props> = ({
                               )}
                             </div>
                           ))}
-                          <div className="text-center py-1 font-semibold tabular-nums">
+                          <div className="text-center py-1.5 font-bold tabular-nums">
                             {cells.some(c => c.net === null) ? '–' : sumNet}
                           </div>
                         </div>
