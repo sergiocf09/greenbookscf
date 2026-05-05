@@ -140,7 +140,7 @@ export const BloquesStrip: React.FC<Props> = ({
           return (
             <Popover key={blk.blockNumber}>
               <PopoverTrigger asChild>{pill}</PopoverTrigger>
-              <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
+              <PopoverContent side="top" align="center" className="w-[66vw] max-w-[280px] p-2">
                 <div className="text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-medium">
