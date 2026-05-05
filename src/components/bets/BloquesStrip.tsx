@@ -169,7 +169,7 @@ export const BloquesStrip: React.FC<Props> = ({
                   <div className="rounded border border-border/60 overflow-hidden">
                     <div
                       className="grid bg-muted/40 text-[11px] font-medium"
-                      style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
+                      style={{ gridTemplateColumns: `minmax(40px,auto) repeat(${holes.length}, minmax(22px,1fr)) 36px` }}
                     >
                       <div className="px-2 py-1.5">Hoyo</div>
                       {holes.map(h => (
@@ -179,7 +179,7 @@ export const BloquesStrip: React.FC<Props> = ({
                     </div>
                     <div
                       className="grid text-[13px]"
-                      style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
+                      style={{ gridTemplateColumns: `minmax(40px,auto) repeat(${holes.length}, minmax(22px,1fr)) 36px` }}
                     >
                       <div className="px-2 py-1.5 text-muted-foreground text-[11px]">Par</div>
                       {holes.map(h => {
@@ -207,7 +207,7 @@ export const BloquesStrip: React.FC<Props> = ({
                         <div
                           key={row.p.id}
                           className="grid text-[14px] border-t border-border/40 items-center"
-                          style={{ gridTemplateColumns: `minmax(56px,1fr) repeat(${holes.length}, minmax(0,1fr)) 48px` }}
+                          style={{ gridTemplateColumns: `minmax(40px,auto) repeat(${holes.length}, minmax(22px,1fr)) 36px` }}
                         >
                           <div className="px-2 py-1.5 flex items-center gap-1.5 truncate">
                             <PlayerAvatar
