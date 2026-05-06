@@ -143,8 +143,13 @@ export const BloquesStrip: React.FC<Props> = ({
               <PopoverContent side="top" align="center" className="w-[66vw] max-w-[280px] p-2">
                 <div className="text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">
+                    <p className="font-medium flex items-center gap-1">
                       Bloque {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
+                      {blk.multiplier > 1 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                          {blk.multiplier}x
+                        </span>
+                      )}
                     </p>
                     <span className={cn('font-bold tabular-nums',
                       isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
