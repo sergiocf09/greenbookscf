@@ -546,6 +546,8 @@ export interface BloquesBetConfig {
   participantIds?: string[];
   oneVsAll?: boolean;
   anchorPlayerId?: string;
+  /** Per-pair multiplier (1..5) applied to last block. Key = sorted "idA__idB". */
+  lastBlockMultipliers?: Record<string, number>;
 }
 
 export interface SkinsBetConfig {
