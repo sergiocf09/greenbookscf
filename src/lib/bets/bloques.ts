@@ -18,10 +18,15 @@ export interface BloqueResult {
   playerNetSum: number;
   rivalNetSum: number;
   diff: number;
-  amountAtStake: number;
+  amountAtStake: number;     // already includes carry × multiplier
   winnerId: string | null;
   isCarry: boolean;
   resolved: boolean;
+  multiplier: number;        // 1 normal, >1 if last block scaled
+}
+
+export function getBloquesPairKey(idA: string, idB: string): string {
+  return [idA, idB].sort().join('__');
 }
 
 export const calculateBloquesForPair = (
@@ -34,7 +39,8 @@ export const calculateBloquesForPair = (
   startingHole: 1 | 10 = 1,
   holesPerBlock: 2 | 3 | 6 = 3,
   amountPerBlock: number = 100,
-  carryOverOnTie: boolean = true
+  carryOverOnTie: boolean = true,
+  lastBlockMultiplier: number = 1
 ): BloqueResult[] => {
   const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
@@ -54,6 +60,11 @@ export const calculateBloquesForPair = (
     const startHole = blockHoles[0];
     const endHole = blockHoles[blockHoles.length - 1];
 
+    const isLastBlock = b === totalBlocks - 1;
+    const effectiveMultiplier = isLastBlock
+      ? Math.max(1, Math.min(5, Math.floor(lastBlockMultiplier) || 1))
+      : 1;
+
     let playerNetSum = 0;
     let rivalNetSum = 0;
     let allPlayed = true;
@@ -66,7 +77,8 @@ export const calculateBloquesForPair = (
       rivalNetSum += sB;
     }
 
-    const amountAtStake = amountPerBlock + pendingCarry;
+    const baseAmount = amountPerBlock + pendingCarry;
+    const amountAtStake = baseAmount * effectiveMultiplier;
 
     if (!allPlayed) {
       blocks.push({
@@ -74,6 +86,7 @@ export const calculateBloquesForPair = (
         playerNetSum: 0, rivalNetSum: 0, diff: 0,
         amountAtStake, winnerId: null,
         isCarry: pendingCarry > 0, resolved: false,
+        multiplier: effectiveMultiplier,
       });
       continue;
     }
@@ -88,10 +101,12 @@ export const calculateBloquesForPair = (
       playerNetSum, rivalNetSum, diff,
       amountAtStake, winnerId,
       isCarry: pendingCarry > 0, resolved: true,
+      multiplier: effectiveMultiplier,
     });
 
     if (winnerId === null && carryOverOnTie) {
-      pendingCarry = amountAtStake;
+      // Carry passes forward unscaled
+      pendingCarry = baseAmount;
     } else {
       pendingCarry = 0;
     }
@@ -143,13 +158,16 @@ export const calculateBloquesBets = (
       if (pairOverride?.enabled === false) continue;
       const amountPerBlock = pairOverride?.amountOverride ?? config.bloques.amountPerBlock;
       const carryOverOnTie = pairOverride?.carryOverOnTie ?? config.bloques.carryOverOnTie;
+      const pairKey = getBloquesPairKey(playerA.id, playerB.id);
+      const lastBlockMult = config.bloques?.lastBlockMultipliers?.[pairKey] ?? 1;
 
       const blocks = calculateBloquesForPair(
         playerA, playerB, scores, course, config,
         bilateralHandicaps, startingHole,
         config.bloques.holesPerBlock,
         amountPerBlock,
-        carryOverOnTie
+        carryOverOnTie,
+        lastBlockMult
       );
 
       let amountA = 0;

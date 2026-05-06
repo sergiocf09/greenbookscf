@@ -9,7 +9,7 @@ import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVa
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { calculateConejaBets } from '@/lib/conejaCalculations';
-import { calculateBloquesForPair, type BloqueResult } from '@/lib/bets/bloques';
+import { calculateBloquesForPair, getBloquesPairKey, type BloqueResult } from '@/lib/bets/bloques';
 import { BloquesStrip } from './BloquesStrip';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
@@ -26,7 +26,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle, XCircle, Settings2, Edit2, Check, X, Plus, Minus, DollarSign } from 'lucide-react';
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle, XCircle, Settings2, Edit2, Check, X, Plus, Minus, DollarSign, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -229,6 +229,25 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   // Toggle bet enabled/disabled
   const toggleBetEnabled = (overrideLabel: string, enabled: boolean) => {
     updateBetOverride(overrideLabel, { enabled });
+  };
+
+  // Bump last-block multiplier for Bloques (1 → 2 → 3 → 4 → 5 → 1).
+  const bumpBloquesLastBlockMultiplier = () => {
+    if (!onBetConfigChange) return;
+    const pairKey = getBloquesPairKey(player.id, rival.id);
+    const current = effectiveBetConfig.bloques?.lastBlockMultipliers?.[pairKey] ?? 1;
+    const next = current >= 5 ? 1 : current + 1;
+    const baseBloques = betConfig.bloques ?? effectiveBetConfig.bloques;
+    onBetConfigChange({
+      ...betConfig,
+      bloques: {
+        ...baseBloques,
+        lastBlockMultipliers: {
+          ...(baseBloques?.lastBlockMultipliers ?? {}),
+          [pairKey]: next,
+        },
+      },
+    });
   };
   
   // Calculate net scores for display with bilateral handicap overrides
@@ -776,13 +795,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const bloquesOverride = getBetOverride('bloques');
         const effectiveAmt = bloquesOverride?.amountOverride ?? effectiveBetConfig.bloques.amountPerBlock;
         const effectiveCarry = bloquesOverride?.carryOverOnTie ?? effectiveBetConfig.bloques.carryOverOnTie;
+        const bloquesPairKey = getBloquesPairKey(player.id, rival.id);
+        const lastBlockMult = effectiveBetConfig.bloques?.lastBlockMultipliers?.[bloquesPairKey] ?? 1;
         bloquesDetail = calculateBloquesForPair(
           player, rival, confirmedScores, course, effectiveBetConfig,
           effectiveBetConfig.bilateralHandicaps,
           startingHole,
           effectiveBetConfig.bloques.holesPerBlock,
           effectiveAmt,
-          effectiveCarry
+          effectiveCarry,
+          lastBlockMult
         );
 
         const wonByPlayer: number[] = [];
@@ -1963,6 +1985,36 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               allPlayers={allPlayers}
                               carryOverOnTie={effCarry}
                             />
+                            {onBetConfigChange && !isHistorical && (() => {
+                              const lastBlock = bloquesData[bloquesData.length - 1];
+                              if (!lastBlock) return null;
+                              const mult = lastBlock.multiplier ?? 1;
+                              const baseAmt = lastBlock.amountAtStake / Math.max(1, mult);
+                              const nextMult = mult >= 5 ? 1 : mult + 1;
+                              return (
+                                <div className="mt-2">
+                                  <button
+                                    type="button"
+                                    onClick={bumpBloquesLastBlockMultiplier}
+                                    className={cn(
+                                      'w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors border',
+                                      mult > 1
+                                        ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-950/60 border-amber-300 dark:border-amber-800'
+                                        : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-transparent'
+                                    )}
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      <Zap className={cn('h-3 w-3', mult > 1 && 'text-amber-500')} />
+                                      <span>Último bloque: {mult}x</span>
+                                      <span className={cn('tabular-nums', mult > 1 && 'font-semibold')}>· ${baseAmt * mult}</span>
+                                    </span>
+                                    <span className="text-[10px] opacity-80">
+                                      {mult >= 5 ? '→ 1x · Reset' : `→ ${nextMult}x · $${baseAmt * nextMult}`}
+                                    </span>
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })()
@@ -3111,6 +3163,34 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                           allPlayers={allPlayers}
                                           carryOverOnTie={effCarry2}
                                         />
+                                        {onBetConfigChange && !isHistorical && (() => {
+                                          const lastBlock = bloquesData[bloquesData.length - 1];
+                                          if (!lastBlock) return null;
+                                          const mult = lastBlock.multiplier ?? 1;
+                                          const baseAmt = lastBlock.amountAtStake / Math.max(1, mult);
+                                          const nextMult = mult >= 5 ? 1 : mult + 1;
+                                          return (
+                                            <button
+                                              type="button"
+                                              onClick={bumpBloquesLastBlockMultiplier}
+                                              className={cn(
+                                                'w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors border',
+                                                mult > 1
+                                                  ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-950/60 border-amber-300 dark:border-amber-800'
+                                                  : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-transparent'
+                                              )}
+                                            >
+                                              <span className="flex items-center gap-1.5">
+                                                <Zap className={cn('h-3 w-3', mult > 1 && 'text-amber-500')} />
+                                                <span>Último bloque: {mult}x</span>
+                                                <span className={cn('tabular-nums', mult > 1 && 'font-semibold')}>· ${baseAmt * mult}</span>
+                                              </span>
+                                              <span className="text-[10px] opacity-80">
+                                                {mult >= 5 ? '→ 1x · Reset' : `→ ${nextMult}x · $${baseAmt * nextMult}`}
+                                              </span>
+                                            </button>
+                                          );
+                                        })()}
                                       </div>
                                     );
                                   })()}
