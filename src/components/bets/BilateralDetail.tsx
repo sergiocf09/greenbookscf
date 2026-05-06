@@ -230,6 +230,25 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   const toggleBetEnabled = (overrideLabel: string, enabled: boolean) => {
     updateBetOverride(overrideLabel, { enabled });
   };
+
+  // Bump last-block multiplier for Bloques (1 → 2 → 3 → 4 → 5 → 1).
+  const bumpBloquesLastBlockMultiplier = () => {
+    if (!onBetConfigChange) return;
+    const pairKey = getBloquesPairKey(player.id, rival.id);
+    const current = effectiveBetConfig.bloques?.lastBlockMultipliers?.[pairKey] ?? 1;
+    const next = current >= 5 ? 1 : current + 1;
+    const baseBloques = betConfig.bloques ?? effectiveBetConfig.bloques;
+    onBetConfigChange({
+      ...betConfig,
+      bloques: {
+        ...baseBloques,
+        lastBlockMultipliers: {
+          ...(baseBloques?.lastBlockMultipliers ?? {}),
+          [pairKey]: next,
+        },
+      },
+    });
+  };
   
   // Calculate net scores for display with bilateral handicap overrides
   const getNetScoreForSegmentWithBilateral = (
