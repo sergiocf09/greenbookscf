@@ -26,7 +26,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle, XCircle, Settings2, Edit2, Check, X, Plus, Minus, DollarSign } from 'lucide-react';
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle, XCircle, Settings2, Edit2, Check, X, Plus, Minus, DollarSign, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
