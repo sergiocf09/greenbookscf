@@ -18,10 +18,15 @@ export interface BloqueResult {
   playerNetSum: number;
   rivalNetSum: number;
   diff: number;
-  amountAtStake: number;
+  amountAtStake: number;     // already includes carry × multiplier
   winnerId: string | null;
   isCarry: boolean;
   resolved: boolean;
+  multiplier: number;        // 1 normal, >1 if last block scaled
+}
+
+export function getBloquesPairKey(idA: string, idB: string): string {
+  return [idA, idB].sort().join('__');
 }
 
 export const calculateBloquesForPair = (
