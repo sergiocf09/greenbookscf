@@ -785,7 +785,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     }
 
     // Bloques — bilateral mini-medal por bloques
-    if (resolvedCfg.bloques?.enabled && bothParticipate(undefined, 'bloques' as any)) {
+    const _bloquesOverrideEarly = getBetOverride('bloques');
+    if (resolvedCfg.bloques?.enabled && bothParticipate(undefined, 'bloques' as any) && _bloquesOverrideEarly?.enabled !== false) {
       let bloquesAmount = 0;
       let bloquesDesc = '—';
       let bloquesDetail: BloqueResult[] = [];
