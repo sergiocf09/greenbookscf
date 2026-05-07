@@ -200,6 +200,7 @@ interface RoundBetConfig {
     oneVsAll?: boolean;
     anchorPlayerId?: string;
   };
+  roundHoles?: 9 | 18;
 }
 
 export const useBetConfigPersistence = ({
