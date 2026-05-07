@@ -167,7 +167,7 @@ export const calculateSkinsBets = (
       }
 
       const netPureBackSkins = backSkinsA - backSkinsB;
-      if (netPureBackSkins !== 0 && rc.skins.backValue > 0) {
+      if (!isNineHoleAcum && netPureBackSkins !== 0 && rc.skins.backValue > 0) {
         const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
         const backAmount = netPureBackSkins * rc.skins.backValue * pureBackMultiplier;
         const shoeLabel = pureBackMultiplier === 2 ? ' 🥾' : '';
