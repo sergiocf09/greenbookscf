@@ -85,8 +85,9 @@ export const calculateSkinsBets = (
           summaries.push({ playerId: pB.id, vsPlayer: pA.id, betType, amount: -amount, segment, description: `${winsB} vs ${winsA} skins${doubleLabel} (sin acumular)` });
         };
         const sinAcumRanges = getSegmentHoleRanges(startingHole);
+        const isNineHoleSA = (config.roundHoles ?? 18) === 9;
         calcNine(playerA, playerB, adjustedScores, sinAcumRanges.front[0], sinAcumRanges.front[1], rc.skins.frontValue, 'Skins Front', 'front');
-        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], rc.skins.backValue, 'Skins Back', 'back');
+        if (!isNineHoleSA) calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], rc.skins.backValue, 'Skins Back', 'back');
         continue;
       }
 
