@@ -239,7 +239,6 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
               </div>
             )}
           </div>
-          </div>
         </>
       )}
 
