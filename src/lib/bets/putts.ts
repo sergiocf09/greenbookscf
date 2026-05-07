@@ -53,11 +53,13 @@ export const calculatePuttsBets = (
       if (!rc.putts?.enabled) continue;
       if (!shouldCalculatePair(rc.putts, playerA.id, playerB.id)) continue;
 
-      const segments: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
+      const isNineHole = (config.roundHoles ?? 18) === 9;
+      const allSegmentsP: Array<{ key: 'front' | 'back' | 'total'; holes: [number, number]; amount: number; label: string }> = [
         { key: 'front', holes: ranges.front, amount: rc.putts.frontAmount || 0, label: 'Putts Front 9' },
         { key: 'back', holes: ranges.back, amount: rc.putts.backAmount || 0, label: 'Putts Back 9' },
         { key: 'total', holes: [ranges.front[0], ranges.back[1]], amount: rc.putts.totalAmount || 0, label: 'Putts Total' },
       ];
+      const segments = isNineHole ? allSegmentsP.filter(s => s.key === 'front') : allSegmentsP;
       
       segments.forEach(({ key, holes, amount, label }) => {
         const effectiveAmount = getPairOverrideAmount(playerA.id, playerB.id, label) ?? amount;
