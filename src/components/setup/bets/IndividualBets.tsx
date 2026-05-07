@@ -330,22 +330,28 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Hoyos por bloque</Label>
               <div className="flex gap-1">
-                {([2, 3, 6] as const).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => onUpdateBet('bloques' as any, { holesPerBlock: n })}
-                    className={cn(
-                      'flex-1 px-2 py-1.5 text-xs rounded transition-colors',
-                      (config.bloques?.holesPerBlock ?? 3) === n
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    )}
-                  >
-                    {n} hoyos
-                    <span className="block text-[9px] opacity-70">({18 / n} bloques)</span>
-                  </button>
-                ))}
+                {([2, 3, 6] as const).map((n) => {
+                  const disabled = isNineHole && n === 6;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? 'No aplica en ronda de 9 hoyos' : undefined}
+                      onClick={() => { if (disabled) return; onUpdateBet('bloques' as any, { holesPerBlock: n }); }}
+                      className={cn(
+                        'flex-1 px-2 py-1.5 text-xs rounded transition-colors',
+                        (config.bloques?.holesPerBlock ?? 3) === n
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                        disabled && 'opacity-40 cursor-not-allowed'
+                      )}
+                    >
+                      {n} hoyos
+                      <span className="block text-[9px] opacity-70">({(isNineHole ? 9 : 18) / n} bloques)</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
