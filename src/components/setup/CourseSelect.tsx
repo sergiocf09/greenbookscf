@@ -24,6 +24,8 @@ interface CourseSelectProps {
   onTeeColorChange?: (color: 'blue' | 'white' | 'yellow' | 'red') => void;
   startingHole?: 1 | 10;
   onStartingHoleChange?: (hole: 1 | 10) => void;
+  roundHoles?: 9 | 18;
+  onRoundHolesChange?: (h: 9 | 18) => void;
   enabled?: boolean;
 }
 
