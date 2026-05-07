@@ -25,6 +25,7 @@ export const calculateMatchPlayBets = (
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.matchPlay?.enabled) return [];
+  if ((config.roundHoles ?? 18) === 9) return [];
   if (!isBetEnabledAnywhere(config, 'matchPlay' as any)) return [];
 
   const playersByGroup = groupPlayersByGroup(players);

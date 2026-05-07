@@ -504,6 +504,7 @@ export interface BetConfig {
   vegasEnabled?: boolean;
   ninesBets?: NinesBetInstance[];
   parejasExcluded?: Record<string, string[]>; // betKey -> excluded player IDs
+  roundHoles?: 9 | 18; // NEW: default 18. When 9, only the front segment is computed.
 }
 
 export interface MedalBetConfig {

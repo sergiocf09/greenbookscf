@@ -242,6 +242,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bilateralHandicaps={config.bilateralHandicaps}
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
+                isNineHole={(config.roundHoles ?? 18) === 9}
               />
             ))}
             <Button
@@ -307,6 +308,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bilateralHandicaps={config.bilateralHandicaps}
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
+                isNineHole={(config.roundHoles ?? 18) === 9}
               />
             )}
 
@@ -330,6 +332,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bilateralHandicaps={config.bilateralHandicaps}
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
+                isNineHole={(config.roundHoles ?? 18) === 9}
               />
             ))}
 
@@ -817,6 +820,7 @@ interface TeamPressureCardProps {
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
+  isNineHole?: boolean;
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
@@ -829,6 +833,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   bilateralHandicaps,
   getStrokesForLocalPair,
   getLocalPairStrokeState,
+  isNineHole,
 }) => {
   return (
     <div className={cn(
@@ -931,6 +936,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground text-center block">Match 18 (único)</Label>
           <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
+      ) : isNineHole ? (
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
@@ -1149,6 +1159,7 @@ interface CarritosCardProps {
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
+  isNineHole?: boolean;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1168,6 +1179,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   bilateralHandicaps,
   getStrokesForLocalPair,
   getLocalPairStrokeState,
+  isNineHole,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -1254,20 +1266,27 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       </div>
 
       {/* Amounts - 3 columns */}
-      <div className="grid grid-cols-3 gap-2">
+      {isNineHole ? (
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
           <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
-          <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+            <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
-          <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
-        </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -85,8 +85,9 @@ export const calculateSkinsBets = (
           summaries.push({ playerId: pB.id, vsPlayer: pA.id, betType, amount: -amount, segment, description: `${winsB} vs ${winsA} skins${doubleLabel} (sin acumular)` });
         };
         const sinAcumRanges = getSegmentHoleRanges(startingHole);
+        const isNineHoleSA = (config.roundHoles ?? 18) === 9;
         calcNine(playerA, playerB, adjustedScores, sinAcumRanges.front[0], sinAcumRanges.front[1], rc.skins.frontValue, 'Skins Front', 'front');
-        calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], rc.skins.backValue, 'Skins Back', 'back');
+        if (!isNineHoleSA) calcNine(playerA, playerB, adjustedScores, sinAcumRanges.back[0], sinAcumRanges.back[1], rc.skins.backValue, 'Skins Back', 'back');
         continue;
       }
 
@@ -107,23 +108,26 @@ export const calculateSkinsBets = (
 
       if (rc.skins.carryOver) { frontCarryToBack = frontAccumulated; frontAccumulated = 0; }
 
+      const isNineHoleAcum = (config.roundHoles ?? 18) === 9;
       let backSkinsA = 0, backSkinsB = 0, carriedSkinsWonByA = 0, carriedSkinsWonByB = 0;
       let backAccumulated = 0, pendingCarrySkins = frontCarryToBack;
       let backHolesWonByA = 0, backHolesWonByB = 0;
       let backHole18Tied = false, backTiedHoles = 0;
 
-      for (let holeNum = 10; holeNum <= 18; holeNum++) {
-        const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
-        const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
-        if (scoreA === null || scoreB === null) { backAccumulated++; continue; }
-        backAccumulated++;
-        if (scoreA < scoreB) {
-          if (pendingCarrySkins > 0) { carriedSkinsWonByA += pendingCarrySkins; pendingCarrySkins = 0; }
-          backSkinsA += backAccumulated; backAccumulated = 0; backHolesWonByA++;
-        } else if (scoreB < scoreA) {
-          if (pendingCarrySkins > 0) { carriedSkinsWonByB += pendingCarrySkins; pendingCarrySkins = 0; }
-          backSkinsB += backAccumulated; backAccumulated = 0; backHolesWonByB++;
-        } else { backTiedHoles++; if (holeNum === 18) backHole18Tied = true; }
+      if (!isNineHoleAcum) {
+        for (let holeNum = 10; holeNum <= 18; holeNum++) {
+          const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
+          const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
+          if (scoreA === null || scoreB === null) { backAccumulated++; continue; }
+          backAccumulated++;
+          if (scoreA < scoreB) {
+            if (pendingCarrySkins > 0) { carriedSkinsWonByA += pendingCarrySkins; pendingCarrySkins = 0; }
+            backSkinsA += backAccumulated; backAccumulated = 0; backHolesWonByA++;
+          } else if (scoreB < scoreA) {
+            if (pendingCarrySkins > 0) { carriedSkinsWonByB += pendingCarrySkins; pendingCarrySkins = 0; }
+            backSkinsB += backAccumulated; backAccumulated = 0; backHolesWonByB++;
+          } else { backTiedHoles++; if (holeNum === 18) backHole18Tied = true; }
+        }
       }
 
       const frontSkinsA = frontSkinsABase + carriedSkinsWonByA;
@@ -163,7 +167,7 @@ export const calculateSkinsBets = (
       }
 
       const netPureBackSkins = backSkinsA - backSkinsB;
-      if (netPureBackSkins !== 0 && rc.skins.backValue > 0) {
+      if (!isNineHoleAcum && netPureBackSkins !== 0 && rc.skins.backValue > 0) {
         const pureBackMultiplier = netPureBackSkins > 0 ? backDoubleMultiplierA : backDoubleMultiplierB;
         const backAmount = netPureBackSkins * rc.skins.backValue * pureBackMultiplier;
         const shoeLabel = pureBackMultiplier === 2 ? ' 🥾' : '';

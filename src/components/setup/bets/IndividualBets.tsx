@@ -31,6 +31,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 }) => {
   /** Only show bet detail if at least 1 player participates */
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
+  const isNineHole = (config.roundHoles ?? 18) === 9;
 
   return (
     <div className="space-y-3">
@@ -59,8 +60,8 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
-          <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
-          <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />}
+          {!isNineHole && <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />}
         </BetSection>
       )}
 
@@ -79,10 +80,10 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           {!(config.pressures.onlyMatch && config.pressures.continua) && (
             <>
               <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
-              <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
+              {!isNineHole && <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />}
             </>
           )}
-          <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />}
 
           <div className="flex items-center justify-between pt-1">
             <Label className="text-xs text-muted-foreground">Sin presiones</Label>
@@ -116,7 +117,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato)."
         >
           <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
-          <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
+          {!isNineHole && <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />}
 
           <CollapsibleSubSection
             label="Configuración"
@@ -282,8 +283,8 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
-          <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
-          <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />}
+          {!isNineHole && <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />}
           <p className="text-[9px] text-muted-foreground mt-2">⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada segmento.</p>
         </BetSection>
       )}
@@ -318,7 +319,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="bloques"
           title="Bloques"
-          description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${18 / (config.bloques?.holesPerBlock ?? 3)} bloques`}
+          description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${(isNineHole ? 9 : 18) / (config.bloques?.holesPerBlock ?? 3)} bloques`}
           enabled={config.bloques?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}
           isExpanded={expandedSections.includes('bloques')}
@@ -329,22 +330,28 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Hoyos por bloque</Label>
               <div className="flex gap-1">
-                {([2, 3, 6] as const).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => onUpdateBet('bloques' as any, { holesPerBlock: n })}
-                    className={cn(
-                      'flex-1 px-2 py-1.5 text-xs rounded transition-colors',
-                      (config.bloques?.holesPerBlock ?? 3) === n
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    )}
-                  >
-                    {n} hoyos
-                    <span className="block text-[9px] opacity-70">({18 / n} bloques)</span>
-                  </button>
-                ))}
+                {([2, 3, 6] as const).map((n) => {
+                  const disabled = isNineHole && n === 6;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={disabled}
+                      title={disabled ? 'No aplica en ronda de 9 hoyos' : undefined}
+                      onClick={() => { if (disabled) return; onUpdateBet('bloques' as any, { holesPerBlock: n }); }}
+                      className={cn(
+                        'flex-1 px-2 py-1.5 text-xs rounded transition-colors',
+                        (config.bloques?.holesPerBlock ?? 3) === n
+                          ? 'bg-primary text-primary-foreground font-medium'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                        disabled && 'opacity-40 cursor-not-allowed'
+                      )}
+                    >
+                      {n} hoyos
+                      <span className="block text-[9px] opacity-70">({(isNineHole ? 9 : 18) / n} bloques)</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

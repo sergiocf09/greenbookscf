@@ -75,10 +75,11 @@ export const calculatePressureBets = (
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
-      const pairContinua = config.pressures.continua === true && onlyMatch;
+      const isNineHole = (config.roundHoles ?? 18) === 9;
+      const pairContinua = config.pressures.continua === true && onlyMatch && !isNineHole;
 
       const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
-      const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+      const backHoles = isNineHole ? [] : Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
       const totalMatchAmount = resolvedPairConfig.pressures.totalAmount;
 
       // ── Continúa mode: single 18-hole match with early-win detection ──
@@ -191,32 +192,34 @@ export const calculatePressureBets = (
       const backInvertedBets = backBets.map(b => -b);
       const backDisplayStrB = formatPressureResult(backInvertedBets);
       
-      if (backAmountA !== 0 || backBets.length > 0) {
+      if (!isNineHole && (backAmountA !== 0 || backBets.length > 0)) {
         summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: backLabel, amount: backAmountA, segment: 'back', description: backDisplayStr, units: backNetBets, baseUnitAmount: effectiveBackValue, multiplier: 1 });
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: backLabel, amount: -backAmountA, segment: 'back', description: backDisplayStrB, units: -backNetBets, baseUnitAmount: effectiveBackValue, multiplier: 1 });
       }
       
       // Always generate Match 18 summaries so the Total 18 row always displays
-      if (!frontIsTied) {
-        const total18Balance = frontBets[0] + backBets[0];
-        let matchWinner = 0;
-        if (total18Balance > 0) matchWinner = 1;
-        else if (total18Balance < 0) matchWinner = -1;
-        const totalAmountA = matchWinner * match18Unit;
-        const total18Str = total18Balance === 0 ? 'Even' : ((total18Balance >= 0 ? '+' : '') + total18Balance);
-        const total18StrB = (-total18Balance) === 0 ? 'Even' : (((-total18Balance) >= 0 ? '+' : '') + (-total18Balance));
-        
-        if (matchWinner !== 0) {
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: totalAmountA, segment: 'total', description: total18Str, units: matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: -totalAmountA, segment: 'total', description: total18StrB, units: -matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
+      if (!isNineHole) {
+        if (!frontIsTied) {
+          const total18Balance = frontBets[0] + backBets[0];
+          let matchWinner = 0;
+          if (total18Balance > 0) matchWinner = 1;
+          else if (total18Balance < 0) matchWinner = -1;
+          const totalAmountA = matchWinner * match18Unit;
+          const total18Str = total18Balance === 0 ? 'Even' : ((total18Balance >= 0 ? '+' : '') + total18Balance);
+          const total18StrB = (-total18Balance) === 0 ? 'Even' : (((-total18Balance) >= 0 ? '+' : '') + (-total18Balance));
+          
+          if (matchWinner !== 0) {
+            summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: totalAmountA, segment: 'total', description: total18Str, units: matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
+            summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: -totalAmountA, segment: 'total', description: total18StrB, units: -matchWinner, baseUnitAmount: match18Unit, multiplier: 1 });
+          } else {
+            summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
+            summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
+          }
         } else {
-          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
-          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Even' });
+          // Front tied = Carry (match absorbed into back)
+          summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
+          summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
         }
-      } else {
-        // Front tied = Carry (match absorbed into back)
-        summaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
-        summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Match 18', amount: 0, segment: 'total', description: 'Carry' });
       }
     }
   }

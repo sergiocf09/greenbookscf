@@ -166,11 +166,30 @@ export const getAdjustedScoresForPair = (
 
 // ── Segment helpers ──
 
-export const getSegmentHoleRange = (segment: 'front' | 'back' | 'total', startingHole: 1 | 10 = 1): [number, number] => {
+export const getSegmentHoleRange = (
+  segment: 'front' | 'back' | 'total',
+  startingHole: 1 | 10 = 1,
+  roundHoles: 9 | 18 = 18
+): [number, number] => {
+  const ranges = getSegmentHoleRanges(startingHole, roundHoles);
+  if (roundHoles === 9) {
+    // In a 9-hole round, every segment resolves to the front. Calculators
+    // that iterate front/back/total will produce identical results which the
+    // 9-hole guards in each calculator skip explicitly.
+    return ranges.front;
+  }
   if (segment === 'total') return [1, 18];
-  const ranges = getSegmentHoleRanges(startingHole);
   return segment === 'front' ? ranges.front : ranges.back;
 };
+
+/**
+ * Returns segments that should produce results for a given roundHoles.
+ * 9-hole rounds compute only 'front'; 18-hole rounds compute all three.
+ */
+export function getActiveSegments(roundHoles: 9 | 18 = 18): Array<'front' | 'back' | 'total'> {
+  if (roundHoles === 9) return ['front'];
+  return ['front', 'back', 'total'];
+}
 
 export const getSegmentNetTotal = (
   playerId: string,
