@@ -134,7 +134,8 @@ export function SetupView(props: SetupViewProps) {
         startingHole={startingHole}
         onStartingHoleChange={onStartingHoleChange}
         roundHoles={roundHoles ?? 18}
-        onRoundHolesChange={isRoundStarted ? undefined : onRoundHolesChange}
+        onRoundHolesChange={onRoundHolesChange}
+        roundHolesDisabled={isRoundStarted}
         enabled={enableCourseCatalog}
       />
 

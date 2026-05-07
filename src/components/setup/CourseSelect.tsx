@@ -26,6 +26,7 @@ interface CourseSelectProps {
   onStartingHoleChange?: (hole: 1 | 10) => void;
   roundHoles?: 9 | 18;
   onRoundHolesChange?: (h: 9 | 18) => void;
+  roundHolesDisabled?: boolean;
   enabled?: boolean;
 }
 
@@ -38,6 +39,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onStartingHoleChange,
   roundHoles = 18,
   onRoundHolesChange,
+  roundHolesDisabled = false,
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
@@ -226,12 +228,14 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                 >
                   <ToggleGroupItem
                     value="18"
+                    disabled={roundHolesDisabled}
                     className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     18
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="9"
+                    disabled={roundHolesDisabled}
                     className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     9
