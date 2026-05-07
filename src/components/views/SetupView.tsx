@@ -40,6 +40,7 @@ interface SetupViewProps {
   selectedCourseId: string | null;
   teeColor: 'blue' | 'white' | 'yellow' | 'red';
   startingHole: 1 | 10;
+  roundHoles?: 9 | 18;
   roundState: {
     id: string | null;
     groupId: string | null;
@@ -64,6 +65,7 @@ interface SetupViewProps {
   onCourseChange: (id: string | null) => void;
   onTeeColorChange: (c: 'blue' | 'white' | 'yellow' | 'red') => void;
   onStartingHoleChange: (h: 1 | 10) => void;
+  onRoundHolesChange: (h: 9 | 18) => void;
   onPlayersChange: (players: Player[]) => void;
   onAddGroup: () => Promise<void> | void;
   onGroupPlayersChange: (groupId: string, players: Player[]) => Promise<void> | void;
@@ -84,9 +86,10 @@ interface SetupViewProps {
 export function SetupView(props: SetupViewProps) {
   const {
     players, playerGroups, selectedCourseId, teeColor, startingHole,
+    roundHoles,
     roundState, profile, isRoundStarted, isLoading,
     canCreateRound, canStartScoring, enableCourseCatalog,
-    onCourseChange, onTeeColorChange, onStartingHoleChange,
+    onCourseChange, onTeeColorChange, onStartingHoleChange, onRoundHolesChange,
     onPlayersChange, onAddGroup, onGroupPlayersChange,
     onAddFromFriendsClick, onOpenDialog, onSetView,
     onCreateRound, onStartRound, onContinueRound, setRoundDate,
@@ -132,6 +135,40 @@ export function SetupView(props: SetupViewProps) {
         onStartingHoleChange={onStartingHoleChange}
         enabled={enableCourseCatalog}
       />
+
+      {/* Round length selector — 9 vs 18 holes */}
+      <div className="bg-card border border-border rounded-lg p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Hoyos a jugar</span>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={(roundHoles ?? 18) === 18 ? 'default' : 'outline'}
+              size="sm"
+              className="h-8"
+              onClick={() => onRoundHolesChange(18)}
+              disabled={isRoundStarted}
+            >
+              18 hoyos
+            </Button>
+            <Button
+              type="button"
+              variant={(roundHoles ?? 18) === 9 ? 'default' : 'outline'}
+              size="sm"
+              className="h-8"
+              onClick={() => onRoundHolesChange(9)}
+              disabled={isRoundStarted}
+            >
+              9 hoyos
+            </Button>
+          </div>
+        </div>
+        {(roundHoles ?? 18) === 9 && (
+          <p className="text-[11px] text-muted-foreground">
+            Las apuestas computan solo el primer nine. Back 9 y Total 18 quedan deshabilitados.
+          </p>
+        )}
+      </div>
       <PlayerSetup
         players={players}
         onChange={onPlayersChange}
