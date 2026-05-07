@@ -2459,6 +2459,7 @@ const Index = () => {
             selectedCourseId={selectedCourseId}
             teeColor={teeColor}
             startingHole={startingHole}
+            roundHoles={betConfig.roundHoles}
             roundState={roundState}
             profile={profile}
             isRoundStarted={isRoundStarted}
@@ -2470,6 +2471,13 @@ const Index = () => {
             onCourseChange={setSelectedCourseId}
             onTeeColorChange={handleTeeColorChange}
             onStartingHoleChange={setStartingHole}
+            onRoundHolesChange={(h) => setBetConfig(prev => {
+              const next: typeof prev = { ...prev, roundHoles: h };
+              if (h === 9 && prev.bloques?.holesPerBlock === 6) {
+                next.bloques = { ...prev.bloques, holesPerBlock: 3 };
+              }
+              return next;
+            })}
             onPlayersChange={handlePlayersChange}
             onAddGroup={handleAddGroup}
             onGroupPlayersChange={handleGroupPlayersChange}
