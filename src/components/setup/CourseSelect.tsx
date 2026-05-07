@@ -228,12 +228,14 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                 >
                   <ToggleGroupItem
                     value="18"
+                    disabled={roundHolesDisabled}
                     className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     18
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="9"
+                    disabled={roundHolesDisabled}
                     className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     9
