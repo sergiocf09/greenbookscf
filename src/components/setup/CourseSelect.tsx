@@ -26,6 +26,7 @@ interface CourseSelectProps {
   onStartingHoleChange?: (hole: 1 | 10) => void;
   roundHoles?: 9 | 18;
   onRoundHolesChange?: (h: 9 | 18) => void;
+  roundHolesDisabled?: boolean;
   enabled?: boolean;
 }
 
