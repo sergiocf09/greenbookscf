@@ -200,6 +200,7 @@ interface RoundBetConfig {
     oneVsAll?: boolean;
     anchorPlayerId?: string;
   };
+  roundHoles?: 9 | 18;
 }
 
 export const useBetConfigPersistence = ({
@@ -447,6 +448,10 @@ export const useBetConfigPersistence = ({
         };
       }
 
+      if ('roundHoles' in dbConfig && (dbConfig as any).roundHoles) {
+        newConfig.roundHoles = (dbConfig as any).roundHoles;
+      }
+
       return newConfig;
     });
   }, [setBetConfig]);
@@ -550,7 +555,8 @@ export const useBetConfigPersistence = ({
         parejasExcluded: config.parejasExcluded,
         matchPlay: (config as any).matchPlay,
         bloques: (config as any).bloques,
-      };
+        roundHoles: config.roundHoles,
+      } as RoundBetConfig & { roundHoles?: 9 | 18 };
 
       // Concurrency guard: check updated_at before writing
       if (lastKnownUpdatedAtRef.current) {
