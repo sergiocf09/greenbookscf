@@ -31,6 +31,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 }) => {
   /** Only show bet detail if at least 1 player participates */
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
+  const isNineHole = (config.roundHoles ?? 18) === 9;
 
   return (
     <div className="space-y-3">
@@ -59,8 +60,8 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
-          <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />
-          <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />}
+          {!isNineHole && <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />}
         </BetSection>
       )}
 
@@ -79,10 +80,10 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           {!(config.pressures.onlyMatch && config.pressures.continua) && (
             <>
               <AmountInput label="Front 9" value={config.pressures.frontAmount} onChange={(v) => onUpdateBet('pressures', { frontAmount: v })} />
-              <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />
+              {!isNineHole && <AmountInput label="Back 9" value={config.pressures.backAmount} onChange={(v) => onUpdateBet('pressures', { backAmount: v })} />}
             </>
           )}
-          <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />}
 
           <div className="flex items-center justify-between pt-1">
             <Label className="text-xs text-muted-foreground">Sin presiones</Label>
@@ -116,7 +117,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato)."
         >
           <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
-          <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />
+          {!isNineHole && <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />}
 
           <CollapsibleSubSection
             label="Configuración"
@@ -282,8 +283,8 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
         >
           <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
-          <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />
-          <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />
+          {!isNineHole && <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />}
+          {!isNineHole && <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />}
           <p className="text-[9px] text-muted-foreground mt-2">⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada segmento.</p>
         </BetSection>
       )}
