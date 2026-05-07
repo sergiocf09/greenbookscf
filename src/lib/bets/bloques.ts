@@ -40,18 +40,27 @@ export const calculateBloquesForPair = (
   holesPerBlock: 2 | 3 | 6 = 3,
   amountPerBlock: number = 100,
   carryOverOnTie: boolean = true,
-  lastBlockMultiplier: number = 1
+  lastBlockMultiplier: number = 1,
+  roundHoles: 9 | 18 = 18
 ): BloqueResult[] => {
   const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
-  const ranges = getSegmentHoleRanges(startingHole);
-  const allHoles = [
-    ...Array.from({ length: 9 }, (_, i) => ranges.front[0] + i),
-    ...Array.from({ length: 9 }, (_, i) => ranges.back[0] + i),
-  ];
+  if (roundHoles === 9 && holesPerBlock === 6) {
+    // 9 holes is not cleanly divisible into 6-hole blocks — skip.
+    return [];
+  }
+
+  const ranges = getSegmentHoleRanges(startingHole, roundHoles);
+  const allHoles = roundHoles === 9
+    ? Array.from({ length: 9 }, (_, i) => ranges.front[0] + i)
+    : [
+        ...Array.from({ length: 9 }, (_, i) => ranges.front[0] + i),
+        ...Array.from({ length: 9 }, (_, i) => ranges.back[0] + i),
+      ];
 
   const blocks: BloqueResult[] = [];
-  const totalBlocks = 18 / holesPerBlock;
+  const playableHoles = roundHoles === 9 ? 9 : 18;
+  const totalBlocks = playableHoles / holesPerBlock;
   let pendingCarry = 0;
 
   for (let b = 0; b < totalBlocks; b++) {
