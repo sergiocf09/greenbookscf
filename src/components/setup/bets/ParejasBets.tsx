@@ -308,6 +308,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 bilateralHandicaps={config.bilateralHandicaps}
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
+                isNineHole={(config.roundHoles ?? 18) === 9}
               />
             )}
 
