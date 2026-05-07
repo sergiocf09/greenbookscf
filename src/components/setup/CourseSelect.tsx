@@ -39,6 +39,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onStartingHoleChange,
   roundHoles = 18,
   onRoundHolesChange,
+  roundHolesDisabled = false,
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
