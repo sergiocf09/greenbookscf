@@ -176,7 +176,8 @@ export const calculateBloquesBets = (
         config.bloques.holesPerBlock,
         amountPerBlock,
         carryOverOnTie,
-        lastBlockMult
+        lastBlockMult,
+        config.roundHoles ?? 18
       );
 
       let amountA = 0;
