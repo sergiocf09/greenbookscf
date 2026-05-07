@@ -133,42 +133,11 @@ export function SetupView(props: SetupViewProps) {
         onTeeColorChange={onTeeColorChange}
         startingHole={startingHole}
         onStartingHoleChange={onStartingHoleChange}
+        roundHoles={roundHoles ?? 18}
+        onRoundHolesChange={isRoundStarted ? undefined : onRoundHolesChange}
         enabled={enableCourseCatalog}
       />
 
-      {/* Round length selector — 9 vs 18 holes */}
-      <div className="bg-card border border-border rounded-lg p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Hoyos a jugar</span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={(roundHoles ?? 18) === 18 ? 'default' : 'outline'}
-              size="sm"
-              className="h-8"
-              onClick={() => onRoundHolesChange(18)}
-              disabled={isRoundStarted}
-            >
-              18 hoyos
-            </Button>
-            <Button
-              type="button"
-              variant={(roundHoles ?? 18) === 9 ? 'default' : 'outline'}
-              size="sm"
-              className="h-8"
-              onClick={() => onRoundHolesChange(9)}
-              disabled={isRoundStarted}
-            >
-              9 hoyos
-            </Button>
-          </div>
-        </div>
-        {(roundHoles ?? 18) === 9 && (
-          <p className="text-[11px] text-muted-foreground">
-            Las apuestas computan solo el primer nine. Back 9 y Total 18 quedan deshabilitados.
-          </p>
-        )}
-      </div>
       <PlayerSetup
         players={players}
         onChange={onPlayersChange}

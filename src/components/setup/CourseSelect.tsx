@@ -24,6 +24,8 @@ interface CourseSelectProps {
   onTeeColorChange?: (color: 'blue' | 'white' | 'yellow' | 'red') => void;
   startingHole?: 1 | 10;
   onStartingHoleChange?: (hole: 1 | 10) => void;
+  roundHoles?: 9 | 18;
+  onRoundHolesChange?: (h: 9 | 18) => void;
   enabled?: boolean;
 }
 
@@ -34,6 +36,8 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onTeeColorChange,
   startingHole = 1,
   onStartingHoleChange,
+  roundHoles = 18,
+  onRoundHolesChange,
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
@@ -168,44 +172,69 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             </button>
           </div>
 
-          <div className="flex gap-6">
-            {onTeeColorChange && (
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            {onStartingHoleChange && (
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Tee de salida</Label>
-                <ToggleGroup 
-                  type="single" 
-                  value={teeColor} 
-                  onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
+                <Label className="text-[10px] text-muted-foreground">Hoyo de inicio</Label>
+                <ToggleGroup
+                  type="single"
+                  value={String(startingHole)}
+                  onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
                   className="justify-start"
                 >
-                  <ToggleGroupItem value="blue" className="w-8 h-8 rounded-full bg-blue-600 data-[state=on]:bg-blue-600 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
-                  <ToggleGroupItem value="white" className="w-8 h-8 rounded-full bg-white border data-[state=on]:bg-white data-[state=on]:ring-2 ring-offset-2 ring-primary" />
-                  <ToggleGroupItem value="yellow" className="w-8 h-8 rounded-full bg-yellow-400 data-[state=on]:bg-yellow-400 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
-                  <ToggleGroupItem value="red" className="w-8 h-8 rounded-full bg-red-500 data-[state=on]:bg-red-500 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem
+                    value="1"
+                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    1
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="10"
+                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    10
+                  </ToggleGroupItem>
                 </ToggleGroup>
               </div>
             )}
 
-            {onStartingHoleChange && (
+            {onTeeColorChange && (
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Hoyo de inicio</Label>
-                <ToggleGroup 
-                  type="single" 
-                  value={String(startingHole)} 
-                  onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
-                  className="justify-start"
+                <Label className="text-[10px] text-muted-foreground text-center block">Tee de salida</Label>
+                <ToggleGroup
+                  type="single"
+                  value={teeColor}
+                  onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
+                  className="justify-center"
                 >
-                  <ToggleGroupItem 
-                    value="1" 
-                    className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  <ToggleGroupItem value="blue" className="w-7 h-7 rounded-full bg-blue-600 data-[state=on]:bg-blue-600 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="white" className="w-7 h-7 rounded-full bg-white border data-[state=on]:bg-white data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="yellow" className="w-7 h-7 rounded-full bg-yellow-400 data-[state=on]:bg-yellow-400 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                  <ToggleGroupItem value="red" className="w-7 h-7 rounded-full bg-red-500 data-[state=on]:bg-red-500 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
+                </ToggleGroup>
+              </div>
+            )}
+
+            {onRoundHolesChange && (
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-right block">Hoyos a jugar</Label>
+                <ToggleGroup
+                  type="single"
+                  value={String(roundHoles)}
+                  onValueChange={(v) => v && onRoundHolesChange(Number(v) as 9 | 18)}
+                  className="justify-end"
+                >
+                  <ToggleGroupItem
+                    value="18"
+                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
-                    Hoyo 1
+                    18
                   </ToggleGroupItem>
-                  <ToggleGroupItem 
-                    value="10" 
-                    className="px-3 py-1.5 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  <ToggleGroupItem
+                    value="9"
+                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
-                    Hoyo 10
+                    9
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
