@@ -447,6 +447,10 @@ export const useBetConfigPersistence = ({
         };
       }
 
+      if ('roundHoles' in dbConfig && (dbConfig as any).roundHoles) {
+        newConfig.roundHoles = (dbConfig as any).roundHoles;
+      }
+
       return newConfig;
     });
   }, [setBetConfig]);
