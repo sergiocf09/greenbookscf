@@ -1263,20 +1263,27 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       </div>
 
       {/* Amounts - 3 columns */}
-      <div className="grid grid-cols-3 gap-2">
+      {isNineHole ? (
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
           <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
-          <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+            <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
-          <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
-        </div>
-      </div>
+      )}
     </div>
   );
 };
