@@ -165,10 +165,11 @@ export const calculateCarritosBets = (
     const totalPtsA = front.pA + back.pA;
     const totalPtsB = front.pB + back.pB;
 
+    const isNineHole = (config.roundHoles ?? 18) === 9;
     const segments: Array<{ label: string; segment: 'front' | 'back' | 'total'; moneyA: number }> = [];
     if (front.pA !== front.pB) segments.push({ label: 'Carritos Front', segment: 'front', moneyA: front.pA > front.pB ? cfg.frontAmount : -cfg.frontAmount });
-    if (back.pA !== back.pB) segments.push({ label: 'Carritos Back', segment: 'back', moneyA: back.pA > back.pB ? cfg.backAmount : -cfg.backAmount });
-    if (totalPtsA !== totalPtsB) segments.push({ label: 'Carritos Total', segment: 'total', moneyA: totalPtsA > totalPtsB ? cfg.totalAmount : -cfg.totalAmount });
+    if (!isNineHole && back.pA !== back.pB) segments.push({ label: 'Carritos Back', segment: 'back', moneyA: back.pA > back.pB ? cfg.backAmount : -cfg.backAmount });
+    if (!isNineHole && totalPtsA !== totalPtsB) segments.push({ label: 'Carritos Total', segment: 'total', moneyA: totalPtsA > totalPtsB ? cfg.totalAmount : -cfg.totalAmount });
 
     segments.forEach(({ label, segment, moneyA }) => {
       const perPairAmount = moneyA / 2;
