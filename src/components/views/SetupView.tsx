@@ -133,6 +133,8 @@ export function SetupView(props: SetupViewProps) {
         onTeeColorChange={onTeeColorChange}
         startingHole={startingHole}
         onStartingHoleChange={onStartingHoleChange}
+        roundHoles={roundHoles ?? 18}
+        onRoundHolesChange={isRoundStarted ? undefined : onRoundHolesChange}
         enabled={enableCourseCatalog}
       />
 
