@@ -75,10 +75,11 @@ export const calculatePressureBets = (
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
-      const pairContinua = config.pressures.continua === true && onlyMatch;
+      const isNineHole = (config.roundHoles ?? 18) === 9;
+      const pairContinua = config.pressures.continua === true && onlyMatch && !isNineHole;
 
       const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
-      const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
+      const backHoles = isNineHole ? [] : Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
       const totalMatchAmount = resolvedPairConfig.pressures.totalAmount;
 
       // ── Continúa mode: single 18-hole match with early-win detection ──
