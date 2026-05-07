@@ -1156,6 +1156,7 @@ interface CarritosCardProps {
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
+  isNineHole?: boolean;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1175,6 +1176,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   bilateralHandicaps,
   getStrokesForLocalPair,
   getLocalPairStrokeState,
+  isNineHole,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
