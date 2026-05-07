@@ -79,7 +79,17 @@ export const calculateStrokesPerHole = (
  * When starting at hole 1: front = 1-9, back = 10-18
  * When starting at hole 10: front = 10-18, back = 1-9
  */
-export const getSegmentHoleRanges = (startingHole: 1 | 10 = 1): { front: [number, number]; back: [number, number] } => {
+export const getSegmentHoleRanges = (
+  startingHole: 1 | 10 = 1,
+  roundHoles: 9 | 18 = 18
+): { front: [number, number]; back: [number, number] } => {
+  if (roundHoles === 9) {
+    // Round of 9 holes: only the front nine exists. Collapse back to the same
+    // range so calculators that iterate both segments naturally produce no
+    // distinct back results.
+    const front: [number, number] = startingHole === 10 ? [10, 18] : [1, 9];
+    return { front, back: front };
+  }
   if (startingHole === 10) {
     return {
       front: [10, 18], // First played nine
