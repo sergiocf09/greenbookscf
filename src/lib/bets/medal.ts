@@ -41,11 +41,12 @@ export const calculateMedalBets = (
       if (!shouldCalculatePair(resolvedPairConfig.medal, playerA.id, playerB.id)) continue;
       
       const isNineHole = (config.roundHoles ?? 18) === 9;
-      const segments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
+      const allSegments: Array<{ key: 'front' | 'back' | 'total'; amount: number; label: string }> = [
         { key: 'front', amount: resolvedPairConfig.medal.frontAmount, label: 'Medal Front 9' },
         { key: 'back', amount: resolvedPairConfig.medal.backAmount, label: 'Medal Back 9' },
         { key: 'total', amount: resolvedPairConfig.medal.totalAmount, label: 'Medal Total' },
-      ].filter(s => !isNineHole || s.key === 'front');
+      ];
+      const segments = isNineHole ? allSegments.filter(s => s.key === 'front') : allSegments;
       
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
       
