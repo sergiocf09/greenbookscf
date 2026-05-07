@@ -817,6 +817,7 @@ interface TeamPressureCardProps {
   bilateralHandicaps?: BilateralHandicap[];
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
+  isNineHole?: boolean;
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
@@ -829,6 +830,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   bilateralHandicaps,
   getStrokesForLocalPair,
   getLocalPairStrokeState,
+  isNineHole,
 }) => {
   return (
     <div className={cn(
@@ -931,6 +933,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground text-center block">Match 18 (único)</Label>
           <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
+        </div>
+      ) : isNineHole ? (
+        <div className="space-y-1">
+          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
