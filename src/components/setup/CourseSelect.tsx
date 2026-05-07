@@ -174,25 +174,24 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             </button>
           </div>
 
-          <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="grid grid-cols-3 items-end gap-3">
             {onStartingHoleChange && (
-              <div className="space-y-1">
+              <div className="space-y-1 flex flex-col items-start">
                 <Label className="text-[10px] text-muted-foreground">Hoyo de inicio</Label>
                 <ToggleGroup
                   type="single"
                   value={String(startingHole)}
                   onValueChange={(v) => v && onStartingHoleChange(Number(v) as 1 | 10)}
-                  className="justify-start"
                 >
                   <ToggleGroupItem
                     value="1"
-                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    className="h-7 w-7 px-0 text-xs rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     1
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="10"
-                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    className="h-7 w-7 px-0 text-xs rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     10
                   </ToggleGroupItem>
@@ -201,13 +200,12 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             )}
 
             {onTeeColorChange && (
-              <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground text-center block">Tee de salida</Label>
+              <div className="space-y-1 flex flex-col items-center">
+                <Label className="text-[10px] text-muted-foreground">Tee de salida</Label>
                 <ToggleGroup
                   type="single"
                   value={teeColor}
                   onValueChange={(v) => v && onTeeColorChange(v as 'blue' | 'white' | 'yellow' | 'red')}
-                  className="justify-center"
                 >
                   <ToggleGroupItem value="blue" className="w-7 h-7 rounded-full bg-blue-600 data-[state=on]:bg-blue-600 data-[state=on]:ring-2 ring-offset-2 ring-primary" />
                   <ToggleGroupItem value="white" className="w-7 h-7 rounded-full bg-white border data-[state=on]:bg-white data-[state=on]:ring-2 ring-offset-2 ring-primary" />
@@ -218,31 +216,29 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             )}
 
             {onRoundHolesChange && (
-              <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground text-right block">Hoyos a jugar</Label>
+              <div className="space-y-1 flex flex-col items-end">
+                <Label className="text-[10px] text-muted-foreground">Hoyos a jugar</Label>
                 <ToggleGroup
                   type="single"
                   value={String(roundHoles)}
                   onValueChange={(v) => v && onRoundHolesChange(Number(v) as 9 | 18)}
-                  className="justify-end"
                 >
                   <ToggleGroupItem
                     value="18"
-                    disabled={roundHolesDisabled}
-                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    className="h-7 w-7 px-0 text-xs rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     18
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="9"
-                    disabled={roundHolesDisabled}
-                    className="h-7 w-8 px-0 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    className="h-7 w-7 px-0 text-xs rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                   >
                     9
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
             )}
+          </div>
           </div>
         </>
       )}
