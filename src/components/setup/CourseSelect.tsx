@@ -36,6 +36,8 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   onTeeColorChange,
   startingHole = 1,
   onStartingHoleChange,
+  roundHoles = 18,
+  onRoundHolesChange,
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
