@@ -283,6 +283,7 @@ export function PlayViews(props: PlayViewsProps) {
               onLeaderboardClick={() => onOpenDialog('leaderboard')}
               playerGroups={playerGroups}
               onQuickScoreClick={(player) => setQuickScorePlayer(player)}
+              betConfig={betConfig}
             />
 
             <LeaderboardDialog
