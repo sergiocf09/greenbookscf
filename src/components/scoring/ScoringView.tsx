@@ -252,7 +252,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Hole Navigation */}
-      <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
+      <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} activeHoles={activeHoles} />
 
       {/* Sixes Badge */}
       {sixesConfig && sixesConfig.sets && sixesConfig.sets.length > 0 && (
