@@ -73,6 +73,7 @@ function drawCanvas(
   players: RoundShareImageProps['players'],
   coursePar: number,
   highlights?: RoundShareImageProps['highlights'],
+  roundHoles?: 9 | 18,
 ) {
   const W = CANVAS_W;
   const H = computeCanvasHeight(players.length, !!highlights);
