@@ -207,14 +207,13 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       }
     }
 
-    // Auto-advance to next unconfirmed hole
+    // Auto-advance to next unconfirmed hole (within active range)
     const findNextUnconfirmed = (): number | null => {
-      for (let h = holeNumber + 1; h <= 18; h++) {
-        if (!isHoleConfirmedForDisplayGroup(h)) return h;
-      }
-      for (let h = 1; h < holeNumber; h++) {
-        if (!isHoleConfirmedForDisplayGroup(h)) return h;
-      }
+      const idx = activeHoles.indexOf(holeNumber);
+      const after = idx >= 0 ? activeHoles.slice(idx + 1) : activeHoles;
+      const before = idx >= 0 ? activeHoles.slice(0, idx) : [];
+      for (const h of after) if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      for (const h of before) if (!isHoleConfirmedForDisplayGroup(h)) return h;
       return null;
     };
 
@@ -222,7 +221,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     if (next !== null) {
       setTimeout(() => setCurrentHole(next), 350);
     }
-  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, onWolfRecalculate, wolfConfig, wolfHoleStates, players, scores, course]);
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, onWolfRecalculate, wolfConfig, wolfHoleStates, players, scores, course, activeHoles]);
 
   // Wolf: check if decision is needed before confirming
   const wolfEnabled = !!(betConfig?.wolfSetup?.enabled);
