@@ -163,7 +163,7 @@ export const calculateAllBets = (
     };
 
     return allSummaries.map(summary => {
-      const override = config.betOverrides?.find(o => {
+      const matchesOverride = (o: typeof config.betOverrides[number]) => {
         const aId = resolveOverridePlayerId(o.playerAId);
         const bId = resolveOverridePlayerId(o.playerBId);
         const matchesPair = (aId === summary.playerId && bId === summary.vsPlayer) ||
@@ -182,11 +182,8 @@ export const calculateAllBets = (
         })();
 
         const isCarryLabel = summaryType.includes('(carry');
-        
+
         const matchesBetType = (() => {
-          // Carry variants like "presiones back (carry x2+match)" must still match
-          // their parent override type ("presiones"). Previously this required exact
-          // match which prevented the override from disabling carry results.
           if (isCarryLabel) return summaryType.includes(overrideType);
           if (overrideType === 'medal' && (summaryType.includes('medal general') || summaryType.includes('rayas medal'))) return false;
           if (overrideType === 'rayas' && summaryType.includes('rayas medal') && o.enabled !== false) return false;
@@ -194,8 +191,15 @@ export const calculateAllBets = (
           return summaryType.includes(overrideType);
         })();
         return matchesPair && matchesBetType;
-      });
-      
+      };
+
+      const matchingOverrides = (config.betOverrides ?? []).filter(matchesOverride);
+      // A parent-level cancellation (enabled:false) must take priority over any
+      // sub-variant amount override (e.g., "Presiones" disabled wins over a
+      // residual "Presiones Front" amount). Otherwise pick the first match.
+      const disabledOverride = matchingOverrides.find(o => o.enabled === false);
+      const override = disabledOverride ?? matchingOverrides[0];
+
       if (override) {
         if (override.enabled === false) return { ...summary, amount: 0 };
         const isRayasType = summary.betType === 'Rayas Front' || 
