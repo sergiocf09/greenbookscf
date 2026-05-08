@@ -2353,6 +2353,7 @@ const Index = () => {
         holePar={holePar}
         holeStrokeIndex={holeStrokeIndex}
         holeYards={holeYards}
+        roundHoles={betConfig.roundHoles}
         user={user}
         profile={profile}
         theme={theme}
