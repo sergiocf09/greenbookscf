@@ -379,12 +379,16 @@ export function generateRoundSnapshot(
     }
   }
 
-  // Calculate gross totals per player
+  // Calculate gross totals per player — only confirmed holes count, so 9H
+  // rounds don't pick up default-par padding from the inactive segment.
   const grossTotals = new Map<string, number>();
   for (const [playerId, playerScores] of scores) {
-    const totalGross = playerScores.reduce((sum, s) => sum + (s.strokes || 0), 0);
+    const totalGross = playerScores.reduce((sum, s) => {
+      return (s as any).confirmed === true ? sum + (s.strokes || 0) : sum;
+    }, 0);
     grossTotals.set(playerId, totalGross);
   }
+
 
   // Helper to get sliding strokes for a pair
   const getSlidingForPair = (playerAId: string, playerBId: string): number | undefined => {
