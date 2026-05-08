@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
