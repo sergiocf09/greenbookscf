@@ -167,7 +167,13 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
   currentScores,
   roundConfirmedHoles = new Set(),
   onSaveScores,
+  roundHoles = 18,
+  startingHole = 1,
 }) => {
+  const isNineHole = roundHoles === 9;
+  const showFront = !isNineHole || startingHole === 1;
+  const showBack = !isNineHole || startingHole === 10;
+  const totalActiveHoles = isNineHole ? 9 : 18;
   const [scores, setScores] = useState<Record<number, { strokes: number; putts: number }>>({});
   const [confirmedInSession, setConfirmedInSession] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
