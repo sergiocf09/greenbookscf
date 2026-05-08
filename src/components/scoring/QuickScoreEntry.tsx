@@ -325,59 +325,69 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
 
         <div className="flex-1 min-h-0 overflow-auto">
           {/* Front 9 */}
-          <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
-            IDA (1-9)
-          </div>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
-            <HoleRow
-              key={h}
-              holeNumber={h}
-              par={getPar(h)}
-              strokes={scores[h]?.strokes || getPar(h)}
-              putts={scores[h]?.putts ?? 2}
-              isConfirmed={isHoleConfirmed(h)}
-              isHighlighted={isHoleHighlighted(h)}
-              onStrokesChange={(v) => handleStrokesChange(h, v)}
-              onPuttsChange={(v) => handlePuttsChange(h, v)}
-              onConfirm={() => handleConfirmHole(h)}
-              saving={saving}
-            />
-          ))}
-          <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20 border-b">
-            OUT: <span className="text-primary font-bold">{frontTotal}</span>
-          </div>
+          {showFront && (
+            <>
+              <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
+                IDA (1-9)
+              </div>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
+                <HoleRow
+                  key={h}
+                  holeNumber={h}
+                  par={getPar(h)}
+                  strokes={scores[h]?.strokes || getPar(h)}
+                  putts={scores[h]?.putts ?? 2}
+                  isConfirmed={isHoleConfirmed(h)}
+                  isHighlighted={isHoleHighlighted(h)}
+                  onStrokesChange={(v) => handleStrokesChange(h, v)}
+                  onPuttsChange={(v) => handlePuttsChange(h, v)}
+                  onConfirm={() => handleConfirmHole(h)}
+                  saving={saving}
+                />
+              ))}
+              <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20 border-b">
+                OUT: <span className="text-primary font-bold">{frontTotal}</span>
+              </div>
+            </>
+          )}
 
           {/* Back 9 */}
-          <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
-            VUELTA (10-18)
-          </div>
-          {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
-            <HoleRow
-              key={h}
-              holeNumber={h}
-              par={getPar(h)}
-              strokes={scores[h]?.strokes || getPar(h)}
-              putts={scores[h]?.putts ?? 2}
-              isConfirmed={isHoleConfirmed(h)}
-              isHighlighted={isHoleHighlighted(h)}
-              onStrokesChange={(v) => handleStrokesChange(h, v)}
-              onPuttsChange={(v) => handlePuttsChange(h, v)}
-              onConfirm={() => handleConfirmHole(h)}
-              saving={saving}
-            />
-          ))}
-          <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20">
-            IN: <span className="text-primary font-bold">{backTotal}</span>
-          </div>
+          {showBack && (
+            <>
+              <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
+                VUELTA (10-18)
+              </div>
+              {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
+                <HoleRow
+                  key={h}
+                  holeNumber={h}
+                  par={getPar(h)}
+                  strokes={scores[h]?.strokes || getPar(h)}
+                  putts={scores[h]?.putts ?? 2}
+                  isConfirmed={isHoleConfirmed(h)}
+                  isHighlighted={isHoleHighlighted(h)}
+                  onStrokesChange={(v) => handleStrokesChange(h, v)}
+                  onPuttsChange={(v) => handlePuttsChange(h, v)}
+                  onConfirm={() => handleConfirmHole(h)}
+                  saving={saving}
+                />
+              ))}
+              <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20">
+                IN: <span className="text-primary font-bold">{backTotal}</span>
+              </div>
+            </>
+          )}
 
           {/* Total */}
-          <div className="text-center text-sm font-bold py-2 border-t bg-card">
-            Total: <span className="text-primary">
-              {typeof frontTotal === 'number' && typeof backTotal === 'number'
-                ? frontTotal + backTotal
-                : '-'}
-            </span>
-          </div>
+          {showFront && showBack && (
+            <div className="text-center text-sm font-bold py-2 border-t bg-card">
+              Total: <span className="text-primary">
+                {typeof frontTotal === 'number' && typeof backTotal === 'number'
+                  ? frontTotal + backTotal
+                  : '-'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
