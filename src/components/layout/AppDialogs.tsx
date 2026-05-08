@@ -157,6 +157,8 @@ export function AppDialogs(props: AppDialogsProps) {
     playerGroups,
     scores,
     roundPlayerIds,
+    betConfig,
+    startingHole = 1,
     currentBetSummaries,
     view,
     historicalScorecardData,
