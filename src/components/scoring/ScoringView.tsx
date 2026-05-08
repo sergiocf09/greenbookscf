@@ -116,8 +116,24 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onWolfRevert,
   onWolfRecalculate,
   sixesConfig,
-  
+  startingHole = 1,
 }) => {
+  const isNineHole = (betConfig?.roundHoles ?? 18) === 9;
+  const activeHoles = useMemo(() => {
+    if (!isNineHole) return Array.from({ length: 18 }, (_, i) => i + 1);
+    return startingHole === 10
+      ? [10, 11, 12, 13, 14, 15, 16, 17, 18]
+      : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  }, [isNineHole, startingHole]);
+  const minHole = activeHoles[0];
+  const maxHole = activeHoles[activeHoles.length - 1];
+
+  useEffect(() => {
+    if (!activeHoles.includes(currentHole)) {
+      setCurrentHole(minHole);
+    }
+  }, [activeHoles, currentHole, minHole, setCurrentHole]);
+
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!profile?.id || playerGroups.length === 0) return 0;
