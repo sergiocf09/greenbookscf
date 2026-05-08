@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fmtMoney } from '@/lib/formatMoney';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import { Player, PlayerScore, BetConfig, GolfCourse, MarkerState, markerInfo, BetOverride, CarritosTeamBet, BilateralHandicap, PlayerGroup } from '@/types/golf';
 import { SnapshotPlayerBalance, SnapshotLedgerEntry, SnapshotPairBreakdowns, SnapshotPairSegmentResults, snapshotLedgerToBetSummaries } from '@/lib/roundSnapshot';
 import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
