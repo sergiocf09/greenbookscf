@@ -43,6 +43,7 @@ interface ScoringViewProps {
   onWolfRevert?: (holeNumber: number) => Promise<void>;
   onWolfRecalculate?: (holeNumber: number) => Promise<void>;
   sixesConfig?: SixesConfig;
+  startingHole?: 1 | 10;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
@@ -50,7 +51,8 @@ const HoleNavigationBar: React.FC<{
   currentHole: number;
   setCurrentHole: (hole: number) => void;
   isHoleConfirmedForDisplayGroup: (hole: number) => boolean;
-}> = ({ currentHole, setCurrentHole, isHoleConfirmedForDisplayGroup }) => {
+  activeHoles: number[];
+}> = ({ currentHole, setCurrentHole, isHoleConfirmedForDisplayGroup, activeHoles }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -65,7 +67,7 @@ const HoleNavigationBar: React.FC<{
 
   return (
     <div ref={containerRef} className="flex gap-1 overflow-x-auto pb-2 pt-1">
-      {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
+      {activeHoles.map(hole => {
         const confirmed = isHoleConfirmedForDisplayGroup(hole);
         return (
           <button
