@@ -114,6 +114,7 @@ export function AppHeader(props: AppHeaderProps) {
     holePar,
     holeStrokeIndex,
     holeYards,
+    roundHoles,
     user,
     profile,
     theme,
