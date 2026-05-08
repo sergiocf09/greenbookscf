@@ -409,7 +409,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Navigation Buttons and Side Bets */}
       <div className="flex gap-2 pt-2">
-        <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1 px-2 text-sm">
+        <Button variant="outline" onClick={() => {
+          const idx = activeHoles.indexOf(currentHole);
+          if (idx > 0) setCurrentHole(activeHoles[idx - 1]);
+        }} disabled={currentHole === minHole} className="flex-1 px-2 text-sm">
           ← Ant
         </Button>
         
