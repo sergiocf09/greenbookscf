@@ -136,11 +136,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
           // Fetch strokes + player count in parallel
           const [scoresResult, countResult] = await Promise.all([
-            supabase.from('hole_scores').select('strokes').eq('round_player_id', rp.id),
+            supabase.from('hole_scores').select('strokes, confirmed').eq('round_player_id', rp.id),
             supabase.from('round_players').select('id', { count: 'exact', head: true }).eq('round_id', rp.round_id),
           ]);
 
-          const totalStrokes = scoresResult.data?.reduce((sum, s) => sum + (s.strokes || 0), 0) || 0;
+          // Only confirmed holes count — prevents 9H rounds from including
+          // default-par padding (or stale unconfirmed strokes) from the inactive segment.
+          const totalStrokes = scoresResult.data?.reduce((sum, s) => (s.confirmed ? sum + (s.strokes || 0) : sum), 0) || 0;
 
           return {
             id: round.id,
