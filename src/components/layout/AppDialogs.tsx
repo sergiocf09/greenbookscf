@@ -71,6 +71,7 @@ interface AppDialogsProps {
   scores: Map<string, PlayerScore[]>;
   roundPlayerIds: Map<string, string>;
   betConfig: BetConfig;
+  startingHole?: 1 | 10;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   currentBetSummaries: any[];
   view: AppView;
