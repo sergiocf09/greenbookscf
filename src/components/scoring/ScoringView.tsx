@@ -455,7 +455,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         )}
 
         
-        <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1 px-2 text-sm">
+        <Button onClick={() => {
+          const idx = activeHoles.indexOf(currentHole);
+          if (idx >= 0 && idx < activeHoles.length - 1) setCurrentHole(activeHoles[idx + 1]);
+        }} disabled={currentHole === maxHole} className="flex-1 px-2 text-sm">
           Sig →
         </Button>
       </div>
