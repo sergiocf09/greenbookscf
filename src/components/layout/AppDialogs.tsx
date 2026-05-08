@@ -71,6 +71,7 @@ interface AppDialogsProps {
   scores: Map<string, PlayerScore[]>;
   roundPlayerIds: Map<string, string>;
   betConfig: BetConfig;
+  startingHole?: 1 | 10;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   currentBetSummaries: any[];
   view: AppView;
@@ -156,6 +157,8 @@ export function AppDialogs(props: AppDialogsProps) {
     playerGroups,
     scores,
     roundPlayerIds,
+    betConfig,
+    startingHole = 1,
     currentBetSummaries,
     view,
     historicalScorecardData,
@@ -525,6 +528,8 @@ export function AppDialogs(props: AppDialogsProps) {
           course={course}
           currentScores={scores.get(quickScorePlayer.id) || []}
           roundConfirmedHoles={holesConfirmedByOthers}
+          roundHoles={(betConfig?.roundHoles === 9 ? 9 : 18) as 9 | 18}
+          startingHole={startingHole}
           onSaveScores={async (newScores) => {
             const playerId = quickScorePlayer.id;
             const rpId = roundPlayerIds.get(playerId);

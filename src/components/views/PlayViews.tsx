@@ -189,6 +189,7 @@ export function PlayViews(props: PlayViewsProps) {
             betConfig={betConfig}
             holePar={holePar}
             profile={profile}
+            startingHole={startingHole}
             onAddSideBet={(bet: SideBet) => {
               setBetConfig(prev => ({
                 ...prev,

@@ -43,6 +43,7 @@ interface ScoringViewProps {
   onWolfRevert?: (holeNumber: number) => Promise<void>;
   onWolfRecalculate?: (holeNumber: number) => Promise<void>;
   sixesConfig?: SixesConfig;
+  startingHole?: 1 | 10;
 }
 
 /** Hole nav bar that auto-scrolls to center the active hole */
@@ -50,7 +51,8 @@ const HoleNavigationBar: React.FC<{
   currentHole: number;
   setCurrentHole: (hole: number) => void;
   isHoleConfirmedForDisplayGroup: (hole: number) => boolean;
-}> = ({ currentHole, setCurrentHole, isHoleConfirmedForDisplayGroup }) => {
+  activeHoles: number[];
+}> = ({ currentHole, setCurrentHole, isHoleConfirmedForDisplayGroup, activeHoles }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
@@ -65,7 +67,7 @@ const HoleNavigationBar: React.FC<{
 
   return (
     <div ref={containerRef} className="flex gap-1 overflow-x-auto pb-2 pt-1">
-      {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => {
+      {activeHoles.map(hole => {
         const confirmed = isHoleConfirmedForDisplayGroup(hole);
         return (
           <button
@@ -114,8 +116,24 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   onWolfRevert,
   onWolfRecalculate,
   sixesConfig,
-  
+  startingHole = 1,
 }) => {
+  const isNineHole = (betConfig?.roundHoles ?? 18) === 9;
+  const activeHoles = useMemo(() => {
+    if (!isNineHole) return Array.from({ length: 18 }, (_, i) => i + 1);
+    return startingHole === 10
+      ? [10, 11, 12, 13, 14, 15, 16, 17, 18]
+      : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  }, [isNineHole, startingHole]);
+  const minHole = activeHoles[0];
+  const maxHole = activeHoles[activeHoles.length - 1];
+
+  useEffect(() => {
+    if (!activeHoles.includes(currentHole)) {
+      setCurrentHole(minHole);
+    }
+  }, [activeHoles, currentHole, minHole, setCurrentHole]);
+
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!profile?.id || playerGroups.length === 0) return 0;
@@ -189,14 +207,13 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       }
     }
 
-    // Auto-advance to next unconfirmed hole
+    // Auto-advance to next unconfirmed hole (within active range)
     const findNextUnconfirmed = (): number | null => {
-      for (let h = holeNumber + 1; h <= 18; h++) {
-        if (!isHoleConfirmedForDisplayGroup(h)) return h;
-      }
-      for (let h = 1; h < holeNumber; h++) {
-        if (!isHoleConfirmedForDisplayGroup(h)) return h;
-      }
+      const idx = activeHoles.indexOf(holeNumber);
+      const after = idx >= 0 ? activeHoles.slice(idx + 1) : activeHoles;
+      const before = idx >= 0 ? activeHoles.slice(0, idx) : [];
+      for (const h of after) if (!isHoleConfirmedForDisplayGroup(h)) return h;
+      for (const h of before) if (!isHoleConfirmedForDisplayGroup(h)) return h;
       return null;
     };
 
@@ -204,7 +221,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
     if (next !== null) {
       setTimeout(() => setCurrentHole(next), 350);
     }
-  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, onWolfRecalculate, wolfConfig, wolfHoleStates, players, scores, course]);
+  }, [displayPlayers, confirmHole, isHoleConfirmedForDisplayGroup, setCurrentHole, onWolfResolve, onWolfRecalculate, wolfConfig, wolfHoleStates, players, scores, course, activeHoles]);
 
   // Wolf: check if decision is needed before confirming
   const wolfEnabled = !!(betConfig?.wolfSetup?.enabled);
@@ -234,7 +251,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       )}
 
       {/* Hole Navigation */}
-      <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} />
+      <HoleNavigationBar currentHole={currentHole} setCurrentHole={setCurrentHole} isHoleConfirmedForDisplayGroup={isHoleConfirmedForDisplayGroup} activeHoles={activeHoles} />
 
       {/* Sixes Badge */}
       {sixesConfig && sixesConfig.sets && sixesConfig.sets.length > 0 && (
@@ -392,7 +409,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
 
       {/* Navigation Buttons and Side Bets */}
       <div className="flex gap-2 pt-2">
-        <Button variant="outline" onClick={() => setCurrentHole(Math.max(1, currentHole - 1))} disabled={currentHole === 1} className="flex-1 px-2 text-sm">
+        <Button variant="outline" onClick={() => {
+          const idx = activeHoles.indexOf(currentHole);
+          if (idx > 0) setCurrentHole(activeHoles[idx - 1]);
+        }} disabled={currentHole === minHole} className="flex-1 px-2 text-sm">
           ← Ant
         </Button>
         
@@ -435,7 +455,10 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         )}
 
         
-        <Button onClick={() => setCurrentHole(Math.min(18, currentHole + 1))} disabled={currentHole === 18} className="flex-1 px-2 text-sm">
+        <Button onClick={() => {
+          const idx = activeHoles.indexOf(currentHole);
+          if (idx >= 0 && idx < activeHoles.length - 1) setCurrentHole(activeHoles[idx + 1]);
+        }} disabled={currentHole === maxHole} className="flex-1 px-2 text-sm">
           Sig →
         </Button>
       </div>
