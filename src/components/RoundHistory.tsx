@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { devError } from '@/lib/logger';
 import { formatPlayerName } from '@/lib/playerInput';
 import { parseLocalDate } from '@/lib/dateUtils';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import {
   AlertDialog,
   AlertDialogAction,
