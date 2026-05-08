@@ -695,8 +695,8 @@ const calculateRayasForPair = (
   if (medalConfig.enabled) {
     // Front medal (skip in 9H starting on 10)
     if (!skipFrontMedal) {
-      const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
-      const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
+      const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
       if (frontTotalA < frontTotalB) {
         frontRayasA += 1;
         details.push({
@@ -722,8 +722,8 @@ const calculateRayasForPair = (
 
     // Back medal (skip in 9H starting on 1)
     if (!skipBackMedal) {
-      const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
-      const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
+      const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
       if (backTotalA < backTotalB) {
         backRayasA += 1;
         details.push({
@@ -749,8 +749,8 @@ const calculateRayasForPair = (
 
     // Medal Total (only when both 9s are played)
     if (!skipMedalTotal) {
-      const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
-      const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
+      const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
 
       if (totalA < totalB) {
         medalTotalRayaWinner = playerA.id;
