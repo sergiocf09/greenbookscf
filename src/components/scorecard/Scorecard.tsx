@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateScoreToPar, getScoreName, calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Plus, Trophy, Users, Star, Zap } from 'lucide-react';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
