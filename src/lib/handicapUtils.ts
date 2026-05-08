@@ -84,11 +84,14 @@ export const getSegmentHoleRanges = (
   roundHoles: 9 | 18 = 18
 ): { front: [number, number]; back: [number, number] } => {
   if (roundHoles === 9) {
-    // Round of 9 holes: only the front nine exists. Collapse back to the same
-    // range so calculators that iterate both segments naturally produce no
-    // distinct back results.
+    // Round of 9 holes: only the played nine exists. Use an EMPTY range for
+    // the inactive segment ([hi, lo] with hi<lo) so calculators that iterate
+    // `for h=back[0]..back[1]` naturally skip it entirely. This prevents any
+    // residual scores from a previous 18H state (e.g. switched to 9H later)
+    // from leaking into Skins/Units/Medal back-9 calculations.
     const front: [number, number] = startingHole === 10 ? [10, 18] : [1, 9];
-    return { front, back: front };
+    const empty: [number, number] = [99, 0];
+    return { front, back: empty };
   }
   if (startingHole === 10) {
     return {
