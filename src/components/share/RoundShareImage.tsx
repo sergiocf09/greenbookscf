@@ -16,6 +16,7 @@ export interface RoundShareImageProps {
   courseName: string;
   date: string;
   coursePar?: number;
+  roundHoles?: 9 | 18;
   highlights?: ShareHighlights;
   players: Array<{
     name: string;
