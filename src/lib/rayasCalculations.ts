@@ -682,7 +682,14 @@ const calculateRayasForPair = (
   let medalTotalRayaWinner: string | null = null;
   let medalTotalAmountA = 0;
   
-  if (medalConfig.enabled) {
+  // 9H mode: only the active segment exists. Skip the inactive medal segment
+  // and always skip Medal Total (which requires both 9s).
+  const isNineHole = ((config as any).roundHoles ?? 18) === 9;
+  const skipFrontMedal = isNineHole && startingHole === 10;
+  const skipBackMedal = isNineHole && startingHole === 1;
+  const skipMedalTotal = isNineHole;
+
+  if (medalConfig.enabled && !skipFrontMedal) {
     // Front medal
     const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
     const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
