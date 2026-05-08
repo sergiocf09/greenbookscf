@@ -26,6 +26,8 @@ interface QuickScoreEntryProps {
   currentScores: PlayerScore[];
   roundConfirmedHoles?: Set<number>;
   onSaveScores: (scores: { holeNumber: number; strokes: number; putts: number }[]) => Promise<void>;
+  roundHoles?: 9 | 18;
+  startingHole?: 1 | 10;
 }
 
 interface HoleRowProps {
