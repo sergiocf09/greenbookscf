@@ -1818,7 +1818,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       <Card>
         <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center justify-between">
-            <span>Balance General</span>
+            <span className="flex items-center gap-2">
+              Balance General
+              <RoundHolesBadge holes={betConfig.roundHoles as 9 | 18 | undefined} />
+            </span>
             {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
               <span className="text-xs font-normal text-muted-foreground">
                 {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
