@@ -400,7 +400,7 @@ const countPositiveUnits = (
   startingHole: 1 | 10 = 1
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const ranges = getSegmentHoleRanges(startingHole);
+  const ranges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   let units = 0;
@@ -434,7 +434,7 @@ const getSegmentNetTotal = (
   startingHole: 1 | 10 = 1
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const ranges = getSegmentHoleRanges(startingHole);
+  const ranges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   return playerScores
@@ -491,7 +491,7 @@ const calculateRayasForPair = (
   const useAccumulation = effectiveVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   if (skinsConfig.enabled) {
     // Front 9 skins
     let frontAccumulated = 0;
@@ -828,7 +828,7 @@ const processOyesSangronForPair = (
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   
   if (!oyesConfig.enabled) return;
 
@@ -945,7 +945,7 @@ const processOyesAcumuladosForPair = (
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   // Separate par 3s by segment using dynamic ranges
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
   const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
   
@@ -1138,7 +1138,7 @@ const processOyesSingleWinner = (
   startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
   const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
 
