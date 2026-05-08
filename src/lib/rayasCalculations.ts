@@ -397,10 +397,11 @@ const countPositiveUnits = (
   scores: Map<string, PlayerScore[]>,
   course: GolfCourse,
   segment: 'front' | 'back' | 'total',
-  startingHole: 1 | 10 = 1
+  startingHole: 1 | 10 = 1,
+  roundHoles: 9 | 18 = 18
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const ranges = getSegmentHoleRanges(startingHole);
+  const ranges = getSegmentHoleRanges(startingHole, roundHoles);
   const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   let units = 0;
@@ -431,10 +432,11 @@ const getSegmentNetTotal = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
   segment: 'front' | 'back' | 'total',
-  startingHole: 1 | 10 = 1
+  startingHole: 1 | 10 = 1,
+  roundHoles: 9 | 18 = 18
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const ranges = getSegmentHoleRanges(startingHole);
+  const ranges = getSegmentHoleRanges(startingHole, roundHoles);
   const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   return playerScores
@@ -491,7 +493,7 @@ const calculateRayasForPair = (
   const useAccumulation = effectiveVariant === 'acumulados';
   
   // =========== 1. SKINS RAYAS ===========
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   if (skinsConfig.enabled) {
     // Front 9 skins
     let frontAccumulated = 0;
@@ -617,10 +619,11 @@ const calculateRayasForPair = (
   // =========== 2. UNITS RAYAS ===========
   if (unitsConfig.enabled) {
     // Count positive units per segment
-    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front', startingHole);
-    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front', startingHole);
-    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back', startingHole);
-    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back', startingHole);
+    const rh = ((config as any).roundHoles ?? 18) as 9 | 18;
+    const frontUnitsA = countPositiveUnits(playerA.id, scores, course, 'front', startingHole, rh);
+    const frontUnitsB = countPositiveUnits(playerB.id, scores, course, 'front', startingHole, rh);
+    const backUnitsA = countPositiveUnits(playerA.id, scores, course, 'back', startingHole, rh);
+    const backUnitsB = countPositiveUnits(playerB.id, scores, course, 'back', startingHole, rh);
     
     // Front units rayas
     if (frontUnitsA > frontUnitsB) {
@@ -692,8 +695,8 @@ const calculateRayasForPair = (
   if (medalConfig.enabled) {
     // Front medal (skip in 9H starting on 10)
     if (!skipFrontMedal) {
-      const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
-      const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
+      const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
       if (frontTotalA < frontTotalB) {
         frontRayasA += 1;
         details.push({
@@ -719,8 +722,8 @@ const calculateRayasForPair = (
 
     // Back medal (skip in 9H starting on 1)
     if (!skipBackMedal) {
-      const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
-      const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
+      const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
       if (backTotalA < backTotalB) {
         backRayasA += 1;
         details.push({
@@ -746,8 +749,8 @@ const calculateRayasForPair = (
 
     // Medal Total (only when both 9s are played)
     if (!skipMedalTotal) {
-      const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
-      const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
+      const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+      const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
 
       if (totalA < totalB) {
         medalTotalRayaWinner = playerA.id;
@@ -828,7 +831,7 @@ const processOyesSangronForPair = (
 ): void => {
   const par3Holes = getPar3Holes(course);
   const oyesConfig = getEffectiveSegmentConfig(config, 'oyes', playerAId, playerBId);
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   
   if (!oyesConfig.enabled) return;
 
@@ -945,7 +948,7 @@ const processOyesAcumuladosForPair = (
   const [idLow, idHigh] = [playerAId, playerBId].sort();
   
   // Separate par 3s by segment using dynamic ranges
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
   const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
   
@@ -1138,7 +1141,7 @@ const processOyesSingleWinner = (
   startingHole: 1 | 10 = 1
 ): void => {
   const par3Holes = getPar3Holes(course);
-  const segRanges = getSegmentHoleRanges(startingHole);
+  const segRanges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
   const frontPar3s = par3Holes.filter(h => h >= segRanges.front[0] && h <= segRanges.front[1]);
   const backPar3s = par3Holes.filter(h => h >= segRanges.back[0] && h <= segRanges.back[1]);
 
