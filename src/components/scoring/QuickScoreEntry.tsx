@@ -274,11 +274,14 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
 
   const confirmedCount = useMemo(() => {
     let count = 0;
-    for (let h = 1; h <= 18; h++) {
+    const range: number[] = isNineHole
+      ? (startingHole === 10 ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9])
+      : Array.from({ length: 18 }, (_, i) => i + 1);
+    for (const h of range) {
       if (isHoleConfirmed(h)) count++;
     }
     return count;
-  }, [isHoleConfirmed]);
+  }, [isHoleConfirmed, isNineHole, startingHole]);
 
   const frontTotal = useMemo(() => {
     let total = 0;
