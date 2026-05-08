@@ -36,6 +36,7 @@ interface RoundHistoryItem {
   handicapUsed: number;
   playersCount: number;
   isOrganizer: boolean;
+  roundHoles: 9 | 18;
 }
 
 interface PlayerScoreData {
