@@ -119,6 +119,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             tee_color,
             course_id,
             bet_config,
+            starting_hole,
             golf_courses(name, location)
           )
         `)
