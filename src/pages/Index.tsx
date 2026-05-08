@@ -2744,6 +2744,7 @@ const Index = () => {
         scores={scores}
         roundPlayerIds={roundPlayerIds}
         betConfig={betConfig}
+        startingHole={startingHole}
         currentBetSummaries={currentBetSummaries}
         view={view}
         historicalScorecardData={historicalScorecardData}
