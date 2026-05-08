@@ -224,7 +224,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
       <div className="bg-primary/10 px-3 py-2 border-b border-border space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+              <RoundHolesBadge holes={betConfig?.roundHoles} />
+            </div>
             <p className="text-[10px] text-muted-foreground">{course.name}</p>
           </div>
 
