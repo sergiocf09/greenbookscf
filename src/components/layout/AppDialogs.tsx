@@ -525,6 +525,8 @@ export function AppDialogs(props: AppDialogsProps) {
           course={course}
           currentScores={scores.get(quickScorePlayer.id) || []}
           roundConfirmedHoles={holesConfirmedByOthers}
+          roundHoles={(betConfig?.roundHoles === 9 ? 9 : 18) as 9 | 18}
+          startingHole={startingHole}
           onSaveScores={async (newScores) => {
             const playerId = quickScorePlayer.id;
             const rpId = roundPlayerIds.get(playerId);
