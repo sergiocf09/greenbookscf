@@ -432,10 +432,11 @@ const getSegmentNetTotal = (
   playerId: string,
   scores: Map<string, PlayerScore[]>,
   segment: 'front' | 'back' | 'total',
-  startingHole: 1 | 10 = 1
+  startingHole: 1 | 10 = 1,
+  roundHoles: 9 | 18 = 18
 ): number => {
   const playerScores = scores.get(playerId) || [];
-  const ranges = getSegmentHoleRanges(startingHole, ((config as any).roundHoles ?? 18) as 9 | 18);
+  const ranges = getSegmentHoleRanges(startingHole, roundHoles);
   const holeRange = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18] as [number, number];
   
   return playerScores
