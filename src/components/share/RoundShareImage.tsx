@@ -115,21 +115,22 @@ function drawCanvas(
 
   ctx.fillStyle = 'rgba(252,227,0,0.75)';
   ctx.font = '20px Arial, sans-serif';
+  const dateW = ctx.measureText(date).width;
   ctx.fillText(date, W / 2, 180);
 
-  // ── Round-holes badge (9H / 18H) ──
+  // ── Round-holes badge (9H / 18H) — inline to the right of the date ──
   {
     const holes = roundHoles === 9 ? 9 : 18;
     const label = `${holes}H`;
-    ctx.font = 'bold 22px Arial, sans-serif';
-    const padX = 14;
+    ctx.font = 'bold 16px Arial, sans-serif';
+    const padX = 10;
     const textW = ctx.measureText(label).width;
     const bw = textW + padX * 2;
-    const bh = 34;
-    const bx = (W - bw) / 2;
-    const by = 196;
+    const bh = 24;
+    const bx = W / 2 + dateW / 2 + 12;
+    const by = 180 - bh + 6;
     ctx.fillStyle = holes === 9 ? GOLD : 'rgba(255,255,255,0.15)';
-    roundRectPath(ctx, bx, by, bw, bh, 17);
+    roundRectPath(ctx, bx, by, bw, bh, 12);
     ctx.fill();
     if (holes !== 9) {
       ctx.strokeStyle = 'rgba(255,255,255,0.45)';
@@ -139,7 +140,7 @@ function drawCanvas(
     ctx.fillStyle = holes === 9 ? GREEN : 'rgba(255,255,255,0.95)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, W / 2, by + bh / 2 + 1);
+    ctx.fillText(label, bx + bw / 2, by + bh / 2 + 1);
     ctx.textBaseline = 'alphabetic';
   }
 
