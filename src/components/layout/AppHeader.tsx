@@ -54,6 +54,7 @@ interface AppHeaderProps {
   holePar: number;
   holeStrokeIndex: number;
   holeYards: number | null | undefined;
+  roundHoles?: 9 | 18;
 
   // Auth / profile
   user: {
