@@ -136,6 +136,18 @@ export const getAdjustedScoresForPair = (
     const isPlayerAFirst = matchesPlayerA(override.playerAId);
     handicapA = isPlayerAFirst ? override.playerAHandicap : override.playerBHandicap;
     handicapB = isPlayerAFirst ? override.playerBHandicap : override.playerAHandicap;
+  } else {
+    // No explicit override saved — fall back to the players' handicap difference
+    // (matches HandicapMatrix UI fallback). The lower-handicap player gives strokes
+    // to the higher-handicap player based on the rounded diff.
+    const diff = Math.round((playerB.handicap ?? 0) - (playerA.handicap ?? 0));
+    if (diff > 0) {
+      handicapA = 0;
+      handicapB = diff;
+    } else if (diff < 0) {
+      handicapA = -diff;
+      handicapB = 0;
+    }
   }
   
   const strokesPerHoleA = calculateStrokesPerHole(handicapA, course);
