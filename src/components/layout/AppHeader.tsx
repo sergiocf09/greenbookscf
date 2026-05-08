@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
@@ -53,6 +54,7 @@ interface AppHeaderProps {
   holePar: number;
   holeStrokeIndex: number;
   holeYards: number | null | undefined;
+  roundHoles?: 9 | 18;
 
   // Auth / profile
   user: {
@@ -112,6 +114,7 @@ export function AppHeader(props: AppHeaderProps) {
     holePar,
     holeStrokeIndex,
     holeYards,
+    roundHoles,
     user,
     profile,
     theme,
@@ -142,7 +145,10 @@ export function AppHeader(props: AppHeaderProps) {
                 Par {holePar} • SI {holeStrokeIndex}
                 {holeYards && <span> • {holeYards} yds</span>}
               </p>
-              <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
+                <RoundHolesBadge holes={roundHoles} onPrimary />
+              </div>
             </div>
           ) : view === 'setup' ? (
             <FriendsLiveHeaderBadge />

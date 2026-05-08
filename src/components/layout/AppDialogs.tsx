@@ -286,6 +286,7 @@ export function AppDialogs(props: AppDialogsProps) {
                     }),
                     betTypes: [],
                     coursePar: snap.coursePar || closingCoursePar,
+                    roundHoles: (snap?.betConfig?.roundHoles === 9 ? 9 : 18),
                     highlights: calcHighlightsFromSnapshot(snap),
                   });
                   onOpenRoundShare();

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
 import { calculateScoreToPar, getScoreName, calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { Plus, Trophy, Users, Star, Zap } from 'lucide-react';
+import { RoundHolesBadge } from '@/components/RoundHolesBadge';
 import { Button } from '@/components/ui/button';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GroupSelector, getPlayersForGroup } from '@/components/GroupSelector';
@@ -223,7 +224,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
       <div className="bg-primary/10 px-3 py-2 border-b border-border space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+              <RoundHolesBadge holes={betConfig?.roundHoles} />
+            </div>
             <p className="text-[10px] text-muted-foreground">{course.name}</p>
           </div>
 

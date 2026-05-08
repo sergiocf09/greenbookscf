@@ -16,6 +16,7 @@ export interface RoundShareImageProps {
   courseName: string;
   date: string;
   coursePar?: number;
+  roundHoles?: 9 | 18;
   highlights?: ShareHighlights;
   players: Array<{
     name: string;
@@ -72,6 +73,7 @@ function drawCanvas(
   players: RoundShareImageProps['players'],
   coursePar: number,
   highlights?: RoundShareImageProps['highlights'],
+  roundHoles?: 9 | 18,
 ) {
   const W = CANVAS_W;
   const H = computeCanvasHeight(players.length, !!highlights);
@@ -113,7 +115,34 @@ function drawCanvas(
 
   ctx.fillStyle = 'rgba(252,227,0,0.75)';
   ctx.font = '20px Arial, sans-serif';
+  const dateW = ctx.measureText(date).width;
   ctx.fillText(date, W / 2, 180);
+
+  // ── Round-holes badge (9H / 18H) — inline to the right of the date ──
+  {
+    const holes = roundHoles === 9 ? 9 : 18;
+    const label = `${holes}H`;
+    ctx.font = 'bold 16px Arial, sans-serif';
+    const padX = 10;
+    const textW = ctx.measureText(label).width;
+    const bw = textW + padX * 2;
+    const bh = 24;
+    const bx = W / 2 + dateW / 2 + 12;
+    const by = 180 - bh + 6;
+    ctx.fillStyle = holes === 9 ? GOLD : 'rgba(255,255,255,0.15)';
+    roundRectPath(ctx, bx, by, bw, bh, 12);
+    ctx.fill();
+    if (holes !== 9) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.fillStyle = holes === 9 ? GREEN : 'rgba(255,255,255,0.95)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, bx + bw / 2, by + bh / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+  }
 
   // ── Ornamental separator ──
   ctx.strokeStyle = GOLD;
@@ -356,6 +385,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   date,
   players,
   coursePar,
+  roundHoles,
   highlights,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -370,9 +400,9 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, coursePar || 72, highlights);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, highlights, roundHoles);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, coursePar, highlights]);
+  }, [courseName, date, players, coursePar, highlights, roundHoles]);
 
   useEffect(() => {
     if (open) {
