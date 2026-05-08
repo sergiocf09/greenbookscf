@@ -385,6 +385,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
   date,
   players,
   coursePar,
+  roundHoles,
   highlights,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -399,9 +400,9 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, courseName, date, players, coursePar || 72, highlights);
+    drawCanvas(ctx, courseName, date, players, coursePar || 72, highlights, roundHoles);
     setPreviewUrl(canvas.toDataURL('image/png'));
-  }, [courseName, date, players, coursePar, highlights]);
+  }, [courseName, date, players, coursePar, highlights, roundHoles]);
 
   useEffect(() => {
     if (open) {
