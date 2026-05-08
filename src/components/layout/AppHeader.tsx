@@ -145,7 +145,10 @@ export function AppHeader(props: AppHeaderProps) {
                 Par {holePar} • SI {holeStrokeIndex}
                 {holeYards && <span> • {holeYards} yds</span>}
               </p>
-              <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <p className="text-xs text-primary-foreground/70 truncate">{course.name}</p>
+                <RoundHolesBadge holes={roundHoles} onPrimary />
+              </div>
             </div>
           ) : view === 'setup' ? (
             <FriendsLiveHeaderBadge />
