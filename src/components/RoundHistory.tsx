@@ -154,6 +154,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
             isOrganizer: rp.is_organizer,
+            roundHoles: ((round.bet_config as any)?.roundHoles === 9 ? 9 : 18) as 9 | 18,
           };
         })
       );
