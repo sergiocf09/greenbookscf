@@ -309,7 +309,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
             <PlayerAvatar initials={playerInitials} background={playerColor} size="sm" />
             <span className="font-medium text-sm">{playerName}</span>
             <span className="text-xs text-muted-foreground ml-auto">
-              {confirmedCount}/18
+              {confirmedCount}/{totalActiveHoles}
             </span>
           </div>
         </DialogHeader>
