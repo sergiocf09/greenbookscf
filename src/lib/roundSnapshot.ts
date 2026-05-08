@@ -290,20 +290,26 @@ export function generateRoundSnapshot(
     playerIds: pIds,
   }));
 
-  // Build scores snapshot
+  // Build scores snapshot. Only confirmed holes contribute strokes/net — this
+  // prevents 9H rounds from leaking the default-par padding from the inactive
+  // segment (e.g. Back 9 = 36 par strokes) into the historical scorecard.
   const snapshotScores: Record<string, SnapshotHoleScore[]> = {};
   for (const [playerId, playerScores] of scores) {
-    snapshotScores[playerId] = playerScores.map(s => ({
-      holeNumber: s.holeNumber,
-      strokes: s.strokes,
-      putts: s.putts,
-      netScore: s.netScore,
-      strokesReceived: s.strokesReceived,
-      oyesProximity: s.oyesProximity,
-      oyesProximitySangron: (s as any).oyesProximitySangron ?? null,
-      markers: { ...s.markers },
-    }));
+    snapshotScores[playerId] = playerScores.map(s => {
+      const isConfirmed = (s as any).confirmed === true;
+      return {
+        holeNumber: s.holeNumber,
+        strokes: isConfirmed ? s.strokes : 0,
+        putts: isConfirmed ? s.putts : 0,
+        netScore: isConfirmed ? s.netScore : 0,
+        strokesReceived: s.strokesReceived,
+        oyesProximity: isConfirmed ? s.oyesProximity : null,
+        oyesProximitySangron: isConfirmed ? ((s as any).oyesProximitySangron ?? null) : null,
+        markers: isConfirmed ? { ...s.markers } : {},
+      };
+    });
   }
+
 
   // Build ledger from bet summaries
   // Each BetSummary represents one side of a transaction
@@ -373,12 +379,16 @@ export function generateRoundSnapshot(
     }
   }
 
-  // Calculate gross totals per player
+  // Calculate gross totals per player — only confirmed holes count, so 9H
+  // rounds don't pick up default-par padding from the inactive segment.
   const grossTotals = new Map<string, number>();
   for (const [playerId, playerScores] of scores) {
-    const totalGross = playerScores.reduce((sum, s) => sum + (s.strokes || 0), 0);
+    const totalGross = playerScores.reduce((sum, s) => {
+      return (s as any).confirmed === true ? sum + (s.strokes || 0) : sum;
+    }, 0);
     grossTotals.set(playerId, totalGross);
   }
+
 
   // Helper to get sliding strokes for a pair
   const getSlidingForPair = (playerAId: string, playerBId: string): number | undefined => {

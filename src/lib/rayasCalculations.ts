@@ -682,86 +682,99 @@ const calculateRayasForPair = (
   let medalTotalRayaWinner: string | null = null;
   let medalTotalAmountA = 0;
   
+  // 9H mode: only the active segment exists. Skip the inactive medal segment
+  // and always skip Medal Total (which requires both 9s).
+  const isNineHole = ((config as any).roundHoles ?? 18) === 9;
+  const skipFrontMedal = isNineHole && startingHole === 10;
+  const skipBackMedal = isNineHole && startingHole === 1;
+  const skipMedalTotal = isNineHole;
+
   if (medalConfig.enabled) {
-    // Front medal
-    const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
-    const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
-    if (frontTotalA < frontTotalB) {
-      frontRayasA += 1;
-      details.push({
-        source: 'medal',
-        segment: 'front',
-        description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
-        rayasCount: 1,
-        valuePerRaya: medalConfig.frontValue,
-        appliedSegment: 'front',
-      });
-    } else if (frontTotalB < frontTotalA) {
-      frontRayasB += 1;
-      details.push({
-        source: 'medal',
-        segment: 'front',
-        description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
-        rayasCount: -1,
-        valuePerRaya: medalConfig.frontValue,
-        appliedSegment: 'front',
-      });
+    // Front medal (skip in 9H starting on 10)
+    if (!skipFrontMedal) {
+      const frontTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'front', startingHole);
+      const frontTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'front', startingHole);
+      if (frontTotalA < frontTotalB) {
+        frontRayasA += 1;
+        details.push({
+          source: 'medal',
+          segment: 'front',
+          description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
+          rayasCount: 1,
+          valuePerRaya: medalConfig.frontValue,
+          appliedSegment: 'front',
+        });
+      } else if (frontTotalB < frontTotalA) {
+        frontRayasB += 1;
+        details.push({
+          source: 'medal',
+          segment: 'front',
+          description: `Medal Front (${frontTotalA} vs ${frontTotalB})`,
+          rayasCount: -1,
+          valuePerRaya: medalConfig.frontValue,
+          appliedSegment: 'front',
+        });
+      }
     }
-    
-    // Back medal
-    const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
-    const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
-    if (backTotalA < backTotalB) {
-      backRayasA += 1;
-      details.push({
-        source: 'medal',
-        segment: 'back',
-        description: `Medal Back (${backTotalA} vs ${backTotalB})`,
-        rayasCount: 1,
-        valuePerRaya: medalConfig.backValue,
-        appliedSegment: 'back',
-      });
-    } else if (backTotalB < backTotalA) {
-      backRayasB += 1;
-      details.push({
-        source: 'medal',
-        segment: 'back',
-        description: `Medal Back (${backTotalA} vs ${backTotalB})`,
-        rayasCount: -1,
-        valuePerRaya: medalConfig.backValue,
-        appliedSegment: 'back',
-      });
+
+    // Back medal (skip in 9H starting on 1)
+    if (!skipBackMedal) {
+      const backTotalA = getSegmentNetTotal(playerA.id, adjustedScores, 'back', startingHole);
+      const backTotalB = getSegmentNetTotal(playerB.id, adjustedScores, 'back', startingHole);
+      if (backTotalA < backTotalB) {
+        backRayasA += 1;
+        details.push({
+          source: 'medal',
+          segment: 'back',
+          description: `Medal Back (${backTotalA} vs ${backTotalB})`,
+          rayasCount: 1,
+          valuePerRaya: medalConfig.backValue,
+          appliedSegment: 'back',
+        });
+      } else if (backTotalB < backTotalA) {
+        backRayasB += 1;
+        details.push({
+          source: 'medal',
+          segment: 'back',
+          description: `Medal Back (${backTotalA} vs ${backTotalB})`,
+          rayasCount: -1,
+          valuePerRaya: medalConfig.backValue,
+          appliedSegment: 'back',
+        });
+      }
     }
-    
-    // Medal Total (additional raya)
-    const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
-    const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
-    
-    if (totalA < totalB) {
-      medalTotalRayaWinner = playerA.id;
-      medalTotalAmountA = medalTotalValue;
-      details.push({
-        source: 'medal',
-        segment: 'total',
-        description: `Medal Total (${totalA} vs ${totalB})`,
-        rayasCount: 1,
-        valuePerRaya: medalTotalValue,
-        appliedSegment: 'total',
-      });
-    } else if (totalB < totalA) {
-      medalTotalRayaWinner = playerB.id;
-      medalTotalAmountA = -medalTotalValue;
-      details.push({
-        source: 'medal',
-        segment: 'total',
-        description: `Medal Total (${totalA} vs ${totalB})`,
-        rayasCount: -1,
-        valuePerRaya: medalTotalValue,
-        appliedSegment: 'total',
-      });
+
+    // Medal Total (only when both 9s are played)
+    if (!skipMedalTotal) {
+      const totalA = getSegmentNetTotal(playerA.id, adjustedScores, 'total', startingHole);
+      const totalB = getSegmentNetTotal(playerB.id, adjustedScores, 'total', startingHole);
+
+      if (totalA < totalB) {
+        medalTotalRayaWinner = playerA.id;
+        medalTotalAmountA = medalTotalValue;
+        details.push({
+          source: 'medal',
+          segment: 'total',
+          description: `Medal Total (${totalA} vs ${totalB})`,
+          rayasCount: 1,
+          valuePerRaya: medalTotalValue,
+          appliedSegment: 'total',
+        });
+      } else if (totalB < totalA) {
+        medalTotalRayaWinner = playerB.id;
+        medalTotalAmountA = -medalTotalValue;
+        details.push({
+          source: 'medal',
+          segment: 'total',
+          description: `Medal Total (${totalA} vs ${totalB})`,
+          rayasCount: -1,
+          valuePerRaya: medalTotalValue,
+          appliedSegment: 'total',
+        });
+      }
     }
   }
-  
+
   // Calculate amounts based on segment-specific values
   // For each segment, we sum up the rayas * their specific values from the details
   let frontAmountA = 0;
