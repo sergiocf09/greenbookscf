@@ -137,13 +137,22 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
           // Fetch strokes + player count in parallel
           const [scoresResult, countResult] = await Promise.all([
-            supabase.from('hole_scores').select('strokes, confirmed').eq('round_player_id', rp.id),
+            supabase.from('hole_scores').select('hole_number, strokes, confirmed').eq('round_player_id', rp.id),
             supabase.from('round_players').select('id', { count: 'exact', head: true }).eq('round_id', rp.round_id),
           ]);
 
-          // Only confirmed holes count — prevents 9H rounds from including
-          // default-par padding (or stale unconfirmed strokes) from the inactive segment.
-          const totalStrokes = scoresResult.data?.reduce((sum, s) => (s.confirmed ? sum + (s.strokes || 0) : sum), 0) || 0;
+          // Filter by active segment for 9H rounds: any back/front data persisted
+          // from a prior 18H state must be ignored regardless of `confirmed` flag.
+          const roundHoles: 9 | 18 = (round.bet_config as any)?.roundHoles === 9 ? 9 : 18;
+          const startingHole: 1 | 10 = round.starting_hole === 10 ? 10 : 1;
+          const inActiveSegment = (h: number) => {
+            if (roundHoles === 18) return true;
+            return startingHole === 10 ? h >= 10 && h <= 18 : h >= 1 && h <= 9;
+          };
+          const totalStrokes = scoresResult.data?.reduce(
+            (sum, s) => (s.confirmed && inActiveSegment(s.hole_number) ? sum + (s.strokes || 0) : sum),
+            0
+          ) || 0;
 
           return {
             id: round.id,
@@ -158,7 +167,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
             isOrganizer: rp.is_organizer,
-            roundHoles: ((round.bet_config as any)?.roundHoles === 9 ? 9 : 18) as 9 | 18,
+            roundHoles,
           };
         })
       );
