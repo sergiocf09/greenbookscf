@@ -15,6 +15,7 @@ export const calculateCarritosBets = (
   const summaries: BetSummary[] = [];
 
   const configs: Array<{
+    id?: string;
     teamA: [string, string];
     teamB: [string, string];
     frontAmount: number;
@@ -34,6 +35,7 @@ export const calculateCarritosBets = (
     const hasTeams = c.teamA[0] && c.teamA[1] && c.teamB[0] && c.teamB[1];
     if (hasTeams) {
       configs.push({
+        id: 'carritos-legacy',
         teamA: c.teamA, teamB: c.teamB,
         frontAmount: c.frontAmount, backAmount: c.backAmount, totalAmount: c.totalAmount,
         scoringType: c.scoringType, teamHandicaps: c.teamHandicaps, useTeamHandicaps: c.useTeamHandicaps,
@@ -48,6 +50,7 @@ export const calculateCarritosBets = (
     const hasTeams = team.teamA[0] && team.teamA[1] && team.teamB[0] && team.teamB[1];
     if (hasTeams) {
       configs.push({
+        id: teamId,
         teamA: team.teamA, teamB: team.teamB,
         frontAmount: team.frontAmount, backAmount: team.backAmount, totalAmount: team.totalAmount,
         scoringType: team.scoringType, teamHandicaps: team.teamHandicaps, useTeamHandicaps: true,
@@ -62,7 +65,8 @@ export const calculateCarritosBets = (
     return match?.id ?? pid;
   };
 
-  configs.forEach(cfg => {
+  configs.forEach((cfg, cfgIndex) => {
+    const betId = cfg.id ?? `carritos-legacy-${cfgIndex}`;
     const teamA: [string, string] = [resolvePlayerId(cfg.teamA[0]), resolvePlayerId(cfg.teamA[1])];
     const teamB: [string, string] = [resolvePlayerId(cfg.teamB[0]), resolvePlayerId(cfg.teamB[1])];
 
@@ -176,8 +180,8 @@ export const calculateCarritosBets = (
       teamA.forEach(aId => {
         teamB.forEach(bId => {
           if (perPairAmount !== 0) {
-            summaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPairAmount, segment });
-            summaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPairAmount, segment });
+            summaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPairAmount, segment, betId });
+            summaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPairAmount, segment, betId });
           }
         });
       });

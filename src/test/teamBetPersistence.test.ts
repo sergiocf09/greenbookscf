@@ -3,6 +3,8 @@ import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
 import { BetConfig, GolfCourse, Player, PlayerScore, SixesConfig, VegasConfig, defaultMarkerState } from '@/types/golf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
+import { calculateCarritosBets } from '@/lib/bets/carritos';
+import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import {
   assertNoCanceledTeamBetLedgerEntries,
   getCanceledTeamBetLedgerViolations,
@@ -207,5 +209,55 @@ describe('team bet persistence guards', () => {
     expect(dashboardSummaries.filter((s) => s.amount > 0).reduce((sum, s) => sum + s.amount, 0)).toBeGreaterThan(0);
     expect(closeEngineWithoutPersistedHandicaps).not.toEqual(dashboardSummaries);
     expect(closeEngineWithPersistedHandicaps).toEqual(dashboardSummaries);
+  });
+
+  it('preserves multiple Carritos team bets with identical pair amounts in the snapshot ledger', () => {
+    const config: BetConfig = {
+      ...defaultBetConfig,
+      carritos: { ...defaultBetConfig.carritos, enabled: true },
+      carritosTeams: [
+        {
+          id: 'carritos-a',
+          teamA: ['p1', 'p2'],
+          teamB: ['p3', 'p4'],
+          frontAmount: 100,
+          backAmount: 100,
+          totalAmount: 100,
+          scoringType: 'all',
+          enabled: true,
+        },
+        {
+          id: 'carritos-b',
+          teamA: ['p1', 'p2'],
+          teamB: ['p3', 'p4'],
+          frontAmount: 100,
+          backAmount: 100,
+          totalAmount: 100,
+          scoringType: 'all',
+          enabled: true,
+        },
+      ],
+    };
+
+    const summaries = calculateCarritosBets(players, scores, config, course);
+    const snapshot = generateRoundSnapshot(
+      'round-carritos-duplicates',
+      course,
+      players,
+      scores,
+      config,
+      summaries,
+      'white',
+      1,
+      '2026-05-08'
+    );
+
+    const carritosFront = snapshot.ledger.filter((entry) => entry.betType === 'Carritos Front');
+    const carritosTotal = snapshot.ledger.filter((entry) => entry.betType === 'Carritos Total');
+
+    expect(carritosFront).toHaveLength(8);
+    expect(carritosTotal).toHaveLength(8);
+    expect(carritosFront.reduce((sum, entry) => sum + entry.amount, 0)).toBe(400);
+    expect(carritosTotal.reduce((sum, entry) => sum + entry.amount, 0)).toBe(400);
   });
 });
