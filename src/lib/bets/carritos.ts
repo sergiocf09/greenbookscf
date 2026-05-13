@@ -66,9 +66,7 @@ export const calculateCarritosBets = (
   };
 
   configs.forEach((cfg, cfgIndex) => {
-    const betId = 'id' in cfg && typeof (cfg as any).id === 'string'
-      ? (cfg as any).id
-      : `carritos-legacy-${cfgIndex}`;
+    const betId = cfg.id ?? `carritos-legacy-${cfgIndex}`;
     const teamA: [string, string] = [resolvePlayerId(cfg.teamA[0]), resolvePlayerId(cfg.teamA[1])];
     const teamB: [string, string] = [resolvePlayerId(cfg.teamB[0]), resolvePlayerId(cfg.teamB[1])];
 
