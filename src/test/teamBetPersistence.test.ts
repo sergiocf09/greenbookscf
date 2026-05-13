@@ -259,5 +259,9 @@ describe('team bet persistence guards', () => {
     expect(carritosTotal).toHaveLength(8);
     expect(carritosFront.reduce((sum, entry) => sum + entry.amount, 0)).toBe(400);
     expect(carritosTotal.reduce((sum, entry) => sum + entry.amount, 0)).toBe(400);
+
+    const frontBetIds = new Set(carritosFront.map((entry) => entry.betId));
+    expect(frontBetIds.has('carritos-a')).toBe(true);
+    expect(frontBetIds.has('carritos-b')).toBe(true);
   });
 });
