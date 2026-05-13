@@ -62,7 +62,10 @@ export const calculateCarritosBets = (
     return match?.id ?? pid;
   };
 
-  configs.forEach(cfg => {
+  configs.forEach((cfg, cfgIndex) => {
+    const betId = 'id' in cfg && typeof (cfg as any).id === 'string'
+      ? (cfg as any).id
+      : `carritos-legacy-${cfgIndex}`;
     const teamA: [string, string] = [resolvePlayerId(cfg.teamA[0]), resolvePlayerId(cfg.teamA[1])];
     const teamB: [string, string] = [resolvePlayerId(cfg.teamB[0]), resolvePlayerId(cfg.teamB[1])];
 
@@ -176,8 +179,8 @@ export const calculateCarritosBets = (
       teamA.forEach(aId => {
         teamB.forEach(bId => {
           if (perPairAmount !== 0) {
-            summaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPairAmount, segment });
-            summaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPairAmount, segment });
+            summaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPairAmount, segment, betId });
+            summaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPairAmount, segment, betId });
           }
         });
       });
