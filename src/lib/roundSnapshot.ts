@@ -62,6 +62,12 @@ export interface SnapshotLedgerEntry {
   segment: 'front' | 'back' | 'total' | 'hole';
   holeNumber?: number;
   description?: string;
+  /**
+   * Identifier of the originating bet instance (e.g. one of multiple Carritos
+   * configurations between the same teams). Critical for distinguishing
+   * otherwise-identical entries in the dedup key during snapshot generation.
+   */
+  betId?: string;
 }
 
 // Per-pair, per-betType breakdown (from loser's perspective the amount is negative,
