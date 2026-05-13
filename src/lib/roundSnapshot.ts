@@ -354,6 +354,7 @@ export function generateRoundSnapshot(
         segment: summary.segment,
         holeNumber: summary.holeNumber,
         description: summary.description,
+        betId: summary.betId,
       });
     }
   }
