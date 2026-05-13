@@ -1,24 +1,37 @@
-## Problema
+## Diagnóstico
 
-En la lista del **Historial de Rondas** la ronda del 6 de mayo de Sergio (9H) muestra **81** en lugar de **36**.
+La ronda del 8 de mayo volvió a guardar valores erróneos al recerrarse porque el código corregido en el archivo de Carritos sí agrega `betId`, pero `generateRoundSnapshot` no persiste ese `betId` en el ledger del snapshot. En consecuencia, si el usuario reabre y cierra, las 3 apuestas de Carritos con mismos equipos/importes vuelven a verse iguales para el deduplicador y se colapsan a una sola.
 
-## Causa raíz
+Esto explica exactamente el patrón:
+- En vivo/cierre: el motor calcula Rodrigo $3,400 correctamente.
+- Al guardar snapshot: el ledger colapsa Carritos repetidos y baja a Rodrigo $2,950.
+- Al reparar manualmente el snapshot se ve bien.
+- Al reabrir/recerrar se regenera desde código y vuelve el error.
 
-Esa ronda fue capturada originalmente como 18H y todos los hoyos quedaron `confirmed=true` en `hole_scores` (verificado en DB: 18 hoyos confirmados, suma = 81). Después se cambió a 9H, pero los registros del back 9 quedaron en la base de datos como confirmados.
+## Plan de implementación
 
-El fix anterior (`s.confirmed ? sum + strokes : 0`) no funciona porque **todos los hoyos están confirmados**. Hay que filtrar por **segmento activo** según `roundHoles` y `starting_hole`, no por `confirmed`.
+1. **Hacer persistente el identificador de apuesta en snapshots**
+   - Agregar `betId?: string` a `SnapshotLedgerEntry`.
+   - Cuando `generateRoundSnapshot` construya el ledger, copiar `summary.betId` a cada entrada.
+   - Mantener compatibilidad con snapshots viejos: si no hay `betId`, no cambia nada.
 
-El detalle de la ronda (scorecard) ya filtra correctamente y muestra 36; sólo la lista resumen está mal.
+2. **Blindar Carritos multi-instancia**
+   - Mantener el `betId` que ya se añade en `calculateCarritosBets`.
+   - Confirmar que cada Carritos configurado (`carritos-177826...`) produce entradas distinguibles aun si par, segmento e importe son iguales.
 
-## Cambio
+3. **Extender la prueba existente**
+   - Ajustar la prueba de Carritos para validar no solo totales/cantidad, sino también que el ledger del snapshot conserva dos `betId` distintos.
+   - Ejecutar la prueba enfocada de `teamBetPersistence.test.ts`.
 
-**`src/components/RoundHistory.tsx`** (función `fetchRounds`, líneas ~115-163):
+4. **Reparar nuevamente la ronda afectada**
+   - Reaplicar la corrección de datos a la ronda del 8 de mayo para que el snapshot quede otra vez con:
+     - Rodrigo Echevarria: $3,400
+     - Carlos Echevarría: $3,050
+     - Antonio Gomez Aguirre: -$5,350
+     - German Galvez: -$775
+     - Adrian Garza Frisbie: -$325
+   - Verificar por consulta que Carritos tiene 12 entradas por segmento y $600 por segmento.
 
-1. Incluir `starting_hole` en el `select` de `rounds` del query principal.
-2. Cambiar el `select` de `hole_scores` a `'hole_number, strokes, confirmed'`.
-3. Calcular `totalStrokes` filtrando por el rango activo cuando `roundHoles === 9`:
-   - `startingHole === 10` → solo hoyos 10-18
-   - en otro caso → solo hoyos 1-9
-   - 18H → todos los hoyos confirmados (comportamiento actual)
-
-Resultado: la fila del 6-may de Sergio mostrará **36** en lugar de **81**, consistente con el scorecard y con balances históricos.
+5. **Validar el caso del jugador eliminado**
+   - Verificar que Sergio Cruz ya no está en el snapshot tras el recierre y que su eliminación no afecta los balances porque estaba en cero.
+   - Confirmar que el snapshot actual vuelve a coincidir con el último `balanceComparison` del cierre.
