@@ -6,7 +6,7 @@ import { RouteErrorBoundary } from "./components/ErrorBoundary";
 
 // Bump this constant to force ALL production clients to drop their SW + caches
 // on next load. Acts as a global "kill switch" for stuck PWAs.
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.2";
 
 const isInIframe = (() => {
   try { return window.self !== window.top; } catch { return true; }
@@ -49,15 +49,10 @@ if (isInIframe || isDevOrPreviewHost) {
     // localStorage unavailable — skip kill switch.
   }
 
-  // Auto-reload when a new SW takes control (after autoUpdate + skipWaiting).
-  if ("serviceWorker" in navigator) {
-    let reloading = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    });
-  }
+  // Do not auto-reload on Service Worker controller changes. The PWA update
+  // flow can emit repeated controllerchange events on some mobile browsers,
+  // which looks like a permanent refresh loop. Version-based cleanup above is
+  // the only intentional automatic reload path.
 }
 
 initSentry();
