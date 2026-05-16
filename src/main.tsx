@@ -15,6 +15,13 @@ const host = window.location.hostname;
 const isProductionHost = host === "golfgreenbookscf.com" || host === "www.golfgreenbookscf.com";
 const isDevOrPreviewHost = !isProductionHost;
 
+const registerProductionServiceWorker = () => {
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+};
+
 if (isInIframe || isDevOrPreviewHost) {
   // Preview/dev/iframe: always nuke SW + caches so latest code is shown.
   navigator.serviceWorker?.getRegistrations().then((regs) => {
@@ -26,6 +33,8 @@ if (isInIframe || isDevOrPreviewHost) {
     }).catch(() => {});
   }
 } else {
+  registerProductionServiceWorker();
+
   // Production: kill-switch by version. If the stored version doesn't match
   // the bundled APP_VERSION, fully reset SW + caches and reload once.
   try {
