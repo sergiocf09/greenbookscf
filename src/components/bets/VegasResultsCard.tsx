@@ -20,10 +20,11 @@ interface VegasResultsCardProps {
   isDisabled?: boolean;
   onToggleDisabled?: () => void;
   onConfigurePlayers?: () => void;
+  startingHole?: 1 | 10;
 }
 
 export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
-  players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled,
+  players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled, startingHole = 1,
 }) => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
@@ -40,8 +41,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     return ids.filter(id => !players.find(p => p.id === id));
   }, [players, vegasConfig]);
 
-  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildVegasSetResults(players, scores, vegasConfig, course, vegasConfig.teamHandicaps), [players, scores, vegasConfig, course, missingPlayerIds]);
-  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps), [players, scores, vegasConfig, course, missingPlayerIds]);
+  const setResults = useMemo(() => missingPlayerIds.length > 0 ? [] : buildVegasSetResults(players, scores, vegasConfig, course, vegasConfig.teamHandicaps, startingHole), [players, scores, vegasConfig, course, missingPlayerIds, startingHole]);
+  const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateVegasBets(players, scores, vegasConfig, course, vegasConfig.teamHandicaps, startingHole), [players, scores, vegasConfig, course, missingPlayerIds, startingHole]);
 
   const totalBalance = bets.filter(b => b.playerId === basePlayerId).reduce((s, b) => s + b.amount, 0);
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
