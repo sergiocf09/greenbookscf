@@ -3565,6 +3565,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
             isDisabled={isTeamBetDisabled('vegas-primary')}
             onToggleDisabled={!isHistorical && onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
+            startingHole={startingHole}
           />
         );
       })()}
