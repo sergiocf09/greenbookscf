@@ -128,6 +128,24 @@ export function AppHeader(props: AppHeaderProps) {
     onSignOut,
   } = props;
 
+  const handleHardCacheCleanup = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
+      }
+    } finally {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('cache-cleanup', Date.now().toString());
+      window.location.replace(nextUrl.toString());
+    }
+  };
+
   return (
     <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
       <div className="max-w-md mx-auto flex items-center">
@@ -188,7 +206,9 @@ export function AppHeader(props: AppHeaderProps) {
               variant="ghost"
               size="icon"
               className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
-              onClick={() => window.location.reload()}
+              onClick={handleHardCacheCleanup}
+              aria-label="Limpiar caché y recargar"
+              title="Limpiar caché y recargar"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
