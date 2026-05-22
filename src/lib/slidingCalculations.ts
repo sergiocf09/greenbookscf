@@ -14,6 +14,7 @@
  */
 
 import { Player, PlayerScore, GolfCourse, BetConfig, HoleInfo } from '@/types/golf';
+import { getSegmentHoleRanges } from './handicapUtils';
 
 export type MatchWinner = 'A' | 'B' | 'tie';
 
