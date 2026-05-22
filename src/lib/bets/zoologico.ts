@@ -3,7 +3,7 @@
  */
 import { Player, BetConfig, ZooAnimalType, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
 import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
-import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
+import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, playOrderIndex } from './shared';
 
 export interface ZoologicoAnimalResult {
   animalType: ZooAnimalType;
@@ -47,6 +47,7 @@ export const calculateZoologicoAnimalResult = (
   animalType: ZooAnimalType,
   players: Player[],
   zoologicoConfig: ZoologicoBetConfig,
+  startingHole: 1 | 10 = 1,
 ): ZoologicoAnimalResult | null => {
   if (!zoologicoConfig?.enabled) return null;
   if (!zoologicoConfig.enabledAnimals?.includes(animalType)) return null;
@@ -80,7 +81,10 @@ export const calculateZoologicoAnimalResult = (
   let tieHole: number | null = null;
 
   if (animalEvents.length > 0) {
-    const maxHole = Math.max(...animalEvents.map(e => e.holeNumber));
+    // "Last" is by play order, not by physical hole number.
+    const maxHole = animalEvents.reduce((acc, e) =>
+      playOrderIndex(e.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? e.holeNumber : acc
+    , animalEvents[0].holeNumber);
     const eventsOnLastHole = animalEvents.filter(e => e.holeNumber === maxHole);
     const playerCountsOnLastHole = new Map<string, number>();
     eventsOnLastHole.forEach(e => { const current = playerCountsOnLastHole.get(e.playerId) || 0; playerCountsOnLastHole.set(e.playerId, current + (e.count || 1)); });
@@ -110,6 +114,7 @@ export const calculateZoologicoAnimalResult = (
 export const calculateZoologicoBets = (
   players: Player[],
   config: BetConfig,
+  startingHole: 1 | 10 = 1,
 ): BetSummary[] => {
   if (!isBetEnabledAnywhere(config, 'zoologico') || players.length < 2) return [];
   const allSummaries: BetSummary[] = [];
@@ -124,7 +129,7 @@ export const calculateZoologicoBets = (
     if (participatingPlayers.length < 2) return;
 
     enabledAnimals.forEach(animalType => {
-      const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, resolved.zoologico);
+      const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, resolved.zoologico, startingHole);
       if (!result || !result.loser || result.totalOccurrences === 0) return;
       participatingPlayers.forEach(player => {
         if (player.id === result.loser!.playerId) return;

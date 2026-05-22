@@ -23,6 +23,18 @@ export interface BetSummary {
   betId?: string;
 }
 
+// ── Play-order helpers ──
+
+/**
+ * Returns the 0-based index of a hole in the actual order of play, given a
+ * starting hole. When startingHole === 10, play order is 10,11,...,18,1,...,9
+ * so hole 10 → 0 and hole 9 → 17 (last played).
+ */
+export const playOrderIndex = (holeNumber: number, startingHole: 1 | 10 = 1): number => {
+  if (startingHole === 1) return holeNumber - 1;
+  return holeNumber >= 10 ? holeNumber - 10 : holeNumber + 8;
+};
+
 // ── Player grouping ──
 
 export const groupPlayersByGroup = (players: Player[]): Player[][] => {
