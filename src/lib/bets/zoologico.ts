@@ -81,7 +81,10 @@ export const calculateZoologicoAnimalResult = (
   let tieHole: number | null = null;
 
   if (animalEvents.length > 0) {
-    const maxHole = Math.max(...animalEvents.map(e => e.holeNumber));
+    // "Last" is by play order, not by physical hole number.
+    const maxHole = animalEvents.reduce((acc, e) =>
+      playOrderIndex(e.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? e.holeNumber : acc
+    , animalEvents[0].holeNumber);
     const eventsOnLastHole = animalEvents.filter(e => e.holeNumber === maxHole);
     const playerCountsOnLastHole = new Map<string, number>();
     eventsOnLastHole.forEach(e => { const current = playerCountsOnLastHole.get(e.playerId) || 0; playerCountsOnLastHole.set(e.playerId, current + (e.count || 1)); });
