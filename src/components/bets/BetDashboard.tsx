@@ -3428,6 +3428,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         confirmedHoles={confirmedHoles}
         onBetConfigChange={onBetConfigChange}
         renderSection="indicators"
+        startingHole={startingHole}
       />
 
       {/* Grupales (Culebras/Pingüinos/Coneja/etc.)
@@ -3445,7 +3446,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         confirmedHoles={confirmedHoles}
         onBetConfigChange={onBetConfigChange}
         renderSection="grupales"
+        startingHole={startingHole}
       />
+
 
       {/* Sprint 3 — Wolf */}
       {(wolfHook?.isActive && wolfHook.wolfConfig || (isHistorical && effectiveBetConfig.wolfSetup?.enabled)) &&

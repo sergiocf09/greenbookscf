@@ -48,6 +48,7 @@ interface GroupBetsCardProps {
   onBetConfigChange?: (config: BetConfig) => void;
   /** Controls which sections to render: 'all' (default), 'indicators' (only Oyes/Unidades/Manchas), 'grupales' (everything except indicators) */
   renderSection?: 'all' | 'indicators' | 'grupales';
+  startingHole?: 1 | 10;
   wolfHook?: ReturnType<typeof useWolf>;
   sixesHook?: ReturnType<typeof useSixes>;
   vegasHook?: ReturnType<typeof useVegas>;
@@ -825,6 +826,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   confirmedHoles = new Set(),
   onBetConfigChange,
   renderSection = 'all',
+  startingHole = 1,
   wolfHook,
   sixesHook,
   vegasHook,
@@ -1443,9 +1445,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     
     return orderedAnimals
       .filter(animal => enabledAnimals.includes(animal))
-      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, betConfig.zoologico))
+      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, betConfig.zoologico, startingHole))
       .filter((r): r is ZoologicoAnimalResult => r !== null);
-  }, [sameGroupPlayers, betConfig.zoologico]);
+  }, [sameGroupPlayers, betConfig.zoologico, startingHole]);
 
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
