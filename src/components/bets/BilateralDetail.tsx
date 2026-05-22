@@ -97,6 +97,31 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   const getPlayerAbbr = (p: Player) => disambiguatedAbbrsLocal.get(p.id) || p.initials;
   const getShortName = (p: Player) => shortNamesLocal.get(p.id) || formatPlayerName(p.name).split(' ')[0];
 
+  // When the round starts on hole 10, the "Front 9" segment is physically hoyos
+  // 10-18 and "Back 9" is hoyos 1-9. Labels stay constant ("Front 9"/"Back 9"),
+  // but we surface the actual physical range as a hover/tap tooltip so users can
+  // confirm which holes contributed to the displayed totals.
+  const getSegmentPhysicalRange = (label: string): string | null => {
+    if (startingHole !== 10) return null;
+    if (label === 'Front 9') return 'Hoyos 10–18';
+    if (label === 'Back 9') return 'Hoyos 1–9';
+    return null;
+  };
+  const renderSegmentLabel = (label: string, className?: string) => {
+    const tip = getSegmentPhysicalRange(label);
+    if (!tip) return <span className={className}>{label}</span>;
+    return (
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={cn(className, 'underline decoration-dotted underline-offset-2')}>{label}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">{tip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
   // Get bet override for this pair (stored as a label substring; bet engine matches via "includes")
   const getBetOverride = (overrideLabel: string): BetOverride | undefined => {
     const normalizeLabel = (label: string) => {
@@ -1875,7 +1900,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <button className="flex items-center gap-3 text-left">
-                                    <span className="text-xs text-muted-foreground cursor-pointer hover:underline">{segment.label}</span>
+                                    {renderSegmentLabel(segment.label, 'text-xs text-muted-foreground cursor-pointer hover:underline')}
                                     {/* Colored skins count instead of description text */}
                                     <span className="flex items-center gap-1 cursor-pointer">
                                       <span className="text-sm font-bold text-green-600">{data.playerNet}</span>
@@ -2812,7 +2837,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         
                         const segmentContent = (
                           <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{segment.label}</span>
+                            {renderSegmentLabel(segment.label, 'text-sm text-muted-foreground')}
                             {/* Score comparison - skip for Zoológico and non-applicable historical bets */}
                             {showScoreComparison && (
                               <div className="flex items-center gap-1.5 text-sm">
