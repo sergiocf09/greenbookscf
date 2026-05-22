@@ -50,7 +50,8 @@ export const calculatePuttsGeneralBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  _course: GolfCourse
+  _course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   const cfg = (config as any).puttsGeneral;
   if (!cfg?.enabled || players.length < 2) return [];
@@ -59,8 +60,11 @@ export const calculatePuttsGeneralBets = (
   const summaries: BetSummary[] = [];
 
   if (segmentMode === 'segments') {
-    summaries.push(...computeForSegment(players, scores, cfg.frontAmount ?? 0, h => h >= 1 && h <= 9, 'front'));
-    summaries.push(...computeForSegment(players, scores, cfg.backAmount ?? 0, h => h >= 10 && h <= 18, 'back'));
+    const ranges = getSegmentHoleRanges(startingHole);
+    const [fs, fe] = ranges.front;
+    const [bs, be] = ranges.back;
+    summaries.push(...computeForSegment(players, scores, cfg.frontAmount ?? 0, h => h >= fs && h <= fe, 'front'));
+    summaries.push(...computeForSegment(players, scores, cfg.backAmount ?? 0, h => h >= bs && h <= be, 'back'));
   }
   // Total always runs
   summaries.push(...computeForSegment(players, scores, cfg.amount ?? 100, () => true, 'total'));
