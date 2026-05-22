@@ -47,6 +47,7 @@ export const calculateZoologicoAnimalResult = (
   animalType: ZooAnimalType,
   players: Player[],
   zoologicoConfig: ZoologicoBetConfig,
+  startingHole: 1 | 10 = 1,
 ): ZoologicoAnimalResult | null => {
   if (!zoologicoConfig?.enabled) return null;
   if (!zoologicoConfig.enabledAnimals?.includes(animalType)) return null;
