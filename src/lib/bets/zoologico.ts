@@ -3,7 +3,7 @@
  */
 import { Player, BetConfig, ZooAnimalType, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
 import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
-import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
+import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, playOrderIndex } from './shared';
 
 export interface ZoologicoAnimalResult {
   animalType: ZooAnimalType;

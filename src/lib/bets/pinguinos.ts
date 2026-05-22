@@ -3,13 +3,14 @@
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
-import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
+import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, playOrderIndex } from './shared';
 
 export const calculatePinguinosBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!isBetEnabledAnywhere(config, 'pinguinos')) return [];
   
@@ -39,7 +40,10 @@ export const calculatePinguinosBets = (
     
     if (allPinguinos.length === 0) return;
     
-    const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+    // "Last" is by play order, not by physical hole number.
+    const maxHole = allPinguinos.reduce((acc, p) =>
+      playOrderIndex(p.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? p.holeNumber : acc
+    , allPinguinos[0].holeNumber);
     const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
     
     let lastPlayerToPay: string;

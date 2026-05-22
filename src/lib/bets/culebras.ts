@@ -3,12 +3,13 @@
  */
 import { Player, PlayerScore, BetConfig } from '@/types/golf';
 import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
-import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup } from './shared';
+import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, playOrderIndex } from './shared';
 
 export const calculateCulebrasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
-  config: BetConfig
+  config: BetConfig,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!isBetEnabledAnywhere(config, 'culebras')) return [];
   
@@ -23,7 +24,6 @@ export const calculateCulebrasBets = (
     
     if (participatingPlayers.length < 2) return;
     
-    const participantIds = new Set(participatingPlayers.map(p => p.id));
     const allCulebras: { playerId: string; holeNumber: number; putts: number }[] = [];
     
     participatingPlayers.forEach(player => {
@@ -37,7 +37,10 @@ export const calculateCulebrasBets = (
     
     if (allCulebras.length === 0) return;
     
-    const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+    // "Last" is by play order, not by physical hole number.
+    const maxHole = allCulebras.reduce((acc, c) =>
+      playOrderIndex(c.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? c.holeNumber : acc
+    , allCulebras[0].holeNumber);
     const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
     
     let lastPlayerToPay: string;
