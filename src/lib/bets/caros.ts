@@ -46,7 +46,16 @@ export const calculateCarosBets = (
 
       const startHole = rc.caros.startHole ?? 15;
       const endHole = rc.caros.endHole ?? 18;
-      const caroHoles = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
+      // Interpret startHole/endHole as play-order positions (1..18). When the
+      // round starts on hole 10, "holes 15-18" means the 15th-18th holes
+      // PLAYED, i.e. physical holes 6,7,8,9. Map play-order → physical hole.
+      const playOrder: number[] = startingHole === 10
+        ? [10,11,12,13,14,15,16,17,18,1,2,3,4,5,6,7,8,9]
+        : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+      const caroHoles = Array.from(
+        { length: endHole - startHole + 1 },
+        (_, i) => playOrder[(startHole - 1) + i]
+      ).filter((h): h is number => typeof h === 'number');
 
       const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
 
