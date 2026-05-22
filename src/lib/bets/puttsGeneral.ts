@@ -3,6 +3,7 @@
  * Supports segments: total-only or front/back/total
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
+import { getSegmentHoleRanges } from '../handicapUtils';
 import { BetSummary } from './shared';
 
 type Segment = 'front' | 'back' | 'total';
