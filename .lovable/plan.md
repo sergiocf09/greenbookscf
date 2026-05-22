@@ -1,37 +1,82 @@
-## Diagnóstico
+## Objetivo
 
-La ronda del 8 de mayo volvió a guardar valores erróneos al recerrarse porque el código corregido en el archivo de Carritos sí agrega `betId`, pero `generateRoundSnapshot` no persiste ese `betId` en el ledger del snapshot. En consecuencia, si el usuario reabre y cierra, las 3 apuestas de Carritos con mismos equipos/importes vuelven a verse iguales para el deduplicador y se colapsan a una sola.
+Unificar la lógica cuando la ronda arranca en el hoyo 10:
 
-Esto explica exactamente el patrón:
-- En vivo/cierre: el motor calcula Rodrigo $3,400 correctamente.
-- Al guardar snapshot: el ledger colapsa Carritos repetidos y baja a Rodrigo $2,950.
-- Al reparar manualmente el snapshot se ve bien.
-- Al reabrir/recerrar se regenera desde código y vuelve el error.
+1. **Nomenclatura siempre "Front 9 / Back 9"** en todas las apuestas (individuales, parejas y grupales). El detalle de qué hoyos físicos componen cada segmento se muestra solo en el tooltip al hacer clic.
+2. **Apuestas de "último en…" (Culebras, Zoológico, Pingüinos)** deben determinar al "último" por el **orden de juego**, no por el número físico de hoyo. Si la ronda empezó en 10, el último hoyo jugado es el 9 (no el 18).
 
-## Plan de implementación
+Los Caros ya quedaron correctos en la iteración anterior y no se tocan.
 
-1. **Hacer persistente el identificador de apuesta en snapshots**
-   - Agregar `betId?: string` a `SnapshotLedgerEntry`.
-   - Cuando `generateRoundSnapshot` construya el ledger, copiar `summary.betId` a cada entrada.
-   - Mantener compatibilidad con snapshots viejos: si no hay `betId`, no cambia nada.
+---
 
-2. **Blindar Carritos multi-instancia**
-   - Mantener el `betId` que ya se añade en `calculateCarritosBets`.
-   - Confirmar que cada Carritos configurado (`carritos-177826...`) produce entradas distinguibles aun si par, segmento e importe son iguales.
+## Cambios
 
-3. **Extender la prueba existente**
-   - Ajustar la prueba de Carritos para validar no solo totales/cantidad, sino también que el ledger del snapshot conserva dos `betId` distintos.
-   - Ejecutar la prueba enfocada de `teamBetPersistence.test.ts`.
+### 1. Revertir labels a "Front 9 / Back 9" con tooltip de hoyos físicos
 
-4. **Reparar nuevamente la ronda afectada**
-   - Reaplicar la corrección de datos a la ronda del 8 de mayo para que el snapshot quede otra vez con:
-     - Rodrigo Echevarria: $3,400
-     - Carlos Echevarría: $3,050
-     - Antonio Gomez Aguirre: -$5,350
-     - German Galvez: -$775
-     - Adrian Garza Frisbie: -$325
-   - Verificar por consulta que Carritos tiene 12 entradas por segmento y $600 por segmento.
+`**src/components/bets/BilateralDetail.tsx**`
 
-5. **Validar el caso del jugador eliminado**
-   - Verificar que Sergio Cruz ya no está en el snapshot tras el recierre y que su eliminación no afecta los balances porque estaba en cero.
-   - Confirmar que el snapshot actual vuelve a coincidir con el último `balanceComparison` del cierre.
+- Deshacer el cambio anterior: el primer renglón siempre dice **"Front 9"**, el segundo **"Back 9"**, el tercero **"Total 18"** — independientemente del `startingHole`.
+- Agregar un tooltip (usando el componente `Tooltip` ya disponible) en cada label que muestre el rango físico real:
+  - `startingHole === 1` → "Hoyos 1–9" / "Hoyos 10–18"
+  - `startingHole === 10` → "Hoyos 10–18" / "Hoyos 1–9"
+- Los valores numéricos ya se calculan correctamente con `getSegmentHoleRanges` desde la iteración previa; solo se ajusta la presentación.
+
+### 2. "Último" por orden de juego en Culebras / Zoológico / Pingüinos
+
+Crear un helper compartido en `**src/lib/bets/shared.ts**`:
+
+```ts
+export const playOrderIndex = (holeNumber: number, startingHole: 1 | 10): number => {
+  if (startingHole === 1) return holeNumber - 1;
+  // startingHole === 10: orden es 10,11,...,18,1,2,...,9
+  return holeNumber >= 10 ? holeNumber - 10 : holeNumber + 8;
+};
+```
+
+`**src/lib/bets/culebras.ts**`
+
+- Recibir `startingHole` como parámetro.
+- Reemplazar `Math.max(...allCulebras.map(c => c.holeNumber))` por el hoyo cuyo `playOrderIndex` sea el mayor.
+- `culebrasOnLastHole` se filtra contra ese hoyo (que es el último jugado, no el de mayor número físico).
+- El tie-break override (`tieBreakLoser` con formato `hole:playerId`) sigue funcionando porque compara contra el hoyo seleccionado, sea cual sea.
+
+`**src/lib/bets/pinguinos.ts**`
+
+- Mismo tratamiento: recibir `startingHole`, calcular `maxHole` por `playOrderIndex` en lugar de por número físico.
+
+`**src/lib/bets/zoologico.ts**`
+
+- `calculateZoologicoAnimalResult` recibe `startingHole` (default `1`).
+- Calcular el "último hoyo" usando `playOrderIndex` sobre `animalEvents`.
+- `calculateZoologicoBets` propaga `startingHole` al helper.
+
+### 3. Propagación de `startingHole`
+
+`**src/lib/betCalculations.ts**` (orquestador) — pasar `startingHole` a:
+
+- `calculateCulebrasBets`
+- `calculatePinguinosBets`
+- `calculateZoologicoBets`
+
+Verificar también que cualquier consumidor directo de `calculateZoologicoAnimalResult` (p.ej. dashboards/popovers de Zoológico) reciba y pase `startingHole`. Si no lo tienen disponible, se toma de `round.startingHole` desde `RoundContext`/`useRoundManagement`.
+
+---
+
+## Detalles técnicos
+
+- Empate en el "último hoyo jugado": se mantiene la lógica existente (mayor `putts` / mayor `overPar` / mayor `count`), porque el cambio es solo en cómo se identifica ese último hoyo.
+- No se toca persistencia ni esquema de BD.
+- No se toca la lógica de Caros, Vegas, Skins, Medal, Putts ni Sliding (ya corregidas).
+- Tests: si existen tests de culebras/zoológico/pingüinos, agregar un caso con `startingHole=10` que verifique que una incidencia en hoyo 18 (primer hoyo jugado) no se considera la "última".
+
+---
+
+## Archivos a modificar
+
+- `src/components/bets/BilateralDetail.tsx` — labels fijos + tooltip
+- `src/lib/bets/shared.ts` — helper `playOrderIndex`
+- `src/lib/bets/culebras.ts` — parámetro + lógica de último
+- `src/lib/bets/pinguinos.ts` — parámetro + lógica de último
+- `src/lib/bets/zoologico.ts` — parámetro + lógica de último
+- `src/lib/betCalculations.ts` — propagar `startingHole`
+- Consumidores de `calculateZoologicoAnimalResult` (si aplica)
