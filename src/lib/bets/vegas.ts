@@ -11,6 +11,28 @@ export const formVegasNumber = (s1: number, s2: number): number => {
   return lo * 10 + hi;
 };
 
+/**
+ * Returns the play-order index (0..17) of a hole, considering the round's
+ * starting hole. When startingHole=10, hole 10 is index 0, hole 18 is index
+ * 8, hole 1 is index 9, hole 9 is index 17.
+ */
+const playOrderIndex = (holeNumber: number, startingHole: 1 | 10): number => {
+  if (startingHole === 10) {
+    return holeNumber >= 10 ? holeNumber - 10 : holeNumber + 8;
+  }
+  return holeNumber - 1;
+};
+
+/**
+ * Returns the played holes in play order based on the starting hole.
+ */
+const playedHolesInOrder = (startingHole: 1 | 10): number[] => {
+  if (startingHole === 10) {
+    return [10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  }
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+};
+
 const getScore = (
   playerId: string, holeNumber: number, players: Player[],
   scores: Map<string,PlayerScore[]>, course: GolfCourse, useHandicap: boolean,
@@ -38,15 +60,20 @@ const hasBirdie = (
     return !!(d.birdie || d.eagle || d.albatross);
   });
 
-const getVegasSegmentAmount = (config: VegasConfig, holeNumber: number): number => {
+const getVegasSegmentAmount = (
+  config: VegasConfig,
+  holeNumber: number,
+  startingHole: 1 | 10 = 1,
+): number => {
   if (!config.useSegmentAmounts) return config.valuePerPoint;
+  const idx = playOrderIndex(holeNumber, startingHole);
   if (config.variant === 'fixed') {
-    return holeNumber <= 9
+    return idx <= 8
       ? (config.frontAmount ?? config.valuePerPoint)
       : (config.backAmount  ?? config.valuePerPoint);
   }
-  if (holeNumber <= 6)  return config.set1Amount ?? config.valuePerPoint;
-  if (holeNumber <= 12) return config.set2Amount ?? config.valuePerPoint;
+  if (idx <= 5)  return config.set1Amount ?? config.valuePerPoint;
+  if (idx <= 11) return config.set2Amount ?? config.valuePerPoint;
   return config.set3Amount ?? config.valuePerPoint;
 };
 
@@ -77,54 +104,31 @@ const resolveVegasHole = (
   teamHandicaps?: Record<string, number>,
   halfStrokeHole?: number | null,
   halfReceivingTeam?: 'team1' | 'team2' | null,
+  startingHole: 1 | 10 = 1,
 ): VegasHoleDetail => {
-  const [pA, pB] = team1, [pC, pD] = team2;
-  // Net scores used for Vegas number formation
-  const sA = getScore(pA, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
-  const sB = getScore(pB, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
-  const sC = getScore(pC, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
-  const sD = getScore(pD, holeNumber, players, scores, course, config.useHandicap, teamHandicaps);
-
-  // Raw gross scores for popover display
+  const [pA, pB] = team1; const [pC, pD] = team2;
+  const useH = !!teamHandicaps;
   const gA = getScore(pA, holeNumber, players, scores, course, false);
   const gB = getScore(pB, holeNumber, players, scores, course, false);
   const gC = getScore(pC, holeNumber, players, scores, course, false);
   const gD = getScore(pD, holeNumber, players, scores, course, false);
+  const sA = useH ? getScore(pA, holeNumber, players, scores, course, true, teamHandicaps) : gA;
+  const sB = useH ? getScore(pB, holeNumber, players, scores, course, true, teamHandicaps) : gB;
+  const sC = useH ? getScore(pC, holeNumber, players, scores, course, true, teamHandicaps) : gC;
+  const sD = useH ? getScore(pD, holeNumber, players, scores, course, true, teamHandicaps) : gD;
 
-  // Detect half-point player on this hole
-  const isHalfHoleHere = halfStrokeHole === holeNumber;
-  const halfPlayerId = isHalfHoleHere
-    ? [pA, pB, pC, pD].find(id => {
-        const hcp = teamHandicaps?.[id] ?? players.find(x => x.id === id)?.handicap ?? 0;
-        return typeof hcp === 'number' && hcp % 1 !== 0;
-      })
-    : undefined;
-
-  const pd = (id: string, gross: number, net: number, showHalf: boolean) => {
-    const p = players.find(x => x.id === id);
-    const hcp = teamHandicaps?.[id] ?? p?.handicap ?? 0;
-    const sp = calculateStrokesPerHole(Math.floor(hcp), course);
-    let strokes = config.useHandicap ? (sp[holeNumber - 1] ?? 0) : 0;
-    if (showHalf && config.useHandicap && strokes === 0 && id === halfPlayerId) {
-      strokes = 0.5;
-    }
+  const halfPointBreaksTie = !!halfReceivingTeam && holeNumber === halfStrokeHole;
+  const pd = (pid: string, gross: number, strokes: number, isHalfHole: boolean) => {
+    const isReceiving = halfPointBreaksTie && (
+      (halfReceivingTeam === 'team1' && (pid === pA || pid === pB)) ||
+      (halfReceivingTeam === 'team2' && (pid === pC || pid === pD))
+    );
+    const net = isHalfHole && isReceiving ? strokes - 0.5 : strokes;
     return { gross, strokes, net };
   };
 
-  // Compute raw Vegas numbers without half-point offset
-  const n1Raw = formVegasNumber(sA, sB), n2Raw = formVegasNumber(sC, sD);
-
-  // Only apply half-point offset when there's an actual tie
-  const halfPointBreaksTie = n1Raw === n2Raw && isHalfHoleHere && halfPlayerId;
-  let n1 = n1Raw, n2 = n2Raw;
-  if (halfPointBreaksTie) {
-    const vegasNetA = halfPlayerId === pA ? sA - 1 : sA;
-    const vegasNetB = halfPlayerId === pB ? sB - 1 : sB;
-    const vegasNetC = halfPlayerId === pC ? sC - 1 : sC;
-    const vegasNetD = halfPlayerId === pD ? sD - 1 : sD;
-    n1 = formVegasNumber(vegasNetA, vegasNetB);
-    n2 = formVegasNumber(vegasNetC, vegasNetD);
-  }
+  const n1 = formVegasNumber(sA, sB);
+  const n2 = formVegasNumber(sC, sD);
 
   const dA = pd(pA, gA, sA, !!halfPointBreaksTie), dB = pd(pB, gB, sB, !!halfPointBreaksTie);
   const dC = pd(pC, gC, sC, !!halfPointBreaksTie), dD = pd(pD, gD, sD, !!halfPointBreaksTie);
@@ -138,7 +142,7 @@ const resolveVegasHole = (
 
   const diff = n2e - n1e;
 
-  const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber);
+  const amountThisHole = Math.abs(diff) * getVegasSegmentAmount(config, holeNumber, startingHole);
   const winner: 'team1'|'team2'|'tied' = diff > 0 ? 'team1' : diff < 0 ? 'team2' : 'tied';
 
   return {
@@ -158,6 +162,7 @@ export const buildVegasSetResults = (
   players: Player[], scores: Map<string,PlayerScore[]>,
   config: VegasConfig, course: GolfCourse,
   teamHandicaps?: Record<string, number>,
+  startingHole: 1 | 10 = 1,
 ): VegasSetResult[] => {
   const { playerAId: A, playerBId: B, playerCId: C, playerDId: D } = config;
   if (!A || !B || !C || !D) return [];
@@ -165,12 +170,14 @@ export const buildVegasSetResults = (
   const isHalfPointMode = config.handicapConfig?.slidingHalfPointMode === 'halfPoint';
   const effectiveTH = teamHandicaps ?? config.teamHandicaps;
 
+  const order = playedHolesInOrder(startingHole);
+
   const sets = config.variant === 'fixed'
-    ? [{ setNumber: null as null, start: 1, end: 18, t1: [A,B] as [string,string], t2: [C,D] as [string,string] }]
+    ? [{ setNumber: null as null, holes: order, t1: [A,B] as [string,string], t2: [C,D] as [string,string] }]
     : [
-        { setNumber: 1 as const, start: 1,  end: 6,  t1: [A,B] as [string,string], t2: [C,D] as [string,string] },
-        { setNumber: 2 as const, start: 7,  end: 12, t1: [A,C] as [string,string], t2: [B,D] as [string,string] },
-        { setNumber: 3 as const, start: 13, end: 18, t1: [A,D] as [string,string], t2: [B,C] as [string,string] },
+        { setNumber: 1 as const, holes: order.slice(0, 6),  t1: [A,B] as [string,string], t2: [C,D] as [string,string] },
+        { setNumber: 2 as const, holes: order.slice(6, 12), t1: [A,C] as [string,string], t2: [B,D] as [string,string] },
+        { setNumber: 3 as const, holes: order.slice(12, 18), t1: [A,D] as [string,string], t2: [B,C] as [string,string] },
       ];
 
   return sets.map(s => {
@@ -178,23 +185,28 @@ export const buildVegasSetResults = (
       s.t1, s.t2, effectiveTH, isHalfPointMode, course
     );
 
-    const holes = Array.from({ length: s.end - s.start + 1 }, (_, i) => s.start + i);
-    const details = holes.map(h => resolveVegasHole(
+    const details = s.holes.map(h => resolveVegasHole(
       s.t1, s.t2, h, s.setNumber, players, scores, course, config, effectiveTH,
-      halfStrokeHole, halfReceivingTeam,
+      halfStrokeHole, halfReceivingTeam, startingHole,
     ));
     const totalDiff = details.reduce((acc, d) => acc + d.diff, 0);
+    const startHole = s.holes[0] ?? 1;
+    const endHole = s.holes[s.holes.length - 1] ?? 18;
     const totalAmount = (() => {
       if (!config.useSegmentAmounts || config.variant !== 'fixed') {
-        return Math.abs(totalDiff) * getVegasSegmentAmount(config, s.start);
+        return Math.abs(totalDiff) * getVegasSegmentAmount(config, startHole, startingHole);
       }
-      const frontDiff = details.filter(d => d.holeNumber <= 9).reduce((a, d) => a + d.diff, 0);
-      const backDiff = details.filter(d => d.holeNumber > 9).reduce((a, d) => a + d.diff, 0);
-      return Math.abs(frontDiff) * getVegasSegmentAmount(config, 1)
-           + Math.abs(backDiff) * getVegasSegmentAmount(config, 10);
+      // Fixed variant with segment amounts: split by first/second nine in play order
+      const frontHoleSet = new Set(order.slice(0, 9));
+      const frontDiff = details.filter(d => frontHoleSet.has(d.holeNumber)).reduce((a, d) => a + d.diff, 0);
+      const backDiff = details.filter(d => !frontHoleSet.has(d.holeNumber)).reduce((a, d) => a + d.diff, 0);
+      const frontRef = order[0];
+      const backRef = order[9] ?? order[0];
+      return Math.abs(frontDiff) * getVegasSegmentAmount(config, frontRef, startingHole)
+           + Math.abs(backDiff) * getVegasSegmentAmount(config, backRef, startingHole);
     })();
     const winner: 'team1'|'team2'|'tied' = totalDiff > 0 ? 'team1' : totalDiff < 0 ? 'team2' : 'tied';
-    return { setNumber: s.setNumber, startHole: s.start, endHole: s.end, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
+    return { setNumber: s.setNumber, startHole, endHole, team1: s.t1, team2: s.t2, holeDetails: details, totalDiff, totalAmount, winner };
   });
 };
 
@@ -202,9 +214,10 @@ export const calculateVegasBets = (
   players: Player[], scores: Map<string,PlayerScore[]>,
   config: VegasConfig, course: GolfCourse,
   teamHandicaps?: Record<string, number>,
+  startingHole: 1 | 10 = 1,
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
-  buildVegasSetResults(players, scores, config, course, teamHandicaps).forEach(sr => {
+  buildVegasSetResults(players, scores, config, course, teamHandicaps, startingHole).forEach(sr => {
     if (sr.winner === 'tied' || sr.totalAmount === 0) return;
     const winners = [...(sr.winner === 'team1' ? sr.team1 : sr.team2)];
     const losers  = [...(sr.winner === 'team1' ? sr.team2 : sr.team1)];

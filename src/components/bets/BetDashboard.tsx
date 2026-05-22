@@ -438,8 +438,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     if (isHistorical || !vegasHook?.vegasConfig) return [];
     if (!vegasSettlementActive) return [];
     const th = effectiveBetConfig.vegasBets?.[0]?.teamHandicaps;
-    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th);
-  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets, vegasSettlementActive]);
+    return calculateVegasBets(allPlayersForCalculations, confirmedScores, vegasHook.vegasConfig, course, th, startingHole);
+  }, [isHistorical, vegasHook?.vegasConfig, allPlayersForCalculations, confirmedScores, course, effectiveBetConfig.vegasBets, vegasSettlementActive, startingHole]);
 
   const betSummaries = useMemo(
     () => isHistorical
@@ -3565,6 +3565,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             basePlayerId={basePlayer?.id || basePlayer?.profileId || ''}
             isDisabled={isTeamBetDisabled('vegas-primary')}
             onToggleDisabled={!isHistorical && onBetConfigChange ? () => toggleTeamBetDisabled('vegas-primary') : undefined}
+            startingHole={startingHole}
           />
         );
       })()}

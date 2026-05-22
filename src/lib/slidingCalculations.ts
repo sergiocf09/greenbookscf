@@ -14,6 +14,7 @@
  */
 
 import { Player, PlayerScore, GolfCourse, BetConfig, HoleInfo } from '@/types/golf';
+import { getSegmentHoleRanges } from './handicapUtils';
 
 export type MatchWinner = 'A' | 'B' | 'tie';
 
@@ -163,7 +164,8 @@ export function calculateSlidingResults(
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
   course: GolfCourse,
-  getStrokesForPair: (playerAId: string, playerBId: string) => number
+  getStrokesForPair: (playerAId: string, playerBId: string) => number,
+  startingHole: 1 | 10 = 1
 ): SlidingResult[] {
   const results: SlidingResult[] = [];
   
@@ -206,11 +208,12 @@ export function calculateSlidingResults(
         course.holes
       );
       
-      // Calculate segment winners
-      const frontMainWinner = calculateSegmentWinner(holeResults, 1, 9);
-      const backMainWinner = calculateSegmentWinner(holeResults, 10, 18);
+      // Calculate segment winners (respeta el hoyo de inicio)
+      const ranges = getSegmentHoleRanges(startingHole);
+      const frontMainWinner = calculateSegmentWinner(holeResults, ranges.front[0], ranges.front[1]);
+      const backMainWinner = calculateSegmentWinner(holeResults, ranges.back[0], ranges.back[1]);
       const matchTotalWinner = calculateSegmentWinner(holeResults, 1, 18);
-      
+
       // Carry in front main = front is tied
       const carryFrontMain = frontMainWinner === 'tie';
       

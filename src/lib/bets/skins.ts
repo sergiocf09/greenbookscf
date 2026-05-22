@@ -92,18 +92,24 @@ export const calculateSkinsBets = (
       }
 
       // Acumulados mode
+      const acumRanges = getSegmentHoleRanges(startingHole);
+      const [frontStart, frontEnd] = acumRanges.front;
+      const [backStart, backEnd] = acumRanges.back;
+      const frontLastHole = frontEnd;
+      const backLastHole = backEnd;
+
       let frontSkinsABase = 0, frontSkinsBBase = 0, frontAccumulated = 0, frontCarryToBack = 0;
       let frontHolesWonByA = 0, frontHolesWonByB = 0;
       let frontHole9Tied = false, frontTiedHoles = 0;
 
-      for (let holeNum = 1; holeNum <= 9; holeNum++) {
+      for (let holeNum = frontStart; holeNum <= frontEnd; holeNum++) {
         const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
         const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
         if (scoreA === null || scoreB === null) { frontAccumulated++; continue; }
         frontAccumulated++;
         if (scoreA < scoreB) { frontSkinsABase += frontAccumulated; frontAccumulated = 0; frontHolesWonByA++; }
         else if (scoreB < scoreA) { frontSkinsBBase += frontAccumulated; frontAccumulated = 0; frontHolesWonByB++; }
-        else { frontTiedHoles++; if (holeNum === 9) frontHole9Tied = true; }
+        else { frontTiedHoles++; if (holeNum === frontLastHole) frontHole9Tied = true; }
       }
 
       if (rc.skins.carryOver) { frontCarryToBack = frontAccumulated; frontAccumulated = 0; }
@@ -115,7 +121,7 @@ export const calculateSkinsBets = (
       let backHole18Tied = false, backTiedHoles = 0;
 
       if (!isNineHoleAcum) {
-        for (let holeNum = 10; holeNum <= 18; holeNum++) {
+        for (let holeNum = backStart; holeNum <= backEnd; holeNum++) {
           const scoreA = getHoleScore(playerA.id, holeNum, adjustedScores);
           const scoreB = getHoleScore(playerB.id, holeNum, adjustedScores);
           if (scoreA === null || scoreB === null) { backAccumulated++; continue; }
@@ -126,7 +132,7 @@ export const calculateSkinsBets = (
           } else if (scoreB < scoreA) {
             if (pendingCarrySkins > 0) { carriedSkinsWonByB += pendingCarrySkins; pendingCarrySkins = 0; }
             backSkinsB += backAccumulated; backAccumulated = 0; backHolesWonByB++;
-          } else { backTiedHoles++; if (holeNum === 18) backHole18Tied = true; }
+          } else { backTiedHoles++; if (holeNum === backLastHole) backHole18Tied = true; }
         }
       }
 

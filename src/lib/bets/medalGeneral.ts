@@ -3,7 +3,7 @@
  * Supports segments: total-only or front/back/total
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
-import { calculateStrokesPerHole } from '../handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
 import { BetSummary } from './shared';
 
 type Segment = 'front' | 'back' | 'total';
@@ -64,7 +64,8 @@ export const calculateMedalGeneralBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.medalGeneral?.enabled || players.length < 2) return [];
 
@@ -72,8 +73,11 @@ export const calculateMedalGeneralBets = (
   const summaries: BetSummary[] = [];
 
   if (segmentMode === 'segments') {
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 0, h => h >= 1 && h <= 9, 'front'));
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 0, h => h >= 10 && h <= 18, 'back'));
+    const ranges = getSegmentHoleRanges(startingHole);
+    const [fs, fe] = ranges.front;
+    const [bs, be] = ranges.back;
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 0, h => h >= fs && h <= fe, 'front'));
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 0, h => h >= bs && h <= be, 'back'));
   }
   // Total always runs
   summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.amount ?? 100, () => true, 'total'));

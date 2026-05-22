@@ -1467,7 +1467,7 @@ export const useRoundManagement = ({
             teamHandicaps: vegasBetInstanceForClose?.teamHandicaps,
             handicapConfig: vegasBetInstanceForClose?.handicapConfig,
           };
-          sprint3Summaries.push(...calculateVegasBets(sanitizedPlayers, confirmedScoresForClose, vegasConfig, course, vegasBetInstanceForClose?.teamHandicaps));
+          sprint3Summaries.push(...calculateVegasBets(sanitizedPlayers, confirmedScoresForClose, vegasConfig, course, vegasBetInstanceForClose?.teamHandicaps, roundState.startingHole));
           devLog(`[CLOSE] Vegas: ${sprint3Summaries.filter(s => s.betType === 'Vegas' && s.amount > 0).length} winning entries`);
         }
 
@@ -2089,7 +2089,8 @@ export const useRoundManagement = ({
             scores,
             betConfig,
             course,
-            getStrokesForPair
+            getStrokesForPair,
+            roundState.startingHole
           );
 
           if (slidingResults.length > 0) {

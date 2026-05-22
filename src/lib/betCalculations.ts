@@ -143,7 +143,7 @@ export const calculateAllBets = (
     ...calculatePinguinosBets(players, scores, config, course),
     ...calculateZoologicoBets(players, config),
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
-    ...calculateMedalGeneralBets(players, scores, config, course),
+    ...calculateMedalGeneralBets(players, scores, config, course, startingHole),
     ...conejaSummaries,
     ...calculatePuttsBets(players, scores, config, startingHole),
     ...calculateSideBets(players, config),
