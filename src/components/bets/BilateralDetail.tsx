@@ -620,8 +620,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         label: 'Medal',
         configKey: 'medal',
         segments: [
-          { label: startingHole === 10 ? 'Hoyos 10-18' : 'Front 9', key: 'medal_front', overrideLabel: 'Medal Front 9' },
-          { label: startingHole === 10 ? 'Hoyos 1-9' : 'Back 9', key: 'medal_back', overrideLabel: 'Medal Back 9' },
+          { label: 'Front 9', key: 'medal_front', overrideLabel: 'Medal Front 9' },
+          { label: 'Back 9', key: 'medal_back', overrideLabel: 'Medal Back 9' },
           { label: 'Total 18', key: 'medal_total', overrideLabel: 'Medal Total' },
         ],
         getTotal: () => {
