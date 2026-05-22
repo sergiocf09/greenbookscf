@@ -164,7 +164,8 @@ export function calculateSlidingResults(
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
   course: GolfCourse,
-  getStrokesForPair: (playerAId: string, playerBId: string) => number
+  getStrokesForPair: (playerAId: string, playerBId: string) => number,
+  startingHole: 1 | 10 = 1
 ): SlidingResult[] {
   const results: SlidingResult[] = [];
   
