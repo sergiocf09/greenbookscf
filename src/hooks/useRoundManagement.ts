@@ -2089,7 +2089,8 @@ export const useRoundManagement = ({
             scores,
             betConfig,
             course,
-            getStrokesForPair
+            getStrokesForPair,
+            roundState.startingHole
           );
 
           if (slidingResults.length > 0) {
