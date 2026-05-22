@@ -114,6 +114,7 @@ export const calculateZoologicoAnimalResult = (
 export const calculateZoologicoBets = (
   players: Player[],
   config: BetConfig,
+  startingHole: 1 | 10 = 1,
 ): BetSummary[] => {
   if (!isBetEnabledAnywhere(config, 'zoologico') || players.length < 2) return [];
   const allSummaries: BetSummary[] = [];
@@ -128,7 +129,7 @@ export const calculateZoologicoBets = (
     if (participatingPlayers.length < 2) return;
 
     enabledAnimals.forEach(animalType => {
-      const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, resolved.zoologico);
+      const result = calculateZoologicoAnimalResult(animalType, participatingPlayers, resolved.zoologico, startingHole);
       if (!result || !result.loser || result.totalOccurrences === 0) return;
       participatingPlayers.forEach(player => {
         if (player.id === result.loser!.playerId) return;
