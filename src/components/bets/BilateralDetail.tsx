@@ -1327,7 +1327,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // Use allPlayers versions to ensure groupId is available for scope filtering
         const playerWithGroup = allPlayers.find(p => p.id === player.id) || player;
         const rivalWithGroup = allPlayers.find(p => p.id === rival.id) || rival;
-        const medalResult = getMedalGeneralBilateralResult(allPlayers, playerWithGroup, rivalWithGroup, confirmedScores, betConfig, course);
+        const medalResult = getMedalGeneralBilateralResult(allPlayers, playerWithGroup, rivalWithGroup, confirmedScores, betConfig, course, startingHole);
         if (medalResult) {
           groups.push({
             key: 'medalGeneral',
