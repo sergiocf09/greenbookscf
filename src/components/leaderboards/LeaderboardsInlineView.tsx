@@ -10,9 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, Loader2, Calendar, Hash } from 'lucide-react';
+import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { MultiDayRulesJson } from '@/types/leaderboard';
+
 
 interface LeaderboardsInlineViewProps {
   onNavigateToDetail: (leaderboardId: string, competitionType?: string | null) => void;
