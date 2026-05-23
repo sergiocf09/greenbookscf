@@ -2866,7 +2866,8 @@ const computeMedalBilateralForPool = (
   rival: Player,
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
   const amount = betConfig.medalGeneral?.amount ?? 100;
@@ -2879,7 +2880,7 @@ const computeMedalBilateralForPool = (
     if (confirmed.length === 0) return;
 
     const hcp = playerHandicaps.find((ph) => ph.playerId === p.id)?.handicap ?? p.handicap;
-    const strokesPerHole = calculateStrokesPerHole(hcp, course);
+    const strokesPerHole = calculateStrokesPerHole(hcp, course, startingHole);
     const netTotal = confirmed.reduce((sum, s) => {
       const received = strokesPerHole[s.holeNumber - 1] || 0;
       return sum + (s.strokes - received);
@@ -2930,7 +2931,8 @@ export const getMedalGeneralBilateralResult = (
   rival: Player,
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   if (!betConfig.medalGeneral?.enabled) return null;
 
