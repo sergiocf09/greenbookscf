@@ -551,6 +551,34 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
       </Tabs>
 
       <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
+
+      {editTarget && (editTarget.competition_type === 'multi_day' ? (
+        <EditMultiDayConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ) : (
+        <EditLeaderboardConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            start_date: editTarget.start_date,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ))}
     </div>
   );
 };
