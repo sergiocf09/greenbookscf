@@ -1,61 +1,68 @@
+## Objetivo
 
-## Contexto
-
-Hay un bug raíz y varios ajustes UX en la experiencia de leaderboards multi-día. La causa principal de "no aparece día ni Acumulado, no abre el editor multi-día, muestra Neto cuando elegí Gross" es que cuando se abre el detalle inline desde la app de la ronda, `src/pages/Index.tsx` **fuerza** `competition_type` a `'standard'` (línea 481 y 2435), por lo que renderiza `LeaderboardDetailInline` (estándar) en vez de `MultiDayLeaderboardDetail`. Por eso ves el editor "estándar" sin días, el tab de Acumulado no aparece y el sortMode default es `'net'` aunque la competencia esté en Gross.
+Compactar la cabecera del leaderboard Multi-día para que los resultados ocupen la mayor parte de la pantalla, arreglar el botón de configuración, agregar desambiguación de avatares y habilitar la edición desde la lista de leaderboards.
 
 ## Cambios
 
-### 1. Render correcto del multi-día inline (causa raíz)
-**`src/pages/Index.tsx`**
-- Línea ~481: resolver los tres tipos:
-  ```ts
-  const ct = (data as any).competition_type;
-  const resolved = ct === 'teams_cup' ? 'teams_cup' : ct === 'multi_day' ? 'multi_day' : 'standard';
-  ```
-- Línea ~2435 (banner amber de leaderboards vinculados): mapear igualmente `multi_day` → `'multi_day'`.
+### 1) Compactar `MultiDayLeaderboardDetail.tsx`
 
-Con esto el editor de configuración multi-día (con todos los días) ya aparece automáticamente al pulsar "Editar configuración", y se muestran los tabs por día + Acumulado.
+Reducir la información superior a 2 renglones máximo antes de la tabla.
 
-### 2. Default de modo (Gross/Neto/Stableford) según `scoring_modes`
-**`src/components/leaderboards/MultiDayLeaderboardDetail.tsx`** y **`src/components/leaderboards/LeaderboardDetailInline.tsx`**
-- Inicializar `sortMode` no a `'net'` hardcoded, sino:
-  ```ts
-  const initial = (event?.scoring_modes?.[0] as SortMode) ?? 'net';
-  ```
-- En multi-día, usar un `useEffect` que setea `sortMode` cuando carga `event` si el actual no está dentro de `availableModes`. Mismo patrón en estándar (cuando se carga event).
-- Resultado: si la competencia es solo Gross, la tabla y el header (`Score`) aparecen con Gross por default.
+**Header (barra superior)** — sin cambios estructurales, pero juntar acciones:
 
-### 3. Vinculación de ronda sin candado de fecha
-**`src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx`**
-- Quitar el bloqueo `blockMd` que desactiva "Vincular" cuando la fecha no coincide.
-- Para multi-día: mostrar **lista de días** como `RadioGroup` (Día 1 — fecha · etiqueta, Día 2 …). Pre-seleccionar el que coincide con `roundDate`; si no coincide ninguno, no preseleccionar y resaltar aviso.
-- Si la fecha de la ronda no coincide con el día elegido, mostrar banner ámbar:
-  > "La fecha de tu ronda (DD/MM/YYYY) no coincide con la del Día N (DD/MM/YYYY). Confirma que es correcto."
-  con `Checkbox` "Entiendo y confirmo vincular esta ronda al Día N" — el botón "Vincular" queda deshabilitado hasta que se marca.
-- Si coincide, se vincula directo (sin checkbox).
-- Persistencia: la lógica actual ya usa `rounds.date` para mapear al día en `MultiDayLeaderboardDetail` (`dayByDate[date]`). Como queremos permitir asignar la ronda a un día con fecha distinta, hay que **fijar la fecha de la ronda a la del día seleccionado** al confirmar la vinculación (UPDATE `rounds.date` = día elegido), o alternativamente persistir el `day_number` en `leaderboard_rounds`. Tomaremos la opción más simple y consistente con el motor actual: **actualizar `rounds.date`** al día seleccionado solo si el usuario confirmó la vinculación con fecha distinta. Esto evita tocar el schema y mantiene el cálculo intacto.
+- Mantener `Back`, logo, `Refresh`, `Share`, `Settings` (dropdown) en una sola línea con `size="icon"` actuales. Ya está OK; el ahorro viene en lo siguiente.
 
-### 4. Tab "Acumulado" siempre visible y ordenado
-**`MultiDayLeaderboardDetail.tsx`**
-- Reorganizar el `TabsList` para que el tab **"Acumulado" sea sticky a la izquierda** y los tabs de días scrolleen horizontalmente a la derecha:
-  - Cambiar `flex-wrap` por `overflow-x-auto whitespace-nowrap`.
-  - Envolver el botón "Acumulado" en un contenedor `sticky left-0 bg-background z-10 border-r` para que se mantenga visible al hacer scroll horizontal.
-- La tabla de "Acumulado" debe **mostrar columnas por día**: `# | Jugador | Hcp | D1 | D2 | … | Total/Mejores N`. La columna del total queda como **primera columna fija (sticky)** después del nombre y los días scrollean si no caben.
-  - Implementación: dos tablas en un wrapper flex (izquierda fija: #, Jugador, Total) + derecha (overflow-x-auto: D1..Dn) sincronizadas por filas con la misma altura `h-10`.
-- Orden: por la columna **Total** (acumulado) descendente para Stableford, ascendente para Gross/Net vs par (ya está implementado en `computeAccumulatedStandings`, solo agregar columnas de días).
+**Tarjeta de info del torneo** (líneas 616–650) — colapsar a una sola tarjeta compacta:
 
-### 5. Quitar checkbox redundante mencionado por el usuario
-El usuario dijo "esto lo vamos a eliminar" sobre la variante extra de gross/net en multi-día. **No agregamos nada nuevo** ahí — `EditMultiDayConfigDialog` ya permite seleccionar las 3 modalidades; se queda como está.
+- Una sola fila: `Trophy` + nombre del torneo (text-base, font-bold) + badge "Multi-día" + (a la derecha) chip código `#XXX` clickeable.
+- Segunda fila micro (text-[11px] text-muted-foreground): `N jugadores · N días · Agregación: Suma/Mejores X` y un mini-chip del día actual: `Hoy · Día N` (si aplica). Eliminar la descripción salvo que exista (y mostrarla en text-[11px] truncada a 1 línea).
+- Quitar el banner separado "Jugando hoy: Día N" (líneas 669–683) — esa info ya queda integrada arriba.
+- Reducir `CardHeader` paddings: `py-2 px-3`, eliminar `CardContent` separado (todo dentro de una sola `div` flex).
 
-## Archivos a tocar
+**Segunda tarjeta (tabs)** (líneas 652–727):
 
-- `src/pages/Index.tsx` (2 líneas en resolución de tipo)
-- `src/components/leaderboards/MultiDayLeaderboardDetail.tsx` (default sortMode, layout de tabs sticky, tabla acumulado por días)
-- `src/components/leaderboards/LeaderboardDetailInline.tsx` (default sortMode)
-- `src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx` (selector de día + confirm checkbox + UPDATE rounds.date)
+- Quitar el wrapper `Card` exterior; renderizar directo (`<div>` con borde superior sutil) para eliminar `px-0 pb-2 pt-3`.
+- Pegar los tabs de modalidad (Gross/Neto/Stb) en línea con los tabs de días cuando solo hay un modo activo; cuando hay varios, mantenerlos arriba pero con `h-7` y `mb-1`.
+- Reducir gaps verticales: `space-y-4` del wrapper → `space-y-2`, padding del wrapper `p-4` → `px-3 py-2`.
+
+Resultado: header + info + tabs deben caber en ~150px en lugar de ~280px, dejando la tabla visible desde el primer scroll.
+
+### 2) Botón Settings que no responde ( quizá había quedado en un loop, ya pude usarlo y que se desplieguen las opciones). ..
+
+### 3) Desambiguación de avatares e iniciales
+
+En `MultiDayLeaderboardDetail.tsx`:
+
+- Importar `disambiguateInitials` de `@/lib/playerInput`.
+- Calcular `const initialsMap = useMemo(() => disambiguateInitials(participants.map(p => ({ id: p.id, name: p.display_name }))), [participants])`.
+- Al renderizar `PlayerAvatar`, pasar `initials={initialsMap.get(part.id) ?? part.initials}` tanto en `renderStandingsTable` (línea ~422) como en `renderAccumulated` (línea ~503).
+
+### 4) Botón de edición desde la lista de leaderboards
+
+En `LeaderboardsInlineView.tsx`, en las cards de `activeEvents` (líneas 446–491) y `completedEvents` (505–530):
+
+- Reemplazar el `Trophy` de la esquina superior derecha por un grupo: ícono `Trophy` + botón `Pencil` (size icon, h-7 w-7, `variant="ghost"`) visible solo si el usuario actual es el creador del evento.
+- Click en el lápiz: `e.stopPropagation()` para no abrir el detalle, y abrir el dialog de edición correspondiente según `competition_type`:
+  - `multi_day` → `EditMultiDayConfigDialog`
+  - `standard` → `EditLeaderboardConfigDialog`
+  - `teams_cup` → reusar `CupSettingsDialog` (si ya existe; si no, fuera de alcance — fallback: navegar al detalle).
+- Estado local: `editTarget: { id, type, event } | null` para controlar qué dialog está abierto.
+- Necesita `useAuth()` para `profile?.id` y comparar con `ev.created_by` (verificar que el hook `useLeaderboards` ya devuelva `created_by` — si no, agregarlo al select).
+
+&nbsp;
+
+&nbsp;
+
+Falta habilitar la opción de desvincular se de la ronda... Y que al unirse a un leadeboard de multi día, se tenga la vista para elegir a qué día se estará uniendo de dicho leadervoard, que no se asuma en automático algún día, que sea selección manual en todo momento y de ahí los mebsajes que cirrwsponda. Para confirmación o advertencia al que se está uniendo ue se
 
 ## Fuera de alcance
 
-- No se cambia schema (`leaderboard_rounds` queda igual).
-- No se toca Teams Cup.
-- No se toca el motor de cálculo: el mapeo día↔fecha sigue por `rounds.date`.
+- No tocar lógica de cálculo de standings.
+- No tocar Teams Cup detail.
+- No agregar nuevas migraciones.
+
+## Archivos a modificar
+
+- `src/components/leaderboards/MultiDayLeaderboardDetail.tsx`
+- `src/components/leaderboards/LeaderboardsInlineView.tsx`
+- (revisar) `src/hooks/useLeaderboards.ts` para asegurar que `created_by` esté en el `select`.

@@ -119,6 +119,8 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         setSelectedLeaderboardId(null);
       }
       setJoinCode('');
+      setSelectedDayNumber(null);
+      setConfirmMismatch(false);
       setSelectedPlayerIds(
         new Set(
           allPlayers
@@ -386,11 +388,10 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                 const mdDays = isMd
                   ? ((selectedEvent.rules_json as any)?.days as Array<{day_number:number;date:string;label?:string}> | undefined) || []
                   : [];
-                const matchedDay = isMd && roundDate ? mdDays.find(d => d.date === roundDate) : null;
-                const effectiveDayNum = selectedDayNumber ?? matchedDay?.day_number ?? null;
-                const effectiveDay = mdDays.find(d => d.day_number === effectiveDayNum) || null;
+                const effectiveDay = mdDays.find(d => d.day_number === selectedDayNumber) || null;
                 const mismatch = isMd && effectiveDay && roundDate && effectiveDay.date !== roundDate;
-                const mdBlock = isMd && (!effectiveDay || (mismatch && !confirmMismatch));
+                // Always require explicit manual day selection for multi-day
+                const mdBlock = isMd && !effectiveDay;
                 return (
                   <>
                     <div className="bg-muted/50 rounded-lg p-3">
@@ -406,17 +407,17 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                       <div className="rounded-lg border border-border p-3 space-y-2">
                         <p className="text-xs font-semibold">¿A qué día del torneo se vinculará la ronda?</p>
                         <p className="text-[11px] text-muted-foreground">
-                          Fecha de tu ronda: <strong>{roundDate || '—'}</strong>
+                          Selecciona manualmente. Fecha de tu ronda: <strong>{roundDate || '—'}</strong>
                         </p>
                         <div className="grid grid-cols-1 gap-1.5">
                           {mdDays.map(d => {
-                            const isSel = effectiveDayNum === d.day_number;
+                            const isSel = selectedDayNumber === d.day_number;
                             const isMatch = d.date === roundDate;
                             return (
                               <button
                                 key={d.day_number}
                                 type="button"
-                                onClick={() => { setSelectedDayNumber(d.day_number); setConfirmMismatch(false); }}
+                                onClick={() => setSelectedDayNumber(d.day_number)}
                                 className={cn(
                                   "text-left text-xs px-2.5 py-2 rounded-md border transition-colors",
                                   isSel ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
@@ -434,18 +435,10 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                         </div>
 
                         {mismatch && effectiveDay && (
-                          <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-2.5 text-[11px] space-y-2">
+                          <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-2.5 text-[11px]">
                             <p className="text-amber-800 dark:text-amber-200">
-                              ⚠ La fecha de tu ronda (<strong>{roundDate}</strong>) no coincide con la del Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda a la del día.
+                              ⚠ Tu ronda es del <strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.
                             </p>
-                            <label className="flex items-start gap-2 cursor-pointer text-amber-900 dark:text-amber-100">
-                              <Checkbox
-                                checked={confirmMismatch}
-                                onCheckedChange={(v) => setConfirmMismatch(v === true)}
-                                className="mt-0.5"
-                              />
-                              <span>Entiendo y confirmo vincular esta ronda al Día {effectiveDay.day_number}</span>
-                            </label>
                           </div>
                         )}
                       </div>

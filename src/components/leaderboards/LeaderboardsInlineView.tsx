@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
+import { useAuth } from '@/contexts/AuthContext';
 import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
+import { EditLeaderboardConfigDialog } from '@/components/leaderboards/EditLeaderboardConfigDialog';
+import { EditMultiDayConfigDialog } from '@/components/leaderboards/EditMultiDayConfigDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays } from 'lucide-react';
+import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
@@ -26,13 +29,15 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   onNavigateToDetail,
 }) => {
   const navigate = useNavigate();
-  const { events, loading, createEvent, joinByCode } = useLeaderboards();
+  const { profile } = useAuth();
+  const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createType, setCreateType] = useState<'standard' | 'multi_day' | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
 
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
@@ -464,7 +469,20 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                       )}
                     </div>
-                    <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {ev.created_by === profile?.id && (ev as any).competition_type !== 'teams_cup' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Editar configuración"
+                          onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
+                      <Trophy className="h-5 w-5 text-amber-500" />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0">
@@ -533,6 +551,34 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
       </Tabs>
 
       <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
+
+      {editTarget && (editTarget.competition_type === 'multi_day' ? (
+        <EditMultiDayConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ) : (
+        <EditLeaderboardConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            start_date: editTarget.start_date,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ))}
     </div>
   );
 };

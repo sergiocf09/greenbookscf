@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle, Link2Off, Link } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -16,7 +16,7 @@ import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
 import {
   computeAccumulatedStandings,
@@ -67,6 +67,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [deleteText, setDeleteText] = useState('');
   const [showClose, setShowClose] = useState(false);
   const [closeText, setCloseText] = useState('');
+  const [showLinkedRounds, setShowLinkedRounds] = useState(false);
+  const [linkedRounds, setLinkedRounds] = useState<Array<{ round_id: string; date: string; course_name: string; day_number: number | null }>>([]);
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const isCreator = event?.created_by === profile?.id;
@@ -337,6 +340,63 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     fetchAll();
   };
 
+  const initialsMap = useMemo(
+    () => disambiguateInitials(
+      participants.map(p => ({ id: p.id, name: p.display_name, initials: p.initials, color: p.avatar_color, handicap: p.handicap_for_leaderboard })),
+    ),
+    [participants],
+  );
+
+  const fetchLinkedRounds = useCallback(async () => {
+    const { data: lr } = await supabase
+      .from('leaderboard_rounds')
+      .select('round_id')
+      .eq('leaderboard_id', leaderboardId);
+    const ids = (lr || []).map(r => r.round_id);
+    if (ids.length === 0) { setLinkedRounds([]); return; }
+    const { data: rds } = await supabase
+      .from('rounds')
+      .select('id, date, course_id')
+      .in('id', ids);
+    const courseIds = [...new Set((rds || []).map(r => r.course_id))];
+    let courseMap: Record<string, string> = {};
+    if (courseIds.length > 0) {
+      const { data: cs } = await supabase.from('golf_courses').select('id, name').in('id', courseIds);
+      courseMap = Object.fromEntries(((cs as any[]) || []).map((c: any) => [c.id, c.name]));
+    }
+    const dayByDate: Record<string, number> = {};
+    for (const d of rules.days) dayByDate[d.date] = d.day_number;
+    setLinkedRounds(
+      (rds || []).map(r => ({
+        round_id: r.id,
+        date: r.date,
+        course_name: courseMap[r.course_id] || 'Campo',
+        day_number: dayByDate[r.date] ?? null,
+      })).sort((a, b) => a.date.localeCompare(b.date)),
+    );
+  }, [leaderboardId, rules.days]);
+
+  const handleUnlinkRound = async (roundId: string) => {
+    setUnlinkingId(roundId);
+    try {
+      // Cascade clear leaderboard_scores for that round in this leaderboard, then delete link
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', leaderboardId).eq('round_id', roundId);
+      const { error } = await supabase
+        .from('leaderboard_rounds')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', roundId);
+      if (error) throw error;
+      toast.success('Ronda desvinculada');
+      await fetchLinkedRounds();
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setUnlinkingId(null);
+    }
+  };
+
   const sortDay = (entries: DayStanding[]): DayStanding[] => {
     const played = entries.filter(e => e.holesPlayed > 0);
     const unplayed = entries.filter(e => e.holesPlayed === 0);
@@ -419,7 +479,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <td className="py-1.5 px-1">
                 <div className="flex items-center gap-1.5">
                   <PlayerAvatar
-                    initials={part.initials}
+                    initials={initialsMap.get(part.id) ?? part.initials}
                     background={part.avatar_color}
                     size="sm"
                     isLoggedInUser={part.profile_id === profile?.id}
@@ -500,7 +560,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     <td className={cn(rowH, 'px-1')}>
                       <div className="flex items-center gap-1.5">
                         <PlayerAvatar
-                          initials={part.initials}
+                          initials={initialsMap.get(part.id) ?? part.initials}
                           background={part.avatar_color}
                           size="sm"
                           isLoggedInUser={part.profile_id === profile?.id}
@@ -588,6 +648,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
                     <Settings className="h-4 w-4 mr-2" /> Editar configuración
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
+                    <Link2Off className="h-4 w-4 mr-2" /> Gestionar rondas vinculadas
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {event.status === 'active' ? (
                     <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
@@ -612,119 +675,95 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
         </div>
       </div>
 
-      <div className="p-4 max-w-lg mx-auto space-y-4">
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              <CardTitle className="text-lg">{event.name}</CardTitle>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold uppercase">
-                Multi-día
-              </span>
-            </div>
-            {event.description && (
-              <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+      <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
+        {/* Compact tournament info */}
+        <div className="rounded-md border bg-card px-3 py-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+            <span className="font-bold text-sm truncate flex-1 min-w-0">{event.name}</span>
+            <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase shrink-0">
+              Multi-día
+            </span>
+            <button onClick={copyCode}
+              className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded hover:bg-muted/80 shrink-0">
+              <Hash className="h-2.5 w-2.5" />
+              <span className="font-mono font-bold text-[11px]">{event.code}</span>
+              <Copy className="h-2.5 w-2.5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+            <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{participants.length}</span>
+            <span>·</span>
+            <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />{rules.days.length}d</span>
+            <span>·</span>
+            <span>{rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Suma'}</span>
+            {currentDay?.isToday && (
+              <span className="ml-auto text-primary font-semibold">Hoy · Día {currentDay.day_number}</span>
             )}
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-              <button onClick={copyCode}
-                className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md hover:bg-muted/80">
-                <Hash className="h-3 w-3" />
-                <span className="font-mono font-bold">{event.code}</span>
-                <Copy className="h-3 w-3 ml-1" />
-              </button>
-              <span className="flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" /> {participants.length} jugadores
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" /> {rules.days.length} días
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Agregación: {rules.aggregation === 'best_n'
-                ? `Mejores ${rules.best_n} de ${rules.days.length} días`
-                : 'Suma total'}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          {event.description && (
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{event.description}</p>
+          )}
+        </div>
 
-        <Card>
-          <CardContent className="px-0 pb-2 pt-3">
-            {availableModes.length > 1 && (
-              <div className="px-4 mb-2">
-                <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-                  <TabsList className="w-full h-8">
-                    {availableModes.includes('gross') &&
-                      <TabsTrigger value="gross" className="flex-1 text-xs h-7">Gross</TabsTrigger>}
-                    {availableModes.includes('net') &&
-                      <TabsTrigger value="net" className="flex-1 text-xs h-7">Neto</TabsTrigger>}
-                    {availableModes.includes('stableford') &&
-                      <TabsTrigger value="stableford" className="flex-1 text-xs h-7">Stableford</TabsTrigger>}
-                  </TabsList>
-                </Tabs>
-              </div>
-            )}
-
-            {currentDay && (
-              <div className={cn(
-                "mx-4 mb-2 rounded-md px-3 py-1.5 text-xs flex items-center gap-2",
-                currentDay.isToday
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "bg-muted text-muted-foreground"
-              )}>
-                <Calendar className="h-3.5 w-3.5" />
-                {currentDay.isToday ? (
-                  <span>Jugando hoy: Día {currentDay.day_number}{currentDay.label ? ` · ${currentDay.label}` : ''}</span>
-                ) : (
-                  <span>Próximo: Día {currentDay.day_number} · {format(parseLocalDate(currentDay.date), "d 'de' MMM", { locale: es })}</span>
-                )}
-              </div>
-            )}
-
-            <div className="px-4">
-              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList className="w-full h-auto p-1 flex justify-start overflow-x-auto whitespace-nowrap">
-                  <TabsTrigger
-                    value="all"
-                    className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
-                  >
-                    Acumulado
-                  </TabsTrigger>
-                  {rules.days.map(d => {
-                    const isToday = d.date === todayStr;
-                    return (
-                      <TabsTrigger key={d.day_number} value={String(d.day_number)}
-                        className={cn(
-                          "text-xs h-7 min-w-[72px] shrink-0 gap-1",
-                          isToday && "data-[state=inactive]:text-primary"
-                        )}>
-                        {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
-                        Día {d.day_number}{isToday ? ' · Hoy' : ''}
-                      </TabsTrigger>
-                    );
-                  })}
+        {/* Tabs + standings */}
+        <div className="rounded-md border bg-card pt-2 pb-2">
+          {availableModes.length > 1 && (
+            <div className="px-3 mb-1.5">
+              <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                <TabsList className="w-full h-7">
+                  {availableModes.includes('gross') &&
+                    <TabsTrigger value="gross" className="flex-1 text-[11px] h-6">Gross</TabsTrigger>}
+                  {availableModes.includes('net') &&
+                    <TabsTrigger value="net" className="flex-1 text-[11px] h-6">Neto</TabsTrigger>}
+                  {availableModes.includes('stableford') &&
+                    <TabsTrigger value="stableford" className="flex-1 text-[11px] h-6">Stableford</TabsTrigger>}
                 </TabsList>
-
-
-                {rules.days.map(d => (
-                  <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-3">
-                    <div className="text-xs text-muted-foreground mb-2 px-1">
-                      {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
-                      {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
-                      {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
-                    </div>
-                    {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
-                  </TabsContent>
-                ))}
-
-                <TabsContent value="all" className="mt-3">
-                  {renderAccumulated()}
-                </TabsContent>
               </Tabs>
             </div>
-          </CardContent>
-        </Card>
+          )}
+
+          <div className="px-3">
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="w-full h-auto p-1 flex justify-start overflow-x-auto whitespace-nowrap">
+                <TabsTrigger
+                  value="all"
+                  className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
+                >
+                  Acumulado
+                </TabsTrigger>
+                {rules.days.map(d => {
+                  const isToday = d.date === todayStr;
+                  return (
+                    <TabsTrigger key={d.day_number} value={String(d.day_number)}
+                      className={cn(
+                        "text-xs h-7 min-w-[72px] shrink-0 gap-1",
+                        isToday && "data-[state=inactive]:text-primary"
+                      )}>
+                      {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
+                      Día {d.day_number}{isToday ? ' · Hoy' : ''}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+
+              {rules.days.map(d => (
+                <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-2">
+                  <div className="text-[11px] text-muted-foreground mb-1.5 px-1">
+                    {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
+                    {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
+                    {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
+                  </div>
+                  {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
+                </TabsContent>
+              ))}
+
+              <TabsContent value="all" className="mt-2">
+                {renderAccumulated()}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
 
       {isCreator && (
@@ -796,6 +835,46 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   onClick={handleDelete}>
                   Eliminar
                 </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showLinkedRounds} onOpenChange={setShowLinkedRounds}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Rondas vinculadas</DialogTitle>
+                <DialogDescription>
+                  Desvincular una ronda elimina sus aportes al leaderboard. La ronda en sí no se borra.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {linkedRounds.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No hay rondas vinculadas.</p>
+                ) : linkedRounds.map(r => (
+                  <div key={r.round_id} className="flex items-center gap-2 p-2 rounded-md border">
+                    <Link className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{r.course_name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {r.date}{r.day_number ? ` · Día ${r.day_number}` : ' · Sin día'}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-destructive hover:text-destructive"
+                      disabled={unlinkingId === r.round_id}
+                      onClick={() => handleUnlinkRound(r.round_id)}
+                    >
+                      {unlinkingId === r.round_id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <><Link2Off className="h-3.5 w-3.5 mr-1" /> Desvincular</>}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowLinkedRounds(false)}>Cerrar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
