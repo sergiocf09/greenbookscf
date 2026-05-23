@@ -118,7 +118,7 @@ const Index = () => {
   }, [scores]);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
-  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup'>('standard');
+  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup' | 'multi_day'>('standard');
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboards, setLinkedLeaderboards] = useState<Array<{ id: string; name: string; code: string; competition_type: string }>>([]);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
