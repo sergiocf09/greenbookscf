@@ -469,7 +469,20 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                       )}
                     </div>
-                    <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {ev.created_by === profile?.id && (ev as any).competition_type !== 'teams_cup' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Editar configuración"
+                          onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )}
+                      <Trophy className="h-5 w-5 text-amber-500" />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0">
