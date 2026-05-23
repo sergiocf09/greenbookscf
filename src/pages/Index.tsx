@@ -478,7 +478,9 @@ const Index = () => {
         .eq('id', leaderboardDetailId)
         .maybeSingle();
       if (cancelled || !data) return;
-      const resolved = (data as any).competition_type === 'teams_cup' ? 'teams_cup' : 'standard';
+      const ct = (data as any).competition_type;
+      const resolved: 'standard' | 'teams_cup' | 'multi_day' =
+        ct === 'teams_cup' ? 'teams_cup' : ct === 'multi_day' ? 'multi_day' : 'standard';
       setLeaderboardDetailType(prev => (prev === resolved ? prev : resolved));
     })();
     return () => { cancelled = true; };
