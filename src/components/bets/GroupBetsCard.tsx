@@ -1130,14 +1130,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Pinguinos - show count and loser payment (scoped to same group)
   const pinguinosResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.pinguinos?.enabled || sameGroupPlayers.length < 2) {
+    if (!effectiveBetConfig.pinguinos?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
-    const valuePerOccurrence = betConfig.pinguinos.valuePerOccurrence || 25;
+    const valuePerOccurrence = effectiveBetConfig.pinguinos.valuePerOccurrence || 25;
     
     // Filter to only participating players within the same group (with template inheritance)
-    const participatingPlayers = resolveGroupParticipants(betConfig.pinguinos.participantIds);
+    const participatingPlayers = resolveGroupParticipants(effectiveBetConfig.pinguinos.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
@@ -1165,12 +1165,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Map occurrences with player initials
     const occurrences: OccurrenceInfo[] = allPinguinos
-      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .sort((a, b) => playOrderIndex(a.holeNumber, startingHole) - playOrderIndex(b.holeNumber, startingHole))
       .map(p => {
         const player = participatingPlayers.find(pl => pl.id === p.playerId);
         return {
           playerId: p.playerId,
-          playerInitial: player?.initials?.charAt(0) || '?',
+          playerInitial: player ? getPlayerAbbr(player) : '?',
           holeNumber: p.holeNumber,
         };
       });
@@ -1182,7 +1182,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     let tieHole: number | null = null;
     
     if (allPinguinos.length > 0) {
-      const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+      const maxHole = allPinguinos.reduce((acc, p) =>
+        playOrderIndex(p.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? p.holeNumber : acc
+      , allPinguinos[0].holeNumber);
       const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
       const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
       const playersWithMaxOverPar = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
@@ -1196,7 +1198,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const override = parseTieBreak(betConfig.pinguinos.tieBreakLoser);
+        const override = parseTieBreak(effectiveBetConfig.pinguinos.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxOverPar.some(p => p.playerId === override.playerId)) {
           const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
@@ -1241,7 +1243,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [sameGroupPlayers, scores, betConfig.pinguinos, course]);
+  }, [sameGroupPlayers, scores, effectiveBetConfig.pinguinos, course, startingHole, disambiguatedAbbrs]);
 
   // Calculate Stableford points based on scope
   const stablefordScope = betConfig.stableford?.scope ?? 'global';
