@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
+import { EditLeaderboardConfigDialog } from './EditLeaderboardConfigDialog';
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -51,6 +52,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
+  const [showEditConfig, setShowEditConfig] = useState(false);
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -194,6 +196,9 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
                   <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
+                  <Settings className="h-4 w-4 mr-2" /> Editar configuración
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -417,6 +422,21 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isCreator && event && (
+        <EditLeaderboardConfigDialog
+          open={showEditConfig}
+          onOpenChange={setShowEditConfig}
+          event={{
+            id: event.id,
+            name: event.name,
+            description: event.description,
+            start_date: event.start_date,
+            scoring_modes: event.scoring_modes || ['gross', 'net'],
+          }}
+          onSaved={fetchDetail}
+        />
+      )}
     </div>
   );
 };
