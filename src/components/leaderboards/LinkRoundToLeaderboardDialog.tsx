@@ -16,6 +16,7 @@ import { useLeaderboards, useLeaderboardDetail } from '@/hooks/useLeaderboards';
 import { getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { Loader2, Search, Trophy, ChevronRight, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface LinkRoundToLeaderboardDialogProps {
   open: boolean;
