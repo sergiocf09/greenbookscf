@@ -1,7 +1,6 @@
 // Oyeses (Closest to the Pin) Calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, OyesModality } from '@/types/golf';
-import { BetSummary } from './betCalculations';
-import { sortHolesByPlayOrder } from './bets/shared';
+import { BetSummary, sortHolesByPlayOrder } from './bets/shared';
 
 /**
  * Oyeses result per player per hole for display
