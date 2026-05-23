@@ -1450,17 +1450,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
-    if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
+    if (!effectiveBetConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
     
-    const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+    const enabledAnimals = effectiveBetConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
     // Maintain order: camello, pez, gorila
     const orderedAnimals: ZooAnimalType[] = ['camello', 'pez', 'gorila'];
     
     return orderedAnimals
       .filter(animal => enabledAnimals.includes(animal))
-      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, betConfig.zoologico, startingHole))
+      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, effectiveBetConfig.zoologico, startingHole))
       .filter((r): r is ZoologicoAnimalResult => r !== null);
-  }, [sameGroupPlayers, betConfig.zoologico, startingHole]);
+  }, [sameGroupPlayers, effectiveBetConfig.zoologico, startingHole]);
 
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
