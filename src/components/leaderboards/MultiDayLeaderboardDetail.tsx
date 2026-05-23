@@ -672,119 +672,95 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
         </div>
       </div>
 
-      <div className="p-4 max-w-lg mx-auto space-y-4">
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              <CardTitle className="text-lg">{event.name}</CardTitle>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold uppercase">
-                Multi-día
-              </span>
-            </div>
-            {event.description && (
-              <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+      <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
+        {/* Compact tournament info */}
+        <div className="rounded-md border bg-card px-3 py-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+            <span className="font-bold text-sm truncate flex-1 min-w-0">{event.name}</span>
+            <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase shrink-0">
+              Multi-día
+            </span>
+            <button onClick={copyCode}
+              className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded hover:bg-muted/80 shrink-0">
+              <Hash className="h-2.5 w-2.5" />
+              <span className="font-mono font-bold text-[11px]">{event.code}</span>
+              <Copy className="h-2.5 w-2.5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+            <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{participants.length}</span>
+            <span>·</span>
+            <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />{rules.days.length}d</span>
+            <span>·</span>
+            <span>{rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Suma'}</span>
+            {currentDay?.isToday && (
+              <span className="ml-auto text-primary font-semibold">Hoy · Día {currentDay.day_number}</span>
             )}
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-              <button onClick={copyCode}
-                className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md hover:bg-muted/80">
-                <Hash className="h-3 w-3" />
-                <span className="font-mono font-bold">{event.code}</span>
-                <Copy className="h-3 w-3 ml-1" />
-              </button>
-              <span className="flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" /> {participants.length} jugadores
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" /> {rules.days.length} días
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Agregación: {rules.aggregation === 'best_n'
-                ? `Mejores ${rules.best_n} de ${rules.days.length} días`
-                : 'Suma total'}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          {event.description && (
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{event.description}</p>
+          )}
+        </div>
 
-        <Card>
-          <CardContent className="px-0 pb-2 pt-3">
-            {availableModes.length > 1 && (
-              <div className="px-4 mb-2">
-                <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-                  <TabsList className="w-full h-8">
-                    {availableModes.includes('gross') &&
-                      <TabsTrigger value="gross" className="flex-1 text-xs h-7">Gross</TabsTrigger>}
-                    {availableModes.includes('net') &&
-                      <TabsTrigger value="net" className="flex-1 text-xs h-7">Neto</TabsTrigger>}
-                    {availableModes.includes('stableford') &&
-                      <TabsTrigger value="stableford" className="flex-1 text-xs h-7">Stableford</TabsTrigger>}
-                  </TabsList>
-                </Tabs>
-              </div>
-            )}
-
-            {currentDay && (
-              <div className={cn(
-                "mx-4 mb-2 rounded-md px-3 py-1.5 text-xs flex items-center gap-2",
-                currentDay.isToday
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "bg-muted text-muted-foreground"
-              )}>
-                <Calendar className="h-3.5 w-3.5" />
-                {currentDay.isToday ? (
-                  <span>Jugando hoy: Día {currentDay.day_number}{currentDay.label ? ` · ${currentDay.label}` : ''}</span>
-                ) : (
-                  <span>Próximo: Día {currentDay.day_number} · {format(parseLocalDate(currentDay.date), "d 'de' MMM", { locale: es })}</span>
-                )}
-              </div>
-            )}
-
-            <div className="px-4">
-              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList className="w-full h-auto p-1 flex justify-start overflow-x-auto whitespace-nowrap">
-                  <TabsTrigger
-                    value="all"
-                    className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
-                  >
-                    Acumulado
-                  </TabsTrigger>
-                  {rules.days.map(d => {
-                    const isToday = d.date === todayStr;
-                    return (
-                      <TabsTrigger key={d.day_number} value={String(d.day_number)}
-                        className={cn(
-                          "text-xs h-7 min-w-[72px] shrink-0 gap-1",
-                          isToday && "data-[state=inactive]:text-primary"
-                        )}>
-                        {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
-                        Día {d.day_number}{isToday ? ' · Hoy' : ''}
-                      </TabsTrigger>
-                    );
-                  })}
+        {/* Tabs + standings */}
+        <div className="rounded-md border bg-card pt-2 pb-2">
+          {availableModes.length > 1 && (
+            <div className="px-3 mb-1.5">
+              <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                <TabsList className="w-full h-7">
+                  {availableModes.includes('gross') &&
+                    <TabsTrigger value="gross" className="flex-1 text-[11px] h-6">Gross</TabsTrigger>}
+                  {availableModes.includes('net') &&
+                    <TabsTrigger value="net" className="flex-1 text-[11px] h-6">Neto</TabsTrigger>}
+                  {availableModes.includes('stableford') &&
+                    <TabsTrigger value="stableford" className="flex-1 text-[11px] h-6">Stableford</TabsTrigger>}
                 </TabsList>
-
-
-                {rules.days.map(d => (
-                  <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-3">
-                    <div className="text-xs text-muted-foreground mb-2 px-1">
-                      {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
-                      {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
-                      {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
-                    </div>
-                    {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
-                  </TabsContent>
-                ))}
-
-                <TabsContent value="all" className="mt-3">
-                  {renderAccumulated()}
-                </TabsContent>
               </Tabs>
             </div>
-          </CardContent>
-        </Card>
+          )}
+
+          <div className="px-3">
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="w-full h-auto p-1 flex justify-start overflow-x-auto whitespace-nowrap">
+                <TabsTrigger
+                  value="all"
+                  className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
+                >
+                  Acumulado
+                </TabsTrigger>
+                {rules.days.map(d => {
+                  const isToday = d.date === todayStr;
+                  return (
+                    <TabsTrigger key={d.day_number} value={String(d.day_number)}
+                      className={cn(
+                        "text-xs h-7 min-w-[72px] shrink-0 gap-1",
+                        isToday && "data-[state=inactive]:text-primary"
+                      )}>
+                      {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
+                      Día {d.day_number}{isToday ? ' · Hoy' : ''}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+
+              {rules.days.map(d => (
+                <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-2">
+                  <div className="text-[11px] text-muted-foreground mb-1.5 px-1">
+                    {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
+                    {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
+                    {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
+                  </div>
+                  {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
+                </TabsContent>
+              ))}
+
+              <TabsContent value="all" className="mt-2">
+                {renderAccumulated()}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
 
       {isCreator && (
