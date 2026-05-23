@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -46,6 +53,16 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [standingsByDay, setStandingsByDay] = useState<Record<number, DayStanding[]>>({});
   const [sortMode, setSortMode] = useState<SortMode>('net');
   const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [showEditConfig, setShowEditConfig] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
+  const [showClose, setShowClose] = useState(false);
+  const [closeText, setCloseText] = useState('');
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const isCreator = event?.created_by === profile?.id;
 
   const rules = useMemo<MultiDayRulesJson>(() => {
     const r = (event?.rules_json ?? {}) as MultiDayRulesJson;
