@@ -1,85 +1,61 @@
 
-## Objetivo
+## Contexto
 
-Tres mejoras sobre la nueva variante Multi-día (y leaderboards en general):
+Hay un bug raíz y varios ajustes UX en la experiencia de leaderboards multi-día. La causa principal de "no aparece día ni Acumulado, no abre el editor multi-día, muestra Neto cuando elegí Gross" es que cuando se abre el detalle inline desde la app de la ronda, `src/pages/Index.tsx` **fuerza** `competition_type` a `'standard'` (línea 481 y 2435), por lo que renderiza `LeaderboardDetailInline` (estándar) en vez de `MultiDayLeaderboardDetail`. Por eso ves el editor "estándar" sin días, el tab de Acumulado no aparece y el sortMode default es `'net'` aunque la competencia esté en Gross.
 
-1. **Edición de configuración** del leaderboard (no solo el nombre).
-2. **UX claro de "día actual"** en el detalle Multi-día.
-3. **Claridad al vincular una ronda** a qué día del torneo se está uniendo.
+## Cambios
 
-Sólo cambia el creador del leaderboard puede editar config. Participantes siguen viendo todo en read-only.
+### 1. Render correcto del multi-día inline (causa raíz)
+**`src/pages/Index.tsx`**
+- Línea ~481: resolver los tres tipos:
+  ```ts
+  const ct = (data as any).competition_type;
+  const resolved = ct === 'teams_cup' ? 'teams_cup' : ct === 'multi_day' ? 'multi_day' : 'standard';
+  ```
+- Línea ~2435 (banner amber de leaderboards vinculados): mapear igualmente `multi_day` → `'multi_day'`.
 
----
+Con esto el editor de configuración multi-día (con todos los días) ya aparece automáticamente al pulsar "Editar configuración", y se muestran los tabs por día + Acumulado.
 
-## 1. Editar configuración del leaderboard
+### 2. Default de modo (Gross/Neto/Stableford) según `scoring_modes`
+**`src/components/leaderboards/MultiDayLeaderboardDetail.tsx`** y **`src/components/leaderboards/LeaderboardDetailInline.tsx`**
+- Inicializar `sortMode` no a `'net'` hardcoded, sino:
+  ```ts
+  const initial = (event?.scoring_modes?.[0] as SortMode) ?? 'net';
+  ```
+- En multi-día, usar un `useEffect` que setea `sortMode` cuando carga `event` si el actual no está dentro de `availableModes`. Mismo patrón en estándar (cuando se carga event).
+- Resultado: si la competencia es solo Gross, la tabla y el header (`Score`) aparecen con Gross por default.
 
-Hoy el dropdown de ajustes del `LeaderboardDetailInline` y del `MultiDayLeaderboardDetail` solo permite renombrar / cerrar / eliminar. Se agrega una opción **"Editar configuración"** (solo visible si `event.created_by === profile.id`).
+### 3. Vinculación de ronda sin candado de fecha
+**`src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx`**
+- Quitar el bloqueo `blockMd` que desactiva "Vincular" cuando la fecha no coincide.
+- Para multi-día: mostrar **lista de días** como `RadioGroup` (Día 1 — fecha · etiqueta, Día 2 …). Pre-seleccionar el que coincide con `roundDate`; si no coincide ninguno, no preseleccionar y resaltar aviso.
+- Si la fecha de la ronda no coincide con el día elegido, mostrar banner ámbar:
+  > "La fecha de tu ronda (DD/MM/YYYY) no coincide con la del Día N (DD/MM/YYYY). Confirma que es correcto."
+  con `Checkbox` "Entiendo y confirmo vincular esta ronda al Día N" — el botón "Vincular" queda deshabilitado hasta que se marca.
+- Si coincide, se vincula directo (sin checkbox).
+- Persistencia: la lógica actual ya usa `rounds.date` para mapear al día en `MultiDayLeaderboardDetail` (`dayByDate[date]`). Como queremos permitir asignar la ronda a un día con fecha distinta, hay que **fijar la fecha de la ronda a la del día seleccionado** al confirmar la vinculación (UPDATE `rounds.date` = día elegido), o alternativamente persistir el `day_number` en `leaderboard_rounds`. Tomaremos la opción más simple y consistente con el motor actual: **actualizar `rounds.date`** al día seleccionado solo si el usuario confirmó la vinculación con fecha distinta. Esto evita tocar el schema y mantiene el cálculo intacto.
 
-### Standard (`LeaderboardDetailInline`)
-Diálogo con campos editables:
-- Nombre
-- Descripción
-- Fecha (`start_date`)
-- Modalidades (gross / net / stableford) — checkboxes
+### 4. Tab "Acumulado" siempre visible y ordenado
+**`MultiDayLeaderboardDetail.tsx`**
+- Reorganizar el `TabsList` para que el tab **"Acumulado" sea sticky a la izquierda** y los tabs de días scrolleen horizontalmente a la derecha:
+  - Cambiar `flex-wrap` por `overflow-x-auto whitespace-nowrap`.
+  - Envolver el botón "Acumulado" en un contenedor `sticky left-0 bg-background z-10 border-r` para que se mantenga visible al hacer scroll horizontal.
+- La tabla de "Acumulado" debe **mostrar columnas por día**: `# | Jugador | Hcp | D1 | D2 | … | Total/Mejores N`. La columna del total queda como **primera columna fija (sticky)** después del nombre y los días scrollean si no caben.
+  - Implementación: dos tablas en un wrapper flex (izquierda fija: #, Jugador, Total) + derecha (overflow-x-auto: D1..Dn) sincronizadas por filas con la misma altura `h-10`.
+- Orden: por la columna **Total** (acumulado) descendente para Stableford, ascendente para Gross/Net vs par (ya está implementado en `computeAccumulatedStandings`, solo agregar columnas de días).
 
-### Multi-día (`MultiDayLeaderboardDetail`)
-Diálogo con campos editables:
-- Nombre, Descripción
-- Modalidades
-- **Días del torneo**: lista de `{ date, label }` editable (agregar / quitar día). Mínimo 2.
-- **Agregación**: `sum` o `best_n` (con N)
-- Al guardar, recalcular `day_number` por orden cronológico, persistir en `rules_json` y actualizar `start_date`/`end_date`.
-
-Guardas:
-- No permitir borrar un día si ya hay una ronda vinculada cuya fecha cae en ese día. Mostrar warning con la lista de rondas afectadas y bloquear el borrado de ese día (el resto se puede editar).
-- Cambiar fechas que ya tienen rondas vinculadas muestra un aviso pero se permite (el mapeo se recalcula por `rounds.date` → `day_number`).
-
-### Implementación
-- Nuevo componente `EditLeaderboardConfigDialog` (variante standard) y `EditMultiDayConfigDialog`. Actualizan vía `supabase.from('leaderboard_events').update({...})` filtrando por `id`. RLS ya permite a `created_by` updatear.
-- Después de guardar: `fetchDetail()` / `fetchAll()` y `queryClient.invalidateQueries(['leaderboard_events'])`.
-
----
-
-## 2. UX "día actual" en Multi-día
-
-En `MultiDayLeaderboardDetail`:
-
-- **Default tab**: en lugar de `'all'`, abrir en el día cuyo `date` === hoy (`YYYY-MM-DD` local). Si hoy no coincide con ningún día, abrir en el primer día sin completar; si todos completados, abrir en `'all'`.
-- **Etiqueta visual "Hoy"**: al `TabsTrigger` del día con `date === today` agregar un punto/badge (`bg-primary`) y texto "Día N · Hoy".
-- **Header del card**: bajo el título mostrar una línea pill destacada: `"Jugando: Día N — <fecha> [Hoy]"` cuando aplique. Si el torneo no está en curso hoy, mostrar `"Próximo: Día N — <fecha>"` o `"Finalizado"`.
-- **Tab "Acumulado"** mantiene su lugar (último) y mantiene estilo `font-semibold` actual.
-
----
-
-## 3. Claridad al vincular ronda en Multi-día
-
-En `LinkRoundToLeaderboardDialog`:
-
-- Al listar leaderboards activos, los multi-día muestran badge `Multi-día · N días`.
-- Cuando el `selectedEvent.competition_type === 'multi_day'`:
-  - Cargar `rules_json.days` y la fecha de la ronda activa (`rounds.date` del `roundId`).
-  - Mostrar **arriba del listado de jugadores** un bloque informativo:
-    - Si la fecha de la ronda coincide con algún `day.date`: card verde "Se vinculará al **Día N — `<fecha>` (`label`)** del torneo «`<nombre>`»".
-    - Si NO coincide con ningún día del torneo: card ámbar "⚠ La fecha de esta ronda (`<fecha>`) no coincide con ningún día del torneo. Edita la configuración del leaderboard o la fecha de la ronda antes de vincular." → botón de "Vincular" deshabilitado.
-- Igual señal contextual al `MultiDayLeaderboardDetail` cuando se invoca el flujo desde ahí (mismo dialog, lógica unificada).
-
-No se cambian estructuras de datos: el día se sigue derivando de `rounds.date` ↔ `rules.days[].date` (como ya hace `MultiDayLeaderboardDetail`).
-
----
+### 5. Quitar checkbox redundante mencionado por el usuario
+El usuario dijo "esto lo vamos a eliminar" sobre la variante extra de gross/net en multi-día. **No agregamos nada nuevo** ahí — `EditMultiDayConfigDialog` ya permite seleccionar las 3 modalidades; se queda como está.
 
 ## Archivos a tocar
 
-- `src/components/leaderboards/LeaderboardDetailInline.tsx` — añadir opción "Editar configuración" en el menú.
-- `src/components/leaderboards/MultiDayLeaderboardDetail.tsx` — menú de ajustes (hoy no existe), default tab = hoy, badge "Hoy", header "Jugando Día N".
-- Nuevos: `src/components/leaderboards/EditLeaderboardConfigDialog.tsx`, `src/components/leaderboards/EditMultiDayConfigDialog.tsx`.
-- `src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx` — bloque informativo multi-día + guardas de vinculación.
-
-Sin migraciones de DB. Sin cambios a `useLeaderboards` salvo (opcional) un `updateEvent` helper.
-
----
+- `src/pages/Index.tsx` (2 líneas en resolución de tipo)
+- `src/components/leaderboards/MultiDayLeaderboardDetail.tsx` (default sortMode, layout de tabs sticky, tabla acumulado por días)
+- `src/components/leaderboards/LeaderboardDetailInline.tsx` (default sortMode)
+- `src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx` (selector de día + confirm checkbox + UPDATE rounds.date)
 
 ## Fuera de alcance
 
-- Teams Cup edición (ya tiene su propio `CupSettingsDialog`).
-- Cambiar el modelo de datos (sigue mapeo por fecha).
-- Editar handicaps de participantes (ya existe en flujo aparte).
+- No se cambia schema (`leaderboard_rounds` queda igual).
+- No se toca Teams Cup.
+- No se toca el motor de cálculo: el mapeo día↔fecha sigue por `rounds.date`.
