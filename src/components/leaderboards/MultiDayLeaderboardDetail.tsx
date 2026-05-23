@@ -59,7 +59,15 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event?.id]);
-  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const tabStorageKey = `mdlb:selectedTab:${leaderboardId}`;
+  const sortStorageKey = `mdlb:sortMode:${leaderboardId}`;
+  const [selectedTab, setSelectedTabState] = useState<string>(() => {
+    try { return localStorage.getItem(tabStorageKey) || 'all'; } catch { return 'all'; }
+  });
+  const setSelectedTab = (v: string) => {
+    setSelectedTabState(v);
+    try { localStorage.setItem(tabStorageKey, v); } catch {}
+  };
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState('');
