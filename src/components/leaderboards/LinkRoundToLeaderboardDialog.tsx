@@ -70,6 +70,9 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
   const [roundDate, setRoundDate] = useState<string | null>(null);
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
+  const [confirmMismatch, setConfirmMismatch] = useState(false);
+
 
   // Fetch round date once for multi-day targeting feedback
   useEffect(() => {
