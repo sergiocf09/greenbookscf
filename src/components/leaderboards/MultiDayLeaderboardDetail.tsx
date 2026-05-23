@@ -52,6 +52,13 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [standingsByDay, setStandingsByDay] = useState<Record<number, DayStanding[]>>({});
   const [sortMode, setSortMode] = useState<SortMode>('net');
+  useEffect(() => {
+    const modes = (event?.scoring_modes || []) as SortMode[];
+    if (modes.length > 0 && !modes.includes(sortMode)) {
+      setSortMode(modes[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [showRename, setShowRename] = useState(false);
