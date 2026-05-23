@@ -449,53 +449,111 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     if (accumulated.length === 0) {
       return <p className="text-center text-sm text-muted-foreground py-8">Aún no hay resultados</p>;
     }
+    const daysSorted = [...rules.days].sort((a, b) => a.day_number - b.day_number);
+    const dayStandingsLookup: Record<number, Record<string, DayStanding>> = {};
+    for (const dn of Object.keys(standingsByDay)) {
+      dayStandingsLookup[Number(dn)] = Object.fromEntries(
+        (standingsByDay[Number(dn)] || []).map(s => [s.participantId, s]),
+      );
+    }
+
+    const totalLabel = rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Total';
+    const rowH = 'h-10';
+
+    const getTotal = (a: typeof accumulated[number]) =>
+      sortMode === 'stableford'
+        ? (rules.aggregation === 'best_n' ? (a.bestNStableford ?? 0) : a.totalStableford)
+        : sortMode === 'gross'
+          ? (rules.aggregation === 'best_n' ? (a.bestNGross ?? 0) : a.totalGrossVsPar)
+          : (rules.aggregation === 'best_n' ? (a.bestNNetVsPar ?? 0) : a.totalNetVsPar);
+
+    const getDayScore = (partId: string, dayNum: number): { played: boolean; val: number } => {
+      const e = dayStandingsLookup[dayNum]?.[partId];
+      if (!e || e.holesPlayed === 0) return { played: false, val: 0 };
+      const v = sortMode === 'stableford' ? e.stablefordTotal
+        : sortMode === 'gross' ? e.grossVsPar : e.netVsPar;
+      return { played: true, val: v };
+    };
+
     return (
-      <table className="table-fixed w-full text-sm">
-        <thead>
-          <tr className="text-xs border-b">
-            <th className="h-8 w-8 text-center font-medium text-muted-foreground">#</th>
-            <th className="h-8 text-left font-medium text-muted-foreground">Jugador</th>
-            <th className="h-8 w-10 text-center font-medium text-muted-foreground">Días</th>
-            <th className="h-8 w-16 text-center font-medium text-muted-foreground">
-              {rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Total'}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {accumulated.map((a, idx) => {
-            const part = partMap.get(a.participantId);
-            if (!part) return null;
-            const total = sortMode === 'stableford'
-              ? (rules.aggregation === 'best_n' ? (a.bestNStableford ?? 0) : a.totalStableford)
-              : sortMode === 'gross'
-                ? (rules.aggregation === 'best_n' ? (a.bestNGross ?? 0) : a.totalGrossVsPar)
-                : (rules.aggregation === 'best_n' ? (a.bestNNetVsPar ?? 0) : a.totalNetVsPar);
-            return (
-              <tr key={a.participantId} className="border-b hover:bg-muted/50">
-                <td className="text-center font-bold text-muted-foreground py-1.5">{idx + 1}</td>
-                <td className="py-1.5 px-1">
-                  <div className="flex items-center gap-1.5">
-                    <PlayerAvatar
-                      initials={part.initials}
-                      background={part.avatar_color}
-                      size="sm"
-                      isLoggedInUser={part.profile_id === profile?.id}
-                    />
-                    <span className="font-semibold text-sm truncate">{part.display_name}</span>
-                  </div>
-                </td>
-                <td className="text-center text-xs text-muted-foreground py-1.5">{a.daysPlayed}</td>
-                <td className={cn('text-center text-base py-1.5',
-                  sortMode === 'stableford' ? 'font-extrabold text-amber-600' : vsParColor(total))}>
-                  {sortMode === 'stableford' ? total : formatVsPar(total)}
-                </td>
+      <div className="flex w-full border rounded-md overflow-hidden">
+        {/* Fixed left section: #, Jugador, Total */}
+        <div className="shrink-0 bg-background border-r">
+          <table className="text-sm">
+            <thead>
+              <tr className="text-xs border-b bg-muted/30">
+                <th className={cn(rowH, 'w-8 text-center font-medium text-muted-foreground px-1')}>#</th>
+                <th className={cn(rowH, 'w-[120px] text-left font-medium text-muted-foreground px-1')}>Jugador</th>
+                <th className={cn(rowH, 'w-16 text-center font-semibold text-foreground px-1 bg-primary/5')}>
+                  {totalLabel}
+                </th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {accumulated.map((a, idx) => {
+                const part = partMap.get(a.participantId);
+                if (!part) return null;
+                const total = getTotal(a);
+                return (
+                  <tr key={a.participantId} className="border-b">
+                    <td className={cn(rowH, 'text-center font-bold text-muted-foreground px-1')}>{idx + 1}</td>
+                    <td className={cn(rowH, 'px-1')}>
+                      <div className="flex items-center gap-1.5">
+                        <PlayerAvatar
+                          initials={part.initials}
+                          background={part.avatar_color}
+                          size="sm"
+                          isLoggedInUser={part.profile_id === profile?.id}
+                        />
+                        <span className="font-semibold text-xs truncate max-w-[80px]">{part.display_name}</span>
+                      </div>
+                    </td>
+                    <td className={cn(rowH, 'text-center text-base px-1 bg-primary/5',
+                      sortMode === 'stableford' ? 'font-extrabold text-amber-600' : vsParColor(total))}>
+                      {sortMode === 'stableford' ? total : formatVsPar(total)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Scrollable right section: per-day columns */}
+        <div className="flex-1 overflow-x-auto">
+          <table className="text-sm w-full">
+            <thead>
+              <tr className="text-xs border-b bg-muted/30">
+                {daysSorted.map(d => (
+                  <th key={d.day_number} className={cn(rowH, 'min-w-[56px] text-center font-medium text-muted-foreground px-2')}>
+                    D{d.day_number}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {accumulated.map(a => (
+                <tr key={a.participantId} className="border-b">
+                  {daysSorted.map(d => {
+                    const { played, val } = getDayScore(a.participantId, d.day_number);
+                    return (
+                      <td key={d.day_number} className={cn(rowH, 'text-center text-xs px-2',
+                        played
+                          ? (sortMode === 'stableford' ? 'font-semibold text-amber-600' : vsParColor(val))
+                          : 'text-muted-foreground')}>
+                        {played ? (sortMode === 'stableford' ? val : formatVsPar(val)) : '–'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   };
+
 
   return (
     <div className="min-h-full bg-background">
