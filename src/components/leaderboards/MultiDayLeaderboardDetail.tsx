@@ -838,6 +838,46 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={showLinkedRounds} onOpenChange={setShowLinkedRounds}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Rondas vinculadas</DialogTitle>
+                <DialogDescription>
+                  Desvincular una ronda elimina sus aportes al leaderboard. La ronda en sí no se borra.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {linkedRounds.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No hay rondas vinculadas.</p>
+                ) : linkedRounds.map(r => (
+                  <div key={r.round_id} className="flex items-center gap-2 p-2 rounded-md border">
+                    <Link className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{r.course_name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {r.date}{r.day_number ? ` · Día ${r.day_number}` : ' · Sin día'}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-destructive hover:text-destructive"
+                      disabled={unlinkingId === r.round_id}
+                      onClick={() => handleUnlinkRound(r.round_id)}
+                    >
+                      {unlinkingId === r.round_id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <><Link2Off className="h-3.5 w-3.5 mr-1" /> Desvincular</>}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowLinkedRounds(false)}>Cerrar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
