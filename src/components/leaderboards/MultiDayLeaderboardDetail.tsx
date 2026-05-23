@@ -684,13 +684,19 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
             <div className="px-4">
               <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList className="w-full h-auto flex-wrap">
+                <TabsList className="w-full h-auto p-1 flex justify-start overflow-x-auto whitespace-nowrap">
+                  <TabsTrigger
+                    value="all"
+                    className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
+                  >
+                    Acumulado
+                  </TabsTrigger>
                   {rules.days.map(d => {
                     const isToday = d.date === todayStr;
                     return (
                       <TabsTrigger key={d.day_number} value={String(d.day_number)}
                         className={cn(
-                          "flex-1 text-xs h-7 min-w-[60px] gap-1",
+                          "text-xs h-7 min-w-[72px] shrink-0 gap-1",
                           isToday && "data-[state=inactive]:text-primary"
                         )}>
                         {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
@@ -698,10 +704,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                       </TabsTrigger>
                     );
                   })}
-                  <TabsTrigger value="all" className="flex-1 text-xs h-7 min-w-[80px] font-semibold">
-                    Acumulado
-                  </TabsTrigger>
                 </TabsList>
+
 
                 {rules.days.map(d => (
                   <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-3">
