@@ -67,6 +67,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [deleteText, setDeleteText] = useState('');
   const [showClose, setShowClose] = useState(false);
   const [closeText, setCloseText] = useState('');
+  const [showLinkedRounds, setShowLinkedRounds] = useState(false);
+  const [linkedRounds, setLinkedRounds] = useState<Array<{ round_id: string; date: string; course_name: string; day_number: number | null }>>([]);
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const isCreator = event?.created_by === profile?.id;
