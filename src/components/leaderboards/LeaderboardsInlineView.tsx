@@ -28,7 +28,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
-  const [createType, setCreateType] = useState<'standard' | null>(null);
+  const [createType, setCreateType] = useState<'standard' | 'multi_day' | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -36,6 +36,30 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [formModes, setFormModes] = useState<string[]>(['gross', 'net']);
+
+  // Multi-day state
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const [mdDays, setMdDays] = useState<Array<{ date: string; label: string }>>([
+    { date: todayStr, label: '' },
+    { date: todayStr, label: '' },
+  ]);
+  const [mdAggregation, setMdAggregation] = useState<'sum' | 'best_n'>('sum');
+  const [mdBestN, setMdBestN] = useState<number>(2);
+
+  const addDay = () => setMdDays(prev => [...prev, { date: prev[prev.length - 1]?.date || todayStr, label: '' }]);
+  const removeDay = (idx: number) => setMdDays(prev => prev.filter((_, i) => i !== idx));
+  const updateDay = (idx: number, field: 'date' | 'label', value: string) =>
+    setMdDays(prev => prev.map((d, i) => i === idx ? { ...d, [field]: value } : d));
+
+  const resetForms = () => {
+    setFormName('');
+    setFormDescription('');
+    setFormModes(['gross', 'net']);
+    setMdDays([{ date: todayStr, label: '' }, { date: todayStr, label: '' }]);
+    setMdAggregation('sum');
+    setMdBestN(2);
+  };
+
 
   const activeEvents = events.filter(e => e.status === 'active');
   const completedEvents = events.filter(e => e.status === 'completed');
