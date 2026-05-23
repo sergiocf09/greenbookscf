@@ -473,7 +473,7 @@ const calculateRayasForPair = (
   const details: RayaDetail[] = [];
   
   // Get adjusted scores for this pair based on bilateral handicap overrides
-  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
   
   let frontRayasA = 0;
   let frontRayasB = 0;
