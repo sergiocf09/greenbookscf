@@ -69,6 +69,16 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
   const [openMatches, setOpenMatches] = useState<any[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
+  const [roundDate, setRoundDate] = useState<string | null>(null);
+
+  // Fetch round date once for multi-day targeting feedback
+  useEffect(() => {
+    if (!roundId) { setRoundDate(null); return; }
+    (async () => {
+      const { data } = await supabase.from('rounds').select('date').eq('id', roundId).single();
+      setRoundDate((data as any)?.date ?? null);
+    })();
+  }, [roundId]);
 
   const {
     event: selectedEvent,
