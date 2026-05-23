@@ -657,6 +657,81 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           </CardContent>
         </Card>
       </div>
+
+      {isCreator && (
+        <>
+          <EditMultiDayConfigDialog
+            open={showEditConfig}
+            onOpenChange={setShowEditConfig}
+            event={{
+              id: event.id,
+              name: event.name,
+              description: event.description,
+              scoring_modes: event.scoring_modes || ['gross', 'net'],
+              rules_json: event.rules_json || {},
+            }}
+            onSaved={fetchAll}
+          />
+
+          <Dialog open={showRename} onOpenChange={setShowRename}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar nombre</DialogTitle>
+                <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                <Label>Nombre</Label>
+                <Input value={renameValue} onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleRename()} />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowRename(false)}>Cancelar</Button>
+                <Button disabled={!renameValue.trim()} onClick={handleRename}>Guardar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showClose} onOpenChange={setShowClose}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+                <DialogDescription>
+                  Pasará a Historial. Escribe <strong>CERRAR</strong> para confirmar.
+                </DialogDescription>
+              </DialogHeader>
+              <Input value={closeText} onChange={e => setCloseText(e.target.value)}
+                placeholder="Escribe CERRAR" className="uppercase" />
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowClose(false)}>Cancelar</Button>
+                <Button disabled={closeText.trim().toLowerCase() !== 'cerrar'} onClick={handleCloseLeaderboard}>
+                  Cerrar competencia
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showDelete} onOpenChange={setShowDelete}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+                <DialogDescription>
+                  Acción irreversible. Escribe <strong>ELIMINAR</strong> para confirmar.
+                </DialogDescription>
+              </DialogHeader>
+              <Input value={deleteText} onChange={e => setDeleteText(e.target.value)}
+                placeholder="Escribe ELIMINAR" className="uppercase" />
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowDelete(false)}>Cancelar</Button>
+                <Button variant="destructive"
+                  disabled={deleteText.trim().toLowerCase() !== 'eliminar'}
+                  onClick={handleDelete}>
+                  Eliminar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 };
