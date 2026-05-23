@@ -67,7 +67,6 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event?.id]);
   const tabStorageKey = `mdlb:selectedTab:${leaderboardId}`;
-  const sortStorageKey = `mdlb:sortMode:${leaderboardId}`;
   const [selectedTab, setSelectedTabState] = useState<string>(() => {
     try { return localStorage.getItem(tabStorageKey) || 'all'; } catch { return 'all'; }
   });
