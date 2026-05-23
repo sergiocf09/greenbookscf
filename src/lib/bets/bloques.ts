@@ -43,7 +43,7 @@ export const calculateBloquesForPair = (
   lastBlockMultiplier: number = 1,
   roundHoles: 9 | 18 = 18
 ): BloqueResult[] => {
-  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
 
   if (roundHoles === 9 && holesPerBlock === 6) {
     // 9 holes is not cleanly divisible into 6-hole blocks — skip.
