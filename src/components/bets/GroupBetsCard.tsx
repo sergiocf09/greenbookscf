@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, SixesSetAssignment } from '@/types/golf';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,8 @@ import { SixesResultsCard } from '@/components/bets/SixesResultsCard';
 import { VegasResultsCard } from '@/components/bets/VegasResultsCard';
 import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
 import { getOyesModalityForPair } from '@/lib/rayasCalculations';
+import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
+import { playOrderIndex, sortHolesByPlayOrder } from '@/lib/bets/shared';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -863,6 +865,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return players.filter(p => p.groupId === baseGroupId);
   }, [players, basePlayerId]);
 
+  const activeGroupId = sameGroupPlayers[0]?.groupId;
+  const effectiveBetConfig = useMemo(
+    () => resolveConfigForGroup(betConfig, activeGroupId),
+    [betConfig, activeGroupId]
+  );
+
   // Disambiguated initials for this group
   const disambiguatedAbbrs = useMemo(() => disambiguateInitials(sameGroupPlayers), [sameGroupPlayers]);
   const getPlayerAbbr = (player: Player) => disambiguatedAbbrs.get(player.id) || player.initials;
@@ -939,7 +947,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
       const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
       const handicap = playerHcp?.handicap ?? player.handicap;
-      const strokesPerHole = calculateStrokesPerHole(handicap, course);
+      const strokesPerHole = calculateStrokesPerHole(handicap, course, startingHole);
       const netTotal = confirmedScores.reduce((sum, s) => {
         const received = strokesPerHole[s.holeNumber - 1] || 0;
         return sum + (s.strokes - received);
@@ -991,12 +999,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const medalGeneralGroupResult = useMemo((): MedalGeneralResult | null => {
     if (!hasMultipleGroups || medalScope === 'global') return null;
     return calculateMedalForPool(sameGroupPlayers);
-  }, [sameGroupPlayers, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+  }, [sameGroupPlayers, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope, startingHole]);
 
   const medalGeneralGlobalResult = useMemo((): MedalGeneralResult | null => {
     if (hasMultipleGroups && medalScope === 'group') return null;
     return calculateMedalForPool(players);
-  }, [players, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+  }, [players, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope, startingHole]);
 
   // For backward compat: single result for non-multi-group or single scope
   const medalGeneralResult = medalGeneralGroupResult || medalGeneralGlobalResult;
@@ -1005,14 +1013,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Culebras - show count and loser payment (scoped to same group)
   const culebrasResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.culebras?.enabled || sameGroupPlayers.length < 2) {
+    if (!effectiveBetConfig.culebras?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
-    const valuePerOccurrence = betConfig.culebras.valuePerOccurrence || 25;
+    const valuePerOccurrence = effectiveBetConfig.culebras.valuePerOccurrence || 25;
     
     // Filter to only participating players within the same group (with template inheritance)
-    const participatingPlayers = resolveGroupParticipants(betConfig.culebras.participantIds);
+    const participatingPlayers = resolveGroupParticipants(effectiveBetConfig.culebras.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
@@ -1040,12 +1048,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Map occurrences with player initials
     const occurrences: OccurrenceInfo[] = allCulebras
-      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .sort((a, b) => playOrderIndex(a.holeNumber, startingHole) - playOrderIndex(b.holeNumber, startingHole))
       .map(c => {
         const player = participatingPlayers.find(p => p.id === c.playerId);
         return {
           playerId: c.playerId,
-          playerInitial: player?.initials?.charAt(0) || '?',
+          playerInitial: player ? getPlayerAbbr(player) : '?',
           holeNumber: c.holeNumber,
         };
       });
@@ -1057,7 +1065,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     let tieHole: number | null = null;
     
     if (allCulebras.length > 0) {
-      const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+      const maxHole = allCulebras.reduce((acc, c) =>
+        playOrderIndex(c.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? c.holeNumber : acc
+      , allCulebras[0].holeNumber);
       const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
       const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
       const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
@@ -1071,7 +1081,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const override = parseTieBreak(betConfig.culebras.tieBreakLoser);
+        const override = parseTieBreak(effectiveBetConfig.culebras.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxPutts.some(c => c.playerId === override.playerId)) {
           const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
@@ -1116,18 +1126,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [sameGroupPlayers, scores, betConfig.culebras]);
+  }, [sameGroupPlayers, scores, effectiveBetConfig.culebras, startingHole, disambiguatedAbbrs]);
 
   // Calculate Pinguinos - show count and loser payment (scoped to same group)
   const pinguinosResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.pinguinos?.enabled || sameGroupPlayers.length < 2) {
+    if (!effectiveBetConfig.pinguinos?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
-    const valuePerOccurrence = betConfig.pinguinos.valuePerOccurrence || 25;
+    const valuePerOccurrence = effectiveBetConfig.pinguinos.valuePerOccurrence || 25;
     
     // Filter to only participating players within the same group (with template inheritance)
-    const participatingPlayers = resolveGroupParticipants(betConfig.pinguinos.participantIds);
+    const participatingPlayers = resolveGroupParticipants(effectiveBetConfig.pinguinos.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
@@ -1155,12 +1165,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Map occurrences with player initials
     const occurrences: OccurrenceInfo[] = allPinguinos
-      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .sort((a, b) => playOrderIndex(a.holeNumber, startingHole) - playOrderIndex(b.holeNumber, startingHole))
       .map(p => {
         const player = participatingPlayers.find(pl => pl.id === p.playerId);
         return {
           playerId: p.playerId,
-          playerInitial: player?.initials?.charAt(0) || '?',
+          playerInitial: player ? getPlayerAbbr(player) : '?',
           holeNumber: p.holeNumber,
         };
       });
@@ -1172,7 +1182,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     let tieHole: number | null = null;
     
     if (allPinguinos.length > 0) {
-      const maxHole = Math.max(...allPinguinos.map(p => p.holeNumber));
+      const maxHole = allPinguinos.reduce((acc, p) =>
+        playOrderIndex(p.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? p.holeNumber : acc
+      , allPinguinos[0].holeNumber);
       const pinguinosOnLastHole = allPinguinos.filter(p => p.holeNumber === maxHole);
       const maxOverPar = Math.max(...pinguinosOnLastHole.map(p => p.overPar));
       const playersWithMaxOverPar = pinguinosOnLastHole.filter(p => p.overPar === maxOverPar);
@@ -1186,7 +1198,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const override = parseTieBreak(betConfig.pinguinos.tieBreakLoser);
+        const override = parseTieBreak(effectiveBetConfig.pinguinos.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxOverPar.some(p => p.playerId === override.playerId)) {
           const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
@@ -1231,7 +1243,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [sameGroupPlayers, scores, betConfig.pinguinos, course]);
+  }, [sameGroupPlayers, scores, effectiveBetConfig.pinguinos, course, startingHole, disambiguatedAbbrs]);
 
   // Calculate Stableford points based on scope
   const stablefordScope = betConfig.stableford?.scope ?? 'global';
@@ -1364,18 +1376,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const oyesesSummary = useMemo(() => {
     if (sameGroupPlayers.length < 2) return null;
 
-    const standaloneOyesEnabled = betConfig.oyeses?.enabled === true;
-    const rayasOyesEnabled = betConfig.rayas?.enabled === true && (betConfig.rayas.segments?.oyes?.enabled ?? true);
+    const standaloneOyesEnabled = effectiveBetConfig.oyeses?.enabled === true;
+    const rayasOyesEnabled = effectiveBetConfig.rayas?.enabled === true && (effectiveBetConfig.rayas.segments?.oyes?.enabled ?? true);
 
     if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
 
     // Oyeses can be played directly OR as the Oyes segment inside Rayas.
     // The indicator must include both populations so Rayas-only Sangrón players appear here.
     const standalonePlayers = standaloneOyesEnabled
-      ? resolveGroupParticipants(betConfig.oyeses?.participantIds)
+      ? resolveGroupParticipants(effectiveBetConfig.oyeses?.participantIds)
       : [];
     const rayasOyesPlayers = rayasOyesEnabled
-      ? resolveGroupParticipants(betConfig.rayas?.participantIds)
+      ? resolveGroupParticipants(effectiveBetConfig.rayas?.participantIds)
       : [];
     const activePlayers = [...standalonePlayers, ...rayasOyesPlayers].filter(
       (player, index, arr) => arr.findIndex(p => p.id === player.id) === index
@@ -1390,13 +1402,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       }
     }
 
-    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'acumulados');
-    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'sangron');
+    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'acumulados');
+    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'sangron');
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+    const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
 
-    const holeSummaries = par3Holes.map(holeNumber => {
+    const holeSummaries = orderedPar3Holes.map(holeNumber => {
       // Acumulados rankings: ALL active players, sorted by oyes_proximity
       const acumuladosRankings = hasAcumulados ? activePlayers
         .map(player => {
@@ -1433,21 +1446,21 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const holesWithData = holeSummaries.filter(h => h.hasData).length;
 
     return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData, activePlayers };
-  }, [betConfig, scores, course, sameGroupPlayers]);
+  }, [effectiveBetConfig, scores, course, sameGroupPlayers, startingHole]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
-    if (!betConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
+    if (!effectiveBetConfig.zoologico?.enabled || sameGroupPlayers.length < 2) return [];
     
-    const enabledAnimals = betConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
+    const enabledAnimals = effectiveBetConfig.zoologico.enabledAnimals || ['camello', 'pez', 'gorila'];
     // Maintain order: camello, pez, gorila
     const orderedAnimals: ZooAnimalType[] = ['camello', 'pez', 'gorila'];
     
     return orderedAnimals
       .filter(animal => enabledAnimals.includes(animal))
-      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, betConfig.zoologico, startingHole))
+      .map(animal => calculateZoologicoAnimalResult(animal, sameGroupPlayers, effectiveBetConfig.zoologico, startingHole))
       .filter((r): r is ZoologicoAnimalResult => r !== null);
-  }, [sameGroupPlayers, betConfig.zoologico, startingHole]);
+  }, [sameGroupPlayers, effectiveBetConfig.zoologico, startingHole]);
 
   // State for collapsible occurrence details
   const [showCulebrasDetail, setShowCulebrasDetail] = useState(false);
@@ -1683,7 +1696,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <Popover key={idx}>
                         <PopoverTrigger asChild>
                           <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
-                            H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                            H{occ.holeNumber} - {player ? getPlayerAbbr(player) : occ.playerInitial}
                           </span>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" side="top">
@@ -1771,7 +1784,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         <Popover key={idx}>
                           <PopoverTrigger asChild>
                             <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
-                              H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                              H{occ.holeNumber} - {player ? getPlayerAbbr(player) : occ.playerInitial}
                             </span>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-2" side="top">
@@ -2265,13 +2278,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (() => {
           const medalSegmentMode = betConfig.medalGeneral?.segmentMode ?? 'total';
           const sameGroupPlayerIdSet = new Set(sameGroupPlayers.map(p => p.id));
+          const segmentRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
 
           const renderMedalScope = (pool: Player[], label?: string) => {
             if (medalSegmentMode === 'segments') {
               // Segmented: Front 9, Back 9, Total 18
               const segments: Array<{ label: string; amount: number; result: MedalGeneralResult | null }> = [];
-              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 1 && h <= 9, betConfig.medalGeneral?.frontAmount ?? 0) });
-              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 10 && h <= 18, betConfig.medalGeneral?.backAmount ?? 0) });
+              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.front[0] && h <= segmentRanges.front[1], betConfig.medalGeneral?.frontAmount ?? 0) });
+              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.back[0] && h <= segmentRanges.back[1], betConfig.medalGeneral?.backAmount ?? 0) });
               segments.push({ label: 'Total 18', amount: betConfig.medalGeneral?.amount ?? 100, result: calculateMedalForPool(pool, () => true) });
 
               return (
@@ -2398,8 +2412,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
           const segments: Array<{ label: string; amount: number; result: ReturnType<typeof computePuttsSegment> }> = [];
           if (puttsSegmentMode === 'segments') {
-            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= 1 && h <= 9, puttsCfg?.frontAmount ?? 0) });
-            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= 10 && h <= 18, puttsCfg?.backAmount ?? 0) });
+            const puttsRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.front[0] && h <= puttsRanges.front[1], puttsCfg?.frontAmount ?? 0) });
+            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.back[0] && h <= puttsRanges.back[1], puttsCfg?.backAmount ?? 0) });
           }
           segments.push({ label: 'Total 18', amount: puttsCfg?.amount ?? 100, result: computePuttsSegment(() => true, puttsCfg?.amount ?? 100) });
 
@@ -2853,7 +2868,8 @@ const computeMedalBilateralForPool = (
   rival: Player,
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
   const amount = betConfig.medalGeneral?.amount ?? 100;
@@ -2866,7 +2882,7 @@ const computeMedalBilateralForPool = (
     if (confirmed.length === 0) return;
 
     const hcp = playerHandicaps.find((ph) => ph.playerId === p.id)?.handicap ?? p.handicap;
-    const strokesPerHole = calculateStrokesPerHole(hcp, course);
+    const strokesPerHole = calculateStrokesPerHole(hcp, course, startingHole);
     const netTotal = confirmed.reduce((sum, s) => {
       const received = strokesPerHole[s.holeNumber - 1] || 0;
       return sum + (s.strokes - received);
@@ -2917,7 +2933,8 @@ export const getMedalGeneralBilateralResult = (
   rival: Player,
   scores: Map<string, PlayerScore[]>,
   betConfig: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   if (!betConfig.medalGeneral?.enabled) return null;
 
@@ -2925,7 +2942,7 @@ export const getMedalGeneralBilateralResult = (
   const hasMultipleGroups = new Set(allPlayers.map(p => p.groupId).filter(Boolean)).size > 1;
 
   if (!hasMultipleGroups || scope === 'global') {
-    return computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+    return computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course, startingHole);
   }
 
   // For 'group' or 'both': calculate within group
@@ -2935,12 +2952,12 @@ export const getMedalGeneralBilateralResult = (
     : allPlayers;
 
   if (scope === 'group') {
-    return computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+    return computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course, startingHole);
   }
 
   // scope === 'both': sum group + global results
-  const groupResult = computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
-  const globalResult = computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+  const groupResult = computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course, startingHole);
+  const globalResult = computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course, startingHole);
 
   if (!groupResult && !globalResult) return null;
 

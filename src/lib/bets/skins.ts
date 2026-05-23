@@ -57,7 +57,7 @@ export const calculateSkinsBets = (
       if (!shouldCalculatePair(rc.skins, playerA.id, playerB.id)) continue;
 
       const pairModality = getEffectiveSkinsModality(playerA.id, playerB.id, rc.skins);
-      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
 
       if (pairModality === 'sinAcumular') {
         const calcNine = (

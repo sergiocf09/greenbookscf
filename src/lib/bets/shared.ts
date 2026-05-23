@@ -35,6 +35,9 @@ export const playOrderIndex = (holeNumber: number, startingHole: 1 | 10 = 1): nu
   return holeNumber >= 10 ? holeNumber - 10 : holeNumber + 8;
 };
 
+export const sortHolesByPlayOrder = (holes: number[], startingHole: 1 | 10 = 1): number[] =>
+  [...holes].sort((a, b) => playOrderIndex(a, startingHole) - playOrderIndex(b, startingHole));
+
 // ── Player grouping ──
 
 export const groupPlayersByGroup = (players: Player[]): Player[][] => {
@@ -133,7 +136,8 @@ export const getAdjustedScoresForPair = (
   playerB: Player,
   scores: Map<string, PlayerScore[]>,
   course: GolfCourse,
-  bilateralHandicaps?: BilateralHandicap[]
+  bilateralHandicaps?: BilateralHandicap[],
+  startingHole: 1 | 10 = 1
 ): Map<string, PlayerScore[]> => {
   const override = getBilateralHandicapForPair(
     playerA.id, playerB.id, bilateralHandicaps, playerA.profileId, playerB.profileId
@@ -162,8 +166,8 @@ export const getAdjustedScoresForPair = (
     }
   }
   
-  const strokesPerHoleA = calculateStrokesPerHole(handicapA, course);
-  const strokesPerHoleB = calculateStrokesPerHole(handicapB, course);
+  const strokesPerHoleA = calculateStrokesPerHole(handicapA, course, startingHole);
+  const strokesPerHoleB = calculateStrokesPerHole(handicapB, course, startingHole);
   
   const adjustedScores = new Map<string, PlayerScore[]>();
   

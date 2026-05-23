@@ -23,7 +23,7 @@ export const getMatchPlayEvolution = (
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   const allHoles = [...frontHoles, ...backHoles];
 
-  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
 
   const states: PressureHoleState[] = [];
   let cumBal = 0;

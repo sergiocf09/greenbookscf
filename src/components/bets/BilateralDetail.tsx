@@ -3,7 +3,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MarkerSt
 import { SnapshotPairBreakdowns, SnapshotPairSegmentResults } from '@/lib/roundSnapshot';
 import { BetSummary, getPressureEvolution, getSkinsEvolution, getMatchPlayEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
 import { fmtMoney } from '@/lib/formatMoney';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair, getAuthoritativeRayasBalance } from '@/lib/rayasCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
@@ -291,7 +291,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
            (h.playerAId === rivalId && h.playerBId === playerId)
     );
     
-    const [start, end] = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+    const ranges = getSegmentHoleRanges(startingHole, effectiveBetConfig.roundHoles ?? 18);
+    const [start, end] = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18];
     // Medal display mode: sum ALL confirmed holes for this player in the segment
     const filtered = playerScores.filter((s) => s.holeNumber >= start && s.holeNumber <= end);
     
@@ -304,7 +305,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const isPlayerA = override.playerAId === playerId;
     const overrideHandicap = isPlayerA ? override.playerAHandicap : override.playerBHandicap;
     
-    const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course);
+    const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course, startingHole);
     
     // Calculate net with overridden strokes received
     return filtered.reduce((sum, s) => {
@@ -387,12 +388,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       if (groupId) {
         const resolved = resolveConfigForGroup(betConfig, groupId);
         const resolvedBet = resolved[betKey as keyof BetConfig] as any;
-        if (resolvedBet?.enabled === false) return false;
         participantIds = resolvedBet?.participantIds;
         resolvedBetConfig = resolvedBet;
       } else {
         resolvedBetConfig = betConfig[betKey as keyof BetConfig] as any;
       }
+      if (resolvedBetConfig?.enabled === false) return false;
     }
     
     // oneVsAll mode: pair is valid if either player or rival is the anchor
@@ -1326,7 +1327,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         // Use allPlayers versions to ensure groupId is available for scope filtering
         const playerWithGroup = allPlayers.find(p => p.id === player.id) || player;
         const rivalWithGroup = allPlayers.find(p => p.id === rival.id) || rival;
-        const medalResult = getMedalGeneralBilateralResult(allPlayers, playerWithGroup, rivalWithGroup, confirmedScores, betConfig, course);
+        const medalResult = getMedalGeneralBilateralResult(allPlayers, playerWithGroup, rivalWithGroup, confirmedScores, betConfig, course, startingHole);
         if (medalResult) {
           groups.push({
             key: 'medalGeneral',
@@ -2051,14 +2052,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         //  - any 'Rayas Oyes' summary whose description includes "(Sangrón)"
                         //  - the pair's effective Oyes modality is 'sangron'
                         const par3Numbers = course.holes.filter(h => h.par === 3).map(h => h.number);
+                        const orderedPar3Numbers = startingHole === 10
+                          ? [...par3Numbers].sort((a, b) => (a >= 10 ? a - 10 : a + 8) - (b >= 10 ? b - 10 : b + 8))
+                          : par3Numbers;
                         const playerScoresArr = confirmedScores.get(player.id) || [];
                         const rivalScoresArr = confirmedScores.get(rival.id) || [];
-                        const hasAcumuladoData = par3Numbers.some(hn => {
+                        const hasAcumuladoData = orderedPar3Numbers.some(hn => {
                           const sA = playerScoresArr.find(s => s.holeNumber === hn);
                           const sB = rivalScoresArr.find(s => s.holeNumber === hn);
                           return (sA?.oyesProximity ?? null) !== null || (sB?.oyesProximity ?? null) !== null;
                         });
-                        const hasSangronData = par3Numbers.some(hn => {
+                        const hasSangronData = orderedPar3Numbers.some(hn => {
                           const sA = playerScoresArr.find(s => s.holeNumber === hn);
                           const sB = rivalScoresArr.find(s => s.holeNumber === hn);
                           return (sA?.oyesProximitySangron ?? null) !== null || (sB?.oyesProximitySangron ?? null) !== null;
@@ -2081,7 +2085,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           confirmedScores,
                           effectiveBetConfig,
                           course,
-                          showTabs ? activeModality : undefined
+                          showTabs ? activeModality : undefined,
+                          startingHole
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
@@ -2091,7 +2096,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           rival.id,
                           confirmedScores,
                           effectiveBetConfig,
-                          course
+                          course,
+                          startingHole
                         );
                         
                         if (playerAHoles.length === 0 && !showTabs) {
@@ -2597,6 +2603,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
                               rayasDetails={rayasResult.details}
                               basePlayerId={basePlayerId}
+                              startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 cursor-pointer hover:bg-muted/20 rounded transition-colors">
                               <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9</div>
@@ -2641,6 +2648,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
                               rayasDetails={rayasResult.details}
                               basePlayerId={basePlayerId}
+                              startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2 cursor-pointer hover:bg-muted/20 rounded transition-colors">
                               <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9</div>

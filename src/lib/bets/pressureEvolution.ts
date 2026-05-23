@@ -44,7 +44,7 @@ export const getPressureEvolution = (
   const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   
-  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
 
   // Continua mode: single 18-hole cumulative match with match-play notation
   if (isContinua) {

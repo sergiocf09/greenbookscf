@@ -4,6 +4,7 @@
 import { Player, BetConfig, ZooAnimalType, ZOO_ANIMALS, ZoologicoBetConfig } from '@/types/golf';
 import { resolveConfigForGroup, isBetEnabledAnywhere } from '../groupBetOverrides';
 import { BetSummary, groupPlayersByGroup, resolveParticipantsForGroup, playOrderIndex } from './shared';
+import { disambiguateInitials } from '../playerInput';
 
 export interface ZoologicoAnimalResult {
   animalType: ZooAnimalType;
@@ -55,6 +56,7 @@ export const calculateZoologicoAnimalResult = (
   const animalInfo = ZOO_ANIMALS[animalType];
   const valuePerOccurrence = zoologicoConfig.valuePerOccurrence || 10;
   const events = zoologicoConfig.events || [];
+  const disambiguatedInitials = disambiguateInitials(players);
 
   const participantIds = zoologicoConfig.participantIds;
   const participantPlayerIds = new Set(
@@ -69,8 +71,8 @@ export const calculateZoologicoAnimalResult = (
   const animalEvents = events.filter(e => e.animalType === animalType && participantPlayerIds.has(e.playerId));
   const mappedEvents = animalEvents.map(e => {
     const player = players.find(p => p.id === e.playerId);
-    return { playerId: e.playerId, playerName: player?.name || 'Jugador', playerInitials: player?.initials || '?', holeNumber: e.holeNumber, count: e.count || 1 };
-  }).sort((a, b) => a.holeNumber - b.holeNumber);
+    return { playerId: e.playerId, playerName: player?.name || 'Jugador', playerInitials: player ? (disambiguatedInitials.get(player.id) || player.initials) : '?', holeNumber: e.holeNumber, count: e.count || 1 };
+  }).sort((a, b) => playOrderIndex(a.holeNumber, startingHole) - playOrderIndex(b.holeNumber, startingHole));
 
   const totalOccurrences = mappedEvents.reduce((sum, e) => sum + e.count, 0);
   const amountPerPlayer = totalOccurrences * valuePerOccurrence;
@@ -100,11 +102,11 @@ export const calculateZoologicoAnimalResult = (
       const override = parseZooTieBreak(tieBreakers[animalType]);
       if (override.hole === maxHole && override.playerId && playersWithMaxCount.includes(override.playerId)) {
         const loserPlayer = players.find(p => p.id === override.playerId);
-        if (loserPlayer) { hasTie = false; loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
+        if (loserPlayer) { hasTie = false; loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: disambiguatedInitials.get(loserPlayer.id) || loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
       }
     } else if (playersWithMaxCount.length === 1) {
       const loserPlayer = players.find(p => p.id === playersWithMaxCount[0]);
-      if (loserPlayer) { loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
+      if (loserPlayer) { loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: disambiguatedInitials.get(loserPlayer.id) || loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
     }
   }
 

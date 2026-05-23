@@ -48,7 +48,7 @@ export const calculateMedalBets = (
       ];
       const segments = isNineHole ? allSegments.filter(s => s.key === 'front') : allSegments;
       
-      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
       
       segments.forEach(({ key, amount, label }) => {
         if (amount <= 0) return;

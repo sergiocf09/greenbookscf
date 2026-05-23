@@ -136,7 +136,7 @@ export const calculateAllBets = (
     ...calculateBloquesBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateSkinsBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateCarosBets(players, scores, config, course, bilateralHandicaps, startingHole),
-    ...calculateOyesesBets(players, scores, config, course),
+    ...calculateOyesesBets(players, scores, config, course, startingHole),
     ...calculateUnitsBets(players, scores, config, course),
     ...calculateManchasBets(players, scores, config),
     ...calculateCulebrasBets(players, scores, config, startingHole),
