@@ -16,7 +16,7 @@ import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
-import { formatPlayerName } from '@/lib/playerInput';
+import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
 import {
   computeAccumulatedStandings,
