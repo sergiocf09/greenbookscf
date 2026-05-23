@@ -119,6 +119,8 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         setSelectedLeaderboardId(null);
       }
       setJoinCode('');
+      setSelectedDayNumber(null);
+      setConfirmMismatch(false);
       setSelectedPlayerIds(
         new Set(
           allPlayers
