@@ -196,8 +196,25 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     </div>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCreateType('multi_day')}
+                  className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    <div>
+                      <div className="font-medium text-foreground">Multi-día</div>
+                      <div className="text-sm text-muted-foreground">
+                        Varios días con standings por día y acumulado
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             )}
+
 
             {createType === 'standard' && (
               <div className="space-y-4">
