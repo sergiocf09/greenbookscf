@@ -479,7 +479,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <td className="py-1.5 px-1">
                 <div className="flex items-center gap-1.5">
                   <PlayerAvatar
-                    initials={part.initials}
+                    initials={initialsMap.get(part.id) ?? part.initials}
                     background={part.avatar_color}
                     size="sm"
                     isLoggedInUser={part.profile_id === profile?.id}
