@@ -341,7 +341,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   };
 
   const initialsMap = useMemo(
-    () => disambiguateInitials(participants.map(p => ({ id: p.id, name: p.display_name }))),
+    () => disambiguateInitials(
+      participants.map(p => ({ id: p.id, name: p.display_name, initials: p.initials, color: p.avatar_color, handicap: p.handicap_for_leaderboard })),
+    ),
     [participants],
   );
 
