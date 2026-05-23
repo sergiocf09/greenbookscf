@@ -676,33 +676,43 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       </div>
 
       <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
-        {/* Compact tournament info */}
-        <div className="rounded-md border bg-card px-3 py-2">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* Compact tournament info — Teams Cup style (centered, no card) */}
+        <div className="text-center space-y-1">
+          <h1 className="text-lg font-bold leading-tight inline-flex items-center justify-center gap-1.5">
             <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
-            <span className="font-bold text-sm truncate flex-1 min-w-0">{event.name}</span>
-            <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase shrink-0">
+            <span className="truncate">{event.name}</span>
+          </h1>
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase">
               Multi-día
             </span>
-            <button onClick={copyCode}
-              className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded hover:bg-muted/80 shrink-0">
-              <Hash className="h-2.5 w-2.5" />
-              <span className="font-mono font-bold text-[11px]">{event.code}</span>
-              <Copy className="h-2.5 w-2.5" />
-            </button>
+            {event?.code && (
+              <button
+                onClick={copyCode}
+                className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-[11px] font-mono"
+                title="Copiar código"
+              >
+                <Hash className="h-2.5 w-2.5 text-muted-foreground" />
+                <span className="font-semibold tracking-wide">{event.code}</span>
+                <Copy className="h-2.5 w-2.5" />
+              </button>
+            )}
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
-            <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{participants.length}</span>
+          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+            <span className="inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{participants.length}</span>
             <span>·</span>
-            <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />{rules.days.length}d</span>
+            <span className="inline-flex items-center gap-0.5"><Calendar className="h-3 w-3" />{rules.days.length}d</span>
             <span>·</span>
             <span>{rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Suma'}</span>
             {currentDay?.isToday && (
-              <span className="ml-auto text-primary font-semibold">Hoy · Día {currentDay.day_number}</span>
+              <>
+                <span>·</span>
+                <span className="text-primary font-semibold">Hoy · Día {currentDay.day_number}</span>
+              </>
             )}
           </div>
           {event.description && (
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{event.description}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{event.description}</p>
           )}
         </div>
 
