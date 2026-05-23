@@ -368,7 +368,8 @@ export const calculateOyesesBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   if (!config.oyeses.enabled) return [];
   
@@ -379,6 +380,7 @@ export const calculateOyesesBets = (
   const par3Holes = course.holes
     .filter(h => h.par === 3)
     .map(h => h.number);
+  const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   const getPlayerModality = (playerId: string): OyesModality | null => {
     const cfg = getEffectiveOyesesPlayerConfig(playerId, config);
@@ -415,7 +417,7 @@ export const calculateOyesesBets = (
       const pairSummaries: BetSummary[] = [];
       
       // Process each Par 3 hole
-      for (const holeNum of par3Holes) {
+      for (const holeNum of orderedPar3Holes) {
         const scoresA = scores.get(playerA.id) || [];
         const scoresB = scores.get(playerB.id) || [];
         
