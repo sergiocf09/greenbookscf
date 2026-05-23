@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap } from '@/types/golf';
 import { RayaDetail } from '@/lib/rayasCalculations';
 import { getAdjustedScoresForPair } from '@/lib/betCalculations';
+import { getSegmentHoleRanges } from '@/lib/handicapUtils';
 import { getEffectiveSkinVariantForPair, getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -28,6 +29,7 @@ interface RayasSegmentPopoverProps {
   bilateralHandicaps?: BilateralHandicap[];
   rayasDetails: RayaDetail[];
   basePlayerId?: string;
+  startingHole?: 1 | 10;
   children: React.ReactNode;
 }
 
@@ -41,13 +43,15 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
   bilateralHandicaps,
   rayasDetails,
   basePlayerId,
+  startingHole = 1,
   children,
 }) => {
-  const holeRange = segment === 'front' ? [1, 9] : [10, 18];
+  const ranges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+  const holeRange = segment === 'front' ? ranges.front : ranges.back;
 
   const adjustedScores = useMemo(
-    () => getAdjustedScoresForPair(player, rival, confirmedScores, course, bilateralHandicaps),
-    [player, rival, confirmedScores, course, bilateralHandicaps]
+    () => getAdjustedScoresForPair(player, rival, confirmedScores, course, bilateralHandicaps, startingHole),
+    [player, rival, confirmedScores, course, bilateralHandicaps, startingHole]
   );
 
   const segmentDetails = useMemo(
