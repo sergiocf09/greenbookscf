@@ -361,8 +361,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     const courseIds = [...new Set((rds || []).map(r => r.course_id))];
     let courseMap: Record<string, string> = {};
     if (courseIds.length > 0) {
-      const { data: cs } = await supabase.from('courses').select('id, name').in('id', courseIds);
-      courseMap = Object.fromEntries((cs || []).map(c => [c.id, c.name]));
+      const { data: cs } = await supabase.from('golf_courses').select('id, name').in('id', courseIds);
+      courseMap = Object.fromEntries(((cs as any[]) || []).map((c: any) => [c.id, c.name]));
     }
     const dayByDate: Record<string, number> = {};
     for (const d of rules.days) dayByDate[d.date] = d.day_number;
