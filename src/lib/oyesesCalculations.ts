@@ -1,6 +1,7 @@
 // Oyeses (Closest to the Pin) Calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, OyesModality } from '@/types/golf';
 import { BetSummary } from './betCalculations';
+import { sortHolesByPlayOrder } from './bets/shared';
 
 /**
  * Oyeses result per player per hole for display
@@ -70,7 +71,8 @@ export const getOyesesPairResult = (
   playerBId: string,
   scores: Map<string, PlayerScore[]>,
   config: BetConfig,
-  course: GolfCourse
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1
 ): OyesesPairResult | null => {
   if (!config.oyeses.enabled) return null;
   
@@ -80,6 +82,7 @@ export const getOyesesPairResult = (
   const par3Holes = course.holes
     .filter(h => h.par === 3)
     .map(h => h.number);
+  const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
   const cfgB = getEffectiveOyesesPlayerConfig(playerBId, config);
@@ -101,7 +104,7 @@ export const getOyesesPairResult = (
   let totalPlayedHoles = 0; // Total Par 3s that have been played
   let baseTotal = 0; // Money won by A (positive) or B (negative)
   
-  for (const holeNum of par3Holes) {
+  for (const holeNum of orderedPar3Holes) {
     const scoresA = scores.get(playerAId) || [];
     const scoresB = scores.get(playerBId) || [];
     
