@@ -73,19 +73,48 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const handleCreate = async () => {
     if (!formName.trim() || formModes.length === 0) return;
     setCreating(true);
-    const result = await createEvent({
-      name: formName.trim(),
-      description: formDescription.trim() || undefined,
-      scoring_modes: formModes,
-      start_date: formDate,
-    });
+    let result;
+    if (createType === 'multi_day') {
+      const validDays = mdDays.filter(d => d.date);
+      if (validDays.length < 2) {
+        toast.error('Agrega al menos 2 días con fecha');
+        setCreating(false);
+        return;
+      }
+      const sortedDays = [...validDays].sort((a, b) => a.date.localeCompare(b.date));
+      const rules: MultiDayRulesJson = {
+        days: sortedDays.map((d, idx) => ({
+          day_number: idx + 1,
+          date: d.date,
+          label: d.label.trim() || undefined,
+        })),
+        aggregation: mdAggregation,
+        best_n: mdAggregation === 'best_n' ? Math.min(mdBestN, sortedDays.length) : undefined,
+      };
+      result = await createEvent({
+        name: formName.trim(),
+        description: formDescription.trim() || undefined,
+        scoring_modes: formModes,
+        start_date: sortedDays[0].date,
+        end_date: sortedDays[sortedDays.length - 1].date,
+        competition_type: 'multi_day',
+        rules_json: rules as unknown as Record<string, any>,
+      });
+    } else {
+      result = await createEvent({
+        name: formName.trim(),
+        description: formDescription.trim() || undefined,
+        scoring_modes: formModes,
+        start_date: formDate,
+        competition_type: 'standard',
+      });
+    }
     setCreating(false);
     if (result) {
       setShowCreateDialog(false);
-      setFormName('');
-      setFormDescription('');
-      setFormModes(['gross', 'net']);
-      onNavigateToDetail(result.id);
+      setCreateType(null);
+      resetForms();
+      onNavigateToDetail(result.id, createType === 'multi_day' ? 'multi_day' : 'standard');
     }
   };
 
@@ -102,6 +131,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
     onNavigateToDetail(eventId, competitionType);
   };
+
 
   return (
     <div className="space-y-4">
