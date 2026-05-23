@@ -392,8 +392,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 </Button>
               </div>
             )}
-
+          </DialogContent>
         </Dialog>
+
 
         <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
           <DialogTrigger asChild>
