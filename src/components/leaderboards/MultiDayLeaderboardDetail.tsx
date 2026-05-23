@@ -256,6 +256,80 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Pick a sensible default tab once event loads:
+  // - today's day if today matches one of the configured dates
+  // - else first day that still has zero holes played
+  // - else "all" (accumulated)
+  const [tabInit, setTabInit] = useState(false);
+  useEffect(() => {
+    if (tabInit || !event || rules.days.length === 0) return;
+    const today = rules.days.find(d => d.date === todayStr);
+    if (today) {
+      setSelectedTab(String(today.day_number));
+      setTabInit(true);
+      return;
+    }
+    const firstUnfinished = rules.days.find(d => {
+      const entries = standingsByDay[d.day_number] || [];
+      return entries.every(e => e.holesPlayed === 0);
+    });
+    if (firstUnfinished) {
+      setSelectedTab(String(firstUnfinished.day_number));
+    } else {
+      setSelectedTab('all');
+    }
+    setTabInit(true);
+  }, [event, rules.days, standingsByDay, todayStr, tabInit]);
+
+  const currentDay = useMemo(() => {
+    if (!rules.days.length) return null;
+    const today = rules.days.find(d => d.date === todayStr);
+    if (today) return { ...today, isToday: true as const };
+    const upcoming = [...rules.days].sort((a, b) => a.date.localeCompare(b.date))
+      .find(d => d.date >= todayStr);
+    if (upcoming) return { ...upcoming, isToday: false as const };
+    return null;
+  }, [rules.days, todayStr]);
+
+  const handleRename = async () => {
+    if (!renameValue.trim() || !event) return;
+    const { error } = await supabase.from('leaderboard_events').update({ name: renameValue.trim() }).eq('id', event.id);
+    if (error) return toast.error(error.message);
+    toast.success('Nombre actualizado');
+    setShowRename(false);
+    fetchAll();
+  };
+
+  const handleDelete = async () => {
+    if (!event) return;
+    try {
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_rounds').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
+      const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
+      if (error) throw error;
+      toast.success('Leaderboard eliminado');
+      onBack?.();
+    } catch (err: any) { toast.error('Error: ' + err.message); }
+  };
+
+  const handleCloseLeaderboard = async () => {
+    if (!event) return;
+    const { error } = await supabase.rpc('close_leaderboard', { p_leaderboard_id: event.id });
+    if (error) return toast.error(error.message);
+    toast.success('Competencia cerrada');
+    setShowClose(false);
+    fetchAll();
+  };
+
+  const handleReopen = async () => {
+    if (!event) return;
+    const { error } = await supabase.rpc('reopen_leaderboard', { p_leaderboard_id: event.id });
+    if (error) return toast.error(error.message);
+    toast.success('Competencia reactivada');
+    fetchAll();
+  };
+
   const sortDay = (entries: DayStanding[]): DayStanding[] => {
     const played = entries.filter(e => e.holesPlayed > 0);
     const unplayed = entries.filter(e => e.holesPlayed === 0);
