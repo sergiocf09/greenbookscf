@@ -1,82 +1,85 @@
+
 ## Objetivo
 
-Unificar la lógica cuando la ronda arranca en el hoyo 10:
+Tres mejoras sobre la nueva variante Multi-día (y leaderboards en general):
 
-1. **Nomenclatura siempre "Front 9 / Back 9"** en todas las apuestas (individuales, parejas y grupales). El detalle de qué hoyos físicos componen cada segmento se muestra solo en el tooltip al hacer clic.
-2. **Apuestas de "último en…" (Culebras, Zoológico, Pingüinos)** deben determinar al "último" por el **orden de juego**, no por el número físico de hoyo. Si la ronda empezó en 10, el último hoyo jugado es el 9 (no el 18).
+1. **Edición de configuración** del leaderboard (no solo el nombre).
+2. **UX claro de "día actual"** en el detalle Multi-día.
+3. **Claridad al vincular una ronda** a qué día del torneo se está uniendo.
 
-Los Caros ya quedaron correctos en la iteración anterior y no se tocan.
-
----
-
-## Cambios
-
-### 1. Revertir labels a "Front 9 / Back 9" con tooltip de hoyos físicos
-
-`**src/components/bets/BilateralDetail.tsx**`
-
-- Deshacer el cambio anterior: el primer renglón siempre dice **"Front 9"**, el segundo **"Back 9"**, el tercero **"Total 18"** — independientemente del `startingHole`.
-- Agregar un tooltip (usando el componente `Tooltip` ya disponible) en cada label que muestre el rango físico real:
-  - `startingHole === 1` → "Hoyos 1–9" / "Hoyos 10–18"
-  - `startingHole === 10` → "Hoyos 10–18" / "Hoyos 1–9"
-- Los valores numéricos ya se calculan correctamente con `getSegmentHoleRanges` desde la iteración previa; solo se ajusta la presentación.
-
-### 2. "Último" por orden de juego en Culebras / Zoológico / Pingüinos
-
-Crear un helper compartido en `**src/lib/bets/shared.ts**`:
-
-```ts
-export const playOrderIndex = (holeNumber: number, startingHole: 1 | 10): number => {
-  if (startingHole === 1) return holeNumber - 1;
-  // startingHole === 10: orden es 10,11,...,18,1,2,...,9
-  return holeNumber >= 10 ? holeNumber - 10 : holeNumber + 8;
-};
-```
-
-`**src/lib/bets/culebras.ts**`
-
-- Recibir `startingHole` como parámetro.
-- Reemplazar `Math.max(...allCulebras.map(c => c.holeNumber))` por el hoyo cuyo `playOrderIndex` sea el mayor.
-- `culebrasOnLastHole` se filtra contra ese hoyo (que es el último jugado, no el de mayor número físico).
-- El tie-break override (`tieBreakLoser` con formato `hole:playerId`) sigue funcionando porque compara contra el hoyo seleccionado, sea cual sea.
-
-`**src/lib/bets/pinguinos.ts**`
-
-- Mismo tratamiento: recibir `startingHole`, calcular `maxHole` por `playOrderIndex` en lugar de por número físico.
-
-`**src/lib/bets/zoologico.ts**`
-
-- `calculateZoologicoAnimalResult` recibe `startingHole` (default `1`).
-- Calcular el "último hoyo" usando `playOrderIndex` sobre `animalEvents`.
-- `calculateZoologicoBets` propaga `startingHole` al helper.
-
-### 3. Propagación de `startingHole`
-
-`**src/lib/betCalculations.ts**` (orquestador) — pasar `startingHole` a:
-
-- `calculateCulebrasBets`
-- `calculatePinguinosBets`
-- `calculateZoologicoBets`
-
-Verificar también que cualquier consumidor directo de `calculateZoologicoAnimalResult` (p.ej. dashboards/popovers de Zoológico) reciba y pase `startingHole`. Si no lo tienen disponible, se toma de `round.startingHole` desde `RoundContext`/`useRoundManagement`.
+Sólo cambia el creador del leaderboard puede editar config. Participantes siguen viendo todo en read-only.
 
 ---
 
-## Detalles técnicos
+## 1. Editar configuración del leaderboard
 
-- Empate en el "último hoyo jugado": se mantiene la lógica existente (mayor `putts` / mayor `overPar` / mayor `count`), porque el cambio es solo en cómo se identifica ese último hoyo.
-- No se toca persistencia ni esquema de BD.
-- No se toca la lógica de Caros, Vegas, Skins, Medal, Putts ni Sliding (ya corregidas).
-- Tests: si existen tests de culebras/zoológico/pingüinos, agregar un caso con `startingHole=10` que verifique que una incidencia en hoyo 18 (primer hoyo jugado) no se considera la "última".
+Hoy el dropdown de ajustes del `LeaderboardDetailInline` y del `MultiDayLeaderboardDetail` solo permite renombrar / cerrar / eliminar. Se agrega una opción **"Editar configuración"** (solo visible si `event.created_by === profile.id`).
+
+### Standard (`LeaderboardDetailInline`)
+Diálogo con campos editables:
+- Nombre
+- Descripción
+- Fecha (`start_date`)
+- Modalidades (gross / net / stableford) — checkboxes
+
+### Multi-día (`MultiDayLeaderboardDetail`)
+Diálogo con campos editables:
+- Nombre, Descripción
+- Modalidades
+- **Días del torneo**: lista de `{ date, label }` editable (agregar / quitar día). Mínimo 2.
+- **Agregación**: `sum` o `best_n` (con N)
+- Al guardar, recalcular `day_number` por orden cronológico, persistir en `rules_json` y actualizar `start_date`/`end_date`.
+
+Guardas:
+- No permitir borrar un día si ya hay una ronda vinculada cuya fecha cae en ese día. Mostrar warning con la lista de rondas afectadas y bloquear el borrado de ese día (el resto se puede editar).
+- Cambiar fechas que ya tienen rondas vinculadas muestra un aviso pero se permite (el mapeo se recalcula por `rounds.date` → `day_number`).
+
+### Implementación
+- Nuevo componente `EditLeaderboardConfigDialog` (variante standard) y `EditMultiDayConfigDialog`. Actualizan vía `supabase.from('leaderboard_events').update({...})` filtrando por `id`. RLS ya permite a `created_by` updatear.
+- Después de guardar: `fetchDetail()` / `fetchAll()` y `queryClient.invalidateQueries(['leaderboard_events'])`.
 
 ---
 
-## Archivos a modificar
+## 2. UX "día actual" en Multi-día
 
-- `src/components/bets/BilateralDetail.tsx` — labels fijos + tooltip
-- `src/lib/bets/shared.ts` — helper `playOrderIndex`
-- `src/lib/bets/culebras.ts` — parámetro + lógica de último
-- `src/lib/bets/pinguinos.ts` — parámetro + lógica de último
-- `src/lib/bets/zoologico.ts` — parámetro + lógica de último
-- `src/lib/betCalculations.ts` — propagar `startingHole`
-- Consumidores de `calculateZoologicoAnimalResult` (si aplica)
+En `MultiDayLeaderboardDetail`:
+
+- **Default tab**: en lugar de `'all'`, abrir en el día cuyo `date` === hoy (`YYYY-MM-DD` local). Si hoy no coincide con ningún día, abrir en el primer día sin completar; si todos completados, abrir en `'all'`.
+- **Etiqueta visual "Hoy"**: al `TabsTrigger` del día con `date === today` agregar un punto/badge (`bg-primary`) y texto "Día N · Hoy".
+- **Header del card**: bajo el título mostrar una línea pill destacada: `"Jugando: Día N — <fecha> [Hoy]"` cuando aplique. Si el torneo no está en curso hoy, mostrar `"Próximo: Día N — <fecha>"` o `"Finalizado"`.
+- **Tab "Acumulado"** mantiene su lugar (último) y mantiene estilo `font-semibold` actual.
+
+---
+
+## 3. Claridad al vincular ronda en Multi-día
+
+En `LinkRoundToLeaderboardDialog`:
+
+- Al listar leaderboards activos, los multi-día muestran badge `Multi-día · N días`.
+- Cuando el `selectedEvent.competition_type === 'multi_day'`:
+  - Cargar `rules_json.days` y la fecha de la ronda activa (`rounds.date` del `roundId`).
+  - Mostrar **arriba del listado de jugadores** un bloque informativo:
+    - Si la fecha de la ronda coincide con algún `day.date`: card verde "Se vinculará al **Día N — `<fecha>` (`label`)** del torneo «`<nombre>`»".
+    - Si NO coincide con ningún día del torneo: card ámbar "⚠ La fecha de esta ronda (`<fecha>`) no coincide con ningún día del torneo. Edita la configuración del leaderboard o la fecha de la ronda antes de vincular." → botón de "Vincular" deshabilitado.
+- Igual señal contextual al `MultiDayLeaderboardDetail` cuando se invoca el flujo desde ahí (mismo dialog, lógica unificada).
+
+No se cambian estructuras de datos: el día se sigue derivando de `rounds.date` ↔ `rules.days[].date` (como ya hace `MultiDayLeaderboardDetail`).
+
+---
+
+## Archivos a tocar
+
+- `src/components/leaderboards/LeaderboardDetailInline.tsx` — añadir opción "Editar configuración" en el menú.
+- `src/components/leaderboards/MultiDayLeaderboardDetail.tsx` — menú de ajustes (hoy no existe), default tab = hoy, badge "Hoy", header "Jugando Día N".
+- Nuevos: `src/components/leaderboards/EditLeaderboardConfigDialog.tsx`, `src/components/leaderboards/EditMultiDayConfigDialog.tsx`.
+- `src/components/leaderboards/LinkRoundToLeaderboardDialog.tsx` — bloque informativo multi-día + guardas de vinculación.
+
+Sin migraciones de DB. Sin cambios a `useLeaderboards` salvo (opcional) un `updateEvent` helper.
+
+---
+
+## Fuera de alcance
+
+- Teams Cup edición (ya tiene su propio `CupSettingsDialog`).
+- Cambiar el modelo de datos (sigue mapeo por fecha).
+- Editar handicaps de participantes (ya existe en flujo aparte).
