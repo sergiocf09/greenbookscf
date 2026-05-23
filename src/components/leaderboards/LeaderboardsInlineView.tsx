@@ -29,13 +29,15 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   onNavigateToDetail,
 }) => {
   const navigate = useNavigate();
-  const { events, loading, createEvent, joinByCode } = useLeaderboards();
+  const { profile } = useAuth();
+  const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createType, setCreateType] = useState<'standard' | 'multi_day' | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
 
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
