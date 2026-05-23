@@ -162,8 +162,27 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
     setSubmitting(true);
 
     try {
+      // Multi-day: if user picked a day with a different date than the round,
+      // align the round's date to the selected day so the engine maps it correctly.
+      const isMd = (selectedEvent as any)?.competition_type === 'multi_day';
+      const mdDays = isMd
+        ? ((selectedEvent?.rules_json as any)?.days as Array<{day_number:number;date:string;label?:string}> | undefined) || []
+        : [];
+      if (isMd && selectedDayNumber) {
+        const chosen = mdDays.find(d => d.day_number === selectedDayNumber);
+        if (chosen && chosen.date && chosen.date !== roundDate) {
+          const { error: dErr } = await supabase
+            .from('rounds')
+            .update({ date: chosen.date })
+            .eq('id', roundId);
+          if (dErr) throw dErr;
+          setRoundDate(chosen.date);
+        }
+      }
+
       // Link the round first (idempotent)
       await linkRound(roundId);
+
 
       // Fetch fresh participants from backend (avoid stale state when re-linking)
       const { data: currentParts, error: partsErr } = await supabase
