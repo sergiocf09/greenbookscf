@@ -215,7 +215,8 @@ export const getOyesesDisplayData = (
   config: BetConfig,
   course: GolfCourse,
   /** Optional override to force display in a specific modality (for tabs in dashboard) */
-  forceModality?: OyesModality
+  forceModality?: OyesModality,
+  startingHole: 1 | 10 = 1
 ): { playerAHoles: OyesHoleDisplay[]; playerBHoles: OyesHoleDisplay[] } => {
   const playerAHoles: OyesHoleDisplay[] = [];
   const playerBHoles: OyesHoleDisplay[] = [];
@@ -231,6 +232,7 @@ export const getOyesesDisplayData = (
   const par3Holes = course.holes
     .filter(h => h.par === 3)
     .map(h => h.number);
+  const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   let pairModality: OyesModality;
   
@@ -253,7 +255,7 @@ export const getOyesesDisplayData = (
   
   let accumulated = 0;
   
-  for (const holeNum of par3Holes) {
+  for (const holeNum of orderedPar3Holes) {
     const scoresA = scores.get(playerAId) || [];
     const scoresB = scores.get(playerBId) || [];
     
