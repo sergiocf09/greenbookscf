@@ -615,30 +615,47 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   };
 
 
+  const modesLabel = (event.scoring_modes || []).map((m: string) =>
+    m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : m === 'stableford' ? 'Stableford' : m
+  ).join(' · ');
+
   return (
     <div className="min-h-full bg-background">
-      <div className="bg-card border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      {/* Compact top bar: back + logo + actions (mirrors Teams Cup) */}
+      <div className="bg-card border-b px-3 py-1.5">
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1">
             {onBack && (
-              <Button variant="ghost" size="icon" onClick={onBack}>
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack} aria-label="Volver">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <GreenBookLogo height={24} />
+            <GreenBookLogo height={20} />
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => fetchAll()} aria-label="Actualizar">
-              <RefreshCw className="h-5 w-5" />
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchAll()} aria-label="Actualizar">
+              <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={copyShareLink}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyShareLink} aria-label="Compartir">
               <Share2 className="h-4 w-4" />
             </Button>
+            {event?.code && (
+              <button
+                type="button"
+                onClick={copyCode}
+                className="inline-flex items-center gap-1 h-8 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
+                aria-label="Copiar código"
+                title="Copiar código del leaderboard"
+              >
+                <Hash className="h-3 w-3 text-muted-foreground" />
+                <span className="font-semibold tracking-wide">{event.code}</span>
+              </button>
+            )}
             {isCreator && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Configuración">
-                    <Settings className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Configuración">
+                    <Settings className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -676,44 +693,26 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       </div>
 
       <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
-        {/* Compact tournament info — Teams Cup style (centered, no card) */}
+        {/* Compact tournament title (Teams Cup style: 2 rows max) */}
         <div className="text-center space-y-1">
           <h1 className="text-lg font-bold leading-tight inline-flex items-center justify-center gap-1.5">
             <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
             <span className="truncate">{event.name}</span>
           </h1>
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
-            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase">
+            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold uppercase">
               Multi-día
             </span>
-            {event?.code && (
-              <button
-                onClick={copyCode}
-                className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-[11px] font-mono"
-                title="Copiar código"
-              >
-                <Hash className="h-2.5 w-2.5 text-muted-foreground" />
-                <span className="font-semibold tracking-wide">{event.code}</span>
-                <Copy className="h-2.5 w-2.5" />
-              </button>
+            {modesLabel && (
+              <span className="text-[10px] border border-border px-2 py-0.5 rounded-full font-medium text-foreground">
+                {modesLabel}
+              </span>
             )}
+            <span className="text-[10px] border border-border px-2 py-0.5 rounded-full text-muted-foreground inline-flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {participants.length} jugadores
+            </span>
           </div>
-          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-            <span className="inline-flex items-center gap-0.5"><Users className="h-3 w-3" />{participants.length}</span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-0.5"><Calendar className="h-3 w-3" />{rules.days.length}d</span>
-            <span>·</span>
-            <span>{rules.aggregation === 'best_n' ? `Mejores ${rules.best_n}` : 'Suma'}</span>
-            {currentDay?.isToday && (
-              <>
-                <span>·</span>
-                <span className="text-primary font-semibold">Hoy · Día {currentDay.day_number}</span>
-              </>
-            )}
-          </div>
-          {event.description && (
-            <p className="text-[11px] text-muted-foreground truncate">{event.description}</p>
-          )}
         </div>
 
         {/* Tabs + standings */}
