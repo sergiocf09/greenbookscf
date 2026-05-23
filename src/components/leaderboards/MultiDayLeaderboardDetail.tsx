@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -46,6 +53,16 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [standingsByDay, setStandingsByDay] = useState<Record<number, DayStanding[]>>({});
   const [sortMode, setSortMode] = useState<SortMode>('net');
   const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [showEditConfig, setShowEditConfig] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
+  const [showClose, setShowClose] = useState(false);
+  const [closeText, setCloseText] = useState('');
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const isCreator = event?.created_by === profile?.id;
 
   const rules = useMemo<MultiDayRulesJson>(() => {
     const r = (event?.rules_json ?? {}) as MultiDayRulesJson;
@@ -239,6 +256,80 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Pick a sensible default tab once event loads:
+  // - today's day if today matches one of the configured dates
+  // - else first day that still has zero holes played
+  // - else "all" (accumulated)
+  const [tabInit, setTabInit] = useState(false);
+  useEffect(() => {
+    if (tabInit || !event || rules.days.length === 0) return;
+    const today = rules.days.find(d => d.date === todayStr);
+    if (today) {
+      setSelectedTab(String(today.day_number));
+      setTabInit(true);
+      return;
+    }
+    const firstUnfinished = rules.days.find(d => {
+      const entries = standingsByDay[d.day_number] || [];
+      return entries.every(e => e.holesPlayed === 0);
+    });
+    if (firstUnfinished) {
+      setSelectedTab(String(firstUnfinished.day_number));
+    } else {
+      setSelectedTab('all');
+    }
+    setTabInit(true);
+  }, [event, rules.days, standingsByDay, todayStr, tabInit]);
+
+  const currentDay = useMemo(() => {
+    if (!rules.days.length) return null;
+    const today = rules.days.find(d => d.date === todayStr);
+    if (today) return { ...today, isToday: true as const };
+    const upcoming = [...rules.days].sort((a, b) => a.date.localeCompare(b.date))
+      .find(d => d.date >= todayStr);
+    if (upcoming) return { ...upcoming, isToday: false as const };
+    return null;
+  }, [rules.days, todayStr]);
+
+  const handleRename = async () => {
+    if (!renameValue.trim() || !event) return;
+    const { error } = await supabase.from('leaderboard_events').update({ name: renameValue.trim() }).eq('id', event.id);
+    if (error) return toast.error(error.message);
+    toast.success('Nombre actualizado');
+    setShowRename(false);
+    fetchAll();
+  };
+
+  const handleDelete = async () => {
+    if (!event) return;
+    try {
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_rounds').delete().eq('leaderboard_id', event.id);
+      await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
+      const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
+      if (error) throw error;
+      toast.success('Leaderboard eliminado');
+      onBack?.();
+    } catch (err: any) { toast.error('Error: ' + err.message); }
+  };
+
+  const handleCloseLeaderboard = async () => {
+    if (!event) return;
+    const { error } = await supabase.rpc('close_leaderboard', { p_leaderboard_id: event.id });
+    if (error) return toast.error(error.message);
+    toast.success('Competencia cerrada');
+    setShowClose(false);
+    fetchAll();
+  };
+
+  const handleReopen = async () => {
+    if (!event) return;
+    const { error } = await supabase.rpc('reopen_leaderboard', { p_leaderboard_id: event.id });
+    if (error) return toast.error(error.message);
+    toast.success('Competencia reactivada');
+    fetchAll();
+  };
+
   const sortDay = (entries: DayStanding[]): DayStanding[] => {
     const played = entries.filter(e => e.holesPlayed > 0);
     const unplayed = entries.filter(e => e.holesPlayed === 0);
@@ -418,6 +509,40 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             <Button variant="ghost" size="icon" onClick={copyShareLink}>
               <Share2 className="h-4 w-4" />
             </Button>
+            {isCreator && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Configuración">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRename(true); }}>
+                    <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
+                    <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {event.status === 'active' ? (
+                    <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
+                      <CheckCircle className="h-4 w-4 mr-2" /> Cerrar competencia
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={handleReopen}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Reactivar competencia
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => { setDeleteText(''); setShowDelete(true); }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -476,15 +601,38 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               </div>
             )}
 
+            {currentDay && (
+              <div className={cn(
+                "mx-4 mb-2 rounded-md px-3 py-1.5 text-xs flex items-center gap-2",
+                currentDay.isToday
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                <Calendar className="h-3.5 w-3.5" />
+                {currentDay.isToday ? (
+                  <span>Jugando hoy: Día {currentDay.day_number}{currentDay.label ? ` · ${currentDay.label}` : ''}</span>
+                ) : (
+                  <span>Próximo: Día {currentDay.day_number} · {format(parseLocalDate(currentDay.date), "d 'de' MMM", { locale: es })}</span>
+                )}
+              </div>
+            )}
+
             <div className="px-4">
               <Tabs value={selectedTab} onValueChange={setSelectedTab}>
                 <TabsList className="w-full h-auto flex-wrap">
-                  {rules.days.map(d => (
-                    <TabsTrigger key={d.day_number} value={String(d.day_number)}
-                      className="flex-1 text-xs h-7 min-w-[60px]">
-                      Día {d.day_number}
-                    </TabsTrigger>
-                  ))}
+                  {rules.days.map(d => {
+                    const isToday = d.date === todayStr;
+                    return (
+                      <TabsTrigger key={d.day_number} value={String(d.day_number)}
+                        className={cn(
+                          "flex-1 text-xs h-7 min-w-[60px] gap-1",
+                          isToday && "data-[state=inactive]:text-primary"
+                        )}>
+                        {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
+                        Día {d.day_number}{isToday ? ' · Hoy' : ''}
+                      </TabsTrigger>
+                    );
+                  })}
                   <TabsTrigger value="all" className="flex-1 text-xs h-7 min-w-[80px] font-semibold">
                     Acumulado
                   </TabsTrigger>
@@ -495,6 +643,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     <div className="text-xs text-muted-foreground mb-2 px-1">
                       {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
                       {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
+                      {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
                     </div>
                     {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
                   </TabsContent>
@@ -508,6 +657,81 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           </CardContent>
         </Card>
       </div>
+
+      {isCreator && (
+        <>
+          <EditMultiDayConfigDialog
+            open={showEditConfig}
+            onOpenChange={setShowEditConfig}
+            event={{
+              id: event.id,
+              name: event.name,
+              description: event.description,
+              scoring_modes: event.scoring_modes || ['gross', 'net'],
+              rules_json: event.rules_json || {},
+            }}
+            onSaved={fetchAll}
+          />
+
+          <Dialog open={showRename} onOpenChange={setShowRename}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar nombre</DialogTitle>
+                <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                <Label>Nombre</Label>
+                <Input value={renameValue} onChange={e => setRenameValue(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleRename()} />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowRename(false)}>Cancelar</Button>
+                <Button disabled={!renameValue.trim()} onClick={handleRename}>Guardar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showClose} onOpenChange={setShowClose}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+                <DialogDescription>
+                  Pasará a Historial. Escribe <strong>CERRAR</strong> para confirmar.
+                </DialogDescription>
+              </DialogHeader>
+              <Input value={closeText} onChange={e => setCloseText(e.target.value)}
+                placeholder="Escribe CERRAR" className="uppercase" />
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowClose(false)}>Cancelar</Button>
+                <Button disabled={closeText.trim().toLowerCase() !== 'cerrar'} onClick={handleCloseLeaderboard}>
+                  Cerrar competencia
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showDelete} onOpenChange={setShowDelete}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+                <DialogDescription>
+                  Acción irreversible. Escribe <strong>ELIMINAR</strong> para confirmar.
+                </DialogDescription>
+              </DialogHeader>
+              <Input value={deleteText} onChange={e => setDeleteText(e.target.value)}
+                placeholder="Escribe ELIMINAR" className="uppercase" />
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowDelete(false)}>Cancelar</Button>
+                <Button variant="destructive"
+                  disabled={deleteText.trim().toLowerCase() !== 'eliminar'}
+                  onClick={handleDelete}>
+                  Eliminar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 };
