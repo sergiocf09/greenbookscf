@@ -57,7 +57,7 @@ export const calculateCarosBets = (
         (_, i) => playOrder[(startHole - 1) + i]
       ).filter((h): h is number => typeof h === 'number');
 
-      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
 
       let totalA = 0, totalB = 0, played = 0;
       caroHoles.forEach(holeNum => {
