@@ -24,8 +24,10 @@ const Stats              = lazy(() => import("./pages/Stats"));
 const TeamsCupDetail     = lazy(() => import("./pages/TeamsCupDetail"));
 const MoneyRankingDetail = lazy(() => import("./pages/MoneyRankingDetail"));
 const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
+const MultiDayLeaderboard = lazy(() => import("./pages/MultiDayLeaderboard"));
 const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
 const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
+
 
 
 const queryClient = new QueryClient();
