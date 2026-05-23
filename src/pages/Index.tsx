@@ -2565,8 +2565,14 @@ const Index = () => {
                 leaderboardId={leaderboardDetailId}
                 onBack={() => setLeaderboardDetailId(null)}
               />
+            ) : leaderboardDetailType === 'multi_day' ? (
+              <MultiDayLeaderboardDetail
+                leaderboardId={leaderboardDetailId}
+                onBack={() => setLeaderboardDetailId(null)}
+              />
             ) : (
               <LeaderboardDetailInline
+
                 leaderboardId={leaderboardDetailId}
                 onBack={() => setLeaderboardDetailId(null)}
                 hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
