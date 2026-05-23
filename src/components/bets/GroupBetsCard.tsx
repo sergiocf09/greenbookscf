@@ -1013,14 +1013,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   // Calculate Culebras - show count and loser payment (scoped to same group)
   const culebrasResult = useMemo((): OccurrenceBetResult | null => {
-    if (!betConfig.culebras?.enabled || sameGroupPlayers.length < 2) {
+    if (!effectiveBetConfig.culebras?.enabled || sameGroupPlayers.length < 2) {
       return null;
     }
 
-    const valuePerOccurrence = betConfig.culebras.valuePerOccurrence || 25;
+    const valuePerOccurrence = effectiveBetConfig.culebras.valuePerOccurrence || 25;
     
     // Filter to only participating players within the same group (with template inheritance)
-    const participatingPlayers = resolveGroupParticipants(betConfig.culebras.participantIds);
+    const participatingPlayers = resolveGroupParticipants(effectiveBetConfig.culebras.participantIds);
     
     if (participatingPlayers.length < 2) return null;
 
@@ -1048,12 +1048,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Map occurrences with player initials
     const occurrences: OccurrenceInfo[] = allCulebras
-      .sort((a, b) => a.holeNumber - b.holeNumber)
+      .sort((a, b) => playOrderIndex(a.holeNumber, startingHole) - playOrderIndex(b.holeNumber, startingHole))
       .map(c => {
         const player = participatingPlayers.find(p => p.id === c.playerId);
         return {
           playerId: c.playerId,
-          playerInitial: player?.initials?.charAt(0) || '?',
+          playerInitial: player ? getPlayerAbbr(player) : '?',
           holeNumber: c.holeNumber,
         };
       });
@@ -1065,7 +1065,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     let tieHole: number | null = null;
     
     if (allCulebras.length > 0) {
-      const maxHole = Math.max(...allCulebras.map(c => c.holeNumber));
+      const maxHole = allCulebras.reduce((acc, c) =>
+        playOrderIndex(c.holeNumber, startingHole) > playOrderIndex(acc, startingHole) ? c.holeNumber : acc
+      , allCulebras[0].holeNumber);
       const culebrasOnLastHole = allCulebras.filter(c => c.holeNumber === maxHole);
       const maxPutts = Math.max(...culebrasOnLastHole.map(c => c.putts));
       const playersWithMaxPutts = culebrasOnLastHole.filter(c => c.putts === maxPutts);
@@ -1079,7 +1081,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           .filter((p): p is Player => p !== undefined);
         
         // Check if there's a manual override
-        const override = parseTieBreak(betConfig.culebras.tieBreakLoser);
+        const override = parseTieBreak(effectiveBetConfig.culebras.tieBreakLoser);
         // Only apply override if it was chosen for THIS tie hole
         if (override.hole === maxHole && override.playerId && playersWithMaxPutts.some(c => c.playerId === override.playerId)) {
           const loserPlayer = participatingPlayers.find(p => p.id === override.playerId);
@@ -1124,7 +1126,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       tiedPlayers,
       tieHole,
     };
-  }, [sameGroupPlayers, scores, betConfig.culebras]);
+  }, [sameGroupPlayers, scores, effectiveBetConfig.culebras, startingHole, disambiguatedAbbrs]);
 
   // Calculate Pinguinos - show count and loser payment (scoped to same group)
   const pinguinosResult = useMemo((): OccurrenceBetResult | null => {
