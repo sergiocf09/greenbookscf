@@ -3,7 +3,7 @@ import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MarkerSt
 import { SnapshotPairBreakdowns, SnapshotPairSegmentResults } from '@/lib/roundSnapshot';
 import { BetSummary, getPressureEvolution, getSkinsEvolution, getMatchPlayEvolution, calculateAllBets, getBilateralBalance, groupSummariesByType, getPlayerBalance } from '@/lib/betCalculations';
 import { fmtMoney } from '@/lib/formatMoney';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair, getAuthoritativeRayasBalance } from '@/lib/rayasCalculations';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
@@ -387,12 +387,12 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       if (groupId) {
         const resolved = resolveConfigForGroup(betConfig, groupId);
         const resolvedBet = resolved[betKey as keyof BetConfig] as any;
-        if (resolvedBet?.enabled === false) return false;
         participantIds = resolvedBet?.participantIds;
         resolvedBetConfig = resolvedBet;
       } else {
         resolvedBetConfig = betConfig[betKey as keyof BetConfig] as any;
       }
+      if (resolvedBetConfig?.enabled === false) return false;
     }
     
     // oneVsAll mode: pair is valid if either player or rival is the anchor
