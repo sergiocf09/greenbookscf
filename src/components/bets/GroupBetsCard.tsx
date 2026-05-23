@@ -2940,7 +2940,7 @@ export const getMedalGeneralBilateralResult = (
   const hasMultipleGroups = new Set(allPlayers.map(p => p.groupId).filter(Boolean)).size > 1;
 
   if (!hasMultipleGroups || scope === 'global') {
-    return computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+    return computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course, startingHole);
   }
 
   // For 'group' or 'both': calculate within group
@@ -2950,12 +2950,12 @@ export const getMedalGeneralBilateralResult = (
     : allPlayers;
 
   if (scope === 'group') {
-    return computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
+    return computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course, startingHole);
   }
 
   // scope === 'both': sum group + global results
-  const groupResult = computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course);
-  const globalResult = computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course);
+  const groupResult = computeMedalBilateralForPool(groupPool, player, rival, scores, betConfig, course, startingHole);
+  const globalResult = computeMedalBilateralForPool(allPlayers, player, rival, scores, betConfig, course, startingHole);
 
   if (!groupResult && !globalResult) return null;
 
