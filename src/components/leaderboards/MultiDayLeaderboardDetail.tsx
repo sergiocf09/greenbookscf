@@ -639,71 +639,88 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   return (
     <div className="min-h-full bg-background">
-      {/* Compact top bar: logo + actions (no back: navigate via profile menu) */}
+      {/* Compact top bar: centered actions */}
       <div className="bg-card border-b px-2 py-0.5">
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1">
-            <GreenBookLogo height={18} />
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fetchAll()} aria-label="Actualizar">
-              <RefreshCw className="h-4 w-4" />
+        <div className="flex items-center justify-center gap-2">
+          {hasActiveRound && !isRoundLinked && onLinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onLinkRound}
+              aria-label="Vincular ronda"
+              title="Vincular ronda activa"
+            >
+              <Link className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyShareLink} aria-label="Compartir">
-              <Share2 className="h-4 w-4" />
+          )}
+          {hasActiveRound && isRoundLinked && onUnlinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={onUnlinkRound}
+              aria-label="Desvincular ronda"
+              title="Desvincular ronda"
+            >
+              <Link2Off className="h-4 w-4" />
             </Button>
-            {event?.code && (
-              <button
-                type="button"
-                onClick={copyCode}
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
-                aria-label="Copiar código"
-                title="Copiar código del leaderboard"
-              >
-                <Hash className="h-3 w-3 text-muted-foreground" />
-                <span className="font-semibold tracking-wide">{event.code}</span>
-              </button>
-            )}
-            {isCreator && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Configuración">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRename(true); }}>
-                    <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+          )}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyShareLink} aria-label="Compartir">
+            <Share2 className="h-4 w-4" />
+          </Button>
+          {event?.code && (
+            <button
+              type="button"
+              onClick={copyCode}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
+              aria-label="Copiar código"
+              title="Copiar código del leaderboard"
+            >
+              <Hash className="h-3 w-3 text-muted-foreground" />
+              <span className="font-semibold tracking-wide">{event.code}</span>
+            </button>
+          )}
+          {isCreator && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Configuración">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRename(true); }}>
+                  <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
+                  <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
+                  <Link2Off className="h-4 w-4 mr-2" /> Gestionar rondas vinculadas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {event.status === 'active' ? (
+                  <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
+                    <CheckCircle className="h-4 w-4 mr-2" /> Cerrar competencia
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
-                    <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                ) : (
+                  <DropdownMenuItem onClick={handleReopen}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Reactivar competencia
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
-                    <Link2Off className="h-4 w-4 mr-2" /> Gestionar rondas vinculadas
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {event.status === 'active' ? (
-                    <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
-                      <CheckCircle className="h-4 w-4 mr-2" /> Cerrar competencia
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={handleReopen}>
-                      <RefreshCw className="h-4 w-4 mr-2" /> Reactivar competencia
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => { setDeleteText(''); setShowDelete(true); }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => { setDeleteText(''); setShowDelete(true); }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
+
 
       <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
         {/* Compact tournament title (Teams Cup style: 2 rows max) */}
