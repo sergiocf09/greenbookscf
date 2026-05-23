@@ -51,7 +51,14 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [event, setEvent] = useState<any>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [standingsByDay, setStandingsByDay] = useState<Record<number, DayStanding[]>>({});
-  const [sortMode, setSortMode] = useState<SortMode>('net');
+  const sortStorageKeyInit = `mdlb:sortMode:${leaderboardId}`;
+  const [sortMode, setSortModeState] = useState<SortMode>(() => {
+    try { return (localStorage.getItem(sortStorageKeyInit) as SortMode) || 'net'; } catch { return 'net'; }
+  });
+  const setSortMode = (v: SortMode) => {
+    setSortModeState(v);
+    try { localStorage.setItem(sortStorageKeyInit, v); } catch {}
+  };
   useEffect(() => {
     const modes = (event?.scoring_modes || []) as SortMode[];
     if (modes.length > 0 && !modes.includes(sortMode)) {
