@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle, Link2Off, Link } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
