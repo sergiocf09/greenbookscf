@@ -2696,9 +2696,14 @@ const Index = () => {
             <LeaderboardsInlineView
               onNavigateToDetail={(id, type) => {
                 setLeaderboardDetailId(id);
-                setLeaderboardDetailType(type === 'teams_cup' ? 'teams_cup' : 'standard');
+                setLeaderboardDetailType(
+                  type === 'teams_cup' ? 'teams_cup'
+                    : type === 'multi_day' ? 'multi_day'
+                    : 'standard'
+                );
               }}
             />
+
           )
         )}
 
