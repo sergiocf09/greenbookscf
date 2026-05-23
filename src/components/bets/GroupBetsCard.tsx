@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, SixesSetAssignment } from '@/types/golf';
-import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
