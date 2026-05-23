@@ -45,6 +45,14 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const { event, participants, standings, loading, fetchDetail, isCreator, closeLeaderboard, reopenLeaderboard } = useLeaderboardDetail(leaderboardId);
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
+  // Sync sortMode to first available scoring mode once event loads
+  useEffect(() => {
+    const modes = (event?.scoring_modes || []) as SortMode[];
+    if (modes.length > 0 && !modes.includes(sortMode)) {
+      setSortMode(modes[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
