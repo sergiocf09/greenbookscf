@@ -1696,7 +1696,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <Popover key={idx}>
                         <PopoverTrigger asChild>
                           <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
-                            H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                            H{occ.holeNumber} - {player ? getPlayerAbbr(player) : occ.playerInitial}
                           </span>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" side="top">
@@ -1784,7 +1784,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         <Popover key={idx}>
                           <PopoverTrigger asChild>
                             <span className="text-xs bg-muted/50 px-2 py-1 rounded font-medium cursor-pointer hover:bg-muted transition-colors">
-                              H{occ.holeNumber} - {player?.initials || occ.playerInitial}
+                              H{occ.holeNumber} - {player ? getPlayerAbbr(player) : occ.playerInitial}
                             </span>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-2" side="top">
