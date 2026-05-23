@@ -291,7 +291,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
            (h.playerAId === rivalId && h.playerBId === playerId)
     );
     
-    const [start, end] = segment === 'front' ? [1, 9] : segment === 'back' ? [10, 18] : [1, 18];
+    const ranges = getSegmentHoleRanges(startingHole, effectiveBetConfig.roundHoles ?? 18);
+    const [start, end] = segment === 'front' ? ranges.front : segment === 'back' ? ranges.back : [1, 18];
     // Medal display mode: sum ALL confirmed holes for this player in the segment
     const filtered = playerScores.filter((s) => s.holeNumber >= start && s.holeNumber <= end);
     
@@ -304,7 +305,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     const isPlayerA = override.playerAId === playerId;
     const overrideHandicap = isPlayerA ? override.playerAHandicap : override.playerBHandicap;
     
-    const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course);
+    const strokesPerHole = calculateStrokesPerHole(overrideHandicap, course, startingHole);
     
     // Calculate net with overridden strokes received
     return filtered.reduce((sum, s) => {
