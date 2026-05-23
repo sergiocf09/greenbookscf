@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
 import { Player, PlayerScore, BetConfig, GolfCourse, StablefordPointConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, SixesSetAssignment } from '@/types/golf';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -2278,13 +2278,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {showGrupales && (medalGeneralGroupResult || medalGeneralGlobalResult) && (() => {
           const medalSegmentMode = betConfig.medalGeneral?.segmentMode ?? 'total';
           const sameGroupPlayerIdSet = new Set(sameGroupPlayers.map(p => p.id));
+          const segmentRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
 
           const renderMedalScope = (pool: Player[], label?: string) => {
             if (medalSegmentMode === 'segments') {
               // Segmented: Front 9, Back 9, Total 18
               const segments: Array<{ label: string; amount: number; result: MedalGeneralResult | null }> = [];
-              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 1 && h <= 9, betConfig.medalGeneral?.frontAmount ?? 0) });
-              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= 10 && h <= 18, betConfig.medalGeneral?.backAmount ?? 0) });
+              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.front[0] && h <= segmentRanges.front[1], betConfig.medalGeneral?.frontAmount ?? 0) });
+              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.back[0] && h <= segmentRanges.back[1], betConfig.medalGeneral?.backAmount ?? 0) });
               segments.push({ label: 'Total 18', amount: betConfig.medalGeneral?.amount ?? 100, result: calculateMedalForPool(pool, () => true) });
 
               return (
@@ -2411,8 +2412,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
           const segments: Array<{ label: string; amount: number; result: ReturnType<typeof computePuttsSegment> }> = [];
           if (puttsSegmentMode === 'segments') {
-            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= 1 && h <= 9, puttsCfg?.frontAmount ?? 0) });
-            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= 10 && h <= 18, puttsCfg?.backAmount ?? 0) });
+            const puttsRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.front[0] && h <= puttsRanges.front[1], puttsCfg?.frontAmount ?? 0) });
+            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.back[0] && h <= puttsRanges.back[1], puttsCfg?.backAmount ?? 0) });
           }
           segments.push({ label: 'Total 18', amount: puttsCfg?.amount ?? 100, result: computePuttsSegment(() => true, puttsCfg?.amount ?? 100) });
 
