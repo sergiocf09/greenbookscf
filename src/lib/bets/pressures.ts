@@ -73,7 +73,7 @@ export const calculatePressureBets = (
       
       if (!shouldCalculatePair(resolvedPairConfig.pressures, playerA.id, playerB.id)) continue;
       
-      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+      const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
       const onlyMatch = getPairOnlyMatch(playerA.id, playerB.id);
       const isNineHole = (config.roundHoles ?? 18) === 9;
       const pairContinua = config.pressures.continua === true && onlyMatch && !isNineHole;
