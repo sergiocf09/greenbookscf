@@ -503,7 +503,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
 
                     <Button
                       onClick={handleSubmit}
-                      disabled={selectedPlayerIds.size === 0 || submitting || blockMd}
+                      disabled={selectedPlayerIds.size === 0 || submitting || mdBlock}
                       className="w-full"
                     >
                       {submitting ? (
