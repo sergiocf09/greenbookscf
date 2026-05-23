@@ -273,7 +273,126 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 </Button>
               </div>
             )}
-          </DialogContent>
+
+            {createType === 'multi_day' && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input
+                    placeholder="Ej: Copa de Verano"
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Descripción</Label>
+                  <Input
+                    placeholder="Descripción breve (opcional)"
+                    value={formDescription}
+                    onChange={e => setFormDescription(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2 border-l-2 border-primary/30 pl-3">
+                  <Label className="text-xs">Días del torneo *</Label>
+                  {mdDays.map((day, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <span className="text-xs w-12 shrink-0">Día {idx + 1}</span>
+                      <Input
+                        type="date"
+                        value={day.date}
+                        onChange={e => updateDay(idx, 'date', e.target.value)}
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Input
+                        placeholder="Etiqueta"
+                        value={day.label}
+                        onChange={e => updateDay(idx, 'label', e.target.value)}
+                        className="h-8 text-xs flex-1"
+                      />
+                      {mdDays.length > 2 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => removeDay(idx)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 w-full"
+                    onClick={addDay}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Agregar día
+                  </Button>
+
+                  <div className="space-y-1 mt-3">
+                    <Label className="text-xs">Agregación</Label>
+                    <select
+                      value={mdAggregation}
+                      onChange={e => setMdAggregation(e.target.value as 'sum' | 'best_n')}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="sum">Suma total de todos los días</option>
+                      <option value="best_n">Mejores N días</option>
+                    </select>
+                    {mdAggregation === 'best_n' && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Label className="text-xs">N =</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={mdDays.length}
+                          value={mdBestN}
+                          onChange={e => setMdBestN(parseInt(e.target.value) || 1)}
+                          className="h-7 w-16 text-xs"
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          de {mdDays.length} días
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Modalidades *</Label>
+                  <div className="mt-1 flex flex-col gap-2">
+                    {[
+                      { key: 'gross', label: 'Medal Gross' },
+                      { key: 'net', label: 'Medal Neto' },
+                      { key: 'stableford', label: 'Stableford' },
+                    ].map(mode => (
+                      <label key={mode.key} className="flex cursor-pointer items-center gap-2">
+                        <Checkbox
+                          checked={formModes.includes(mode.key)}
+                          onCheckedChange={() => toggleMode(mode.key)}
+                        />
+                        <span className="text-sm">{mode.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
+                  ← Atrás
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={!formName.trim() || formModes.length === 0 || mdDays.length < 2 || creating}
+                  className="w-full"
+                >
+                  {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Crear Multi-día
+                </Button>
+              </div>
+            )}
+
         </Dialog>
 
         <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
