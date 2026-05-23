@@ -2052,14 +2052,17 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         //  - any 'Rayas Oyes' summary whose description includes "(Sangrón)"
                         //  - the pair's effective Oyes modality is 'sangron'
                         const par3Numbers = course.holes.filter(h => h.par === 3).map(h => h.number);
+                        const orderedPar3Numbers = startingHole === 10
+                          ? [...par3Numbers].sort((a, b) => (a >= 10 ? a - 10 : a + 8) - (b >= 10 ? b - 10 : b + 8))
+                          : par3Numbers;
                         const playerScoresArr = confirmedScores.get(player.id) || [];
                         const rivalScoresArr = confirmedScores.get(rival.id) || [];
-                        const hasAcumuladoData = par3Numbers.some(hn => {
+                        const hasAcumuladoData = orderedPar3Numbers.some(hn => {
                           const sA = playerScoresArr.find(s => s.holeNumber === hn);
                           const sB = rivalScoresArr.find(s => s.holeNumber === hn);
                           return (sA?.oyesProximity ?? null) !== null || (sB?.oyesProximity ?? null) !== null;
                         });
-                        const hasSangronData = par3Numbers.some(hn => {
+                        const hasSangronData = orderedPar3Numbers.some(hn => {
                           const sA = playerScoresArr.find(s => s.holeNumber === hn);
                           const sB = rivalScoresArr.find(s => s.holeNumber === hn);
                           return (sA?.oyesProximitySangron ?? null) !== null || (sB?.oyesProximitySangron ?? null) !== null;
@@ -2082,7 +2085,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           confirmedScores,
                           effectiveBetConfig,
                           course,
-                          showTabs ? activeModality : undefined
+                          showTabs ? activeModality : undefined,
+                          startingHole
                         );
                         const { playerAHoles, playerBHoles } = oyesesData;
                         
@@ -2092,7 +2096,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                           rival.id,
                           confirmedScores,
                           effectiveBetConfig,
-                          course
+                          course,
+                          startingHole
                         );
                         
                         if (playerAHoles.length === 0 && !showTabs) {
