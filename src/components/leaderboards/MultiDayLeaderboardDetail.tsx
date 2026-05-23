@@ -340,6 +340,61 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     fetchAll();
   };
 
+  const initialsMap = useMemo(
+    () => disambiguateInitials(participants.map(p => ({ id: p.id, name: p.display_name }))),
+    [participants],
+  );
+
+  const fetchLinkedRounds = useCallback(async () => {
+    const { data: lr } = await supabase
+      .from('leaderboard_rounds')
+      .select('round_id')
+      .eq('leaderboard_id', leaderboardId);
+    const ids = (lr || []).map(r => r.round_id);
+    if (ids.length === 0) { setLinkedRounds([]); return; }
+    const { data: rds } = await supabase
+      .from('rounds')
+      .select('id, date, course_id')
+      .in('id', ids);
+    const courseIds = [...new Set((rds || []).map(r => r.course_id))];
+    let courseMap: Record<string, string> = {};
+    if (courseIds.length > 0) {
+      const { data: cs } = await supabase.from('courses').select('id, name').in('id', courseIds);
+      courseMap = Object.fromEntries((cs || []).map(c => [c.id, c.name]));
+    }
+    const dayByDate: Record<string, number> = {};
+    for (const d of rules.days) dayByDate[d.date] = d.day_number;
+    setLinkedRounds(
+      (rds || []).map(r => ({
+        round_id: r.id,
+        date: r.date,
+        course_name: courseMap[r.course_id] || 'Campo',
+        day_number: dayByDate[r.date] ?? null,
+      })).sort((a, b) => a.date.localeCompare(b.date)),
+    );
+  }, [leaderboardId, rules.days]);
+
+  const handleUnlinkRound = async (roundId: string) => {
+    setUnlinkingId(roundId);
+    try {
+      // Cascade clear leaderboard_scores for that round in this leaderboard, then delete link
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', leaderboardId).eq('round_id', roundId);
+      const { error } = await supabase
+        .from('leaderboard_rounds')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', roundId);
+      if (error) throw error;
+      toast.success('Ronda desvinculada');
+      await fetchLinkedRounds();
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setUnlinkingId(null);
+    }
+  };
+
   const sortDay = (entries: DayStanding[]): DayStanding[] => {
     const played = entries.filter(e => e.holesPlayed > 0);
     const unplayed = entries.filter(e => e.holesPlayed === 0);
