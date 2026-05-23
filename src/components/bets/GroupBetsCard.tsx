@@ -999,12 +999,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const medalGeneralGroupResult = useMemo((): MedalGeneralResult | null => {
     if (!hasMultipleGroups || medalScope === 'global') return null;
     return calculateMedalForPool(sameGroupPlayers);
-  }, [sameGroupPlayers, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+  }, [sameGroupPlayers, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope, startingHole]);
 
   const medalGeneralGlobalResult = useMemo((): MedalGeneralResult | null => {
     if (hasMultipleGroups && medalScope === 'group') return null;
     return calculateMedalForPool(players);
-  }, [players, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope]);
+  }, [players, scores, betConfig.medalGeneral, course, hasMultipleGroups, medalScope, startingHole]);
 
   // For backward compat: single result for non-multi-group or single scope
   const medalGeneralResult = medalGeneralGroupResult || medalGeneralGlobalResult;
