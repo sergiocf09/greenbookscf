@@ -509,6 +509,40 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             <Button variant="ghost" size="icon" onClick={copyShareLink}>
               <Share2 className="h-4 w-4" />
             </Button>
+            {isCreator && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Configuración">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRename(true); }}>
+                    <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
+                    <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {event.status === 'active' ? (
+                    <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
+                      <CheckCircle className="h-4 w-4 mr-2" /> Cerrar competencia
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={handleReopen}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Reactivar competencia
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => { setDeleteText(''); setShowDelete(true); }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -567,15 +601,38 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               </div>
             )}
 
+            {currentDay && (
+              <div className={cn(
+                "mx-4 mb-2 rounded-md px-3 py-1.5 text-xs flex items-center gap-2",
+                currentDay.isToday
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                <Calendar className="h-3.5 w-3.5" />
+                {currentDay.isToday ? (
+                  <span>Jugando hoy: Día {currentDay.day_number}{currentDay.label ? ` · ${currentDay.label}` : ''}</span>
+                ) : (
+                  <span>Próximo: Día {currentDay.day_number} · {format(parseLocalDate(currentDay.date), "d 'de' MMM", { locale: es })}</span>
+                )}
+              </div>
+            )}
+
             <div className="px-4">
               <Tabs value={selectedTab} onValueChange={setSelectedTab}>
                 <TabsList className="w-full h-auto flex-wrap">
-                  {rules.days.map(d => (
-                    <TabsTrigger key={d.day_number} value={String(d.day_number)}
-                      className="flex-1 text-xs h-7 min-w-[60px]">
-                      Día {d.day_number}
-                    </TabsTrigger>
-                  ))}
+                  {rules.days.map(d => {
+                    const isToday = d.date === todayStr;
+                    return (
+                      <TabsTrigger key={d.day_number} value={String(d.day_number)}
+                        className={cn(
+                          "flex-1 text-xs h-7 min-w-[60px] gap-1",
+                          isToday && "data-[state=inactive]:text-primary"
+                        )}>
+                        {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
+                        Día {d.day_number}{isToday ? ' · Hoy' : ''}
+                      </TabsTrigger>
+                    );
+                  })}
                   <TabsTrigger value="all" className="flex-1 text-xs h-7 min-w-[80px] font-semibold">
                     Acumulado
                   </TabsTrigger>
@@ -586,6 +643,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     <div className="text-xs text-muted-foreground mb-2 px-1">
                       {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
                       {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
+                      {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
                     </div>
                     {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
                   </TabsContent>
