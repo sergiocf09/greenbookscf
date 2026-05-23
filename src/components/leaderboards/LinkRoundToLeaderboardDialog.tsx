@@ -323,23 +323,34 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                     No hay leaderboards activos
                   </p>
                 ) : (
-                  activeEvents.map(ev => (
-                    <button
-                      key={ev.id}
-                      onClick={() => handleSelectLeaderboard(ev.id)}
-                      className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors text-left"
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{ev.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          #{ev.code} · {ev.scoring_modes.map(m => 
-                            m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
-                          ).join(' · ')}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  ))
+                  activeEvents.map(ev => {
+                    const isMd = (ev as any).competition_type === 'multi_day';
+                    const mdDays = isMd ? ((ev.rules_json as any)?.days as Array<{date:string}> | undefined) : undefined;
+                    return (
+                      <button
+                        key={ev.id}
+                        onClick={() => handleSelectLeaderboard(ev.id)}
+                        className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm flex items-center gap-1.5">
+                            <span className="truncate">{ev.name}</span>
+                            {isMd && (
+                              <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold uppercase shrink-0">
+                                Multi-día · {mdDays?.length ?? 0}d
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            #{ev.code} · {ev.scoring_modes.map(m =>
+                              m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
+                            ).join(' · ')}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </>
