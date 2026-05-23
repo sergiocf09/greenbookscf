@@ -2603,6 +2603,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
                               rayasDetails={rayasResult.details}
                               basePlayerId={basePlayerId}
+                              startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 cursor-pointer hover:bg-muted/20 rounded transition-colors">
                               <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9</div>
@@ -2647,6 +2648,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               bilateralHandicaps={effectiveBetConfig.bilateralHandicaps}
                               rayasDetails={rayasResult.details}
                               basePlayerId={basePlayerId}
+                              startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2 cursor-pointer hover:bg-muted/20 rounded transition-colors">
                               <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9</div>
