@@ -51,7 +51,14 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const [event, setEvent] = useState<any>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [standingsByDay, setStandingsByDay] = useState<Record<number, DayStanding[]>>({});
-  const [sortMode, setSortMode] = useState<SortMode>('net');
+  const sortStorageKeyInit = `mdlb:sortMode:${leaderboardId}`;
+  const [sortMode, setSortModeState] = useState<SortMode>(() => {
+    try { return (localStorage.getItem(sortStorageKeyInit) as SortMode) || 'net'; } catch { return 'net'; }
+  });
+  const setSortMode = (v: SortMode) => {
+    setSortModeState(v);
+    try { localStorage.setItem(sortStorageKeyInit, v); } catch {}
+  };
   useEffect(() => {
     const modes = (event?.scoring_modes || []) as SortMode[];
     if (modes.length > 0 && !modes.includes(sortMode)) {
@@ -59,7 +66,14 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event?.id]);
-  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const tabStorageKey = `mdlb:selectedTab:${leaderboardId}`;
+  const [selectedTab, setSelectedTabState] = useState<string>(() => {
+    try { return localStorage.getItem(tabStorageKey) || 'all'; } catch { return 'all'; }
+  });
+  const setSelectedTab = (v: string) => {
+    setSelectedTabState(v);
+    try { localStorage.setItem(tabStorageKey, v); } catch {}
+  };
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -621,29 +635,24 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   return (
     <div className="min-h-full bg-background">
-      {/* Compact top bar: back + logo + actions (mirrors Teams Cup) */}
-      <div className="bg-card border-b px-3 py-1.5">
+      {/* Compact top bar: logo + actions (no back: navigate via profile menu) */}
+      <div className="bg-card border-b px-2 py-0.5">
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1">
-            {onBack && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack} aria-label="Volver">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-            <GreenBookLogo height={20} />
+            <GreenBookLogo height={18} />
           </div>
           <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchAll()} aria-label="Actualizar">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fetchAll()} aria-label="Actualizar">
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyShareLink} aria-label="Compartir">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyShareLink} aria-label="Compartir">
               <Share2 className="h-4 w-4" />
             </Button>
             {event?.code && (
               <button
                 type="button"
                 onClick={copyCode}
-                className="inline-flex items-center gap-1 h-8 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
                 aria-label="Copiar código"
                 title="Copiar código del leaderboard"
               >
@@ -654,7 +663,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             {isCreator && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Configuración">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Configuración">
                     <Settings className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
