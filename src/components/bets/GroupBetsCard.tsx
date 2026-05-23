@@ -1376,8 +1376,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const oyesesSummary = useMemo(() => {
     if (sameGroupPlayers.length < 2) return null;
 
-    const standaloneOyesEnabled = betConfig.oyeses?.enabled === true;
-    const rayasOyesEnabled = betConfig.rayas?.enabled === true && (betConfig.rayas.segments?.oyes?.enabled ?? true);
+    const standaloneOyesEnabled = effectiveBetConfig.oyeses?.enabled === true;
+    const rayasOyesEnabled = effectiveBetConfig.rayas?.enabled === true && (effectiveBetConfig.rayas.segments?.oyes?.enabled ?? true);
 
     if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
 
@@ -1387,7 +1387,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       ? resolveGroupParticipants(betConfig.oyeses?.participantIds)
       : [];
     const rayasOyesPlayers = rayasOyesEnabled
-      ? resolveGroupParticipants(betConfig.rayas?.participantIds)
+      ? resolveGroupParticipants(effectiveBetConfig.rayas?.participantIds)
       : [];
     const activePlayers = [...standalonePlayers, ...rayasOyesPlayers].filter(
       (player, index, arr) => arr.findIndex(p => p.id === player.id) === index
@@ -1402,13 +1402,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       }
     }
 
-    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'acumulados');
-    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(betConfig, a.id, b.id) === 'sangron');
+    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'acumulados');
+    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'sangron');
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
+    const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
 
-    const holeSummaries = par3Holes.map(holeNumber => {
+    const holeSummaries = orderedPar3Holes.map(holeNumber => {
       // Acumulados rankings: ALL active players, sorted by oyes_proximity
       const acumuladosRankings = hasAcumulados ? activePlayers
         .map(player => {
@@ -1445,7 +1446,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const holesWithData = holeSummaries.filter(h => h.hasData).length;
 
     return { holeSummaries, hasAcumulados, hasSangron, totalPar3: par3Holes.length, holesWithData, activePlayers };
-  }, [betConfig, scores, course, sameGroupPlayers]);
+  }, [effectiveBetConfig, scores, course, sameGroupPlayers, startingHole]);
 
   // Calculate Zoologico results for each animal type (scoped to same group)
   const zoologicoResults = useMemo((): ZoologicoAnimalResult[] => {
