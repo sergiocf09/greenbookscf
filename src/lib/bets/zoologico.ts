@@ -102,11 +102,11 @@ export const calculateZoologicoAnimalResult = (
       const override = parseZooTieBreak(tieBreakers[animalType]);
       if (override.hole === maxHole && override.playerId && playersWithMaxCount.includes(override.playerId)) {
         const loserPlayer = players.find(p => p.id === override.playerId);
-        if (loserPlayer) { hasTie = false; loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
+        if (loserPlayer) { hasTie = false; loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: disambiguatedInitials.get(loserPlayer.id) || loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
       }
     } else if (playersWithMaxCount.length === 1) {
       const loserPlayer = players.find(p => p.id === playersWithMaxCount[0]);
-      if (loserPlayer) { loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
+      if (loserPlayer) { loser = { playerId: loserPlayer.id, name: loserPlayer.name, initials: disambiguatedInitials.get(loserPlayer.id) || loserPlayer.initials, color: loserPlayer.color, totalLoss: amountPerPlayer * (participantCount - 1) }; }
     }
   }
 
