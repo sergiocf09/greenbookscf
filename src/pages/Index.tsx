@@ -5,6 +5,8 @@ import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
+import { MultiDayLeaderboardDetail } from '@/components/leaderboards/MultiDayLeaderboardDetail';
+
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
 const StatsInlineView = lazy(() => import('@/pages/Stats').then(m => ({ default: m.StatsInlineView })));
 const MoneyRankingDetail = lazy(() => import('@/pages/MoneyRankingDetail'));
