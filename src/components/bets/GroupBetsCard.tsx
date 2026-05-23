@@ -33,6 +33,8 @@ import { SixesResultsCard } from '@/components/bets/SixesResultsCard';
 import { VegasResultsCard } from '@/components/bets/VegasResultsCard';
 import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
 import { getOyesModalityForPair } from '@/lib/rayasCalculations';
+import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
+import { playOrderIndex, sortHolesByPlayOrder } from '@/lib/bets/shared';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -862,6 +864,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     if (!baseGroupId) return players; // No group info = single group, use all
     return players.filter(p => p.groupId === baseGroupId);
   }, [players, basePlayerId]);
+
+  const activeGroupId = sameGroupPlayers[0]?.groupId;
+  const effectiveBetConfig = useMemo(
+    () => resolveConfigForGroup(betConfig, activeGroupId),
+    [betConfig, activeGroupId]
+  );
 
   // Disambiguated initials for this group
   const disambiguatedAbbrs = useMemo(() => disambiguateInitials(sameGroupPlayers), [sameGroupPlayers]);
