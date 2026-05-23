@@ -358,78 +358,111 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
 
           {step === 'select-participants' && (
             selectedEvent ? (
-              <>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="font-medium text-sm">{selectedEvent.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    #{selectedEvent.code} · {selectedEvent.scoring_modes.map(m => 
-                      m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
-                    ).join(' · ')}
-                  </p>
-                </div>
+              (() => {
+                const isMd = (selectedEvent as any).competition_type === 'multi_day';
+                const mdDays = isMd
+                  ? ((selectedEvent.rules_json as any)?.days as Array<{day_number:number;date:string;label?:string}> | undefined) || []
+                  : [];
+                const matchedDay = isMd && roundDate ? mdDays.find(d => d.date === roundDate) : null;
+                const blockMd = isMd && !matchedDay;
+                return (
+                  <>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <p className="font-medium text-sm">{selectedEvent.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        #{selectedEvent.code} · {selectedEvent.scoring_modes.map(m =>
+                          m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stb'
+                        ).join(' · ')}
+                      </p>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Selecciona jugadores y asigna handicap para el leaderboard
-                  </Label>
-                  {allPlayers.map(player => {
-                    const isSelected = selectedPlayerIds.has(player.id);
-                    const hcp = handicaps.get(player.id) ?? player.handicap;
-                    const alreadyIn = existingKeys.has(playerKey(player));
-
-                    return (
-                      <div
-                        key={player.id}
-                        className="flex items-center gap-2 p-2 rounded-lg border border-border"
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => togglePlayer(player.id)}
-                        />
-                        <PlayerAvatar
-                          initials={player.initials}
-                          background={player.color}
-                          size="sm"
-                          isLoggedInUser={player.profileId === profileId}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate block">{player.name}</span>
-                          {alreadyIn && (
-                            <span className="text-[10px] text-muted-foreground italic">
-                              Ya está en este leaderboard
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Hcp:</span>
-                          <Input
-                            type="number"
-                            value={hcp}
-                            onChange={e => updateHandicap(player.id, parseFloat(e.target.value) || 0)}
-                            className="w-16 h-7 text-center text-sm"
-                            disabled={!isSelected}
-                            step="0.1"
-                          />
-                        </div>
+                    {isMd && matchedDay && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+                        <p className="font-semibold text-primary">
+                          Se vinculará al Día {matchedDay.day_number}
+                          {matchedDay.label ? ` · ${matchedDay.label}` : ''}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5">
+                          Fecha de la ronda: {roundDate} — coincide con un día del torneo «{selectedEvent.name}».
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={selectedPlayerIds.size === 0 || submitting}
-                  className="w-full"
-                >
-                  {submitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  Vincular {selectedPlayerIds.size} jugador{selectedPlayerIds.size !== 1 ? 'es' : ''}
-                </Button>
-              </>
-            ) : (
+                    {blockMd && (
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-xs">
+                        <p className="font-semibold text-amber-800 dark:text-amber-200">
+                          ⚠ La fecha de esta ronda ({roundDate || '—'}) no coincide con ningún día del torneo
+                        </p>
+                        <p className="text-amber-700 dark:text-amber-300 mt-0.5">
+                          Días configurados: {mdDays.map(d => `Día ${d.day_number} (${d.date})`).join(' · ')}.
+                          Edita la configuración del leaderboard o cambia la fecha de la ronda antes de vincular.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        Selecciona jugadores y asigna handicap para el leaderboard
+                      </Label>
+                      {allPlayers.map(player => {
+                        const isSelected = selectedPlayerIds.has(player.id);
+                        const hcp = handicaps.get(player.id) ?? player.handicap;
+                        const alreadyIn = existingKeys.has(playerKey(player));
+
+                        return (
+                          <div
+                            key={player.id}
+                            className="flex items-center gap-2 p-2 rounded-lg border border-border"
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => togglePlayer(player.id)}
+                            />
+                            <PlayerAvatar
+                              initials={player.initials}
+                              background={player.color}
+                              size="sm"
+                              isLoggedInUser={player.profileId === profileId}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium truncate block">{player.name}</span>
+                              {alreadyIn && (
+                                <span className="text-[10px] text-muted-foreground italic">
+                                  Ya está en este leaderboard
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">Hcp:</span>
+                              <Input
+                                type="number"
+                                value={hcp}
+                                onChange={e => updateHandicap(player.id, parseFloat(e.target.value) || 0)}
+                                className="w-16 h-7 text-center text-sm"
+                                disabled={!isSelected}
+                                step="0.1"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={selectedPlayerIds.size === 0 || submitting || blockMd}
+                      className="w-full"
+                    >
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-2" />
+                      )}
+                      Vincular {selectedPlayerIds.size} jugador{selectedPlayerIds.size !== 1 ? 'es' : ''}
+                    </Button>
+                  </>
+                );
+              })()
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
