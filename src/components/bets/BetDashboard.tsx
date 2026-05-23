@@ -1364,7 +1364,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         rivalWithGroup,
         confirmedScores,
         betConfig,
-        course
+        course,
+        startingHole
       );
       if (medalResult) {
         medalGeneralTotal = medalResult.amount;
