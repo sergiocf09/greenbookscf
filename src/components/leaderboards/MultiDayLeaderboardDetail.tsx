@@ -648,6 +648,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
                     <Settings className="h-4 w-4 mr-2" /> Editar configuración
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
+                    <Link2Off className="h-4 w-4 mr-2" /> Gestionar rondas vinculadas
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {event.status === 'active' ? (
                     <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
