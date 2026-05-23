@@ -106,6 +106,9 @@ export function useLeaderboards() {
     description?: string;
     scoring_modes: string[];
     start_date: string;
+    end_date?: string;
+    competition_type?: 'standard' | 'multi_day';
+    rules_json?: Record<string, any>;
   }) => {
     if (!profile) return null;
     try {
@@ -115,8 +118,11 @@ export function useLeaderboards() {
           name: params.name,
           description: params.description || null,
           type: 'single_day',
+          competition_type: params.competition_type || 'standard',
           scoring_modes: params.scoring_modes,
           start_date: params.start_date,
+          end_date: params.end_date || null,
+          rules_json: params.rules_json || {},
           created_by: profile.id,
         })
         .select()
@@ -130,6 +136,7 @@ export function useLeaderboards() {
       return null;
     }
   }, [profile, queryClient]);
+
 
   const joinByCode = useCallback(async (code: string): Promise<{ id: string; competition_type: string } | null> => {
     try {

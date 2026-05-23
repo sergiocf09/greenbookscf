@@ -5,6 +5,8 @@ import { AddPlayerFromScorecardDialog, type AddGuestPayload } from '@/components
 import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsInlineView';
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
+import { MultiDayLeaderboardDetail } from '@/components/leaderboards/MultiDayLeaderboardDetail';
+
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
 const StatsInlineView = lazy(() => import('@/pages/Stats').then(m => ({ default: m.StatsInlineView })));
 const MoneyRankingDetail = lazy(() => import('@/pages/MoneyRankingDetail'));
@@ -118,7 +120,7 @@ const Index = () => {
   }, [scores]);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
-  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup'>('standard');
+  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup' | 'multi_day'>('standard');
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboards, setLinkedLeaderboards] = useState<Array<{ id: string; name: string; code: string; competition_type: string }>>([]);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
@@ -2563,8 +2565,14 @@ const Index = () => {
                 leaderboardId={leaderboardDetailId}
                 onBack={() => setLeaderboardDetailId(null)}
               />
+            ) : leaderboardDetailType === 'multi_day' ? (
+              <MultiDayLeaderboardDetail
+                leaderboardId={leaderboardDetailId}
+                onBack={() => setLeaderboardDetailId(null)}
+              />
             ) : (
               <LeaderboardDetailInline
+
                 leaderboardId={leaderboardDetailId}
                 onBack={() => setLeaderboardDetailId(null)}
                 hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
@@ -2688,9 +2696,14 @@ const Index = () => {
             <LeaderboardsInlineView
               onNavigateToDetail={(id, type) => {
                 setLeaderboardDetailId(id);
-                setLeaderboardDetailType(type === 'teams_cup' ? 'teams_cup' : 'standard');
+                setLeaderboardDetailType(
+                  type === 'teams_cup' ? 'teams_cup'
+                    : type === 'multi_day' ? 'multi_day'
+                    : 'standard'
+                );
               }}
             />
+
           )
         )}
 
