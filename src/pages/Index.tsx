@@ -2434,7 +2434,9 @@ const Index = () => {
                   onClick={() => {
                     setLeaderboardDetailId(lb.id);
                     setLeaderboardDetailType(
-                      lb.competition_type === 'teams_cup' ? 'teams_cup' : 'standard'
+                      lb.competition_type === 'teams_cup' ? 'teams_cup'
+                        : lb.competition_type === 'multi_day' ? 'multi_day'
+                        : 'standard'
                     );
                     setView('leaderboards');
                   }}
