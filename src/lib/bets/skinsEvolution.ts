@@ -48,7 +48,7 @@ export const getSkinsEvolution = (
   const frontHoles = Array.from({ length: 9 }, (_, i) => ranges.front[0] + i);
   const backHoles = Array.from({ length: 9 }, (_, i) => ranges.back[0] + i);
   
-  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps);
+  const adjustedScores = getAdjustedScoresForPair(playerA, playerB, scores, course, bilateralHandicaps, startingHole);
   const isAccumulated = getEffectiveSkinsModality(playerA.id, playerB.id, config.skins) === 'acumulados';
   
   const processNine = (holes: number[], segment: 'front' | 'back'): SkinsEvolution => {
