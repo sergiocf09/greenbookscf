@@ -15,7 +15,8 @@ const computeForSegment = (
   course: GolfCourse,
   amount: number,
   holeFilter: (h: number) => boolean,
-  segment: Segment
+  segment: Segment,
+  startingHole: 1 | 10 = 1
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
   if (amount <= 0 || players.length < 2) return summaries;
@@ -30,7 +31,7 @@ const computeForSegment = (
 
     const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
     const handicap = playerHcp?.handicap ?? player.handicap;
-    const strokesPerHole = calculateStrokesPerHole(handicap, course);
+    const strokesPerHole = calculateStrokesPerHole(handicap, course, startingHole);
 
     const netTotal = confirmedScores.reduce((sum, s) => {
       const received = strokesPerHole[s.holeNumber - 1] || 0;
@@ -76,11 +77,11 @@ export const calculateMedalGeneralBets = (
     const ranges = getSegmentHoleRanges(startingHole);
     const [fs, fe] = ranges.front;
     const [bs, be] = ranges.back;
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 0, h => h >= fs && h <= fe, 'front'));
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 0, h => h >= bs && h <= be, 'back'));
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 0, h => h >= fs && h <= fe, 'front', startingHole));
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 0, h => h >= bs && h <= be, 'back', startingHole));
   }
   // Total always runs
-  summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.amount ?? 100, () => true, 'total'));
+  summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.amount ?? 100, () => true, 'total', startingHole));
 
   return summaries;
 };
