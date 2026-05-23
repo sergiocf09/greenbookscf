@@ -60,7 +60,7 @@ export const calculateMatchPlayBets = (
         continue;
 
       const adjustedScores = getAdjustedScoresForPair(
-        playerA, playerB, scores, course, bilateralHandicaps
+        playerA, playerB, scores, course, bilateralHandicaps, startingHole
       );
 
       // Per-pair amount override (set from BilateralDetail editor)
