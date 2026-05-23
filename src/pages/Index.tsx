@@ -2573,7 +2573,37 @@ const Index = () => {
               <MultiDayLeaderboardDetail
                 leaderboardId={leaderboardDetailId}
                 onBack={() => setLeaderboardDetailId(null)}
+                hasActiveRound={isRoundStarted && roundState.status !== 'completed'}
+                isRoundLinked={isRoundLinkedToLeaderboard}
+                onLinkRound={() => {
+                  setPreselectedLeaderboardId(leaderboardDetailId);
+                  openDialog('linkLeaderboard');
+                }}
+                onUnlinkRound={async () => {
+                  if (!roundState.id || !leaderboardDetailId) return;
+                  try {
+                    const roundId = roundState.id;
+                    const leaderboardId = leaderboardDetailId;
+                    const { error: linkError } = await supabase
+                      .from('leaderboard_rounds')
+                      .delete()
+                      .eq('leaderboard_id', leaderboardId)
+                      .eq('round_id', roundId);
+                    if (linkError) throw linkError;
+                    const { error: scoresError } = await supabase
+                      .from('leaderboard_scores')
+                      .delete()
+                      .eq('leaderboard_id', leaderboardId)
+                      .eq('round_id', roundId);
+                    if (scoresError) throw scoresError;
+                    setIsRoundLinkedToLeaderboard(false);
+                    toast.success('Ronda desvinculada del leaderboard');
+                  } catch (err: any) {
+                    toast.error('Error al desvincular: ' + err.message);
+                  }
+                }}
               />
+
             ) : (
               <LeaderboardDetailInline
 
