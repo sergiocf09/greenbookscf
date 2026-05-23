@@ -43,9 +43,13 @@ interface Participant {
 interface Props {
   leaderboardId: string;
   onBack?: () => void;
+  hasActiveRound?: boolean;
+  isRoundLinked?: boolean;
+  onLinkRound?: () => void;
+  onUnlinkRound?: () => void;
 }
 
-export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack }) => {
+export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack, hasActiveRound, isRoundLinked, onLinkRound, onUnlinkRound }) => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<any>(null);
