@@ -14,6 +14,8 @@ import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays } from '
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
+import { toast } from 'sonner';
+
 
 
 interface LeaderboardsInlineViewProps {
