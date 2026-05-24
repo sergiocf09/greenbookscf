@@ -2241,49 +2241,56 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <DialogTitle className="text-base">Agregar Jugadores de Otros Grupos</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 max-h-60 overflow-y-auto">
-                        {playerGroups
-                          .filter((_, gIdx) => gIdx !== displayGroupIndex)
-                          .map((group) => (
-                          <div key={group.id} className="space-y-2">
-                            <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {group.name}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {group.players.map(player => {
-                                const isAdded = getCrossGroupRivalsForBase(balanceBasePlayerId).includes(player.id);
-                                return (
-                                  <button
-                                    key={player.id}
-                                    type="button"
-                                    onClick={() => {
-                                      if (isAdded) {
-                                        setCrossGroupRivalsForBase(prev => prev.filter(id => id !== player.id));
-                                      } else {
-                                        setCrossGroupRivalsForBase(prev => [...prev, player.id]);
-                                      }
-                                    }}
-                                    className={cn(
-                                      'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
-                                      isAdded 
-                                        ? 'bg-primary text-primary-foreground' 
-                                        : 'bg-muted hover:bg-muted/80'
-                                    )}
-                                  >
-                                    <PlayerAvatar 
-                                      initials={player.initials} 
-                                      background={player.color} 
-                                      size="sm" 
-                                      isLoggedInUser={player.id === basePlayerId}
-                                    />
-                                    <span className="text-sm font-medium">{formatPlayerName(player.name).split(' ')[0]}</span>
-                                    {isAdded && <Check className="h-4 w-4" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
+                        {Array.from({ length: 1 + playerGroups.length }, (_, i) => i)
+                          .filter((i) => i !== displayGroupIndex)
+                          .map((i) => {
+                            const label = i === 0
+                              ? 'Grupo 1'
+                              : (playerGroups[i - 1]?.name || `Grupo ${i + 1}`);
+                            const groupPlayers = getPlayersForGroup(i, players, playerGroups);
+                            if (groupPlayers.length === 0) return null;
+                            return (
+                              <div key={`grp-${i}`} className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {label}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {groupPlayers.map(player => {
+                                    const isAdded = getCrossGroupRivalsForBase(balanceBasePlayerId).includes(player.id);
+                                    return (
+                                      <button
+                                        key={player.id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (isAdded) {
+                                            setCrossGroupRivalsForBase(prev => prev.filter(id => id !== player.id));
+                                          } else {
+                                            setCrossGroupRivalsForBase(prev => [...prev, player.id]);
+                                          }
+                                        }}
+                                        className={cn(
+                                          'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
+                                          isAdded
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'bg-muted hover:bg-muted/80'
+                                        )}
+                                      >
+                                        <PlayerAvatar
+                                          initials={player.initials}
+                                          background={player.color}
+                                          size="sm"
+                                          isLoggedInUser={player.id === basePlayerId}
+                                        />
+                                        <span className="text-sm font-medium">{formatPlayerName(player.name).split(' ')[0]}</span>
+                                        {isAdded && <Check className="h-4 w-4" />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
                         {playerGroups.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-4">
                             No hay otros grupos de juego
