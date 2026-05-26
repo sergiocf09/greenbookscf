@@ -187,6 +187,13 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
 
     setSubmitting(true);
     try {
+      // Build per-participant Course HCP + tee overrides from current UI state.
+      const overrides = new Map<string, ParticipantPlayOverride>();
+      participants.forEach(p => {
+        const tee = teeByPart.get(p.id) ?? 'white';
+        const index = Number(p.handicap_for_leaderboard ?? 0);
+        overrides.set(p.id, { courseHandicap: computeCourseHcp(index, tee), teeColor: tee });
+      });
       const roundId = await createRoundFromCup({
         leaderboardId,
         organizerProfileId,
@@ -196,6 +203,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         roundHoles,
         date,
         groups: groupsRaw,
+        playerOverrides: overrides,
       });
       toast.success('Ronda creada y vinculada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
