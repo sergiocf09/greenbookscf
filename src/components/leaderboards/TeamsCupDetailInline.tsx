@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDialog';
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
+import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── helpers ─────────────────────────────────────── */
