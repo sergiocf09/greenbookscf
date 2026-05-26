@@ -425,6 +425,39 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showCreateRound, setShowCreateRound] = useState(false);
+  const [participantToRemove, setParticipantToRemove] = useState<CupParticipant | null>(null);
+  const [removingParticipant, setRemovingParticipant] = useState(false);
+
+  /** Returns the match_order numbers where this participant appears, if any. */
+  const matchesContainingParticipant = (participantId: string): number[] => {
+    return cup.matches
+      .filter(m =>
+        m.player_a1_id === participantId ||
+        m.player_a2_id === participantId ||
+        m.player_b1_id === participantId ||
+        m.player_b2_id === participantId
+      )
+      .map(m => m.match_order ?? 0);
+  };
+
+  const handleRemoveParticipant = async () => {
+    if (!participantToRemove) return;
+    setRemovingParticipant(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .update({ is_active: false, cup_team_id: null })
+        .eq('id', participantToRemove.id);
+      if (error) throw error;
+      toast.success(`${formatPlayerName(participantToRemove.display_name)} eliminado`);
+      setParticipantToRemove(null);
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al eliminar: ' + err.message);
+    } finally {
+      setRemovingParticipant(false);
+    }
+  };
 
   const activeRound = useActiveRoundForLink();
 
@@ -933,6 +966,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -955,6 +999,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -969,6 +1024,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto shrink-0">
                     Pendiente
                   </Badge>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1040,6 +1106,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       className="w-12 h-7 px-1 text-center text-xs"
                     />
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setParticipantToRemove(p)}
+                    aria-label={`Eliminar a ${p.display_name}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               );
             };
@@ -1262,6 +1337,49 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {unlinking && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               Desvincular
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Remove Participant Confirm ─── */}
+      <AlertDialog
+        open={!!participantToRemove}
+        onOpenChange={(open) => { if (!open) setParticipantToRemove(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Eliminar a {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                if (!participantToRemove) return null;
+                const inMatches = matchesContainingParticipant(participantToRemove.id);
+                if (inMatches.length > 0) {
+                  return (
+                    <>
+                      Este jugador aparece en {inMatches.length === 1 ? 'el match' : 'los matches'}{' '}
+                      <strong>#{inMatches.sort((a, b) => a - b).join(', #')}</strong>.
+                      Primero edita o elimina {inMatches.length === 1 ? 'ese match' : 'esos matches'} y vuelve a intentar.
+                    </>
+                  );
+                }
+                return 'Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.';
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingParticipant}>Cancelar</AlertDialogCancel>
+            {participantToRemove && matchesContainingParticipant(participantToRemove.id).length === 0 && (
+              <AlertDialogAction
+                disabled={removingParticipant}
+                onClick={(e) => { e.preventDefault(); handleRemoveParticipant(); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {removingParticipant && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Eliminar
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
