@@ -496,3 +496,102 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     </Dialog>
   );
 };
+
+/* ── Review Step ─────────────────────────────────── */
+
+interface ReviewGroupsProps {
+  usedGroupNumbers: number[];
+  groupCounts: Map<number, number>;
+  groupByPart: Map<string, number | null>;
+  orderedParticipants: CupParticipant[];
+  teamColorById: Map<string, string>;
+  matchOrderByPart: Map<string, number>;
+  maxPerGroup: number;
+  onBack: () => void;
+  onConfirm: () => void;
+  submitting: boolean;
+}
+
+const ReviewGroups: React.FC<ReviewGroupsProps> = ({
+  usedGroupNumbers, groupByPart, orderedParticipants,
+  teamColorById, matchOrderByPart, maxPerGroup, onBack, onConfirm, submitting,
+}) => {
+  const benchedInMatch = orderedParticipants.filter(
+    p => groupByPart.get(p.id) == null && matchOrderByPart.has(p.id),
+  );
+
+  return (
+    <div className="space-y-3 pt-2 border-t">
+      <p className="text-xs font-semibold text-center">Confirma los grupos</p>
+
+      {benchedInMatch.length > 0 && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-2 text-[11px] text-amber-800 dark:text-amber-200">
+          <strong>Atención:</strong> {benchedInMatch.length} jugador(es) con match
+          asignado no jugarán esta ronda. Sus matches quedarán sin uno de los
+          contendientes.
+          <ul className="mt-1 list-disc pl-4">
+            {benchedInMatch.map(p => (
+              <li key={p.id}>{formatPlayerName(p.display_name)} · Match #{matchOrderByPart.get(p.id)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+        {usedGroupNumbers.map(n => {
+          const members = orderedParticipants.filter(p => groupByPart.get(p.id) === n);
+          const overCap = members.length > maxPerGroup;
+          return (
+            <div key={n} className={cn(
+              'border rounded-lg p-2',
+              overCap ? 'border-destructive bg-destructive/5' : 'border-border',
+            )}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold">Grupo {n}</span>
+                <span className={cn(
+                  'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                  overCap ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground',
+                )}>
+                  {members.length} jugador{members.length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {members.map(p => {
+                  const color = p.cup_team_id ? teamColorById.get(p.cup_team_id) : undefined;
+                  const matchOrd = matchOrderByPart.get(p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 py-0.5 pl-2 min-w-0"
+                      style={color ? { borderLeft: `3px solid ${color}` } : undefined}
+                    >
+                      <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                      <span className="text-xs truncate flex-1 min-w-0">
+                        {formatPlayerName(p.display_name)}
+                      </span>
+                      {matchOrd !== undefined && (
+                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold shrink-0">
+                          M#{matchOrd}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-2 pt-1 border-t">
+        <Button variant="outline" className="flex-1" onClick={onBack} disabled={submitting}>
+          ← Editar
+        </Button>
+        <Button className="flex-1" onClick={onConfirm} disabled={submitting}>
+          {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+          Confirmar y Crear
+        </Button>
+      </div>
+    </div>
+  );
+};
