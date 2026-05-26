@@ -864,6 +864,7 @@ export type Database = {
           match_handicap: number
           profile_id: string | null
           source_round_id: string | null
+          tee_color: string | null
         }
         Insert: {
           cup_team_id?: string | null
@@ -878,6 +879,7 @@ export type Database = {
           match_handicap?: number
           profile_id?: string | null
           source_round_id?: string | null
+          tee_color?: string | null
         }
         Update: {
           cup_team_id?: string | null
@@ -892,6 +894,7 @@ export type Database = {
           match_handicap?: number
           profile_id?: string | null
           source_round_id?: string | null
+          tee_color?: string | null
         }
         Relationships: [
           {

@@ -1,56 +1,92 @@
-
 ## Diagnóstico
 
-**1. Error "new row violates row-level security policy for table cup_matches"**
+Hoy en la Teams Cup el hándicap es **un entero plano** que se guarda en `leaderboard_participants.match_handicap`. Como el input usa `parseInt`, escribir un decimal (p. ej. `12.4`, que es el HCP Index) trunca y, si se valida o se vuelve a editar, "no deja avanzar". Además **no se sabe de qué tee juega cada jugador**, por lo que es imposible derivar el Course Handicap real cuando se elige el campo.
 
-Las políticas actuales de `cup_matches` (INSERT/UPDATE/DELETE) exigen que quien ejecuta la acción sea **participante activo del leaderboard** (`leaderboard_participants.profile_id = get_my_profile_id() AND is_active = true`).
+Lo correcto en USGA es:
 
-En esta Cup ("Ryder Juriquilla") el organizador creó el evento y agregó 13 jugadores con `AddCupParticipantsDialog`, pero **a sí mismo no se agregó** como participante. Por eso al pulsar "Agregar Match" PostgREST rechaza el INSERT.
-
-La política de SELECT ya contempla al creador (`le.created_by = get_my_profile_id()`), pero las de INSERT/UPDATE/DELETE no. Hay que alinearlas.
-
-**2. UX: eliminar jugadores desde el roster**
-
-Hoy `AddCupParticipantsDialog` solo agrega. Si te equivocas en un nombre o sobra alguien, no hay forma intuitiva de quitarlo desde la vista de la Cup. Hay que poder eliminar con un click desde el propio roster de Participantes.
-
-## Plan
-
-### A. Migración SQL — RLS de `cup_matches`
-
-Reescribir las tres policies de mutación para permitir **al creador del leaderboard** además de a los participantes activos:
-
-```sql
-DROP POLICY "Participants can manage cup matches insert" ON public.cup_matches;
-DROP POLICY "Participants can manage cup matches update" ON public.cup_matches;
-DROP POLICY "Participants can manage cup matches delete" ON public.cup_matches;
-
-CREATE POLICY "Creator or participants can insert cup matches"
-  ON public.cup_matches FOR INSERT TO authenticated
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM leaderboard_events le
-            WHERE le.id = leaderboard_id AND le.created_by = get_my_profile_id())
-    OR EXISTS (SELECT 1 FROM leaderboard_participants lp
-               WHERE lp.leaderboard_id = cup_matches.leaderboard_id
-                 AND lp.profile_id = get_my_profile_id()
-                 AND lp.is_active = true)
-  );
--- equivalentes para UPDATE (USING+WITH CHECK) y DELETE (USING).
+```text
+Course HCP = round( Index × Slope/113 + (Rating − Par) )
 ```
 
-### B. UX — Eliminar jugador desde el roster
+Necesitamos guardar el **Index** (decimal) y el **tee** por jugador, y dejar que el sistema calcule el Course HCP cuando ya hay campo seleccionado.
 
-En `TeamsCupDetailInline.tsx`, sección "Participantes" (filas de Equipo A, Equipo B y "Sin equipo"):
+## Cambios
 
-- Agregar un ícono `Trash2` muted al final de cada fila, **solo visible para el creador**.
-- Al pulsarlo, abrir `AlertDialog` de confirmación: *"¿Eliminar a {nombre} de esta competencia? Si tiene matches asignados también deberás recrearlos."*
-- Bloquear la eliminación si el jugador aparece en algún `cup_matches` (player_a1/a2/b1/b2). En ese caso el dialog muestra un mensaje explicativo y un atajo "Quitar de matches primero" (cierra el confirm y abre el editor de matches afectados). Esto evita huérfanos.
-- Acción: soft-delete con `is_active = false` en `leaderboard_participants` (consistente con el patrón existente del hook que filtra por `is_active`), luego `cup.fetchAll()`.
+### 1. Base de datos
 
-Espejear el mismo ícono de borrar en cada fila del panel "Asignar Equipos y Hándicaps" (también solo para el creador), por simetría.
+Agregar columna a `leaderboard_participants`:
 
-### Detalles técnicos
+- `tee_color text` (nullable; valores: `blue|white|yellow|red`).
 
-- Archivos a tocar: migración SQL nueva + `src/components/leaderboards/TeamsCupDetailInline.tsx` (filas de participantes y panel de asignación). No requiere cambios en `useTeamsCup` salvo, opcionalmente, un helper `removeParticipant(id)`.
-- La función `get_my_profile_id()` ya existe y se usa en las políticas vigentes.
-- No se modifica el flujo de `AddCupParticipantsDialog` ni `CreateRoundFromCupDialog`.
-- Si después de eliminar un jugador el creador quiere "revivirlo", lo vuelve a buscar y agregar con el dialog existente (el `is_active=false` se reactiva con un upsert; ya está cubierto por el flujo actual).
+`handicap_for_leaderboard` ya es `numeric` → soporta el Index decimal sin migración. `match_handicap` (integer) lo seguiremos usando como Course HCP redondeado y se recalcula automáticamente al elegir campo.
+
+### 2. Captura del HCP Index (entrada)
+
+`**AddCupParticipantsDialog.tsx**`
+
+- Inputs de HCP: `type="number"`, `step="0.1"`, `min="-10"`, `max="54"`, usar `parseFloat` en lugar de `parseInt`.
+- Etiqueta cambia de **"HCP"** → **"Index"**.
+- Default del invitado: `20.0`. Default de amigos/búsqueda: `currentHandicap` tal cual (ya viene decimal).
+- Agregar un **selector de tee** (chips B/W/Y/R con sus colores) en cada renglón del jugador y en el formulario de invitado. Default = `white`.
+- En el insert: enviar `handicap_for_leaderboard` con el Index decimal, `match_handicap` = `Math.round(index)` como fallback temporal, y `tee_color`.
+
+**Panel "Asignar Equipos y Hándicaps" (`TeamsCupDetailInline.tsx`)**
+
+- Mismo cambio: input decimal, etiqueta "Index", + selector de tee por renglón.
+- `flushAssignDrafts` actualiza `handicap_for_leaderboard` + `tee_color`; `match_handicap` se sigue derivando como redondeo del Index hasta que haya campo.
+
+`**useTeamsCup.ts**`
+
+- Extender `CupParticipant` con `tee_color: string | null`.
+- `batchUpdateParticipants` acepta `handicap_for_leaderboard` y `tee_color`.
+
+### 3. Mostrar el Index (lectura)
+
+**Roster de participantes (`TeamsCupDetailInline.tsx`):** sustituir `HCP: {match_handicap}` por:
+
+```
+Index: 12.4 · Tee Blanco
+```
+
+Cuando ya haya `linkedRoundInfo` (campo elegido) se muestra debajo en muted: `CH: 14` (Course Handicap).
+
+### 4. Cálculo automático del Course HCP al crear la ronda
+
+`**CreateRoundFromCupDialog.tsx**`
+
+- Cuando cambia `courseId`, cargar en paralelo: `course_tees` (rating/slope por tee) y `course_holes` (suma de pars para Par del campo).
+- Para cada participante: leer su `tee_color` (con fallback al `teeColor` global del diálogo) y calcular Course HCP con `calculateCourseHandicap(index, slope, rating, par)` de `src/lib/usgaHandicap.ts`.
+- En el renglón de cada jugador mostrar: `Index 12.4 → CH 14 (Blanco)` con el tee editable inline (mismo selector de chips). Si edita el tee, recalcula al vuelo.
+- En el submit, pasar al builder un mapa `participantId → { courseHandicap, teeColor }`.
+
+`**src/lib/teamsCupRoundBuilder.ts**`
+
+- `CreateRoundFromCupInput.groups[].participantIds` queda igual.
+- Agregar `playerOverrides?: Map<participantId, { courseHandicap: number; teeColor: 'blue'|'white'|'yellow'|'red' }>`.
+- Al insertar `round_players`, usar `handicap_for_round = courseHandicap` (en lugar de `handicap_for_leaderboard`) y `tee_color` del override; misma lógica para el organizador y para el ghost del invitado.
+
+### 5. Persistir el Course HCP en la Cup (opcional pero recomendable)
+
+Después de crear la ronda, hacer **un update final** a `leaderboard_participants` que sincronice `match_handicap = courseHandicap` para que los matches que se generen usen ese número entero como `strokes_advantage` base. Así la UI muestra coherencia entre la ronda y la cup.
+
+## Detalles técnicos
+
+- HCP Index permitido: −10 a 54 (rango USGA con tolerancia para plus handicaps).
+- `parseFloat(value)` con guard: si `Number.isNaN`, no actualizar.
+- El selector de tee se renderiza con cuatro chips coloreados (azul/blanco/amarillo/rojo) reutilizando el patrón visual ya presente en `CourseSelect`.
+- Si una combinación `course_id + tee_color` no existe en `course_tees`, caer a `course_rating=72, slope=113` (default) y mostrar un aviso pequeño `⚠ tee sin datos` para que el creador lo arregle.
+- `match_handicap` queda en integer (no migración) ya que solo es el redondeo del Course HCP.
+
+## Archivos afectados
+
+- migration nueva → `leaderboard_participants.tee_color`
+- `src/hooks/useTeamsCup.ts` (interface + batchUpdate)
+- `src/components/leaderboards/AddCupParticipantsDialog.tsx`
+- `src/components/leaderboards/TeamsCupDetailInline.tsx`
+- `src/components/leaderboards/CreateRoundFromCupDialog.tsx`
+- `src/lib/teamsCupRoundBuilder.ts`
+
+## Fuera de alcance
+
+- No tocamos `CupMatchEditorDialog` (sigue tomando `match_handicap` ya recalculado).
+- No tocamos el motor de scoring ni RLS de `cup_matches` (ya resueltos en el cambio anterior).    Y sigue quedando la posibilidad de cambiar los strokes que recibe alguno equipo al setear el Match, está la info correcta del su course handicap, pero la pueden ajustar en esa parte del seteo del match
