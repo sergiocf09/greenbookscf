@@ -425,6 +425,39 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showCreateRound, setShowCreateRound] = useState(false);
+  const [participantToRemove, setParticipantToRemove] = useState<CupParticipant | null>(null);
+  const [removingParticipant, setRemovingParticipant] = useState(false);
+
+  /** Returns the match_order numbers where this participant appears, if any. */
+  const matchesContainingParticipant = (participantId: string): number[] => {
+    return cup.matches
+      .filter(m =>
+        m.player_a1_id === participantId ||
+        m.player_a2_id === participantId ||
+        m.player_b1_id === participantId ||
+        m.player_b2_id === participantId
+      )
+      .map(m => m.match_order ?? 0);
+  };
+
+  const handleRemoveParticipant = async () => {
+    if (!participantToRemove) return;
+    setRemovingParticipant(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .update({ is_active: false, cup_team_id: null })
+        .eq('id', participantToRemove.id);
+      if (error) throw error;
+      toast.success(`${formatPlayerName(participantToRemove.display_name)} eliminado`);
+      setParticipantToRemove(null);
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al eliminar: ' + err.message);
+    } finally {
+      setRemovingParticipant(false);
+    }
+  };
 
   const activeRound = useActiveRoundForLink();
 
