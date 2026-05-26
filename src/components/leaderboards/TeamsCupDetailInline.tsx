@@ -615,37 +615,53 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   };
 
   // ── Deferred assignment-panel state ─────────────────────
-  // Local team + hcp drafts. Nothing is written to the DB while the user
-  // taps around. On dialog close we diff & batch-save in a single call.
+  // Local team + index + tee drafts. Nothing is written to the DB while the
+  // user taps around. On dialog close we diff & batch-save in a single call.
   const [draftTeams, setDraftTeams] = useState<Map<string, string | null>>(new Map());
   const [draftHcps, setDraftHcps] = useState<Map<string, number>>(new Map());
+  const [draftTees, setDraftTees] = useState<Map<string, TeeColor>>(new Map());
 
   const getDraftTeam = (p: CupParticipant) =>
     draftTeams.has(p.id) ? draftTeams.get(p.id)! : p.cup_team_id;
   const getDraftHcp = (p: CupParticipant) =>
-    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.match_handicap;
+    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.handicap_for_leaderboard;
+  const getDraftTee = (p: CupParticipant): TeeColor =>
+    draftTees.has(p.id) ? draftTees.get(p.id)! : ((p.tee_color as TeeColor | null) ?? 'white');
 
   const setDraftTeam = (id: string, teamId: string | null) =>
     setDraftTeams(prev => new Map(prev).set(id, teamId));
   const setDraftHcp = (id: string, value: number) =>
     setDraftHcps(prev => new Map(prev).set(id, value));
+  const setDraftTee = (id: string, value: TeeColor) =>
+    setDraftTees(prev => new Map(prev).set(id, value));
 
   const flushAssignDrafts = async () => {
-    const updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }> = [];
+    const updates: Array<{
+      id: string;
+      cup_team_id?: string | null;
+      match_handicap?: number;
+      handicap_for_leaderboard?: number;
+      tee_color?: TeeColor | null;
+    }> = [];
     for (const p of cup.participants) {
-      const patch: { id: string; cup_team_id?: string | null; match_handicap?: number } = { id: p.id };
+      const patch: typeof updates[number] = { id: p.id };
       let dirty = false;
       const teamChanged = draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id;
-      const effectiveHcp = draftHcps.has(p.id)
-        ? draftHcps.get(p.id)!
-        : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard);
+      const hcpChanged = draftHcps.has(p.id) && draftHcps.get(p.id) !== p.handicap_for_leaderboard;
+      const teeChanged = draftTees.has(p.id) && draftTees.get(p.id) !== p.tee_color;
 
       if (teamChanged) {
         patch.cup_team_id = draftTeams.get(p.id)!;
         dirty = true;
       }
-      if ((draftHcps.has(p.id) || teamChanged) && effectiveHcp !== p.match_handicap) {
-        patch.match_handicap = effectiveHcp;
+      if (hcpChanged) {
+        const newIndex = draftHcps.get(p.id)!;
+        patch.handicap_for_leaderboard = newIndex;
+        patch.match_handicap = Math.round(newIndex);
+        dirty = true;
+      }
+      if (teeChanged) {
+        patch.tee_color = draftTees.get(p.id)!;
         dirty = true;
       }
       if (dirty) updates.push(patch);
@@ -656,6 +672,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
     setDraftTeams(new Map());
     setDraftHcps(new Map());
+    setDraftTees(new Map());
   };
 
 
