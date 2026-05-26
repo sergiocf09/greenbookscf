@@ -36,6 +36,7 @@ import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDi
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
+import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
