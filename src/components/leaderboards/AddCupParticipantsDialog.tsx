@@ -239,12 +239,15 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         match_handicap: Math.round(g.hcp),
         cup_team_id: g.team,
         tee_color: g.tee,
+        is_active: true,
       }));
 
       if (profileRows.length > 0) {
+        // Upsert WITHOUT ignoreDuplicates so previously-removed (is_active=false)
+        // players get reactivated and their team/HCP/tee updated on re-add.
         const { error } = await supabase
           .from('leaderboard_participants')
-          .upsert(profileRows, { onConflict: 'leaderboard_id,profile_id', ignoreDuplicates: true });
+          .upsert(profileRows, { onConflict: 'leaderboard_id,profile_id' });
         if (error) throw error;
       }
       if (guestRows.length > 0) {
