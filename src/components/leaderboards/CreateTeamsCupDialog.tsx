@@ -12,9 +12,10 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupFormat } from '@/hooks/useTeamsCup';
+import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 
 const TEAM_COLORS = [
   { hex: '#ef4444', label: 'Rojo' },
