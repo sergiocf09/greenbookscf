@@ -35,7 +35,7 @@ const MAX_GROUPS = 6;
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, organizerProfileId, participants, teams, onCreated,
 }) => {
-  const navigate = useNavigate();
+  // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
 
   const [courseId, setCourseId] = useState<string | null>(null);
