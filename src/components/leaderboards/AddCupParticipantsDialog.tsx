@@ -224,6 +224,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
           tee_color: sel.tee,
+          is_active: true,
         });
       }
 
