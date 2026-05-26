@@ -36,6 +36,7 @@ import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDi
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
+import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── helpers ─────────────────────────────────────── */
@@ -423,6 +424,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null }>({ date: null, courseName: null });
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
+  const [showCreateRound, setShowCreateRound] = useState(false);
 
   const activeRound = useActiveRoundForLink();
 
