@@ -12,9 +12,10 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupFormat } from '@/hooks/useTeamsCup';
+import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 
 const TEAM_COLORS = [
   { hex: '#ef4444', label: 'Rojo' },
@@ -34,8 +35,10 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [creating, setCreating] = useState(false);
+  const [createdEvent, setCreatedEvent] = useState<{ id: string; teams: Array<{ id: string; name: string; color: string }> } | null>(null);
+  const [showAddPlayers, setShowAddPlayers] = useState(false);
 
   // Step 1
   const [name, setName] = useState('');
@@ -57,6 +60,8 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
     setTeamAColor('#3B82F6');
     setTeamBName('Equipo B');
     setTeamBColor('#ef4444');
+    setCreatedEvent(null);
+    setShowAddPlayers(false);
   };
 
   const handleCreate = async () => {
@@ -79,22 +84,28 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
         .single();
       if (evErr) throw evErr;
 
-      const { error: teamsErr } = await supabase.from('cup_teams').insert([
+      const { data: createdTeams, error: teamsErr } = await supabase.from('cup_teams').insert([
         { leaderboard_id: ev.id, name: teamAName.trim() || 'Equipo A', color: teamAColor },
         { leaderboard_id: ev.id, name: teamBName.trim() || 'Equipo B', color: teamBColor },
-      ]);
+      ]).select();
       if (teamsErr) throw teamsErr;
 
       toast.success('Teams Cup creada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
-      reset();
-      onClose();
-      navigate('/leaderboards/cup/' + ev.id);
+      setCreatedEvent({ id: ev.id, teams: (createdTeams as any[]) || [] });
+      setStep(3);
     } catch (err: any) {
       toast.error('Error al crear: ' + err.message);
     } finally {
       setCreating(false);
     }
+  };
+
+  const goToCup = () => {
+    const id = createdEvent?.id;
+    reset();
+    onClose();
+    if (id) navigate('/leaderboards/cup/' + id);
   };
 
   return (
@@ -104,7 +115,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
           <DialogTitle className="flex items-center gap-2">
             🏆 Nueva Teams Cup
             <span className="text-xs font-normal text-muted-foreground ml-auto">
-              Paso {step} de 2
+              Paso {step} de 3
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -212,6 +223,35 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
                 Crear Competencia ✓
               </Button>
             </div>
+          </div>
+        )}
+
+        {step === 3 && createdEvent && (
+          <div className="space-y-4">
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium">¡Competencia creada!</p>
+              <p className="text-xs text-muted-foreground">
+                ¿Quieres agregar jugadores ahora? También puedes hacerlo después desde el detalle.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button className="w-full gap-1" onClick={() => setShowAddPlayers(true)}>
+                <UserPlus className="h-4 w-4" /> Agregar Jugadores Ahora
+              </Button>
+              <Button variant="outline" className="w-full" onClick={goToCup}>
+                Más tarde
+              </Button>
+            </div>
+
+            <AddCupParticipantsDialog
+              open={showAddPlayers}
+              onClose={() => { setShowAddPlayers(false); goToCup(); }}
+              leaderboardId={createdEvent.id}
+              teams={createdEvent.teams as any}
+              existingProfileIds={new Set()}
+              existingGuestNames={new Set()}
+              onAdded={() => { /* navegación ocurre al cerrar */ }}
+            />
           </div>
         )}
       </DialogContent>

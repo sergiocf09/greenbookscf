@@ -1,33 +1,81 @@
-## Problema
+# Dictamen UX: Agregar participantes a Teams Cup
 
-En `src/components/bets/BetDashboard.tsx` (tarjeta de Foursome, ~líneas 2844-3015), la línea de "Unidades" y "Oyeses" se construye parseando el `description` del `BetSummary` que genera `src/lib/bets/teamPressures.ts`. Hoy:
+## Lo que encontré (diagnóstico)
 
-1. En `teamPressures.ts` (líneas 281-295) el summary se empuja **solo si `totalMoney !== 0`**, y dentro de la descripción (líneas 283-285) **solo se agrega "Unidades: …" si `unitsMoney !== 0`** y "Oyeses: …" si `oyesesMoney !== 0`.
-2. Resultado: cuando un Foursome queda empatado en unidades u oyeses (o el total es 0), la línea desaparece del dashboard y no se puede dar clic para ver el desglose. Esto rompe la transparencia.
-3. La línea visible del dashboard se sirve del string parseado, por lo que el usuario también percibe que "el contador no está registrando bien": en realidad sí cuenta, pero solo aparece cuando hay dinero distinto de 0.
+Tracé el flujo completo de cómo un participante llega a una competencia por equipos:
 
-Además, la cuenta de Unidades en el popover ya se calcula de forma independiente (líneas 2856-2894) con `detectScoreBasedMarkers` + `mergeMarkers`, igual que en el motor (`teamPressures.ts` líneas 221-246). Esa cuenta es la "fuente de verdad" para mostrar.
+**1. Creación (`CreateTeamsCupDialog`)** — 2 pasos:
 
-## Cambio
+- Paso 1: Nombre, descripción, formato.
+- Paso 2: Nombres y colores de Equipo A / Equipo B.
+- **NO hay ningún paso para agregar jugadores.** Al cerrar, la competencia queda con 0 participantes.
 
-Hacer que la línea de Unidades y de Oyeses se renderice **siempre que la sub-modalidad esté habilitada en el bet**, independientemente de si el `BetSummary` existe o de si el monto es 0. La línea siempre será clickable y mostrará el popover con la contabilidad.
+**2. Detalle (`TeamsCupDetailInline`)** — al entrar el usuario ve:
 
-### `src/components/bets/BetDashboard.tsx` (bloque del Foursome card, ~líneas 2844-3160)
+- Marcador global 0–0.
+- Sección "Matches" (vacía, con botón "+ Agregar Match").
+- Sección "Participantes" colapsada, con badge "0 jugadores" y solo un botón **"Asignar Equipos"**.
+- El botón "Asignar Equipos" abre un panel que **solo permite reasignar el equipo y HCP de participantes que ya existen.** Si la lista está vacía, el panel está vacío. No ofrece manera de añadir jugadores.
 
-1. Dejar de depender de `mySummary.description` para decidir qué líneas mostrar. Calcular `unitsDetail` y `oyesesDetail` siempre (ya se hace) y construir las líneas visibles a partir de ellos.
-2. Reemplazar el render `parts.map(...)` por un render directo:
-   - Si `bet.unitsConfig?.enabled`: mostrar siempre un chip "Unidades: ±$N" (verde si `unitsDetail.money > 0` desde la perspectiva del jugador base, rojo si <0, gris/neutral si `=0`). Siempre `cursor-pointer + underline decoration-dotted` y siempre abre el popover de unidades.
-   - Si `bet.oyesesConfig?.enabled`: mismo patrón con `oyesesDetail.money`.
-3. Aplicar el signo desde la perspectiva del jugador base (`isBaseInTeamA`) de manera consistente, igual que se hace hoy en el popover (línea 3008).
-4. El popover de unidades ya incluye el desglose por hoyo, el diferencial, y la ventaja otorgada (líneas 2991-3003); mantenerlo. Cuando `diff = 0` y no hay ventaja, mostrar igualmente la tabla con "—" y "Resultado $0" para confirmar el empate.
-5. El popover de oyeses ya muestra las wins; mantenerlo y permitir abrir aunque `diff = 0` (mostrará lista de hoyos par 3 sin ganador o empates).
+**3. Único camino real para añadir participantes** (oculto):
 
-### `src/lib/bets/teamPressures.ts`
+- Salir del leaderboard, ir al Dashboard, abrir una ronda existente, abrir "Vincular a Leaderboard" (`LinkRoundToLeaderboardDialog`) y elegir la Teams Cup. Esto trae a los jugadores de esa ronda como participantes.
+- O esperar a que otro organizador vincule su ronda y los jugadores se importen automáticamente.
 
-Sin cambios funcionales en cálculo. Para que el card de Foursome siga apareciendo cuando todo está en 0 (hoy ya aparece porque el render del card se basa en `bet.enabled`, no en summaries), no hace falta tocar la generación de summaries. La descripción puede seguir omitiendo líneas en $0; ya no se usa para decidir qué mostrar.
+## Por qué esto rompe la experiencia
 
-## Archivos
+- El nombre del único botón ("Asignar Equipos") **presupone que ya hay jugadores**. Cuando no los hay, no hay affordance que diga "agregar".
+- El flujo de creación termina prometiendo una competencia lista, pero el usuario aterriza en una pantalla donde lo único accionable ("Agregar Match") falla porque no hay roster.
+- La dependencia de "vincular una ronda" para sembrar jugadores es un modelo mental invertido: en una copa por equipos primero se arma el roster, luego se juegan rondas.
+- No hay manera de invitar amigos directamente, ni de agregar guests sueltos, ni de añadir un jugador faltante después.
 
-- `src/components/bets/BetDashboard.tsx` — único cambio, bloque de sub-modality breakdown dentro del map de `teamPressures.bets`.
+## Propuesta (alcance UX, sin tocar motor de cálculo)
 
-No se tocan motores de cálculo (units, oyeses, presiones) ni otros tipos de apuestas.
+### A. Botón primario "Agregar Jugadores" en el detalle de Teams Cup
+
+En `TeamsCupDetailInline`, sección Participantes:
+
+- Reemplazar el header por: título + **dos** botones: `+ Agregar Jugadores` (primario) y `Asignar Equipos` (secundario, deshabilitado si hay 0 participantes).
+- Cuando el roster esté vacío, mostrar un **empty state explícito** debajo del marcador 0–0:
+  > "Aún no hay jugadores. Agrega participantes para empezar a armar matches."  
+  > [+ Agregar Jugadores]
+
+### B. Nuevo diálogo `AddCupParticipantsDialog`
+
+Reutiliza patrones existentes (avatar, search, selección múltiple). Tres tabs/secciones:
+
+1. **Mis amigos** — lista de `friendships` con checkbox, HCP editable inline, asignación rápida A/B/—.
+2. **Buscar por usuario** — input de nombre/email (mismo patrón que en el setup de ronda).
+3. **Invitado (guest)** — campos: nombre, iniciales (auto), color, HCP. Inserta `leaderboard_participants` con `profile_id=null` y `guest_name`.
+
+Acción "Agregar seleccionados" inserta filas en `leaderboard_participants` (con `cup_team_id` opcional si ya eligió equipo en la misma pantalla). Esto unifica los dos pasos "agregar" + "asignar equipo".
+
+### C. Paso opcional al final de la creación
+
+En `CreateTeamsCupDialog`, después del Paso 2 (equipos), agregar un **Paso 3 opcional**:
+
+- "¿Quieres agregar jugadores ahora?" → [Más tarde] · [Agregar ahora]
+- "Agregar ahora" abre directo el mismo `AddCupParticipantsDialog` con la nueva competencia ya creada.
+
+Esto cierra el loop de la creación sin obligar al usuario a saber del flujo de "vincular ronda".
+
+### D. Mantener el flujo de "vincular ronda" como atajo
+
+El path actual (importar participantes desde una ronda vinculada) sigue funcionando sin cambios — solo deja de ser el **único** camino.
+
+## Archivos afectados
+
+- `src/components/leaderboards/TeamsCupDetailInline.tsx` — empty state + nuevo botón + handler para abrir el diálogo.
+- `src/components/leaderboards/AddCupParticipantsDialog.tsx` — **nuevo** componente.
+- `src/components/leaderboards/CreateTeamsCupDialog.tsx` — paso 3 opcional + apertura del nuevo diálogo tras crear.
+- `src/hooks/useTeamsCup.ts` — exponer (si no existe) un método `addParticipants(rows[])` que haga el insert batch con `cup_team_id` opcional.
+
+## Lo que NO cambia
+
+- Motor de matches, cálculo de puntos, RLS, esquema de DB.
+- Comportamiento de "Asignar Equipos" para rosters existentes (sigue tal cual).
+- Importación automática al vincular una ronda.
+
+## Pregunta antes de implementar
+
+¿Quieres que en el **Paso 3 de creación** ofrezca también traer participantes desde una ronda existente del usuario (atajo visual), o lo dejo solo con amigos / buscar / guest para mantenerlo simple?   Solo con amigos buscar guest para simpleza 
