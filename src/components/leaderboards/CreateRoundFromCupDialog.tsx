@@ -357,24 +357,40 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
               </div>
             )}
 
-            <div className="space-y-1.5 max-h-[40vh] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
               {participants.map(p => {
                 const color = p.cup_team_id ? teamColorById.get(p.cup_team_id) : undefined;
+                const tee = teeByPart.get(p.id) ?? 'white';
+                const index = Number(p.handicap_for_leaderboard ?? 0);
+                const ch = computeCourseHcp(index, tee);
                 return (
                   <div
                     key={p.id}
-                    className="flex items-center gap-2 p-1.5 border rounded-lg min-w-0"
+                    className="flex flex-col gap-1.5 p-1.5 border rounded-lg min-w-0"
                     style={color ? { borderLeft: `3px solid ${color}` } : undefined}
                   >
-                    <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                    <span className="text-xs font-medium truncate flex-1 min-w-0">
-                      {formatPlayerName(p.display_name)}
-                    </span>
-                    {renderGroupPicker(p.id)}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                      <span className="text-xs font-medium truncate flex-1 min-w-0">
+                        {formatPlayerName(p.display_name)}
+                      </span>
+                      {renderGroupPicker(p.id)}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pl-7">
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        Index {index.toFixed(1)} → <span className="font-semibold text-foreground">CH {ch}</span>
+                      </span>
+                      <TeePicker
+                        value={tee}
+                        onChange={(t) => setTeeByPart(prev => new Map(prev).set(p.id, t))}
+                        size="xs"
+                      />
+                    </div>
                   </div>
                 );
               })}
             </div>
+
           </div>
 
           <div className="flex gap-2 pt-2 border-t">
