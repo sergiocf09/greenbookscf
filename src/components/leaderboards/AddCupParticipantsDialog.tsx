@@ -28,6 +28,14 @@ interface Props {
   existingProfileIds: Set<string>;
   existingGuestNames: Set<string>;
   onAdded: () => void;
+  /** Optional: when the logged-in creator isn't yet a participant, show a banner to add self. */
+  selfOption?: {
+    displayName: string;
+    initials: string;
+    avatarColor: string;
+    handicap: number;
+    onAddSelf: () => Promise<void> | void;
+  } | null;
 }
 
 type TeamChoice = string | null; // cup_team_id or null = sin asignar
