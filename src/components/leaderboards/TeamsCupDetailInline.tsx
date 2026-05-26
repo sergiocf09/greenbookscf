@@ -850,7 +850,33 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         )}
       </div>
 
+      {/* ── Section 2.5: Crear Ronda y Grupos de Juego (creator only) ─── */}
+      {isCreator && cup.participants.length >= 2 && !linkedRoundInfo.date && (
+        <Card className="border-dashed border-primary/40">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <Calendar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Crear Ronda y Grupos de Juego</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                  Genera la ronda donde estos jugadores capturarán sus scores y arma los
+                  foursomes. La ronda queda enlazada automáticamente.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="w-full gap-1"
+              onClick={() => setShowCreateRound(true)}
+            >
+              <Plus className="h-3.5 w-3.5" /> Crear Ronda desde esta Cup
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Section 3: Participants ─── */}
+
       {isCreator && cup.participants.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="p-4 text-center space-y-2">
@@ -1125,6 +1151,22 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         profileId={profile?.id}
         preselectedLeaderboardId={leaderboardId}
       />
+
+      {/* ── Create Round From Cup Dialog (creator only) ─── */}
+      {isCreator && profile && showCreateRound && (
+        <CreateRoundFromCupDialog
+          open={showCreateRound}
+          onClose={() => setShowCreateRound(false)}
+          leaderboardId={leaderboardId}
+          organizerProfileId={profile.id}
+          participants={cup.participants}
+          teams={cup.teams}
+          onCreated={async () => {
+            await cup.fetchAll();
+          }}
+        />
+      )}
+
 
       {/* ── Settings Dialog (creator only) ─── */}
       {isCreator && event && (
