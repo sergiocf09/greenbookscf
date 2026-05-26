@@ -411,6 +411,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showMatchEditor, setShowMatchEditor] = useState(false);
   const [editingMatch, setEditingMatch] = useState<CupMatch | null>(null);
   const [showAssignPanel, setShowAssignPanel] = useState(false);
+  const [showAddParticipants, setShowAddParticipants] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
