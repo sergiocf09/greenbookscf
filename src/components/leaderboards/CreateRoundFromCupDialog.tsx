@@ -111,6 +111,43 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     return m;
   }, [teams]);
 
+  /**
+   * Reorder participants so players that share a match (1v1 or fourball) appear
+   * consecutively, grouped by match_order. Unmatched players go at the end.
+   * This makes it trivial for the organizer to assign them to the same group.
+   */
+  const orderedParticipants = useMemo(() => {
+    const byId = new Map(participants.map(p => [p.id, p]));
+    const used = new Set<string>();
+    const ordered: CupParticipant[] = [];
+    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    for (const m of sortedMatches) {
+      const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
+        .filter((x): x is string => !!x);
+      for (const id of ids) {
+        if (used.has(id)) continue;
+        const p = byId.get(id);
+        if (p) { ordered.push(p); used.add(id); }
+      }
+    }
+    // Append any participant not in a match (alphabetical).
+    const rest = participants
+      .filter(p => !used.has(p.id))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+    return [...ordered, ...rest];
+  }, [participants, matches]);
+
+  /** Map participantId → match_order (first match they appear in). */
+  const matchOrderByPart = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const match of matches) {
+      const ids = [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
+        .filter((x): x is string => !!x);
+      for (const id of ids) if (!m.has(id)) m.set(id, match.match_order ?? 0);
+    }
+    return m;
+  }, [matches]);
+
   const setPartGroup = (partId: string, n: number | null) => {
     setGroupByPart(prev => new Map(prev).set(partId, n));
   };
@@ -139,33 +176,45 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     [groupByPart],
   );
 
-  /** Auto-armar: round-robin distribution that keeps team A/B balanced per group. */
+  /**
+   * Auto-armar: keep all players that share a match in the SAME group,
+   * filling groups up to 4 (foursomes) and overflowing to the next group.
+   * Unmatched players are appended after, also packed by 4.
+   */
   const autoBalance = () => {
-    const teamAId = teams[0]?.id ?? null;
-    const teamBId = teams[1]?.id ?? null;
-    const byTeam = {
-      A: participants.filter(p => p.cup_team_id === teamAId),
-      B: participants.filter(p => p.cup_team_id === teamBId),
-      none: participants.filter(p => !p.cup_team_id || (p.cup_team_id !== teamAId && p.cup_team_id !== teamBId)),
-    };
-    const total = participants.length;
-    // Default to foursomes (4); otherwise spread across as few groups as possible.
-    const numGroups = Math.max(1, Math.min(MAX_GROUPS, Math.ceil(total / 4)));
     const next = new Map<string, number | null>();
-    let cursor = 0;
-    const interleaved: typeof participants = [];
-    const maxLen = Math.max(byTeam.A.length, byTeam.B.length, byTeam.none.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (byTeam.A[i]) interleaved.push(byTeam.A[i]);
-      if (byTeam.B[i]) interleaved.push(byTeam.B[i]);
-      if (byTeam.none[i]) interleaved.push(byTeam.none[i]);
+    let group = 1;
+    let groupSize = 0;
+    const target = 4;
+
+    const placeMatchUnit = (ids: string[]) => {
+      // If adding this unit would exceed the foursome target, advance group.
+      if (groupSize > 0 && groupSize + ids.length > target && group < MAX_GROUPS) {
+        group++;
+        groupSize = 0;
+      }
+      for (const id of ids) {
+        if (next.has(id)) continue;
+        next.set(id, group);
+        groupSize++;
+      }
+    };
+
+    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    for (const m of sortedMatches) {
+      const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
+        .filter((x): x is string => !!x);
+      if (ids.length > 0) placeMatchUnit(ids);
     }
-    for (const p of interleaved) {
-      next.set(p.id, (cursor % numGroups) + 1);
-      cursor++;
-    }
+    // Unmatched players fill remaining slots (1-by-1).
+    const unmatched = participants.filter(p => !next.has(p.id));
+    for (const p of unmatched) placeMatchUnit([p.id]);
+
+    // Anyone we still couldn't place → mark as not playing.
+    participants.forEach(p => { if (!next.has(p.id)) next.set(p.id, null); });
     setGroupByPart(next);
   };
+
 
   const handleCreate = async () => {
     if (!courseId) { toast.error('Selecciona el campo'); return; }
