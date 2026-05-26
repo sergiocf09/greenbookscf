@@ -225,6 +225,35 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
             </div>
           </div>
         )}
+
+        {step === 3 && createdEvent && (
+          <div className="space-y-4">
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium">¡Competencia creada!</p>
+              <p className="text-xs text-muted-foreground">
+                ¿Quieres agregar jugadores ahora? También puedes hacerlo después desde el detalle.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button className="w-full gap-1" onClick={() => setShowAddPlayers(true)}>
+                <UserPlus className="h-4 w-4" /> Agregar Jugadores Ahora
+              </Button>
+              <Button variant="outline" className="w-full" onClick={goToCup}>
+                Más tarde
+              </Button>
+            </div>
+
+            <AddCupParticipantsDialog
+              open={showAddPlayers}
+              onClose={() => { setShowAddPlayers(false); goToCup(); }}
+              leaderboardId={createdEvent.id}
+              teams={createdEvent.teams as any}
+              existingProfileIds={new Set()}
+              existingGuestNames={new Set()}
+              onAdded={() => { /* navegación ocurre al cerrar */ }}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
