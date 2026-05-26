@@ -20,7 +20,7 @@ import { formatPlayerName } from '@/lib/playerInput';
 import { createRoundFromCup, type ParticipantPlayOverride } from '@/lib/teamsCupRoundBuilder';
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
-import type { CupParticipant, CupTeam } from '@/hooks/useTeamsCup';
+import type { CupParticipant, CupTeam, CupMatch } from '@/hooks/useTeamsCup';
 
 interface Props {
   open: boolean;
@@ -29,6 +29,7 @@ interface Props {
   organizerProfileId: string;
   participants: CupParticipant[];
   teams: CupTeam[];
+  matches: CupMatch[];
   onCreated: (roundId: string) => void;
 }
 
@@ -36,7 +37,7 @@ const MAX_PER_GROUP = 6;
 const MAX_GROUPS = 6;
 
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
-  open, onClose, leaderboardId, organizerProfileId, participants, teams, onCreated,
+  open, onClose, leaderboardId, organizerProfileId, participants, teams, matches, onCreated,
 }) => {
   // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
