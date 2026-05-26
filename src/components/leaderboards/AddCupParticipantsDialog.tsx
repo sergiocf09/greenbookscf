@@ -65,9 +65,10 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
   const [guestInitials, setGuestInitials] = useState('');
   const [guestColor, setGuestColor] = useState(GUEST_COLORS[0]);
   const [guestHcp, setGuestHcp] = useState<number>(20);
+  const [guestTee, setGuestTee] = useState<TeeColor>('white');
   const [guestTeam, setGuestTeam] = useState<TeamChoice>(null);
   const [pendingGuests, setPendingGuests] = useState<Array<{
-    name: string; initials: string; color: string; hcp: number; team: TeamChoice;
+    name: string; initials: string; color: string; hcp: number; team: TeamChoice; tee: TeeColor;
   }>>([]);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
       setGuestInitials('');
       setGuestColor(GUEST_COLORS[0]);
       setGuestHcp(20);
+      setGuestTee('white');
       setGuestTeam(null);
       setPendingGuests([]);
       setTab('friends');
@@ -119,7 +121,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
     setFriendSel(prev => {
       const next = new Map(prev);
       if (next.has(id)) next.delete(id);
-      else next.set(id, { team: null, hcp: defaultHcp });
+      else next.set(id, { team: null, hcp: defaultHcp, tee: 'white' });
       return next;
     });
   };
@@ -136,7 +138,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
     setSearchSel(prev => {
       const next = new Map(prev);
       if (next.has(id)) next.delete(id);
-      else next.set(id, { team: null, hcp: defaultHcp });
+      else next.set(id, { team: null, hcp: defaultHcp, tee: 'white' });
       return next;
     });
   };
@@ -162,11 +164,13 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
       color: guestColor,
       hcp: guestHcp,
       team: guestTeam,
+      tee: guestTee,
     }]);
     setGuestName('');
     setGuestInitials('');
     setGuestInitialsTouched(false);
     setGuestHcp(20);
+    setGuestTee('white');
     setGuestTeam(null);
   };
 
@@ -196,8 +200,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           guest_initials: null,
           guest_color: null,
           handicap_for_leaderboard: sel.hcp,
-          match_handicap: sel.hcp,
+          match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
+          tee_color: sel.tee,
         });
       }
 
@@ -215,8 +220,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           guest_initials: null,
           guest_color: null,
           handicap_for_leaderboard: sel.hcp,
-          match_handicap: sel.hcp,
+          match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
+          tee_color: sel.tee,
         });
       }
 
@@ -228,8 +234,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         guest_initials: g.initials,
         guest_color: g.color,
         handicap_for_leaderboard: g.hcp,
-        match_handicap: g.hcp,
+        match_handicap: Math.round(g.hcp),
         cup_team_id: g.team,
+        tee_color: g.tee,
       }));
 
       if (profileRows.length > 0) {
