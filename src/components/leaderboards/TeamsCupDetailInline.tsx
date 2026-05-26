@@ -966,6 +966,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -988,6 +999,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
                   </div>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1002,6 +1024,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto shrink-0">
                     Pendiente
                   </Badge>
+                  {isCreator && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setParticipantToRemove(p)}
+                      aria-label={`Eliminar a ${p.display_name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
