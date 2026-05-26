@@ -27,7 +27,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Loader2, Plus, ChevronDown, Pencil, Trash2,
+  Loader2, Plus, ChevronDown, Pencil, Trash2, UserPlus,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
   Calendar, MapPin, CheckCircle, RefreshCw,
 } from 'lucide-react';
@@ -427,6 +427,37 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showCreateRound, setShowCreateRound] = useState(false);
   const [participantToRemove, setParticipantToRemove] = useState<CupParticipant | null>(null);
   const [removingParticipant, setRemovingParticipant] = useState(false);
+  const [addingSelf, setAddingSelf] = useState(false);
+
+  const creatorIsParticipant = !!(profile && cup.participants.some(p => p.profile_id === profile.id));
+
+  const handleAddSelf = async () => {
+    if (!profile) return;
+    setAddingSelf(true);
+    try {
+      const hcp = Number(profile.current_handicap) || 0;
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .upsert(
+          [{
+            leaderboard_id: leaderboardId,
+            profile_id: profile.id,
+            handicap_for_leaderboard: hcp,
+            match_handicap: hcp,
+            cup_team_id: null,
+            is_active: true,
+          }],
+          { onConflict: 'leaderboard_id,profile_id' }
+        );
+      if (error) throw error;
+      toast.success('Te agregaste como jugador');
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al agregarte: ' + err.message);
+    } finally {
+      setAddingSelf(false);
+    }
+  };
 
   /** Returns the match_order numbers where this participant appears, if any. */
   const matchesContainingParticipant = (participantId: string): number[] => {
@@ -917,9 +948,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <p className="text-xs text-muted-foreground">
               Agrega participantes para empezar a armar los matches.
             </p>
-            <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
-              <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
-            </Button>
+            <div className="flex flex-col gap-2 pt-1">
+              {!creatorIsParticipant && profile && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleAddSelf} disabled={addingSelf}>
+                  {addingSelf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                  Agregarme como jugador
+                </Button>
+              )}
+              <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
+                <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -930,7 +969,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <ChevronDown className={cn('h-4 w-4 transition-transform', participantsOpen && 'rotate-180')} />
           </CollapsibleTrigger>
           {isCreator && (
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap justify-end">
+              {!creatorIsParticipant && profile && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleAddSelf} disabled={addingSelf}>
+                  {addingSelf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                  Agregarme
+                </Button>
+              )}
               <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
                 <Plus className="h-3.5 w-3.5" /> Agregar
               </Button>
