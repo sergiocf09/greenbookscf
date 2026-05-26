@@ -60,6 +60,8 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
     setTeamAColor('#3B82F6');
     setTeamBName('Equipo B');
     setTeamBColor('#ef4444');
+    setCreatedEvent(null);
+    setShowAddPlayers(false);
   };
 
   const handleCreate = async () => {
@@ -82,22 +84,28 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
         .single();
       if (evErr) throw evErr;
 
-      const { error: teamsErr } = await supabase.from('cup_teams').insert([
+      const { data: createdTeams, error: teamsErr } = await supabase.from('cup_teams').insert([
         { leaderboard_id: ev.id, name: teamAName.trim() || 'Equipo A', color: teamAColor },
         { leaderboard_id: ev.id, name: teamBName.trim() || 'Equipo B', color: teamBColor },
-      ]);
+      ]).select();
       if (teamsErr) throw teamsErr;
 
       toast.success('Teams Cup creada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
-      reset();
-      onClose();
-      navigate('/leaderboards/cup/' + ev.id);
+      setCreatedEvent({ id: ev.id, teams: (createdTeams as any[]) || [] });
+      setStep(3);
     } catch (err: any) {
       toast.error('Error al crear: ' + err.message);
     } finally {
       setCreating(false);
     }
+  };
+
+  const goToCup = () => {
+    const id = createdEvent?.id;
+    reset();
+    onClose();
+    if (id) navigate('/leaderboards/cup/' + id);
   };
 
   return (
