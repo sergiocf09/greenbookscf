@@ -1172,7 +1172,6 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <TeePicker
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
-                    size="sm"
                   />
                   <Input
                     type="number"
