@@ -14,6 +14,7 @@ import { formatPlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { Loader2, Search, UserPlus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupTeam } from '@/hooks/useTeamsCup';
+import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 
 const GUEST_COLORS = [
   '#3B82F6', '#ef4444', '#22c55e', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#eab308',
@@ -33,8 +34,14 @@ type TeamChoice = string | null; // cup_team_id or null = sin asignar
 
 interface Selection {
   team: TeamChoice;
-  hcp: number;
+  hcp: number;       // HCP Index (decimal allowed)
+  tee: TeeColor;
 }
+
+const parseIndex = (raw: string): number => {
+  const v = parseFloat(raw);
+  return Number.isFinite(v) ? v : 0;
+};
 
 export const AddCupParticipantsDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded,
