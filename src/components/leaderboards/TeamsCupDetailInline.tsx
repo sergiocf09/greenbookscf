@@ -1340,6 +1340,49 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Remove Participant Confirm ─── */}
+      <AlertDialog
+        open={!!participantToRemove}
+        onOpenChange={(open) => { if (!open) setParticipantToRemove(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Eliminar a {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                if (!participantToRemove) return null;
+                const inMatches = matchesContainingParticipant(participantToRemove.id);
+                if (inMatches.length > 0) {
+                  return (
+                    <>
+                      Este jugador aparece en {inMatches.length === 1 ? 'el match' : 'los matches'}{' '}
+                      <strong>#{inMatches.sort((a, b) => a - b).join(', #')}</strong>.
+                      Primero edita o elimina {inMatches.length === 1 ? 'ese match' : 'esos matches'} y vuelve a intentar.
+                    </>
+                  );
+                }
+                return 'Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.';
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingParticipant}>Cancelar</AlertDialogCancel>
+            {participantToRemove && matchesContainingParticipant(participantToRemove.id).length === 0 && (
+              <AlertDialogAction
+                disabled={removingParticipant}
+                onClick={(e) => { e.preventDefault(); handleRemoveParticipant(); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {removingParticipant && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Eliminar
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
