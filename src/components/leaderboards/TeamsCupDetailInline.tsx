@@ -1137,10 +1137,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             const renderRow = (p: CupParticipant) => {
               const draftTeam = getDraftTeam(p);
               return (
-                <div key={p.id} className="flex items-center gap-1.5 p-1.5 border rounded-lg min-w-0">
-                  <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
+                <div key={p.id} className="flex items-center gap-1 p-1.5 border rounded-lg min-w-0">
                   <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-0.5 shrink-0">
                     {teamA && (
                       <button
                         type="button"
@@ -1174,22 +1173,21 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
                   />
-                  <div className="shrink-0 w-14">
-                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">Index</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="-10"
-                      max="54"
-                      value={getDraftHcp(p)}
-                      onChange={e => {
-                        const v = parseFloat(e.target.value);
-                        setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                      className="w-14 h-7 px-1 text-center text-xs"
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="-10"
+                    max="54"
+                    value={getDraftHcp(p)}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    className="w-11 h-6 px-1 text-center text-xs shrink-0"
+                    aria-label="HCP Index"
+                    title="HCP Index"
+                  />
                   <Button
                     variant="ghost"
                     size="icon"
