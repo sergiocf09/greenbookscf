@@ -18,6 +18,13 @@ export interface CupGroupSpec {
   participantIds: string[];
 }
 
+export interface ParticipantPlayOverride {
+  /** Course Handicap (integer) computed from this player's Index + their tee */
+  courseHandicap: number;
+  /** Tee color this player will play from this round */
+  teeColor: 'blue' | 'white' | 'yellow' | 'red';
+}
+
 export interface CreateRoundFromCupInput {
   leaderboardId: string;
   organizerProfileId: string;
@@ -27,6 +34,8 @@ export interface CreateRoundFromCupInput {
   roundHoles: 9 | 18;
   date: Date;
   groups: CupGroupSpec[];
+  /** Per-participant Course HCP + tee. If absent for a player, falls back to leaderboard HCP + global teeColor. */
+  playerOverrides?: Map<string, ParticipantPlayOverride>;
 }
 
 interface CupParticipantRow {
@@ -41,7 +50,7 @@ interface CupParticipantRow {
 export async function createRoundFromCup(input: CreateRoundFromCupInput): Promise<string> {
   const {
     leaderboardId, organizerProfileId, courseId, teeColor,
-    startingHole, roundHoles, date, groups,
+    startingHole, roundHoles, date, groups, playerOverrides,
   } = input;
 
   // 1. Load all selected participants in one go.
@@ -105,11 +114,14 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
           .eq('id', organizerRoundPlayerId);
       }
     }
-    // Sync organizer handicap from leaderboard if non-zero.
-    if (organizerCupPart && (organizerCupPart.handicap_for_leaderboard ?? 0) !== 0) {
+    // Sync organizer handicap + tee from override (preferred) or leaderboard fallback.
+    if (organizerCupPart) {
+      const ov = playerOverrides?.get(organizerCupPart.id);
+      const hcp = ov?.courseHandicap ?? organizerCupPart.handicap_for_leaderboard ?? 0;
+      const tee = ov?.teeColor ?? teeColor;
       await supabase
         .from('round_players')
-        .update({ handicap_for_round: organizerCupPart.handicap_for_leaderboard })
+        .update({ handicap_for_round: hcp, tee_color: tee })
         .eq('id', organizerRoundPlayerId);
     }
 
@@ -149,13 +161,16 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
         const profileId = part.profile_id ?? ghostProfileByPartId.get(part.id) ?? null;
         if (!profileId) continue;
         const isGuest = !part.profile_id;
+        const ov = playerOverrides?.get(part.id);
+        const hcp = ov?.courseHandicap ?? part.handicap_for_leaderboard ?? 0;
+        const tee = ov?.teeColor ?? teeColor;
         playerRows.push({
           round_id: roundId,
           group_id: gid,
           profile_id: profileId,
-          handicap_for_round: part.handicap_for_leaderboard ?? 0,
+          handicap_for_round: hcp,
           is_organizer: false,
-          tee_color: teeColor,
+          tee_color: tee,
           guest_name: isGuest ? part.guest_name : null,
           guest_initials: isGuest ? part.guest_initials : null,
           guest_color: isGuest ? part.guest_color : null,

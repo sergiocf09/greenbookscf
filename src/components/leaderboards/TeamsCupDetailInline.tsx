@@ -36,6 +36,7 @@ import { CupMatchEditorDialog } from '@/components/leaderboards/CupMatchEditorDi
 import { CupSettingsDialog } from '@/components/leaderboards/CupSettingsDialog';
 import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoundToLeaderboardDialog';
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
+import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
@@ -50,6 +51,15 @@ function formatRunning(delta: number): string {
   if (delta === 0) return 'AS';
   if (delta > 0) return `${delta}UP`;
   return `${Math.abs(delta)}DN`;
+}
+
+const TEE_LABEL_ES: Record<string, string> = {
+  blue: 'Azul', white: 'Blanco', yellow: 'Amarillo', red: 'Rojo',
+};
+
+function formatIndex(v: number): string {
+  // Show one decimal for non-integer values, otherwise compact integer.
+  return Number.isInteger(v) ? `${v}` : v.toFixed(1);
 }
 
 /* ── CupMatchRow ─────────────────────────────────── */
@@ -614,37 +624,53 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   };
 
   // ── Deferred assignment-panel state ─────────────────────
-  // Local team + hcp drafts. Nothing is written to the DB while the user
-  // taps around. On dialog close we diff & batch-save in a single call.
+  // Local team + index + tee drafts. Nothing is written to the DB while the
+  // user taps around. On dialog close we diff & batch-save in a single call.
   const [draftTeams, setDraftTeams] = useState<Map<string, string | null>>(new Map());
   const [draftHcps, setDraftHcps] = useState<Map<string, number>>(new Map());
+  const [draftTees, setDraftTees] = useState<Map<string, TeeColor>>(new Map());
 
   const getDraftTeam = (p: CupParticipant) =>
     draftTeams.has(p.id) ? draftTeams.get(p.id)! : p.cup_team_id;
   const getDraftHcp = (p: CupParticipant) =>
-    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.match_handicap;
+    draftHcps.has(p.id) ? draftHcps.get(p.id)! : p.handicap_for_leaderboard;
+  const getDraftTee = (p: CupParticipant): TeeColor =>
+    draftTees.has(p.id) ? draftTees.get(p.id)! : ((p.tee_color as TeeColor | null) ?? 'white');
 
   const setDraftTeam = (id: string, teamId: string | null) =>
     setDraftTeams(prev => new Map(prev).set(id, teamId));
   const setDraftHcp = (id: string, value: number) =>
     setDraftHcps(prev => new Map(prev).set(id, value));
+  const setDraftTee = (id: string, value: TeeColor) =>
+    setDraftTees(prev => new Map(prev).set(id, value));
 
   const flushAssignDrafts = async () => {
-    const updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }> = [];
+    const updates: Array<{
+      id: string;
+      cup_team_id?: string | null;
+      match_handicap?: number;
+      handicap_for_leaderboard?: number;
+      tee_color?: TeeColor | null;
+    }> = [];
     for (const p of cup.participants) {
-      const patch: { id: string; cup_team_id?: string | null; match_handicap?: number } = { id: p.id };
+      const patch: typeof updates[number] = { id: p.id };
       let dirty = false;
       const teamChanged = draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id;
-      const effectiveHcp = draftHcps.has(p.id)
-        ? draftHcps.get(p.id)!
-        : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard);
+      const hcpChanged = draftHcps.has(p.id) && draftHcps.get(p.id) !== p.handicap_for_leaderboard;
+      const teeChanged = draftTees.has(p.id) && draftTees.get(p.id) !== p.tee_color;
 
       if (teamChanged) {
         patch.cup_team_id = draftTeams.get(p.id)!;
         dirty = true;
       }
-      if ((draftHcps.has(p.id) || teamChanged) && effectiveHcp !== p.match_handicap) {
-        patch.match_handicap = effectiveHcp;
+      if (hcpChanged) {
+        const newIndex = draftHcps.get(p.id)!;
+        patch.handicap_for_leaderboard = newIndex;
+        patch.match_handicap = Math.round(newIndex);
+        dirty = true;
+      }
+      if (teeChanged) {
+        patch.tee_color = draftTees.get(p.id)!;
         dirty = true;
       }
       if (dirty) updates.push(patch);
@@ -655,6 +681,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
     setDraftTeams(new Map());
     setDraftHcps(new Map());
+    setDraftTees(new Map());
   };
 
 
@@ -1009,7 +1036,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
-                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Index {formatIndex(p.handicap_for_leaderboard)}
+                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                    </span>
                   </div>
                   {isCreator && (
                     <Button
@@ -1042,7 +1072,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
-                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Index {formatIndex(p.handicap_for_leaderboard)}
+                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                    </span>
                   </div>
                   {isCreator && (
                     <Button
@@ -1135,20 +1168,24 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       </button>
                     )}
                   </div>
-                  <div className="shrink-0 w-12">
-                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">HCP</Label>
+                  <TeePicker
+                    value={getDraftTee(p)}
+                    onChange={(v) => setDraftTee(p.id, v)}
+                  />
+                  <div className="shrink-0 w-14">
+                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">Index</Label>
                     <Input
                       type="number"
-                      value={
-                        // Show match_handicap if user already touched it (draft) or if it's non-zero;
-                        // otherwise fall back to handicap_for_leaderboard (the value carried from setup).
-                        draftHcps.has(p.id)
-                          ? draftHcps.get(p.id)!
-                          : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard)
-                      }
-                      onChange={e => setDraftHcp(p.id, parseInt(e.target.value) || 0)}
+                      step="0.1"
+                      min="-10"
+                      max="54"
+                      value={getDraftHcp(p)}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value);
+                        setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
+                      }}
                       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                      className="w-12 h-7 px-1 text-center text-xs"
+                      className="w-14 h-7 px-1 text-center text-xs"
                     />
                   </div>
                   <Button

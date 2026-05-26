@@ -52,6 +52,8 @@ export interface CupMatchResult {
   hole_breakdown: CupHoleBreakdown[];
 }
 
+export type TeeColor = 'blue' | 'white' | 'yellow' | 'red';
+
 export interface CupParticipant {
   id: string;
   profile_id: string | null;
@@ -61,6 +63,7 @@ export interface CupParticipant {
   handicap_for_leaderboard: number;
   match_handicap: number;
   cup_team_id: string | null;
+  tee_color: TeeColor | null;
 }
 
 export interface CupStandings {
@@ -92,7 +95,7 @@ export function useTeamsCup(leaderboardId: string | null) {
         supabase.from('cup_matches').select('*')
           .eq('leaderboard_id', leaderboardId).order('match_order'),
         supabase.from('leaderboard_participants')
-          .select('id, profile_id, handicap_for_leaderboard, match_handicap, cup_team_id, is_active, guest_name, guest_initials, guest_color')
+          .select('id, profile_id, handicap_for_leaderboard, match_handicap, cup_team_id, tee_color, is_active, guest_name, guest_initials, guest_color')
           .eq('leaderboard_id', leaderboardId)
           .eq('is_active', true),
         supabase.from('leaderboard_rounds')
@@ -158,6 +161,7 @@ export function useTeamsCup(leaderboardId: string | null) {
           handicap_for_leaderboard: hcpForLb,
           match_handicap: effectiveMatchHcp,
           cup_team_id: p.cup_team_id,
+          tee_color: (p.tee_color as TeeColor | null) ?? null,
         };
       });
 
@@ -294,7 +298,13 @@ export function useTeamsCup(leaderboardId: string | null) {
    * UI flicker on every click.
    */
   const batchUpdateParticipants = useCallback(async (
-    updates: Array<{ id: string; cup_team_id?: string | null; match_handicap?: number }>
+    updates: Array<{
+      id: string;
+      cup_team_id?: string | null;
+      match_handicap?: number;
+      handicap_for_leaderboard?: number;
+      tee_color?: TeeColor | null;
+    }>
   ) => {
     if (updates.length === 0) return;
     try {
@@ -302,6 +312,8 @@ export function useTeamsCup(leaderboardId: string | null) {
         const patch: any = {};
         if ('cup_team_id' in u) patch.cup_team_id = u.cup_team_id;
         if ('match_handicap' in u) patch.match_handicap = u.match_handicap;
+        if ('handicap_for_leaderboard' in u) patch.handicap_for_leaderboard = u.handicap_for_leaderboard;
+        if ('tee_color' in u) patch.tee_color = u.tee_color;
         return supabase.from('leaderboard_participants').update(patch).eq('id', u.id);
       }));
       await fetchAll();

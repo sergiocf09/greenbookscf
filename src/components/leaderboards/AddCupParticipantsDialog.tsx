@@ -14,6 +14,7 @@ import { formatPlayerName, initialsFromPlayerName } from '@/lib/playerInput';
 import { Loader2, Search, UserPlus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupTeam } from '@/hooks/useTeamsCup';
+import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 
 const GUEST_COLORS = [
   '#3B82F6', '#ef4444', '#22c55e', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#eab308',
@@ -33,8 +34,14 @@ type TeamChoice = string | null; // cup_team_id or null = sin asignar
 
 interface Selection {
   team: TeamChoice;
-  hcp: number;
+  hcp: number;       // HCP Index (decimal allowed)
+  tee: TeeColor;
 }
+
+const parseIndex = (raw: string): number => {
+  const v = parseFloat(raw);
+  return Number.isFinite(v) ? v : 0;
+};
 
 export const AddCupParticipantsDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded,
@@ -58,9 +65,10 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
   const [guestInitials, setGuestInitials] = useState('');
   const [guestColor, setGuestColor] = useState(GUEST_COLORS[0]);
   const [guestHcp, setGuestHcp] = useState<number>(20);
+  const [guestTee, setGuestTee] = useState<TeeColor>('white');
   const [guestTeam, setGuestTeam] = useState<TeamChoice>(null);
   const [pendingGuests, setPendingGuests] = useState<Array<{
-    name: string; initials: string; color: string; hcp: number; team: TeamChoice;
+    name: string; initials: string; color: string; hcp: number; team: TeamChoice; tee: TeeColor;
   }>>([]);
 
   useEffect(() => {
@@ -74,6 +82,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
       setGuestInitials('');
       setGuestColor(GUEST_COLORS[0]);
       setGuestHcp(20);
+      setGuestTee('white');
       setGuestTeam(null);
       setPendingGuests([]);
       setTab('friends');
@@ -112,7 +121,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
     setFriendSel(prev => {
       const next = new Map(prev);
       if (next.has(id)) next.delete(id);
-      else next.set(id, { team: null, hcp: defaultHcp });
+      else next.set(id, { team: null, hcp: defaultHcp, tee: 'white' });
       return next;
     });
   };
@@ -129,7 +138,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
     setSearchSel(prev => {
       const next = new Map(prev);
       if (next.has(id)) next.delete(id);
-      else next.set(id, { team: null, hcp: defaultHcp });
+      else next.set(id, { team: null, hcp: defaultHcp, tee: 'white' });
       return next;
     });
   };
@@ -155,11 +164,13 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
       color: guestColor,
       hcp: guestHcp,
       team: guestTeam,
+      tee: guestTee,
     }]);
     setGuestName('');
     setGuestInitials('');
     setGuestInitialsTouched(false);
     setGuestHcp(20);
+    setGuestTee('white');
     setGuestTeam(null);
   };
 
@@ -189,8 +200,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           guest_initials: null,
           guest_color: null,
           handicap_for_leaderboard: sel.hcp,
-          match_handicap: sel.hcp,
+          match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
+          tee_color: sel.tee,
         });
       }
 
@@ -208,8 +220,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           guest_initials: null,
           guest_color: null,
           handicap_for_leaderboard: sel.hcp,
-          match_handicap: sel.hcp,
+          match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
+          tee_color: sel.tee,
         });
       }
 
@@ -221,8 +234,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         guest_initials: g.initials,
         guest_color: g.color,
         handicap_for_leaderboard: g.hcp,
-        match_handicap: g.hcp,
+        match_handicap: Math.round(g.hcp),
         cup_team_id: g.team,
+        tee_color: g.tee,
       }));
 
       if (profileRows.length > 0) {
@@ -322,12 +336,17 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                     {checked && (
                       <>
                         <TeamPicker value={sel!.team} onChange={(v) => updateFriend(f.profileId, { team: v })} />
+                        <TeePicker value={sel!.tee} onChange={(v) => updateFriend(f.profileId, { tee: v })} />
                         <Input
                           type="number"
+                          step="0.1"
+                          min="-10"
+                          max="54"
                           value={sel!.hcp}
-                          onChange={(e) => updateFriend(f.profileId, { hcp: parseInt(e.target.value) || 0 })}
-                          className="w-12 h-7 px-1 text-center text-xs shrink-0"
-                          aria-label="Hándicap"
+                          onChange={(e) => updateFriend(f.profileId, { hcp: parseIndex(e.target.value) })}
+                          className="w-14 h-7 px-1 text-center text-xs shrink-0"
+                          aria-label="Index"
+                          title="HCP Index"
                         />
                       </>
                     )}
@@ -370,12 +389,17 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                       {checked && (
                         <>
                           <TeamPicker value={sel!.team} onChange={(v) => updateSearch(r.id, { team: v })} />
+                          <TeePicker value={sel!.tee} onChange={(v) => updateSearch(r.id, { tee: v })} />
                           <Input
                             type="number"
+                            step="0.1"
+                            min="-10"
+                            max="54"
                             value={sel!.hcp}
-                            onChange={(e) => updateSearch(r.id, { hcp: parseInt(e.target.value) || 0 })}
-                            className="w-12 h-7 px-1 text-center text-xs shrink-0"
-                            aria-label="Hándicap"
+                            onChange={(e) => updateSearch(r.id, { hcp: parseIndex(e.target.value) })}
+                            className="w-14 h-7 px-1 text-center text-xs shrink-0"
+                            aria-label="Index"
+                            title="HCP Index"
                           />
                         </>
                       )}
@@ -408,14 +432,21 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-[10px]">HCP</Label>
+                  <Label className="text-[10px]">Index</Label>
                   <Input
                     type="number"
+                    step="0.1"
+                    min="-10"
+                    max="54"
                     value={guestHcp}
-                    onChange={(e) => setGuestHcp(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setGuestHcp(parseIndex(e.target.value))}
                     className="h-8 text-xs text-center"
                   />
                 </div>
+              </div>
+              <div>
+                <Label className="text-[10px] block mb-1">Tee de salida</Label>
+                <TeePicker value={guestTee} onChange={setGuestTee} size="sm" />
               </div>
               <div>
                 <Label className="text-[10px]">Color</Label>

@@ -1,0 +1,1 @@
+ALTER TABLE public.leaderboard_participants ADD COLUMN IF NOT EXISTS tee_color text;

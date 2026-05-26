@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 // (navigation kept local — caller decides where to go after onCreated)
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -16,7 +17,9 @@ import { cn } from '@/lib/utils';
 import { CourseSelect } from '@/components/setup/CourseSelect';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName } from '@/lib/playerInput';
-import { createRoundFromCup } from '@/lib/teamsCupRoundBuilder';
+import { createRoundFromCup, type ParticipantPlayOverride } from '@/lib/teamsCupRoundBuilder';
+import { calculateCourseHandicap } from '@/lib/usgaHandicap';
+import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import type { CupParticipant, CupTeam } from '@/hooks/useTeamsCup';
 
 interface Props {
@@ -44,6 +47,13 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
   const [roundHoles, setRoundHoles] = useState<9 | 18>(18);
   const [date, setDate] = useState<Date>(new Date());
 
+  // Per-participant tee override (initial = participant's stored tee, else 'white')
+  const [teeByPart, setTeeByPart] = useState<Map<string, TeeColor>>(new Map());
+
+  // Course tee/par data — recomputed when courseId changes
+  const [teeData, setTeeData] = useState<Map<string, { rating: number; slope: number }>>(new Map());
+  const [coursePar, setCoursePar] = useState<number>(72);
+
   // groupByPart: participantId -> groupNumber (1..6) or null (no juega esta ronda)
   const [groupByPart, setGroupByPart] = useState<Map<string, number | null>>(() => {
     const m = new Map<string, number | null>();
@@ -57,10 +67,42 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
   React.useEffect(() => {
     if (!open) return;
     const m = new Map<string, number | null>();
-    participants.forEach(p => m.set(p.id, 1));
+    const tm = new Map<string, TeeColor>();
+    participants.forEach(p => {
+      m.set(p.id, 1);
+      tm.set(p.id, (p.tee_color as TeeColor | null) ?? 'white');
+    });
     setGroupByPart(m);
+    setTeeByPart(tm);
     setDate(new Date());
   }, [open, participants]);
+
+  // Load tee rating/slope + course par when courseId changes.
+  useEffect(() => {
+    let cancelled = false;
+    if (!courseId) { setTeeData(new Map()); setCoursePar(72); return; }
+    (async () => {
+      const [teesRes, holesRes] = await Promise.all([
+        supabase.from('course_tees').select('tee_color, course_rating, slope_rating').eq('course_id', courseId),
+        supabase.from('course_holes').select('par').eq('course_id', courseId),
+      ]);
+      if (cancelled) return;
+      const tm = new Map<string, { rating: number; slope: number }>();
+      (teesRes.data ?? []).forEach((t: any) => {
+        tm.set(t.tee_color, { rating: Number(t.course_rating) || 72, slope: Number(t.slope_rating) || 113 });
+      });
+      setTeeData(tm);
+      const par = (holesRes.data ?? []).reduce((s: number, h: any) => s + (h.par ?? 0), 0) || 72;
+      setCoursePar(par);
+    })();
+    return () => { cancelled = true; };
+  }, [courseId]);
+
+  const computeCourseHcp = (index: number, tee: TeeColor): number => {
+    const td = teeData.get(tee);
+    if (!td) return Math.round(index); // fallback when course tee data is missing
+    return calculateCourseHandicap(index, td.slope, td.rating, coursePar);
+  };
 
   const teamColorById = useMemo(() => {
     const m = new Map<string, string>();
