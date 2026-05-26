@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// (navigation kept local — caller decides where to go after onCreated)
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -159,9 +159,8 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onCreated(roundId);
       onClose();
-      // Take the organizer straight to scoring setup.
-      navigate('/');
     } catch (err: any) {
+
       console.error('createRoundFromCup error:', err);
       toast.error('Error al crear ronda: ' + (err?.message ?? 'desconocido'));
     } finally {
