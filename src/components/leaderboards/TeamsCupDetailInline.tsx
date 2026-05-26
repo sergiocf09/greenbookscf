@@ -445,15 +445,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     if (!profile) return;
     setAddingSelf(true);
     try {
-      const hcp = Number(profile.current_handicap) || 0;
+      const indexRaw = Number(profile.current_handicap);
+      const indexHcp = Number.isFinite(indexRaw) ? indexRaw : 0;
       const { error } = await supabase
         .from('leaderboard_participants')
         .upsert(
           [{
             leaderboard_id: leaderboardId,
             profile_id: profile.id,
-            handicap_for_leaderboard: hcp,
-            match_handicap: hcp,
+            handicap_for_leaderboard: indexHcp,            // decimal index
+            match_handicap: Math.round(indexHcp),           // integer column
+            tee_color: 'white',
             cup_team_id: null,
             is_active: true,
           }],
@@ -1328,6 +1330,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           organizerProfileId={profile.id}
           participants={cup.participants}
           teams={cup.teams}
+          matches={cup.matches}
           onCreated={async () => {
             await cup.fetchAll();
           }}

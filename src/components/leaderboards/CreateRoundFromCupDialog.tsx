@@ -20,7 +20,7 @@ import { formatPlayerName } from '@/lib/playerInput';
 import { createRoundFromCup, type ParticipantPlayOverride } from '@/lib/teamsCupRoundBuilder';
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
-import type { CupParticipant, CupTeam } from '@/hooks/useTeamsCup';
+import type { CupParticipant, CupTeam, CupMatch } from '@/hooks/useTeamsCup';
 
 interface Props {
   open: boolean;
@@ -29,6 +29,7 @@ interface Props {
   organizerProfileId: string;
   participants: CupParticipant[];
   teams: CupTeam[];
+  matches: CupMatch[];
   onCreated: (roundId: string) => void;
 }
 
@@ -36,7 +37,7 @@ const MAX_PER_GROUP = 6;
 const MAX_GROUPS = 6;
 
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
-  open, onClose, leaderboardId, organizerProfileId, participants, teams, onCreated,
+  open, onClose, leaderboardId, organizerProfileId, participants, teams, matches, onCreated,
 }) => {
   // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
@@ -62,6 +63,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<'config' | 'review'>('config');
 
   // Recompute defaults whenever the participants list changes (dialog reopen).
   React.useEffect(() => {
@@ -75,6 +77,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     setGroupByPart(m);
     setTeeByPart(tm);
     setDate(new Date());
+    setPhase('config');
   }, [open, participants]);
 
   // Load tee rating/slope + course par when courseId changes.
@@ -110,6 +113,43 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     return m;
   }, [teams]);
 
+  /**
+   * Reorder participants so players that share a match (1v1 or fourball) appear
+   * consecutively, grouped by match_order. Unmatched players go at the end.
+   * This makes it trivial for the organizer to assign them to the same group.
+   */
+  const orderedParticipants = useMemo(() => {
+    const byId = new Map(participants.map(p => [p.id, p]));
+    const used = new Set<string>();
+    const ordered: CupParticipant[] = [];
+    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    for (const m of sortedMatches) {
+      const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
+        .filter((x): x is string => !!x);
+      for (const id of ids) {
+        if (used.has(id)) continue;
+        const p = byId.get(id);
+        if (p) { ordered.push(p); used.add(id); }
+      }
+    }
+    // Append any participant not in a match (alphabetical).
+    const rest = participants
+      .filter(p => !used.has(p.id))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+    return [...ordered, ...rest];
+  }, [participants, matches]);
+
+  /** Map participantId → match_order (first match they appear in). */
+  const matchOrderByPart = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const match of matches) {
+      const ids = [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
+        .filter((x): x is string => !!x);
+      for (const id of ids) if (!m.has(id)) m.set(id, match.match_order ?? 0);
+    }
+    return m;
+  }, [matches]);
+
   const setPartGroup = (partId: string, n: number | null) => {
     setGroupByPart(prev => new Map(prev).set(partId, n));
   };
@@ -138,33 +178,45 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     [groupByPart],
   );
 
-  /** Auto-armar: round-robin distribution that keeps team A/B balanced per group. */
+  /**
+   * Auto-armar: keep all players that share a match in the SAME group,
+   * filling groups up to 4 (foursomes) and overflowing to the next group.
+   * Unmatched players are appended after, also packed by 4.
+   */
   const autoBalance = () => {
-    const teamAId = teams[0]?.id ?? null;
-    const teamBId = teams[1]?.id ?? null;
-    const byTeam = {
-      A: participants.filter(p => p.cup_team_id === teamAId),
-      B: participants.filter(p => p.cup_team_id === teamBId),
-      none: participants.filter(p => !p.cup_team_id || (p.cup_team_id !== teamAId && p.cup_team_id !== teamBId)),
-    };
-    const total = participants.length;
-    // Default to foursomes (4); otherwise spread across as few groups as possible.
-    const numGroups = Math.max(1, Math.min(MAX_GROUPS, Math.ceil(total / 4)));
     const next = new Map<string, number | null>();
-    let cursor = 0;
-    const interleaved: typeof participants = [];
-    const maxLen = Math.max(byTeam.A.length, byTeam.B.length, byTeam.none.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (byTeam.A[i]) interleaved.push(byTeam.A[i]);
-      if (byTeam.B[i]) interleaved.push(byTeam.B[i]);
-      if (byTeam.none[i]) interleaved.push(byTeam.none[i]);
+    let group = 1;
+    let groupSize = 0;
+    const target = 4;
+
+    const placeMatchUnit = (ids: string[]) => {
+      // If adding this unit would exceed the foursome target, advance group.
+      if (groupSize > 0 && groupSize + ids.length > target && group < MAX_GROUPS) {
+        group++;
+        groupSize = 0;
+      }
+      for (const id of ids) {
+        if (next.has(id)) continue;
+        next.set(id, group);
+        groupSize++;
+      }
+    };
+
+    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    for (const m of sortedMatches) {
+      const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
+        .filter((x): x is string => !!x);
+      if (ids.length > 0) placeMatchUnit(ids);
     }
-    for (const p of interleaved) {
-      next.set(p.id, (cursor % numGroups) + 1);
-      cursor++;
-    }
+    // Unmatched players fill remaining slots (1-by-1).
+    const unmatched = participants.filter(p => !next.has(p.id));
+    for (const p of unmatched) placeMatchUnit([p.id]);
+
+    // Anyone we still couldn't place → mark as not playing.
+    participants.forEach(p => { if (!next.has(p.id)) next.set(p.id, null); });
     setGroupByPart(next);
   };
+
 
   const handleCreate = async () => {
     if (!courseId) { toast.error('Selecciona el campo'); return; }
@@ -358,60 +410,188 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
             )}
 
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
-              {participants.map(p => {
+              {orderedParticipants.map((p, idx) => {
                 const color = p.cup_team_id ? teamColorById.get(p.cup_team_id) : undefined;
                 const tee = teeByPart.get(p.id) ?? 'white';
                 const index = Number(p.handicap_for_leaderboard ?? 0);
                 const ch = computeCourseHcp(index, tee);
+                const matchOrd = matchOrderByPart.get(p.id);
+                const prevMatchOrd = idx > 0 ? matchOrderByPart.get(orderedParticipants[idx - 1].id) : undefined;
+                const showMatchSep = matchOrd !== undefined && matchOrd !== prevMatchOrd;
                 return (
-                  <div
-                    key={p.id}
-                    className="flex flex-col gap-1.5 p-1.5 border rounded-lg min-w-0"
-                    style={color ? { borderLeft: `3px solid ${color}` } : undefined}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                      <span className="text-xs font-medium truncate flex-1 min-w-0">
-                        {formatPlayerName(p.display_name)}
-                      </span>
-                      {renderGroupPicker(p.id)}
+                  <React.Fragment key={p.id}>
+                    {showMatchSep && (
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold pt-1 pl-1">
+                        Match #{matchOrd}
+                      </div>
+                    )}
+                    <div
+                      className="flex flex-col gap-1.5 p-1.5 border rounded-lg min-w-0"
+                      style={color ? { borderLeft: `3px solid ${color}` } : undefined}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                        <span className="text-xs font-medium truncate flex-1 min-w-0">
+                          {formatPlayerName(p.display_name)}
+                        </span>
+                        {renderGroupPicker(p.id)}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pl-7">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          Index {index.toFixed(1)} → <span className="font-semibold text-foreground">CH {ch}</span>
+                        </span>
+                        <TeePicker
+                          value={tee}
+                          onChange={(t) => setTeeByPart(prev => new Map(prev).set(p.id, t))}
+                          size="xs"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between gap-2 pl-7">
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                        Index {index.toFixed(1)} → <span className="font-semibold text-foreground">CH {ch}</span>
-                      </span>
-                      <TeePicker
-                        value={tee}
-                        onChange={(t) => setTeeByPart(prev => new Map(prev).set(p.id, t))}
-                        size="xs"
-                      />
-                    </div>
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>
 
           </div>
 
-          <div className="flex gap-2 pt-2 border-t">
-            <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleCreate}
-              disabled={submitting || !courseId || playingCount === 0}
-            >
-              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              Crear Ronda
-            </Button>
-          </div>
-          <p className="text-[10px] text-muted-foreground text-center -mt-1">
-            La ronda quedará vinculada a esta competencia y los matches en espera
-            se asignarán automáticamente.
-          </p>
+          {phase === 'config' ? (
+            <>
+              <div className="flex gap-2 pt-2 border-t">
+                <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    if (!courseId) { toast.error('Selecciona el campo'); return; }
+                    if (playingCount === 0) { toast.error('Asigna al menos un jugador a un grupo'); return; }
+                    setPhase('review');
+                  }}
+                  disabled={submitting || !courseId || playingCount === 0}
+                >
+                  Revisar Grupos
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center -mt-1">
+                Verás un resumen antes de confirmar. La ronda quedará vinculada y
+                los matches en espera se asignarán automáticamente.
+              </p>
+            </>
+          ) : (
+            <ReviewGroups
+              usedGroupNumbers={usedGroupNumbers}
+              groupCounts={groupCounts}
+              groupByPart={groupByPart}
+              orderedParticipants={orderedParticipants}
+              teamColorById={teamColorById}
+              matchOrderByPart={matchOrderByPart}
+              maxPerGroup={MAX_PER_GROUP}
+              onBack={() => setPhase('config')}
+              onConfirm={handleCreate}
+              submitting={submitting}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+/* ── Review Step ─────────────────────────────────── */
+
+interface ReviewGroupsProps {
+  usedGroupNumbers: number[];
+  groupCounts: Map<number, number>;
+  groupByPart: Map<string, number | null>;
+  orderedParticipants: CupParticipant[];
+  teamColorById: Map<string, string>;
+  matchOrderByPart: Map<string, number>;
+  maxPerGroup: number;
+  onBack: () => void;
+  onConfirm: () => void;
+  submitting: boolean;
+}
+
+const ReviewGroups: React.FC<ReviewGroupsProps> = ({
+  usedGroupNumbers, groupByPart, orderedParticipants,
+  teamColorById, matchOrderByPart, maxPerGroup, onBack, onConfirm, submitting,
+}) => {
+  const benchedInMatch = orderedParticipants.filter(
+    p => groupByPart.get(p.id) == null && matchOrderByPart.has(p.id),
+  );
+
+  return (
+    <div className="space-y-3 pt-2 border-t">
+      <p className="text-xs font-semibold text-center">Confirma los grupos</p>
+
+      {benchedInMatch.length > 0 && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-2 text-[11px] text-amber-800 dark:text-amber-200">
+          <strong>Atención:</strong> {benchedInMatch.length} jugador(es) con match
+          asignado no jugarán esta ronda. Sus matches quedarán sin uno de los
+          contendientes.
+          <ul className="mt-1 list-disc pl-4">
+            {benchedInMatch.map(p => (
+              <li key={p.id}>{formatPlayerName(p.display_name)} · Match #{matchOrderByPart.get(p.id)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+        {usedGroupNumbers.map(n => {
+          const members = orderedParticipants.filter(p => groupByPart.get(p.id) === n);
+          const overCap = members.length > maxPerGroup;
+          return (
+            <div key={n} className={cn(
+              'border rounded-lg p-2',
+              overCap ? 'border-destructive bg-destructive/5' : 'border-border',
+            )}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold">Grupo {n}</span>
+                <span className={cn(
+                  'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                  overCap ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground',
+                )}>
+                  {members.length} jugador{members.length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {members.map(p => {
+                  const color = p.cup_team_id ? teamColorById.get(p.cup_team_id) : undefined;
+                  const matchOrd = matchOrderByPart.get(p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 py-0.5 pl-2 min-w-0"
+                      style={color ? { borderLeft: `3px solid ${color}` } : undefined}
+                    >
+                      <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                      <span className="text-xs truncate flex-1 min-w-0">
+                        {formatPlayerName(p.display_name)}
+                      </span>
+                      {matchOrd !== undefined && (
+                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold shrink-0">
+                          M#{matchOrd}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-2 pt-1 border-t">
+        <Button variant="outline" className="flex-1" onClick={onBack} disabled={submitting}>
+          ← Editar
+        </Button>
+        <Button className="flex-1" onClick={onConfirm} disabled={submitting}>
+          {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+          Confirmar y Crear
+        </Button>
+      </div>
+    </div>
   );
 };
