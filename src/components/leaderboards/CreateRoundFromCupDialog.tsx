@@ -63,6 +63,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<'config' | 'review'>('config');
 
   // Recompute defaults whenever the participants list changes (dialog reopen).
   React.useEffect(() => {
@@ -76,6 +77,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     setGroupByPart(m);
     setTeeByPart(tm);
     setDate(new Date());
+    setPhase('config');
   }, [open, participants]);
 
   // Load tee rating/slope + course par when courseId changes.
