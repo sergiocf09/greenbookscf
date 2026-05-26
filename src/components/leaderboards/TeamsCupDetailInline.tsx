@@ -53,6 +53,15 @@ function formatRunning(delta: number): string {
   return `${Math.abs(delta)}DN`;
 }
 
+const TEE_LABEL_ES: Record<string, string> = {
+  blue: 'Azul', white: 'Blanco', yellow: 'Amarillo', red: 'Rojo',
+};
+
+function formatIndex(v: number): string {
+  // Show one decimal for non-integer values, otherwise compact integer.
+  return Number.isInteger(v) ? `${v}` : v.toFixed(1);
+}
+
 /* ── CupMatchRow ─────────────────────────────────── */
 
 interface MatchRowProps {
@@ -1027,7 +1036,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
-                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Index {formatIndex(p.handicap_for_leaderboard)}
+                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                    </span>
                   </div>
                   {isCreator && (
                     <Button
@@ -1060,7 +1072,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
-                    <span className="text-[10px] text-muted-foreground">HCP: {p.match_handicap}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Index {formatIndex(p.handicap_for_leaderboard)}
+                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                    </span>
                   </div>
                   {isCreator && (
                     <Button
