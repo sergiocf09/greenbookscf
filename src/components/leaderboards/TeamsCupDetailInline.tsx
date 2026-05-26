@@ -849,16 +849,39 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       </div>
 
       {/* ── Section 3: Participants ─── */}
+      {isCreator && cup.participants.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="p-4 text-center space-y-2">
+            <p className="text-sm font-medium">Aún no hay jugadores</p>
+            <p className="text-xs text-muted-foreground">
+              Agrega participantes para empezar a armar los matches.
+            </p>
+            <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
+              <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <Collapsible open={participantsOpen} onOpenChange={setParticipantsOpen}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <CollapsibleTrigger className="flex items-center gap-1.5 text-base font-semibold">
             Participantes
             <ChevronDown className={cn('h-4 w-4 transition-transform', participantsOpen && 'rotate-180')} />
           </CollapsibleTrigger>
           {isCreator && (
-            <Button variant="outline" size="sm" onClick={() => setShowAssignPanel(true)}>
-              Asignar Equipos
-            </Button>
+            <div className="flex gap-1.5">
+              <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
+                <Plus className="h-3.5 w-3.5" /> Agregar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAssignPanel(true)}
+                disabled={cup.participants.length === 0}
+              >
+                Asignar Equipos
+              </Button>
+            </div>
           )}
         </div>
         <CollapsibleContent className="mt-2">
