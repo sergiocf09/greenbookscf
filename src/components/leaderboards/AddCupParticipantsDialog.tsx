@@ -28,6 +28,14 @@ interface Props {
   existingProfileIds: Set<string>;
   existingGuestNames: Set<string>;
   onAdded: () => void;
+  /** Optional: when the logged-in creator isn't yet a participant, show a banner to add self. */
+  selfOption?: {
+    displayName: string;
+    initials: string;
+    avatarColor: string;
+    handicap: number;
+    onAddSelf: () => Promise<void> | void;
+  } | null;
 }
 
 type TeamChoice = string | null; // cup_team_id or null = sin asignar
@@ -44,7 +52,7 @@ const parseIndex = (raw: string): number => {
 };
 
 export const AddCupParticipantsDialog: React.FC<Props> = ({
-  open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded,
+  open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded, selfOption,
 }) => {
   const teamA = teams[0] ?? null;
   const teamB = teams[1] ?? null;
@@ -52,6 +60,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
   const [tab, setTab] = useState<'friends' | 'search' | 'guest'>('friends');
   const [submitting, setSubmitting] = useState(false);
+  const [addingSelf, setAddingSelf] = useState(false);
 
   // Friend selections — key = profileId
   const [friendSel, setFriendSel] = useState<Map<string, Selection>>(new Map());
@@ -203,6 +212,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
           tee_color: sel.tee,
+          is_active: true,
         });
       }
 
@@ -223,6 +233,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           match_handicap: Math.round(sel.hcp),
           cup_team_id: sel.team,
           tee_color: sel.tee,
+          is_active: true,
         });
       }
 
@@ -237,12 +248,15 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         match_handicap: Math.round(g.hcp),
         cup_team_id: g.team,
         tee_color: g.tee,
+        is_active: true,
       }));
 
       if (profileRows.length > 0) {
+        // Upsert WITHOUT ignoreDuplicates so previously-removed (is_active=false)
+        // players get reactivated and their team/HCP/tee updated on re-add.
         const { error } = await supabase
           .from('leaderboard_participants')
-          .upsert(profileRows, { onConflict: 'leaderboard_id,profile_id', ignoreDuplicates: true });
+          .upsert(profileRows, { onConflict: 'leaderboard_id,profile_id' });
         if (error) throw error;
       }
       if (guestRows.length > 0) {
@@ -304,7 +318,31 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           </DialogTitle>
         </DialogHeader>
 
+        {selfOption && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex items-center gap-2 mb-2">
+            <PlayerAvatar initials={selfOption.initials} background={selfOption.avatarColor} size="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold truncate">Tú: {formatPlayerName(selfOption.displayName)}</p>
+              <p className="text-[10px] text-muted-foreground">Aún no estás en esta competencia</p>
+            </div>
+            <Button
+              size="sm"
+              className="h-7 px-2 text-xs gap-1 shrink-0"
+              disabled={addingSelf}
+              onClick={async () => {
+                setAddingSelf(true);
+                try { await selfOption.onAddSelf(); }
+                finally { setAddingSelf(false); }
+              }}
+            >
+              {addingSelf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              Agregarme
+            </Button>
+          </div>
+        )}
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
+
           <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="friends" className="text-xs">Amigos</TabsTrigger>
             <TabsTrigger value="search" className="text-xs">Buscar</TabsTrigger>

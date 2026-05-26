@@ -1281,6 +1281,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           existingProfileIds={new Set(cup.participants.map(p => p.profile_id).filter(Boolean) as string[])}
           existingGuestNames={new Set(cup.participants.filter(p => !p.profile_id).map(p => p.display_name))}
           onAdded={() => { cup.fetchAll(); setParticipantsOpen(true); }}
+          selfOption={!creatorIsParticipant && profile ? {
+            displayName: profile.display_name,
+            initials: profile.initials,
+            avatarColor: profile.avatar_color,
+            handicap: Number(profile.current_handicap) || 0,
+            onAddSelf: async () => {
+              await handleAddSelf();
+              setParticipantsOpen(true);
+            },
+          } : null}
         />
       )}
 
