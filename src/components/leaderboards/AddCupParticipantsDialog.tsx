@@ -318,7 +318,31 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           </DialogTitle>
         </DialogHeader>
 
+        {selfOption && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex items-center gap-2 mb-2">
+            <PlayerAvatar initials={selfOption.initials} background={selfOption.avatarColor} size="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold truncate">Tú: {formatPlayerName(selfOption.displayName)}</p>
+              <p className="text-[10px] text-muted-foreground">Aún no estás en esta competencia</p>
+            </div>
+            <Button
+              size="sm"
+              className="h-7 px-2 text-xs gap-1 shrink-0"
+              disabled={addingSelf}
+              onClick={async () => {
+                setAddingSelf(true);
+                try { await selfOption.onAddSelf(); }
+                finally { setAddingSelf(false); }
+              }}
+            >
+              {addingSelf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              Agregarme
+            </Button>
+          </div>
+        )}
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
+
           <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="friends" className="text-xs">Amigos</TabsTrigger>
             <TabsTrigger value="search" className="text-xs">Buscar</TabsTrigger>
