@@ -336,12 +336,17 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                     {checked && (
                       <>
                         <TeamPicker value={sel!.team} onChange={(v) => updateFriend(f.profileId, { team: v })} />
+                        <TeePicker value={sel!.tee} onChange={(v) => updateFriend(f.profileId, { tee: v })} />
                         <Input
                           type="number"
+                          step="0.1"
+                          min="-10"
+                          max="54"
                           value={sel!.hcp}
-                          onChange={(e) => updateFriend(f.profileId, { hcp: parseInt(e.target.value) || 0 })}
-                          className="w-12 h-7 px-1 text-center text-xs shrink-0"
-                          aria-label="Hándicap"
+                          onChange={(e) => updateFriend(f.profileId, { hcp: parseIndex(e.target.value) })}
+                          className="w-14 h-7 px-1 text-center text-xs shrink-0"
+                          aria-label="Index"
+                          title="HCP Index"
                         />
                       </>
                     )}
@@ -384,12 +389,17 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                       {checked && (
                         <>
                           <TeamPicker value={sel!.team} onChange={(v) => updateSearch(r.id, { team: v })} />
+                          <TeePicker value={sel!.tee} onChange={(v) => updateSearch(r.id, { tee: v })} />
                           <Input
                             type="number"
+                            step="0.1"
+                            min="-10"
+                            max="54"
                             value={sel!.hcp}
-                            onChange={(e) => updateSearch(r.id, { hcp: parseInt(e.target.value) || 0 })}
-                            className="w-12 h-7 px-1 text-center text-xs shrink-0"
-                            aria-label="Hándicap"
+                            onChange={(e) => updateSearch(r.id, { hcp: parseIndex(e.target.value) })}
+                            className="w-14 h-7 px-1 text-center text-xs shrink-0"
+                            aria-label="Index"
+                            title="HCP Index"
                           />
                         </>
                       )}
@@ -422,14 +432,21 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-[10px]">HCP</Label>
+                  <Label className="text-[10px]">Index</Label>
                   <Input
                     type="number"
+                    step="0.1"
+                    min="-10"
+                    max="54"
                     value={guestHcp}
-                    onChange={(e) => setGuestHcp(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setGuestHcp(parseIndex(e.target.value))}
                     className="h-8 text-xs text-center"
                   />
                 </div>
+              </div>
+              <div>
+                <Label className="text-[10px] block mb-1">Tee de salida</Label>
+                <TeePicker value={guestTee} onChange={setGuestTee} size="sm" />
               </div>
               <div>
                 <Label className="text-[10px]">Color</Label>
