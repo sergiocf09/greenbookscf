@@ -18,6 +18,13 @@ export interface CupGroupSpec {
   participantIds: string[];
 }
 
+export interface ParticipantPlayOverride {
+  /** Course Handicap (integer) computed from this player's Index + their tee */
+  courseHandicap: number;
+  /** Tee color this player will play from this round */
+  teeColor: 'blue' | 'white' | 'yellow' | 'red';
+}
+
 export interface CreateRoundFromCupInput {
   leaderboardId: string;
   organizerProfileId: string;
@@ -27,6 +34,8 @@ export interface CreateRoundFromCupInput {
   roundHoles: 9 | 18;
   date: Date;
   groups: CupGroupSpec[];
+  /** Per-participant Course HCP + tee. If absent for a player, falls back to leaderboard HCP + global teeColor. */
+  playerOverrides?: Map<string, ParticipantPlayOverride>;
 }
 
 interface CupParticipantRow {
@@ -41,7 +50,7 @@ interface CupParticipantRow {
 export async function createRoundFromCup(input: CreateRoundFromCupInput): Promise<string> {
   const {
     leaderboardId, organizerProfileId, courseId, teeColor,
-    startingHole, roundHoles, date, groups,
+    startingHole, roundHoles, date, groups, playerOverrides,
   } = input;
 
   // 1. Load all selected participants in one go.
