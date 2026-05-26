@@ -1106,6 +1106,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       className="w-12 h-7 px-1 text-center text-xs"
                     />
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setParticipantToRemove(p)}
+                    aria-label={`Eliminar a ${p.display_name}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               );
             };
