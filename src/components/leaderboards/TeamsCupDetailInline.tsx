@@ -1330,6 +1330,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           organizerProfileId={profile.id}
           participants={cup.participants}
           teams={cup.teams}
+          matches={cup.matches}
           onCreated={async () => {
             await cup.fetchAll();
           }}
