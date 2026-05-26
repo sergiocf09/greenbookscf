@@ -52,7 +52,7 @@ const parseIndex = (raw: string): number => {
 };
 
 export const AddCupParticipantsDialog: React.FC<Props> = ({
-  open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded,
+  open, onClose, leaderboardId, teams, existingProfileIds, existingGuestNames, onAdded, selfOption,
 }) => {
   const teamA = teams[0] ?? null;
   const teamB = teams[1] ?? null;
@@ -60,6 +60,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
   const [tab, setTab] = useState<'friends' | 'search' | 'guest'>('friends');
   const [submitting, setSubmitting] = useState(false);
+  const [addingSelf, setAddingSelf] = useState(false);
 
   // Friend selections — key = profileId
   const [friendSel, setFriendSel] = useState<Map<string, Selection>>(new Map());
