@@ -1,0 +1,192 @@
+import { supabase } from '@/integrations/supabase/client';
+
+/**
+ * Build a real golf round (rounds + round_groups + round_players) directly from
+ * a Teams Cup's existing participants, link it to the leaderboard, and assign
+ * any orphan cup_matches to it.
+ *
+ * Why: The leaderboard world (cup_teams / leaderboard_participants / cup_matches)
+ * and the scoring world (rounds / round_groups / round_players / hole_scores)
+ * are otherwise disconnected. Without this bridge, players added directly to a
+ * Teams Cup have no round in which to capture their scores.
+ */
+
+export interface CupGroupSpec {
+  /** 1-based number used as round_groups.group_number */
+  groupNumber: number;
+  /** Cup participant ids (leaderboard_participants.id) that play in this group */
+  participantIds: string[];
+}
+
+export interface CreateRoundFromCupInput {
+  leaderboardId: string;
+  organizerProfileId: string;
+  courseId: string;
+  teeColor: 'blue' | 'white' | 'yellow' | 'red';
+  startingHole: 1 | 10;
+  roundHoles: 9 | 18;
+  date: Date;
+  groups: CupGroupSpec[];
+}
+
+interface CupParticipantRow {
+  id: string;
+  profile_id: string | null;
+  guest_name: string | null;
+  guest_initials: string | null;
+  guest_color: string | null;
+  handicap_for_leaderboard: number | null;
+}
+
+export async function createRoundFromCup(input: CreateRoundFromCupInput): Promise<string> {
+  const {
+    leaderboardId, organizerProfileId, courseId, teeColor,
+    startingHole, roundHoles, date, groups,
+  } = input;
+
+  // 1. Load all selected participants in one go.
+  const allParticipantIds = Array.from(new Set(groups.flatMap(g => g.participantIds)));
+  if (allParticipantIds.length === 0) {
+    throw new Error('Selecciona al menos un participante para crear la ronda.');
+  }
+
+  const { data: partsData, error: partsErr } = await supabase
+    .from('leaderboard_participants')
+    .select('id, profile_id, guest_name, guest_initials, guest_color, handicap_for_leaderboard')
+    .in('id', allParticipantIds);
+  if (partsErr) throw partsErr;
+  const parts = (partsData ?? []) as CupParticipantRow[];
+  const partById = new Map(parts.map(p => [p.id, p]));
+
+  // 2. Create the round via the security-definer RPC.
+  //    This atomically inserts: rounds, round_groups#1, round_players (organizer).
+  const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
+    p_course_id: courseId,
+    p_tee_color: teeColor,
+    p_date: date.toISOString().split('T')[0],
+    p_bet_config: { roundHoles } as any,
+    p_starting_hole: startingHole,
+  });
+  if (rpcErr) throw rpcErr;
+  const rpcRow: any = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+  if (!rpcRow) throw new Error('No se pudo crear la ronda.');
+  const roundId: string = rpcRow.round_id;
+  const firstGroupId: string = rpcRow.group_id;
+  const organizerRoundPlayerId: string = rpcRow.round_player_id;
+
+  try {
+    // 3. Build the rest of the round_groups (skip number 1, already created).
+    const extraGroupNumbers = groups.map(g => g.groupNumber).filter(n => n !== 1);
+    const groupIdByNumber = new Map<number, string>([[1, firstGroupId]]);
+    if (extraGroupNumbers.length > 0) {
+      const { data: newGroups, error: groupErr } = await supabase
+        .from('round_groups')
+        .insert(extraGroupNumbers.map(n => ({ round_id: roundId, group_number: n })))
+        .select('id, group_number');
+      if (groupErr) throw groupErr;
+      (newGroups ?? []).forEach((g: any) => groupIdByNumber.set(g.group_number, g.id));
+    }
+
+    // 4. For each participant find their target group_id.
+    //    Compute who needs which group; treat the organizer specially since
+    //    create_round already added them to group 1.
+    const organizerCupPart = parts.find(p => p.profile_id === organizerProfileId);
+    const organizerTargetGroupNumber: number | null = (() => {
+      if (!organizerCupPart) return null;
+      const g = groups.find(g => g.participantIds.includes(organizerCupPart.id));
+      return g?.groupNumber ?? null;
+    })();
+    if (organizerTargetGroupNumber && organizerTargetGroupNumber !== 1) {
+      const targetGid = groupIdByNumber.get(organizerTargetGroupNumber);
+      if (targetGid) {
+        await supabase
+          .from('round_players')
+          .update({ group_id: targetGid })
+          .eq('id', organizerRoundPlayerId);
+      }
+    }
+    // Sync organizer handicap from leaderboard if non-zero.
+    if (organizerCupPart && (organizerCupPart.handicap_for_leaderboard ?? 0) !== 0) {
+      await supabase
+        .from('round_players')
+        .update({ handicap_for_round: organizerCupPart.handicap_for_leaderboard })
+        .eq('id', organizerRoundPlayerId);
+    }
+
+    // 5. Build the round_players rows for the rest (skip organizer already inserted).
+    //    Guests need a ghost profile first.
+    const guestParts = parts.filter(p => !p.profile_id && p.id !== organizerCupPart?.id);
+    const ghostProfileByPartId = new Map<string, string>();
+    if (guestParts.length > 0) {
+      const ghostRows = guestParts.map(p => ({
+        is_ghost: true,
+        user_id: null,
+        display_name: p.guest_name || 'Invitado',
+        initials: (p.guest_initials || '??').slice(0, 3).toUpperCase(),
+        avatar_color: p.guest_color || '#3B82F6',
+        current_handicap: p.handicap_for_leaderboard ?? 20,
+      }));
+      const { data: ghosts, error: ghostErr } = await supabase
+        .from('profiles')
+        .insert(ghostRows as any)
+        .select('id, display_name, initials');
+      if (ghostErr) throw ghostErr;
+      // Map by order — Supabase preserves insertion order on .insert.
+      (ghosts ?? []).forEach((g: any, idx: number) => {
+        ghostProfileByPartId.set(guestParts[idx].id, g.id);
+      });
+    }
+
+    const playerRows: any[] = [];
+    for (const group of groups) {
+      const gid = groupIdByNumber.get(group.groupNumber);
+      if (!gid) continue;
+      for (const partId of group.participantIds) {
+        const part = partById.get(partId);
+        if (!part) continue;
+        // Organizer already added by create_round.
+        if (organizerCupPart && part.id === organizerCupPart.id) continue;
+        const profileId = part.profile_id ?? ghostProfileByPartId.get(part.id) ?? null;
+        if (!profileId) continue;
+        const isGuest = !part.profile_id;
+        playerRows.push({
+          round_id: roundId,
+          group_id: gid,
+          profile_id: profileId,
+          handicap_for_round: part.handicap_for_leaderboard ?? 0,
+          is_organizer: false,
+          tee_color: teeColor,
+          guest_name: isGuest ? part.guest_name : null,
+          guest_initials: isGuest ? part.guest_initials : null,
+          guest_color: isGuest ? part.guest_color : null,
+        });
+      }
+    }
+    if (playerRows.length > 0) {
+      const { error: rpErr } = await supabase.from('round_players').insert(playerRows);
+      if (rpErr) throw rpErr;
+    }
+
+    // 6. Link the round to the leaderboard.
+    await supabase
+      .from('leaderboard_rounds')
+      .insert({
+        leaderboard_id: leaderboardId,
+        round_id: roundId,
+        added_by: organizerProfileId,
+      });
+
+    // 7. Assign any orphan cup_matches to the new round so live results compute.
+    await supabase
+      .from('cup_matches')
+      .update({ round_id: roundId, status: 'active' } as any)
+      .eq('leaderboard_id', leaderboardId)
+      .is('round_id', null);
+
+    return roundId;
+  } catch (err) {
+    // Best-effort rollback: delete the round (cascades groups/players via FK).
+    try { await supabase.from('rounds').delete().eq('id', roundId); } catch { /* noop */ }
+    throw err;
+  }
+}
