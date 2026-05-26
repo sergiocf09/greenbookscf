@@ -427,6 +427,37 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showCreateRound, setShowCreateRound] = useState(false);
   const [participantToRemove, setParticipantToRemove] = useState<CupParticipant | null>(null);
   const [removingParticipant, setRemovingParticipant] = useState(false);
+  const [addingSelf, setAddingSelf] = useState(false);
+
+  const creatorIsParticipant = !!(profile && cup.participants.some(p => p.profile_id === profile.id));
+
+  const handleAddSelf = async () => {
+    if (!profile) return;
+    setAddingSelf(true);
+    try {
+      const hcp = Number(profile.current_handicap) || 0;
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .upsert(
+          [{
+            leaderboard_id: leaderboardId,
+            profile_id: profile.id,
+            handicap_for_leaderboard: hcp,
+            match_handicap: hcp,
+            cup_team_id: null,
+            is_active: true,
+          }],
+          { onConflict: 'leaderboard_id,profile_id' }
+        );
+      if (error) throw error;
+      toast.success('Te agregaste como jugador');
+      await cup.fetchAll();
+    } catch (err: any) {
+      toast.error('Error al agregarte: ' + err.message);
+    } finally {
+      setAddingSelf(false);
+    }
+  };
 
   /** Returns the match_order numbers where this participant appears, if any. */
   const matchesContainingParticipant = (participantId: string): number[] => {
