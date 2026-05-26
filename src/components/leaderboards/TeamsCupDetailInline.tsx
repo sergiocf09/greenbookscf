@@ -948,9 +948,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <p className="text-xs text-muted-foreground">
               Agrega participantes para empezar a armar los matches.
             </p>
-            <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
-              <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
-            </Button>
+            <div className="flex flex-col gap-2 pt-1">
+              {!creatorIsParticipant && profile && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleAddSelf} disabled={addingSelf}>
+                  {addingSelf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                  Agregarme como jugador
+                </Button>
+              )}
+              <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
+                <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -961,7 +969,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <ChevronDown className={cn('h-4 w-4 transition-transform', participantsOpen && 'rotate-180')} />
           </CollapsibleTrigger>
           {isCreator && (
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap justify-end">
+              {!creatorIsParticipant && profile && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleAddSelf} disabled={addingSelf}>
+                  {addingSelf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                  Agregarme
+                </Button>
+              )}
               <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
                 <Plus className="h-3.5 w-3.5" /> Agregar
               </Button>
