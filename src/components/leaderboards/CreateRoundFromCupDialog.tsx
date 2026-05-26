@@ -410,58 +410,87 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
             )}
 
             <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
-              {participants.map(p => {
+              {orderedParticipants.map((p, idx) => {
                 const color = p.cup_team_id ? teamColorById.get(p.cup_team_id) : undefined;
                 const tee = teeByPart.get(p.id) ?? 'white';
                 const index = Number(p.handicap_for_leaderboard ?? 0);
                 const ch = computeCourseHcp(index, tee);
+                const matchOrd = matchOrderByPart.get(p.id);
+                const prevMatchOrd = idx > 0 ? matchOrderByPart.get(orderedParticipants[idx - 1].id) : undefined;
+                const showMatchSep = matchOrd !== undefined && matchOrd !== prevMatchOrd;
                 return (
-                  <div
-                    key={p.id}
-                    className="flex flex-col gap-1.5 p-1.5 border rounded-lg min-w-0"
-                    style={color ? { borderLeft: `3px solid ${color}` } : undefined}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
-                      <span className="text-xs font-medium truncate flex-1 min-w-0">
-                        {formatPlayerName(p.display_name)}
-                      </span>
-                      {renderGroupPicker(p.id)}
+                  <React.Fragment key={p.id}>
+                    {showMatchSep && (
+                      <div className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold pt-1 pl-1">
+                        Match #{matchOrd}
+                      </div>
+                    )}
+                    <div
+                      className="flex flex-col gap-1.5 p-1.5 border rounded-lg min-w-0"
+                      style={color ? { borderLeft: `3px solid ${color}` } : undefined}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
+                        <span className="text-xs font-medium truncate flex-1 min-w-0">
+                          {formatPlayerName(p.display_name)}
+                        </span>
+                        {renderGroupPicker(p.id)}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pl-7">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          Index {index.toFixed(1)} → <span className="font-semibold text-foreground">CH {ch}</span>
+                        </span>
+                        <TeePicker
+                          value={tee}
+                          onChange={(t) => setTeeByPart(prev => new Map(prev).set(p.id, t))}
+                          size="xs"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between gap-2 pl-7">
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                        Index {index.toFixed(1)} → <span className="font-semibold text-foreground">CH {ch}</span>
-                      </span>
-                      <TeePicker
-                        value={tee}
-                        onChange={(t) => setTeeByPart(prev => new Map(prev).set(p.id, t))}
-                        size="xs"
-                      />
-                    </div>
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>
 
           </div>
 
-          <div className="flex gap-2 pt-2 border-t">
-            <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleCreate}
-              disabled={submitting || !courseId || playingCount === 0}
-            >
-              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              Crear Ronda
-            </Button>
-          </div>
-          <p className="text-[10px] text-muted-foreground text-center -mt-1">
-            La ronda quedará vinculada a esta competencia y los matches en espera
-            se asignarán automáticamente.
-          </p>
+          {phase === 'config' ? (
+            <>
+              <div className="flex gap-2 pt-2 border-t">
+                <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    if (!courseId) { toast.error('Selecciona el campo'); return; }
+                    if (playingCount === 0) { toast.error('Asigna al menos un jugador a un grupo'); return; }
+                    setPhase('review');
+                  }}
+                  disabled={submitting || !courseId || playingCount === 0}
+                >
+                  Revisar Grupos
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center -mt-1">
+                Verás un resumen antes de confirmar. La ronda quedará vinculada y
+                los matches en espera se asignarán automáticamente.
+              </p>
+            </>
+          ) : (
+            <ReviewGroups
+              usedGroupNumbers={usedGroupNumbers}
+              groupCounts={groupCounts}
+              groupByPart={groupByPart}
+              orderedParticipants={orderedParticipants}
+              teamColorById={teamColorById}
+              matchOrderByPart={matchOrderByPart}
+              maxPerGroup={MAX_PER_GROUP}
+              onBack={() => setPhase('config')}
+              onConfirm={handleCreate}
+              submitting={submitting}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
