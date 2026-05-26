@@ -35,8 +35,10 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [creating, setCreating] = useState(false);
+  const [createdEvent, setCreatedEvent] = useState<{ id: string; teams: Array<{ id: string; name: string; color: string }> } | null>(null);
+  const [showAddPlayers, setShowAddPlayers] = useState(false);
 
   // Step 1
   const [name, setName] = useState('');
