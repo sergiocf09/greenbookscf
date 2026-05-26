@@ -1168,20 +1168,24 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       </button>
                     )}
                   </div>
-                  <div className="shrink-0 w-12">
-                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">HCP</Label>
+                  <TeePicker
+                    value={getDraftTee(p)}
+                    onChange={(v) => setDraftTee(p.id, v)}
+                  />
+                  <div className="shrink-0 w-14">
+                    <Label className="text-[9px] text-muted-foreground block text-center leading-none">Index</Label>
                     <Input
                       type="number"
-                      value={
-                        // Show match_handicap if user already touched it (draft) or if it's non-zero;
-                        // otherwise fall back to handicap_for_leaderboard (the value carried from setup).
-                        draftHcps.has(p.id)
-                          ? draftHcps.get(p.id)!
-                          : (p.match_handicap !== 0 ? p.match_handicap : p.handicap_for_leaderboard)
-                      }
-                      onChange={e => setDraftHcp(p.id, parseInt(e.target.value) || 0)}
+                      step="0.1"
+                      min="-10"
+                      max="54"
+                      value={getDraftHcp(p)}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value);
+                        setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
+                      }}
                       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                      className="w-12 h-7 px-1 text-center text-xs"
+                      className="w-14 h-7 px-1 text-center text-xs"
                     />
                   </div>
                   <Button
