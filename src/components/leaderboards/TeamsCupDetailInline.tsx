@@ -1086,16 +1086,18 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         calcFourballHandicap={cup.calcFourballHandicap}
       />
 
-      {/* ── Add Participants Dialog ─── */}
-      <AddCupParticipantsDialog
-        open={showAddParticipants}
-        onClose={() => setShowAddParticipants(false)}
-        leaderboardId={leaderboardId}
-        teams={cup.teams}
-        existingProfileIds={new Set(cup.participants.map(p => p.profile_id).filter(Boolean) as string[])}
-        existingGuestNames={new Set(cup.participants.filter(p => !p.profile_id).map(p => p.display_name))}
-        onAdded={() => { cup.fetchAll(); setParticipantsOpen(true); }}
-      />
+      {/* ── Add Participants Dialog (mounted only when open) ─── */}
+      {showAddParticipants && (
+        <AddCupParticipantsDialog
+          open={showAddParticipants}
+          onClose={() => setShowAddParticipants(false)}
+          leaderboardId={leaderboardId}
+          teams={cup.teams}
+          existingProfileIds={new Set(cup.participants.map(p => p.profile_id).filter(Boolean) as string[])}
+          existingGuestNames={new Set(cup.participants.filter(p => !p.profile_id).map(p => p.display_name))}
+          onAdded={() => { cup.fetchAll(); setParticipantsOpen(true); }}
+        />
+      )}
 
       {/* ── Link Round Dialog ─── */}
       <LinkRoundToLeaderboardDialog

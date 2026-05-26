@@ -93,8 +93,13 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
   // Auto-derive initials when typing guest name (only if user hasn't manually overridden)
   const [guestInitialsTouched, setGuestInitialsTouched] = useState(false);
   useEffect(() => {
-    if (!guestInitialsTouched) {
-      setGuestInitials(initialsFromPlayerName(guestName).slice(0, 3) || '');
+    if (guestInitialsTouched) return;
+    const trimmed = guestName.trim();
+    if (!trimmed) { setGuestInitials(''); return; }
+    try {
+      setGuestInitials(initialsFromPlayerName(trimmed).slice(0, 3));
+    } catch {
+      setGuestInitials('');
     }
   }, [guestName, guestInitialsTouched]);
 
