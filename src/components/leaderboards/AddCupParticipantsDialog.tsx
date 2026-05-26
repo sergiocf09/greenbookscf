@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, initialsFromPlayerName } from '@/lib/playerInput';
-import { Loader2, Search, UserPlus } from 'lucide-react';
+import { Loader2, Search, UserPlus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupTeam } from '@/hooks/useTeamsCup';
 
