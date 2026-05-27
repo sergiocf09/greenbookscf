@@ -411,7 +411,9 @@ export const calculateConejaBets = (
   
   const results: ConejaBetResult[] = [];
   const setResults = calculateConejaSetResults(players, scores, course, config, confirmedHoles);
-  const amountPerConeja = config.coneja.amount || 50;
+  // Use ?? to honor an explicit 0 (bet disabled by amount) instead of falling back to 50
+  const amountPerConeja = config.coneja.amount ?? 50;
+  if (amountPerConeja <= 0) return [];
   
   for (const setResult of setResults) {
     if (!setResult.winnerId) continue;
