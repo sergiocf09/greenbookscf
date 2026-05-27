@@ -1,92 +1,48 @@
-## Diagnóstico
+# Gestión de Foursomes post-creación en Team Cup
 
-Hoy en la Teams Cup el hándicap es **un entero plano** que se guarda en `leaderboard_participants.match_handicap`. Como el input usa `parseInt`, escribir un decimal (p. ej. `12.4`, que es el HCP Index) trunca y, si se valida o se vuelve a editar, "no deja avanzar". Además **no se sabe de qué tee juega cada jugador**, por lo que es imposible derivar el Course Handicap real cuando se elige el campo.
+Hoy, una vez que se crea la ronda desde el detalle de la Team Cup, la tarjeta "Crear Ronda y Grupos de Juego" desaparece (`!linkedRoundInfo.date`) y ya no hay forma de:
 
-Lo correcto en USGA es:
+- Reacomodar quién juega en qué foursome.
+- Agregar nuevos jugadores (sobre todo invitados) a la ronda enlazada.
+- Crear/eliminar grupos adicionales.
 
-```text
-Course HCP = round( Index × Slope/113 + (Rating − Par) )
-```
+Esto se resuelve agregando un panel de "Foursomes de la Ronda" que vive en el detalle de la Cup y sólo aparece cuando ya existe ronda enlazada.
 
-Necesitamos guardar el **Index** (decimal) y el **tee** por jugador, y dejar que el sistema calcule el Course HCP cuando ya hay campo seleccionado.
+## Alcance
 
-## Cambios
+1. **Nuevo bloque "Foursomes de la Ronda" (sólo organizador, cuando ya hay ronda enlazada)**
+   - Muestra cada grupo (Grupo 1, Grupo 2, …) con los jugadores actuales (nombre + initials, marca de invitado, HCP de la ronda).
+   - Acciones por jugador: mover a otro grupo (popover con los grupos existentes) y quitar del grupo (vuelve a "Sin asignar").
+   - Acciones por grupo: renombrar visualmente (sólo número), eliminar grupo vacío.
+   - Botón "Agregar Grupo" (crea `round_groups` con el siguiente `group_number`).
+   - Sección "Sin asignar" arriba: lista participantes de la Cup que aún no están en `round_players` o que quedaron sin grupo, con botón rápido "Asignar a Grupo N".
+   - Botón "Guardar cambios" (full-width, alineado al patrón ya usado en el diálogo de equipos/HCPs).
 
-### 1. Base de datos
+2. **Agregar jugadores después de creada la ronda**
+   - Reusar el flujo existente "Agregar Jugadores" (`setShowAddParticipants`) pero, cuando ya hay `linkedRoundInfo`, además de crear `leaderboard_participants` también:
+     - Crear/usar el `profile` (ghost si invitado, igual que hoy).
+     - Insertar el `round_player` correspondiente en el último grupo (o en "Sin asignar" si el organizador prefiere acomodarlos manualmente).
+     - Calcular `handicap_for_round` con `calculateCourseHandicap` a partir del `course_id` de la ronda y el tee elegido (default = tee del organizador o blanco).
+   - Tras agregarlos, el bloque de Foursomes resalta los recién llegados para que el organizador los mueva al grupo correcto.
 
-Agregar columna a `leaderboard_participants`:
+3. **Sincronización con la Cup**
+   - Cuando se asigne tee/HCP desde el panel de "Asignar Equipos y Hándicaps", seguir actualizando `round_players` (ya implementado).
+   - Si se elimina un jugador del round (no de la Cup), se borra `round_players` pero el `leaderboard_participants` permanece (el usuario sigue siendo parte de la Cup aunque no juegue ese día). Mostrar confirmación.
 
-- `tee_color text` (nullable; valores: `blue|white|yellow|red`).
+## Detalle técnico
 
-`handicap_for_leaderboard` ya es `numeric` → soporta el Index decimal sin migración. `match_handicap` (integer) lo seguiremos usando como Course HCP redondeado y se recalcula automáticamente al elegir campo.
-
-### 2. Captura del HCP Index (entrada)
-
-`**AddCupParticipantsDialog.tsx**`
-
-- Inputs de HCP: `type="number"`, `step="0.1"`, `min="-10"`, `max="54"`, usar `parseFloat` en lugar de `parseInt`.
-- Etiqueta cambia de **"HCP"** → **"Index"**.
-- Default del invitado: `20.0`. Default de amigos/búsqueda: `currentHandicap` tal cual (ya viene decimal).
-- Agregar un **selector de tee** (chips B/W/Y/R con sus colores) en cada renglón del jugador y en el formulario de invitado. Default = `white`.
-- En el insert: enviar `handicap_for_leaderboard` con el Index decimal, `match_handicap` = `Math.round(index)` como fallback temporal, y `tee_color`.
-
-**Panel "Asignar Equipos y Hándicaps" (`TeamsCupDetailInline.tsx`)**
-
-- Mismo cambio: input decimal, etiqueta "Index", + selector de tee por renglón.
-- `flushAssignDrafts` actualiza `handicap_for_leaderboard` + `tee_color`; `match_handicap` se sigue derivando como redondeo del Index hasta que haya campo.
-
-`**useTeamsCup.ts**`
-
-- Extender `CupParticipant` con `tee_color: string | null`.
-- `batchUpdateParticipants` acepta `handicap_for_leaderboard` y `tee_color`.
-
-### 3. Mostrar el Index (lectura)
-
-**Roster de participantes (`TeamsCupDetailInline.tsx`):** sustituir `HCP: {match_handicap}` por:
-
-```
-Index: 12.4 · Tee Blanco
-```
-
-Cuando ya haya `linkedRoundInfo` (campo elegido) se muestra debajo en muted: `CH: 14` (Course Handicap).
-
-### 4. Cálculo automático del Course HCP al crear la ronda
-
-`**CreateRoundFromCupDialog.tsx**`
-
-- Cuando cambia `courseId`, cargar en paralelo: `course_tees` (rating/slope por tee) y `course_holes` (suma de pars para Par del campo).
-- Para cada participante: leer su `tee_color` (con fallback al `teeColor` global del diálogo) y calcular Course HCP con `calculateCourseHandicap(index, slope, rating, par)` de `src/lib/usgaHandicap.ts`.
-- En el renglón de cada jugador mostrar: `Index 12.4 → CH 14 (Blanco)` con el tee editable inline (mismo selector de chips). Si edita el tee, recalcula al vuelo.
-- En el submit, pasar al builder un mapa `participantId → { courseHandicap, teeColor }`.
-
-`**src/lib/teamsCupRoundBuilder.ts**`
-
-- `CreateRoundFromCupInput.groups[].participantIds` queda igual.
-- Agregar `playerOverrides?: Map<participantId, { courseHandicap: number; teeColor: 'blue'|'white'|'yellow'|'red' }>`.
-- Al insertar `round_players`, usar `handicap_for_round = courseHandicap` (en lugar de `handicap_for_leaderboard`) y `tee_color` del override; misma lógica para el organizador y para el ghost del invitado.
-
-### 5. Persistir el Course HCP en la Cup (opcional pero recomendable)
-
-Después de crear la ronda, hacer **un update final** a `leaderboard_participants` que sincronice `match_handicap = courseHandicap` para que los matches que se generen usen ese número entero como `strokes_advantage` base. Así la UI muestra coherencia entre la ronda y la cup.
-
-## Detalles técnicos
-
-- HCP Index permitido: −10 a 54 (rango USGA con tolerancia para plus handicaps).
-- `parseFloat(value)` con guard: si `Number.isNaN`, no actualizar.
-- El selector de tee se renderiza con cuatro chips coloreados (azul/blanco/amarillo/rojo) reutilizando el patrón visual ya presente en `CourseSelect`.
-- Si una combinación `course_id + tee_color` no existe en `course_tees`, caer a `course_rating=72, slope=113` (default) y mostrar un aviso pequeño `⚠ tee sin datos` para que el creador lo arregle.
-- `match_handicap` queda en integer (no migración) ya que solo es el redondeo del Course HCP.
-
-## Archivos afectados
-
-- migration nueva → `leaderboard_participants.tee_color`
-- `src/hooks/useTeamsCup.ts` (interface + batchUpdate)
-- `src/components/leaderboards/AddCupParticipantsDialog.tsx`
-- `src/components/leaderboards/TeamsCupDetailInline.tsx`
-- `src/components/leaderboards/CreateRoundFromCupDialog.tsx`
-- `src/lib/teamsCupRoundBuilder.ts`
+- Archivo nuevo: `src/components/leaderboards/ManageFoursomesDialog.tsx` (o sección inline) que recibe `roundId`, `leaderboardId`, lista de participants de la Cup y maneja:
+  - Fetch de `round_groups` + `round_players` del `roundId`.
+  - Mutaciones: `insert/update/delete` sobre `round_groups` y `update group_id` / `insert` / `delete` sobre `round_players`.
+- Hook auxiliar en `useTeamsCup` (o nuevo `useRoundFoursomes`) para encapsular el fetch + mutate y refrescar `cup` y `linkedRoundInfo`.
+- Render dentro de `TeamsCupDetailInline.tsx`: reemplazar la condición actual de la tarjeta "Crear Ronda…" por:
+  - Sin ronda → tarjeta actual de creación.
+  - Con ronda → nueva tarjeta "Foursomes de la Ronda" con botón "Editar Foursomes" que abre el diálogo.
+- Reutilizar utilidades de `teamsCupRoundBuilder.ts` (cálculo de HCP por tee/curso) para mantener consistencia.
+- RLS: las políticas existentes de `round_groups`/`round_players` ya permiten al organizador todas las operaciones; no se requiere migración.
 
 ## Fuera de alcance
 
-- No tocamos `CupMatchEditorDialog` (sigue tomando `match_handicap` ya recalculado).
-- No tocamos el motor de scoring ni RLS de `cup_matches` (ya resueltos en el cambio anterior).    Y sigue quedando la posibilidad de cambiar los strokes que recibe alguno equipo al setear el Match, está la info correcta del su course handicap, pero la pueden ajustar en esa parte del seteo del match
+- Cambiar la lógica de creación inicial (`CreateRoundFromCupDialog`).
+- Reordenar holes de salida por grupo (eso vive en otra pantalla).
+- Cambios en matches/balance.
