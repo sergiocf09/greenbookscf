@@ -180,6 +180,21 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 0. Revalidate the round still exists — RLS inserts will silently fail
+      //    (42501) if the round was deleted or reorganized elsewhere.
+      const { data: roundCheck, error: roundCheckErr } = await supabase
+        .from('rounds')
+        .select('id')
+        .eq('id', roundId)
+        .maybeSingle();
+      if (roundCheckErr) throw roundCheckErr;
+      if (!roundCheck) {
+        toast.error('La ronda enlazada ya no existe. Crea una nueva desde la tarjeta superior.');
+        onRoundMissing?.();
+        onClose();
+        return;
+      }
+
       // 1. Persist any new groups (dbId === null) and build map number → id.
       const numToId = new Map<number, string>();
       groups.forEach(g => { if (g.dbId) numToId.set(g.groupNumber, g.dbId); });
@@ -194,14 +209,13 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         (inserted ?? []).forEach((row: any) => numToId.set(row.group_number, row.id));
       }
 
-      // 2. Delete groups removed from local state (and that exist in DB and have no players).
+      // 2. Identify groups removed from local state for deferred deletion.
       const localGroupNums = new Set(groups.map(g => g.groupNumber));
       const { data: dbGroups } = await supabase
         .from('round_groups')
         .select('id, group_number')
         .eq('round_id', roundId);
       const groupsToDelete = (dbGroups ?? []).filter((g: any) => !localGroupNums.has(g.group_number));
-      // Only delete after we've moved their players (we will). Safest: defer to end.
 
       // 3. Diff participants.
       for (const part of participants) {
@@ -209,17 +223,14 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         const orig = originalRoundPlayers.get(part.id);
 
         if (orig && target == null) {
-          // Remove player from round.
           const { error } = await supabase.from('round_players').delete().eq('id', orig.rpId);
           if (error) throw error;
         } else if (orig && target != null && target !== orig.groupNumber) {
-          // Move to different group.
           const newGid = numToId.get(target);
           if (!newGid) throw new Error(`Grupo ${target} no encontrado`);
           const { error } = await supabase.from('round_players').update({ group_id: newGid }).eq('id', orig.rpId);
           if (error) throw error;
         } else if (!orig && target != null) {
-          // Insert new round_player.
           const gid = numToId.get(target);
           if (!gid) throw new Error(`Grupo ${target} no encontrado`);
           const tee = (part.tee_color ?? 'white') as TeeColor;
@@ -248,8 +259,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         }
       }
 
-
-      // 4. Now delete the groups marked for removal (must be empty in DB).
+      // 4. Delete the groups marked for removal (now empty).
       for (const g of groupsToDelete) {
         const { error } = await supabase.from('round_groups').delete().eq('id', g.id);
         if (error) console.warn('Could not delete group:', error.message);
@@ -259,9 +269,37 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       onChanged();
       onClose();
     } catch (err: any) {
-      toast.error('Error al guardar: ' + err.message);
+      // RLS rejection — almost always means the round was deleted/reorganized.
+      if (err?.code === '42501') {
+        toast.error('No tienes permisos sobre esta ronda o fue eliminada. Vuelve a crearla desde la tarjeta superior.');
+        onRoundMissing?.();
+        onClose();
+      } else {
+        toast.error('Error al guardar: ' + err.message);
+      }
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ── Remove participant from the whole Cup (organizer action) ─────── */
+  const removeFromCup = async (participantId: string) => {
+    try {
+      // Drop them from this round first (best-effort), then deactivate in Cup.
+      const orig = originalRoundPlayers.get(participantId);
+      if (orig) {
+        await supabase.from('round_players').delete().eq('id', orig.rpId);
+      }
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .update({ is_active: false, cup_team_id: null })
+        .eq('id', participantId);
+      if (error) throw error;
+      toast.success('Eliminado del Cup');
+      onChanged();
+      await loadData();
+    } catch (err: any) {
+      toast.error('Error al eliminar del Cup: ' + err.message);
     }
   };
 
