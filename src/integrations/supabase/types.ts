@@ -2471,6 +2471,10 @@ export type Database = {
       }
       get_round_invite_info: { Args: { p_round_id: string }; Returns: Json }
       is_group_admin: { Args: { p_group_id: string }; Returns: boolean }
+      is_linked_round_organizer: {
+        Args: { _leaderboard_id: string }
+        Returns: boolean
+      }
       is_money_ranking_creator: {
         Args: { p_ranking_id: string }
         Returns: boolean
