@@ -31,6 +31,11 @@ interface Props {
   teams: CupTeam[];
   matches: CupMatch[];
   onCreated: (roundId: string) => void;
+  /**
+   * If set, the dialog rebuilds foursomes on this existing round instead of
+   * creating a new round. Used to recover when all round_groups were wiped.
+   */
+  existingRoundId?: string | null;
 }
 
 const MAX_PER_GROUP = 6;
@@ -38,6 +43,7 @@ const MAX_GROUPS = 6;
 
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, organizerProfileId, participants, teams, matches, onCreated,
+  existingRoundId,
 }) => {
   // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
