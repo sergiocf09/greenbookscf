@@ -344,7 +344,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       tee_color?: TeeColor | null;
     }>
   ) => {
-    if (updates.length === 0) return;
+    if (updates.length === 0) return true;
     try {
       const partResults = await Promise.all(updates.map(u => {
         const patch: any = {};
