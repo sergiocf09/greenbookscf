@@ -21,6 +21,8 @@ interface Props {
   leaderboardId: string;
   participants: CupParticipant[];
   onChanged: () => void;
+  /** Called when the linked round no longer exists in DB. */
+  onRoundMissing?: () => void;
 }
 
 interface GroupRow {
@@ -41,7 +43,7 @@ interface GroupRow {
  *  - Add a new empty group / remove an empty group.
  */
 export const ManageFoursomesDialog: React.FC<Props> = ({
-  open, onClose, roundId, leaderboardId, participants, onChanged,
+  open, onClose, roundId, leaderboardId, participants, onChanged, onRoundMissing,
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
