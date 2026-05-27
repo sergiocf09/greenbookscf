@@ -967,7 +967,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       </div>
 
       {/* ── Section 2.5: Crear Ronda y Grupos de Juego (creator only) ─── */}
-      {isCreator && cup.participants.length >= 2 && !linkedRoundInfo.date && (
+      {isCreator && cup.participants.length >= 2 && (!linkedRoundInfo.date || !linkedRoundInfo.hasFoursomes) && (
         <Card className="border-dashed border-primary/40">
           <CardContent className="p-3 space-y-2">
             <div className="flex items-start gap-2">
