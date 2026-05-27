@@ -435,6 +435,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [unlinking, setUnlinking] = useState(false);
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null; roundId: string | null; hasFoursomes: boolean }>({ date: null, courseName: null, roundId: null, hasFoursomes: false });
+  const [linkedRoundRefresh, setLinkedRoundRefresh] = useState(0);
   const [showManageFoursomes, setShowManageFoursomes] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
@@ -572,7 +573,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     };
     loadMeta();
     return () => { cancelled = true; };
-  }, [leaderboardId, isRoundLinked]);
+  }, [leaderboardId, isRoundLinked, linkedRoundRefresh]);
 
   const handleUnlinkRound = async () => {
     if (!leaderboardId || !activeRound.roundId) return;
@@ -1418,8 +1419,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           participants={cup.participants}
           teams={cup.teams}
           matches={cup.matches}
+          existingRoundId={linkedRoundInfo.roundId}
           onCreated={async () => {
             await cup.fetchAll();
+            setLinkedRoundRefresh(n => n + 1);
           }}
         />
       )}
@@ -1432,7 +1435,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           roundId={linkedRoundInfo.roundId}
           leaderboardId={leaderboardId}
           participants={cup.participants}
-          onChanged={async () => { await cup.fetchAll(); }}
+          onChanged={async () => {
+            await cup.fetchAll();
+            setLinkedRoundRefresh(n => n + 1);
+          }}
+          onRoundMissing={() => {
+            // Round was deleted out from under us — close dialog and refresh
+            // so the "Crear Ronda" card reappears.
+            setShowManageFoursomes(false);
+            setLinkedRoundRefresh(n => n + 1);
+          }}
         />
       )}
 
