@@ -38,6 +38,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
+import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── helpers ─────────────────────────────────────── */
@@ -433,7 +434,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [isRoundLinked, setIsRoundLinked] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
-  const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null }>({ date: null, courseName: null });
+  const [linkedRoundInfo, setLinkedRoundInfo] = useState<{ date: string | null; courseName: string | null; roundId: string | null }>({ date: null, courseName: null, roundId: null });
+  const [showManageFoursomes, setShowManageFoursomes] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showCreateRound, setShowCreateRound] = useState(false);
@@ -530,7 +532,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     let cancelled = false;
     const loadMeta = async () => {
       if (!leaderboardId) {
-        setLinkedRoundInfo({ date: null, courseName: null });
+        setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
         return;
       }
       const { data: linkRows } = await supabase
@@ -541,7 +543,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .limit(1);
       const linkedId = linkRows?.[0]?.round_id;
       if (!linkedId) {
-        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null });
+        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
         return;
       }
       const { data: round } = await supabase
@@ -559,7 +561,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         courseName = course?.name ?? null;
       }
       if (!cancelled) {
-        setLinkedRoundInfo({ date: round?.date ?? null, courseName });
+        setLinkedRoundInfo({ date: round?.date ?? null, courseName, roundId: linkedId });
       }
     };
     loadMeta();
@@ -983,6 +985,32 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </Card>
       )}
 
+      {/* ── Section 2.6: Manage Foursomes (creator only, once a round is linked) ─── */}
+      {isCreator && linkedRoundInfo.roundId && cup.participants.length > 0 && (
+        <Card className="border-primary/30">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <Calendar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Foursomes de la Ronda</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                  Mueve jugadores entre foursomes, agrega nuevos grupos o suma
+                  jugadores que se incorporen después (incluye invitados).
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full gap-1"
+              onClick={() => setShowManageFoursomes(true)}
+            >
+              <Settings className="h-3.5 w-3.5" /> Editar Foursomes
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Section 3: Participants ─── */}
 
       {isCreator && cup.participants.length === 0 && (
@@ -1389,6 +1417,20 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           }}
         />
       )}
+
+      {/* ── Manage Foursomes Dialog (creator only, post-round-creation) ─── */}
+      {isCreator && linkedRoundInfo.roundId && (
+        <ManageFoursomesDialog
+          open={showManageFoursomes}
+          onClose={() => setShowManageFoursomes(false)}
+          roundId={linkedRoundInfo.roundId}
+          leaderboardId={leaderboardId}
+          participants={cup.participants}
+          onChanged={async () => { await cup.fetchAll(); }}
+        />
+      )}
+
+
 
 
       {/* ── Settings Dialog (creator only) ─── */}
