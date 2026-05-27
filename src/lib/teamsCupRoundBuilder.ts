@@ -224,14 +224,16 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
       if (rpErr) throw rpErr;
     }
 
-    // 6. Link the round to the leaderboard.
-    await supabase
-      .from('leaderboard_rounds')
-      .insert({
-        leaderboard_id: leaderboardId,
-        round_id: roundId,
-        added_by: organizerProfileId,
-      });
+    // 6. Link the round to the leaderboard (skip if reusing — link already exists).
+    if (!reusing) {
+      await supabase
+        .from('leaderboard_rounds')
+        .insert({
+          leaderboard_id: leaderboardId,
+          round_id: roundId,
+          added_by: organizerProfileId,
+        });
+    }
 
     // 7. Assign any orphan cup_matches to the new round so live results compute.
     await supabase
@@ -242,8 +244,11 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
 
     return roundId;
   } catch (err) {
-    // Best-effort rollback: delete the round (cascades groups/players via FK).
-    try { await supabase.from('rounds').delete().eq('id', roundId); } catch { /* noop */ }
+    // Best-effort rollback ONLY when we created the round in this call.
+    // When reusing, the round predates us — don't nuke it on partial failure.
+    if (!reusing) {
+      try { await supabase.from('rounds').delete().eq('id', roundId); } catch { /* noop */ }
+    }
     throw err;
   }
 }
