@@ -284,13 +284,13 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         date,
         groups: groupsRaw,
         playerOverrides: overrides,
+        existingRoundId: existingRoundId ?? null,
       });
-      toast.success('Ronda creada y vinculada');
+      toast.success(existingRoundId ? 'Foursomes recreados' : 'Ronda creada y vinculada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onCreated(roundId);
       onClose();
     } catch (err: any) {
-
       console.error('createRoundFromCup error:', err);
       toast.error('Error al crear ronda: ' + (err?.message ?? 'desconocido'));
     } finally {
