@@ -138,7 +138,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       // for the linked round. This is the HCP the player actually plays from,
       // given the course + tee chosen at round creation. It supersedes the
       // leaderboard Index for all match calcs and displays.
-      let courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
+      const courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
       if (linkedRoundId) {
         const { data: rps } = await supabase
           .from('round_players')
@@ -346,7 +346,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   ) => {
     if (updates.length === 0) return;
     try {
-      await Promise.all(updates.map(u => {
+      const partResults = await Promise.all(updates.map(u => {
         const patch: any = {};
         if ('cup_team_id' in u) patch.cup_team_id = u.cup_team_id;
         if ('match_handicap' in u) patch.match_handicap = u.match_handicap;
@@ -354,6 +354,8 @@ export function useTeamsCup(leaderboardId: string | null) {
         if ('tee_color' in u) patch.tee_color = u.tee_color;
         return supabase.from('leaderboard_participants').update(patch).eq('id', u.id);
       }));
+      const partError = partResults.find(r => r.error)?.error;
+      if (partError) throw partError;
 
       const needsRoundSync = updates.some(u => 'tee_color' in u || 'handicap_for_leaderboard' in u || 'match_handicap' in u);
       if (needsRoundSync && leaderboardId) {
@@ -387,7 +389,7 @@ export function useTeamsCup(leaderboardId: string | null) {
 
           const updateById = new Map(updates.map(u => [u.id, u]));
           const syncTargets = participants.filter(p => updateById.has(p.id));
-          await Promise.all(syncTargets.map(p => {
+          const roundResults = await Promise.all(syncTargets.map(p => {
             const u = updateById.get(p.id)!;
             const tee = (('tee_color' in u ? u.tee_color : p.tee_color) ?? 'white') as TeeColor;
             const index = Number(('handicap_for_leaderboard' in u ? u.handicap_for_leaderboard : p.handicap_for_leaderboard) ?? 0);
@@ -399,11 +401,15 @@ export function useTeamsCup(leaderboardId: string | null) {
             q = p.profile_id ? q.eq('profile_id', p.profile_id) : q.eq('guest_name', p.display_name);
             return q;
           }));
+          const roundError = roundResults.find(r => r.error)?.error;
+          if (roundError) throw roundError;
         }
       }
       await fetchAll();
+      return true;
     } catch (err: any) {
       toast.error('Error al guardar cambios: ' + err.message);
+      return false;
     }
   }, [fetchAll, leaderboardId, participants]);
 
