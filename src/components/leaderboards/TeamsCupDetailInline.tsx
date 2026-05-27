@@ -1418,6 +1418,20 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         />
       )}
 
+      {/* ── Manage Foursomes Dialog (creator only, post-round-creation) ─── */}
+      {isCreator && linkedRoundInfo.roundId && (
+        <ManageFoursomesDialog
+          open={showManageFoursomes}
+          onClose={() => setShowManageFoursomes(false)}
+          roundId={linkedRoundInfo.roundId}
+          leaderboardId={leaderboardId}
+          participants={cup.participants}
+          onChanged={async () => { await cup.fetchAll(); }}
+        />
+      )}
+
+
+
 
       {/* ── Settings Dialog (creator only) ─── */}
       {isCreator && event && (
