@@ -691,7 +691,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       if (dirty) updates.push(patch);
     }
     if (updates.length > 0) {
-      await cup.batchUpdateParticipants(updates);
+      const saved = await cup.batchUpdateParticipants(updates);
+      if (!saved) return;
       toast.success(`Cambios guardados (${updates.length})`);
     }
     setDraftTeams(new Map());
