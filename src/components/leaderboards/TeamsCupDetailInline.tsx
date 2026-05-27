@@ -1483,6 +1483,32 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ── Delete Match Confirm ─── */}
+      <AlertDialog
+        open={!!matchToDelete}
+        onOpenChange={(open) => { if (!open) setMatchToDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este match?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se quitará de la competencia y no contará para el marcador. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingMatch}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingMatch}
+              onClick={(e) => { e.preventDefault(); handleDeleteMatch(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingMatch && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ── Remove Participant Confirm ─── */}
       <AlertDialog
         open={!!participantToRemove}
