@@ -67,7 +67,21 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [groupsRes, playersRes, roundRes] = await Promise.all([
+      // Revalidate the round still exists before touching anything else.
+      const { data: roundExists, error: roundCheckErr } = await supabase
+        .from('rounds')
+        .select('id, course_id')
+        .eq('id', roundId)
+        .maybeSingle();
+      if (roundCheckErr) throw roundCheckErr;
+      if (!roundExists) {
+        toast.error('La ronda enlazada fue eliminada. Crea una nueva.');
+        onRoundMissing?.();
+        onClose();
+        return;
+      }
+
+      const [groupsRes, playersRes] = await Promise.all([
         supabase.from('round_groups')
           .select('id, group_number')
           .eq('round_id', roundId)
@@ -75,10 +89,6 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         supabase.from('round_players')
           .select('id, profile_id, guest_name, group_id')
           .eq('round_id', roundId),
-        supabase.from('rounds')
-          .select('course_id')
-          .eq('id', roundId)
-          .maybeSingle(),
       ]);
       if (groupsRes.error) throw groupsRes.error;
       if (playersRes.error) throw playersRes.error;
@@ -91,7 +101,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       const gNumById = new Map<string, number>();
       gRows.forEach(g => { if (g.dbId) gNumById.set(g.dbId, g.groupNumber); });
 
-      const cid = roundRes.data?.course_id ?? null;
+      const cid = roundExists.course_id ?? null;
       setCourseId(cid);
       if (cid) {
         const [teesRes, holesRes] = await Promise.all([
@@ -129,7 +139,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
     } finally {
       setLoading(false);
     }
-  }, [roundId, participants]);
+  }, [roundId, participants, onRoundMissing, onClose]);
 
   useEffect(() => {
     if (open) loadData();
