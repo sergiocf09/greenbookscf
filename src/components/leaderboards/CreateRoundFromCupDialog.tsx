@@ -360,7 +360,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> Crear Ronda y Grupos de Juego
+            <Users className="h-4 w-4" /> {existingRoundId ? 'Recrear Foursomes' : 'Crear Ronda y Grupos de Juego'}
           </DialogTitle>
         </DialogHeader>
 
