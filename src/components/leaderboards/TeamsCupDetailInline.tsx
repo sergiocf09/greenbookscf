@@ -698,6 +698,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     setDraftTeams(new Map());
     setDraftHcps(new Map());
     setDraftTees(new Map());
+    return true;
   };
 
 
@@ -1139,7 +1140,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       {/* ── Assignment Panel (deferred saves on close) ─── */}
       <Dialog open={showAssignPanel} onOpenChange={async (open) => {
         if (!open) {
-          await flushAssignDrafts();
+          const saved = await flushAssignDrafts();
+          if (!saved) return;
         }
         setShowAssignPanel(open);
       }}>
@@ -1252,7 +1254,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     size="sm"
                     variant={hasChanges ? 'default' : 'outline'}
                     className="h-8 w-full text-xs"
-                    onClick={() => setShowAssignPanel(false)}
+                    onClick={async () => {
+                      const saved = await flushAssignDrafts();
+                      if (saved) setShowAssignPanel(false);
+                    }}
                   >
                     Guardar
                   </Button>
