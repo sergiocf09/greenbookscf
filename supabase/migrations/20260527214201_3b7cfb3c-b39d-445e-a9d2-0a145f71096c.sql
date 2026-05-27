@@ -1,0 +1,1 @@
+DELETE FROM public.round_players WHERE id IN ('27b32644-9b53-4938-85ed-253445c7b48b','b9259ba6-1314-42e6-86a1-1321ec1aa748');
