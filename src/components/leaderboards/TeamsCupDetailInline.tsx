@@ -427,6 +427,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showSettings, setShowSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [matchToDelete, setMatchToDelete] = useState<CupMatch | null>(null);
+  const [deletingMatch, setDeletingMatch] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [isRoundLinked, setIsRoundLinked] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
@@ -625,6 +627,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     }
   };
 
+  const handleDeleteMatch = async () => {
+    if (!matchToDelete) return;
+    setDeletingMatch(true);
+    try {
+      await cup.deleteMatch(matchToDelete.id);
+      setMatchToDelete(null);
+    } finally {
+      setDeletingMatch(false);
+    }
+  };
+
   // ── Deferred assignment-panel state ─────────────────────
   // Local team + index + tee drafts. Nothing is written to the DB while the
   // user taps around. On dialog close we diff & batch-save in a single call.
@@ -678,12 +691,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       if (dirty) updates.push(patch);
     }
     if (updates.length > 0) {
-      await cup.batchUpdateParticipants(updates);
+      const saved = await cup.batchUpdateParticipants(updates);
+      if (!saved) return;
       toast.success(`Cambios guardados (${updates.length})`);
     }
     setDraftTeams(new Map());
     setDraftHcps(new Map());
     setDraftTees(new Map());
+    return true;
   };
 
 
@@ -936,7 +951,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   isCreator={isCreator}
                   initialsMap={initialsMap}
                   onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
-                  onDelete={() => cup.deleteMatch(m.id)}
+                  onDelete={() => setMatchToDelete(m)}
                 />
               ))}
           </div>
@@ -1125,7 +1140,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       {/* ── Assignment Panel (deferred saves on close) ─── */}
       <Dialog open={showAssignPanel} onOpenChange={async (open) => {
         if (!open) {
-          await flushAssignDrafts();
+          const saved = await flushAssignDrafts();
+          if (!saved) return;
         }
         setShowAssignPanel(open);
       }}>
@@ -1238,7 +1254,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     size="sm"
                     variant={hasChanges ? 'default' : 'outline'}
                     className="h-8 w-full text-xs"
-                    onClick={() => setShowAssignPanel(false)}
+                    onClick={async () => {
+                      const saved = await flushAssignDrafts();
+                      if (saved) setShowAssignPanel(false);
+                    }}
                   >
                     Guardar
                   </Button>
@@ -1465,6 +1484,32 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             >
               {unlinking && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               Desvincular
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete Match Confirm ─── */}
+      <AlertDialog
+        open={!!matchToDelete}
+        onOpenChange={(open) => { if (!open) setMatchToDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este match?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se quitará de la competencia y no contará para el marcador. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingMatch}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingMatch}
+              onClick={(e) => { e.preventDefault(); handleDeleteMatch(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingMatch && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

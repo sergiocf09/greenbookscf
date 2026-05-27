@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 
 export type CupFormat = 'match_individual' | 'fourball';
 
@@ -137,7 +138,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       // for the linked round. This is the HCP the player actually plays from,
       // given the course + tee chosen at round creation. It supersedes the
       // leaderboard Index for all match calcs and displays.
-      let courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
+      const courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
       if (linkedRoundId) {
         const { data: rps } = await supabase
           .from('round_players')
@@ -343,9 +344,9 @@ export function useTeamsCup(leaderboardId: string | null) {
       tee_color?: TeeColor | null;
     }>
   ) => {
-    if (updates.length === 0) return;
+    if (updates.length === 0) return true;
     try {
-      await Promise.all(updates.map(u => {
+      const partResults = await Promise.all(updates.map(u => {
         const patch: any = {};
         if ('cup_team_id' in u) patch.cup_team_id = u.cup_team_id;
         if ('match_handicap' in u) patch.match_handicap = u.match_handicap;
@@ -353,11 +354,64 @@ export function useTeamsCup(leaderboardId: string | null) {
         if ('tee_color' in u) patch.tee_color = u.tee_color;
         return supabase.from('leaderboard_participants').update(patch).eq('id', u.id);
       }));
+      const partError = partResults.find(r => r.error)?.error;
+      if (partError) throw partError;
+
+      const needsRoundSync = updates.some(u => 'tee_color' in u || 'handicap_for_leaderboard' in u || 'match_handicap' in u);
+      if (needsRoundSync && leaderboardId) {
+        const { data: linkedRows } = await supabase
+          .from('leaderboard_rounds')
+          .select('round_id')
+          .eq('leaderboard_id', leaderboardId)
+          .order('added_at', { ascending: false })
+          .limit(1);
+        const linkedRoundId = linkedRows?.[0]?.round_id ?? null;
+
+        if (linkedRoundId) {
+          const { data: round } = await supabase
+            .from('rounds')
+            .select('course_id')
+            .eq('id', linkedRoundId)
+            .maybeSingle();
+
+          let coursePar = 72;
+          const teeData = new Map<string, { rating: number; slope: number }>();
+          if (round?.course_id) {
+            const [teesRes, holesRes] = await Promise.all([
+              supabase.from('course_tees').select('tee_color, course_rating, slope_rating').eq('course_id', round.course_id),
+              supabase.from('course_holes').select('par').eq('course_id', round.course_id),
+            ]);
+            (teesRes.data ?? []).forEach((t: any) => {
+              teeData.set(t.tee_color, { rating: Number(t.course_rating) || 72, slope: Number(t.slope_rating) || 113 });
+            });
+            coursePar = (holesRes.data ?? []).reduce((sum: number, h: any) => sum + (Number(h.par) || 0), 0) || 72;
+          }
+
+          const updateById = new Map(updates.map(u => [u.id, u]));
+          const syncTargets = participants.filter(p => updateById.has(p.id));
+          const roundResults = await Promise.all(syncTargets.map(p => {
+            const u = updateById.get(p.id)!;
+            const tee = (('tee_color' in u ? u.tee_color : p.tee_color) ?? 'white') as TeeColor;
+            const index = Number(('handicap_for_leaderboard' in u ? u.handicap_for_leaderboard : p.handicap_for_leaderboard) ?? 0);
+            const td = teeData.get(tee);
+            const courseHcp = td ? calculateCourseHandicap(index, td.slope, td.rating, coursePar) : Math.round(index);
+            const patch = { tee_color: tee, handicap_for_round: courseHcp };
+
+            let q = supabase.from('round_players').update(patch).eq('round_id', linkedRoundId);
+            q = p.profile_id ? q.eq('profile_id', p.profile_id) : q.eq('guest_name', p.display_name);
+            return q;
+          }));
+          const roundError = roundResults.find(r => r.error)?.error;
+          if (roundError) throw roundError;
+        }
+      }
       await fetchAll();
+      return true;
     } catch (err: any) {
       toast.error('Error al guardar cambios: ' + err.message);
+      return false;
     }
-  }, [fetchAll]);
+  }, [fetchAll, leaderboardId, participants]);
 
   const createMatch = useCallback(async (params: Partial<CupMatch>) => {
     if (!leaderboardId) return null;
