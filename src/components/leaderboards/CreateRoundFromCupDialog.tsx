@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Loader2, Users, Sparkles } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Users, Sparkles, Shuffle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -31,6 +31,11 @@ interface Props {
   teams: CupTeam[];
   matches: CupMatch[];
   onCreated: (roundId: string) => void;
+  /**
+   * If set, the dialog rebuilds foursomes on this existing round instead of
+   * creating a new round. Used to recover when all round_groups were wiped.
+   */
+  existingRoundId?: string | null;
 }
 
 const MAX_PER_GROUP = 6;
@@ -38,6 +43,7 @@ const MAX_GROUPS = 6;
 
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, organizerProfileId, participants, teams, matches, onCreated,
+  existingRoundId,
 }) => {
   // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
@@ -217,6 +223,28 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     setGroupByPart(next);
   };
 
+  /**
+   * Pure random shuffle: ignore matches; distribute all participants in
+   * foursomes of 4 (last group may be 1-3). Useful for casual tournaments
+   * with lots of guests where the organizer wants to randomize quickly.
+   */
+  const randomShuffle = () => {
+    const ids = participants.map(p => p.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    const next = new Map<string, number | null>();
+    ids.forEach((id, idx) => {
+      const group = Math.min(Math.floor(idx / 4) + 1, MAX_GROUPS);
+      next.set(id, group);
+    });
+    participants.forEach(p => { if (!next.has(p.id)) next.set(p.id, null); });
+    setGroupByPart(next);
+  };
+
+
+
 
   const handleCreate = async () => {
     if (!courseId) { toast.error('Selecciona el campo'); return; }
@@ -256,13 +284,13 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         date,
         groups: groupsRaw,
         playerOverrides: overrides,
+        existingRoundId: existingRoundId ?? null,
       });
-      toast.success('Ronda creada y vinculada');
+      toast.success(existingRoundId ? 'Foursomes recreados' : 'Ronda creada y vinculada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onCreated(roundId);
       onClose();
     } catch (err: any) {
-
       console.error('createRoundFromCup error:', err);
       toast.error('Error al crear ronda: ' + (err?.message ?? 'desconocido'));
     } finally {
@@ -332,7 +360,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> Crear Ronda y Grupos de Juego
+            <Users className="h-4 w-4" /> {existingRoundId ? 'Recrear Foursomes' : 'Crear Ronda y Grupos de Juego'}
           </DialogTitle>
         </DialogHeader>
 
@@ -379,15 +407,28 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
               <Label className="text-xs font-semibold">
                 Grupos de Juego ({playingCount}/{participants.length})
               </Label>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[10px] gap-1"
-                onClick={autoBalance}
-                type="button"
-              >
-                <Sparkles className="h-3 w-3" /> Auto-armar
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={randomShuffle}
+                  type="button"
+                  title="Distribuir al azar en foursomes de 4"
+                >
+                  <Shuffle className="h-3 w-3" /> Al azar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={autoBalance}
+                  type="button"
+                  title="Respetar matches y armar foursomes"
+                >
+                  <Sparkles className="h-3 w-3" /> Auto-armar
+                </Button>
+              </div>
             </div>
 
             {/* Group capacity summary */}

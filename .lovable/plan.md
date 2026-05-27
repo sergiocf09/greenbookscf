@@ -1,48 +1,51 @@
-# Gestión de Foursomes post-creación en Team Cup
+## Problemas a resolver
 
-Hoy, una vez que se crea la ronda desde el detalle de la Team Cup, la tarjeta "Crear Ronda y Grupos de Juego" desaparece (`!linkedRoundInfo.date`) y ya no hay forma de:
+1. **Error RLS al guardar Foursomes desde Leaderboards**: `new row violates row-level security policy for table "round_groups"`. Pasa al recrear foursomes después de haber borrado manualmente los grupos desde el Setup.
+2. **Eliminar jugadores desde "Foursomes de la Ronda" no los quita del Setup**: solo borra el `round_player` del foursome pero el cup_participant + round queda inconsistente, obligando al organizador a limpiar manualmente desde el Setup.
+3. **Card "Crear Ronda y Grupos de Juego" desaparece para siempre**: una vez creada la ronda (aunque queden 0 foursomes / 0 round_players por limpieza manual), no se puede regenerar foursomes desde cero ni usar la opción de "armar foursomes al azar" que existe en el flujo original.
 
-- Reacomodar quién juega en qué foursome.
-- Agregar nuevos jugadores (sobre todo invitados) a la ronda enlazada.
-- Crear/eliminar grupos adicionales.
+## Causa raíz
 
-Esto se resuelve agregando un panel de "Foursomes de la Ronda" que vive en el detalle de la Cup y sólo aparece cuando ya existe ronda enlazada.
+- **RLS**: `is_round_organizer(round_id)` valida contra `rounds.organizer_id`. Al borrar grupos desde el Setup, el flujo de Setup probablemente está borrando también la ronda (o reasignando organizador) — `ManageFoursomesDialog` mantiene `roundId` cacheado y al insertar pega contra una ronda inexistente o de otro organizador. Hay que: (a) revalidar que el `roundId` siga vivo y sea del organizador antes de insertar; (b) si no, caer al flujo de "crear ronda" en vez de intentar inserts huérfanos.
+- **Sin sincronía Leaderboard ↔ Setup**: `ManageFoursomesDialog` solo toca `round_groups` / `round_players`. No avisa al state de Setup ni borra el participante de la ronda en `leaderboard_participants` (cuando esa es la intención del organizador).
+- **Gating del card de creación**: la condición `!linkedRoundInfo.date` esconde el card en cuanto existe `leaderboard_rounds`. Debe esconderse solo cuando exista al menos 1 `round_group` con jugadores.
 
-## Alcance
+## Cambios propuestos
 
-1. **Nuevo bloque "Foursomes de la Ronda" (sólo organizador, cuando ya hay ronda enlazada)**
-   - Muestra cada grupo (Grupo 1, Grupo 2, …) con los jugadores actuales (nombre + initials, marca de invitado, HCP de la ronda).
-   - Acciones por jugador: mover a otro grupo (popover con los grupos existentes) y quitar del grupo (vuelve a "Sin asignar").
-   - Acciones por grupo: renombrar visualmente (sólo número), eliminar grupo vacío.
-   - Botón "Agregar Grupo" (crea `round_groups` con el siguiente `group_number`).
-   - Sección "Sin asignar" arriba: lista participantes de la Cup que aún no están en `round_players` o que quedaron sin grupo, con botón rápido "Asignar a Grupo N".
-   - Botón "Guardar cambios" (full-width, alineado al patrón ya usado en el diálogo de equipos/HCPs).
+### 1) `TeamsCupDetailInline.tsx` – gating del card de creación
+- Extender el estado `linkedRoundInfo` con `hasFoursomes: boolean` (count de `round_groups` con al menos 1 `round_player`).
+- Card "Crear Ronda y Grupos de Juego" se muestra cuando `!linkedRoundInfo.date || !linkedRoundInfo.hasFoursomes`.
+- Card "Foursomes de la Ronda" (gestión) se muestra solo cuando `linkedRoundInfo.hasFoursomes === true`.
+- Si existe `leaderboard_rounds` pero sin foursomes/players, `CreateRoundFromCupDialog` debe **reutilizar la ronda existente** en lugar de crear una nueva (parámetro `existingRoundId`).
 
-2. **Agregar jugadores después de creada la ronda**
-   - Reusar el flujo existente "Agregar Jugadores" (`setShowAddParticipants`) pero, cuando ya hay `linkedRoundInfo`, además de crear `leaderboard_participants` también:
-     - Crear/usar el `profile` (ghost si invitado, igual que hoy).
-     - Insertar el `round_player` correspondiente en el último grupo (o en "Sin asignar" si el organizador prefiere acomodarlos manualmente).
-     - Calcular `handicap_for_round` con `calculateCourseHandicap` a partir del `course_id` de la ronda y el tee elegido (default = tee del organizador o blanco).
-   - Tras agregarlos, el bloque de Foursomes resalta los recién llegados para que el organizador los mueva al grupo correcto.
+### 2) `CreateRoundFromCupDialog.tsx` – opción "Armar foursomes al azar"
+Confirmar/añadir botón "Armar al azar" (mismo patrón que el setup normal):
+- Botón secundario arriba del listado de grupos manual: barajar los participantes seleccionados y distribuirlos en grupos de 4 (último grupo puede quedar con 1-3).
+- Mantiene la opción manual existente intacta.
 
-3. **Sincronización con la Cup**
-   - Cuando se asigne tee/HCP desde el panel de "Asignar Equipos y Hándicaps", seguir actualizando `round_players` (ya implementado).
-   - Si se elimina un jugador del round (no de la Cup), se borra `round_players` pero el `leaderboard_participants` permanece (el usuario sigue siendo parte de la Cup aunque no juegue ese día). Mostrar confirmación.
+### 3) `teamsCupRoundBuilder.ts` – soporte de `existingRoundId`
+Si recibe `existingRoundId`:
+- Saltar `rpc('create_round')` y `leaderboard_rounds.insert`.
+- Limpiar `round_groups`/`round_players` existentes para esa ronda (DELETE) antes de reinsertar la nueva estructura.
+- Reusar el resto del flujo (ghosts, group_id mapping, etc.).
 
-## Detalle técnico
+### 4) `ManageFoursomesDialog.tsx` – robustez + sincronía
+- Antes de cualquier insert/update, **revalidar** que la ronda exista (`select id from rounds where id = roundId`); si no, cerrar el dialog con toast: "La ronda fue eliminada. Crea una nueva." y refrescar el padre para que reaparezca el card de creación.
+- Cuando el organizador "Quitar de la ronda" un jugador, ofrecer (popover) dos acciones:
+  - **"Quitar solo de esta ronda"** (comportamiento actual: borra `round_players`, deja `leaderboard_participants`).
+  - **"Quitar del Cup completo"** (borra también `leaderboard_participants` + cascades `cup_team_members` / `cup_matches`).
+- Tras guardar, emitir `onChanged()` que refresca tanto el Cup como el Setup (`activeRound` se refresca al re-entrar a Play; lo importante es que el state local del Cup vuelva a consultar `round_groups`).
 
-- Archivo nuevo: `src/components/leaderboards/ManageFoursomesDialog.tsx` (o sección inline) que recibe `roundId`, `leaderboardId`, lista de participants de la Cup y maneja:
-  - Fetch de `round_groups` + `round_players` del `roundId`.
-  - Mutaciones: `insert/update/delete` sobre `round_groups` y `update group_id` / `insert` / `delete` sobre `round_players`.
-- Hook auxiliar en `useTeamsCup` (o nuevo `useRoundFoursomes`) para encapsular el fetch + mutate y refrescar `cup` y `linkedRoundInfo`.
-- Render dentro de `TeamsCupDetailInline.tsx`: reemplazar la condición actual de la tarjeta "Crear Ronda…" por:
-  - Sin ronda → tarjeta actual de creación.
-  - Con ronda → nueva tarjeta "Foursomes de la Ronda" con botón "Editar Foursomes" que abre el diálogo.
-- Reutilizar utilidades de `teamsCupRoundBuilder.ts` (cálculo de HCP por tee/curso) para mantener consistencia.
-- RLS: las políticas existentes de `round_groups`/`round_players` ya permiten al organizador todas las operaciones; no se requiere migración.
+### 5) Mensaje de error más útil
+Capturar el código RLS específico (`42501`) en el catch y mostrar: "No tienes permisos sobre esta ronda o la ronda fue eliminada. Vuelve a crearla desde el card superior."
 
 ## Fuera de alcance
+- Cambiar la lógica de Setup que está dejando inconsistencias al borrar grupos (eso ya es un bug aparte; aquí solo hacemos que Leaderboards se recupere).
+- Migraciones de RLS (las políticas están bien; el problema es state stale del cliente).
+- Reordenar holes por grupo o cambios en el motor de apuestas.
 
-- Cambiar la lógica de creación inicial (`CreateRoundFromCupDialog`).
-- Reordenar holes de salida por grupo (eso vive en otra pantalla).
-- Cambios en matches/balance.
+## Archivos a tocar
+- `src/components/leaderboards/TeamsCupDetailInline.tsx` (gating + `hasFoursomes` + paso de `existingRoundId`)
+- `src/components/leaderboards/CreateRoundFromCupDialog.tsx` (botón "Armar al azar" + soporte `existingRoundId`)
+- `src/lib/teamsCupRoundBuilder.ts` (rama `existingRoundId`)
+- `src/components/leaderboards/ManageFoursomesDialog.tsx` (revalidación + opción "Quitar del Cup completo" + manejo de error 42501)

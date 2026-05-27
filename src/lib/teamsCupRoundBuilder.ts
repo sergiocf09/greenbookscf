@@ -36,6 +36,13 @@ export interface CreateRoundFromCupInput {
   groups: CupGroupSpec[];
   /** Per-participant Course HCP + tee. If absent for a player, falls back to leaderboard HCP + global teeColor. */
   playerOverrides?: Map<string, ParticipantPlayOverride>;
+  /**
+   * If set, reuse this existing round instead of creating a new one.
+   * Existing round_groups + round_players will be wiped and rebuilt
+   * from the provided `groups` payload. The leaderboard_rounds link
+   * is preserved (not re-inserted).
+   */
+  existingRoundId?: string | null;
 }
 
 interface CupParticipantRow {
@@ -50,7 +57,7 @@ interface CupParticipantRow {
 export async function createRoundFromCup(input: CreateRoundFromCupInput): Promise<string> {
   const {
     leaderboardId, organizerProfileId, courseId, teeColor,
-    startingHole, roundHoles, date, groups, playerOverrides,
+    startingHole, roundHoles, date, groups, playerOverrides, existingRoundId,
   } = input;
 
   // 1. Load all selected participants in one go.
@@ -67,30 +74,60 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
   const parts = (partsData ?? []) as CupParticipantRow[];
   const partById = new Map(parts.map(p => [p.id, p]));
 
-  // 2. Create the round via the security-definer RPC.
-  //    This atomically inserts: rounds, round_groups#1, round_players (organizer).
-  const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
-    p_course_id: courseId,
-    p_tee_color: teeColor,
-    p_date: date.toISOString().split('T')[0],
-    p_bet_config: { roundHoles } as any,
-    p_starting_hole: startingHole,
-  });
-  if (rpcErr) throw rpcErr;
-  const rpcRow: any = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-  if (!rpcRow) throw new Error('No se pudo crear la ronda.');
-  const roundId: string = rpcRow.round_id;
-  const firstGroupId: string = rpcRow.group_id;
-  const organizerRoundPlayerId: string = rpcRow.round_player_id;
+  let roundId: string;
+  let firstGroupId: string | null = null;
+  let organizerRoundPlayerId: string | null = null;
+  const reusing = !!existingRoundId;
+
+  if (reusing) {
+    // Verify the round still exists and the caller is its organizer
+    // (otherwise the wipe below would silently no-op via RLS).
+    const { data: roundRow, error: roundErr } = await supabase
+      .from('rounds')
+      .select('id, organizer_id')
+      .eq('id', existingRoundId)
+      .maybeSingle();
+    if (roundErr) throw roundErr;
+    if (!roundRow) {
+      throw new Error('La ronda enlazada ya no existe. Crea una nueva.');
+    }
+    if (roundRow.organizer_id !== organizerProfileId) {
+      throw new Error('Solo el organizador original de la ronda puede recrear los foursomes.');
+    }
+    roundId = existingRoundId!;
+    // Wipe existing structure so we can rebuild cleanly.
+    await supabase.from('round_players').delete().eq('round_id', roundId);
+    await supabase.from('round_groups').delete().eq('round_id', roundId);
+  } else {
+    // Create the round via the security-definer RPC.
+    // This atomically inserts: rounds, round_groups#1, round_players (organizer).
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
+      p_course_id: courseId,
+      p_tee_color: teeColor,
+      p_date: date.toISOString().split('T')[0],
+      p_bet_config: { roundHoles } as any,
+      p_starting_hole: startingHole,
+    });
+    if (rpcErr) throw rpcErr;
+    const rpcRow: any = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!rpcRow) throw new Error('No se pudo crear la ronda.');
+    roundId = rpcRow.round_id;
+    firstGroupId = rpcRow.group_id;
+    organizerRoundPlayerId = rpcRow.round_player_id;
+  }
 
   try {
-    // 3. Build the rest of the round_groups (skip number 1, already created).
-    const extraGroupNumbers = groups.map(g => g.groupNumber).filter(n => n !== 1);
-    const groupIdByNumber = new Map<number, string>([[1, firstGroupId]]);
-    if (extraGroupNumbers.length > 0) {
+    // 3. Build the round_groups. When reusing, all groups are new.
+    //    When creating fresh, skip number 1 (already created by RPC).
+    const groupNumbersToInsert = reusing
+      ? groups.map(g => g.groupNumber)
+      : groups.map(g => g.groupNumber).filter(n => n !== 1);
+    const groupIdByNumber = new Map<number, string>();
+    if (!reusing && firstGroupId) groupIdByNumber.set(1, firstGroupId);
+    if (groupNumbersToInsert.length > 0) {
       const { data: newGroups, error: groupErr } = await supabase
         .from('round_groups')
-        .insert(extraGroupNumbers.map(n => ({ round_id: roundId, group_number: n })))
+        .insert(groupNumbersToInsert.map(n => ({ round_id: roundId, group_number: n })))
         .select('id, group_number');
       if (groupErr) throw groupErr;
       (newGroups ?? []).forEach((g: any) => groupIdByNumber.set(g.group_number, g.id));
@@ -98,36 +135,40 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
 
     // 4. For each participant find their target group_id.
     //    Compute who needs which group; treat the organizer specially since
-    //    create_round already added them to group 1.
+    //    (in the create-fresh path) create_round already added them to group 1.
     const organizerCupPart = parts.find(p => p.profile_id === organizerProfileId);
     const organizerTargetGroupNumber: number | null = (() => {
       if (!organizerCupPart) return null;
       const g = groups.find(g => g.participantIds.includes(organizerCupPart.id));
       return g?.groupNumber ?? null;
     })();
-    if (organizerTargetGroupNumber && organizerTargetGroupNumber !== 1) {
-      const targetGid = groupIdByNumber.get(organizerTargetGroupNumber);
-      if (targetGid) {
+    if (!reusing) {
+      if (organizerTargetGroupNumber && organizerTargetGroupNumber !== 1 && organizerRoundPlayerId) {
+        const targetGid = groupIdByNumber.get(organizerTargetGroupNumber);
+        if (targetGid) {
+          await supabase
+            .from('round_players')
+            .update({ group_id: targetGid })
+            .eq('id', organizerRoundPlayerId);
+        }
+      }
+      // Sync organizer handicap + tee from override (preferred) or leaderboard fallback.
+      if (organizerCupPart && organizerRoundPlayerId) {
+        const ov = playerOverrides?.get(organizerCupPart.id);
+        const hcp = ov?.courseHandicap ?? organizerCupPart.handicap_for_leaderboard ?? 0;
+        const tee = ov?.teeColor ?? teeColor;
         await supabase
           .from('round_players')
-          .update({ group_id: targetGid })
+          .update({ handicap_for_round: hcp, tee_color: tee })
           .eq('id', organizerRoundPlayerId);
       }
     }
-    // Sync organizer handicap + tee from override (preferred) or leaderboard fallback.
-    if (organizerCupPart) {
-      const ov = playerOverrides?.get(organizerCupPart.id);
-      const hcp = ov?.courseHandicap ?? organizerCupPart.handicap_for_leaderboard ?? 0;
-      const tee = ov?.teeColor ?? teeColor;
-      await supabase
-        .from('round_players')
-        .update({ handicap_for_round: hcp, tee_color: tee })
-        .eq('id', organizerRoundPlayerId);
-    }
 
-    // 5. Build the round_players rows for the rest (skip organizer already inserted).
+    // 5. Build the round_players rows for the rest.
+    //    When NOT reusing, skip the organizer (create_round already inserted them).
+    //    When reusing, the organizer is inserted here with is_organizer=true.
     //    Guests need a ghost profile first.
-    const guestParts = parts.filter(p => !p.profile_id && p.id !== organizerCupPart?.id);
+    const guestParts = parts.filter(p => !p.profile_id && (reusing || p.id !== organizerCupPart?.id));
     const ghostProfileByPartId = new Map<string, string>();
     if (guestParts.length > 0) {
       const ghostRows = guestParts.map(p => ({
@@ -156,11 +197,12 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
       for (const partId of group.participantIds) {
         const part = partById.get(partId);
         if (!part) continue;
-        // Organizer already added by create_round.
-        if (organizerCupPart && part.id === organizerCupPart.id) continue;
+        // In create-fresh path, organizer already added by create_round → skip.
+        if (!reusing && organizerCupPart && part.id === organizerCupPart.id) continue;
         const profileId = part.profile_id ?? ghostProfileByPartId.get(part.id) ?? null;
         if (!profileId) continue;
         const isGuest = !part.profile_id;
+        const isOrganizer = reusing && organizerCupPart != null && part.id === organizerCupPart.id;
         const ov = playerOverrides?.get(part.id);
         const hcp = ov?.courseHandicap ?? part.handicap_for_leaderboard ?? 0;
         const tee = ov?.teeColor ?? teeColor;
@@ -169,7 +211,7 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
           group_id: gid,
           profile_id: profileId,
           handicap_for_round: hcp,
-          is_organizer: false,
+          is_organizer: isOrganizer,
           tee_color: tee,
           guest_name: isGuest ? part.guest_name : null,
           guest_initials: isGuest ? part.guest_initials : null,
@@ -182,14 +224,16 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
       if (rpErr) throw rpErr;
     }
 
-    // 6. Link the round to the leaderboard.
-    await supabase
-      .from('leaderboard_rounds')
-      .insert({
-        leaderboard_id: leaderboardId,
-        round_id: roundId,
-        added_by: organizerProfileId,
-      });
+    // 6. Link the round to the leaderboard (skip if reusing — link already exists).
+    if (!reusing) {
+      await supabase
+        .from('leaderboard_rounds')
+        .insert({
+          leaderboard_id: leaderboardId,
+          round_id: roundId,
+          added_by: organizerProfileId,
+        });
+    }
 
     // 7. Assign any orphan cup_matches to the new round so live results compute.
     await supabase
@@ -200,8 +244,11 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
 
     return roundId;
   } catch (err) {
-    // Best-effort rollback: delete the round (cascades groups/players via FK).
-    try { await supabase.from('rounds').delete().eq('id', roundId); } catch { /* noop */ }
+    // Best-effort rollback ONLY when we created the round in this call.
+    // When reusing, the round predates us — don't nuke it on partial failure.
+    if (!reusing) {
+      try { await supabase.from('rounds').delete().eq('id', roundId); } catch { /* noop */ }
+    }
     throw err;
   }
 }
