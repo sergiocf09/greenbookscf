@@ -192,25 +192,20 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       // Only delete after we've moved their players (we will). Safest: defer to end.
 
       // 3. Diff participants.
-      const ops: Promise<any>[] = [];
       for (const part of participants) {
         const target = assignment.get(part.id);
         const orig = originalRoundPlayers.get(part.id);
 
         if (orig && target == null) {
           // Remove player from round.
-          ops.push(
-            supabase.from('round_players').delete().eq('id', orig.rpId)
-              .then(({ error }) => { if (error) throw error; })
-          );
+          const { error } = await supabase.from('round_players').delete().eq('id', orig.rpId);
+          if (error) throw error;
         } else if (orig && target != null && target !== orig.groupNumber) {
           // Move to different group.
           const newGid = numToId.get(target);
           if (!newGid) throw new Error(`Grupo ${target} no encontrado`);
-          ops.push(
-            supabase.from('round_players').update({ group_id: newGid }).eq('id', orig.rpId)
-              .then(({ error }) => { if (error) throw error; })
-          );
+          const { error } = await supabase.from('round_players').update({ group_id: newGid }).eq('id', orig.rpId);
+          if (error) throw error;
         } else if (!orig && target != null) {
           // Insert new round_player.
           const gid = numToId.get(target);
@@ -236,14 +231,11 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
             insertRow.guest_initials = part.initials;
             insertRow.guest_color = part.avatar_color;
           }
-          ops.push(
-            supabase.from('round_players').insert(insertRow)
-              .then(({ error }) => { if (error) throw error; })
-          );
+          const { error } = await supabase.from('round_players').insert(insertRow);
+          if (error) throw error;
         }
       }
 
-      await Promise.all(ops);
 
       // 4. Now delete the groups marked for removal (must be empty in DB).
       for (const g of groupsToDelete) {
