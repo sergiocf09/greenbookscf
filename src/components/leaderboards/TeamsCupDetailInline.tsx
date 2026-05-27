@@ -1129,7 +1129,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
           {(() => {
             // Detect pending changes vs. saved state.
             const hasChanges = cup.participants.some(p => {
@@ -1232,12 +1232,12 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             return (
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2 pb-1 border-b">
-                  <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
+                <div className="sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 bg-background border-b flex items-center justify-between gap-2">
+                  <DialogTitle className="text-base min-w-0 truncate flex-1">Asignar Equipos y Hándicaps</DialogTitle>
                   <Button
                     size="sm"
                     variant={hasChanges ? 'default' : 'outline'}
-                    className="h-7 px-2 text-xs shrink-0"
+                    className="h-7 px-3 text-xs shrink-0"
                     onClick={() => setShowAssignPanel(false)}
                   >
                     {hasChanges ? 'Guardar cambios' : 'Cerrar'}
