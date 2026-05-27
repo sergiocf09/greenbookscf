@@ -992,7 +992,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       )}
 
       {/* ── Section 2.6: Manage Foursomes (creator only, once a round is linked) ─── */}
-      {isCreator && linkedRoundInfo.roundId && cup.participants.length > 0 && (
+      {isCreator && linkedRoundInfo.roundId && linkedRoundInfo.hasFoursomes && cup.participants.length > 0 && (
         <Card className="border-primary/30">
           <CardContent className="p-3 space-y-2">
             <div className="flex items-start gap-2">
