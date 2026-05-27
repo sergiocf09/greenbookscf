@@ -2545,6 +2545,10 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      reset_round_groups_and_players: {
+        Args: { p_round_id: string }
+        Returns: undefined
+      }
       resolve_leaderboard_by_code: { Args: { p_code: string }; Returns: string }
       resolve_round_id_by_code: { Args: { p_code: string }; Returns: string }
       search_profiles: {

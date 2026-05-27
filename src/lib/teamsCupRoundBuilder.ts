@@ -74,14 +74,13 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
   const parts = (partsData ?? []) as CupParticipantRow[];
   const partById = new Map(parts.map(p => [p.id, p]));
 
-  let roundId: string;
+  let roundId: string = '';
   let firstGroupId: string | null = null;
   let organizerRoundPlayerId: string | null = null;
-  const reusing = !!existingRoundId;
+  let reusing = !!existingRoundId;
 
   if (reusing) {
-    // Verify the round still exists and the caller is its organizer
-    // (otherwise the wipe below would silently no-op via RLS).
+    // Verify the round still exists and the caller is its organizer.
     const { data: roundRow, error: roundErr } = await supabase
       .from('rounds')
       .select('id, organizer_id')
@@ -89,18 +88,49 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
       .maybeSingle();
     if (roundErr) throw roundErr;
     if (!roundRow) {
-      throw new Error('La ronda enlazada ya no existe. Crea una nueva.');
+      // Stale link — unlink and fall through to fresh creation.
+      await supabase
+        .from('leaderboard_rounds')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', existingRoundId!);
+      reusing = false;
+    } else if (roundRow.organizer_id !== organizerProfileId) {
+      // Linked round belongs to a different organizer — we cannot mutate it
+      // under RLS. Unlink and create a fresh round owned by current user.
+      await supabase
+        .from('leaderboard_rounds')
+        .delete()
+        .eq('leaderboard_id', leaderboardId)
+        .eq('round_id', existingRoundId!);
+      reusing = false;
+    } else {
+      roundId = existingRoundId!;
+      // Wipe via SECURITY DEFINER RPC: atomic + validates organizer,
+      // so we never end in a half-deleted state that later fails INSERT
+      // with a confusing RLS error.
+      const { error: resetErr } = await supabase.rpc(
+        'reset_round_groups_and_players' as any,
+        { p_round_id: roundId },
+      );
+      if (resetErr) {
+        if ((resetErr as any).code === '42501') {
+          // Caller is not the round organizer — unlink and create fresh.
+          await supabase
+            .from('leaderboard_rounds')
+            .delete()
+            .eq('leaderboard_id', leaderboardId)
+            .eq('round_id', roundId);
+          reusing = false;
+        } else {
+          throw resetErr;
+        }
+      }
     }
-    if (roundRow.organizer_id !== organizerProfileId) {
-      throw new Error('Solo el organizador original de la ronda puede recrear los foursomes.');
-    }
-    roundId = existingRoundId!;
-    // Wipe existing structure so we can rebuild cleanly.
-    await supabase.from('round_players').delete().eq('round_id', roundId);
-    await supabase.from('round_groups').delete().eq('round_id', roundId);
-  } else {
-    // Create the round via the security-definer RPC.
-    // This atomically inserts: rounds, round_groups#1, round_players (organizer).
+  }
+
+  if (!reusing) {
+    // Create a fresh round via security-definer RPC.
     const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
       p_course_id: courseId,
       p_tee_color: teeColor,
