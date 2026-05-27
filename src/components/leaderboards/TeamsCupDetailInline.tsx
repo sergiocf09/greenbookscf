@@ -561,7 +561,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         courseName = course?.name ?? null;
       }
       if (!cancelled) {
-        setLinkedRoundInfo({ date: round?.date ?? null, courseName });
+        setLinkedRoundInfo({ date: round?.date ?? null, courseName, roundId: linkedId });
       }
     };
     loadMeta();
