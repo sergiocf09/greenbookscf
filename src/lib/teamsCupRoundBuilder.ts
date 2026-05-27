@@ -135,36 +135,40 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
 
     // 4. For each participant find their target group_id.
     //    Compute who needs which group; treat the organizer specially since
-    //    create_round already added them to group 1.
+    //    (in the create-fresh path) create_round already added them to group 1.
     const organizerCupPart = parts.find(p => p.profile_id === organizerProfileId);
     const organizerTargetGroupNumber: number | null = (() => {
       if (!organizerCupPart) return null;
       const g = groups.find(g => g.participantIds.includes(organizerCupPart.id));
       return g?.groupNumber ?? null;
     })();
-    if (organizerTargetGroupNumber && organizerTargetGroupNumber !== 1) {
-      const targetGid = groupIdByNumber.get(organizerTargetGroupNumber);
-      if (targetGid) {
+    if (!reusing) {
+      if (organizerTargetGroupNumber && organizerTargetGroupNumber !== 1 && organizerRoundPlayerId) {
+        const targetGid = groupIdByNumber.get(organizerTargetGroupNumber);
+        if (targetGid) {
+          await supabase
+            .from('round_players')
+            .update({ group_id: targetGid })
+            .eq('id', organizerRoundPlayerId);
+        }
+      }
+      // Sync organizer handicap + tee from override (preferred) or leaderboard fallback.
+      if (organizerCupPart && organizerRoundPlayerId) {
+        const ov = playerOverrides?.get(organizerCupPart.id);
+        const hcp = ov?.courseHandicap ?? organizerCupPart.handicap_for_leaderboard ?? 0;
+        const tee = ov?.teeColor ?? teeColor;
         await supabase
           .from('round_players')
-          .update({ group_id: targetGid })
+          .update({ handicap_for_round: hcp, tee_color: tee })
           .eq('id', organizerRoundPlayerId);
       }
     }
-    // Sync organizer handicap + tee from override (preferred) or leaderboard fallback.
-    if (organizerCupPart) {
-      const ov = playerOverrides?.get(organizerCupPart.id);
-      const hcp = ov?.courseHandicap ?? organizerCupPart.handicap_for_leaderboard ?? 0;
-      const tee = ov?.teeColor ?? teeColor;
-      await supabase
-        .from('round_players')
-        .update({ handicap_for_round: hcp, tee_color: tee })
-        .eq('id', organizerRoundPlayerId);
-    }
 
-    // 5. Build the round_players rows for the rest (skip organizer already inserted).
+    // 5. Build the round_players rows for the rest.
+    //    When NOT reusing, skip the organizer (create_round already inserted them).
+    //    When reusing, the organizer is inserted here with is_organizer=true.
     //    Guests need a ghost profile first.
-    const guestParts = parts.filter(p => !p.profile_id && p.id !== organizerCupPart?.id);
+    const guestParts = parts.filter(p => !p.profile_id && (reusing || p.id !== organizerCupPart?.id));
     const ghostProfileByPartId = new Map<string, string>();
     if (guestParts.length > 0) {
       const ghostRows = guestParts.map(p => ({
@@ -193,11 +197,12 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
       for (const partId of group.participantIds) {
         const part = partById.get(partId);
         if (!part) continue;
-        // Organizer already added by create_round.
-        if (organizerCupPart && part.id === organizerCupPart.id) continue;
+        // In create-fresh path, organizer already added by create_round → skip.
+        if (!reusing && organizerCupPart && part.id === organizerCupPart.id) continue;
         const profileId = part.profile_id ?? ghostProfileByPartId.get(part.id) ?? null;
         if (!profileId) continue;
         const isGuest = !part.profile_id;
+        const isOrganizer = reusing && organizerCupPart != null && part.id === organizerCupPart.id;
         const ov = playerOverrides?.get(part.id);
         const hcp = ov?.courseHandicap ?? part.handicap_for_leaderboard ?? 0;
         const tee = ov?.teeColor ?? teeColor;
@@ -206,7 +211,7 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
           group_id: gid,
           profile_id: profileId,
           handicap_for_round: hcp,
-          is_organizer: false,
+          is_organizer: isOrganizer,
           tee_color: tee,
           guest_name: isGuest ? part.guest_name : null,
           guest_initials: isGuest ? part.guest_initials : null,
