@@ -1129,7 +1129,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
           {(() => {
             // Detect pending changes vs. saved state.
             const hasChanges = cup.participants.some(p => {
