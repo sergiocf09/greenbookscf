@@ -21,6 +21,8 @@ interface Props {
   leaderboardId: string;
   participants: CupParticipant[];
   onChanged: () => void;
+  /** Called when the linked round no longer exists in DB. */
+  onRoundMissing?: () => void;
 }
 
 interface GroupRow {
@@ -41,7 +43,7 @@ interface GroupRow {
  *  - Add a new empty group / remove an empty group.
  */
 export const ManageFoursomesDialog: React.FC<Props> = ({
-  open, onClose, roundId, leaderboardId, participants, onChanged,
+  open, onClose, roundId, leaderboardId, participants, onChanged, onRoundMissing,
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,7 +67,21 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [groupsRes, playersRes, roundRes] = await Promise.all([
+      // Revalidate the round still exists before touching anything else.
+      const { data: roundExists, error: roundCheckErr } = await supabase
+        .from('rounds')
+        .select('id, course_id')
+        .eq('id', roundId)
+        .maybeSingle();
+      if (roundCheckErr) throw roundCheckErr;
+      if (!roundExists) {
+        toast.error('La ronda enlazada fue eliminada. Crea una nueva.');
+        onRoundMissing?.();
+        onClose();
+        return;
+      }
+
+      const [groupsRes, playersRes] = await Promise.all([
         supabase.from('round_groups')
           .select('id, group_number')
           .eq('round_id', roundId)
@@ -73,10 +89,6 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         supabase.from('round_players')
           .select('id, profile_id, guest_name, group_id')
           .eq('round_id', roundId),
-        supabase.from('rounds')
-          .select('course_id')
-          .eq('id', roundId)
-          .maybeSingle(),
       ]);
       if (groupsRes.error) throw groupsRes.error;
       if (playersRes.error) throw playersRes.error;
@@ -89,7 +101,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       const gNumById = new Map<string, number>();
       gRows.forEach(g => { if (g.dbId) gNumById.set(g.dbId, g.groupNumber); });
 
-      const cid = roundRes.data?.course_id ?? null;
+      const cid = roundExists.course_id ?? null;
       setCourseId(cid);
       if (cid) {
         const [teesRes, holesRes] = await Promise.all([
@@ -127,7 +139,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
     } finally {
       setLoading(false);
     }
-  }, [roundId, participants]);
+  }, [roundId, participants, onRoundMissing, onClose]);
 
   useEffect(() => {
     if (open) loadData();
@@ -168,6 +180,21 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 0. Revalidate the round still exists — RLS inserts will silently fail
+      //    (42501) if the round was deleted or reorganized elsewhere.
+      const { data: roundCheck, error: roundCheckErr } = await supabase
+        .from('rounds')
+        .select('id')
+        .eq('id', roundId)
+        .maybeSingle();
+      if (roundCheckErr) throw roundCheckErr;
+      if (!roundCheck) {
+        toast.error('La ronda enlazada ya no existe. Crea una nueva desde la tarjeta superior.');
+        onRoundMissing?.();
+        onClose();
+        return;
+      }
+
       // 1. Persist any new groups (dbId === null) and build map number → id.
       const numToId = new Map<number, string>();
       groups.forEach(g => { if (g.dbId) numToId.set(g.groupNumber, g.dbId); });
@@ -182,14 +209,13 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         (inserted ?? []).forEach((row: any) => numToId.set(row.group_number, row.id));
       }
 
-      // 2. Delete groups removed from local state (and that exist in DB and have no players).
+      // 2. Identify groups removed from local state for deferred deletion.
       const localGroupNums = new Set(groups.map(g => g.groupNumber));
       const { data: dbGroups } = await supabase
         .from('round_groups')
         .select('id, group_number')
         .eq('round_id', roundId);
       const groupsToDelete = (dbGroups ?? []).filter((g: any) => !localGroupNums.has(g.group_number));
-      // Only delete after we've moved their players (we will). Safest: defer to end.
 
       // 3. Diff participants.
       for (const part of participants) {
@@ -197,17 +223,14 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         const orig = originalRoundPlayers.get(part.id);
 
         if (orig && target == null) {
-          // Remove player from round.
           const { error } = await supabase.from('round_players').delete().eq('id', orig.rpId);
           if (error) throw error;
         } else if (orig && target != null && target !== orig.groupNumber) {
-          // Move to different group.
           const newGid = numToId.get(target);
           if (!newGid) throw new Error(`Grupo ${target} no encontrado`);
           const { error } = await supabase.from('round_players').update({ group_id: newGid }).eq('id', orig.rpId);
           if (error) throw error;
         } else if (!orig && target != null) {
-          // Insert new round_player.
           const gid = numToId.get(target);
           if (!gid) throw new Error(`Grupo ${target} no encontrado`);
           const tee = (part.tee_color ?? 'white') as TeeColor;
@@ -236,8 +259,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         }
       }
 
-
-      // 4. Now delete the groups marked for removal (must be empty in DB).
+      // 4. Delete the groups marked for removal (now empty).
       for (const g of groupsToDelete) {
         const { error } = await supabase.from('round_groups').delete().eq('id', g.id);
         if (error) console.warn('Could not delete group:', error.message);
@@ -247,9 +269,37 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       onChanged();
       onClose();
     } catch (err: any) {
-      toast.error('Error al guardar: ' + err.message);
+      // RLS rejection — almost always means the round was deleted/reorganized.
+      if (err?.code === '42501') {
+        toast.error('No tienes permisos sobre esta ronda o fue eliminada. Vuelve a crearla desde la tarjeta superior.');
+        onRoundMissing?.();
+        onClose();
+      } else {
+        toast.error('Error al guardar: ' + err.message);
+      }
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ── Remove participant from the whole Cup (organizer action) ─────── */
+  const removeFromCup = async (participantId: string) => {
+    try {
+      // Drop them from this round first (best-effort), then deactivate in Cup.
+      const orig = originalRoundPlayers.get(participantId);
+      if (orig) {
+        await supabase.from('round_players').delete().eq('id', orig.rpId);
+      }
+      const { error } = await supabase
+        .from('leaderboard_participants')
+        .update({ is_active: false, cup_team_id: null })
+        .eq('id', participantId);
+      if (error) throw error;
+      toast.success('Eliminado del Cup');
+      onChanged();
+      await loadData();
+    } catch (err: any) {
+      toast.error('Error al eliminar del Cup: ' + err.message);
     }
   };
 
@@ -308,6 +358,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
                 allGroups={groups}
                 onMove={moveTo}
                 onRemoveGroup={() => removeGroup(g.groupNumber)}
+                onRemoveFromCup={removeFromCup}
               />
             ))}
 
@@ -385,9 +436,10 @@ interface GroupSectionProps {
   allGroups: GroupRow[];
   onMove: (participantId: string, groupNumber: number | null) => void;
   onRemoveGroup: () => void;
+  onRemoveFromCup: (participantId: string) => void;
 }
 const GroupSection: React.FC<GroupSectionProps> = ({
-  groupNumber, isNew, players, allGroups, onMove, onRemoveGroup,
+  groupNumber, isNew, players, allGroups, onMove, onRemoveGroup, onRemoveFromCup,
 }) => (
   <div className={cn(
     'rounded-md border bg-card p-2 space-y-1.5',
@@ -429,7 +481,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                 <ArrowRightLeft className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-40 p-1">
+            <PopoverContent align="end" className="w-52 p-1">
               <div className="space-y-0.5">
                 {allGroups.filter(g => g.groupNumber !== groupNumber).map(g => (
                   <button
@@ -440,11 +492,22 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                     Mover a Foursome {g.groupNumber}
                   </button>
                 ))}
+                <div className="my-1 border-t border-border" />
                 <button
                   onClick={() => onMove(p.id, null)}
                   className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive"
                 >
-                  Quitar de la ronda
+                  Quitar solo de esta ronda
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`¿Eliminar a ${p.display_name} del Cup completo? Esta acción lo quita del leaderboard, sus equipos y matches.`)) {
+                      onRemoveFromCup(p.id);
+                    }
+                  }}
+                  className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive font-semibold"
+                >
+                  Quitar del Cup completo
                 </button>
               </div>
             </PopoverContent>
