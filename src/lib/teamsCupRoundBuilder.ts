@@ -57,7 +57,7 @@ interface CupParticipantRow {
 export async function createRoundFromCup(input: CreateRoundFromCupInput): Promise<string> {
   const {
     leaderboardId, organizerProfileId, courseId, teeColor,
-    startingHole, roundHoles, date, groups, playerOverrides,
+    startingHole, roundHoles, date, groups, playerOverrides, existingRoundId,
   } = input;
 
   // 1. Load all selected participants in one go.
@@ -74,30 +74,60 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
   const parts = (partsData ?? []) as CupParticipantRow[];
   const partById = new Map(parts.map(p => [p.id, p]));
 
-  // 2. Create the round via the security-definer RPC.
-  //    This atomically inserts: rounds, round_groups#1, round_players (organizer).
-  const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
-    p_course_id: courseId,
-    p_tee_color: teeColor,
-    p_date: date.toISOString().split('T')[0],
-    p_bet_config: { roundHoles } as any,
-    p_starting_hole: startingHole,
-  });
-  if (rpcErr) throw rpcErr;
-  const rpcRow: any = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-  if (!rpcRow) throw new Error('No se pudo crear la ronda.');
-  const roundId: string = rpcRow.round_id;
-  const firstGroupId: string = rpcRow.group_id;
-  const organizerRoundPlayerId: string = rpcRow.round_player_id;
+  let roundId: string;
+  let firstGroupId: string | null = null;
+  let organizerRoundPlayerId: string | null = null;
+  const reusing = !!existingRoundId;
+
+  if (reusing) {
+    // Verify the round still exists and the caller is its organizer
+    // (otherwise the wipe below would silently no-op via RLS).
+    const { data: roundRow, error: roundErr } = await supabase
+      .from('rounds')
+      .select('id, organizer_id')
+      .eq('id', existingRoundId)
+      .maybeSingle();
+    if (roundErr) throw roundErr;
+    if (!roundRow) {
+      throw new Error('La ronda enlazada ya no existe. Crea una nueva.');
+    }
+    if (roundRow.organizer_id !== organizerProfileId) {
+      throw new Error('Solo el organizador original de la ronda puede recrear los foursomes.');
+    }
+    roundId = existingRoundId!;
+    // Wipe existing structure so we can rebuild cleanly.
+    await supabase.from('round_players').delete().eq('round_id', roundId);
+    await supabase.from('round_groups').delete().eq('round_id', roundId);
+  } else {
+    // Create the round via the security-definer RPC.
+    // This atomically inserts: rounds, round_groups#1, round_players (organizer).
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('create_round', {
+      p_course_id: courseId,
+      p_tee_color: teeColor,
+      p_date: date.toISOString().split('T')[0],
+      p_bet_config: { roundHoles } as any,
+      p_starting_hole: startingHole,
+    });
+    if (rpcErr) throw rpcErr;
+    const rpcRow: any = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!rpcRow) throw new Error('No se pudo crear la ronda.');
+    roundId = rpcRow.round_id;
+    firstGroupId = rpcRow.group_id;
+    organizerRoundPlayerId = rpcRow.round_player_id;
+  }
 
   try {
-    // 3. Build the rest of the round_groups (skip number 1, already created).
-    const extraGroupNumbers = groups.map(g => g.groupNumber).filter(n => n !== 1);
-    const groupIdByNumber = new Map<number, string>([[1, firstGroupId]]);
-    if (extraGroupNumbers.length > 0) {
+    // 3. Build the round_groups. When reusing, all groups are new.
+    //    When creating fresh, skip number 1 (already created by RPC).
+    const groupNumbersToInsert = reusing
+      ? groups.map(g => g.groupNumber)
+      : groups.map(g => g.groupNumber).filter(n => n !== 1);
+    const groupIdByNumber = new Map<number, string>();
+    if (!reusing && firstGroupId) groupIdByNumber.set(1, firstGroupId);
+    if (groupNumbersToInsert.length > 0) {
       const { data: newGroups, error: groupErr } = await supabase
         .from('round_groups')
-        .insert(extraGroupNumbers.map(n => ({ round_id: roundId, group_number: n })))
+        .insert(groupNumbersToInsert.map(n => ({ round_id: roundId, group_number: n })))
         .select('id, group_number');
       if (groupErr) throw groupErr;
       (newGroups ?? []).forEach((g: any) => groupIdByNumber.set(g.group_number, g.id));
