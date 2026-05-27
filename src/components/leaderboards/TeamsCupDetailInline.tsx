@@ -620,6 +620,12 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     if (!leaderboardId) return;
     setDeleting(true);
     try {
+      // Clean up children first (no FK cascades in DB)
+      await supabase.from('cup_matches').delete().eq('leaderboard_id', leaderboardId);
+      await supabase.from('cup_teams').delete().eq('leaderboard_id', leaderboardId);
+      await supabase.from('leaderboard_scores').delete().eq('leaderboard_id', leaderboardId);
+      await supabase.from('leaderboard_rounds').delete().eq('leaderboard_id', leaderboardId);
+      await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', leaderboardId);
       const { error } = await supabase
         .from('leaderboard_events')
         .delete()
