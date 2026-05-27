@@ -132,6 +132,32 @@ export function useTeamsCup(leaderboardId: string | null) {
         }
       }
 
+      // ── Course HCP from linked round (overrides leaderboard Index when present)
+      // For each participant, look up the Course Handicap stored in round_players
+      // for the linked round. This is the HCP the player actually plays from,
+      // given the course + tee chosen at round creation. It supersedes the
+      // leaderboard Index for all match calcs and displays.
+      let courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
+      if (linkedRoundId) {
+        const { data: rps } = await supabase
+          .from('round_players')
+          .select('profile_id, guest_name, handicap_for_round, tee_color')
+          .eq('round_id', linkedRoundId);
+        if (rps) {
+          rawParts.forEach(p => {
+            const m = p.profile_id
+              ? rps.find(r => r.profile_id === p.profile_id)
+              : rps.find(r => !!r.guest_name && r.guest_name === p.guest_name);
+            if (m) {
+              courseHcpByPart.set(p.id, {
+                hcp: Number(m.handicap_for_round ?? 0),
+                tee: (m.tee_color as TeeColor | null) ?? null,
+              });
+            }
+          });
+        }
+      }
+
       // Enrich participants with profile data
       const profileIds = rawParts.filter(p => p.profile_id).map(p => p.profile_id!);
       let profileMap: Record<string, { display_name: string; initials: string; avatar_color: string }> = {};
@@ -147,11 +173,14 @@ export function useTeamsCup(leaderboardId: string | null) {
         const prof = p.profile_id ? profileMap[p.profile_id] : null;
         const hcpForLb = p.handicap_for_leaderboard ?? 0;
         const rawMatchHcp = p.match_handicap ?? 0;
-        // Effective match handicap: if not yet set (0), fall back to the
-        // leaderboard handicap carried from the round setup. This keeps the UI
-        // consistent across the assignment panel, participants list, and match
-        // editor — so users never see "0" for a player who has a real HCP.
-        const effectiveMatchHcp = rawMatchHcp !== 0 ? rawMatchHcp : hcpForLb;
+        const courseInfo = courseHcpByPart.get(p.id);
+        // Effective match handicap priority:
+        //  1) Course HCP from the linked round (real-world HCP given course+tee).
+        //  2) Stored match_handicap (legacy / manual overrides).
+        //  3) Leaderboard Index as last-resort fallback.
+        const effectiveMatchHcp = courseInfo
+          ? courseInfo.hcp
+          : (rawMatchHcp !== 0 ? rawMatchHcp : hcpForLb);
         return {
           id: p.id,
           profile_id: p.profile_id,
@@ -161,23 +190,31 @@ export function useTeamsCup(leaderboardId: string | null) {
           handicap_for_leaderboard: hcpForLb,
           match_handicap: effectiveMatchHcp,
           cup_team_id: p.cup_team_id,
-          tee_color: (p.tee_color as TeeColor | null) ?? null,
+          tee_color: courseInfo?.tee ?? ((p.tee_color as TeeColor | null) ?? null),
         };
       });
 
-      // Backfill: persist the effective match_handicap for any participant
-      // whose stored value is 0 but whose leaderboard handicap is non-zero.
-      // Done in the background (no await) so the UI renders immediately.
-      const toBackfill = rawParts.filter(p =>
-        (p.match_handicap ?? 0) === 0 && (p.handicap_for_leaderboard ?? 0) !== 0
-      );
-      if (toBackfill.length > 0) {
-        Promise.all(toBackfill.map(p =>
-          supabase
+      // Persist match_handicap whenever the effective value differs from what's
+      // stored. This keeps Course-HCP-driven match calcs consistent across all
+      // users without forcing every render to depend on the linked round.
+      const toSync = rawParts.filter(p => {
+        const courseInfo = courseHcpByPart.get(p.id);
+        const target = courseInfo
+          ? courseInfo.hcp
+          : ((p.match_handicap ?? 0) === 0 && (p.handicap_for_leaderboard ?? 0) !== 0
+              ? p.handicap_for_leaderboard
+              : null);
+        return target !== null && target !== (p.match_handicap ?? 0);
+      });
+      if (toSync.length > 0) {
+        Promise.all(toSync.map(p => {
+          const courseInfo = courseHcpByPart.get(p.id);
+          const target = courseInfo ? courseInfo.hcp : p.handicap_for_leaderboard;
+          return supabase
             .from('leaderboard_participants')
-            .update({ match_handicap: p.handicap_for_leaderboard })
-            .eq('id', p.id)
-        )).catch(err => console.warn('match_handicap backfill failed:', err));
+            .update({ match_handicap: target })
+            .eq('id', p.id);
+        })).catch(err => console.warn('match_handicap sync failed:', err));
       }
 
       setTeams(teamData);
