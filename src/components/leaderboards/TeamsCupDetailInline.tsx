@@ -532,7 +532,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     let cancelled = false;
     const loadMeta = async () => {
       if (!leaderboardId) {
-        setLinkedRoundInfo({ date: null, courseName: null });
+        setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
         return;
       }
       const { data: linkRows } = await supabase
