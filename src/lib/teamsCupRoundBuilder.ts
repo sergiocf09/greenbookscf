@@ -36,6 +36,13 @@ export interface CreateRoundFromCupInput {
   groups: CupGroupSpec[];
   /** Per-participant Course HCP + tee. If absent for a player, falls back to leaderboard HCP + global teeColor. */
   playerOverrides?: Map<string, ParticipantPlayOverride>;
+  /**
+   * If set, reuse this existing round instead of creating a new one.
+   * Existing round_groups + round_players will be wiped and rebuilt
+   * from the provided `groups` payload. The leaderboard_rounds link
+   * is preserved (not re-inserted).
+   */
+  existingRoundId?: string | null;
 }
 
 interface CupParticipantRow {
