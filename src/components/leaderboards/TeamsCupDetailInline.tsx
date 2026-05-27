@@ -985,7 +985,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               className="w-full gap-1"
               onClick={() => setShowCreateRound(true)}
             >
-              <Plus className="h-3.5 w-3.5" /> Crear Ronda desde esta Cup
+              <Plus className="h-3.5 w-3.5" /> {linkedRoundInfo.roundId ? 'Recrear Foursomes' : 'Crear Ronda desde esta Cup'}
             </Button>
           </CardContent>
         </Card>
