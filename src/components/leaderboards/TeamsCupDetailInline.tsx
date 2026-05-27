@@ -532,7 +532,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     let cancelled = false;
     const loadMeta = async () => {
       if (!leaderboardId) {
-        setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
+        setLinkedRoundInfo({ date: null, courseName: null, roundId: null, hasFoursomes: false });
         return;
       }
       const { data: linkRows } = await supabase
@@ -543,7 +543,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .limit(1);
       const linkedId = linkRows?.[0]?.round_id;
       if (!linkedId) {
-        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
+        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null, roundId: null, hasFoursomes: false });
         return;
       }
       const { data: round } = await supabase
@@ -560,8 +560,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           .maybeSingle();
         courseName = course?.name ?? null;
       }
+      // Check if there are foursomes with players (round_players rows imply round_groups exist).
+      const { count: playersCount } = await supabase
+        .from('round_players')
+        .select('id', { count: 'exact', head: true })
+        .eq('round_id', linkedId);
+      const hasFoursomes = (playersCount ?? 0) > 0;
       if (!cancelled) {
-        setLinkedRoundInfo({ date: round?.date ?? null, courseName, roundId: linkedId });
+        setLinkedRoundInfo({ date: round?.date ?? null, courseName, roundId: linkedId, hasFoursomes });
       }
     };
     loadMeta();
