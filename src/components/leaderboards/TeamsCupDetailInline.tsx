@@ -38,6 +38,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
+import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
 /* ── helpers ─────────────────────────────────────── */
