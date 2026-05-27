@@ -1129,11 +1129,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden">
-          <DialogHeader>
-            <DialogTitle>Asignar Equipos y Hándicaps</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
           {(() => {
+            // Detect pending changes vs. saved state.
+            const hasChanges = cup.participants.some(p => {
+              const teamChanged = draftTeams.has(p.id) && draftTeams.get(p.id) !== p.cup_team_id;
+              const hcpChanged = draftHcps.has(p.id) && draftHcps.get(p.id) !== p.handicap_for_leaderboard;
+              const teeChanged = draftTees.has(p.id) && draftTees.get(p.id) !== p.tee_color;
+              return teamChanged || hcpChanged || teeChanged;
+            });
+
             const renderRow = (p: CupParticipant) => {
               const draftTeam = getDraftTeam(p);
               return (
@@ -1169,6 +1174,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       </button>
                     )}
                   </div>
+                  <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
                   <TeePicker
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
@@ -1206,47 +1212,77 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             const draftPartsA = teamA ? cup.participants.filter(p => getDraftTeam(p) === teamA.id).sort(byName) : [];
             const draftPartsB = teamB ? cup.participants.filter(p => getDraftTeam(p) === teamB.id).sort(byName) : [];
 
+            // Column header: name | Equipo | sep | Tee | HCP | (trash)
+            const ColumnHeader = () => (
+              <div className="flex items-center gap-1 px-1.5 pb-0.5 min-w-0">
+                <span className="flex-1 min-w-0" />
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '3rem' : '1.5rem' }}>
+                  Equipo
+                </span>
+                <span className="w-px shrink-0 mx-0.5" />
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '5.5rem' }}>
+                  Tee
+                </span>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.75rem' }}>
+                  HCP
+                </span>
+                <span className="w-6 shrink-0" />
+              </div>
+            );
+
             return (
-              <div className="space-y-3">
-                <p className="text-[10px] text-muted-foreground italic">
-                  Los cambios se guardan al cerrar este panel.
-                </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2 pb-1 border-b">
+                  <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
+                  <Button
+                    size="sm"
+                    variant={hasChanges ? 'default' : 'outline'}
+                    className="h-7 px-2 text-xs shrink-0"
+                    onClick={() => setShowAssignPanel(false)}
+                  >
+                    {hasChanges ? 'Guardar cambios' : 'Cerrar'}
+                  </Button>
+                </div>
                 {draftPartsNone.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
+                    <ColumnHeader />
                     <div className="space-y-1.5">{draftPartsNone.map(renderRow)}</div>
                   </div>
                 )}
                 {teamA && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <p className="text-xs font-semibold" style={{ color: teamA.color }}>
                       {teamA.name}
                     </p>
                     {draftPartsA.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
                     ) : (
-                      <div className="space-y-1.5">{draftPartsA.map(renderRow)}</div>
+                      <>
+                        <ColumnHeader />
+                        <div className="space-y-1.5">{draftPartsA.map(renderRow)}</div>
+                      </>
                     )}
                   </div>
                 )}
                 {teamB && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <p className="text-xs font-semibold" style={{ color: teamB.color }}>
                       {teamB.name}
                     </p>
                     {draftPartsB.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
                     ) : (
-                      <div className="space-y-1.5">{draftPartsB.map(renderRow)}</div>
+                      <>
+                        <ColumnHeader />
+                        <div className="space-y-1.5">{draftPartsB.map(renderRow)}</div>
+                      </>
                     )}
                   </div>
                 )}
               </div>
             );
           })()}
-          <Button className="w-full mt-3" onClick={() => setShowAssignPanel(false)}>
-            Cerrar
-          </Button>
         </DialogContent>
       </Dialog>
 
