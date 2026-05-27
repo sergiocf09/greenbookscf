@@ -1232,15 +1232,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             return (
               <div className="space-y-2">
-                <div className="sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 bg-background border-b flex items-center justify-between gap-2">
-                  <DialogTitle className="text-base min-w-0 truncate flex-1">Asignar Equipos y Hándicaps</DialogTitle>
+                <div className="sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 bg-background border-b space-y-2">
+                  <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
                   <Button
                     size="sm"
                     variant={hasChanges ? 'default' : 'outline'}
-                    className="h-7 px-3 text-xs shrink-0"
+                    className="h-8 w-full text-xs"
                     onClick={() => setShowAssignPanel(false)}
                   >
-                    {hasChanges ? 'Guardar cambios' : 'Cerrar'}
+                    Guardar
                   </Button>
                 </div>
                 {draftPartsNone.length > 0 && (
