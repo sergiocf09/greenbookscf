@@ -427,6 +427,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [showSettings, setShowSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [matchToDelete, setMatchToDelete] = useState<CupMatch | null>(null);
+  const [deletingMatch, setDeletingMatch] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [isRoundLinked, setIsRoundLinked] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
@@ -622,6 +624,17 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteMatch = async () => {
+    if (!matchToDelete) return;
+    setDeletingMatch(true);
+    try {
+      await cup.deleteMatch(matchToDelete.id);
+      setMatchToDelete(null);
+    } finally {
+      setDeletingMatch(false);
     }
   };
 
@@ -936,7 +949,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   isCreator={isCreator}
                   initialsMap={initialsMap}
                   onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
-                  onDelete={() => cup.deleteMatch(m.id)}
+                  onDelete={() => setMatchToDelete(m)}
                 />
               ))}
           </div>
