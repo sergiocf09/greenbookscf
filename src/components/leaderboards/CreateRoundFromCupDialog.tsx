@@ -223,6 +223,28 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     setGroupByPart(next);
   };
 
+  /**
+   * Pure random shuffle: ignore matches; distribute all participants in
+   * foursomes of 4 (last group may be 1-3). Useful for casual tournaments
+   * with lots of guests where the organizer wants to randomize quickly.
+   */
+  const randomShuffle = () => {
+    const ids = participants.map(p => p.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    const next = new Map<string, number | null>();
+    ids.forEach((id, idx) => {
+      const group = Math.min(Math.floor(idx / 4) + 1, MAX_GROUPS);
+      next.set(id, group);
+    });
+    participants.forEach(p => { if (!next.has(p.id)) next.set(p.id, null); });
+    setGroupByPart(next);
+  };
+
+
+
 
   const handleCreate = async () => {
     if (!courseId) { toast.error('Selecciona el campo'); return; }
