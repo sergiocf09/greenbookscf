@@ -358,6 +358,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
                 allGroups={groups}
                 onMove={moveTo}
                 onRemoveGroup={() => removeGroup(g.groupNumber)}
+                onRemoveFromCup={removeFromCup}
               />
             ))}
 
@@ -435,9 +436,10 @@ interface GroupSectionProps {
   allGroups: GroupRow[];
   onMove: (participantId: string, groupNumber: number | null) => void;
   onRemoveGroup: () => void;
+  onRemoveFromCup: (participantId: string) => void;
 }
 const GroupSection: React.FC<GroupSectionProps> = ({
-  groupNumber, isNew, players, allGroups, onMove, onRemoveGroup,
+  groupNumber, isNew, players, allGroups, onMove, onRemoveGroup, onRemoveFromCup,
 }) => (
   <div className={cn(
     'rounded-md border bg-card p-2 space-y-1.5',
@@ -479,7 +481,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                 <ArrowRightLeft className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-40 p-1">
+            <PopoverContent align="end" className="w-52 p-1">
               <div className="space-y-0.5">
                 {allGroups.filter(g => g.groupNumber !== groupNumber).map(g => (
                   <button
@@ -490,11 +492,22 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                     Mover a Foursome {g.groupNumber}
                   </button>
                 ))}
+                <div className="my-1 border-t border-border" />
                 <button
                   onClick={() => onMove(p.id, null)}
                   className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive"
                 >
-                  Quitar de la ronda
+                  Quitar solo de esta ronda
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`¿Eliminar a ${p.display_name} del Cup completo? Esta acción lo quita del leaderboard, sus equipos y matches.`)) {
+                      onRemoveFromCup(p.id);
+                    }
+                  }}
+                  className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive font-semibold"
+                >
+                  Quitar del Cup completo
                 </button>
               </div>
             </PopoverContent>
