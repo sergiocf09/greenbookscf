@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Users, X, ArrowRightLeft, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Users, ArrowRightLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
