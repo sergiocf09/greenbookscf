@@ -543,7 +543,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .limit(1);
       const linkedId = linkRows?.[0]?.round_id;
       if (!linkedId) {
-        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null });
+        if (!cancelled) setLinkedRoundInfo({ date: null, courseName: null, roundId: null });
         return;
       }
       const { data: round } = await supabase
