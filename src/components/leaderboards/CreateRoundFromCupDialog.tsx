@@ -407,15 +407,28 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
               <Label className="text-xs font-semibold">
                 Grupos de Juego ({playingCount}/{participants.length})
               </Label>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[10px] gap-1"
-                onClick={autoBalance}
-                type="button"
-              >
-                <Sparkles className="h-3 w-3" /> Auto-armar
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={randomShuffle}
+                  type="button"
+                  title="Distribuir al azar en foursomes de 4"
+                >
+                  <Shuffle className="h-3 w-3" /> Al azar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] gap-1"
+                  onClick={autoBalance}
+                  type="button"
+                  title="Respetar matches y armar foursomes"
+                >
+                  <Sparkles className="h-3 w-3" /> Auto-armar
+                </Button>
+              </div>
             </div>
 
             {/* Group capacity summary */}
