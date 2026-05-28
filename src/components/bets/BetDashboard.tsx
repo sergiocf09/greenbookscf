@@ -2114,17 +2114,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   )}
                 </div>
               );
-            })}
+              });
+            })()}
           </div>
           
-          {/* Verification */}
+          {/* Verification — usa los totales redondeados (mismo algoritmo que las filas) para mantener Σ = $0 exacto. */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
+            Σ = ${(() => {
+              const raws = new Map<string, number>();
+              tablaGeneralPlayers.forEach((p) => {
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
-                if (snap !== null) return sum + snap;
+                if (snap !== null) { raws.set(p.id, snap); return; }
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id);
-              }, 0)} 
+                const ind = rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0);
+                raws.set(p.id, ind + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id));
+              });
+              const rounded = roundGroupToNearest5Map(raws);
+              return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
+            })()}
             <span className="ml-1">(debe ser $0)</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
