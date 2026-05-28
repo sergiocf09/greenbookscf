@@ -281,6 +281,19 @@ export interface PuttsGeneralBetConfig {
   scope?: GroupBetScope;
 }
 
+// GIR General - Group bet for most Greens In Regulation
+export interface GIRGeneralBetConfig {
+  enabled: boolean;
+  amount: number; // Total 18
+  frontAmount?: number;
+  backAmount?: number;
+  segmentMode?: 'total' | 'segments';
+  participantIds?: string[];
+  scope?: GroupBetScope;
+}
+
+
+
 // Coneja - Group bet based on patas per hole and sets
 export type ConejaHandicapMode = 'individual' | 'bilateral';
 
@@ -476,6 +489,7 @@ export interface BetConfig {
   carritos: CarritosBetConfig;
   medalGeneral: MedalGeneralBetConfig; // Group bet - lowest net total wins
   puttsGeneral?: PuttsGeneralBetConfig; // Group bet - lowest putt total wins
+  girGeneral?: GIRGeneralBetConfig; // Group bet - most GIRs wins
   coneja: ConejaBetConfig; // Group bet - patas system per set of 6 holes
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
   betOverrides?: BetOverride[]; // Individual bet overrides
@@ -681,6 +695,7 @@ export const BET_CATEGORIES: Record<string, BetCategory> = {
   skinsGrupal: 'grupal', // NEW: Group skins
   medalGeneral: 'grupal',
   puttsGeneral: 'grupal',
+  girGeneral: 'grupal',
   stableford: 'grupal',
   rayas: 'individual', // Rayas is an aggregator of individual bets
   // Sprint 3

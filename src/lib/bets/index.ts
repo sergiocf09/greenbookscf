@@ -17,6 +17,7 @@ export { calculateCulebrasBets } from './culebras';
 export { calculatePinguinosBets } from './pinguinos';
 export { calculateMedalGeneralBets } from './medalGeneral';
 export { calculatePuttsGeneralBets } from './puttsGeneral';
+export { calculateGIRGeneralBets } from './girGeneral';
 export { calculatePuttsBets } from './putts';
 export { calculateSideBets } from './sideBets';
 export { calculateStablefordBets } from './stableford';

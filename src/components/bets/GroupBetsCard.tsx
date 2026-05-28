@@ -8,7 +8,7 @@ import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUti
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target, Eye } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords, disambiguateInitials } from '@/lib/playerInput';
 import { 
@@ -819,6 +819,83 @@ const SkinsGrupalPopover: React.FC<{
   );
 };
 
+// ─── Audit Sheet ────────────────────────────────────────────────────────────
+interface AuditEntry {
+  playerId: string;
+  name: string;
+  initials: string;
+  color: string;
+  value: number;
+  valueLabel: string;
+  netAmount: number;
+  isWinner: boolean;
+}
+
+interface GroupBetAuditSheetProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  entries: AuditEntry[];
+  basePlayerId?: string;
+  higherIsBetter: boolean;
+}
+
+const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
+  open, onClose, title, entries, basePlayerId, higherIsBetter,
+}) => {
+  const sorted = [...entries].sort((a, b) =>
+    higherIsBetter ? b.value - a.value : a.value - b.value
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-2 mt-4">
+          {sorted.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">Sin datos suficientes</p>
+          ) : sorted.map((entry, idx) => {
+            const prevValue = idx > 0 ? sorted[idx - 1].value : null;
+            const sameAsPrev = prevValue !== null && prevValue === entry.value;
+            const rankLabel = !sameAsPrev && idx === 0 ? '🥇'
+              : !sameAsPrev && idx === 1 ? '🥈'
+              : !sameAsPrev && idx === 2 ? '🥉'
+              : `${idx + 1}.`;
+            return (
+              <div key={entry.playerId} className={cn(
+                'flex items-center justify-between p-3 rounded-lg border',
+                entry.isWinner ? 'bg-green-500/10 border-green-500/30' : 'bg-muted/30 border-border/50'
+              )}>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-sm w-6 text-center">{rankLabel}</span>
+                  <PlayerAvatar initials={entry.initials} background={entry.color} size="sm" isLoggedInUser={entry.playerId === basePlayerId} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{formatPlayerNameTwoWords(entry.name)}</p>
+                    <p className="text-[10px] text-muted-foreground">{entry.valueLabel}</p>
+                  </div>
+                </div>
+                <span className={cn(
+                  'text-sm font-bold ml-2',
+                  entry.netAmount > 0 ? 'text-green-600' :
+                  entry.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
+                )}>
+                  {entry.netAmount > 0 ? `+$${fmtMoney(entry.netAmount)}` :
+                   entry.netAmount < 0 ? `-$${fmtMoney(Math.abs(entry.netAmount))}` : '$0'}
+                </span>
+              </div>
+            );
+          })}
+          <p className="text-[10px] text-muted-foreground text-center pt-2">
+            Solo hoyos confirmados con putts registrados
+          </p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   players,
   scores,
@@ -1470,6 +1547,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
   const [showOyesesPanel, setShowOyesesPanel] = useState(false);
   const [oyesesPanelTab, setOyesesPanelTab] = useState<'acumulado' | 'sangron'>('acumulado');
+  const [auditSheet, setAuditSheet] = useState<{ betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral'; segment: 'front' | 'back' | 'total' } | null>(null);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -1588,12 +1666,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   }, [betConfig.skinsGrupal, sameGroupPlayers, scores, course, players]);
 
   const puttsGeneralEnabled = !!(betConfig as any).puttsGeneral?.enabled;
+  const girGeneralEnabled = !!(betConfig as any).girGeneral?.enabled;
 
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult || puttsGeneralEnabled;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult || puttsGeneralEnabled || girGeneralEnabled;
 
   const hasIndicators = !!(manchasSummary || unidadesSummary || oyesesSummary);
-  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult || puttsGeneralEnabled);
+  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult || puttsGeneralEnabled || girGeneralEnabled);
 
   if (renderSection === 'indicators') {
     if (!hasIndicators) return null;
@@ -1608,6 +1687,90 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
   const showIndicators = renderSection === 'all' || renderSection === 'indicators';
   const showGrupales = renderSection === 'all' || renderSection === 'grupales';
+
+  // Helper for audit sheets — builds full leaderboard entries for Medal/Putts/GIR General
+  const buildAuditEntries = (
+    betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral',
+    holeFilter: (h: number) => boolean,
+    segAmount: number,
+    pool: Player[]
+  ): AuditEntry[] => {
+    if (betKey === 'medalGeneral') {
+      const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
+      const rows: { playerId: string; value: number }[] = [];
+      pool.forEach(player => {
+        const ps = scores.get(player.id) || [];
+        const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber));
+        if (confirmed.length === 0) return;
+        const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+        const handicap = playerHcp?.handicap ?? player.handicap;
+        const strokesPerHole = calculateStrokesPerHole(handicap, course, startingHole);
+        const netTotal = confirmed.reduce((sum, s) => sum + (s.strokes - (strokesPerHole[s.holeNumber - 1] || 0)), 0);
+        rows.push({ playerId: player.id, value: netTotal });
+      });
+      if (rows.length < 2) return [];
+      const min = Math.min(...rows.map(r => r.value));
+      const winners = rows.filter(r => r.value === min);
+      const losersCount = rows.length - winners.length;
+      return rows.map(r => {
+        const isWinner = r.value === min;
+        const netAmount = isWinner
+          ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+          : -segAmount;
+        const p = pool.find(x => x.id === r.playerId)!;
+        return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `Neto ${r.value}`, netAmount, isWinner };
+      });
+    }
+
+    if (betKey === 'puttsGeneral') {
+      const rows: { playerId: string; value: number }[] = [];
+      pool.forEach(player => {
+        const ps = scores.get(player.id) || [];
+        const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+        if (confirmed.length === 0) return;
+        const total = confirmed.reduce((sum, s) => sum + (s.putts ?? 0), 0);
+        rows.push({ playerId: player.id, value: total });
+      });
+      if (rows.length < 2) return [];
+      const min = Math.min(...rows.map(r => r.value));
+      const winners = rows.filter(r => r.value === min);
+      const losersCount = rows.length - winners.length;
+      return rows.map(r => {
+        const isWinner = r.value === min;
+        const netAmount = isWinner
+          ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+          : -segAmount;
+        const p = pool.find(x => x.id === r.playerId)!;
+        return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `${r.value} putts`, netAmount, isWinner };
+      });
+    }
+
+    // girGeneral
+    const holeMap = new Map(course.holes.map(h => [h.number, h.par]));
+    const rows: { playerId: string; value: number }[] = [];
+    pool.forEach(player => {
+      const ps = scores.get(player.id) || [];
+      const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+      if (confirmed.length === 0) return;
+      const total = confirmed.reduce((sum, s) => {
+        const par = holeMap.get(s.holeNumber) ?? 4;
+        return sum + ((s.strokes - (s.putts ?? 0)) <= (par - 2) ? 1 : 0);
+      }, 0);
+      rows.push({ playerId: player.id, value: total });
+    });
+    if (rows.length < 2) return [];
+    const max = Math.max(...rows.map(r => r.value));
+    const winners = rows.filter(r => r.value === max);
+    const losersCount = rows.length - winners.length;
+    return rows.map(r => {
+      const isWinner = r.value === max;
+      const netAmount = isWinner
+        ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+        : -segAmount;
+      const p = pool.find(x => x.id === r.playerId)!;
+      return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `${r.value} GIRs`, netAmount, isWinner };
+    });
+  };
 
   // When rendering only indicators, skip the Card wrapper
   if (renderSection === 'indicators') {
@@ -2371,9 +2534,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
                     )}
                   </div>
-                  {medalSegmentMode !== 'segments' && (
-                    <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {medalSegmentMode !== 'segments' && (
+                      <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
+                    )}
+                    <button
+                      onClick={() => setAuditSheet({ betKey: 'medalGeneral', segment: 'total' })}
+                      className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                      title="Ver todos los resultados"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
                 </div>
                 
                 {/* Group result */}
@@ -2429,6 +2601,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <Trophy className="h-4 w-4 text-emerald-500" />
                     <span className="font-medium text-sm">Putts General</span>
                   </div>
+                  <button
+                    onClick={() => setAuditSheet({ betKey: 'puttsGeneral', segment: 'total' })}
+                    className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                    title="Ver todos los resultados"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
                 </div>
 
                 {!anyResult ? (
@@ -2486,7 +2665,121 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             </>
           );
         })()}
-        
+
+        {/* GIR General */}
+        {showGrupales && girGeneralEnabled && (() => {
+          const girCfg = (betConfig as any).girGeneral;
+          const girSegmentMode = girCfg?.segmentMode ?? 'total';
+          const girRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+          const holeMap = new Map(course.holes.map(h => [h.number, h.par]));
+
+          const computeGIRSegment = (holeFilter: (h: number) => boolean, segAmount: number) => {
+            const results: Array<{ playerId: string; name: string; initials: string; color: string; totalGIRs: number }> = [];
+            players.forEach(player => {
+              const playerScores = scores.get(player.id) || [];
+              const confirmed = playerScores.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+              if (confirmed.length === 0) return;
+              const total = confirmed.reduce((sum, s) => {
+                const par = holeMap.get(s.holeNumber) ?? 4;
+                return sum + ((s.strokes - (s.putts ?? 0)) <= (par - 2) ? 1 : 0);
+              }, 0);
+              results.push({ playerId: player.id, name: player.name, initials: player.initials, color: player.color, totalGIRs: total });
+            });
+            if (results.length < 2) return null;
+            const max = Math.max(...results.map(p => p.totalGIRs));
+            const winners = results.filter(p => p.totalGIRs === max);
+            const losersCount = results.length - winners.length;
+            if (losersCount === 0) return { winners, pot: 0, perWinner: 0 };
+            const pot = losersCount * segAmount;
+            return { winners, pot, perWinner: pot / winners.length };
+          };
+
+          const girSegments: Array<{ label: string; amount: number; segKey: string; result: ReturnType<typeof computeGIRSegment> }> = [];
+          if (girSegmentMode === 'segments') {
+            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 0, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 0) });
+            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 0, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 0) });
+          }
+          girSegments.push({ label: 'Total 18', amount: girCfg?.amount ?? 100, segKey: 'total', result: computeGIRSegment(() => true, girCfg?.amount ?? 100) });
+
+          const anyGirResult = girSegments.some(s => s.result);
+
+          return (
+            <>
+              {(medalGeneralGroupResult || medalGeneralGlobalResult || puttsGeneralEnabled) && <div className="border-t-2 border-primary/40" />}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-sky-500" />
+                    <span className="font-medium text-sm">GIR General</span>
+                    {girSegmentMode === 'segments' && (
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setAuditSheet({ betKey: 'girGeneral', segment: 'total' })}
+                    className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                    title="Ver todos los resultados"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {!anyGirResult ? (
+                  <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+                    Sin datos suficientes (requiere putts por hoyo)
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {girSegments.map(seg => {
+                      if (seg.amount <= 0 && girSegmentMode === 'segments' && seg.label !== 'Total 18') return null;
+                      const r = seg.result;
+                      return (
+                        <div key={seg.label} className={cn(
+                          'rounded-lg p-3',
+                          !r || r.perWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                          </div>
+                          {!r ? (
+                            <span className="text-xs text-muted-foreground">Sin datos</span>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                                  <div className="flex items-center gap-1">
+                                    {r.winners.map((winner, idx) => (
+                                      <React.Fragment key={winner.playerId}>
+                                        {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                                        <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                                        <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
+                                        <span className="text-xs text-muted-foreground">(GIR: {winner.totalGIRs})</span>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </div>
+                                <span className={cn('font-bold text-sm', r.perWinner > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                                  {r.perWinner > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.perWinner)}` : '$0'}
+                                </span>
+                              </div>
+                              {r.winners.length > 1 && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Empate - pot dividido entre {r.winners.length} jugadores
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+
         {/* Stableford - Scope-aware rendering */}
         {showGrupales && betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
@@ -2857,6 +3150,46 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Audit Sheet — Medal / Putts / GIR General */}
+    {auditSheet && (() => {
+      const isGIR = auditSheet.betKey === 'girGeneral';
+      const isPutts = auditSheet.betKey === 'puttsGeneral';
+      const isMedal = auditSheet.betKey === 'medalGeneral';
+
+      const girCfg = (betConfig as any).girGeneral;
+      const puttsCfg = (betConfig as any).puttsGeneral;
+      const segRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+
+      const segLabel = auditSheet.segment === 'front' ? 'Front 9' : auditSheet.segment === 'back' ? 'Back 9' : 'Total 18';
+      const betLabel = isMedal ? 'Medal General' : isPutts ? 'Putts General' : 'GIR General';
+      const sheetTitle = `${betLabel} — ${segLabel}`;
+
+      const holeFilter = auditSheet.segment === 'front'
+        ? (h: number) => h >= segRanges.front[0] && h <= segRanges.front[1]
+        : auditSheet.segment === 'back'
+        ? (h: number) => h >= segRanges.back[0] && h <= segRanges.back[1]
+        : () => true;
+
+      const segAmount = isMedal
+        ? (auditSheet.segment === 'front' ? (betConfig.medalGeneral?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (betConfig.medalGeneral?.backAmount ?? 0) : (betConfig.medalGeneral?.amount ?? 100))
+        : isPutts
+        ? (auditSheet.segment === 'front' ? (puttsCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (puttsCfg?.backAmount ?? 0) : (puttsCfg?.amount ?? 100))
+        : (auditSheet.segment === 'front' ? (girCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (girCfg?.backAmount ?? 0) : (girCfg?.amount ?? 100));
+
+      const entries = buildAuditEntries(auditSheet.betKey, holeFilter, segAmount, players);
+
+      return (
+        <GroupBetAuditSheet
+          open={!!auditSheet}
+          onClose={() => setAuditSheet(null)}
+          title={sheetTitle}
+          entries={entries}
+          basePlayerId={basePlayerId}
+          higherIsBetter={isGIR}
+        />
+      );
+    })()}
     </>
   );
 };
