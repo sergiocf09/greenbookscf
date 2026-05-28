@@ -2548,30 +2548,35 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           <span className="text-xs text-muted-foreground">Empate total</span>
                         ) : (
                           <>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
-                                <div className="flex items-center gap-1">
-                                  {r.winners.map((winner, idx) => (
-                                    <React.Fragment key={winner.playerId}>
-                                      {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                                      <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                                      <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
-                                      <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
-                                    </React.Fragment>
-                                  ))}
+                            {r.winners.length === 1 ? (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                                  <div className="flex items-center gap-1">
+                                    <PlayerAvatar initials={r.winners[0].initials} background={r.winners[0].color} size="sm" isLoggedInUser={r.winners[0].playerId === basePlayerId} />
+                                    <span className="font-medium text-sm">{formatPlayerNameTwoWords(r.winners[0].name)}</span>
+                                    <span className="text-xs text-muted-foreground">(Neto: {r.winners[0].netScore})</span>
+                                  </div>
                                 </div>
+                                <span className={cn('font-bold text-sm', r.winners[0]?.amountWon > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                                  {r.winners[0]?.amountWon > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.winners[0].amountWon)}` : '$0'}
+                                </span>
                               </div>
-                              <span className={cn('font-bold text-sm', r.winners[0]?.amountWon > 0 ? 'text-green-600' : 'text-muted-foreground')}>
-                                {r.winners[0]?.amountWon > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.winners[0].amountWon)}` : '$0'}
-                              </span>
-                            </div>
-                            {r.winners.length > 1 && (
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                Empate - pot dividido entre {r.winners.length} jugadores
-                              </p>
+                            ) : (
+                              <>
+                                <TieWinnersStack
+                                  winners={r.winners.map(w => ({ playerId: w.playerId, name: w.name, initials: w.initials, color: w.color, statText: `Neto: ${w.netScore}` }))}
+                                  perWinnerAmount={r.winners[0]?.amountWon ?? 0}
+                                  isConfirmed={all18HolesConfirmed}
+                                  basePlayerId={basePlayerId}
+                                />
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Empate - pot dividido entre {r.winners.length} jugadores
+                                </p>
+                              </>
                             )}
                           </>
+
                         )}
                       </div>
                     );
