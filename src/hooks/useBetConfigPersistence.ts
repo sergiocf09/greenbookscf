@@ -98,6 +98,15 @@ interface RoundBetConfig {
     participantIds?: string[];
     scope?: 'group' | 'global' | 'both';
   };
+  girGeneral?: {
+    enabled: boolean;
+    amount: number;
+    frontAmount?: number;
+    backAmount?: number;
+    segmentMode?: 'total' | 'segments';
+    participantIds?: string[];
+    scope?: 'group' | 'global' | 'both';
+  };
   coneja?: {
     enabled: boolean;
     amount: number;
@@ -349,6 +358,13 @@ export const useBetConfigPersistence = ({
         };
       }
 
+      if ((dbConfig as any).girGeneral) {
+        newConfig.girGeneral = {
+          ...(prev.girGeneral ?? { enabled: false, amount: 100, segmentMode: 'total' }),
+          ...(dbConfig as any).girGeneral,
+        };
+      }
+
       if (dbConfig.coneja) {
         newConfig.coneja = {
           enabled: dbConfig.coneja.enabled ?? prev.coneja.enabled,
@@ -506,6 +522,7 @@ export const useBetConfigPersistence = ({
           backAmount: config.medalGeneral.backAmount,
         },
         puttsGeneral: config.puttsGeneral,
+        girGeneral: config.girGeneral,
         coneja: {
           enabled: config.coneja.enabled,
           amount: config.coneja.amount,
