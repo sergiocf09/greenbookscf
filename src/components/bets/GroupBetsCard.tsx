@@ -614,29 +614,37 @@ const MedalResultBlock: React.FC<{
           <span className={cn('text-sm', isZeroAmount ? 'text-muted-foreground' : useGreen ? 'text-green-500' : 'text-amber-500')}>
             {isConfirmed ? '🏆' : '📊'}
           </span>
-          <div className="flex items-center gap-1">
-            {result.winners.map((winner, idx) => (
-              <React.Fragment key={winner.playerId}>
-                {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
-                <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
-                <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
-                <span className="text-xs text-muted-foreground">(Neto: {winner.netScore})</span>
-              </React.Fragment>
-            ))}
-          </div>
+          {result.winners.length === 1 ? (
+            <div className="flex items-center gap-1">
+              <PlayerAvatar initials={result.winners[0].initials} background={result.winners[0].color} size="sm" isLoggedInUser={result.winners[0].playerId === basePlayerId} />
+              <span className="font-medium text-sm">{formatPlayerNameTwoWords(result.winners[0].name)}</span>
+              <span className="text-xs text-muted-foreground">(Neto: {result.winners[0].netScore})</span>
+            </div>
+          ) : null}
         </div>
-        {isZeroAmount ? (
-          <span className="text-xs text-muted-foreground">$0</span>
-        ) : (
-          <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
-            {isConfirmed ? '+' : '~'}${fmtMoney(amountWon)}
-          </span>
+        {result.winners.length === 1 && (
+          isZeroAmount ? (
+            <span className="text-xs text-muted-foreground">$0</span>
+          ) : (
+            <span className={cn('font-bold text-sm', useGreen ? 'text-green-600' : 'text-amber-600')}>
+              {isConfirmed ? '+' : '~'}${fmtMoney(amountWon)}
+            </span>
+          )
         )}
       </div>
       {result.winners.length > 1 && (
-        <p className="text-[10px] text-muted-foreground mt-1">
-          Empate - pot dividido entre {result.winners.length} jugadores
-        </p>
+        <>
+          <TieWinnersStack
+            winners={result.winners.map(w => ({ playerId: w.playerId, name: w.name, initials: w.initials, color: w.color, statText: `Neto: ${w.netScore}` }))}
+            perWinnerAmount={amountWon}
+            isConfirmed={isConfirmed}
+            basePlayerId={basePlayerId}
+            useGreen={useGreen}
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Empate - pot dividido entre {result.winners.length} jugadores
+          </p>
+        </>
       )}
     </div>
   );
