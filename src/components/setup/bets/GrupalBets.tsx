@@ -251,7 +251,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 Solo Total 18
               </button>
               <button type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { segmentMode: 'segments' }); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { segmentMode: 'segments', frontAmount: config.medalGeneral?.frontAmount ?? 50, backAmount: config.medalGeneral?.backAmount ?? 100 }); }}
                 className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
                   config.medalGeneral?.segmentMode === 'segments'
                     ? "bg-primary text-primary-foreground font-medium border-primary"
