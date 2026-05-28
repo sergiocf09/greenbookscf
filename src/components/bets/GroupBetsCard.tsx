@@ -2534,9 +2534,18 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
                     )}
                   </div>
-                  {medalSegmentMode !== 'segments' && (
-                    <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {medalSegmentMode !== 'segments' && (
+                      <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
+                    )}
+                    <button
+                      onClick={() => setAuditSheet({ betKey: 'medalGeneral', segment: 'total' })}
+                      className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                      title="Ver todos los resultados"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
                 </div>
                 
                 {/* Group result */}
