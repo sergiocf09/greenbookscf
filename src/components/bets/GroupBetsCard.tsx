@@ -1547,6 +1547,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
   const [showOyesesPanel, setShowOyesesPanel] = useState(false);
   const [oyesesPanelTab, setOyesesPanelTab] = useState<'acumulado' | 'sangron'>('acumulado');
+  const [auditSheet, setAuditSheet] = useState<{ betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral'; segment: 'front' | 'back' | 'total' } | null>(null);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
@@ -1665,12 +1666,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   }, [betConfig.skinsGrupal, sameGroupPlayers, scores, course, players]);
 
   const puttsGeneralEnabled = !!(betConfig as any).puttsGeneral?.enabled;
+  const girGeneralEnabled = !!(betConfig as any).girGeneral?.enabled;
 
   // Check if any group bet is enabled
-  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult || puttsGeneralEnabled;
+  const hasAnyBet = medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || manchasSummary || unidadesSummary || oyesesSummary || skinsGrupalResult || puttsGeneralEnabled || girGeneralEnabled;
 
   const hasIndicators = !!(manchasSummary || unidadesSummary || oyesesSummary);
-  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult || puttsGeneralEnabled);
+  const hasGrupales = !!(medalGeneralGroupResult || medalGeneralGlobalResult || culebrasResult || pinguinosResult || zoologicoResults.length > 0 || conejaResult || betConfig.stableford?.enabled || skinsGrupalResult || puttsGeneralEnabled || girGeneralEnabled);
 
   if (renderSection === 'indicators') {
     if (!hasIndicators) return null;
