@@ -541,6 +541,37 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   );
 };
 
+// Stacked tie winners list — one row per winner so names/amounts don't overlap
+type TieWinner = { playerId: string; name: string; initials: string; color: string; statText: string };
+const TieWinnersStack: React.FC<{
+  winners: TieWinner[];
+  perWinnerAmount: number;
+  isConfirmed: boolean;
+  basePlayerId?: string;
+  useGreen?: boolean;
+}> = ({ winners, perWinnerAmount, isConfirmed, basePlayerId, useGreen = true }) => (
+  <div className="space-y-1">
+    {winners.map(w => (
+      <div key={w.playerId} className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="text-xs shrink-0">{isConfirmed ? '🏆' : '📊'}</span>
+          <PlayerAvatar initials={w.initials} background={w.color} size="sm" isLoggedInUser={w.playerId === basePlayerId} />
+          <span className="font-medium text-xs truncate">{formatPlayerNameTwoWords(w.name)}</span>
+          <span className="text-[10px] text-muted-foreground shrink-0">({w.statText})</span>
+        </div>
+        {perWinnerAmount > 0 ? (
+          <span className={cn('font-bold text-xs shrink-0', useGreen ? 'text-green-600' : 'text-amber-600')}>
+            {isConfirmed ? '+' : '~'}${fmtMoney(perWinnerAmount)}
+          </span>
+        ) : (
+          <span className="text-[10px] text-muted-foreground shrink-0">$0</span>
+        )}
+      </div>
+    ))}
+  </div>
+);
+
+
 // Medal General result block - reusable for group/global scopes
 const MedalResultBlock: React.FC<{
   result: MedalGeneralResult;
