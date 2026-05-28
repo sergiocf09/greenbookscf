@@ -2485,8 +2485,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             if (medalSegmentMode === 'segments') {
               // Segmented: Front 9, Back 9, Total 18
               const segments: Array<{ label: string; amount: number; result: MedalGeneralResult | null }> = [];
-              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.front[0] && h <= segmentRanges.front[1], betConfig.medalGeneral?.frontAmount ?? 0) });
-              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 0, result: calculateMedalForPool(pool, h => h >= segmentRanges.back[0] && h <= segmentRanges.back[1], betConfig.medalGeneral?.backAmount ?? 0) });
+              segments.push({ label: 'Front 9', amount: betConfig.medalGeneral?.frontAmount ?? 50, result: calculateMedalForPool(pool, h => h >= segmentRanges.front[0] && h <= segmentRanges.front[1], betConfig.medalGeneral?.frontAmount ?? 50) });
+              segments.push({ label: 'Back 9', amount: betConfig.medalGeneral?.backAmount ?? 100, result: calculateMedalForPool(pool, h => h >= segmentRanges.back[0] && h <= segmentRanges.back[1], betConfig.medalGeneral?.backAmount ?? 100) });
               segments.push({ label: 'Total 18', amount: betConfig.medalGeneral?.amount ?? 100, result: calculateMedalForPool(pool, () => true) });
 
               return (
@@ -2623,8 +2623,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           const segments: Array<{ label: string; amount: number; result: ReturnType<typeof computePuttsSegment> }> = [];
           if (puttsSegmentMode === 'segments') {
             const puttsRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
-            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.front[0] && h <= puttsRanges.front[1], puttsCfg?.frontAmount ?? 0) });
-            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 0, result: computePuttsSegment(h => h >= puttsRanges.back[0] && h <= puttsRanges.back[1], puttsCfg?.backAmount ?? 0) });
+            segments.push({ label: 'Front 9', amount: puttsCfg?.frontAmount ?? 50, result: computePuttsSegment(h => h >= puttsRanges.front[0] && h <= puttsRanges.front[1], puttsCfg?.frontAmount ?? 50) });
+            segments.push({ label: 'Back 9', amount: puttsCfg?.backAmount ?? 100, result: computePuttsSegment(h => h >= puttsRanges.back[0] && h <= puttsRanges.back[1], puttsCfg?.backAmount ?? 100) });
           }
           segments.push({ label: 'Total 18', amount: puttsCfg?.amount ?? 100, result: computePuttsSegment(() => true, puttsCfg?.amount ?? 100) });
 
@@ -2734,8 +2734,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
           const girSegments: Array<{ label: string; amount: number; segKey: string; result: ReturnType<typeof computeGIRSegment> }> = [];
           if (girSegmentMode === 'segments') {
-            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 0, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 0) });
-            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 0, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 0) });
+            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 50, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 50) });
+            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 100, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 100) });
           }
           girSegments.push({ label: 'Total 18', amount: girCfg?.amount ?? 100, segKey: 'total', result: computeGIRSegment(() => true, girCfg?.amount ?? 100) });
 

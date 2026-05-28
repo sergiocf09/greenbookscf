@@ -150,6 +150,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'puttsGeneral':
+          return 'Putts General';
+        case 'girGeneral':
+          return 'GIR General';
         case 'coneja':
           return 'Coneja';
         case 'sideBets':
@@ -210,6 +214,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'puttsGeneral':
+          return 'Putts General';
+        case 'girGeneral':
+          return 'GIR General';
         case 'coneja':
           return 'Coneja';
         case 'sideBets':
@@ -589,6 +597,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         { bt: 'Pingüinos',    label: 'Pingüinos',     configKey: 'pinguinos' },
         { bt: 'Coneja',       label: 'Coneja',        configKey: 'coneja' },
         { bt: 'Medal General',label: 'Medal General', configKey: 'medalGeneral' },
+        { bt: 'Putts General',label: 'Putts General', configKey: 'puttsGeneral' },
+        { bt: 'GIR General',  label: 'GIR General',   configKey: 'girGeneral' },
         { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
         { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
         { bt: 'Nines',        label: 'Nines (5-3-1)', configKey: 'ninesBets' },
@@ -614,7 +624,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
         'Putts Front 9','Putts Back 9',
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
-        'Coneja','Medal General','Stableford','Side Bet',
+        'Coneja','Medal General','Putts General','GIR General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
         'Nines',
       ]);
@@ -1342,7 +1352,49 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
             }),
           });
-        }
+    }
+
+    // Putts General (Group bet shown in bilateral view)
+    if ((betConfig as any).puttsGeneral?.enabled && bothParticipate(undefined, 'puttsGeneral')) {
+      const puttsTotal = groupedSummaries['Putts General']?.total || 0;
+      const puttsDesc = groupedSummaries['Putts General']?.details?.[0]?.description || '';
+      if (puttsTotal !== 0 || puttsDesc) {
+        groups.push({
+          key: 'puttsGeneral',
+          label: 'Putts General',
+          configKey: 'puttsGeneral',
+          segments: [],
+          getTotal: () => puttsTotal,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: puttsTotal,
+            description: puttsDesc,
+          }),
+        });
+      }
+    }
+
+    // GIR General (Group bet shown in bilateral view)
+    if ((betConfig as any).girGeneral?.enabled && bothParticipate(undefined, 'girGeneral')) {
+      const girTotal = groupedSummaries['GIR General']?.total || 0;
+      const girDesc = groupedSummaries['GIR General']?.details?.[0]?.description || '';
+      if (girTotal !== 0 || girDesc) {
+        groups.push({
+          key: 'girGeneral',
+          label: 'GIR General',
+          configKey: 'girGeneral',
+          segments: [],
+          getTotal: () => girTotal,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: girTotal,
+            description: girDesc,
+          }),
+        });
+      }
+    }
       }
     }
     
