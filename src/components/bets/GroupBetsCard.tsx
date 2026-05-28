@@ -36,6 +36,7 @@ import { getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { playOrderIndex, sortHolesByPlayOrder } from '@/lib/bets/shared';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
