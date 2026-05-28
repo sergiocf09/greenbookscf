@@ -1344,7 +1344,49 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               description: `Neto: ${medalResult.playerNet} vs ${medalResult.rivalNet}`,
             }),
           });
-        }
+    }
+
+    // Putts General (Group bet shown in bilateral view)
+    if ((betConfig as any).puttsGeneral?.enabled && bothParticipate(undefined, 'puttsGeneral')) {
+      const puttsTotal = groupedSummaries['Putts General']?.total || 0;
+      const puttsDesc = groupedSummaries['Putts General']?.details?.[0]?.description || '';
+      if (puttsTotal !== 0 || puttsDesc) {
+        groups.push({
+          key: 'puttsGeneral',
+          label: 'Putts General',
+          configKey: 'puttsGeneral',
+          segments: [],
+          getTotal: () => puttsTotal,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: puttsTotal,
+            description: puttsDesc,
+          }),
+        });
+      }
+    }
+
+    // GIR General (Group bet shown in bilateral view)
+    if ((betConfig as any).girGeneral?.enabled && bothParticipate(undefined, 'girGeneral')) {
+      const girTotal = groupedSummaries['GIR General']?.total || 0;
+      const girDesc = groupedSummaries['GIR General']?.details?.[0]?.description || '';
+      if (girTotal !== 0 || girDesc) {
+        groups.push({
+          key: 'girGeneral',
+          label: 'GIR General',
+          configKey: 'girGeneral',
+          segments: [],
+          getTotal: () => girTotal,
+          getSegmentData: () => ({
+            playerNet: 0,
+            rivalNet: 0,
+            amount: girTotal,
+            description: girDesc,
+          }),
+        });
+      }
+    }
       }
     }
     
