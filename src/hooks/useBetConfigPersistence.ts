@@ -522,6 +522,7 @@ export const useBetConfigPersistence = ({
           backAmount: config.medalGeneral.backAmount,
         },
         puttsGeneral: config.puttsGeneral,
+        girGeneral: config.girGeneral,
         coneja: {
           enabled: config.coneja.enabled,
           amount: config.coneja.amount,
