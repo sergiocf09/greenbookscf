@@ -406,7 +406,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 Solo Total 18
               </button>
               <button type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, segmentMode: 'segments' } } as any); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, segmentMode: 'segments', frontAmount: (config as any).girGeneral?.frontAmount ?? 50, backAmount: (config as any).girGeneral?.backAmount ?? 100 } } as any); }}
                 className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
                   (config as any).girGeneral?.segmentMode === 'segments'
                     ? "bg-primary text-primary-foreground font-medium border-primary"
