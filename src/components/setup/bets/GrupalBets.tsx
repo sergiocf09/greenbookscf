@@ -382,6 +382,64 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         </BetSection>
       )}
 
+      {/* GIR General */}
+      {show('girGeneral') && (
+        <BetSection
+          id="girGeneral" title="GIR General 🎯" description="Grupal: más Greens In Regulation gana"
+          enabled={(config as any).girGeneral?.enabled ?? false}
+          onToggle={(enabled) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, enabled } } as any)}
+          isExpanded={expandedSections.includes('girGeneral')}
+          onExpandChange={(open) => onToggleSection('girGeneral', open)} color="gold"
+          helpText="El jugador con más GIRs (greens alcanzados en regulación = strokes sin putts ≤ par-2) gana y cobra a cada perdedor. No aplica hándicap. Requiere putts capturados por hoyo."
+        >
+          {/* Segment mode toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] font-semibold text-primary">Modo</Label>
+            <div className="flex gap-1">
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, segmentMode: 'total' } } as any); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  ((config as any).girGeneral?.segmentMode ?? 'total') === 'total'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                Solo Total 18
+              </button>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, segmentMode: 'segments' } } as any); }}
+                className={cn("px-2.5 py-1 text-[10px] rounded transition-colors border",
+                  (config as any).girGeneral?.segmentMode === 'segments'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                F9 + B9 + Total
+              </button>
+            </div>
+          </div>
+
+          {(config as any).girGeneral?.segmentMode === 'segments' ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+                <AmountInput label="" value={(config as any).girGeneral?.frontAmount ?? 50} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, frontAmount: v } } as any)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+                <AmountInput label="" value={(config as any).girGeneral?.backAmount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, backAmount: v } } as any)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <AmountInput label="" value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
+              </div>
+            </div>
+          ) : (
+            <AmountInput label="Cantidad por jugador" value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
+          )}
+
+          <p className="text-[9px] text-muted-foreground mt-2">El ganador con más GIRs cobra a cada perdedor. No aplica hándicap.</p>
+        </BetSection>
+      )}
+
       {/* Stableford */}
       {show('stableford') && (
         <BetSection
