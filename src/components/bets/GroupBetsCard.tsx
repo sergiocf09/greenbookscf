@@ -1585,7 +1585,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const [showUnidadesPanel, setShowUnidadesPanel] = useState(false);
   const [showOyesesPanel, setShowOyesesPanel] = useState(false);
   const [oyesesPanelTab, setOyesesPanelTab] = useState<'acumulado' | 'sangron'>('acumulado');
-  const [auditSheet, setAuditSheet] = useState<{ betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral'; segment: 'front' | 'back' | 'total' } | null>(null);
+  const [auditSheet, setAuditSheet] = useState<{ betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral' } | null>(null);
   
   // Handler for tie-breaker selection (amount editing removed - was a syntax error request)
   // Handler for tie-breaker selection
