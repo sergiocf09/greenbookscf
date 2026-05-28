@@ -1,47 +1,70 @@
-## Problema detectado
+## Objetivo
 
-En el popover bilateral SC vs JA, **Medal General** muestra **−$100**, pero sumando el detalle por tramos del dashboard:
+Mostrar todas las cifras monetarias del Balance General y de los popovers de bilateralidad redondeadas al múltiplo de 5 más cercano, manteniendo la suma = $0 (cero pérdida/ganancia agregada).
 
-- F9: JA gana → SC paga $50 a JA
-- B9: SC y JA empatan en 1° (no hay intercambio entre ellos)
-- T18: JA gana → SC paga $100 a JA
+## Alcance (solo presentación)
 
-Total correcto = **−$150** (no −$100).
+- **No** se modifican calculadoras de apuestas, ni `betCalculations.ts`, ni la persistencia. Los cálculos internos siguen con precisión decimal.
+- El redondeo se aplica **solo al renderizar** los totales agregados por jugador (Balance General) y los montos bilaterales por par.
 
-### Causa raíz
+## Algoritmo de redondeo balanceado (largest-remainder a múltiplos de 5)
 
-`computeMedalBilateralForPool` en `src/components/bets/GroupBetsCard.tsx` (línea ~3312) **ignora `segmentMode`**: siempre calcula sobre los 18 hoyos con `config.medalGeneral.amount`, sin sumar F9 ni B9. Por eso el bilateral solo refleja el T18.
+Dado un arreglo `values: number[]` cuya suma es ~0:
 
-Esta función es la fuente autoritativa del bilateral de Medal General tanto en:
-- `BilateralDetail.tsx` (fila Medal General dentro del popover)
-- `BetDashboard.tsx` (`medalGeneralTotal` que va al header del avatar)
+1. Para cada valor calcular `base = Math.round(v/5)*5` y `residual = v - base`.
+2. La suma de `base` puede no ser 0; sea `drift = -Σ base` (en múltiplos de 5, porque Σv ≈ 0).
+3. Si `drift > 0` (faltan +5s): elegir los `drift/5` jugadores con mayor `residual` positivo y sumarles +5 a cada uno.
+   Si `drift < 0`: elegir los `|drift|/5` con `residual` más negativo y restarles 5.
+4. Empates en residual: desempatar por mayor `|valor original|` (los importes grandes absorben el ajuste de forma menos visible), luego por id estable.
 
-Para **Putts General** y **GIR General** el bilateral se lee de `groupedSummaries[...]?.total`, que sí agrega los `BetSummary` por segmento emitidos por `calculatePuttsGeneralBets` / `calculateGIRGeneralBets`. Por lo tanto los montos ya son correctos en esos dos casos. La revisión es solo para confirmar (no se modifica lógica).
+Esto garantiza `Σ rounded = 0` y desvíos máximos de ±$2.50 por jugador respecto al valor real.
 
-## Cambios
+## Cambios concretos
 
-### 1. `src/components/bets/GroupBetsCard.tsx` — `computeMedalBilateralForPool`
+### 1. `src/lib/formatMoney.ts` — nuevas utilidades
 
-Refactorizar para que respete `segmentMode`:
+```ts
+// Redondea un único valor al múltiplo de 5 más cercano.
+roundToNearest5(v: number): number
 
-- Extraer la lógica actual en una función interna `computeForSegment(amount, holeFilter)` que calcula netTotals filtrando hoyos y devuelve `{ amount, playerNet, rivalNet }` para el par.
-- Si `segmentMode === 'segments'`:
-  - Calcular F9 con `frontAmount ?? 50` filtrando hoyos del front (usar `getSegmentHoleRanges(startingHole)`).
-  - Calcular B9 con `backAmount ?? 100` filtrando hoyos del back.
-  - Calcular T18 con `amount ?? 100`.
-  - Sumar los tres `amount` → `bilateralAmount` total.
-  - `playerNet` / `rivalNet` retornados = los del T18 (para la descripción "Neto X vs Y" sigue mostrándose el total 18, consistente con cómo se muestra el ganador en el dashboard).
-- Si `segmentMode === 'total'`: comportamiento actual.
+// Redondea una colección preservando Σ = 0 (largest-remainder).
+// keys es opcional para mapeo estable id->valor.
+roundGroupToNearest5(values: number[]): number[]
+roundGroupToNearest5Map<K>(map: Map<K, number>): Map<K, number>
+```
 
-`getMedalGeneralBilateralResult` no cambia (sigue sumando `groupResult + globalResult` para scope `both`); solo cambia el cálculo subyacente.
+Reusa `fmtMoneySign` / `fmtMoneyAbs` existentes para el render (ya quitan decimales innecesarios; tras redondear a 5 nunca habrá decimales).
 
-### 2. Validación post-cambio
+### 2. `src/components/bets/BetDashboard.tsx` — Balance General
 
-- En SC vs JA: F9 −$50 + B9 $0 + T18 −$100 = **−$150** en el bilateral row y en el header del avatar.
-- Para casos sin `segments` (solo total), el resultado no cambia.
+- Antes de renderizar la lista ordenada de jugadores, pasar el `Map<playerId, totalNet>` por `roundGroupToNearest5Map` y usar el resultado para:
+  - el monto mostrado a la derecha (`+$2683.33` → `+$2685`),
+  - la línea `Σ = $0 (debe ser $0)` (que seguirá cuadrando exactamente).
+- El orden del ranking se calcula con los valores **redondeados** para evitar inconsistencias visuales (dos jugadores con totales muy cercanos podrían intercambiar posición; el desempate por `|valor original|` minimiza esto).
+
+### 3. `src/components/bets/BilateralDetail.tsx` + tarjeta de bilateralidad en `GroupBetsCard.tsx`
+
+- En la vista "Balance Sergio Cruz vs ...":
+  - Tomar el `Map<rivalId, bilateralNet>` del jugador base y pasarlo por `roundGroupToNearest5Map`. Esto preserva la propiedad `Σ rivales = -totalBase` (que también será múltiplo de 5).
+  - Renderizar los chips (`$258.33`, `$225`, `-$1500`) con esos valores redondeados.
+- Dentro del popover de detalle por par (filas Medal/Putts/GIR/etc.):
+  - Cada fila individual también se redondea a múltiplo de 5 con `roundToNearest5` simple, y el "Total" del par se recalcula como la **suma de las filas redondeadas** (no como redondeo del total real) para que el usuario vea coherencia fila-por-fila. El pequeño desvío residual se absorbe en la última fila ("ajuste de redondeo") para que el header del avatar siga coincidiendo con la suma visible.
+
+### 4. Otros lugares de render (auditoría rápida)
+
+- `HistoricalBalances.tsx`, `MoneyRankings.tsx`, `MoneyRankingDetail.tsx`: aplicar `roundGroupToNearest5Map` al render del total por jugador (mismo principio: la suma debe seguir siendo 0).
+- Tarjetas de Nines/Sixes/Vegas/Wolf/Carritos: dado que sus calculadoras ya emiten enteros con `Math.round`, **no** se tocan salvo que el agregado general las incluya (vía Balance General sí, automáticamente).
 
 ## Detalle técnico
 
-Importar `getSegmentHoleRanges` de `@/lib/handicapUtils` en `GroupBetsCard.tsx` (probablemente ya importado para el render de tramos). Reusar el mismo patrón que `medalGeneral.ts` para mantener consistencia.
+- El redondeo se aplica solo en la capa de presentación. Hooks (`useRoundManagement`, `useMoneyRankings`) devuelven los valores precisos; los componentes los transforman al render.
+- Tests: añadir `src/test/formatMoney.test.ts` con casos:
+  - `[316.67, -316.67]` → `[315, -315]`
+  - `[2683.33, -316.67, -1050, -1316.67]` → `[2685, -315, -1050, -1320]` (Σ=0)
+  - Arreglos con muchos empates de residual.
+- No se cambian queries de base de datos, ni RLS, ni edge functions.
 
-No se tocan: `BilateralDetail.tsx`, `BetDashboard.tsx`, calculators de Putts/GIR, ni `betCalculations.ts`.
+## Validación visual
+
+- Balance General del screenshot debe pasar a: JA +$2685, MSA2 -$315, MSA1 -$1050, SC -$1320 (Σ = $0).
+- Bilateral SC vs JA: -$1500 (ya múltiplo de 5, sin cambio). MSA1 $258.33 → $260, MSA2 $225 → $225, JA -$1500 → -$1500. Σ rivales de SC = $260 + $225 - $1500 = -$1015, debe coincidir con el total redondeado de SC en Balance General para esa subdivisión (se cuadra con el algoritmo de redondeo balanceado aplicado a los rivales).
