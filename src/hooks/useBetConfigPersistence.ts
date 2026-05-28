@@ -98,6 +98,15 @@ interface RoundBetConfig {
     participantIds?: string[];
     scope?: 'group' | 'global' | 'both';
   };
+  girGeneral?: {
+    enabled: boolean;
+    amount: number;
+    frontAmount?: number;
+    backAmount?: number;
+    segmentMode?: 'total' | 'segments';
+    participantIds?: string[];
+    scope?: 'group' | 'global' | 'both';
+  };
   coneja?: {
     enabled: boolean;
     amount: number;
