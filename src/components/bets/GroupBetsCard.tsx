@@ -3319,58 +3319,80 @@ const computeMedalBilateralForPool = (
   startingHole: 1 | 10 = 1
 ): { isWinner: boolean; isTied: boolean; amount: number; playerNet: number; rivalNet: number } | null => {
   const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
-  const amount = betConfig.medalGeneral?.amount ?? 100;
+  const segmentMode = betConfig.medalGeneral?.segmentMode ?? 'total';
 
-  const netTotals: Array<{ playerId: string; netTotal: number }> = [];
+  // Compute bilateral result for a single segment (subset of holes, fixed amount).
+  // Returns { amount, playerNet, rivalNet } or null if not computable.
+  const computeForSegment = (
+    segAmount: number,
+    holeFilter: (h: number) => boolean,
+  ): { amount: number; playerNet: number; rivalNet: number } | null => {
+    if (segAmount <= 0) return null;
 
-  pool.forEach((p) => {
-    const pScores = scores.get(p.id) || [];
-    const confirmed = pScores.filter((s) => s.confirmed && s.strokes > 0);
-    if (confirmed.length === 0) return;
+    const netTotals: Array<{ playerId: string; netTotal: number }> = [];
+    pool.forEach((p) => {
+      const pScores = scores.get(p.id) || [];
+      const confirmed = pScores.filter((s) => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber));
+      if (confirmed.length === 0) return;
+      const hcp = playerHandicaps.find((ph) => ph.playerId === p.id)?.handicap ?? p.handicap;
+      const strokesPerHole = calculateStrokesPerHole(hcp, course, startingHole);
+      const netTotal = confirmed.reduce((sum, s) => {
+        const received = strokesPerHole[s.holeNumber - 1] || 0;
+        return sum + (s.strokes - received);
+      }, 0);
+      netTotals.push({ playerId: p.id, netTotal });
+    });
 
-    const hcp = playerHandicaps.find((ph) => ph.playerId === p.id)?.handicap ?? p.handicap;
-    const strokesPerHole = calculateStrokesPerHole(hcp, course, startingHole);
-    const netTotal = confirmed.reduce((sum, s) => {
-      const received = strokesPerHole[s.holeNumber - 1] || 0;
-      return sum + (s.strokes - received);
-    }, 0);
+    if (netTotals.length < 2) return null;
+    const playerEntry = netTotals.find((n) => n.playerId === player.id);
+    const rivalEntry = netTotals.find((n) => n.playerId === rival.id);
+    if (!playerEntry || !rivalEntry) return null;
 
-    netTotals.push({ playerId: p.id, netTotal });
-  });
+    const minNet = Math.min(...netTotals.map((n) => n.netTotal));
+    const winnerIds = new Set(netTotals.filter((n) => n.netTotal === minNet).map((n) => n.playerId));
+    const winnersCount = winnerIds.size;
+    const losersCount = netTotals.length - winnersCount;
+    if (losersCount === 0) return { amount: 0, playerNet: playerEntry.netTotal, rivalNet: rivalEntry.netTotal };
 
-  if (netTotals.length < 2) return null;
+    const isPlayerWinner = winnerIds.has(player.id);
+    const isRivalWinner = winnerIds.has(rival.id);
+    const per = segAmount / winnersCount;
+    const bilateralAmount =
+      isPlayerWinner && !isRivalWinner
+        ? per
+        : !isPlayerWinner && isRivalWinner
+          ? -per
+          : 0;
 
-  // Both player and rival must be in the pool
-  const playerEntry = netTotals.find(n => n.playerId === player.id);
-  const rivalEntry = netTotals.find(n => n.playerId === rival.id);
-  if (!playerEntry || !rivalEntry) return null;
+    return { amount: bilateralAmount, playerNet: playerEntry.netTotal, rivalNet: rivalEntry.netTotal };
+  };
 
-  const minNetTotal = Math.min(...netTotals.map((p) => p.netTotal));
-  const winnerIds = new Set(netTotals.filter((p) => p.netTotal === minNetTotal).map((p) => p.playerId));
-  const winnersCount = winnerIds.size;
-  const losersCount = netTotals.length - winnersCount;
+  const totalAmount = betConfig.medalGeneral?.amount ?? 100;
+  const totalResult = computeForSegment(totalAmount, () => true);
+  if (!totalResult) return null;
 
-  if (losersCount === 0) return null;
+  let aggregatedAmount = totalResult.amount;
 
-  const isPlayerWinner = winnerIds.has(player.id);
-  const isRivalWinner = winnerIds.has(rival.id);
-  const amountFromLoserToWinner = amount / winnersCount;
-
-  const bilateralAmount =
-    isPlayerWinner && !isRivalWinner
-      ? amountFromLoserToWinner
-      : !isPlayerWinner && isRivalWinner
-        ? -amountFromLoserToWinner
-        : 0;
+  if (segmentMode === 'segments') {
+    const ranges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+    const [fs, fe] = ranges.front;
+    const [bs, be] = ranges.back;
+    const frontAmount = betConfig.medalGeneral?.frontAmount ?? 50;
+    const backAmount = betConfig.medalGeneral?.backAmount ?? 100;
+    const frontResult = computeForSegment(frontAmount, (h) => h >= fs && h <= fe);
+    const backResult = computeForSegment(backAmount, (h) => h >= bs && h <= be);
+    aggregatedAmount += (frontResult?.amount ?? 0) + (backResult?.amount ?? 0);
+  }
 
   return {
-    isWinner: playerEntry.netTotal < rivalEntry.netTotal,
-    isTied: playerEntry.netTotal === rivalEntry.netTotal,
-    amount: bilateralAmount,
-    playerNet: playerEntry.netTotal,
-    rivalNet: rivalEntry.netTotal,
+    isWinner: totalResult.playerNet < totalResult.rivalNet,
+    isTied: totalResult.playerNet === totalResult.rivalNet,
+    amount: aggregatedAmount,
+    playerNet: totalResult.playerNet,
+    rivalNet: totalResult.rivalNet,
   };
 };
+
 
 // Utility function to calculate Medal General result for bilateral view
 // Respects scope setting: group, global, or both (summing both pools)

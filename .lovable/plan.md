@@ -1,51 +1,47 @@
-## Problemas a resolver
+## Problema detectado
 
-1. **Error RLS al guardar Foursomes desde Leaderboards**: `new row violates row-level security policy for table "round_groups"`. Pasa al recrear foursomes después de haber borrado manualmente los grupos desde el Setup.
-2. **Eliminar jugadores desde "Foursomes de la Ronda" no los quita del Setup**: solo borra el `round_player` del foursome pero el cup_participant + round queda inconsistente, obligando al organizador a limpiar manualmente desde el Setup.
-3. **Card "Crear Ronda y Grupos de Juego" desaparece para siempre**: una vez creada la ronda (aunque queden 0 foursomes / 0 round_players por limpieza manual), no se puede regenerar foursomes desde cero ni usar la opción de "armar foursomes al azar" que existe en el flujo original.
+En el popover bilateral SC vs JA, **Medal General** muestra **−$100**, pero sumando el detalle por tramos del dashboard:
 
-## Causa raíz
+- F9: JA gana → SC paga $50 a JA
+- B9: SC y JA empatan en 1° (no hay intercambio entre ellos)
+- T18: JA gana → SC paga $100 a JA
 
-- **RLS**: `is_round_organizer(round_id)` valida contra `rounds.organizer_id`. Al borrar grupos desde el Setup, el flujo de Setup probablemente está borrando también la ronda (o reasignando organizador) — `ManageFoursomesDialog` mantiene `roundId` cacheado y al insertar pega contra una ronda inexistente o de otro organizador. Hay que: (a) revalidar que el `roundId` siga vivo y sea del organizador antes de insertar; (b) si no, caer al flujo de "crear ronda" en vez de intentar inserts huérfanos.
-- **Sin sincronía Leaderboard ↔ Setup**: `ManageFoursomesDialog` solo toca `round_groups` / `round_players`. No avisa al state de Setup ni borra el participante de la ronda en `leaderboard_participants` (cuando esa es la intención del organizador).
-- **Gating del card de creación**: la condición `!linkedRoundInfo.date` esconde el card en cuanto existe `leaderboard_rounds`. Debe esconderse solo cuando exista al menos 1 `round_group` con jugadores.
+Total correcto = **−$150** (no −$100).
 
-## Cambios propuestos
+### Causa raíz
 
-### 1) `TeamsCupDetailInline.tsx` – gating del card de creación
-- Extender el estado `linkedRoundInfo` con `hasFoursomes: boolean` (count de `round_groups` con al menos 1 `round_player`).
-- Card "Crear Ronda y Grupos de Juego" se muestra cuando `!linkedRoundInfo.date || !linkedRoundInfo.hasFoursomes`.
-- Card "Foursomes de la Ronda" (gestión) se muestra solo cuando `linkedRoundInfo.hasFoursomes === true`.
-- Si existe `leaderboard_rounds` pero sin foursomes/players, `CreateRoundFromCupDialog` debe **reutilizar la ronda existente** en lugar de crear una nueva (parámetro `existingRoundId`).
+`computeMedalBilateralForPool` en `src/components/bets/GroupBetsCard.tsx` (línea ~3312) **ignora `segmentMode`**: siempre calcula sobre los 18 hoyos con `config.medalGeneral.amount`, sin sumar F9 ni B9. Por eso el bilateral solo refleja el T18.
 
-### 2) `CreateRoundFromCupDialog.tsx` – opción "Armar foursomes al azar"
-Confirmar/añadir botón "Armar al azar" (mismo patrón que el setup normal):
-- Botón secundario arriba del listado de grupos manual: barajar los participantes seleccionados y distribuirlos en grupos de 4 (último grupo puede quedar con 1-3).
-- Mantiene la opción manual existente intacta.
+Esta función es la fuente autoritativa del bilateral de Medal General tanto en:
+- `BilateralDetail.tsx` (fila Medal General dentro del popover)
+- `BetDashboard.tsx` (`medalGeneralTotal` que va al header del avatar)
 
-### 3) `teamsCupRoundBuilder.ts` – soporte de `existingRoundId`
-Si recibe `existingRoundId`:
-- Saltar `rpc('create_round')` y `leaderboard_rounds.insert`.
-- Limpiar `round_groups`/`round_players` existentes para esa ronda (DELETE) antes de reinsertar la nueva estructura.
-- Reusar el resto del flujo (ghosts, group_id mapping, etc.).
+Para **Putts General** y **GIR General** el bilateral se lee de `groupedSummaries[...]?.total`, que sí agrega los `BetSummary` por segmento emitidos por `calculatePuttsGeneralBets` / `calculateGIRGeneralBets`. Por lo tanto los montos ya son correctos en esos dos casos. La revisión es solo para confirmar (no se modifica lógica).
 
-### 4) `ManageFoursomesDialog.tsx` – robustez + sincronía
-- Antes de cualquier insert/update, **revalidar** que la ronda exista (`select id from rounds where id = roundId`); si no, cerrar el dialog con toast: "La ronda fue eliminada. Crea una nueva." y refrescar el padre para que reaparezca el card de creación.
-- Cuando el organizador "Quitar de la ronda" un jugador, ofrecer (popover) dos acciones:
-  - **"Quitar solo de esta ronda"** (comportamiento actual: borra `round_players`, deja `leaderboard_participants`).
-  - **"Quitar del Cup completo"** (borra también `leaderboard_participants` + cascades `cup_team_members` / `cup_matches`).
-- Tras guardar, emitir `onChanged()` que refresca tanto el Cup como el Setup (`activeRound` se refresca al re-entrar a Play; lo importante es que el state local del Cup vuelva a consultar `round_groups`).
+## Cambios
 
-### 5) Mensaje de error más útil
-Capturar el código RLS específico (`42501`) en el catch y mostrar: "No tienes permisos sobre esta ronda o la ronda fue eliminada. Vuelve a crearla desde el card superior."
+### 1. `src/components/bets/GroupBetsCard.tsx` — `computeMedalBilateralForPool`
 
-## Fuera de alcance
-- Cambiar la lógica de Setup que está dejando inconsistencias al borrar grupos (eso ya es un bug aparte; aquí solo hacemos que Leaderboards se recupere).
-- Migraciones de RLS (las políticas están bien; el problema es state stale del cliente).
-- Reordenar holes por grupo o cambios en el motor de apuestas.
+Refactorizar para que respete `segmentMode`:
 
-## Archivos a tocar
-- `src/components/leaderboards/TeamsCupDetailInline.tsx` (gating + `hasFoursomes` + paso de `existingRoundId`)
-- `src/components/leaderboards/CreateRoundFromCupDialog.tsx` (botón "Armar al azar" + soporte `existingRoundId`)
-- `src/lib/teamsCupRoundBuilder.ts` (rama `existingRoundId`)
-- `src/components/leaderboards/ManageFoursomesDialog.tsx` (revalidación + opción "Quitar del Cup completo" + manejo de error 42501)
+- Extraer la lógica actual en una función interna `computeForSegment(amount, holeFilter)` que calcula netTotals filtrando hoyos y devuelve `{ amount, playerNet, rivalNet }` para el par.
+- Si `segmentMode === 'segments'`:
+  - Calcular F9 con `frontAmount ?? 50` filtrando hoyos del front (usar `getSegmentHoleRanges(startingHole)`).
+  - Calcular B9 con `backAmount ?? 100` filtrando hoyos del back.
+  - Calcular T18 con `amount ?? 100`.
+  - Sumar los tres `amount` → `bilateralAmount` total.
+  - `playerNet` / `rivalNet` retornados = los del T18 (para la descripción "Neto X vs Y" sigue mostrándose el total 18, consistente con cómo se muestra el ganador en el dashboard).
+- Si `segmentMode === 'total'`: comportamiento actual.
+
+`getMedalGeneralBilateralResult` no cambia (sigue sumando `groupResult + globalResult` para scope `both`); solo cambia el cálculo subyacente.
+
+### 2. Validación post-cambio
+
+- En SC vs JA: F9 −$50 + B9 $0 + T18 −$100 = **−$150** en el bilateral row y en el header del avatar.
+- Para casos sin `segments` (solo total), el resultado no cambia.
+
+## Detalle técnico
+
+Importar `getSegmentHoleRanges` de `@/lib/handicapUtils` en `GroupBetsCard.tsx` (probablemente ya importado para el render de tramos). Reusar el mismo patrón que `medalGeneral.ts` para mantener consistencia.
+
+No se tocan: `BilateralDetail.tsx`, `BetDashboard.tsx`, calculators de Putts/GIR, ni `betCalculations.ts`.
