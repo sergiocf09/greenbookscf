@@ -8,7 +8,7 @@ import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUti
 import { calculateZoologicoAnimalResult, ZoologicoAnimalResult } from '@/lib/betCalculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target } from 'lucide-react';
+import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target, Eye } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords, disambiguateInitials } from '@/lib/playerInput';
 import { 
