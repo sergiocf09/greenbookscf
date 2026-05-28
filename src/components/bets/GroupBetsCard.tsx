@@ -832,21 +832,75 @@ interface AuditEntry {
   isWinner: boolean;
 }
 
+interface AuditSection {
+  key: 'front' | 'back' | 'total';
+  label: string;
+  entries: AuditEntry[];
+}
+
 interface GroupBetAuditSheetProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  entries: AuditEntry[];
+  sections: AuditSection[];
   basePlayerId?: string;
   higherIsBetter: boolean;
 }
 
-const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
-  open, onClose, title, entries, basePlayerId, higherIsBetter,
-}) => {
+const AuditEntriesList: React.FC<{
+  entries: AuditEntry[];
+  basePlayerId?: string;
+  higherIsBetter: boolean;
+}> = ({ entries, basePlayerId, higherIsBetter }) => {
   const sorted = [...entries].sort((a, b) =>
     higherIsBetter ? b.value - a.value : a.value - b.value
   );
+  if (sorted.length === 0) {
+    return <p className="text-xs text-muted-foreground text-center py-4">Sin datos suficientes</p>;
+  }
+  return (
+    <div className="space-y-2">
+      {sorted.map((entry, idx) => {
+        const prevValue = idx > 0 ? sorted[idx - 1].value : null;
+        const sameAsPrev = prevValue !== null && prevValue === entry.value;
+        const rankLabel = !sameAsPrev && idx === 0 ? '🥇'
+          : !sameAsPrev && idx === 1 ? '🥈'
+          : !sameAsPrev && idx === 2 ? '🥉'
+          : `${idx + 1}.`;
+        return (
+          <div key={entry.playerId} className={cn(
+            'flex items-center justify-between p-3 rounded-lg border',
+            entry.isWinner ? 'bg-green-500/10 border-green-500/30' : 'bg-muted/30 border-border/50'
+          )}>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-sm w-6 text-center">{rankLabel}</span>
+              <PlayerAvatar initials={entry.initials} background={entry.color} size="sm" isLoggedInUser={entry.playerId === basePlayerId} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{formatPlayerNameTwoWords(entry.name)}</p>
+                <p className="text-[10px] text-muted-foreground">{entry.valueLabel}</p>
+              </div>
+            </div>
+            <span className={cn(
+              'text-sm font-bold ml-2',
+              entry.netAmount > 0 ? 'text-green-600' :
+              entry.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
+            )}>
+              {entry.netAmount > 0 ? `+$${fmtMoney(entry.netAmount)}` :
+               entry.netAmount < 0 ? `-$${fmtMoney(Math.abs(entry.netAmount))}` : '$0'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
+  open, onClose, title, sections, basePlayerId, higherIsBetter,
+}) => {
+  const validSections = sections.filter(s => s.entries.length > 0);
+  const initialTab = validSections[0]?.key ?? sections[0]?.key ?? 'total';
+  const showTabs = sections.length > 1;
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -854,41 +908,24 @@ const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <div className="space-y-2 mt-4">
-          {sorted.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">Sin datos suficientes</p>
-          ) : sorted.map((entry, idx) => {
-            const prevValue = idx > 0 ? sorted[idx - 1].value : null;
-            const sameAsPrev = prevValue !== null && prevValue === entry.value;
-            const rankLabel = !sameAsPrev && idx === 0 ? '🥇'
-              : !sameAsPrev && idx === 1 ? '🥈'
-              : !sameAsPrev && idx === 2 ? '🥉'
-              : `${idx + 1}.`;
-            return (
-              <div key={entry.playerId} className={cn(
-                'flex items-center justify-between p-3 rounded-lg border',
-                entry.isWinner ? 'bg-green-500/10 border-green-500/30' : 'bg-muted/30 border-border/50'
-              )}>
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="text-sm w-6 text-center">{rankLabel}</span>
-                  <PlayerAvatar initials={entry.initials} background={entry.color} size="sm" isLoggedInUser={entry.playerId === basePlayerId} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{formatPlayerNameTwoWords(entry.name)}</p>
-                    <p className="text-[10px] text-muted-foreground">{entry.valueLabel}</p>
-                  </div>
-                </div>
-                <span className={cn(
-                  'text-sm font-bold ml-2',
-                  entry.netAmount > 0 ? 'text-green-600' :
-                  entry.netAmount < 0 ? 'text-red-500' : 'text-muted-foreground'
-                )}>
-                  {entry.netAmount > 0 ? `+$${fmtMoney(entry.netAmount)}` :
-                   entry.netAmount < 0 ? `-$${fmtMoney(Math.abs(entry.netAmount))}` : '$0'}
-                </span>
-              </div>
-            );
-          })}
-          <p className="text-[10px] text-muted-foreground text-center pt-2">
+        <div className="mt-4">
+          {showTabs ? (
+            <Tabs defaultValue={initialTab} className="w-full">
+              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
+                {sections.map(s => (
+                  <TabsTrigger key={s.key} value={s.key} className="text-xs">{s.label}</TabsTrigger>
+                ))}
+              </TabsList>
+              {sections.map(s => (
+                <TabsContent key={s.key} value={s.key} className="mt-3">
+                  <AuditEntriesList entries={s.entries} basePlayerId={basePlayerId} higherIsBetter={higherIsBetter} />
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <AuditEntriesList entries={sections[0]?.entries ?? []} basePlayerId={basePlayerId} higherIsBetter={higherIsBetter} />
+          )}
+          <p className="text-[10px] text-muted-foreground text-center pt-3">
             Solo hoyos confirmados con putts registrados
           </p>
         </div>
