@@ -2734,8 +2734,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
           const girSegments: Array<{ label: string; amount: number; segKey: string; result: ReturnType<typeof computeGIRSegment> }> = [];
           if (girSegmentMode === 'segments') {
-            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 0, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 0) });
-            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 0, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 0) });
+            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 50, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 50) });
+            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 100, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 100) });
           }
           girSegments.push({ label: 'Total 18', amount: girCfg?.amount ?? 100, segKey: 'total', result: computeGIRSegment(() => true, girCfg?.amount ?? 100) });
 
