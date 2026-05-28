@@ -68,6 +68,8 @@ import { calculateManchasBets } from './bets/manchas';
 import { calculateCulebrasBets } from './bets/culebras';
 import { calculatePinguinosBets } from './bets/pinguinos';
 import { calculateMedalGeneralBets } from './bets/medalGeneral';
+import { calculatePuttsGeneralBets } from './bets/puttsGeneral';
+import { calculateGIRGeneralBets } from './bets/girGeneral';
 import { calculatePuttsBets } from './bets/putts';
 import { calculateSideBets } from './bets/sideBets';
 import { calculateStablefordBets } from './bets/stableford';
@@ -144,6 +146,8 @@ export const calculateAllBets = (
     ...calculateZoologicoBets(players, config, startingHole),
     ...calculateRayasBets(players, scores, config, course, bilateralHandicaps, startingHole),
     ...calculateMedalGeneralBets(players, scores, config, course, startingHole),
+    ...calculatePuttsGeneralBets(players, scores, config, course, startingHole),
+    ...calculateGIRGeneralBets(players, scores, config, course, startingHole),
     ...conejaSummaries,
     ...calculatePuttsBets(players, scores, config, startingHole),
     ...calculateSideBets(players, config),
