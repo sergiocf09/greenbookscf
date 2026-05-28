@@ -1927,7 +1927,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 rawDisplayMap.set(player.id, raw);
               });
               const roundedDisplayMap = roundGroupToNearest5Map(rawDisplayMap);
-              (window as any).__gbRoundedTotalsSum = Array.from(roundedDisplayMap.values()).reduce((s, v) => s + v, 0);
 
               return sortedDisplayPlayers.map((player, idx) => {
               // HISTORICAL: Use snapshotBalances as the immutable source of truth (avoids ledger duplicate issues).
