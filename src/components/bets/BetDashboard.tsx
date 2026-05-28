@@ -1897,7 +1897,39 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-2">
-            {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
+            {(() => {
+              const sortedDisplayPlayers = getSortedPlayersForDisplay(tablaGeneralPlayers);
+              // Precompute raw display balances per player for Σ-preserving rounding.
+              const rawDisplayMap = new Map<string, number>();
+              sortedDisplayPlayers.forEach((player) => {
+                const snapshotTotal = isHistorical ? getSnapshotTotalBalance(player.id) : null;
+                let totalBalance: number;
+                if (snapshotTotal !== null) {
+                  totalBalance = snapshotTotal;
+                } else {
+                  const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
+                  const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getBilateralBalanceFromMap(player.id, rivalId), 0);
+                  totalBalance = individualBalance
+                    + getCarritosBalanceForPlayer(player.id)
+                    + getTeamPressuresBalanceForPlayer(player.id)
+                    + getWolfBalanceForPlayer(player.id)
+                    + getSixesBalanceForPlayer(player.id)
+                    + getVegasBalanceForPlayer(player.id);
+                }
+                const playerCrossGroupRivals = getCrossGroupRivalsForBase(player.id);
+                const crossGroupOthers = tablaGeneralMode === 'all'
+                  ? otherGroupPlayers.filter(p => playerCrossGroupRivals.includes(p.id))
+                  : [];
+                const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
+                  return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getBilateralBalanceFromMap(player.id, rival.id)) : getBilateralBalanceFromMap(player.id, rival.id));
+                }, 0);
+                const raw = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+                rawDisplayMap.set(player.id, raw);
+              });
+              const roundedDisplayMap = roundGroupToNearest5Map(rawDisplayMap);
+              (window as any).__gbRoundedTotalsSum = Array.from(roundedDisplayMap.values()).reduce((s, v) => s + v, 0);
+
+              return sortedDisplayPlayers.map((player, idx) => {
               // HISTORICAL: Use snapshotBalances as the immutable source of truth (avoids ledger duplicate issues).
               // LIVE: Use corrected calculation.
               const snapshotTotal = isHistorical ? getSnapshotTotalBalance(player.id) : null;
