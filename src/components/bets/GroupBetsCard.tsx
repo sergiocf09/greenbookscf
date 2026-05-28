@@ -2601,6 +2601,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <Trophy className="h-4 w-4 text-emerald-500" />
                     <span className="font-medium text-sm">Putts General</span>
                   </div>
+                  <button
+                    onClick={() => setAuditSheet({ betKey: 'puttsGeneral', segment: 'total' })}
+                    className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                    title="Ver todos los resultados"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
                 </div>
 
                 {!anyResult ? (
