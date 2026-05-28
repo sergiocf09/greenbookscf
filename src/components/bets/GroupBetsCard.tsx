@@ -3150,6 +3150,46 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Audit Sheet — Medal / Putts / GIR General */}
+    {auditSheet && (() => {
+      const isGIR = auditSheet.betKey === 'girGeneral';
+      const isPutts = auditSheet.betKey === 'puttsGeneral';
+      const isMedal = auditSheet.betKey === 'medalGeneral';
+
+      const girCfg = (betConfig as any).girGeneral;
+      const puttsCfg = (betConfig as any).puttsGeneral;
+      const segRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+
+      const segLabel = auditSheet.segment === 'front' ? 'Front 9' : auditSheet.segment === 'back' ? 'Back 9' : 'Total 18';
+      const betLabel = isMedal ? 'Medal General' : isPutts ? 'Putts General' : 'GIR General';
+      const sheetTitle = `${betLabel} — ${segLabel}`;
+
+      const holeFilter = auditSheet.segment === 'front'
+        ? (h: number) => h >= segRanges.front[0] && h <= segRanges.front[1]
+        : auditSheet.segment === 'back'
+        ? (h: number) => h >= segRanges.back[0] && h <= segRanges.back[1]
+        : () => true;
+
+      const segAmount = isMedal
+        ? (auditSheet.segment === 'front' ? (betConfig.medalGeneral?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (betConfig.medalGeneral?.backAmount ?? 0) : (betConfig.medalGeneral?.amount ?? 100))
+        : isPutts
+        ? (auditSheet.segment === 'front' ? (puttsCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (puttsCfg?.backAmount ?? 0) : (puttsCfg?.amount ?? 100))
+        : (auditSheet.segment === 'front' ? (girCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (girCfg?.backAmount ?? 0) : (girCfg?.amount ?? 100));
+
+      const entries = buildAuditEntries(auditSheet.betKey, holeFilter, segAmount, players);
+
+      return (
+        <GroupBetAuditSheet
+          open={!!auditSheet}
+          onClose={() => setAuditSheet(null)}
+          title={sheetTitle}
+          entries={entries}
+          basePlayerId={basePlayerId}
+          higherIsBetter={isGIR}
+        />
+      );
+    })()}
     </>
   );
 };
