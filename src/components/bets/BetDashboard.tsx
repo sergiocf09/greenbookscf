@@ -2201,7 +2201,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  const balance = getRivalBalance(rival.id);
+                  const rawBalance = getRivalBalance(rival.id);
+                  const balance = roundToNearest5(rawBalance);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
                   const hasOverride = !!pairHandicap;
