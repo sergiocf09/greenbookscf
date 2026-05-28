@@ -3197,37 +3197,59 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
       const girCfg = (betConfig as any).girGeneral;
       const puttsCfg = (betConfig as any).puttsGeneral;
+      const cfg = isMedal ? betConfig.medalGeneral : isPutts ? puttsCfg : girCfg;
+      const segmentMode = cfg?.segmentMode ?? 'total';
       const segRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
-
-      const segLabel = auditSheet.segment === 'front' ? 'Front 9' : auditSheet.segment === 'back' ? 'Back 9' : 'Total 18';
       const betLabel = isMedal ? 'Medal General' : isPutts ? 'Putts General' : 'GIR General';
-      const sheetTitle = `${betLabel} — ${segLabel}`;
 
-      const holeFilter = auditSheet.segment === 'front'
-        ? (h: number) => h >= segRanges.front[0] && h <= segRanges.front[1]
-        : auditSheet.segment === 'back'
-        ? (h: number) => h >= segRanges.back[0] && h <= segRanges.back[1]
-        : () => true;
+      const totalAmount = cfg?.amount ?? (isMedal ? 100 : 100);
+      const frontAmount = cfg?.frontAmount ?? 0;
+      const backAmount = cfg?.backAmount ?? 0;
 
-      const segAmount = isMedal
-        ? (auditSheet.segment === 'front' ? (betConfig.medalGeneral?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (betConfig.medalGeneral?.backAmount ?? 0) : (betConfig.medalGeneral?.amount ?? 100))
-        : isPutts
-        ? (auditSheet.segment === 'front' ? (puttsCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (puttsCfg?.backAmount ?? 0) : (puttsCfg?.amount ?? 100))
-        : (auditSheet.segment === 'front' ? (girCfg?.frontAmount ?? 0) : auditSheet.segment === 'back' ? (girCfg?.backAmount ?? 0) : (girCfg?.amount ?? 100));
+      const buildSection = (
+        key: 'front' | 'back' | 'total',
+        label: string,
+        amount: number,
+        holeFilter: (h: number) => boolean
+      ): AuditSection => ({
+        key,
+        label,
+        entries: buildAuditEntries(auditSheet.betKey, holeFilter, amount, players),
+      });
 
-      const entries = buildAuditEntries(auditSheet.betKey, holeFilter, segAmount, players);
+      const sections: AuditSection[] = [];
+      if (segmentMode === 'segments') {
+        sections.push(buildSection(
+          'front',
+          'Front 9',
+          frontAmount,
+          (h) => h >= segRanges.front[0] && h <= segRanges.front[1]
+        ));
+        sections.push(buildSection(
+          'back',
+          'Back 9',
+          backAmount,
+          (h) => h >= segRanges.back[0] && h <= segRanges.back[1]
+        ));
+      }
+      sections.push(buildSection('total', 'Total 18', totalAmount, () => true));
+
+      const sheetTitle = segmentMode === 'segments'
+        ? `${betLabel} — Por tramo`
+        : `${betLabel} — Total 18`;
 
       return (
         <GroupBetAuditSheet
           open={!!auditSheet}
           onClose={() => setAuditSheet(null)}
           title={sheetTitle}
-          entries={entries}
+          sections={sections}
           basePlayerId={basePlayerId}
           higherIsBetter={isGIR}
         />
       );
     })()}
+
     </>
   );
 };
