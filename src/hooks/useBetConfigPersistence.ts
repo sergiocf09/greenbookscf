@@ -358,6 +358,13 @@ export const useBetConfigPersistence = ({
         };
       }
 
+      if ((dbConfig as any).girGeneral) {
+        newConfig.girGeneral = {
+          ...(prev.girGeneral ?? { enabled: false, amount: 100, segmentMode: 'total' }),
+          ...(dbConfig as any).girGeneral,
+        };
+      }
+
       if (dbConfig.coneja) {
         newConfig.coneja = {
           enabled: dbConfig.coneja.enabled ?? prev.coneja.enabled,
