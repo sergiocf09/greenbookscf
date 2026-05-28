@@ -150,6 +150,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'puttsGeneral':
+          return 'Putts General';
+        case 'girGeneral':
+          return 'GIR General';
         case 'coneja':
           return 'Coneja';
         case 'sideBets':
@@ -210,6 +214,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           return 'Rayas';
         case 'medalGeneral':
           return 'Medal General';
+        case 'puttsGeneral':
+          return 'Putts General';
+        case 'girGeneral':
+          return 'GIR General';
         case 'coneja':
           return 'Coneja';
         case 'sideBets':
