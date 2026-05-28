@@ -1688,6 +1688,90 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   const showIndicators = renderSection === 'all' || renderSection === 'indicators';
   const showGrupales = renderSection === 'all' || renderSection === 'grupales';
 
+  // Helper for audit sheets — builds full leaderboard entries for Medal/Putts/GIR General
+  const buildAuditEntries = (
+    betKey: 'medalGeneral' | 'puttsGeneral' | 'girGeneral',
+    holeFilter: (h: number) => boolean,
+    segAmount: number,
+    pool: Player[]
+  ): AuditEntry[] => {
+    if (betKey === 'medalGeneral') {
+      const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
+      const rows: { playerId: string; value: number }[] = [];
+      pool.forEach(player => {
+        const ps = scores.get(player.id) || [];
+        const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber));
+        if (confirmed.length === 0) return;
+        const playerHcp = playerHandicaps.find(ph => ph.playerId === player.id);
+        const handicap = playerHcp?.handicap ?? player.handicap;
+        const strokesPerHole = calculateStrokesPerHole(handicap, course, startingHole);
+        const netTotal = confirmed.reduce((sum, s) => sum + (s.strokes - (strokesPerHole[s.holeNumber - 1] || 0)), 0);
+        rows.push({ playerId: player.id, value: netTotal });
+      });
+      if (rows.length < 2) return [];
+      const min = Math.min(...rows.map(r => r.value));
+      const winners = rows.filter(r => r.value === min);
+      const losersCount = rows.length - winners.length;
+      return rows.map(r => {
+        const isWinner = r.value === min;
+        const netAmount = isWinner
+          ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+          : -segAmount;
+        const p = pool.find(x => x.id === r.playerId)!;
+        return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `Neto ${r.value}`, netAmount, isWinner };
+      });
+    }
+
+    if (betKey === 'puttsGeneral') {
+      const rows: { playerId: string; value: number }[] = [];
+      pool.forEach(player => {
+        const ps = scores.get(player.id) || [];
+        const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+        if (confirmed.length === 0) return;
+        const total = confirmed.reduce((sum, s) => sum + (s.putts ?? 0), 0);
+        rows.push({ playerId: player.id, value: total });
+      });
+      if (rows.length < 2) return [];
+      const min = Math.min(...rows.map(r => r.value));
+      const winners = rows.filter(r => r.value === min);
+      const losersCount = rows.length - winners.length;
+      return rows.map(r => {
+        const isWinner = r.value === min;
+        const netAmount = isWinner
+          ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+          : -segAmount;
+        const p = pool.find(x => x.id === r.playerId)!;
+        return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `${r.value} putts`, netAmount, isWinner };
+      });
+    }
+
+    // girGeneral
+    const holeMap = new Map(course.holes.map(h => [h.number, h.par]));
+    const rows: { playerId: string; value: number }[] = [];
+    pool.forEach(player => {
+      const ps = scores.get(player.id) || [];
+      const confirmed = ps.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+      if (confirmed.length === 0) return;
+      const total = confirmed.reduce((sum, s) => {
+        const par = holeMap.get(s.holeNumber) ?? 4;
+        return sum + ((s.strokes - (s.putts ?? 0)) <= (par - 2) ? 1 : 0);
+      }, 0);
+      rows.push({ playerId: player.id, value: total });
+    });
+    if (rows.length < 2) return [];
+    const max = Math.max(...rows.map(r => r.value));
+    const winners = rows.filter(r => r.value === max);
+    const losersCount = rows.length - winners.length;
+    return rows.map(r => {
+      const isWinner = r.value === max;
+      const netAmount = isWinner
+        ? (losersCount > 0 ? Math.round((losersCount * segAmount) / winners.length) : 0)
+        : -segAmount;
+      const p = pool.find(x => x.id === r.playerId)!;
+      return { playerId: r.playerId, name: p.name, initials: p.initials, color: p.color, value: r.value, valueLabel: `${r.value} GIRs`, netAmount, isWinner };
+    });
+  };
+
   // When rendering only indicators, skip the Card wrapper
   if (renderSection === 'indicators') {
     if (!hasIndicators) return null;
