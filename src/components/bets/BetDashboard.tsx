@@ -1967,7 +1967,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
                 return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getBilateralBalanceFromMap(player.id, rival.id)) : getBilateralBalanceFromMap(player.id, rival.id));
               }, 0);
-              const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+              const rawDisplayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+              const displayBalance = roundedDisplayMap.get(player.id) ?? rawDisplayBalance;
               
               return (
                 <div key={player.id}>
