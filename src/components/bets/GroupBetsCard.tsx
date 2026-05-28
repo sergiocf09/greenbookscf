@@ -3203,8 +3203,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       const betLabel = isMedal ? 'Medal General' : isPutts ? 'Putts General' : 'GIR General';
 
       const totalAmount = cfg?.amount ?? (isMedal ? 100 : 100);
-      const frontAmount = cfg?.frontAmount ?? 0;
-      const backAmount = cfg?.backAmount ?? 0;
+      const frontAmount = cfg?.frontAmount ?? 50;
+      const backAmount = cfg?.backAmount ?? 100;
 
       const buildSection = (
         key: 'front' | 'back' | 'total',
