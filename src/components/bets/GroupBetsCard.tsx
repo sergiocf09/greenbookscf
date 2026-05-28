@@ -2665,7 +2665,121 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             </>
           );
         })()}
-        
+
+        {/* GIR General */}
+        {showGrupales && girGeneralEnabled && (() => {
+          const girCfg = (betConfig as any).girGeneral;
+          const girSegmentMode = girCfg?.segmentMode ?? 'total';
+          const girRanges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
+          const holeMap = new Map(course.holes.map(h => [h.number, h.par]));
+
+          const computeGIRSegment = (holeFilter: (h: number) => boolean, segAmount: number) => {
+            const results: Array<{ playerId: string; name: string; initials: string; color: string; totalGIRs: number }> = [];
+            players.forEach(player => {
+              const playerScores = scores.get(player.id) || [];
+              const confirmed = playerScores.filter(s => s.confirmed && s.strokes > 0 && s.putts != null && holeFilter(s.holeNumber));
+              if (confirmed.length === 0) return;
+              const total = confirmed.reduce((sum, s) => {
+                const par = holeMap.get(s.holeNumber) ?? 4;
+                return sum + ((s.strokes - (s.putts ?? 0)) <= (par - 2) ? 1 : 0);
+              }, 0);
+              results.push({ playerId: player.id, name: player.name, initials: player.initials, color: player.color, totalGIRs: total });
+            });
+            if (results.length < 2) return null;
+            const max = Math.max(...results.map(p => p.totalGIRs));
+            const winners = results.filter(p => p.totalGIRs === max);
+            const losersCount = results.length - winners.length;
+            if (losersCount === 0) return { winners, pot: 0, perWinner: 0 };
+            const pot = losersCount * segAmount;
+            return { winners, pot, perWinner: pot / winners.length };
+          };
+
+          const girSegments: Array<{ label: string; amount: number; segKey: string; result: ReturnType<typeof computeGIRSegment> }> = [];
+          if (girSegmentMode === 'segments') {
+            girSegments.push({ label: 'Front 9', amount: girCfg?.frontAmount ?? 0, segKey: 'front', result: computeGIRSegment(h => h >= girRanges.front[0] && h <= girRanges.front[1], girCfg?.frontAmount ?? 0) });
+            girSegments.push({ label: 'Back 9', amount: girCfg?.backAmount ?? 0, segKey: 'back', result: computeGIRSegment(h => h >= girRanges.back[0] && h <= girRanges.back[1], girCfg?.backAmount ?? 0) });
+          }
+          girSegments.push({ label: 'Total 18', amount: girCfg?.amount ?? 100, segKey: 'total', result: computeGIRSegment(() => true, girCfg?.amount ?? 100) });
+
+          const anyGirResult = girSegments.some(s => s.result);
+
+          return (
+            <>
+              {(medalGeneralGroupResult || medalGeneralGlobalResult || puttsGeneralEnabled) && <div className="border-t-2 border-primary/40" />}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-sky-500" />
+                    <span className="font-medium text-sm">GIR General</span>
+                    {girSegmentMode === 'segments' && (
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setAuditSheet({ betKey: 'girGeneral', segment: 'total' })}
+                    className="p-1 rounded-full hover:bg-muted/60 transition-colors"
+                    title="Ver todos los resultados"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {!anyGirResult ? (
+                  <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
+                    Sin datos suficientes (requiere putts por hoyo)
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {girSegments.map(seg => {
+                      if (seg.amount <= 0 && girSegmentMode === 'segments' && seg.label !== 'Total 18') return null;
+                      const r = seg.result;
+                      return (
+                        <div key={seg.label} className={cn(
+                          'rounded-lg p-3',
+                          !r || r.perWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                          </div>
+                          {!r ? (
+                            <span className="text-xs text-muted-foreground">Sin datos</span>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{all18HolesConfirmed ? '🏆' : '📊'}</span>
+                                  <div className="flex items-center gap-1">
+                                    {r.winners.map((winner, idx) => (
+                                      <React.Fragment key={winner.playerId}>
+                                        {idx > 0 && <span className="text-xs text-muted-foreground mx-1">&</span>}
+                                        <PlayerAvatar initials={winner.initials} background={winner.color} size="sm" isLoggedInUser={winner.playerId === basePlayerId} />
+                                        <span className="font-medium text-sm">{formatPlayerNameTwoWords(winner.name)}</span>
+                                        <span className="text-xs text-muted-foreground">(GIR: {winner.totalGIRs})</span>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                </div>
+                                <span className={cn('font-bold text-sm', r.perWinner > 0 ? 'text-green-600' : 'text-muted-foreground')}>
+                                  {r.perWinner > 0 ? `${all18HolesConfirmed ? '+' : '~'}$${fmtMoney(r.perWinner)}` : '$0'}
+                                </span>
+                              </div>
+                              {r.winners.length > 1 && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Empate - pot dividido entre {r.winners.length} jugadores
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+
         {/* Stableford - Scope-aware rendering */}
         {showGrupales && betConfig.stableford?.enabled && (stablefordGroupResults.length > 0 || stablefordGlobalResults.length > 0) && (
           <>
