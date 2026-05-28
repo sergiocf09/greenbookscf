@@ -1,6 +1,6 @@
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fmtMoney } from '@/lib/formatMoney';
+import { fmtMoney, roundToNearest5, roundGroupToNearest5Map } from '@/lib/formatMoney';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
 import { cn } from '@/lib/utils';
 import { RoundHolesBadge } from '@/components/RoundHolesBadge';
@@ -1897,7 +1897,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-2">
-            {getSortedPlayersForDisplay(tablaGeneralPlayers).map((player, idx) => {
+            {(() => {
+              const sortedDisplayPlayers = getSortedPlayersForDisplay(tablaGeneralPlayers);
+              // Precompute raw display balances per player for Σ-preserving rounding.
+              const rawDisplayMap = new Map<string, number>();
+              sortedDisplayPlayers.forEach((player) => {
+                const snapshotTotal = isHistorical ? getSnapshotTotalBalance(player.id) : null;
+                let totalBalance: number;
+                if (snapshotTotal !== null) {
+                  totalBalance = snapshotTotal;
+                } else {
+                  const groupRivalIds = tablaGeneralPlayers.filter(p => p.id !== player.id).map(p => p.id);
+                  const individualBalance = groupRivalIds.reduce((sum, rivalId) => sum + getBilateralBalanceFromMap(player.id, rivalId), 0);
+                  totalBalance = individualBalance
+                    + getCarritosBalanceForPlayer(player.id)
+                    + getTeamPressuresBalanceForPlayer(player.id)
+                    + getWolfBalanceForPlayer(player.id)
+                    + getSixesBalanceForPlayer(player.id)
+                    + getVegasBalanceForPlayer(player.id);
+                }
+                const playerCrossGroupRivals = getCrossGroupRivalsForBase(player.id);
+                const crossGroupOthers = tablaGeneralMode === 'all'
+                  ? otherGroupPlayers.filter(p => playerCrossGroupRivals.includes(p.id))
+                  : [];
+                const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
+                  return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getBilateralBalanceFromMap(player.id, rival.id)) : getBilateralBalanceFromMap(player.id, rival.id));
+                }, 0);
+                const raw = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+                rawDisplayMap.set(player.id, raw);
+              });
+              const roundedDisplayMap = roundGroupToNearest5Map(rawDisplayMap);
+
+              return sortedDisplayPlayers.map((player, idx) => {
               // HISTORICAL: Use snapshotBalances as the immutable source of truth (avoids ledger duplicate issues).
               // LIVE: Use corrected calculation.
               const snapshotTotal = isHistorical ? getSnapshotTotalBalance(player.id) : null;
@@ -1935,7 +1966,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const crossGroupBalance = crossGroupOthers.reduce((sum, rival) => {
                 return sum + (isHistorical ? (getSnapshotBilateralBalance(player.id, rival.id) ?? getBilateralBalanceFromMap(player.id, rival.id)) : getBilateralBalanceFromMap(player.id, rival.id));
               }, 0);
-              const displayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+              const rawDisplayBalance = tablaGeneralMode === 'all' ? totalBalance + crossGroupBalance : totalBalance;
+              const displayBalance = roundedDisplayMap.get(player.id) ?? rawDisplayBalance;
               
               return (
                 <div key={player.id}>
@@ -2073,7 +2105,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {vsTotalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(vsTotalBalance))}
+                              {(() => { const r = roundToNearest5(vsTotalBalance); return `${r >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(r))}`; })()}
                             </span>
                           </div>
                       ))}
@@ -2081,17 +2113,24 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   )}
                 </div>
               );
-            })}
+              });
+            })()}
           </div>
           
-          {/* Verification */}
+          {/* Verification — usa los totales redondeados (mismo algoritmo que las filas) para mantener Σ = $0 exacto. */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${tablaGeneralPlayers.reduce((sum, p) => {
+            Σ = ${(() => {
+              const raws = new Map<string, number>();
+              tablaGeneralPlayers.forEach((p) => {
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
-                if (snap !== null) return sum + snap;
+                if (snap !== null) { raws.set(p.id, snap); return; }
                 const rivalIds = tablaGeneralPlayers.filter(x => x.id !== p.id).map(x => x.id);
-                return sum + rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0) + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id);
-              }, 0)} 
+                const ind = rivalIds.reduce((s, rId) => s + getBilateralBalanceFromMap(p.id, rId), 0);
+                raws.set(p.id, ind + getCarritosBalanceForPlayer(p.id) + getTeamPressuresBalanceForPlayer(p.id) + getWolfBalanceForPlayer(p.id) + getSixesBalanceForPlayer(p.id) + getVegasBalanceForPlayer(p.id));
+              });
+              const rounded = roundGroupToNearest5Map(raws);
+              return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
+            })()}
             <span className="ml-1">(debe ser $0)</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
@@ -2162,7 +2201,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex-1 pl-3 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
                 {rivals.map(rival => {
-                  const balance = getRivalBalance(rival.id);
+                  const rawBalance = getRivalBalance(rival.id);
+                  const balance = roundToNearest5(rawBalance);
                   const isSelected = selectedRival === rival.id;
                   const pairHandicap = getBilateralHandicap(basePlayer?.id || '', rival.id);
                   const hasOverride = !!pairHandicap;
