@@ -2577,7 +2577,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                       <span className="text-xs text-muted-foreground">${betConfig.medalGeneral?.amount ?? 100} c/u</span>
                     )}
                     <button
-                      onClick={() => setAuditSheet({ betKey: 'medalGeneral', segment: 'total' })}
+                      onClick={() => setAuditSheet({ betKey: 'medalGeneral' })}
                       className="p-1 rounded-full hover:bg-muted/60 transition-colors"
                       title="Ver todos los resultados"
                     >
@@ -2640,7 +2640,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <span className="font-medium text-sm">Putts General</span>
                   </div>
                   <button
-                    onClick={() => setAuditSheet({ betKey: 'puttsGeneral', segment: 'total' })}
+                    onClick={() => setAuditSheet({ betKey: 'puttsGeneral' })}
                     className="p-1 rounded-full hover:bg-muted/60 transition-colors"
                     title="Ver todos los resultados"
                   >
@@ -2754,7 +2754,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     )}
                   </div>
                   <button
-                    onClick={() => setAuditSheet({ betKey: 'girGeneral', segment: 'total' })}
+                    onClick={() => setAuditSheet({ betKey: 'girGeneral' })}
                     className="p-1 rounded-full hover:bg-muted/60 transition-colors"
                     title="Ver todos los resultados"
                   >
