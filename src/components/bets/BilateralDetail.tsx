@@ -589,6 +589,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         { bt: 'Pingüinos',    label: 'Pingüinos',     configKey: 'pinguinos' },
         { bt: 'Coneja',       label: 'Coneja',        configKey: 'coneja' },
         { bt: 'Medal General',label: 'Medal General', configKey: 'medalGeneral' },
+        { bt: 'Putts General',label: 'Putts General', configKey: 'puttsGeneral' },
+        { bt: 'GIR General',  label: 'GIR General',   configKey: 'girGeneral' },
         { bt: 'Stableford',   label: 'Stableford',    configKey: 'stableford' },
         { bt: 'Side Bet',     label: 'Side Bet',      configKey: 'sideBets' },
         { bt: 'Nines',        label: 'Nines (5-3-1)', configKey: 'ninesBets' },
@@ -614,7 +616,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         'Rayas Front','Rayas Back','Rayas Medal Total','Rayas Oyes',
         'Putts Front 9','Putts Back 9',
         'Caros','Oyes','Unidades','Manchas','Culebras','Pingüinos',
-        'Coneja','Medal General','Stableford','Side Bet',
+        'Coneja','Medal General','Putts General','GIR General','Stableford','Side Bet',
         'Carritos Front','Carritos Back','Carritos Total','Presiones Parejas','Presiones Pareja',
         'Nines',
       ]);
