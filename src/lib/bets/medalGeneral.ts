@@ -77,8 +77,8 @@ export const calculateMedalGeneralBets = (
     const ranges = getSegmentHoleRanges(startingHole);
     const [fs, fe] = ranges.front;
     const [bs, be] = ranges.back;
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 0, h => h >= fs && h <= fe, 'front', startingHole));
-    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 0, h => h >= bs && h <= be, 'back', startingHole));
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.frontAmount ?? 50, h => h >= fs && h <= fe, 'front', startingHole));
+    summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.backAmount ?? 100, h => h >= bs && h <= be, 'back', startingHole));
   }
   // Total always runs
   summaries.push(...computeForSegment(players, scores, config, course, config.medalGeneral.amount ?? 100, () => true, 'total', startingHole));

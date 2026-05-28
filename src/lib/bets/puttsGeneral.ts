@@ -63,8 +63,8 @@ export const calculatePuttsGeneralBets = (
     const ranges = getSegmentHoleRanges(startingHole);
     const [fs, fe] = ranges.front;
     const [bs, be] = ranges.back;
-    summaries.push(...computeForSegment(players, scores, cfg.frontAmount ?? 0, h => h >= fs && h <= fe, 'front'));
-    summaries.push(...computeForSegment(players, scores, cfg.backAmount ?? 0, h => h >= bs && h <= be, 'back'));
+    summaries.push(...computeForSegment(players, scores, cfg.frontAmount ?? 50, h => h >= fs && h <= fe, 'front'));
+    summaries.push(...computeForSegment(players, scores, cfg.backAmount ?? 100, h => h >= bs && h <= be, 'back'));
   }
   // Total always runs
   summaries.push(...computeForSegment(players, scores, cfg.amount ?? 100, () => true, 'total'));
