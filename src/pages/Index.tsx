@@ -444,7 +444,9 @@ const Index = () => {
     roundId: roundState.id,
     betConfig,
     setBetConfig,
+    logEvent,
   });
+
 
   // Combine players from all groups for handicap resolution across groups
   const allPlayersForBets = useMemo(() => {
