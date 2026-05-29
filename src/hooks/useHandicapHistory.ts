@@ -45,61 +45,11 @@ export const useHandicapHistory = (profileId: string | null) => {
         return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
-      // === TRY MATERIALIZED TABLE FIRST ===
-      // Fetch a wider window so we can dedupe by round_id and still keep the most recent 20 rounds.
-      const { data: matData, error: matError } = await supabase
-        .from('handicap_history')
-        .select(`
-          id, handicap, round_id, recorded_at, differential, is_attested,
-          adjusted_gross_score, gross_score, course_rating, slope_rating, tee_color,
-          rounds!handicap_history_round_fk (
-            id, date,
-            golf_courses!inner ( name )
-          )
-        `)
-        .eq('profile_id', profileId)
-        .not('round_id', 'is', null)
-        .not('differential', 'is', null)
-        .order('recorded_at', { ascending: false })
-        .limit(200);
-
-      if (!matError && matData && matData.length > 0) {
-        // Deduplicate by round_id — keep the most recent record per round
-        // (rows are already sorted by recorded_at desc, so the first one we see wins).
-        const seenRoundIds = new Set<string>();
-        const dedupedRows: any[] = [];
-        for (const row of matData as any[]) {
-          if (!row.rounds || row.differential == null || !row.round_id) continue;
-          if (seenRoundIds.has(row.round_id)) continue;
-          seenRoundIds.add(row.round_id);
-          dedupedRows.push(row);
-          if (dedupedRows.length >= 20) break;
-        }
-
-        const entries: HandicapHistoryEntry[] = dedupedRows.map((row: any) => ({
-          roundId: row.round_id,
-          date: row.rounds.date,
-          courseName: row.rounds.golf_courses?.name || 'Desconocido',
-          teeColor: row.tee_color || 'white',
-          totalStrokes: row.gross_score || 0,
-          adjustedGrossScore: row.adjusted_gross_score || row.gross_score || 0,
-          courseRating: Number(row.course_rating) || 72,
-          slopeRating: Number(row.slope_rating) || 113,
-          differential: Number(row.differential),
-          handicapAtTime: Number(row.handicap),
-          isAttested: row.is_attested ?? false,
-        }));
-
-        if (entries.length > 0) {
-          const differentialValues = entries.map(e => e.differential);
-          const handicapIndex = calculateHandicapIndexFromDifferentials(differentialValues);
-          const roundsUsed = getNumDifferentialsToUse(entries.length);
-
-          return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3 };
-        }
-      }
-
-      // === FALLBACK: Batch calculate from raw scores (same pattern as useUSGAHandicap) ===
+      // === PRIMARY: Batch calculate from raw scores ===
+      // The materialized handicap_history table can be incomplete (older rounds
+      // never got rows inserted), so we always recompute from raw scores and
+      // only enrich with materialized data (handicapAtTime, isAttested) when
+      // available.
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
@@ -117,19 +67,25 @@ export const useHandicapHistory = (profileId: string | null) => {
 
       const recent = roundPlayers.slice(0, 20);
       const rpIds = recent.map(rp => rp.id);
+      const roundIds = recent.map(rp => rp.round_id).filter(Boolean) as string[];
       const courseIdSet = new Set<string>();
       for (const rp of recent) {
         courseIdSet.add((rp.rounds as any).golf_courses.id);
       }
       const uniqueCourseIds = Array.from(courseIdSet);
 
-      const [holeScoresRes, courseHolesRes, courseTeesRes] = await Promise.all([
+      const [holeScoresRes, courseHolesRes, courseTeesRes, matHistoryRes] = await Promise.all([
         supabase.from('hole_scores').select('round_player_id, hole_number, strokes, confirmed')
           .in('round_player_id', rpIds).eq('confirmed', true).not('strokes', 'is', null).order('hole_number'),
         supabase.from('course_holes').select('course_id, hole_number, par, stroke_index')
           .in('course_id', uniqueCourseIds).order('hole_number'),
         supabase.from('course_tees').select('course_id, tee_color, course_rating, slope_rating')
           .in('course_id', uniqueCourseIds),
+        supabase.from('handicap_history')
+          .select('round_id, handicap, is_attested, recorded_at')
+          .eq('profile_id', profileId)
+          .in('round_id', roundIds)
+          .order('recorded_at', { ascending: false }),
       ]);
 
       if (holeScoresRes.error) throw holeScoresRes.error;
@@ -151,6 +107,15 @@ export const useHandicapHistory = (profileId: string | null) => {
       const teeMap = new Map<string, { course_rating: number; slope_rating: number }>();
       for (const t of courseTeesRes.data || []) {
         teeMap.set(`${t.course_id}|${t.tee_color}`, { course_rating: t.course_rating, slope_rating: t.slope_rating });
+      }
+      // Materialized lookup by round_id (keep most recent record per round)
+      const matByRoundId = new Map<string, { handicap: number; is_attested: boolean }>();
+      for (const row of (matHistoryRes.data || []) as any[]) {
+        if (!row.round_id || matByRoundId.has(row.round_id)) continue;
+        matByRoundId.set(row.round_id, {
+          handicap: Number(row.handicap) || 0,
+          is_attested: row.is_attested ?? false,
+        });
       }
 
       const entries: HandicapHistoryEntry[] = [];
@@ -187,6 +152,7 @@ export const useHandicapHistory = (profileId: string | null) => {
         const adjustedGrossScore = calculateAdjustedGrossScore(holeStrokesArr, holePars, strokesPerHole);
         const totalStrokes = holeScores.reduce((sum, h) => sum + (h.strokes || 0), 0);
         const differential = calculateDifferential(adjustedGrossScore, courseRating, slopeRating);
+        const mat = matByRoundId.get(rp.round_id);
 
         entries.push({
           roundId: round.id,
@@ -198,8 +164,8 @@ export const useHandicapHistory = (profileId: string | null) => {
           courseRating,
           slopeRating,
           differential,
-          handicapAtTime: 0,
-          isAttested: false,
+          handicapAtTime: mat?.handicap ?? 0,
+          isAttested: mat?.is_attested ?? false,
         });
       }
 
@@ -208,6 +174,7 @@ export const useHandicapHistory = (profileId: string | null) => {
       const roundsUsed = getNumDifferentialsToUse(entries.length);
 
       return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3 };
+
     },
     enabled: !!profileId,
     staleTime: 5 * 60 * 1000,
