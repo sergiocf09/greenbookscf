@@ -341,6 +341,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                {attestationCount > 0 && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAttestation(); }}>
+                    <ScrollText className="h-4 w-4 mr-2 text-destructive" />
+                    <span>Scores Attestation</span>
+                    <span className="ml-1 text-destructive font-semibold">({attestationCount})</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => {
                     onSetProfileMenuOpen(false);
