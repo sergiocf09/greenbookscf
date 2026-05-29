@@ -364,6 +364,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAuditLog(); }}>
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    <span>Bitácora de Ronda</span>
+                  </DropdownMenuItem>
+                )}
+
                 {attestationCount > 0 && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAttestation(); }}>
                     <ScrollText className="h-4 w-4 mr-2 text-destructive" />
