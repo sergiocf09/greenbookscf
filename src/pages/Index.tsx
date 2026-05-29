@@ -202,8 +202,8 @@ const Index = () => {
   const vegas = useVegas(roundState?.id ?? null);
   const nines = useNines(roundState?.id ?? null, players);
 
-  // Scores Attestation
-  const { pendingRounds: pendingAttestations, isAttesting, attestRound } = useAttestation(profile?.id ?? null);
+  // Scores Attestation (per-player model)
+  const { pendingRounds: pendingAttestations, pendingPlayersCount, isAttesting, attestPlayer } = useAttestation(profile?.id ?? null);
 
 
 
@@ -2374,7 +2374,7 @@ const Index = () => {
         isRoundStarted={isRoundStarted}
         roundState={roundState}
         linkedLeaderboards={linkedLeaderboards}
-        attestationCount={pendingAttestations.length}
+        attestationCount={pendingPlayersCount}
         onOpenAttestation={() => openDialog('attestation')}
         onSetView={setView}
         onSetTheme={setTheme}
@@ -2848,7 +2848,7 @@ const Index = () => {
         onClose={() => closeDialog('attestation')}
         rounds={pendingAttestations}
         isAttesting={isAttesting}
-        onAttest={attestRound}
+        onAttest={attestPlayer}
       />
       <UpgradeModal
         open={showUpgrade}
