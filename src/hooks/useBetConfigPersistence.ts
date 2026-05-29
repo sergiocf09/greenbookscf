@@ -707,11 +707,13 @@ export const useBetConfigPersistence = ({
           ownSaveTimestampsRef.current = new Set(arr.slice(-10));
         }
       }
-
       devLog('Bet config saved to database');
-      if (logEvent) {
-        logEvent('bet_config_changed', { description: 'Configuración de apuestas actualizada' });
+      const description = diffBetConfigs(prevSavedConfigRef.current, configToSave);
+      prevSavedConfigRef.current = JSON.parse(JSON.stringify(configToSave));
+      if (logEvent && description !== 'Sin cambios detectables') {
+        logEvent('bet_config_changed', { description });
       }
+
     } catch (err) {
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
