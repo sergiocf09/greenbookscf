@@ -810,6 +810,10 @@ export const useRoundManagement = ({
       setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));
 
       toast.success('Ronda creada');
+      if (logEvent) {
+        logEvent('round_created', { course_id: courseId });
+      }
+
 
       // Persist the organizer's locally-set handicap from setup.
       // The RPC always creates the organizer with handicap = 0, so we must sync
