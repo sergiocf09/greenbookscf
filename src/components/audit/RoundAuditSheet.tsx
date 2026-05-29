@@ -126,22 +126,23 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent side="bottom" className="h-[80vh] flex flex-col p-0">
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border">
-          <div className="flex items-center justify-between gap-12 pr-10">
+          <div className="flex items-center pr-20">
             <SheetTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="h-4 w-4" />
               Bitácora de Ronda
             </SheetTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => onRefresh()}
-              aria-label="Actualizar bitácora"
-              title="Actualizar bitácora"
-            >
-              <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-            </Button>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-12 top-3 h-8 w-8 shrink-0"
+            onClick={() => onRefresh()}
+            aria-label="Actualizar bitácora"
+            title="Actualizar bitácora"
+          >
+            <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+          </Button>
+
           <div className="flex gap-1.5 overflow-x-auto pt-2 -mx-1 px-1">
             {FILTER_GROUPS.map(g => (
               <button
