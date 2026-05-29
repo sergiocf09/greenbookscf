@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
 
@@ -15,6 +15,7 @@ export interface AuditLogEntry {
 }
 
 export function useRoundAuditLog(roundId: string | null, isAdmin: boolean) {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['round-audit-log', roundId],
     enabled: !!roundId && isAdmin,
@@ -42,23 +43,29 @@ export function useRoundAuditLog(roundId: string | null, isAdmin: boolean) {
     },
   });
 
-  const logEvent = useCallback(async (
+  const logEvent = useCallback((
     eventType: string,
     payload: Record<string, any>,
     targetPlayerId?: string | null
   ) => {
     if (!roundId) return;
-    try {
-      await supabase.rpc('log_round_event', {
+    void supabase.rpc('log_round_event', {
         p_round_id: roundId,
         p_event_type: eventType,
         p_payload: payload,
         p_target_player_id: targetPlayerId ?? null,
+      })
+      .then(({ error }) => {
+        if (error) {
+          devError('useRoundAuditLog logEvent failed (non-blocking)', error);
+          return;
+        }
+        void queryClient.invalidateQueries({ queryKey: ['round-audit-log', roundId] });
+      })
+      .catch((err) => {
+        devError('useRoundAuditLog logEvent failed (non-blocking)', err);
       });
-    } catch (err) {
-      devError('useRoundAuditLog logEvent failed (non-blocking)', err);
-    }
-  }, [roundId]);
+  }, [queryClient, roundId]);
 
   return {
     entries: query.data ?? [],
