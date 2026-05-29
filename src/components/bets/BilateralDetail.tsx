@@ -2210,23 +2210,32 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 Sin datos de Oyeses {activeModality === 'sangron' ? 'Sangrón' : 'Acumulado'} registrados
                               </div>
                             )}
-                            {!isHistorical && onBetConfigChange && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium">Zapato</span>
-                                <Switch
-                                  checked={betConfig.oyeses.zapatoEnabled !== false}
-                                  onCheckedChange={(checked) => {
-                                    onBetConfigChange({
-                                      ...betConfig,
-                                      oyeses: {
-                                        ...betConfig.oyeses,
-                                        zapatoEnabled: checked,
-                                      },
-                                    });
-                                  }}
-                                />
-                              </div>
-                            )}
+                            {!isHistorical && onBetConfigChange && (() => {
+                              const zapatoPairKey = [player.id, rival.id].sort().join('_');
+                              const pairOverride = betConfig.oyesPairZapatoOverrides?.[zapatoPairKey];
+                              const globalZapato = betConfig.oyeses.zapatoEnabled !== false;
+                              const checked = pairOverride !== undefined ? pairOverride : globalZapato;
+                              return (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium">Zapato</span>
+                                  <Switch
+                                    checked={checked}
+                                    onCheckedChange={(next) => {
+                                      const nextOverrides = { ...(betConfig.oyesPairZapatoOverrides ?? {}) };
+                                      if (next === globalZapato) {
+                                        delete nextOverrides[zapatoPairKey];
+                                      } else {
+                                        nextOverrides[zapatoPairKey] = next;
+                                      }
+                                      onBetConfigChange({
+                                        ...betConfig,
+                                        oyesPairZapatoOverrides: nextOverrides,
+                                      });
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })()}
                             {/* Oyes modality pair override */}
                             {!isHistorical && onBetConfigChange && (() => {
                               const cfgA = betConfig.oyeses?.playerConfigs?.find(pc => pc.playerId === player.id);
