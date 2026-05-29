@@ -218,6 +218,21 @@ const Index = () => {
   // Scores Attestation (per-player model)
   const { pendingRounds: pendingAttestations, pendingPlayersCount, isAttesting, attestPlayer } = useAttestation(profile?.id ?? null);
 
+  // Round audit log (only fetches when current user is round admin)
+  const isCurrentUserRoundAdmin =
+    roundState.organizerProfileId === profile?.id ||
+    players.some(p => p.profileId === profile?.id && p.isAdmin);
+
+  const {
+    entries: auditEntries,
+    isLoading: isAuditLoading,
+    refetch: refetchAudit,
+    logEvent: realLogEvent,
+  } = useRoundAuditLog(roundState.id, isCurrentUserRoundAdmin);
+
+  useEffect(() => {
+    logEventRef.current = realLogEvent;
+  }, [realLogEvent]);
 
 
   // Sprint 3: sync betConfig setup → dedicated hooks
