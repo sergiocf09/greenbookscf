@@ -214,19 +214,8 @@ export function AppHeader(props: AppHeaderProps) {
               </span>
             </div>
           )}
-          {/* Audit log button — visible only for round admin during active round */}
-          {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
-              onClick={onOpenAuditLog}
-              title="Bitácora de ronda"
-            >
-              <ClipboardList className="h-5 w-5" />
-            </Button>
-          )}
           {/* Friends Button - only show in setup view */}
+
 
           {view === 'setup' && (
             <Button
@@ -248,6 +237,18 @@ export function AppHeader(props: AppHeaderProps) {
                 onClick={() => onOpenDialog('help')}
               >
                 <HelpCircle className="h-7 w-7" />
+              </Button>
+            )}
+            {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
+                onClick={onOpenAuditLog}
+                aria-label="Bitácora de ronda"
+                title="Bitácora de ronda"
+              >
+                <ClipboardList className="h-4 w-4" />
               </Button>
             )}
             <Button
