@@ -2152,6 +2152,8 @@ const Index = () => {
 
         if (idx >= 0) {
           const wasConfirmed = !!playerScores[idx].confirmed;
+          const prevStrokes = playerScores[idx].strokes;
+          const prevPutts = playerScores[idx].putts;
 
           // Only unconfirm when the actual score changes.
           // Markers (unidades/manchas) should NOT force re-confirmation.
@@ -2180,8 +2182,28 @@ const Index = () => {
             saveScoreToDb(playerId, holeNumber, playerScores[idx]);
           }
 
+          // Audit log: only log modifications of already-confirmed scores here.
+          // First captures are logged in confirmHole.
+          if (wasConfirmed && isScoringMutation) {
+            const allGroupPlayers = [...players];
+            playerGroups.forEach((g) => allGroupPlayers.push(...g.players));
+            const player = allGroupPlayers.find((p) => p.id === playerId);
+            const newStrokes = updates.strokes ?? prevStrokes;
+            const newPutts = updates.putts ?? prevPutts;
+            if (prevStrokes !== newStrokes || prevPutts !== newPutts) {
+              logEvent('score_modified', {
+                hole_number: holeNumber,
+                prev_strokes: prevStrokes,
+                new_strokes: newStrokes,
+                prev_putts: prevPutts,
+                new_putts: newPutts,
+              }, player?.profileId ?? null);
+            }
+          }
+
           // No global confirmedHoles mutation here; UI/logic derives from per-player flags.
         }
+
 
         newScores.set(playerId, playerScores);
         return newScores;
@@ -2194,11 +2216,11 @@ const Index = () => {
     // If playerIds provided, only confirm for those players (group-specific)
     // Otherwise, fallback to all players in main group (legacy behavior)
     const targetPlayerIds = playerIds ?? players.map(p => p.id);
-    
+
     // Get all players from all groups to find player info
     const allGroupPlayers = [...players];
     playerGroups.forEach(g => allGroupPlayers.push(...g.players));
-    
+
     // Mark the specified players' scores for this hole as confirmed
     // Create the score if it doesn't exist
     setScores(prev => {
@@ -2206,17 +2228,14 @@ const Index = () => {
       targetPlayerIds.forEach(playerId => {
         const playerScores = [...(newScores.get(playerId) || [])];
         const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
-        
+
         if (idx >= 0) {
-          // Score exists - just mark as confirmed
           playerScores[idx] = { ...playerScores[idx], confirmed: true };
         } else {
-          // Score doesn't exist - create it with default values
           const player = allGroupPlayers.find(p => p.id === playerId);
           const holePar = course?.holes[holeNumber - 1]?.par || 4;
           const strokesPerHole = player && course ? calculateStrokesPerHole(player.handicap, course) : [];
           const strokesReceived = strokesPerHole[holeNumber - 1] ?? 0;
-          
           const newScore: PlayerScore = {
             playerId,
             holeNumber,
@@ -2235,9 +2254,6 @@ const Index = () => {
       });
       return newScores;
     });
-    
-    // Note: we don't add to global confirmedHoles since confirmation is now per-group
-    // The UI derives this from per-player scores
 
     // Persist confirmation explicitly - use a small delay to ensure local state is updated
     if (roundState.id && course) {
@@ -2247,11 +2263,22 @@ const Index = () => {
             const holeScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
             if (!holeScore) return;
             await saveScoreToDb(playerId, holeNumber, { ...holeScore, confirmed: true });
+            // Audit log: capture score per player
+            const player = allGroupPlayers.find(p => p.id === playerId);
+            logEvent('score_captured', {
+              hole_number: holeNumber,
+              strokes: holeScore.strokes,
+              putts: holeScore.putts,
+            }, player?.profileId ?? null);
           })
         );
+        logEvent('hole_confirmed', { hole_number: holeNumber });
       }, 50);
     }
-  }, [players, playerGroups, course, saveScoreToDb, roundState.id]);
+  }, [players, playerGroups, course, saveScoreToDb, roundState.id, logEvent]);
+
+
+
 
   const isHoleConfirmed = useCallback(
     (holeNumber: number): boolean => {
