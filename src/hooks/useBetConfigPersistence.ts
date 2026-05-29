@@ -340,8 +340,10 @@ export const useBetConfigPersistence = ({
         // Suppress auto-save: loading from DB should NOT trigger a save-back
         isApplyingRemoteRef.current = true;
         applyDbConfigToState(dbConfig);
+        prevSavedConfigRef.current = JSON.parse(JSON.stringify(dbConfig));
         devLog('Bet config loaded from database:', dbConfig);
       }
+
       
       isLoadedRef.current = true;
       setIsLoaded(true);
