@@ -2239,19 +2239,28 @@ const Index = () => {
           const strokesPerHole = player && course ? calculateStrokesPerHole(player.handicap, course) : [];
           const strokesReceived = strokesPerHole[holeNumber - 1] ?? 0;
           
-          const newScore: PlayerScore = {
-            playerId,
-            holeNumber,
-            strokes: holePar,
-            putts: 2,
-            markers: { ...defaultMarkerState },
-            strokesReceived,
-            netScore: holePar - strokesReceived,
-            confirmed: true,
-            oyesProximity: null,
-          };
-          playerScores.push(newScore);
-          playerScores.sort((a, b) => a.holeNumber - b.holeNumber);
+    // Persist confirmation explicitly - use a small delay to ensure local state is updated
+    if (roundState.id && course) {
+      setTimeout(() => {
+        void Promise.all(
+          targetPlayerIds.map(async (playerId) => {
+            const holeScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
+            if (!holeScore) return;
+            await saveScoreToDb(playerId, holeNumber, { ...holeScore, confirmed: true });
+            // Audit log: capture score per player
+            const player = allGroupPlayers.find(p => p.id === playerId);
+            logEvent('score_captured', {
+              hole_number: holeNumber,
+              strokes: holeScore.strokes,
+              putts: holeScore.putts,
+            }, player?.profileId ?? null);
+          })
+        );
+        logEvent('hole_confirmed', { hole_number: holeNumber });
+      }, 50);
+    }
+  }, [players, playerGroups, course, saveScoreToDb, roundState.id, logEvent]);
+
         }
         newScores.set(playerId, playerScores);
       });
