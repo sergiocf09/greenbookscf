@@ -59,7 +59,10 @@ import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
 import { useAttestation } from '@/hooks/useAttestation';
+import { useRoundAuditLog } from '@/hooks/useRoundAuditLog';
 import { AttestationSheet } from '@/components/attestation/AttestationSheet';
+import { RoundAuditSheet } from '@/components/audit/RoundAuditSheet';
+
 
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
