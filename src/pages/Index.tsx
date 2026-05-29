@@ -71,7 +71,7 @@ type DialogName =
   | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
   | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
   | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
-  | 'roundShare' | 'attestation';
+  | 'roundShare' | 'attestation' | 'auditLog';
 
 type DialogState = Record<DialogName, boolean>;
 
@@ -81,8 +81,9 @@ const DIALOGS_INITIAL: DialogState = {
   leaderboard: false, linkLeaderboard: false, handicapMatrix: false,
   closeAttempt: false, closeConfirm: false, pendingRound: false,
   friends: false, addFromFriends: false, onboarding: false, help: false,
-  profileMenuHelp: false, roundShare: false, attestation: false,
+  profileMenuHelp: false, roundShare: false, attestation: false, auditLog: false,
 };
+
 
 function dialogsReducer(state: DialogState, action: { name: DialogName; open: boolean }): DialogState {
   if (state[action.name] === action.open) return state;
