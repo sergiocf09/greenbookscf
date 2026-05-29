@@ -389,7 +389,7 @@ export function AppDialogs(props: AppDialogsProps) {
                   .select(`
                     id, profile_id, handicap_for_round,
                     guest_name, guest_initials, guest_color,
-                    profiles(display_name, initials, avatar_color)
+                    profiles!round_players_profile_id_fkey(display_name, initials, avatar_color)
                   `)
                   .eq('round_id', roundId);
 
