@@ -2897,6 +2897,14 @@ const Index = () => {
         isAttesting={isAttesting}
         onAttest={attestPlayer}
       />
+      <RoundAuditSheet
+        open={dialogs.auditLog}
+        onClose={() => closeDialog('auditLog')}
+        entries={auditEntries}
+        isLoading={isAuditLoading}
+        onRefresh={refetchAudit}
+      />
+
       <UpgradeModal
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
