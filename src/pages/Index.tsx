@@ -158,6 +158,10 @@ const Index = () => {
   // Swipe navigation between tabs
   const swipeHandlers = useSwipeNavigation(TAB_ORDER, view as AppView, (v) => {
     setView(v);
+    if (v !== 'leaderboards') setLeaderboardDetailId(null);
+    if (v !== 'rankings') setRankingDetailId(null);
+  });
+
   // Audit log: ref-based wrapper so hooks declared before useRoundAuditLog can still log events.
   const logEventRef = useRef<((eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>) | null>(null);
   const logEvent = useCallback(async (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => {
@@ -166,9 +170,6 @@ const Index = () => {
 
   // Round management hook with restoration
 
-  });
-
-  // Round management hook with restoration
   const {
     roundState,
     setRoundState,
