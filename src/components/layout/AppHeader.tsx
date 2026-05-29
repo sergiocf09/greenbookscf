@@ -184,8 +184,26 @@ export function AppHeader(props: AppHeaderProps) {
           ) : null}
         </div>
 
-        {/* Right: Friends + Help/Refresh + Profile Menu */}
+        {/* Right: Attestation + Friends + Help/Refresh + Profile Menu */}
         <div className="flex items-center flex-shrink-0 gap-1">
+          {/* Attestation badge — only when there are pending attestations */}
+          {attestationCount > 0 && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={onOpenAttestation}
+                aria-label="Scores Attestation"
+                title="Scores Attestation"
+              >
+                <ScrollText className="h-5 w-5" />
+              </Button>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center pointer-events-none">
+                {attestationCount > 9 ? '9+' : attestationCount}
+              </span>
+            </div>
+          )}
           {/* Friends Button - only show in setup view */}
           {view === 'setup' && (
             <Button
