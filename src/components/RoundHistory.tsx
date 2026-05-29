@@ -245,7 +245,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           guest_name,
           guest_initials,
           guest_color,
-          profiles(display_name, initials, avatar_color)
+          profiles!round_players_profile_id_fkey(display_name, initials, avatar_color)
         `)
         .eq('round_id', round.id);
 
