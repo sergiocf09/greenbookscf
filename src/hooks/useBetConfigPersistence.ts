@@ -419,8 +419,10 @@ export const useBetConfigPersistence = ({
           amount: dbConfig.oyeses.amount ?? prev.oyeses.amount,
           playerConfigs: dbConfig.oyeses.playerConfigs ?? prev.oyeses.playerConfigs,
           participantIds: 'participantIds' in dbConfig.oyeses ? dbConfig.oyeses.participantIds : prev.oyeses.participantIds,
+          zapatoEnabled: 'zapatoEnabled' in dbConfig.oyeses ? dbConfig.oyeses.zapatoEnabled : prev.oyeses.zapatoEnabled,
         };
       }
+
       
       if ('oyesPairModalityOverrides' in dbConfig) newConfig.oyesPairModalityOverrides = dbConfig.oyesPairModalityOverrides;
       if ('pressurePairOverrides' in dbConfig) newConfig.pressurePairOverrides = dbConfig.pressurePairOverrides;
