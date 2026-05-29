@@ -606,6 +606,7 @@ export const useBetConfigPersistence = ({
           zapatoEnabled: config.oyeses.zapatoEnabled,
         },
         oyesPairModalityOverrides: config.oyesPairModalityOverrides,
+        oyesPairZapatoOverrides: config.oyesPairZapatoOverrides,
         medalGeneral: {
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
