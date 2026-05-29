@@ -87,6 +87,7 @@ export const useHandicapHistory = (profileId: string | null) => {
           slopeRating: Number(row.slope_rating) || 113,
           differential: Number(row.differential),
           handicapAtTime: Number(row.handicap),
+          isAttested: row.is_attested ?? false,
         }));
 
         if (entries.length > 0) {
