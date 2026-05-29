@@ -95,9 +95,14 @@ interface AppHeaderProps {
     code: string;
     competition_type: string;
   }>;
-
-  // Attestation
   attestationCount: number;
+  onOpenAttestation: () => void;
+
+  // Audit log
+  isRoundAdmin: boolean;
+  onOpenAuditLog: () => void;
+
+
   onOpenAttestation: () => void;
 
   // Handlers
