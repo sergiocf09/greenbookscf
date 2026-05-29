@@ -166,13 +166,40 @@ export const useScorePersistence = ({
 
       const { error } = await supabase
         .from('hole_scores')
-        .upsert(payload, {
-          onConflict: 'round_player_id,hole_number',
-          ignoreDuplicates: false,
-        });
-
       if (error) {
         devError('Error saving score:', error);
+      } else if (logEvent && roundId) {
+        const isConfirmEvent = Object.prototype.hasOwnProperty.call(score, 'confirmed') && score.confirmed;
+        const prevScore = scores.get(playerId)?.find(s => s.holeNumber === holeNumber);
+        const prevStrokes = prevScore?.strokes;
+        const prevPutts = prevScore?.putts;
+        const newStrokes = score.strokes;
+        const newPutts = score.putts;
+
+        if (isConfirmEvent) {
+          // logged in saveHoleScores
+        } else if (newStrokes !== undefined) {
+          const isModification = prevScore?.confirmed && prevStrokes !== undefined && prevStrokes !== newStrokes;
+          const eventType = isModification ? 'score_modified' : 'score_captured';
+          const auditPayload: Record<string, any> = { hole_number: holeNumber };
+          if (isModification) {
+            auditPayload.prev_strokes = prevStrokes;
+            auditPayload.new_strokes = newStrokes;
+            if (prevPutts !== undefined) auditPayload.prev_putts = prevPutts;
+            if (newPutts !== undefined) auditPayload.new_putts = newPutts;
+          } else {
+            auditPayload.strokes = newStrokes;
+            if (newPutts !== undefined) auditPayload.putts = newPutts;
+          }
+          const player = players.find(p => p.id === playerId);
+          logEvent(eventType, auditPayload, player?.profileId ?? null);
+        }
+      }
+    } catch (err) {
+      devError('Error in saveScore:', err);
+    }
+  }, [roundPlayerIds, logEvent, roundId, scores, players]);
+
       }
     } catch (err) {
       devError('Error in saveScore:', err);
