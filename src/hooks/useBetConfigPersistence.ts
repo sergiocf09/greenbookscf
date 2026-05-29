@@ -625,11 +625,15 @@ export const useBetConfigPersistence = ({
       }
 
       devLog('Bet config saved to database');
+      if (logEvent) {
+        logEvent('bet_config_changed', { description: 'Configuración de apuestas actualizada' });
+      }
     } catch (err) {
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
     }
-  }, [roundId, loadBetConfig]);
+  }, [roundId, loadBetConfig, logEvent]);
+
 
   // Debounced save on config change
   const debouncedSave = useCallback((config: BetConfig) => {
