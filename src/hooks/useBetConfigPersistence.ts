@@ -215,6 +215,86 @@ interface RoundBetConfig {
 }
 
 
+const BET_LABELS: Record<string, string> = {
+  medal: 'Medal',
+  pressures: 'Presiones',
+  skins: 'Skins',
+  caros: 'Caros',
+  units: 'Unidades',
+  manchas: 'Manchas',
+  culebras: 'Culebras',
+  pinguinos: 'Pingüinos',
+  rayas: 'Rayas',
+  oyeses: 'Oyes',
+  medalGeneral: 'Medal General',
+  puttsGeneral: 'Putts General',
+  girGeneral: 'GIR General',
+  coneja: 'Coneja',
+  carritos: 'Carritos',
+  putts: 'Putts',
+  sideBets: 'Side Bets',
+  stableford: 'Stableford',
+  teamPressures: 'Presiones por Equipo',
+  zoologico: 'Zoológico',
+  skinsGrupal: 'Skins Grupal',
+  wolfSetup: 'Loba',
+  sixesBets: 'Sixes',
+  vegasBets: 'Vegas',
+  ninesBets: 'Nines',
+  matchPlay: 'Match Play',
+  bloques: 'Bloques',
+};
+
+const AMOUNT_FIELDS = ['amount', 'frontAmount', 'backAmount', 'totalAmount', 'frontValue', 'backValue', 'medalTotalValue', 'valuePerOccurrence', 'amountPerBlock'];
+
+function diffBetSection(label: string, prev: any, next: any): string[] {
+  const changes: string[] = [];
+  if (!prev && !next) return changes;
+  const prevEnabled = prev?.enabled;
+  const nextEnabled = next?.enabled;
+  if (prevEnabled !== nextEnabled && (prevEnabled !== undefined || nextEnabled !== undefined)) {
+    changes.push(`${label} ${nextEnabled ? 'activada' : 'desactivada'}`);
+    // If just toggled, skip detailed diff to avoid noise
+    return changes;
+  }
+  if (!next || nextEnabled === false) return changes;
+  for (const f of AMOUNT_FIELDS) {
+    const a = prev?.[f];
+    const b = next?.[f];
+    if (a !== b && (typeof a === 'number' || typeof b === 'number')) {
+      changes.push(`${label} ${f}: ${a ?? '—'}→${b ?? '—'}`);
+    }
+  }
+  const prevPart = prev?.participantIds?.length;
+  const nextPart = next?.participantIds?.length;
+  if (prevPart !== nextPart && (prevPart !== undefined || nextPart !== undefined)) {
+    changes.push(`${label}: participantes ${prevPart ?? 0}→${nextPart ?? 0}`);
+  }
+  return changes;
+}
+
+function diffBetConfigs(prev: any, next: any): string {
+  if (!prev) return 'Configuración inicial guardada';
+  const allChanges: string[] = [];
+  for (const key of Object.keys(BET_LABELS)) {
+    allChanges.push(...diffBetSection(BET_LABELS[key], prev?.[key], next?.[key]));
+  }
+  if (allChanges.length === 0) {
+    // Fallback: detect any JSON diff
+    try {
+      if (JSON.stringify(prev) !== JSON.stringify(next)) {
+        return 'Ajustes menores en configuración';
+      }
+    } catch {}
+    return 'Sin cambios detectables';
+  }
+  // Cap length
+  const max = 3;
+  const shown = allChanges.slice(0, max).join(' · ');
+  const extra = allChanges.length > max ? ` (+${allChanges.length - max} más)` : '';
+  return shown + extra;
+}
+
 export const useBetConfigPersistence = ({
   roundId,
   betConfig,
@@ -231,6 +311,8 @@ export const useBetConfigPersistence = ({
   const savingRef = useRef(false);
   // Track when we are applying a remote config change to suppress our own re-save
   const isApplyingRemoteRef = useRef(false);
+  // Snapshot of last saved config for diffing in audit log
+  const prevSavedConfigRef = useRef<any>(null);
 
   // Load bet config from database
   const loadBetConfig = useCallback(async () => {
@@ -258,8 +340,10 @@ export const useBetConfigPersistence = ({
         // Suppress auto-save: loading from DB should NOT trigger a save-back
         isApplyingRemoteRef.current = true;
         applyDbConfigToState(dbConfig);
+        prevSavedConfigRef.current = JSON.parse(JSON.stringify(dbConfig));
         devLog('Bet config loaded from database:', dbConfig);
       }
+
       
       isLoadedRef.current = true;
       setIsLoaded(true);
@@ -623,11 +707,13 @@ export const useBetConfigPersistence = ({
           ownSaveTimestampsRef.current = new Set(arr.slice(-10));
         }
       }
-
       devLog('Bet config saved to database');
-      if (logEvent) {
-        logEvent('bet_config_changed', { description: 'Configuración de apuestas actualizada' });
+      const description = diffBetConfigs(prevSavedConfigRef.current, configToSave);
+      prevSavedConfigRef.current = JSON.parse(JSON.stringify(configToSave));
+      if (logEvent && description !== 'Sin cambios detectables') {
+        logEvent('bet_config_changed', { description });
       }
+
     } catch (err) {
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
