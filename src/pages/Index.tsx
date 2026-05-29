@@ -1079,7 +1079,14 @@ const Index = () => {
                     if (error) devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
                     else devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`);
                   });
+                if (currentPlayer.handicap !== newPlayer.handicap) {
+                  logEvent('handicap_changed', {
+                    prev_handicap: currentPlayer.handicap,
+                    new_handicap: newPlayer.handicap,
+                  }, newPlayer.profileId ?? null);
+                }
               }
+
             } else {
               if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
                 devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
