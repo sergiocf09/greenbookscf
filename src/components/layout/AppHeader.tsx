@@ -239,6 +239,18 @@ export function AppHeader(props: AppHeaderProps) {
                 <HelpCircle className="h-7 w-7" />
               </Button>
             )}
+            {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
+                onClick={onOpenAuditLog}
+                aria-label="Bitácora de ronda"
+                title="Bitácora de ronda"
+              >
+                <ClipboardList className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
