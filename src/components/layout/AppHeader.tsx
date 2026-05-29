@@ -25,6 +25,7 @@ import {
   Sun,
   Moon,
   BarChart2,
+  ScrollText,
 } from 'lucide-react';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -93,6 +94,10 @@ interface AppHeaderProps {
     competition_type: string;
   }>;
 
+  // Attestation
+  attestationCount: number;
+  onOpenAttestation: () => void;
+
   // Handlers
   onSetView: (v: AppView) => void;
   onSetTheme: (t: string) => void;
@@ -120,6 +125,8 @@ export function AppHeader(props: AppHeaderProps) {
     theme,
     profileMenuOpen,
     pendingRounds,
+    attestationCount,
+    onOpenAttestation,
     onSetView,
     onSetTheme,
     onSetProfileMenuOpen,
@@ -177,8 +184,26 @@ export function AppHeader(props: AppHeaderProps) {
           ) : null}
         </div>
 
-        {/* Right: Friends + Help/Refresh + Profile Menu */}
+        {/* Right: Attestation + Friends + Help/Refresh + Profile Menu */}
         <div className="flex items-center flex-shrink-0 gap-1">
+          {/* Attestation badge — only when there are pending attestations */}
+          {attestationCount > 0 && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={onOpenAttestation}
+                aria-label="Scores Attestation"
+                title="Scores Attestation"
+              >
+                <ScrollText className="h-5 w-5" />
+              </Button>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center pointer-events-none">
+                {attestationCount > 9 ? '9+' : attestationCount}
+              </span>
+            </div>
+          )}
           {/* Friends Button - only show in setup view */}
           {view === 'setup' && (
             <Button
@@ -314,6 +339,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <Play className="h-4 w-4 mr-2 text-destructive" />
                     <span>Rondas Pendientes</span>
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
+                  </DropdownMenuItem>
+                )}
+                {attestationCount > 0 && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAttestation(); }}>
+                    <ScrollText className="h-4 w-4 mr-2 text-destructive" />
+                    <span>Scores Attestation</span>
+                    <span className="ml-1 text-destructive font-semibold">({attestationCount})</span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
