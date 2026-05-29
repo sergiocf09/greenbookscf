@@ -2261,28 +2261,7 @@ const Index = () => {
     }
   }, [players, playerGroups, course, saveScoreToDb, roundState.id, logEvent]);
 
-        }
-        newScores.set(playerId, playerScores);
-      });
-      return newScores;
-    });
-    
-    // Note: we don't add to global confirmedHoles since confirmation is now per-group
-    // The UI derives this from per-player scores
 
-    // Persist confirmation explicitly - use a small delay to ensure local state is updated
-    if (roundState.id && course) {
-      setTimeout(() => {
-        void Promise.all(
-          targetPlayerIds.map(async (playerId) => {
-            const holeScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
-            if (!holeScore) return;
-            await saveScoreToDb(playerId, holeNumber, { ...holeScore, confirmed: true });
-          })
-        );
-      }, 50);
-    }
-  }, [players, playerGroups, course, saveScoreToDb, roundState.id]);
 
   const isHoleConfirmed = useCallback(
     (holeNumber: number): boolean => {
