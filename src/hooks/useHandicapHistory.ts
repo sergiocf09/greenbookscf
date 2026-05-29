@@ -50,7 +50,7 @@ export const useHandicapHistory = (profileId: string | null) => {
       const { data: matData, error: matError } = await supabase
         .from('handicap_history')
         .select(`
-          id, handicap, round_id, recorded_at, differential,
+          id, handicap, round_id, recorded_at, differential, is_attested,
           adjusted_gross_score, gross_score, course_rating, slope_rating, tee_color,
           rounds!handicap_history_round_fk (
             id, date,
