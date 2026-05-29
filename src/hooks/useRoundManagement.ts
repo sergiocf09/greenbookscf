@@ -2191,6 +2191,10 @@ export const useRoundManagement = ({
         }
         if (lastErr) throw lastErr;
         pushStageOk(report, 'setRoundClosed');
+        if (logEvent) {
+          logEvent('round_closed', { round_id: roundState.id });
+        }
+
       } catch (e) {
         await fail('setRoundClosed', e, report.attemptId);
         toast.error('No se pudo marcar la ronda como cerrada');
