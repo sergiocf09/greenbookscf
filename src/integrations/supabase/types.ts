@@ -1379,6 +1379,58 @@ export type Database = {
         }
         Relationships: []
       }
+      round_audit_log: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          round_id: string
+          target_player_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          round_id: string
+          target_player_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          round_id?: string
+          target_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_audit_log_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_audit_log_target_player_id_fkey"
+            columns: ["target_player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_close_attempts: {
         Row: {
           ended_at: string | null
@@ -2498,6 +2550,19 @@ export type Database = {
           worst_gross_score: number
         }[]
       }
+      get_round_audit_log: {
+        Args: { p_limit?: number; p_offset?: number; p_round_id: string }
+        Returns: {
+          actor_id: string
+          actor_name: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          target_name: string
+          target_player_id: string
+        }[]
+      }
       get_round_handicap_ranking_stats: {
         Args: { p_round_id: string }
         Returns: {
@@ -2555,6 +2620,15 @@ export type Database = {
             }
             Returns: Json
           }
+      log_round_event: {
+        Args: {
+          p_event_type: string
+          p_payload?: Json
+          p_round_id: string
+          p_target_player_id?: string
+        }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
