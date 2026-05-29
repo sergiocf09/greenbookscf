@@ -103,8 +103,6 @@ interface AppHeaderProps {
   onOpenAuditLog: () => void;
 
 
-  onOpenAttestation: () => void;
-
   // Handlers
   onSetView: (v: AppView) => void;
   onSetTheme: (t: string) => void;
