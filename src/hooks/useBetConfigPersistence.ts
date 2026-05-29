@@ -213,11 +213,12 @@ interface RoundBetConfig {
   };
   roundHoles?: 9 | 18;
 }
-
-export const useBetConfigPersistence = ({
   roundId,
   betConfig,
   setBetConfig,
+  logEvent,
+}: UseBetConfigPersistenceProps) => {
+
 }: UseBetConfigPersistenceProps) => {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadedRef = useRef(false);
