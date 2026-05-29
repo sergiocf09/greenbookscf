@@ -81,6 +81,7 @@ interface RoundBetConfig {
     zapatoEnabled?: boolean;
   };
   oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
+  oyesPairZapatoOverrides?: Record<string, boolean>;
   pressurePairOverrides?: Record<string, { onlyMatch?: boolean }>;
   medalGeneral?: {
     enabled: boolean;
@@ -425,6 +426,7 @@ export const useBetConfigPersistence = ({
 
       
       if ('oyesPairModalityOverrides' in dbConfig) newConfig.oyesPairModalityOverrides = dbConfig.oyesPairModalityOverrides;
+      if ('oyesPairZapatoOverrides' in dbConfig) newConfig.oyesPairZapatoOverrides = dbConfig.oyesPairZapatoOverrides;
       if ('pressurePairOverrides' in dbConfig) newConfig.pressurePairOverrides = dbConfig.pressurePairOverrides;
       
       if (dbConfig.bilateralHandicaps) newConfig.bilateralHandicaps = dbConfig.bilateralHandicaps;
@@ -604,6 +606,7 @@ export const useBetConfigPersistence = ({
           zapatoEnabled: config.oyeses.zapatoEnabled,
         },
         oyesPairModalityOverrides: config.oyesPairModalityOverrides,
+        oyesPairZapatoOverrides: config.oyesPairZapatoOverrides,
         medalGeneral: {
           enabled: config.medalGeneral.enabled,
           amount: config.medalGeneral.amount,
