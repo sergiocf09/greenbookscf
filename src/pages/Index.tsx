@@ -58,6 +58,9 @@ import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
+import { useAttestation } from '@/hooks/useAttestation';
+import { AttestationSheet } from '@/components/attestation/AttestationSheet';
+
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
 const TAB_ORDER: AppView[] = ['setup', 'betsetup', 'handicaps', 'scorecard', 'bets'];
@@ -198,6 +201,11 @@ const Index = () => {
   const sixes = useSixes(roundState?.id ?? null, players);
   const vegas = useVegas(roundState?.id ?? null);
   const nines = useNines(roundState?.id ?? null, players);
+
+  // Scores Attestation
+  const { pendingRounds: pendingAttestations, isAttesting, attestRound } = useAttestation(profile?.id ?? null);
+
+
 
   // Sprint 3: sync betConfig setup → dedicated hooks
   useEffect(() => {
@@ -2366,6 +2374,8 @@ const Index = () => {
         isRoundStarted={isRoundStarted}
         roundState={roundState}
         linkedLeaderboards={linkedLeaderboards}
+        attestationCount={pendingAttestations.length}
+        onOpenAttestation={() => openDialog('attestation')}
         onSetView={setView}
         onSetTheme={setTheme}
         onSetProfileMenuOpen={setProfileMenuOpen}
@@ -2833,6 +2843,13 @@ const Index = () => {
         />
       )}
       {(!user || user.is_anonymous) && <GuestConversionScreen />}
+      <AttestationSheet
+        open={dialogs.attestation}
+        onClose={() => closeDialog('attestation')}
+        rounds={pendingAttestations}
+        isAttesting={isAttesting}
+        onAttest={attestRound}
+      />
       <UpgradeModal
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
