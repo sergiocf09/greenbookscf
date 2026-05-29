@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHandicapHistory, HandicapHistoryEntry } from '@/hooks/useHandicapHistory';
-import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, TrendingDown, TrendingUp, Check, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { format } from 'date-fns';
@@ -121,6 +121,24 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
         </div>
       </div>
 
+      {/* Attestation percentage line */}
+      {(() => {
+        const usedEntries = entries.slice(0, roundsUsed);
+        const attestedCount = usedEntries.filter(e => e.isAttested).length;
+        const total = usedEntries.length;
+        const pct = total > 0 ? Math.round((attestedCount / total) * 100) : 0;
+        const colorClass = pct >= 80
+          ? 'text-emerald-500'
+          : pct >= 50
+            ? 'text-yellow-500'
+            : 'text-muted-foreground';
+        return (
+          <div className="text-xs text-muted-foreground px-1">
+            Atestadas: <span className={cn('font-medium', colorClass)}>{attestedCount} de {total} ({pct}%)</span>
+          </div>
+        );
+      })()}
+
       {/* Trend chart */}
       {chartData.length >= 3 && (
         <div className="rounded-xl bg-muted/30 p-3">
@@ -223,6 +241,11 @@ const RoundRow: React.FC<{ entry: HandicapHistoryEntry; isUsed: boolean }> = ({ 
             className={cn('w-2 h-2 rounded-full shrink-0', teeColorClass)}
             title={`Tee ${entry.teeColor}`}
           />
+          {entry.isAttested ? (
+            <Check className="h-3 w-3 text-emerald-500 shrink-0" aria-label="Atestada" />
+          ) : (
+            <Clock className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Pendiente" />
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground mt-0.5">
           <Calendar className="h-3 w-3 shrink-0" />
