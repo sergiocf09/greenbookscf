@@ -615,7 +615,10 @@ export const calculateOyesesBets = (
       // Check for Zapato (100% win rule):
       // - All played holes must be resolved (no pending accumulations)
       // - One player must have won ALL the holes
-      const oyesZapatoEnabled2 = config.oyeses?.zapatoEnabled !== false;
+      const pairZapatoOverride2 = config.oyesPairZapatoOverrides?.[pairKey];
+      const oyesZapatoEnabled2 = pairZapatoOverride2 !== undefined
+        ? pairZapatoOverride2
+        : (config.oyeses?.zapatoEnabled !== false);
       const hasZapato = oyesZapatoEnabled2 && totalPlayedHoles >= 2 && 
         pendingAccumulatedHoles === 0 &&
         (holesWonByA === totalPlayedHoles || holesWonByB === totalPlayedHoles);
