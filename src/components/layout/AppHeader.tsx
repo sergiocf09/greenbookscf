@@ -134,6 +134,8 @@ export function AppHeader(props: AppHeaderProps) {
     onOpenAttestation,
     isRoundAdmin,
     onOpenAuditLog,
+    roundState,
+
 
     onSetView,
     onSetTheme,
