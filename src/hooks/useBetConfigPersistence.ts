@@ -426,6 +426,7 @@ export const useBetConfigPersistence = ({
 
       
       if ('oyesPairModalityOverrides' in dbConfig) newConfig.oyesPairModalityOverrides = dbConfig.oyesPairModalityOverrides;
+      if ('oyesPairZapatoOverrides' in dbConfig) newConfig.oyesPairZapatoOverrides = dbConfig.oyesPairZapatoOverrides;
       if ('pressurePairOverrides' in dbConfig) newConfig.pressurePairOverrides = dbConfig.pressurePairOverrides;
       
       if (dbConfig.bilateralHandicaps) newConfig.bilateralHandicaps = dbConfig.bilateralHandicaps;
