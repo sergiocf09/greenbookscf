@@ -26,7 +26,9 @@ import {
   Moon,
   BarChart2,
   ScrollText,
+  ClipboardList,
 } from 'lucide-react';
+
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { RoundHolesBadge } from '@/components/RoundHolesBadge';
