@@ -199,6 +199,7 @@ export const useHandicapHistory = (profileId: string | null) => {
           slopeRating,
           differential,
           handicapAtTime: 0,
+          isAttested: false,
         });
       }
 
