@@ -20,6 +20,7 @@ export interface HandicapHistoryEntry {
   slopeRating: number;
   differential: number;
   handicapAtTime: number;
+  isAttested: boolean;
 }
 
 export interface HandicapHistoryResult {
