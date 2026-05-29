@@ -2216,11 +2216,11 @@ const Index = () => {
     // If playerIds provided, only confirm for those players (group-specific)
     // Otherwise, fallback to all players in main group (legacy behavior)
     const targetPlayerIds = playerIds ?? players.map(p => p.id);
-    
+
     // Get all players from all groups to find player info
     const allGroupPlayers = [...players];
     playerGroups.forEach(g => allGroupPlayers.push(...g.players));
-    
+
     // Mark the specified players' scores for this hole as confirmed
     // Create the score if it doesn't exist
     setScores(prev => {
@@ -2228,17 +2228,33 @@ const Index = () => {
       targetPlayerIds.forEach(playerId => {
         const playerScores = [...(newScores.get(playerId) || [])];
         const idx = playerScores.findIndex(s => s.holeNumber === holeNumber);
-        
+
         if (idx >= 0) {
-          // Score exists - just mark as confirmed
           playerScores[idx] = { ...playerScores[idx], confirmed: true };
         } else {
-          // Score doesn't exist - create it with default values
           const player = allGroupPlayers.find(p => p.id === playerId);
           const holePar = course?.holes[holeNumber - 1]?.par || 4;
           const strokesPerHole = player && course ? calculateStrokesPerHole(player.handicap, course) : [];
           const strokesReceived = strokesPerHole[holeNumber - 1] ?? 0;
-          
+          const newScore: PlayerScore = {
+            playerId,
+            holeNumber,
+            strokes: holePar,
+            putts: 2,
+            markers: { ...defaultMarkerState },
+            strokesReceived,
+            netScore: holePar - strokesReceived,
+            confirmed: true,
+            oyesProximity: null,
+          };
+          playerScores.push(newScore);
+          playerScores.sort((a, b) => a.holeNumber - b.holeNumber);
+        }
+        newScores.set(playerId, playerScores);
+      });
+      return newScores;
+    });
+
     // Persist confirmation explicitly - use a small delay to ensure local state is updated
     if (roundState.id && course) {
       setTimeout(() => {
@@ -2260,6 +2276,7 @@ const Index = () => {
       }, 50);
     }
   }, [players, playerGroups, course, saveScoreToDb, roundState.id, logEvent]);
+
 
 
 
