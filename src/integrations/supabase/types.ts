@@ -651,6 +651,7 @@ export type Database = {
           gross_score: number | null
           handicap: number
           id: string
+          is_attested: boolean
           profile_id: string
           recorded_at: string
           round_id: string | null
@@ -664,6 +665,7 @@ export type Database = {
           gross_score?: number | null
           handicap: number
           id?: string
+          is_attested?: boolean
           profile_id: string
           recorded_at?: string
           round_id?: string | null
@@ -677,6 +679,7 @@ export type Database = {
           gross_score?: number | null
           handicap?: number
           id?: string
+          is_attested?: boolean
           profile_id?: string
           recorded_at?: string
           round_id?: string | null
@@ -1597,6 +1600,8 @@ export type Database = {
       }
       rounds: {
         Row: {
+          attested_at: string | null
+          attested_by: string | null
           bet_config: Json | null
           course_id: string
           created_at: string
@@ -1609,6 +1614,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attested_at?: string | null
+          attested_by?: string | null
           bet_config?: Json | null
           course_id: string
           created_at?: string
@@ -1621,6 +1628,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attested_at?: string | null
+          attested_by?: string | null
           bet_config?: Json | null
           course_id?: string
           created_at?: string
@@ -1633,6 +1642,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rounds_attested_by_fkey"
+            columns: ["attested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rounds_course_id_fkey"
             columns: ["course_id"]
@@ -2189,6 +2205,7 @@ export type Database = {
         }
         Returns: number
       }
+      attest_round: { Args: { p_round_id: string }; Returns: undefined }
       begin_round_close_attempt: {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
@@ -2370,6 +2387,17 @@ export type Database = {
       get_my_profile_id: { Args: never; Returns: string }
       get_organizer_rounds_closed_count: { Args: never; Returns: number }
       get_participated_rounds_closed_count: { Args: never; Returns: number }
+      get_pending_attestations: {
+        Args: never
+        Returns: {
+          course_name: string
+          my_total_strokes: number
+          organizer_name: string
+          player_names: string[]
+          round_date: string
+          round_id: string
+        }[]
+      }
       get_player_courses_summary: {
         Args: never
         Returns: {
