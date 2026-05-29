@@ -179,13 +179,14 @@ export const useScorePersistence = ({
         const prevScore = scores.get(playerId)?.find(s => s.holeNumber === holeNumber);
         const prevStrokes = prevScore?.strokes;
         const prevPutts = prevScore?.putts;
-        const newStrokes = score.strokes;
-        const newPutts = score.putts;
+        const newStrokes = score.strokes ?? prevStrokes;
+        const newPutts = score.putts ?? prevPutts;
+        const player = players.find(p => p.id === playerId);
 
         if (isConfirmEvent) {
-          // logged in saveHoleScores
-        } else if (newStrokes !== undefined) {
-          const isModification = prevScore?.confirmed && prevStrokes !== undefined && prevStrokes !== newStrokes;
+          // On confirm, always emit per-player capture/modification event so the bitácora reflects the actual score.
+          const wasConfirmed = !!prevScore?.confirmed;
+          const isModification = wasConfirmed && prevStrokes !== undefined && newStrokes !== undefined && prevStrokes !== newStrokes;
           const eventType = isModification ? 'score_modified' : 'score_captured';
           const auditPayload: Record<string, any> = { hole_number: holeNumber };
           if (isModification) {
@@ -193,11 +194,24 @@ export const useScorePersistence = ({
             auditPayload.new_strokes = newStrokes;
             if (prevPutts !== undefined) auditPayload.prev_putts = prevPutts;
             if (newPutts !== undefined) auditPayload.new_putts = newPutts;
-          } else {
+          } else if (newStrokes !== undefined) {
             auditPayload.strokes = newStrokes;
             if (newPutts !== undefined) auditPayload.putts = newPutts;
           }
-          const player = players.find(p => p.id === playerId);
+          logEvent(eventType, auditPayload, player?.profileId ?? null);
+        } else if (score.strokes !== undefined) {
+          const isModification = prevScore?.confirmed && prevStrokes !== undefined && prevStrokes !== score.strokes;
+          const eventType = isModification ? 'score_modified' : 'score_captured';
+          const auditPayload: Record<string, any> = { hole_number: holeNumber };
+          if (isModification) {
+            auditPayload.prev_strokes = prevStrokes;
+            auditPayload.new_strokes = score.strokes;
+            if (prevPutts !== undefined) auditPayload.prev_putts = prevPutts;
+            if (score.putts !== undefined) auditPayload.new_putts = score.putts;
+          } else {
+            auditPayload.strokes = score.strokes;
+            if (score.putts !== undefined) auditPayload.putts = score.putts;
+          }
           logEvent(eventType, auditPayload, player?.profileId ?? null);
         }
       }

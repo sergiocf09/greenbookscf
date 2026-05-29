@@ -2262,14 +2262,29 @@ const Index = () => {
           targetPlayerIds.map(async (playerId) => {
             const holeScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
             if (!holeScore) return;
+            // Capture previous persisted state BEFORE overwriting it.
+            const prevScore = scoresRef.current.get(playerId)?.find((s) => s.holeNumber === holeNumber);
+            const wasConfirmedBefore = !!prevScore?.confirmed;
+            const prevStrokes = prevScore?.strokes;
+            const prevPutts = prevScore?.putts;
             await saveScoreToDb(playerId, holeNumber, { ...holeScore, confirmed: true });
-            // Audit log: capture score per player
             const player = allGroupPlayers.find(p => p.id === playerId);
-            logEvent('score_captured', {
-              hole_number: holeNumber,
-              strokes: holeScore.strokes,
-              putts: holeScore.putts,
-            }, player?.profileId ?? null);
+            const isModification = wasConfirmedBefore && prevStrokes !== undefined && prevStrokes !== holeScore.strokes;
+            if (isModification) {
+              logEvent('score_modified', {
+                hole_number: holeNumber,
+                prev_strokes: prevStrokes,
+                new_strokes: holeScore.strokes,
+                prev_putts: prevPutts,
+                new_putts: holeScore.putts,
+              }, player?.profileId ?? null);
+            } else {
+              logEvent('score_captured', {
+                hole_number: holeNumber,
+                strokes: holeScore.strokes,
+                putts: holeScore.putts,
+              }, player?.profileId ?? null);
+            }
           })
         );
         logEvent('hole_confirmed', { hole_number: holeNumber });
