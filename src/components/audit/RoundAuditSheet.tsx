@@ -132,16 +132,16 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
               Bitácora de Ronda
             </SheetTitle>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-12 top-3 h-8 w-8 shrink-0"
+          <button
+            type="button"
             onClick={() => onRefresh()}
             aria-label="Actualizar bitácora"
             title="Actualizar bitácora"
+            className="absolute right-11 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-          </Button>
+          </button>
+
 
           <div className="flex gap-1.5 overflow-x-auto pt-2 -mx-1 px-1">
             {FILTER_GROUPS.map(g => (
