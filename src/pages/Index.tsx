@@ -1412,7 +1412,14 @@ const Index = () => {
                     devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`);
                   }
                 });
+              if (currentPlayer.handicap !== newPlayer.handicap) {
+                logEvent('handicap_changed', {
+                  prev_handicap: currentPlayer.handicap,
+                  new_handicap: newPlayer.handicap,
+                }, newPlayer.profileId ?? null);
+              }
             }
+
           } else {
             // Log when mapping is missing so we can catch timing issues
             if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
