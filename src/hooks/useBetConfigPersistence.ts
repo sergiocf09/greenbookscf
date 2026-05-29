@@ -81,6 +81,7 @@ interface RoundBetConfig {
     zapatoEnabled?: boolean;
   };
   oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
+  oyesPairZapatoOverrides?: Record<string, boolean>;
   pressurePairOverrides?: Record<string, { onlyMatch?: boolean }>;
   medalGeneral?: {
     enabled: boolean;
