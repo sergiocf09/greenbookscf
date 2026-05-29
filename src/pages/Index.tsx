@@ -2152,6 +2152,8 @@ const Index = () => {
 
         if (idx >= 0) {
           const wasConfirmed = !!playerScores[idx].confirmed;
+          const prevStrokes = playerScores[idx].strokes;
+          const prevPutts = playerScores[idx].putts;
 
           // Only unconfirm when the actual score changes.
           // Markers (unidades/manchas) should NOT force re-confirmation.
@@ -2180,8 +2182,28 @@ const Index = () => {
             saveScoreToDb(playerId, holeNumber, playerScores[idx]);
           }
 
+          // Audit log: only log modifications of already-confirmed scores here.
+          // First captures are logged in confirmHole.
+          if (wasConfirmed && isScoringMutation) {
+            const allGroupPlayers = [...players];
+            playerGroups.forEach((g) => allGroupPlayers.push(...g.players));
+            const player = allGroupPlayers.find((p) => p.id === playerId);
+            const newStrokes = updates.strokes ?? prevStrokes;
+            const newPutts = updates.putts ?? prevPutts;
+            if (prevStrokes !== newStrokes || prevPutts !== newPutts) {
+              logEvent('score_modified', {
+                hole_number: holeNumber,
+                prev_strokes: prevStrokes,
+                new_strokes: newStrokes,
+                prev_putts: prevPutts,
+                new_putts: newPutts,
+              }, player?.profileId ?? null);
+            }
+          }
+
           // No global confirmedHoles mutation here; UI/logic derives from per-player flags.
         }
+
 
         newScores.set(playerId, playerScores);
         return newScores;
