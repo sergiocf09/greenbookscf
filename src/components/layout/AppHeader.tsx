@@ -239,18 +239,6 @@ export function AppHeader(props: AppHeaderProps) {
                 <HelpCircle className="h-7 w-7" />
               </Button>
             )}
-            {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
-                onClick={onOpenAuditLog}
-                aria-label="Bitácora de ronda"
-                title="Bitácora de ronda"
-              >
-                <ClipboardList className="h-4 w-4" />
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="icon"
@@ -273,6 +261,7 @@ export function AppHeader(props: AppHeaderProps) {
               <User className="h-5 w-5" />
             </Button>
           ) : (
+            <div className="flex flex-col items-center -space-y-1">
             <DropdownMenu open={profileMenuOpen} onOpenChange={onSetProfileMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -413,6 +402,19 @@ export function AppHeader(props: AppHeaderProps) {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+            {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
+                onClick={onOpenAuditLog}
+                aria-label="Bitácora de ronda"
+                title="Bitácora de ronda"
+              >
+                <ClipboardList className="h-4 w-4" />
+              </Button>
+            )}
+            </div>
           )}
         </div>
       </div>
