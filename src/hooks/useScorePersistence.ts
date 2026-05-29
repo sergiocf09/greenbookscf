@@ -14,6 +14,8 @@ interface UseScorePersistenceProps {
   confirmedHoles: Set<number>;
   setConfirmedHoles: React.Dispatch<React.SetStateAction<Set<number>>>;
   roundPlayerIds: Map<string, string>; // playerId -> round_player_id
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
+  actorProfileId?: string | null;
 }
 
 export const useScorePersistence = ({
@@ -25,7 +27,10 @@ export const useScorePersistence = ({
   confirmedHoles,
   setConfirmedHoles,
   roundPlayerIds,
+  logEvent,
+  actorProfileId,
 }: UseScorePersistenceProps) => {
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
