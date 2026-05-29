@@ -69,6 +69,7 @@ interface UseRoundManagementProps {
   setStartingHole?: React.Dispatch<React.SetStateAction<1 | 10>>;
   getCourseById?: (id: string) => GolfCourse | undefined;
   setPlayerGroups?: React.Dispatch<React.SetStateAction<PlayerGroup[]>>;
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
 }
 
 export const useRoundManagement = ({
@@ -86,7 +87,9 @@ export const useRoundManagement = ({
   setStartingHole,
   getCourseById,
   setPlayerGroups,
+  logEvent,
 }: UseRoundManagementProps) => {
+
   const { profile } = useAuth();
   const [roundState, setRoundState] = useState<RoundState>({
     id: null,
