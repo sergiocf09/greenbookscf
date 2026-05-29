@@ -166,7 +166,13 @@ export const useScorePersistence = ({
 
       const { error } = await supabase
         .from('hole_scores')
+        .upsert(payload, {
+          onConflict: 'round_player_id,hole_number',
+          ignoreDuplicates: false,
+        });
+
       if (error) {
+
         devError('Error saving score:', error);
       } else if (logEvent && roundId) {
         const isConfirmEvent = Object.prototype.hasOwnProperty.call(score, 'confirmed') && score.confirmed;
