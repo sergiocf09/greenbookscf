@@ -2420,6 +2420,9 @@ const Index = () => {
         linkedLeaderboards={linkedLeaderboards}
         attestationCount={pendingPlayersCount}
         onOpenAttestation={() => openDialog('attestation')}
+        isRoundAdmin={isCurrentUserRoundAdmin}
+        onOpenAuditLog={() => openDialog('auditLog')}
+
         onSetView={setView}
         onSetTheme={setTheme}
         onSetProfileMenuOpen={setProfileMenuOpen}
