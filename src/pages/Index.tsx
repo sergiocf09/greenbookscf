@@ -475,6 +475,7 @@ const Index = () => {
     roundId: roundState.id,
     players: allPlayersForBets,
     roundPlayerIds,
+    logEvent,
   });
 
   // Ensure betConfig is loaded at least once for this round so debounced saves are enabled.

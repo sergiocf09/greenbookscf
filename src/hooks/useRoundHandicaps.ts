@@ -32,6 +32,7 @@ interface UseRoundHandicapsProps {
   roundId: string | null;
   players: Player[];
   roundPlayerIds: Map<string, string>; // Local player ID -> round_player ID
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => void | Promise<void>;
 }
 
 /**
@@ -49,6 +50,7 @@ export const useRoundHandicaps = ({
   roundId,
   players,
   roundPlayerIds,
+  logEvent,
 }: UseRoundHandicapsProps) => {
   const [handicaps, setHandicaps] = useState<Map<string, RoundHandicap>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
@@ -290,13 +292,23 @@ export const useRoundHandicaps = ({
         }
 
         devLog('Saved handicap:', normA, 'gives', actualStrokes, 'to', normB);
+        if (!existing || existing.strokesGivenByA !== actualStrokes) {
+          const targetPlayer = players.find(p => roundPlayerIds.get(p.id) === normB || p.id === normB);
+          void logEvent?.('handicap_changed', {
+            prev_handicap: existing?.strokesGivenByA ?? null,
+            new_handicap: actualStrokes,
+            player_a_id: normA,
+            player_b_id: normB,
+            change_type: existing ? 'bilateral_handicap_modified' : 'bilateral_handicap_created',
+          }, targetPlayer?.profileId ?? null);
+        }
         return true;
       } catch (err) {
         devError('Error saving round handicap:', err);
         return false;
       }
     },
-    [roundId, handicaps]
+    [roundId, handicaps, players, roundPlayerIds, logEvent]
   );
 
   // Set strokes using local player IDs (convenience wrapper)
