@@ -224,8 +224,12 @@ export const useScorePersistence = ({
     });
 
     await Promise.all(promises);
+    if (logEvent) {
+      logEvent('hole_confirmed', { hole_number: holeNumber });
+    }
     devLog('Saved hole', holeNumber, 'scores for all players');
-  }, [roundId, players, scores, roundPlayerIds, saveScore]);
+  }, [roundId, players, scores, roundPlayerIds, saveScore, logEvent]);
+
 
   // Debounced save on score change
   const debouncedSave = useCallback((playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
