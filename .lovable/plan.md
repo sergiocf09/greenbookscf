@@ -1,70 +1,83 @@
-## Objetivo
+# Scores Attestation — Implementation Plan
 
-Mostrar todas las cifras monetarias del Balance General y de los popovers de bilateralidad redondeadas al múltiplo de 5 más cercano, manteniendo la suma = $0 (cero pérdida/ganancia agregada).
+Feature: allow a non-organizer participant to attest the scores of a completed round. Surface pending attestations in the header (badge) and profile menu, expose attestation status in the handicap history. Title displayed in English: **"Scores Attestation"**.
 
-## Alcance (solo presentación)
+## 1. Database migration
 
-- **No** se modifican calculadoras de apuestas, ni `betCalculations.ts`, ni la persistencia. Los cálculos internos siguen con precisión decimal.
-- El redondeo se aplica **solo al renderizar** los totales agregados por jugador (Balance General) y los montos bilaterales por par.
+Single migration adding:
+- `rounds.attested_by UUID REFERENCES profiles(id) ON DELETE SET NULL`
+- `rounds.attested_at TIMESTAMPTZ`
+- `handicap_history.is_attested BOOLEAN NOT NULL DEFAULT false`
+- RPC `attest_round(p_round_id UUID)` — SECURITY DEFINER, validates: round exists, status='completed', not yet attested, caller ≠ organizer, caller is a real (non-ghost) participant. Updates `rounds` and flips `handicap_history.is_attested=true` for that round.
+- RPC `get_pending_attestations()` — returns rows `{round_id, round_date, course_name, organizer_name, player_names[], my_total_strokes}` for completed rounds where the caller participated as a real account, is not the organizer, and the round is not yet attested.
+- `GRANT EXECUTE ... TO authenticated` for both RPCs.
 
-## Algoritmo de redondeo balanceado (largest-remainder a múltiplos de 5)
+Note: `round_players.is_ghost` will be guarded with `(rp.is_ghost IS NULL OR rp.is_ghost = false)` — if the column does not exist we will simplify to `rp.profile_id IS NOT NULL` during execution. Existing SELECT RLS on `rounds` already covers the new columns.
 
-Dado un arreglo `values: number[]` cuya suma es ~0:
+## 2. New hook `src/hooks/useAttestation.ts`
 
-1. Para cada valor calcular `base = Math.round(v/5)*5` y `residual = v - base`.
-2. La suma de `base` puede no ser 0; sea `drift = -Σ base` (en múltiplos de 5, porque Σv ≈ 0).
-3. Si `drift > 0` (faltan +5s): elegir los `drift/5` jugadores con mayor `residual` positivo y sumarles +5 a cada uno.
-   Si `drift < 0`: elegir los `|drift|/5` con `residual` más negativo y restarles 5.
-4. Empates en residual: desempatar por mayor `|valor original|` (los importes grandes absorben el ajuste de forma menos visible), luego por id estable.
+React Query hook exposing:
+- `pendingRounds: AttestationRound[]` from `get_pending_attestations` RPC (staleTime 60s).
+- `attestRound(roundId)` mutation calling `attest_round` RPC; on success invalidates `pending-attestations` and `handicap-history` queries.
+- `isLoading`, `isAttesting`, `attestError`.
 
-Esto garantiza `Σ rounded = 0` y desvíos máximos de ±$2.50 por jugador respecto al valor real.
+`AttestationRound` interface: `{roundId, roundDate, courseName, organizerName, playerNames[], myTotalStrokes}`.
 
-## Cambios concretos
+## 3. New component `src/components/attestation/AttestationSheet.tsx`
 
-### 1. `src/lib/formatMoney.ts` — nuevas utilidades
+Bottom/right sheet titled **"Scores Attestation"** (English title, Spanish subtitle: "Confirma que los scores de estas rondas son correctos…"). Lists each pending round as a card with:
+- Course name + date
+- Organizer name + other player names (first 3 + overflow)
+- My total strokes
+- "Atestar" button → calls `onAttest(roundId)`, shows per-row loading state.
+Empty state when `rounds.length === 0`.
 
-```ts
-// Redondea un único valor al múltiplo de 5 más cercano.
-roundToNearest5(v: number): number
+## 4. Update `src/hooks/useHandicapHistory.ts`
 
-// Redondea una colección preservando Σ = 0 (largest-remainder).
-// keys es opcional para mapeo estable id->valor.
-roundGroupToNearest5(values: number[]): number[]
-roundGroupToNearest5Map<K>(map: Map<K, number>): Map<K, number>
+- Add `isAttested: boolean` to `HandicapHistoryEntry`.
+- Map `is_attested: row.is_attested ?? false` in **both** entry-construction blocks (materialized path and fallback path — fallback defaults to `false`).
+
+## 5. Update `src/components/profile/HandicapHistoryView.tsx`
+
+- Import `Check`, `Clock` from lucide-react; import `cn` from `@/lib/utils`.
+- In `RoundRow`, render small ✓ (emerald, attested) or ⏳ (muted, pending) icon beside course name.
+- Below the "X/Y diferenciales" summary, add a line: "Atestadas: N de M (P%)", color-coded (emerald ≥80%, yellow ≥50%, muted otherwise), computed over the differentials currently used for the index.
+
+## 6. Update `src/pages/Index.tsx`
+
+- Extend `DialogName` union with `'attestation'`; add `attestation: false` to `DIALOGS_INITIAL`.
+- Import + instantiate `useAttestation(profile?.id ?? null)`.
+- Pass `attestationCount={pendingAttestations.length}` and `onOpenAttestation={() => openDialog('attestation')}` to `<AppHeader/>`.
+- Render `<AttestationSheet open={dialogs.attestation} onClose={...} rounds={pendingAttestations} isAttesting={isAttesting} onAttest={attestRound} />` next to the other dialogs.
+
+## 7. Update `src/components/layout/AppDialogs.tsx`
+
+- Add `'attestation'` to the local `DialogName` union (the `DialogState` Record updates automatically).
+
+## 8. Update `src/components/layout/AppHeader.tsx`
+
+- Extend `AppHeaderProps` with `attestationCount: number` and `onOpenAttestation: () => void`; destructure both.
+- Import `ScrollText` from lucide-react.
+- In the right-hand actions area, before Friends, render a button with ScrollText icon and a red badge showing `attestationCount` (capped at "9+"), only when count > 0. Clicking calls `onOpenAttestation`.
+- In the profile dropdown, after "Rondas Pendientes", add a "Scores Attestation (N)" menu item, shown only when count > 0.
+
+## Files touched
+
+```text
+supabase/migrations/<new>.sql            (PART 1)
+src/hooks/useAttestation.ts              (NEW)
+src/components/attestation/AttestationSheet.tsx  (NEW)
+src/hooks/useHandicapHistory.ts          (edit)
+src/components/profile/HandicapHistoryView.tsx   (edit)
+src/pages/Index.tsx                      (edit)
+src/components/layout/AppDialogs.tsx     (edit)
+src/components/layout/AppHeader.tsx      (edit)
 ```
 
-Reusa `fmtMoneySign` / `fmtMoneyAbs` existentes para el render (ya quitan decimales innecesarios; tras redondear a 5 nunca habrá decimales).
+No bet calculators, scoring, or other unrelated components will be modified. Title text uses English "Scores Attestation" as requested; explanatory copy remains in Spanish.
 
-### 2. `src/components/bets/BetDashboard.tsx` — Balance General
+## Technical notes
 
-- Antes de renderizar la lista ordenada de jugadores, pasar el `Map<playerId, totalNet>` por `roundGroupToNearest5Map` y usar el resultado para:
-  - el monto mostrado a la derecha (`+$2683.33` → `+$2685`),
-  - la línea `Σ = $0 (debe ser $0)` (que seguirá cuadrando exactamente).
-- El orden del ranking se calcula con los valores **redondeados** para evitar inconsistencias visuales (dos jugadores con totales muy cercanos podrían intercambiar posición; el desempate por `|valor original|` minimiza esto).
-
-### 3. `src/components/bets/BilateralDetail.tsx` + tarjeta de bilateralidad en `GroupBetsCard.tsx`
-
-- En la vista "Balance Sergio Cruz vs ...":
-  - Tomar el `Map<rivalId, bilateralNet>` del jugador base y pasarlo por `roundGroupToNearest5Map`. Esto preserva la propiedad `Σ rivales = -totalBase` (que también será múltiplo de 5).
-  - Renderizar los chips (`$258.33`, `$225`, `-$1500`) con esos valores redondeados.
-- Dentro del popover de detalle por par (filas Medal/Putts/GIR/etc.):
-  - Cada fila individual también se redondea a múltiplo de 5 con `roundToNearest5` simple, y el "Total" del par se recalcula como la **suma de las filas redondeadas** (no como redondeo del total real) para que el usuario vea coherencia fila-por-fila. El pequeño desvío residual se absorbe en la última fila ("ajuste de redondeo") para que el header del avatar siga coincidiendo con la suma visible.
-
-### 4. Otros lugares de render (auditoría rápida)
-
-- `HistoricalBalances.tsx`, `MoneyRankings.tsx`, `MoneyRankingDetail.tsx`: aplicar `roundGroupToNearest5Map` al render del total por jugador (mismo principio: la suma debe seguir siendo 0).
-- Tarjetas de Nines/Sixes/Vegas/Wolf/Carritos: dado que sus calculadoras ya emiten enteros con `Math.round`, **no** se tocan salvo que el agregado general las incluya (vía Balance General sí, automáticamente).
-
-## Detalle técnico
-
-- El redondeo se aplica solo en la capa de presentación. Hooks (`useRoundManagement`, `useMoneyRankings`) devuelven los valores precisos; los componentes los transforman al render.
-- Tests: añadir `src/test/formatMoney.test.ts` con casos:
-  - `[316.67, -316.67]` → `[315, -315]`
-  - `[2683.33, -316.67, -1050, -1316.67]` → `[2685, -315, -1050, -1320]` (Σ=0)
-  - Arreglos con muchos empates de residual.
-- No se cambian queries de base de datos, ni RLS, ni edge functions.
-
-## Validación visual
-
-- Balance General del screenshot debe pasar a: JA +$2685, MSA2 -$315, MSA1 -$1050, SC -$1320 (Σ = $0).
-- Bilateral SC vs JA: -$1500 (ya múltiplo de 5, sin cambio). MSA1 $258.33 → $260, MSA2 $225 → $225, JA -$1500 → -$1500. Σ rivales de SC = $260 + $225 - $1500 = -$1015, debe coincidir con el total redondeado de SC en Balance General para esa subdivisión (se cuadra con el algoritmo de redondeo balanceado aplicado a los rivales).
+- The pasted JSX in the user instructions had stripped angle brackets (rendering glitch). The actual component code will use proper `<Sheet>`, `<Button>`, etc. JSX matching the project's shadcn `sheet` and `button` primitives.
+- The `attest_round` ghost check is best-effort: if `round_players.is_ghost` is absent, the guard falls back to `profile_id IS NOT NULL`.
+- React Query keys (`pending-attestations`, `handicap-history-materialized`) are invalidated on success so the badge and history refresh immediately.
