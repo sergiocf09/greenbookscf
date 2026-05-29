@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ScrollText, Check, Users, Calendar, MapPin, Loader2 } from 'lucide-react';
+import { ScrollText, Check, Calendar, MapPin, Loader2, User } from 'lucide-react';
 import { AttestationRound } from '@/hooks/useAttestation';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ interface AttestationSheetProps {
   onClose: () => void;
   rounds: AttestationRound[];
   isAttesting: boolean;
-  onAttest: (roundId: string) => Promise<void>;
+  onAttest: (roundPlayerId: string) => Promise<void>;
 }
 
 export const AttestationSheet: React.FC<AttestationSheetProps> = ({
@@ -22,14 +22,14 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
 }) => {
   const [attestingId, setAttestingId] = useState<string | null>(null);
 
-  const handleAttest = async (roundId: string) => {
-    setAttestingId(roundId);
+  const handleAttest = async (roundPlayerId: string, name: string) => {
+    setAttestingId(roundPlayerId);
     try {
-      await onAttest(roundId);
-      toast.success('Scores atestados correctamente');
+      await onAttest(roundPlayerId);
+      toast.success(`Score de ${name} atestado`);
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      toast.error((err as any)?.message ?? 'No se pudo atestar la ronda');
+      toast.error((err as any)?.message ?? 'No se pudo atestar');
     } finally {
       setAttestingId(null);
     }
@@ -49,23 +49,22 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
             Scores Attestation
           </SheetTitle>
           <SheetDescription>
-            Confirma que los scores de estas rondas son correctos. Solo se necesita un jugador. No incluye apuestas.
+            Confirma los scores de tus compañeros de ronda. No puedes atestar tu propio score.
           </SheetDescription>
         </SheetHeader>
 
         {rounds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Check className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Sin rondas pendientes de atestar</p>
+            <p className="text-sm text-muted-foreground">Sin scores pendientes de atestar</p>
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-4">
             {rounds.map((round) => (
               <div
                 key={round.roundId}
-                className="rounded-xl border border-border bg-card p-3 space-y-2.5"
+                className="rounded-xl border border-border bg-card p-3 space-y-3"
               >
-                {/* Header */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -74,51 +73,46 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3 shrink-0" />
                     <span>{formatDate(round.roundDate)}</span>
+                    <span className="mx-1">·</span>
+                    <span>Org: {round.organizerName}</span>
                   </div>
                 </div>
 
-                {/* Organizer + other players */}
-                <div className="space-y-1 text-xs">
-                  <p className="text-muted-foreground">
-                    Organizador: <span className="text-foreground font-medium">{round.organizerName}</span>
-                  </p>
-                  {round.playerNames.length > 0 && (
-                    <div className="flex items-start gap-1.5 text-muted-foreground">
-                      <Users className="h-3 w-3 shrink-0 mt-0.5" />
-                      <p className="leading-tight">
-                        {round.playerNames.slice(0, 3).join(' · ')}
-                        {round.playerNames.length > 3 && ` +${round.playerNames.length - 3}`}
-                      </p>
+                <div className="space-y-1.5">
+                  {round.pendingPlayers.map((pp) => (
+                    <div
+                      key={pp.roundPlayerId}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/40 px-2.5 py-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                          <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{pp.name}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                          {pp.totalStrokes > 0 ? `${pp.totalStrokes} golpes` : 'Sin score'}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAttest(pp.roundPlayerId, pp.name)}
+                        disabled={isAttesting || attestingId === pp.roundPlayerId}
+                        className="gap-1.5 shrink-0"
+                      >
+                        {attestingId === pp.roundPlayerId ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-3.5 w-3.5" />
+                            Atestar
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  )}
-                </div>
-
-                {/* My result + CTA */}
-                <div className="flex items-end justify-between pt-2 border-t border-border/50">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tu resultado</p>
-                    <p className="text-lg font-bold tabular-nums text-foreground">
-                      {round.myTotalStrokes > 0 ? `${round.myTotalStrokes} golpes` : '—'}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleAttest(round.roundId)}
-                    disabled={isAttesting || attestingId === round.roundId}
-                    className="gap-1.5"
-                  >
-                    {attestingId === round.roundId ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Atestando...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Atestar
-                      </>
-                    )}
-                  </Button>
+                  ))}
                 </div>
               </div>
             ))}
