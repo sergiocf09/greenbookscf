@@ -204,7 +204,9 @@ const Index = () => {
     setStartingHole,
     getCourseById,
     setPlayerGroups,
+    logEvent,
   });
+
 
   // Sprint 3 bet hooks
   const wolf  = useWolf(roundState?.id ?? null, players);
