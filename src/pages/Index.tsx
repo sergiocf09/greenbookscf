@@ -59,7 +59,10 @@ import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
 import { useAttestation } from '@/hooks/useAttestation';
+import { useRoundAuditLog } from '@/hooks/useRoundAuditLog';
 import { AttestationSheet } from '@/components/attestation/AttestationSheet';
+import { RoundAuditSheet } from '@/components/audit/RoundAuditSheet';
+
 
 
 type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handicaps' | 'leaderboards' | 'rankings' | 'stats';
@@ -71,7 +74,7 @@ type DialogName =
   | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
   | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
   | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
-  | 'roundShare' | 'attestation';
+  | 'roundShare' | 'attestation' | 'auditLog';
 
 type DialogState = Record<DialogName, boolean>;
 
@@ -81,8 +84,9 @@ const DIALOGS_INITIAL: DialogState = {
   leaderboard: false, linkLeaderboard: false, handicapMatrix: false,
   closeAttempt: false, closeConfirm: false, pendingRound: false,
   friends: false, addFromFriends: false, onboarding: false, help: false,
-  profileMenuHelp: false, roundShare: false, attestation: false,
+  profileMenuHelp: false, roundShare: false, attestation: false, auditLog: false,
 };
+
 
 function dialogsReducer(state: DialogState, action: { name: DialogName; open: boolean }): DialogState {
   if (state[action.name] === action.open) return state;
@@ -158,7 +162,14 @@ const Index = () => {
     if (v !== 'rankings') setRankingDetailId(null);
   });
 
+  // Audit log: ref-based wrapper so hooks declared before useRoundAuditLog can still log events.
+  const logEventRef = useRef<((eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>) | null>(null);
+  const logEvent = useCallback(async (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => {
+    if (logEventRef.current) await logEventRef.current(eventType, payload, targetPlayerId);
+  }, []);
+
   // Round management hook with restoration
+
   const {
     roundState,
     setRoundState,
@@ -194,7 +205,9 @@ const Index = () => {
     setStartingHole,
     getCourseById,
     setPlayerGroups,
+    logEvent,
   });
+
 
   // Sprint 3 bet hooks
   const wolf  = useWolf(roundState?.id ?? null, players);
@@ -205,6 +218,21 @@ const Index = () => {
   // Scores Attestation (per-player model)
   const { pendingRounds: pendingAttestations, pendingPlayersCount, isAttesting, attestPlayer } = useAttestation(profile?.id ?? null);
 
+  // Round audit log (only fetches when current user is round admin)
+  const isCurrentUserRoundAdmin =
+    roundState.organizerProfileId === profile?.id ||
+    players.some(p => p.profileId === profile?.id && p.isAdmin);
+
+  const {
+    entries: auditEntries,
+    isLoading: isAuditLoading,
+    refetch: refetchAudit,
+    logEvent: realLogEvent,
+  } = useRoundAuditLog(roundState.id, isCurrentUserRoundAdmin);
+
+  useEffect(() => {
+    logEventRef.current = realLogEvent;
+  }, [realLogEvent]);
 
 
   // Sprint 3: sync betConfig setup → dedicated hooks
@@ -416,7 +444,9 @@ const Index = () => {
     roundId: roundState.id,
     betConfig,
     setBetConfig,
+    logEvent,
   });
+
 
   // Combine players from all groups for handicap resolution across groups
   const allPlayersForBets = useMemo(() => {
@@ -1049,7 +1079,14 @@ const Index = () => {
                     if (error) devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
                     else devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`);
                   });
+                if (currentPlayer.handicap !== newPlayer.handicap) {
+                  logEvent('handicap_changed', {
+                    prev_handicap: currentPlayer.handicap,
+                    new_handicap: newPlayer.handicap,
+                  }, newPlayer.profileId ?? null);
+                }
               }
+
             } else {
               if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
                 devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
@@ -1375,7 +1412,14 @@ const Index = () => {
                     devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`);
                   }
                 });
+              if (currentPlayer.handicap !== newPlayer.handicap) {
+                logEvent('handicap_changed', {
+                  prev_handicap: currentPlayer.handicap,
+                  new_handicap: newPlayer.handicap,
+                }, newPlayer.profileId ?? null);
+              }
             }
+
           } else {
             // Log when mapping is missing so we can catch timing issues
             if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
@@ -2376,6 +2420,9 @@ const Index = () => {
         linkedLeaderboards={linkedLeaderboards}
         attestationCount={pendingPlayersCount}
         onOpenAttestation={() => openDialog('attestation')}
+        isRoundAdmin={isCurrentUserRoundAdmin}
+        onOpenAuditLog={() => openDialog('auditLog')}
+
         onSetView={setView}
         onSetTheme={setTheme}
         onSetProfileMenuOpen={setProfileMenuOpen}
@@ -2850,6 +2897,14 @@ const Index = () => {
         isAttesting={isAttesting}
         onAttest={attestPlayer}
       />
+      <RoundAuditSheet
+        open={dialogs.auditLog}
+        onClose={() => closeDialog('auditLog')}
+        entries={auditEntries}
+        isLoading={isAuditLoading}
+        onRefresh={refetchAudit}
+      />
+
       <UpgradeModal
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}

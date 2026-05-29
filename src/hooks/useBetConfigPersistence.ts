@@ -22,7 +22,9 @@ interface UseBetConfigPersistenceProps {
   roundId: string | null;
   betConfig: BetConfig;
   setBetConfig: React.Dispatch<React.SetStateAction<BetConfig>>;
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
 }
+
 
 interface RoundBetConfig {
   // Standard bilateral bets
@@ -212,11 +214,14 @@ interface RoundBetConfig {
   roundHoles?: 9 | 18;
 }
 
+
 export const useBetConfigPersistence = ({
   roundId,
   betConfig,
   setBetConfig,
+  logEvent,
 }: UseBetConfigPersistenceProps) => {
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadedRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -620,11 +625,15 @@ export const useBetConfigPersistence = ({
       }
 
       devLog('Bet config saved to database');
+      if (logEvent) {
+        logEvent('bet_config_changed', { description: 'Configuración de apuestas actualizada' });
+      }
     } catch (err) {
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
     }
-  }, [roundId, loadBetConfig]);
+  }, [roundId, loadBetConfig, logEvent]);
+
 
   // Debounced save on config change
   const debouncedSave = useCallback((config: BetConfig) => {

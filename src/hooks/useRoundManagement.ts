@@ -69,6 +69,7 @@ interface UseRoundManagementProps {
   setStartingHole?: React.Dispatch<React.SetStateAction<1 | 10>>;
   getCourseById?: (id: string) => GolfCourse | undefined;
   setPlayerGroups?: React.Dispatch<React.SetStateAction<PlayerGroup[]>>;
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
 }
 
 export const useRoundManagement = ({
@@ -86,7 +87,9 @@ export const useRoundManagement = ({
   setStartingHole,
   getCourseById,
   setPlayerGroups,
+  logEvent,
 }: UseRoundManagementProps) => {
+
   const { profile } = useAuth();
   const [roundState, setRoundState] = useState<RoundState>({
     id: null,
@@ -807,6 +810,10 @@ export const useRoundManagement = ({
       setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));
 
       toast.success('Ronda creada');
+      if (logEvent) {
+        logEvent('round_created', { course_id: courseId });
+      }
+
 
       // Persist the organizer's locally-set handicap from setup.
       // The RPC always creates the organizer with handicap = 0, so we must sync
@@ -2184,6 +2191,10 @@ export const useRoundManagement = ({
         }
         if (lastErr) throw lastErr;
         pushStageOk(report, 'setRoundClosed');
+        if (logEvent) {
+          logEvent('round_closed', { round_id: roundState.id });
+        }
+
       } catch (e) {
         await fail('setRoundClosed', e, report.attemptId);
         toast.error('No se pudo marcar la ronda como cerrada');

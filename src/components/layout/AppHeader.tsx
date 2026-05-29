@@ -26,7 +26,9 @@ import {
   Moon,
   BarChart2,
   ScrollText,
+  ClipboardList,
 } from 'lucide-react';
+
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { RoundHolesBadge } from '@/components/RoundHolesBadge';
@@ -93,10 +95,13 @@ interface AppHeaderProps {
     code: string;
     competition_type: string;
   }>;
-
-  // Attestation
   attestationCount: number;
   onOpenAttestation: () => void;
+
+  // Audit log
+  isRoundAdmin: boolean;
+  onOpenAuditLog: () => void;
+
 
   // Handlers
   onSetView: (v: AppView) => void;
@@ -127,6 +132,11 @@ export function AppHeader(props: AppHeaderProps) {
     pendingRounds,
     attestationCount,
     onOpenAttestation,
+    isRoundAdmin,
+    onOpenAuditLog,
+    roundState,
+
+
     onSetView,
     onSetTheme,
     onSetProfileMenuOpen,
@@ -204,7 +214,20 @@ export function AppHeader(props: AppHeaderProps) {
               </span>
             </div>
           )}
+          {/* Audit log button — visible only for round admin during active round */}
+          {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
+              onClick={onOpenAuditLog}
+              title="Bitácora de ronda"
+            >
+              <ClipboardList className="h-5 w-5" />
+            </Button>
+          )}
           {/* Friends Button - only show in setup view */}
+
           {view === 'setup' && (
             <Button
               variant="ghost"
@@ -341,6 +364,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAuditLog(); }}>
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    <span>Bitácora de Ronda</span>
+                  </DropdownMenuItem>
+                )}
+
                 {attestationCount > 0 && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAttestation(); }}>
                     <ScrollText className="h-4 w-4 mr-2 text-destructive" />

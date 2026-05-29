@@ -14,6 +14,8 @@ interface UseScorePersistenceProps {
   confirmedHoles: Set<number>;
   setConfirmedHoles: React.Dispatch<React.SetStateAction<Set<number>>>;
   roundPlayerIds: Map<string, string>; // playerId -> round_player_id
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
+  actorProfileId?: string | null;
 }
 
 export const useScorePersistence = ({
@@ -25,7 +27,10 @@ export const useScorePersistence = ({
   confirmedHoles,
   setConfirmedHoles,
   roundPlayerIds,
+  logEvent,
+  actorProfileId,
 }: UseScorePersistenceProps) => {
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
@@ -167,12 +172,41 @@ export const useScorePersistence = ({
         });
 
       if (error) {
+
         devError('Error saving score:', error);
+      } else if (logEvent && roundId) {
+        const isConfirmEvent = Object.prototype.hasOwnProperty.call(score, 'confirmed') && score.confirmed;
+        const prevScore = scores.get(playerId)?.find(s => s.holeNumber === holeNumber);
+        const prevStrokes = prevScore?.strokes;
+        const prevPutts = prevScore?.putts;
+        const newStrokes = score.strokes;
+        const newPutts = score.putts;
+
+        if (isConfirmEvent) {
+          // logged in saveHoleScores
+        } else if (newStrokes !== undefined) {
+          const isModification = prevScore?.confirmed && prevStrokes !== undefined && prevStrokes !== newStrokes;
+          const eventType = isModification ? 'score_modified' : 'score_captured';
+          const auditPayload: Record<string, any> = { hole_number: holeNumber };
+          if (isModification) {
+            auditPayload.prev_strokes = prevStrokes;
+            auditPayload.new_strokes = newStrokes;
+            if (prevPutts !== undefined) auditPayload.prev_putts = prevPutts;
+            if (newPutts !== undefined) auditPayload.new_putts = newPutts;
+          } else {
+            auditPayload.strokes = newStrokes;
+            if (newPutts !== undefined) auditPayload.putts = newPutts;
+          }
+          const player = players.find(p => p.id === playerId);
+          logEvent(eventType, auditPayload, player?.profileId ?? null);
+        }
       }
     } catch (err) {
       devError('Error in saveScore:', err);
     }
-  }, [roundPlayerIds]);
+  }, [roundPlayerIds, logEvent, roundId, scores, players]);
+
+
 
   // Save all scores for a hole (when confirming)
   const saveHoleScores = useCallback(async (holeNumber: number) => {
@@ -190,8 +224,12 @@ export const useScorePersistence = ({
     });
 
     await Promise.all(promises);
+    if (logEvent) {
+      logEvent('hole_confirmed', { hole_number: holeNumber });
+    }
     devLog('Saved hole', holeNumber, 'scores for all players');
-  }, [roundId, players, scores, roundPlayerIds, saveScore]);
+  }, [roundId, players, scores, roundPlayerIds, saveScore, logEvent]);
+
 
   // Debounced save on score change
   const debouncedSave = useCallback((playerId: string, holeNumber: number, score: Partial<PlayerScore>) => {
