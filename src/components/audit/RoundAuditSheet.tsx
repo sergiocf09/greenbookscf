@@ -137,7 +137,8 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
             onClick={() => onRefresh()}
             aria-label="Actualizar bitácora"
             title="Actualizar bitácora"
-            className="absolute right-11 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="absolute right-14 top-4 inline-flex h-4 w-4 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+
           >
             <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
           </button>
