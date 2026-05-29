@@ -47,14 +47,14 @@ export function useRoundAuditLog(roundId: string | null, isAdmin: boolean) {
     eventType: string,
     payload: Record<string, any>,
     targetPlayerId?: string | null
-  ) => {
-    if (!roundId) return;
-    void supabase.rpc('log_round_event', {
+  ): Promise<void> => {
+    if (!roundId) return Promise.resolve();
+    void Promise.resolve(supabase.rpc('log_round_event', {
         p_round_id: roundId,
         p_event_type: eventType,
         p_payload: payload,
         p_target_player_id: targetPlayerId ?? null,
-      })
+      }))
       .then(({ error }) => {
         if (error) {
           devError('useRoundAuditLog logEvent failed (non-blocking)', error);
@@ -65,6 +65,7 @@ export function useRoundAuditLog(roundId: string | null, isAdmin: boolean) {
       .catch((err) => {
         devError('useRoundAuditLog logEvent failed (non-blocking)', err);
       });
+    return Promise.resolve();
   }, [queryClient, roundId]);
 
   return {
