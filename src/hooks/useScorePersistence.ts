@@ -200,11 +200,7 @@ export const useScorePersistence = ({
     }
   }, [roundPlayerIds, logEvent, roundId, scores, players]);
 
-      }
-    } catch (err) {
-      devError('Error in saveScore:', err);
-    }
-  }, [roundPlayerIds]);
+
 
   // Save all scores for a hole (when confirming)
   const saveHoleScores = useCallback(async (holeNumber: number) => {
