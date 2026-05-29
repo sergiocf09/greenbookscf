@@ -1498,6 +1498,8 @@ export type Database = {
       }
       round_players: {
         Row: {
+          attested_at: string | null
+          attested_by: string | null
           group_id: string
           guest_color: string | null
           guest_initials: string | null
@@ -1512,6 +1514,8 @@ export type Database = {
           tee_color: string | null
         }
         Insert: {
+          attested_at?: string | null
+          attested_by?: string | null
           group_id: string
           guest_color?: string | null
           guest_initials?: string | null
@@ -1526,6 +1530,8 @@ export type Database = {
           tee_color?: string | null
         }
         Update: {
+          attested_at?: string | null
+          attested_by?: string | null
           group_id?: string
           guest_color?: string | null
           guest_initials?: string | null
@@ -1540,6 +1546,13 @@ export type Database = {
           tee_color?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "round_players_attested_by_fkey"
+            columns: ["attested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "round_players_group_id_fkey"
             columns: ["group_id"]
@@ -2205,7 +2218,10 @@ export type Database = {
         }
         Returns: number
       }
-      attest_round: { Args: { p_round_id: string }; Returns: undefined }
+      attest_round_player: {
+        Args: { p_round_player_id: string }
+        Returns: undefined
+      }
       begin_round_close_attempt: {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
@@ -2391,9 +2407,8 @@ export type Database = {
         Args: never
         Returns: {
           course_name: string
-          my_total_strokes: number
           organizer_name: string
-          player_names: string[]
+          pending_players: Json
           round_date: string
           round_id: string
         }[]
