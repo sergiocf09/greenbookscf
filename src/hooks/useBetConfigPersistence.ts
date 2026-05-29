@@ -22,7 +22,9 @@ interface UseBetConfigPersistenceProps {
   roundId: string | null;
   betConfig: BetConfig;
   setBetConfig: React.Dispatch<React.SetStateAction<BetConfig>>;
+  logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => Promise<void>;
 }
+
 
 interface RoundBetConfig {
   // Standard bilateral bets
