@@ -182,7 +182,10 @@ export const getOyesesPairResult = (
   // Zapato: One player won ALL played holes, with no pending accumulations
   // For Acumulados: pendingAccumulatedHoles must be 0 (all resolved)
   // For Sangrón: every hole has a clear winner going to one player
-  const oyesZapatoEnabled = config.oyeses?.zapatoEnabled !== false; // defaults to true
+  const pairZapatoOverride = config.oyesPairZapatoOverrides?.[pairKey];
+  const oyesZapatoEnabled = pairZapatoOverride !== undefined
+    ? pairZapatoOverride
+    : (config.oyeses?.zapatoEnabled !== false); // defaults to true
   const hasZapato = oyesZapatoEnabled && totalPlayedHoles >= 2 && 
     pendingAccumulatedHoles === 0 &&
     (holesWonByA === totalPlayedHoles || holesWonByB === totalPlayedHoles);
