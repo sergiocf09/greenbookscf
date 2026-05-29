@@ -25,6 +25,7 @@ import {
   Sun,
   Moon,
   BarChart2,
+  ScrollText,
 } from 'lucide-react';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -93,6 +94,10 @@ interface AppHeaderProps {
     competition_type: string;
   }>;
 
+  // Attestation
+  attestationCount: number;
+  onOpenAttestation: () => void;
+
   // Handlers
   onSetView: (v: AppView) => void;
   onSetTheme: (t: string) => void;
@@ -120,6 +125,8 @@ export function AppHeader(props: AppHeaderProps) {
     theme,
     profileMenuOpen,
     pendingRounds,
+    attestationCount,
+    onOpenAttestation,
     onSetView,
     onSetTheme,
     onSetProfileMenuOpen,
