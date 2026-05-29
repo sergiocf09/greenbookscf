@@ -132,6 +132,9 @@ export function AppHeader(props: AppHeaderProps) {
     pendingRounds,
     attestationCount,
     onOpenAttestation,
+    isRoundAdmin,
+    onOpenAuditLog,
+
     onSetView,
     onSetTheme,
     onSetProfileMenuOpen,
