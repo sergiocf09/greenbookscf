@@ -34,6 +34,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
     minimumRoundsNeeded,
     isLoading,
     error,
+    attestationStats,
   } = useHandicapHistory(profileId);
 
   if (isLoading) {
