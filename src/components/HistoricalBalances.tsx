@@ -893,7 +893,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {evens.length > 0 && (
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">{evens.length}</span>
-                      <span>mano a mano</span>
+                      <span>scratch</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
