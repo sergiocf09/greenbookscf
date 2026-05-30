@@ -3626,35 +3626,100 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {crossBets.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center gap-2 px-1">
-            <Swords className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Apuestas de Cruce</span>
-          </div>
-          {crossBets.map(cb => {
-            const isInitiator = cb.initiatorProfileId === basePlayerId;
-            const partner = isInitiator
-              ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
-              : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
-            const activeBets = Object.entries(cb.betConfig)
-              .filter(([, v]: any) => v?.enabled)
-              .map(([k, v]: any) => `${k} $${fmtMoney(v.amount ?? 0)}`);
-            return (
-              <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
-                  <div>
-                    <p className="text-sm font-medium">{partner.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{isInitiator ? 'Tú invitaste' : 'Te invitó'}</p>
+      {crossBets.length > 0 && (() => {
+        const resolved = resolveConfigForGroup(betConfig, playerGroups[basePlayerGroupIndex - 1]?.id);
+        const INDIVIDUAL_BETS: { key: string; label: string; amount?: number; enabled: boolean }[] = [
+          { key: 'medal',     label: 'Medal',      amount: resolved.medal?.totalAmount,      enabled: !!resolved.medal?.enabled },
+          { key: 'matchPlay', label: 'Match Play', amount: resolved.matchPlay?.totalAmount,  enabled: !!resolved.matchPlay?.enabled },
+          { key: 'putts',     label: 'Putts',      amount: resolved.putts?.totalAmount,      enabled: !!resolved.putts?.enabled },
+          { key: 'manchas',   label: 'Manchas',    amount: resolved.manchas?.amount,         enabled: !!resolved.manchas?.enabled },
+          { key: 'bloques',   label: 'Bloques',    amount: resolved.bloques?.amount,         enabled: !!resolved.bloques?.enabled },
+          { key: 'units',     label: 'Unidades',   amount: resolved.units?.amount,           enabled: !!resolved.units?.enabled },
+          { key: 'skins',     label: 'Skins',      amount: resolved.skins?.frontAmount,      enabled: !!resolved.skins?.enabled },
+        ];
+        const enabledBets = INDIVIDUAL_BETS.filter(b => b.enabled);
+        return (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Swords className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Apuestas de Cruce</span>
+            </div>
+            {crossBets.map(cb => {
+              const isInitiator = cb.initiatorProfileId === basePlayerId;
+              const partner = isInitiator
+                ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
+                : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
+              const isIncluded = (key: string) => {
+                const flag = (cb.betConfig as any)?.[key]?.included;
+                return flag === undefined ? true : !!flag;
+              };
+              const toggleIncluded = async (key: string, next: boolean) => {
+                if (!onUpdateCrossBetConfig) return;
+                const newConfig = {
+                  ...(cb.betConfig || {}),
+                  [key]: { ...((cb.betConfig as any)?.[key] || {}), included: next },
+                };
+                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: newConfig }); }
+                catch (e) { console.error('toggleIncluded', e); }
+              };
+              return (
+                <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{partner.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{isInitiator ? 'Tú invitaste' : 'Te invitó'}</p>
+                    </div>
                   </div>
+
+                  {enabledBets.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        Aún no hay apuestas individuales configuradas en la ronda.
+                        Ve a <strong>Apuestas → Individuales</strong> para activarlas y luego aparecerán aquí para incluirlas en este cruce.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        Apuestas a incluir en este cruce
+                      </p>
+                      {enabledBets.map(b => {
+                        const included = isIncluded(b.key);
+                        return (
+                          <label
+                            key={b.key}
+                            className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-background/60 cursor-pointer"
+                          >
+                            <span className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                className="accent-primary h-4 w-4"
+                                checked={included}
+                                disabled={!onUpdateCrossBetConfig}
+                                onChange={(e) => { void toggleIncluded(b.key, e.target.checked); }}
+                              />
+                              <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
+                                {b.label}
+                              </span>
+                            </span>
+                            {b.amount !== undefined && b.amount > 0 && (
+                              <span className="text-[11px] text-muted-foreground">${fmtMoney(b.amount)}</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                      <p className="text-[10px] text-muted-foreground pt-1">
+                        Los montos se heredan de tu configuración de Apuestas Individuales. Los strokes de este cruce usan el sliding bilateral entre ambos perfiles y pueden ajustarse desde la vista bilateral del rival.
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {activeBets.length > 0 && <p className="text-xs text-muted-foreground">{activeBets.join(' · ')}</p>}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 };
