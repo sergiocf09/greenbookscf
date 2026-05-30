@@ -74,7 +74,7 @@ type DialogName =
   | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
   | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
   | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
-  | 'roundShare' | 'attestation' | 'auditLog';
+  | 'roundShare' | 'attestation' | 'auditLog' | 'crossInvitations';
 
 type DialogState = Record<DialogName, boolean>;
 
@@ -85,6 +85,7 @@ const DIALOGS_INITIAL: DialogState = {
   closeAttempt: false, closeConfirm: false, pendingRound: false,
   friends: false, addFromFriends: false, onboarding: false, help: false,
   profileMenuHelp: false, roundShare: false, attestation: false, auditLog: false,
+  crossInvitations: false,
 };
 
 
