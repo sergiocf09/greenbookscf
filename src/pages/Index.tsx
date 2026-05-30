@@ -2478,6 +2478,8 @@ const Index = () => {
         onOpenAttestation={() => openDialog('attestation')}
         isRoundAdmin={isCurrentUserRoundAdmin}
         onOpenAuditLog={() => openDialog('auditLog')}
+        crossInvitationsCount={crossInvitationsCount}
+        onOpenCrossInvitations={() => openDialog('crossInvitations')}
 
         onSetView={setView}
         onSetTheme={setTheme}
