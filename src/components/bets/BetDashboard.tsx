@@ -118,6 +118,7 @@ interface BetDashboardProps {
   sixesHook?: ReturnType<typeof useSixes>;
   vegasHook?: ReturnType<typeof useVegas>;
   ninesHook?: ReturnType<typeof useNines>;
+  crossBets?: import('@/hooks/useCrossBets').CrossBet[];
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
