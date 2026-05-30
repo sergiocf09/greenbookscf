@@ -46,6 +46,8 @@ import { expandMarkerStateToRows } from '@/lib/markerPersistence';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
+import { useCrossBets } from '@/hooks/useCrossBets';
+import { CrossBetInvitationsSheet } from '@/components/crossbet/CrossBetInvitationsSheet';
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -74,7 +76,7 @@ type DialogName =
   | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
   | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
   | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
-  | 'roundShare' | 'attestation' | 'auditLog';
+  | 'roundShare' | 'attestation' | 'auditLog' | 'crossInvitations';
 
 type DialogState = Record<DialogName, boolean>;
 
@@ -85,6 +87,7 @@ const DIALOGS_INITIAL: DialogState = {
   closeAttempt: false, closeConfirm: false, pendingRound: false,
   friends: false, addFromFriends: false, onboarding: false, help: false,
   profileMenuHelp: false, roundShare: false, attestation: false, auditLog: false,
+  crossInvitations: false,
 };
 
 
@@ -229,6 +232,16 @@ const Index = () => {
     refetch: refetchAudit,
     logEvent: realLogEvent,
   } = useRoundAuditLog(roundState.id, isCurrentUserRoundAdmin);
+
+  const {
+    pendingInvitations: crossInvitations,
+    pendingCount: crossInvitationsCount,
+    isAccepting: isAcceptingCross,
+    isDeclining: isDecliningCross,
+    acceptInvitation: acceptCrossInvitation,
+    declineInvitation: declineCrossInvitation,
+    refetchCrossBets,
+  } = useCrossBets(roundState.id);
 
   useEffect(() => {
     logEventRef.current = realLogEvent;
@@ -2465,6 +2478,8 @@ const Index = () => {
         onOpenAttestation={() => openDialog('attestation')}
         isRoundAdmin={isCurrentUserRoundAdmin}
         onOpenAuditLog={() => openDialog('auditLog')}
+        crossInvitationsCount={crossInvitationsCount}
+        onOpenCrossInvitations={() => openDialog('crossInvitations')}
 
         onSetView={setView}
         onSetTheme={setTheme}
@@ -2946,6 +2961,16 @@ const Index = () => {
         entries={auditEntries}
         isLoading={isAuditLoading}
         onRefresh={refetchAudit}
+      />
+
+      <CrossBetInvitationsSheet
+        open={dialogs.crossInvitations}
+        onClose={() => closeDialog('crossInvitations')}
+        invitations={crossInvitations}
+        isAccepting={isAcceptingCross}
+        isDeclining={isDecliningCross}
+        onAccept={async (id) => { await acceptCrossInvitation(id); refetchCrossBets(); }}
+        onDecline={declineCrossInvitation}
       />
 
       <UpgradeModal

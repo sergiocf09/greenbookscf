@@ -35,7 +35,7 @@ type DialogName =
   | 'scorecard' | 'share' | 'addPlayer' | 'leaderboard' | 'linkLeaderboard'
   | 'handicapMatrix' | 'closeAttempt' | 'closeConfirm' | 'pendingRound'
   | 'friends' | 'addFromFriends' | 'onboarding' | 'help' | 'profileMenuHelp'
-  | 'roundShare' | 'attestation' | 'auditLog';
+  | 'roundShare' | 'attestation' | 'auditLog' | 'crossInvitations';
 
 
 type DialogState = Record<DialogName, boolean>;

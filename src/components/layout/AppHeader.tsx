@@ -27,6 +27,7 @@ import {
   BarChart2,
   ScrollText,
   ClipboardList,
+  Swords,
 } from 'lucide-react';
 
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -101,6 +102,8 @@ interface AppHeaderProps {
   // Audit log
   isRoundAdmin: boolean;
   onOpenAuditLog: () => void;
+  crossInvitationsCount: number;
+  onOpenCrossInvitations: () => void;
 
 
   // Handlers
@@ -134,6 +137,8 @@ export function AppHeader(props: AppHeaderProps) {
     onOpenAttestation,
     isRoundAdmin,
     onOpenAuditLog,
+    crossInvitationsCount,
+    onOpenCrossInvitations,
     roundState,
 
 
@@ -211,6 +216,18 @@ export function AppHeader(props: AppHeaderProps) {
               </Button>
               <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center pointer-events-none">
                 {attestationCount > 9 ? '9+' : attestationCount}
+              </span>
+            </div>
+          )}
+          {crossInvitationsCount > 0 && (
+            <div className="relative">
+              <Button variant="ghost" size="icon"
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
+                onClick={onOpenCrossInvitations} title="Invitaciones de cruce pendientes">
+                <Swords className="h-5 w-5" />
+              </Button>
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center pointer-events-none">
+                {crossInvitationsCount > 9 ? '9+' : crossInvitationsCount}
               </span>
             </div>
           )}
@@ -352,6 +369,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <Play className="h-4 w-4 mr-2 text-destructive" />
                     <span>Rondas Pendientes</span>
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
+                  </DropdownMenuItem>
+                )}
+                {crossInvitationsCount > 0 && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenCrossInvitations(); }}>
+                    <Swords className="h-4 w-4 mr-2 text-primary" />
+                    <span>Cruces Pendientes</span>
+                    <span className="ml-1 text-primary font-semibold">({crossInvitationsCount})</span>
                   </DropdownMenuItem>
                 )}
                 {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
