@@ -78,6 +78,17 @@ interface MyRoundRow {
   netAmount: number;
 }
 
+interface SlidingEntry {
+  rivalProfileId: string;
+  rivalName: string;
+  rivalInitials: string;
+  rivalColor: string;
+  strokes: number;
+  lastRoundDate: string | null;
+}
+
+type SlidingSortKey = 'name' | 'strokes_desc' | 'strokes_asc';
+
 const getSnapshotVsBalance = (
   snap: RoundSnapshot,
   playerId: string,
