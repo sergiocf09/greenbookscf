@@ -233,6 +233,16 @@ const Index = () => {
     logEvent: realLogEvent,
   } = useRoundAuditLog(roundState.id, isCurrentUserRoundAdmin);
 
+  const {
+    pendingInvitations: crossInvitations,
+    pendingCount: crossInvitationsCount,
+    isAccepting: isAcceptingCross,
+    isDeclining: isDecliningCross,
+    acceptInvitation: acceptCrossInvitation,
+    declineInvitation: declineCrossInvitation,
+    refetchCrossBets,
+  } = useCrossBets(roundState.id);
+
   useEffect(() => {
     logEventRef.current = realLogEvent;
   }, [realLogEvent]);
