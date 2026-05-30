@@ -240,8 +240,17 @@ const Index = () => {
     isDeclining: isDecliningCross,
     acceptInvitation: acceptCrossInvitation,
     declineInvitation: declineCrossInvitation,
+    crossBets,
     refetchCrossBets,
+    sendInvitation,
+    isSending,
+    sendError,
   } = useCrossBets(roundState.id);
+
+  const [crossBetTarget, setCrossBetTarget] = useState<{
+    profileId: string; name: string; initials: string; color: string;
+    courseName: string; holesPlayed: number;
+  } | null>(null);
 
   useEffect(() => {
     logEventRef.current = realLogEvent;
