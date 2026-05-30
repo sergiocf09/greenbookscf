@@ -27,6 +27,7 @@ import {
   BarChart2,
   ScrollText,
   ClipboardList,
+  Swords,
 } from 'lucide-react';
 
 import GreenBookLogo from '@/components/GreenBookLogo';
