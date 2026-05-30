@@ -186,7 +186,7 @@ export const useHandicapHistory = (profileId: string | null) => {
       const handicapIndex = calculateHandicapIndexFromDifferentials(differentialValues);
       const roundsUsed = getNumDifferentialsToUse(entries.length);
 
-      return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3 };
+      return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3, attestationStats };
 
     },
     enabled: !!profileId,
@@ -201,5 +201,6 @@ export const useHandicapHistory = (profileId: string | null) => {
     minimumRoundsNeeded: query.data?.minimumRoundsNeeded ?? 3,
     isLoading: query.isLoading,
     error: query.error,
+    attestationStats: query.data?.attestationStats ?? null,
   };
 };
