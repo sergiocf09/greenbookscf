@@ -128,6 +128,14 @@ export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ 
                         ? `Hoyo ${r.holesPlayed}`
                         : 'Iniciando'}
                     </p>
+                    {onCrossInvite && (
+                      <button type="button"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onCrossInvite(r.profileId, r.displayName, r.initials, r.avatarColor, r.courseName, r.holesPlayed); }}
+                        className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-0.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors mt-1">
+                        <Swords className="h-3 w-3" />
+                        Cruzar
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
