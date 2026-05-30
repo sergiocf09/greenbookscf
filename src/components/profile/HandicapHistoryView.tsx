@@ -206,25 +206,25 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
 
       {/* Rounds list */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Historial de Rondas ({totalRounds})
-          </p>
-          {attestationStats && attestationStats.totalRounds > 0 && (() => {
-            const pct = Math.round((attestationStats.attestedRounds / attestationStats.totalRounds) * 100);
-            const colorClass = pct === 100
-              ? 'text-emerald-500'
-              : pct >= 50
-                ? 'text-yellow-500'
-                : 'text-muted-foreground';
-            return (
-              <span className={cn('flex items-center gap-1 text-[10px] font-medium', colorClass)}>
-                <Check className="h-3 w-3" />
-                {attestationStats.attestedRounds}/{attestationStats.totalRounds} ({pct}%)
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Historial de Rondas ({totalRounds})
+        </p>
+        {attestationStats && attestationStats.totalRounds > 0 && (() => {
+          const pct = Math.round((attestationStats.attestedRounds / attestationStats.totalRounds) * 100);
+          const colorClass = pct === 100
+            ? 'text-emerald-500'
+            : pct >= 50
+              ? 'text-yellow-500'
+              : 'text-muted-foreground';
+          return (
+            <p className="text-[11px] text-muted-foreground px-1 -mt-1 flex items-center gap-1">
+              <Check className="h-3 w-3" />
+              Atestadas: <span className={cn('font-medium', colorClass)}>
+                {attestationStats.attestedRounds} de {attestationStats.totalRounds} ({pct}%)
               </span>
-            );
-          })()}
-        </div>
+            </p>
+          );
+        })()}
         <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
           {entries.map((entry) => (
             <RoundRow
