@@ -31,6 +31,7 @@ export interface HandicapHistoryResult {
   minimumRoundsNeeded: number;
   isLoading: boolean;
   error: Error | null;
+  attestationStats: { totalRounds: number; attestedRounds: number } | null;
 }
 
 /**
