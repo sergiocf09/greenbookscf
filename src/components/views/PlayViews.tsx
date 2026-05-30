@@ -100,6 +100,7 @@ interface PlayViewsProps {
   onSetView: (v: AppView) => void;
   onResetRoundForReclose: () => void;
   onStartNewRound: () => void;
+  crossBets?: import('@/hooks/useCrossBets').CrossBet[];
 }
 
 export function PlayViews(props: PlayViewsProps) {
