@@ -116,7 +116,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [totalRounds, setTotalRounds] = useState(0);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds'>('rivals');
+  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding'>('rivals');
+
+  // Sliding tab state
+  const [slidingEntries, setSlidingEntries] = useState<SlidingEntry[]>([]);
+  const [loadingSliding, setLoadingSliding] = useState(false);
+  const [slidingSort, setSlidingSort] = useState<SlidingSortKey>('name');
 
   // Detail view state
   const [selectedRival, setSelectedRival] = useState<RivalBalance | null>(null);
