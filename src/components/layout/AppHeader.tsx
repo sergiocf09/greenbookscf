@@ -193,7 +193,7 @@ export function AppHeader(props: AppHeaderProps) {
               </div>
             </div>
           ) : view === 'setup' ? (
-            <FriendsLiveHeaderBadge />
+            <FriendsLiveHeaderBadge onCrossInvite={onCrossInvite} />
           ) : view === 'leaderboards' || view === 'rankings' || view === 'stats' ? (
             <Badge variant="secondary" className="bg-primary-foreground/15 text-primary-foreground border-0 text-sm px-3 py-1">
               {view === 'leaderboards' ? 'Leaderboards' : view === 'rankings' ? 'Rankings' : 'Estadísticas'}
