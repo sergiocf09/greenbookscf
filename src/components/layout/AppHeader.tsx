@@ -137,6 +137,8 @@ export function AppHeader(props: AppHeaderProps) {
     onOpenAttestation,
     isRoundAdmin,
     onOpenAuditLog,
+    crossInvitationsCount,
+    onOpenCrossInvitations,
     roundState,
 
 
