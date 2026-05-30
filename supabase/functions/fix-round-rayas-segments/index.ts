@@ -14,15 +14,28 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    // Service role client for direct table updates (bypasses RLS)
-    const adminClient = createClient(supabaseUrl, serviceKey);
-    
-    // User client for RPC calls that need auth context
+
+    // ── Authentication required ──
     const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader || '' } },
+      global: { headers: { Authorization: authHeader } },
     });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { roundId } = await req.json();
     if (!roundId) {
@@ -32,6 +45,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Authorization: caller must be round organizer ──
+    const { data: isOrganizer, error: orgErr } = await userClient.rpc('is_round_organizer', {
+      p_round_id: roundId,
+    });
+    if (orgErr || !isOrganizer) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
     // 1. Fix bet_config: cascade global rayas values to segments
     const { data: round, error: fetchErr } = await adminClient
       .from('rounds')
@@ -40,7 +66,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchErr || !round) {
-      return new Response(JSON.stringify({ error: 'Round not found', detail: fetchErr }), {
+      console.error('fix-round-rayas-segments fetch error:', fetchErr);
+      return new Response(JSON.stringify({ error: 'Round not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -48,8 +75,7 @@ Deno.serve(async (req) => {
 
     const betConfig = round.bet_config as any;
     const rayas = betConfig?.rayas;
-    const oldSegments = rayas?.segments ? JSON.parse(JSON.stringify(rayas.segments)) : null;
-    
+
     if (rayas?.segments) {
       const globalFront = rayas.frontValue;
       const globalBack = rayas.backValue;
@@ -59,41 +85,40 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Update bet_config with service role (bypasses RLS)
     const { error: updateErr } = await adminClient
       .from('rounds')
       .update({ bet_config: betConfig })
       .eq('id', roundId);
 
     if (updateErr) {
-      return new Response(JSON.stringify({ error: 'Failed to update bet_config', detail: updateErr }), {
+      console.error('fix-round-rayas-segments update error:', updateErr);
+      return new Response(JSON.stringify({ error: 'Failed to update bet_config' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // 3. Reset round for re-close (needs user auth context for organizer check)
     const { error: resetErr } = await userClient.rpc('reset_round_for_reclose', {
       p_round_id: roundId,
     });
 
     if (resetErr) {
-      return new Response(JSON.stringify({ error: 'Failed to reset round', detail: resetErr }), {
+      console.error('fix-round-rayas-segments reset error:', resetErr);
+      return new Response(JSON.stringify({ error: 'Failed to reset round' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
       message: 'Bet config fixed and round reset for re-close',
-      oldSegments,
-      fixedSegments: rayas?.segments,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
+    console.error('fix-round-rayas-segments error:', err);
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

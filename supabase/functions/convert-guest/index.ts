@@ -66,10 +66,11 @@ Deno.serve(async (req) => {
     if (convertError) {
       console.error("Error converting ghost profile:", convertError);
       return new Response(
-        JSON.stringify({ error: "Error vinculando perfil: " + convertError.message }),
+        JSON.stringify({ error: "Error vinculando perfil" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     return new Response(
       JSON.stringify({ success: true, user_id: user.id }),

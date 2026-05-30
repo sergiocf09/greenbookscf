@@ -120,6 +120,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Admin-only operation: only service_role JWTs may trigger a global backfill.
+    if (claimsData.claims.role !== "service_role") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: allProfiles, error: profErr } = await supabase
