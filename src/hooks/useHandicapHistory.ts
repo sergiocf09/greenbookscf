@@ -31,6 +31,7 @@ export interface HandicapHistoryResult {
   minimumRoundsNeeded: number;
   isLoading: boolean;
   error: Error | null;
+  attestationStats: { totalRounds: number; attestedRounds: number } | null;
 }
 
 /**
@@ -42,14 +43,26 @@ export const useHandicapHistory = (profileId: string | null) => {
     queryKey: ['handicap-history-materialized', profileId],
     queryFn: async (): Promise<Omit<HandicapHistoryResult, 'isLoading' | 'error'>> => {
       if (!profileId) {
-        return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
+        return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3, attestationStats: null };
+      }
+
+      // Fetch overall attestation stats (across ALL completed rounds, not just the 20 shown)
+      let attestationStats: { totalRounds: number; attestedRounds: number } | null = null;
+      try {
+        const { data: statsData } = await supabase.rpc('get_attestation_stats', {
+          p_profile_id: profileId,
+        });
+        if (statsData && statsData.length > 0) {
+          attestationStats = {
+            totalRounds: Number(statsData[0].total_rounds ?? 0),
+            attestedRounds: Number(statsData[0].attested_rounds ?? 0),
+          };
+        }
+      } catch (_) {
+        // non-blocking
       }
 
       // === PRIMARY: Batch calculate from raw scores ===
-      // The materialized handicap_history table can be incomplete (older rounds
-      // never got rows inserted), so we always recompute from raw scores and
-      // only enrich with materialized data (handicapAtTime, isAttested) when
-      // available.
       const { data: roundPlayers, error: rpError } = await supabase
         .from('round_players')
         .select(`
@@ -62,7 +75,7 @@ export const useHandicapHistory = (profileId: string | null) => {
 
       if (rpError) throw rpError;
       if (!roundPlayers?.length) {
-        return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
+        return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3, attestationStats };
       }
 
       const recent = roundPlayers.slice(0, 20);
@@ -173,7 +186,7 @@ export const useHandicapHistory = (profileId: string | null) => {
       const handicapIndex = calculateHandicapIndexFromDifferentials(differentialValues);
       const roundsUsed = getNumDifferentialsToUse(entries.length);
 
-      return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3 };
+      return { handicapIndex, entries, roundsUsed, totalRounds: entries.length, minimumRoundsNeeded: 3, attestationStats };
 
     },
     enabled: !!profileId,
@@ -188,5 +201,6 @@ export const useHandicapHistory = (profileId: string | null) => {
     minimumRoundsNeeded: query.data?.minimumRoundsNeeded ?? 3,
     isLoading: query.isLoading,
     error: query.error,
+    attestationStats: query.data?.attestationStats ?? null,
   };
 };

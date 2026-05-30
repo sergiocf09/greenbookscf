@@ -78,6 +78,17 @@ interface MyRoundRow {
   netAmount: number;
 }
 
+interface SlidingEntry {
+  rivalProfileId: string;
+  rivalName: string;
+  rivalInitials: string;
+  rivalColor: string;
+  strokes: number;
+  lastRoundDate: string | null;
+}
+
+type SlidingSortKey = 'name' | 'strokes_desc' | 'strokes_asc';
+
 const getSnapshotVsBalance = (
   snap: RoundSnapshot,
   playerId: string,
@@ -105,7 +116,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [totalRounds, setTotalRounds] = useState(0);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds'>('rivals');
+  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding'>('rivals');
+
+  // Sliding tab state
+  const [slidingEntries, setSlidingEntries] = useState<SlidingEntry[]>([]);
+  const [loadingSliding, setLoadingSliding] = useState(false);
+  const [slidingSort, setSlidingSort] = useState<SlidingSortKey>('name');
 
   // Detail view state
   const [selectedRival, setSelectedRival] = useState<RivalBalance | null>(null);
@@ -376,6 +392,73 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }
   };
 
+  // Fetch current sliding entries for the logged-in user from sliding_current table
+  const fetchSliding = async () => {
+    if (!profile) return;
+    setLoadingSliding(true);
+    try {
+      const { data, error } = await supabase
+        .from('sliding_current')
+        .select(`
+          player_a_profile_id,
+          player_b_profile_id,
+          strokes_a_gives_b_current,
+          last_updated_at,
+          last_round:rounds!sliding_current_last_round_id_fkey(date)
+        `)
+        .or(`player_a_profile_id.eq.${profile.id},player_b_profile_id.eq.${profile.id}`);
+
+      if (error) {
+        devError('fetchSliding error:', error);
+        setSlidingEntries([]);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setSlidingEntries([]);
+        return;
+      }
+
+      const rivalIds = data.map((row: any) =>
+        row.player_a_profile_id === profile.id
+          ? row.player_b_profile_id
+          : row.player_a_profile_id
+      );
+
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, display_name, initials, avatar_color')
+        .in('id', rivalIds);
+
+      const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+
+      const entries: SlidingEntry[] = data.map((row: any) => {
+        const isUserA = row.player_a_profile_id === profile.id;
+        const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
+        const strokes = isUserA
+          ? row.strokes_a_gives_b_current
+          : -row.strokes_a_gives_b_current;
+        const rival: any = profilesMap.get(rivalId);
+        const lastDate = (row.last_round as any)?.date ?? null;
+        return {
+          rivalProfileId: rivalId,
+          rivalName: rival?.display_name ?? 'Jugador',
+          rivalInitials: rival?.initials ?? '?',
+          rivalColor: rival?.avatar_color ?? '#3B82F6',
+          strokes,
+          lastRoundDate: lastDate,
+        };
+      });
+
+      setSlidingEntries(entries);
+    } catch (err) {
+      devError('fetchSliding exception:', err);
+    } finally {
+      setLoadingSliding(false);
+    }
+  };
+
+
   // ── "Mis Rondas" data: one row per round with date, course, score, net ──
   const myRounds = useMemo<MyRoundRow[]>(() => {
     if (!profile) return [];
@@ -555,10 +638,15 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   return (
     <div className="space-y-3 overflow-hidden">
       {/* Tabs: Vs Rivales / Mis Rondas */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rivals' | 'rounds')} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => {
+        const tab = v as 'rivals' | 'rounds' | 'sliding';
+        setActiveTab(tab);
+        if (tab === 'sliding') fetchSliding();
+      }} className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="rivals" className="flex-1 text-xs">Vs Rivales</TabsTrigger>
           <TabsTrigger value="rounds" className="flex-1 text-xs">Mis Rondas</TabsTrigger>
+          <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
         </TabsList>
 
         {/* ── Vs Rivales Tab ── */}
@@ -766,6 +854,103 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               </div>
             </ScrollArea>
           )}
+        </TabsContent>
+
+        {/* ── Sliding Tab ── */}
+        <TabsContent value="sliding" className="mt-3 space-y-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
+            {([
+              { key: 'name', label: 'A-Z' },
+              { key: 'strokes_desc', label: 'Mayor→Menor' },
+              { key: 'strokes_asc', label: 'Menor→Mayor' },
+            ] as { key: SlidingSortKey; label: string }[]).map(opt => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSlidingSort(opt.key)}
+                className={cn(
+                  'px-2 py-0.5 text-[10px] rounded-full border transition-colors',
+                  slidingSort === opt.key
+                    ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                    : 'bg-muted text-muted-foreground border-border'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {loadingSliding ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : slidingEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <p className="text-sm text-muted-foreground">Sin datos de sliding</p>
+              <p className="text-xs text-muted-foreground text-center">
+                El sliding se genera automáticamente al cerrar rondas con hándicap bilateral.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {[...slidingEntries]
+                .sort((a, b) => {
+                  if (slidingSort === 'name') return a.rivalName.localeCompare(b.rivalName, 'es');
+                  if (slidingSort === 'strokes_desc') return b.strokes - a.strokes;
+                  return a.strokes - b.strokes;
+                })
+                .map(entry => {
+                  const isGiving = entry.strokes > 0;
+                  return (
+                    <div
+                      key={entry.rivalProfileId}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card"
+                    >
+                      <PlayerAvatar
+                        initials={entry.rivalInitials}
+                        background={entry.rivalColor}
+                        size="sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{entry.rivalName}</p>
+                        {entry.lastRoundDate && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Última ronda: {format(parseLocalDate(entry.lastRoundDate), 'dd MMM yy', { locale: es })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        {entry.strokes === 0 ? (
+                          <span className="text-sm font-semibold text-muted-foreground">Mano a mano</span>
+                        ) : (
+                          <>
+                            <span className={cn(
+                              'text-lg font-bold tabular-nums',
+                              isGiving ? 'text-destructive' : 'text-green-700'
+                            )}>
+                              {isGiving ? `+${entry.strokes}` : `${entry.strokes}`}
+                            </span>
+                            <p className={cn(
+                              'text-[10px] font-medium',
+                              isGiving ? 'text-destructive/80' : 'text-green-700/80'
+                            )}>
+                              {isGiving ? 'das' : 'recibes'}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          <p className="text-[9px] text-muted-foreground text-center pt-1">
+            Solo rivales registrados con hándicap bilateral activo.
+            <span className="text-destructive"> Rojo = das strokes</span> ·
+            <span className="text-green-700"> Verde = recibes strokes</span>
+          </p>
         </TabsContent>
       </Tabs>
     </div>

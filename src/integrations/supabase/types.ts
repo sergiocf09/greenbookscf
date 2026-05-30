@@ -2346,6 +2346,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_attestation_stats: {
+        Args: { p_profile_id: string }
+        Returns: {
+          attested_rounds: number
+          total_rounds: number
+        }[]
+      }
       get_cup_match_result: {
         Args: { p_match_id: string }
         Returns: {
