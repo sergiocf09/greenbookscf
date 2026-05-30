@@ -855,6 +855,103 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             </ScrollArea>
           )}
         </TabsContent>
+
+        {/* ── Sliding Tab ── */}
+        <TabsContent value="sliding" className="mt-3 space-y-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
+            {([
+              { key: 'name', label: 'A-Z' },
+              { key: 'strokes_desc', label: 'Mayor→Menor' },
+              { key: 'strokes_asc', label: 'Menor→Mayor' },
+            ] as { key: SlidingSortKey; label: string }[]).map(opt => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSlidingSort(opt.key)}
+                className={cn(
+                  'px-2 py-0.5 text-[10px] rounded-full border transition-colors',
+                  slidingSort === opt.key
+                    ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                    : 'bg-muted text-muted-foreground border-border'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {loadingSliding ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : slidingEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <p className="text-sm text-muted-foreground">Sin datos de sliding</p>
+              <p className="text-xs text-muted-foreground text-center">
+                El sliding se genera automáticamente al cerrar rondas con hándicap bilateral.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {[...slidingEntries]
+                .sort((a, b) => {
+                  if (slidingSort === 'name') return a.rivalName.localeCompare(b.rivalName, 'es');
+                  if (slidingSort === 'strokes_desc') return b.strokes - a.strokes;
+                  return a.strokes - b.strokes;
+                })
+                .map(entry => {
+                  const isGiving = entry.strokes > 0;
+                  return (
+                    <div
+                      key={entry.rivalProfileId}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card"
+                    >
+                      <PlayerAvatar
+                        initials={entry.rivalInitials}
+                        background={entry.rivalColor}
+                        size="sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{entry.rivalName}</p>
+                        {entry.lastRoundDate && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Última ronda: {format(parseLocalDate(entry.lastRoundDate), 'dd MMM yy', { locale: es })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        {entry.strokes === 0 ? (
+                          <span className="text-sm font-semibold text-muted-foreground">Mano a mano</span>
+                        ) : (
+                          <>
+                            <span className={cn(
+                              'text-lg font-bold tabular-nums',
+                              isGiving ? 'text-destructive' : 'text-green-700'
+                            )}>
+                              {isGiving ? `+${entry.strokes}` : `${entry.strokes}`}
+                            </span>
+                            <p className={cn(
+                              'text-[10px] font-medium',
+                              isGiving ? 'text-destructive/80' : 'text-green-700/80'
+                            )}>
+                              {isGiving ? 'das' : 'recibes'}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          <p className="text-[9px] text-muted-foreground text-center pt-1">
+            Solo rivales registrados con hándicap bilateral activo.
+            <span className="text-destructive"> Rojo = das strokes</span> ·
+            <span className="text-green-700"> Verde = recibes strokes</span>
+          </p>
+        </TabsContent>
       </Tabs>
     </div>
   );
