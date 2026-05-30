@@ -194,10 +194,11 @@ Deno.serve(async (req) => {
       if (courseErr || !courseRow) {
         console.error("Insert course error:", courseErr);
         return new Response(
-          JSON.stringify({ error: "Failed to save course", detail: courseErr?.message }),
+          JSON.stringify({ error: "Failed to save course" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       const courseId = courseRow.id;
 
@@ -303,8 +304,9 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("golf-course-proxy error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal error", detail: String(err) }),
+      JSON.stringify({ error: "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });
