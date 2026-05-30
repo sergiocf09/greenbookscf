@@ -46,6 +46,8 @@ import { expandMarkerStateToRows } from '@/lib/markerPersistence';
 import { initialsFromPlayerName, validatePlayerName } from '@/lib/playerInput';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
+import { useCrossBets } from '@/hooks/useCrossBets';
+import { CrossBetInvitationsSheet } from '@/components/crossbet/CrossBetInvitationsSheet';
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
