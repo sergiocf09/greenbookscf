@@ -119,6 +119,7 @@ interface BetDashboardProps {
   vegasHook?: ReturnType<typeof useVegas>;
   ninesHook?: ReturnType<typeof useNines>;
   crossBets?: import('@/hooks/useCrossBets').CrossBet[];
+  onUpdateCrossBetConfig?: (args: { crossBetId: string; betConfig: Record<string, any> }) => Promise<void>;
 }
 
 export const BetDashboard: React.FC<BetDashboardProps> = ({
@@ -144,6 +145,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   vegasHook,
   ninesHook,
   crossBets = [],
+  onUpdateCrossBetConfig,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
