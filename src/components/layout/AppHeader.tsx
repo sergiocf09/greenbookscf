@@ -104,6 +104,7 @@ interface AppHeaderProps {
   onOpenAuditLog: () => void;
   crossInvitationsCount: number;
   onOpenCrossInvitations: () => void;
+  onCrossInvite?: (profileId: string, name: string, initials: string, color: string, courseName: string, holesPlayed: number) => void;
 
 
   // Handlers
