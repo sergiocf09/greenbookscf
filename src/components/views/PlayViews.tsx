@@ -115,6 +115,7 @@ export function PlayViews(props: PlayViewsProps) {
     setCurrentHole, isHoleConfirmed, confirmHole, updateScore,
     setBetConfig, setCurrentBetSummaries, setQuickScorePlayer,
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
+    crossBets,
   } = props;
 
   const adminInfo = useIsRoundAdmin(roundState.id);
