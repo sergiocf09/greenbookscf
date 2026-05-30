@@ -997,12 +997,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 {evens.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">
-                      Mano a mano ({evens.length})
+                      Scratch ({evens.length})
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {evens.map(e => (
                         <div key={e.rivalProfileId} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border">
-                          <PlayerAvatar initials={e.rivalInitials} background={e.rivalColor} size="xs" />
                           <span className="text-[11px] font-medium truncate min-w-0 flex-1">{e.rivalName}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0">0</span>
                         </div>
