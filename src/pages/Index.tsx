@@ -2986,6 +2986,24 @@ const Index = () => {
         onDecline={declineCrossInvitation}
       />
 
+      {crossBetTarget && (
+        <CrossBetSetupSheet
+          open={!!crossBetTarget}
+          onClose={() => setCrossBetTarget(null)}
+          targetProfileId={crossBetTarget.profileId}
+          targetName={crossBetTarget.name}
+          targetInitials={crossBetTarget.initials}
+          targetColor={crossBetTarget.color}
+          targetCourseName={crossBetTarget.courseName}
+          targetHolesPlayed={crossBetTarget.holesPlayed}
+          isSending={isSending}
+          sendError={sendError as Error | null}
+          onSend={async (betConfig) => {
+            await sendInvitation({ targetProfileId: crossBetTarget.profileId, betConfigProposal: betConfig });
+          }}
+        />
+      )}
+
       <UpgradeModal
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
