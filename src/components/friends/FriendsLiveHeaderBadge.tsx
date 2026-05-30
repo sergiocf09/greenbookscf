@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFriendsLive } from '@/hooks/useFriendsLive';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
-import { Radio } from 'lucide-react';
+import { Radio, Swords } from 'lucide-react';
 
 /** Capitaliza cada palabra: "ALEJANDRO SERRANO" → "Alejandro Serrano" */
 const titleCase = (s: string) =>
