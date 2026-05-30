@@ -2490,6 +2490,9 @@ const Index = () => {
         onOpenAuditLog={() => openDialog('auditLog')}
         crossInvitationsCount={crossInvitationsCount}
         onOpenCrossInvitations={() => openDialog('crossInvitations')}
+        onCrossInvite={(profileId, name, initials, color, courseName, holesPlayed) =>
+          setCrossBetTarget({ profileId, name, initials, color, courseName, holesPlayed })
+        }
 
         onSetView={setView}
         onSetTheme={setTheme}
