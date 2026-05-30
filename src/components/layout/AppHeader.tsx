@@ -371,6 +371,13 @@ export function AppHeader(props: AppHeaderProps) {
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
+                {crossInvitationsCount > 0 && (
+                  <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenCrossInvitations(); }}>
+                    <Swords className="h-4 w-4 mr-2 text-primary" />
+                    <span>Cruces Pendientes</span>
+                    <span className="ml-1 text-primary font-semibold">({crossInvitationsCount})</span>
+                  </DropdownMenuItem>
+                )}
                 {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAuditLog(); }}>
                     <ClipboardList className="h-4 w-4 mr-2" />
