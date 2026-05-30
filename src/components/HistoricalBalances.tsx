@@ -432,23 +432,28 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
       const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
 
-      const entries: SlidingEntry[] = data.map((row: any) => {
-        const isUserA = row.player_a_profile_id === profile.id;
-        const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
-        const strokes = isUserA
-          ? row.strokes_a_gives_b_current
-          : -row.strokes_a_gives_b_current;
-        const rival: any = profilesMap.get(rivalId);
-        const lastDate = (row.last_round as any)?.date ?? null;
-        return {
-          rivalProfileId: rivalId,
-          rivalName: rival?.display_name ?? 'Jugador',
-          rivalInitials: rival?.initials ?? '?',
-          rivalColor: rival?.avatar_color ?? '#3B82F6',
-          strokes,
-          lastRoundDate: lastDate,
-        };
-      });
+      const entries: SlidingEntry[] = data
+        .map((row: any) => {
+          const isUserA = row.player_a_profile_id === profile.id;
+          const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
+          const strokes = isUserA
+            ? row.strokes_a_gives_b_current
+            : -row.strokes_a_gives_b_current;
+          const rival: any = profilesMap.get(rivalId);
+          const lastDate = (row.last_round as any)?.date ?? null;
+          // Filter out entries where the rival profile can't be resolved
+          // (deleted users, RLS-blocked, or orphaned snapshot data)
+          if (!rival?.display_name) return null;
+          return {
+            rivalProfileId: rivalId,
+            rivalName: rival.display_name,
+            rivalInitials: rival.initials ?? '?',
+            rivalColor: rival.avatar_color ?? '#3B82F6',
+            strokes,
+            lastRoundDate: lastDate,
+          };
+        })
+        .filter((e: SlidingEntry | null): e is SlidingEntry => e !== null);
 
       setSlidingEntries(entries);
     } catch (err) {
