@@ -392,6 +392,73 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }
   };
 
+  // Fetch current sliding entries for the logged-in user from sliding_current table
+  const fetchSliding = async () => {
+    if (!profile) return;
+    setLoadingSliding(true);
+    try {
+      const { data, error } = await supabase
+        .from('sliding_current')
+        .select(`
+          player_a_profile_id,
+          player_b_profile_id,
+          strokes_a_gives_b_current,
+          last_updated_at,
+          last_round:rounds!sliding_current_last_round_id_fkey(date)
+        `)
+        .or(`player_a_profile_id.eq.${profile.id},player_b_profile_id.eq.${profile.id}`);
+
+      if (error) {
+        devError('fetchSliding error:', error);
+        setSlidingEntries([]);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setSlidingEntries([]);
+        return;
+      }
+
+      const rivalIds = data.map((row: any) =>
+        row.player_a_profile_id === profile.id
+          ? row.player_b_profile_id
+          : row.player_a_profile_id
+      );
+
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, display_name, initials, avatar_color')
+        .in('id', rivalIds);
+
+      const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+
+      const entries: SlidingEntry[] = data.map((row: any) => {
+        const isUserA = row.player_a_profile_id === profile.id;
+        const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
+        const strokes = isUserA
+          ? row.strokes_a_gives_b_current
+          : -row.strokes_a_gives_b_current;
+        const rival: any = profilesMap.get(rivalId);
+        const lastDate = (row.last_round as any)?.date ?? null;
+        return {
+          rivalProfileId: rivalId,
+          rivalName: rival?.display_name ?? 'Jugador',
+          rivalInitials: rival?.initials ?? '?',
+          rivalColor: rival?.avatar_color ?? '#3B82F6',
+          strokes,
+          lastRoundDate: lastDate,
+        };
+      });
+
+      setSlidingEntries(entries);
+    } catch (err) {
+      devError('fetchSliding exception:', err);
+    } finally {
+      setLoadingSliding(false);
+    }
+  };
+
+
   // ── "Mis Rondas" data: one row per round with date, course, score, net ──
   const myRounds = useMemo<MyRoundRow[]>(() => {
     if (!profile) return [];
