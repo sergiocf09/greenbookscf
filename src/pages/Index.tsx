@@ -2963,6 +2963,16 @@ const Index = () => {
         onRefresh={refetchAudit}
       />
 
+      <CrossBetInvitationsSheet
+        open={dialogs.crossInvitations}
+        onClose={() => closeDialog('crossInvitations')}
+        invitations={crossInvitations}
+        isAccepting={isAcceptingCross}
+        isDeclining={isDecliningCross}
+        onAccept={async (id) => { await acceptCrossInvitation(id); refetchCrossBets(); }}
+        onDecline={declineCrossInvitation}
+      />
+
       <UpgradeModal
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
