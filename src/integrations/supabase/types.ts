@@ -267,6 +267,61 @@ export type Database = {
           },
         ]
       }
+      cross_bet_invitations: {
+        Row: {
+          bet_config_proposal: Json
+          created_at: string
+          id: string
+          initiator_profile_id: string
+          responded_at: string | null
+          round_id: string
+          status: string
+          target_profile_id: string
+        }
+        Insert: {
+          bet_config_proposal?: Json
+          created_at?: string
+          id?: string
+          initiator_profile_id: string
+          responded_at?: string | null
+          round_id: string
+          status?: string
+          target_profile_id: string
+        }
+        Update: {
+          bet_config_proposal?: Json
+          created_at?: string
+          id?: string
+          initiator_profile_id?: string
+          responded_at?: string | null
+          round_id?: string
+          status?: string
+          target_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_bet_invitations_initiator_profile_id_fkey"
+            columns: ["initiator_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_bet_invitations_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_bet_invitations_target_profile_id_fkey"
+            columns: ["target_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cup_matches: {
         Row: {
           advantage_side: string
@@ -1467,6 +1522,75 @@ export type Database = {
         }
         Relationships: []
       }
+      round_cross_bets: {
+        Row: {
+          bet_config: Json
+          created_at: string
+          id: string
+          initiator_profile_id: string
+          invitation_id: string
+          round_id: string
+          target_profile_id: string
+          target_round_player_id: string | null
+        }
+        Insert: {
+          bet_config?: Json
+          created_at?: string
+          id?: string
+          initiator_profile_id: string
+          invitation_id: string
+          round_id: string
+          target_profile_id: string
+          target_round_player_id?: string | null
+        }
+        Update: {
+          bet_config?: Json
+          created_at?: string
+          id?: string
+          initiator_profile_id?: string
+          invitation_id?: string
+          round_id?: string
+          target_profile_id?: string
+          target_round_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_cross_bets_initiator_profile_id_fkey"
+            columns: ["initiator_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_cross_bets_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "cross_bet_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_cross_bets_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_cross_bets_target_profile_id_fkey"
+            columns: ["target_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_cross_bets_target_round_player_id_fkey"
+            columns: ["target_round_player_id"]
+            isOneToOne: false
+            referencedRelation: "round_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_groups: {
         Row: {
           created_at: string
@@ -1550,8 +1674,10 @@ export type Database = {
       }
       round_players: {
         Row: {
+          added_by_profile_id: string | null
           attested_at: string | null
           attested_by: string | null
+          cross_bet_id: string | null
           group_id: string
           guest_color: string | null
           guest_initials: string | null
@@ -1559,6 +1685,7 @@ export type Database = {
           handicap_for_round: number
           id: string
           is_admin: boolean
+          is_cross_only: boolean
           is_organizer: boolean
           joined_at: string
           profile_id: string | null
@@ -1566,8 +1693,10 @@ export type Database = {
           tee_color: string | null
         }
         Insert: {
+          added_by_profile_id?: string | null
           attested_at?: string | null
           attested_by?: string | null
+          cross_bet_id?: string | null
           group_id: string
           guest_color?: string | null
           guest_initials?: string | null
@@ -1575,6 +1704,7 @@ export type Database = {
           handicap_for_round: number
           id?: string
           is_admin?: boolean
+          is_cross_only?: boolean
           is_organizer?: boolean
           joined_at?: string
           profile_id?: string | null
@@ -1582,8 +1712,10 @@ export type Database = {
           tee_color?: string | null
         }
         Update: {
+          added_by_profile_id?: string | null
           attested_at?: string | null
           attested_by?: string | null
+          cross_bet_id?: string | null
           group_id?: string
           guest_color?: string | null
           guest_initials?: string | null
@@ -1591,6 +1723,7 @@ export type Database = {
           handicap_for_round?: number
           id?: string
           is_admin?: boolean
+          is_cross_only?: boolean
           is_organizer?: boolean
           joined_at?: string
           profile_id?: string | null
@@ -1598,6 +1731,20 @@ export type Database = {
           tee_color?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_round_players_cross_bet_id"
+            columns: ["cross_bet_id"]
+            isOneToOne: false
+            referencedRelation: "round_cross_bets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_players_added_by_profile_id_fkey"
+            columns: ["added_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "round_players_attested_by_fkey"
             columns: ["attested_by"]
@@ -2270,6 +2417,10 @@ export type Database = {
         }
         Returns: number
       }
+      accept_cross_bet_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: string
+      }
       attest_round_player: {
         Args: { p_round_player_id: string }
         Returns: undefined
@@ -2278,8 +2429,16 @@ export type Database = {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
       }
+      both_players_can_cross: {
+        Args: { p_profile_a: string; p_profile_b: string }
+        Returns: boolean
+      }
       can_access_full_history: { Args: never; Returns: boolean }
       can_create_round_as_organizer: { Args: never; Returns: boolean }
+      cancel_cross_bet_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
       cleanup_expired_guest_sessions: { Args: never; Returns: undefined }
       close_leaderboard: {
         Args: { p_leaderboard_id: string }
@@ -2319,6 +2478,10 @@ export type Database = {
               round_player_id: string
             }[]
           }
+      decline_cross_bet_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2351,6 +2514,22 @@ export type Database = {
         Returns: {
           attested_rounds: number
           total_rounds: number
+        }[]
+      }
+      get_cross_bets_for_round: {
+        Args: { p_round_id: string }
+        Returns: {
+          bet_config: Json
+          cross_bet_id: string
+          initiator_color: string
+          initiator_initials: string
+          initiator_name: string
+          initiator_profile_id: string
+          target_color: string
+          target_initials: string
+          target_name: string
+          target_profile_id: string
+          target_round_player_id: string
         }[]
       }
       get_cup_match_result: {
@@ -2457,6 +2636,21 @@ export type Database = {
           friend_profile_id: string
           friendship_id: string
           initials: string
+        }[]
+      }
+      get_my_pending_cross_invitations: {
+        Args: never
+        Returns: {
+          bet_config_proposal: Json
+          course_name: string
+          created_at: string
+          holes_played: number
+          initiator_color: string
+          initiator_initials: string
+          initiator_name: string
+          initiator_profile_id: string
+          invitation_id: string
+          round_id: string
         }[]
       }
       get_my_profile_id: { Args: never; Returns: string }
@@ -2602,6 +2796,10 @@ export type Database = {
       is_round_admin: { Args: { p_round_id: string }; Returns: boolean }
       is_round_organizer: { Args: { p_round_id: string }; Returns: boolean }
       is_round_participant: { Args: { p_round_id: string }; Returns: boolean }
+      is_round_participant_by_profile: {
+        Args: { p_profile_id: string; p_round_id: string }
+        Returns: boolean
+      }
       join_leaderboard_by_code: {
         Args: { p_code: string; p_handicap?: number }
         Returns: string
@@ -2688,6 +2886,14 @@ export type Database = {
           id: string
           initials: string
         }[]
+      }
+      send_cross_bet_invitation: {
+        Args: {
+          p_bet_config_proposal?: Json
+          p_round_id: string
+          p_target_profile_id: string
+        }
+        Returns: string
       }
       update_round_bet_config: {
         Args: { p_bet_config: Json; p_round_id: string }
