@@ -40,7 +40,11 @@ const HighlightsLine: React.FC<{ birdies: number[]; eagles: number[] }> = ({ bir
   );
 };
 
-export const FriendsLiveHeaderBadge: React.FC = () => {
+interface FriendsLiveHeaderBadgeProps {
+  onCrossInvite?: (profileId: string, name: string, initials: string, color: string, courseName: string, holesPlayed: number) => void;
+}
+
+export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ onCrossInvite }) => {
   const { liveRounds, refresh } = useFriendsLive();
   const [open, setOpen] = useState(false);
 
