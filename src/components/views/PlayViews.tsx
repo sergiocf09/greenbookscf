@@ -325,6 +325,7 @@ export function PlayViews(props: PlayViewsProps) {
               sixesHook={sixes}
               vegasHook={vegas}
               ninesHook={nines}
+              crossBets={crossBets}
             />
           </ErrorBoundary>
 
