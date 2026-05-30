@@ -571,10 +571,15 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   return (
     <div className="space-y-3 overflow-hidden">
       {/* Tabs: Vs Rivales / Mis Rondas */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'rivals' | 'rounds')} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => {
+        const tab = v as 'rivals' | 'rounds' | 'sliding';
+        setActiveTab(tab);
+        if (tab === 'sliding') fetchSliding();
+      }} className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="rivals" className="flex-1 text-xs">Vs Rivales</TabsTrigger>
           <TabsTrigger value="rounds" className="flex-1 text-xs">Mis Rondas</TabsTrigger>
+          <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
         </TabsList>
 
         {/* ── Vs Rivales Tab ── */}
