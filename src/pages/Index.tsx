@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -48,7 +49,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
 import { useCrossBets } from '@/hooks/useCrossBets';
 import { CrossBetInvitationsSheet } from '@/components/crossbet/CrossBetInvitationsSheet';
-import { CrossBetSetupSheet } from '@/components/crossbet/CrossBetSetupSheet';
+
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -246,6 +247,7 @@ const Index = () => {
     sendInvitation,
     isSending,
     sendError,
+    updateCrossBetConfig,
   } = useCrossBets(roundState.id);
 
   const [crossBetTarget, setCrossBetTarget] = useState<{
@@ -2674,6 +2676,7 @@ const Index = () => {
             onResetRoundForReclose={resetRoundForReclose}
             onStartNewRound={startNewRound}
             crossBets={crossBets}
+            onUpdateCrossBetConfig={updateCrossBetConfig}
           />
         )}
 
@@ -2988,21 +2991,40 @@ const Index = () => {
       />
 
       {crossBetTarget && (
-        <CrossBetSetupSheet
-          open={!!crossBetTarget}
-          onClose={() => setCrossBetTarget(null)}
-          targetProfileId={crossBetTarget.profileId}
-          targetName={crossBetTarget.name}
-          targetInitials={crossBetTarget.initials}
-          targetColor={crossBetTarget.color}
-          targetCourseName={crossBetTarget.courseName}
-          targetHolesPlayed={crossBetTarget.holesPlayed}
-          isSending={isSending}
-          sendError={sendError as Error | null}
-          onSend={async (betConfig) => {
-            await sendInvitation({ targetProfileId: crossBetTarget.profileId, betConfigProposal: betConfig });
-          }}
-        />
+        <AlertDialog open={!!crossBetTarget} onOpenChange={(v) => { if (!v) setCrossBetTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cruzar tarjeta con {crossBetTarget.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Se enviará una invitación de cruce. Cuando la acepte, podrás elegir qué apuestas individuales incluir en este cruce desde la sección <strong>Apuestas de Cruce</strong> del dashboard.
+                {sendError && (
+                  <span className="block mt-2 text-destructive text-xs">
+                    {(sendError as any)?.message?.includes('subscription_required')
+                      ? 'Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.'
+                      : 'Error al enviar la invitación. Intenta de nuevo.'}
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isSending}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await sendInvitation({ targetProfileId: crossBetTarget.profileId, betConfigProposal: {} });
+                    setCrossBetTarget(null);
+                  } catch {
+                    // sendError shown above
+                  }
+                }}
+              >
+                {isSending ? 'Enviando…' : 'Enviar invitación'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       <UpgradeModal

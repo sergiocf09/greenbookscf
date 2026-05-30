@@ -128,6 +128,18 @@ export function useCrossBets(roundId: string | null) {
     onSuccess: invalidate,
   });
 
+  const updateCrossBetConfig = useMutation({
+    mutationFn: async ({ crossBetId, betConfig }: { crossBetId: string; betConfig: Record<string, any> }) => {
+      const { error } = await supabase.rpc('update_cross_bet_config', {
+        p_cross_bet_id: crossBetId,
+        p_bet_config: betConfig,
+      });
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (err: any) => devError('updateCrossBetConfig failed:', err),
+  });
+
   return {
     pendingInvitations: pendingQuery.data ?? [],
     pendingCount: (pendingQuery.data ?? []).length,
@@ -137,6 +149,7 @@ export function useCrossBets(roundId: string | null) {
     refetchCrossBets: crossBetsQuery.refetch,
     sendInvitation: sendInvitation.mutateAsync,
     isSending: sendInvitation.isPending,
+    updateCrossBetConfig: updateCrossBetConfig.mutateAsync,
     sendError: sendInvitation.error,
     acceptInvitation: acceptInvitation.mutateAsync,
     isAccepting: acceptInvitation.isPending,

@@ -2896,6 +2896,10 @@ export type Database = {
         }
         Returns: string
       }
+      update_cross_bet_config: {
+        Args: { p_bet_config: Json; p_cross_bet_id: string }
+        Returns: undefined
+      }
       update_round_bet_config: {
         Args: { p_bet_config: Json; p_round_id: string }
         Returns: string

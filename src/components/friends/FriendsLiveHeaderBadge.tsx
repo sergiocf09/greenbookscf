@@ -121,21 +121,21 @@ export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ 
                     </p>
                     <HighlightsLine birdies={r.birdieHoles} eagles={r.eagleHoles} />
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="shrink-0 flex flex-col items-end gap-1">
                     <VsParLabel value={r.grossVsPar} />
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {r.holesPlayed > 0
-                        ? `Hoyo ${r.holesPlayed}`
-                        : 'Iniciando'}
-                    </p>
-                    {onCrossInvite && (
-                      <button type="button"
-                        onClick={(e) => { e.stopPropagation(); setOpen(false); onCrossInvite(r.profileId, r.displayName, r.initials, r.avatarColor, r.courseName, r.holesPlayed); }}
-                        className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-0.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors mt-1">
-                        <Swords className="h-3 w-3" />
-                        Cruzar
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {onCrossInvite && (
+                        <button type="button"
+                          onClick={(e) => { e.stopPropagation(); setOpen(false); onCrossInvite(r.profileId, r.displayName, r.initials, r.avatarColor, r.courseName, r.holesPlayed); }}
+                          className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-0.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors">
+                          <Swords className="h-3 w-3" />
+                          Cruzar
+                        </button>
+                      )}
+                      <p className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {r.holesPlayed > 0 ? `Hoyo ${r.holesPlayed}` : 'Iniciando'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
