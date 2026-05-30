@@ -3627,15 +3627,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       })()}
 
       {crossBets.length > 0 && (() => {
-        const resolved = resolveConfigForGroup(betConfig, playerGroups[basePlayerGroupIndex - 1]?.id);
+        const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
+        const getAmt = (cfg: any): number | undefined =>
+          cfg?.totalAmount ?? cfg?.amount ?? cfg?.frontAmount ?? cfg?.value ?? undefined;
         const INDIVIDUAL_BETS: { key: string; label: string; amount?: number; enabled: boolean }[] = [
-          { key: 'medal',     label: 'Medal',      amount: resolved.medal?.totalAmount,      enabled: !!resolved.medal?.enabled },
-          { key: 'matchPlay', label: 'Match Play', amount: resolved.matchPlay?.totalAmount,  enabled: !!resolved.matchPlay?.enabled },
-          { key: 'putts',     label: 'Putts',      amount: resolved.putts?.totalAmount,      enabled: !!resolved.putts?.enabled },
-          { key: 'manchas',   label: 'Manchas',    amount: resolved.manchas?.amount,         enabled: !!resolved.manchas?.enabled },
-          { key: 'bloques',   label: 'Bloques',    amount: resolved.bloques?.amount,         enabled: !!resolved.bloques?.enabled },
-          { key: 'units',     label: 'Unidades',   amount: resolved.units?.amount,           enabled: !!resolved.units?.enabled },
-          { key: 'skins',     label: 'Skins',      amount: resolved.skins?.frontAmount,      enabled: !!resolved.skins?.enabled },
+          { key: 'medal',     label: 'Medal',      amount: getAmt(resolved.medal),     enabled: !!resolved.medal?.enabled },
+          { key: 'matchPlay', label: 'Match Play', amount: getAmt(resolved.matchPlay), enabled: !!resolved.matchPlay?.enabled },
+          { key: 'putts',     label: 'Putts',      amount: getAmt(resolved.putts),     enabled: !!resolved.putts?.enabled },
+          { key: 'manchas',   label: 'Manchas',    amount: getAmt(resolved.manchas),   enabled: !!resolved.manchas?.enabled },
+          { key: 'bloques',   label: 'Bloques',    amount: getAmt(resolved.bloques),   enabled: !!resolved.bloques?.enabled },
+          { key: 'units',     label: 'Unidades',   amount: getAmt(resolved.units),     enabled: !!resolved.units?.enabled },
+          { key: 'skins',     label: 'Skins',      amount: getAmt(resolved.skins),     enabled: !!resolved.skins?.enabled },
         ];
         const enabledBets = INDIVIDUAL_BETS.filter(b => b.enabled);
         return (
