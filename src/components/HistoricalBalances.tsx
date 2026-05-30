@@ -958,7 +958,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   'flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border',
                   isReceive ? 'justify-start' : 'justify-end flex-row-reverse'
                 )}>
-                  <PlayerAvatar initials={entry.rivalInitials} background={entry.rivalColor} size="xs" />
                   <span className="text-[11px] font-medium truncate min-w-0 flex-1">{entry.rivalName}</span>
                   <span className={cn(
                     'text-xs font-bold tabular-nums shrink-0',
