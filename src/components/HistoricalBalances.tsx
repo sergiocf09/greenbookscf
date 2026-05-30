@@ -858,7 +858,50 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         {/* ── Sliding Tab ── */}
         <TabsContent value="sliding" className="mt-3 space-y-3">
-          <div className="flex items-center gap-1.5">
+          {/* Summary card (mirrors Vs Rivales / Mis Rondas) */}
+          {(() => {
+            const receivers = slidingEntries.filter(e => e.strokes < 0);
+            const givers = slidingEntries.filter(e => e.strokes > 0);
+            const evens = slidingEntries.filter(e => e.strokes === 0);
+            const totalReceived = receivers.reduce((s, e) => s + Math.abs(e.strokes), 0);
+            const totalGiven = givers.reduce((s, e) => s + e.strokes, 0);
+            const net = totalReceived - totalGiven;
+            return (
+              <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-medium">Sliding Neto</span>
+                  </div>
+                  <div className={cn(
+                    'text-xl font-bold tabular-nums',
+                    net > 0 ? 'text-green-700 dark:text-green-500' : net < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  )}>
+                    {net > 0 ? `+${net}` : net}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-700 dark:text-green-500 font-semibold">−{totalReceived}</span>
+                    <span>recibes ({receivers.length})</span>
+                  </div>
+                  {evens.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold">{evens.length}</span>
+                      <span>mano a mano</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <span>das ({givers.length})</span>
+                    <span className="text-destructive font-semibold">+{totalGiven}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Sort control */}
+          <div className="flex items-center gap-1.5 px-1">
             <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
             {([
               { key: 'name', label: 'A-Z' },
@@ -892,65 +935,80 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 El sliding se genera automáticamente al cerrar rondas con hándicap bilateral.
               </p>
             </div>
-          ) : (
-            <div className="space-y-1.5">
-              {[...slidingEntries]
-                .sort((a, b) => {
-                  if (slidingSort === 'name') return a.rivalName.localeCompare(b.rivalName, 'es');
-                  if (slidingSort === 'strokes_desc') return b.strokes - a.strokes;
-                  return a.strokes - b.strokes;
-                })
-                .map(entry => {
-                  const isGiving = entry.strokes > 0;
-                  return (
-                    <div
-                      key={entry.rivalProfileId}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card"
-                    >
-                      <PlayerAvatar
-                        initials={entry.rivalInitials}
-                        background={entry.rivalColor}
-                        size="sm"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{entry.rivalName}</p>
-                        {entry.lastRoundDate && (
-                          <p className="text-[10px] text-muted-foreground">
-                            Última ronda: {format(parseLocalDate(entry.lastRoundDate), 'dd MMM yy', { locale: es })}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        {entry.strokes === 0 ? (
-                          <span className="text-sm font-semibold text-muted-foreground">Mano a mano</span>
-                        ) : (
-                          <>
-                            <span className={cn(
-                              'text-lg font-bold tabular-nums',
-                              isGiving ? 'text-destructive' : 'text-green-700'
-                            )}>
-                              {isGiving ? `+${entry.strokes}` : `${entry.strokes}`}
-                            </span>
-                            <p className={cn(
-                              'text-[10px] font-medium',
-                              isGiving ? 'text-destructive/80' : 'text-green-700/80'
-                            )}>
-                              {isGiving ? 'das' : 'recibes'}
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+          ) : (() => {
+            const sortFn = (a: SlidingEntry, b: SlidingEntry) => {
+              if (slidingSort === 'name') return a.rivalName.localeCompare(b.rivalName, 'es');
+              if (slidingSort === 'strokes_desc') return Math.abs(b.strokes) - Math.abs(a.strokes);
+              return Math.abs(a.strokes) - Math.abs(b.strokes);
+            };
+            const receives = [...slidingEntries].filter(e => e.strokes < 0).sort(sortFn);
+            const gives = [...slidingEntries].filter(e => e.strokes > 0).sort(sortFn);
+            const evens = [...slidingEntries].filter(e => e.strokes === 0).sort((a, b) => a.rivalName.localeCompare(b.rivalName, 'es'));
 
-          <p className="text-[9px] text-muted-foreground text-center pt-1">
-            Solo rivales registrados con hándicap bilateral activo.
-            <span className="text-destructive"> Rojo = das strokes</span> ·
-            <span className="text-green-700"> Verde = recibes strokes</span>
-          </p>
+            const Row: React.FC<{ entry: SlidingEntry; side: 'left' | 'right' }> = ({ entry, side }) => {
+              const isReceive = side === 'left';
+              const value = isReceive ? `−${Math.abs(entry.strokes)}` : `+${entry.strokes}`;
+              return (
+                <div className={cn(
+                  'flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border',
+                  isReceive ? 'justify-start' : 'justify-end flex-row-reverse'
+                )}>
+                  <PlayerAvatar initials={entry.rivalInitials} background={entry.rivalColor} size="xs" />
+                  <span className="text-[11px] font-medium truncate min-w-0 flex-1">{entry.rivalName}</span>
+                  <span className={cn(
+                    'text-xs font-bold tabular-nums shrink-0',
+                    isReceive ? 'text-green-700 dark:text-green-500' : 'text-destructive'
+                  )}>
+                    {value}
+                  </span>
+                </div>
+              );
+            };
+
+            return (
+              <ScrollArea className="h-[320px]">
+                <div className="grid grid-cols-2 gap-2 pr-1">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-green-700 dark:text-green-500 px-1">
+                      Recibes ({receives.length})
+                    </p>
+                    {receives.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground px-1 italic">—</p>
+                    ) : (
+                      receives.map(e => <Row key={e.rivalProfileId} entry={e} side="left" />)
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-destructive px-1 text-right">
+                      Das ({gives.length})
+                    </p>
+                    {gives.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground px-1 italic text-right">—</p>
+                    ) : (
+                      gives.map(e => <Row key={e.rivalProfileId} entry={e} side="right" />)
+                    )}
+                  </div>
+                </div>
+
+                {evens.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">
+                      Mano a mano ({evens.length})
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {evens.map(e => (
+                        <div key={e.rivalProfileId} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border">
+                          <PlayerAvatar initials={e.rivalInitials} background={e.rivalColor} size="xs" />
+                          <span className="text-[11px] font-medium truncate min-w-0 flex-1">{e.rivalName}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">0</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </ScrollArea>
+            );
+          })()}
         </TabsContent>
       </Tabs>
     </div>
