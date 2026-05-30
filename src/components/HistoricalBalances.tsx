@@ -946,13 +946,15 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               if (slidingSort === 'strokes_desc') return Math.abs(b.strokes) - Math.abs(a.strokes);
               return Math.abs(a.strokes) - Math.abs(b.strokes);
             };
-            const receives = [...slidingEntries].filter(e => e.strokes < 0).sort(sortFn);
+            // Recibes incluye scratch (0 golpes) en verde con valor 0
+            const receives = [...slidingEntries].filter(e => e.strokes <= 0).sort(sortFn);
             const gives = [...slidingEntries].filter(e => e.strokes > 0).sort(sortFn);
-            const evens = [...slidingEntries].filter(e => e.strokes === 0).sort((a, b) => a.rivalName.localeCompare(b.rivalName, 'es'));
 
             const Row: React.FC<{ entry: SlidingEntry; side: 'left' | 'right' }> = ({ entry, side }) => {
               const isReceive = side === 'left';
-              const value = isReceive ? `−${Math.abs(entry.strokes)}` : `+${entry.strokes}`;
+              const value = isReceive
+                ? (entry.strokes === 0 ? '0' : `−${Math.abs(entry.strokes)}`)
+                : `+${entry.strokes}`;
               return (
                 <div className={cn(
                   'flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border',
@@ -993,22 +995,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     )}
                   </div>
                 </div>
-
-                {evens.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">
-                      Scratch ({evens.length})
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {evens.map(e => (
-                        <div key={e.rivalProfileId} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border">
-                          <span className="text-[11px] font-medium truncate min-w-0 flex-1">{e.rivalName}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0">0</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </ScrollArea>
             );
           })()}
