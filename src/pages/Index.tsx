@@ -48,6 +48,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
 import { useCrossBets } from '@/hooks/useCrossBets';
 import { CrossBetInvitationsSheet } from '@/components/crossbet/CrossBetInvitationsSheet';
+import { CrossBetSetupSheet } from '@/components/crossbet/CrossBetSetupSheet';
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -240,8 +241,17 @@ const Index = () => {
     isDeclining: isDecliningCross,
     acceptInvitation: acceptCrossInvitation,
     declineInvitation: declineCrossInvitation,
+    crossBets,
     refetchCrossBets,
+    sendInvitation,
+    isSending,
+    sendError,
   } = useCrossBets(roundState.id);
+
+  const [crossBetTarget, setCrossBetTarget] = useState<{
+    profileId: string; name: string; initials: string; color: string;
+    courseName: string; holesPlayed: number;
+  } | null>(null);
 
   useEffect(() => {
     logEventRef.current = realLogEvent;
@@ -2480,6 +2490,9 @@ const Index = () => {
         onOpenAuditLog={() => openDialog('auditLog')}
         crossInvitationsCount={crossInvitationsCount}
         onOpenCrossInvitations={() => openDialog('crossInvitations')}
+        onCrossInvite={(profileId, name, initials, color, courseName, holesPlayed) =>
+          setCrossBetTarget({ profileId, name, initials, color, courseName, holesPlayed })
+        }
 
         onSetView={setView}
         onSetTheme={setTheme}
@@ -2660,6 +2673,7 @@ const Index = () => {
             onSetView={setView}
             onResetRoundForReclose={resetRoundForReclose}
             onStartNewRound={startNewRound}
+            crossBets={crossBets}
           />
         )}
 
@@ -2972,6 +2986,24 @@ const Index = () => {
         onAccept={async (id) => { await acceptCrossInvitation(id); refetchCrossBets(); }}
         onDecline={declineCrossInvitation}
       />
+
+      {crossBetTarget && (
+        <CrossBetSetupSheet
+          open={!!crossBetTarget}
+          onClose={() => setCrossBetTarget(null)}
+          targetProfileId={crossBetTarget.profileId}
+          targetName={crossBetTarget.name}
+          targetInitials={crossBetTarget.initials}
+          targetColor={crossBetTarget.color}
+          targetCourseName={crossBetTarget.courseName}
+          targetHolesPlayed={crossBetTarget.holesPlayed}
+          isSending={isSending}
+          sendError={sendError as Error | null}
+          onSend={async (betConfig) => {
+            await sendInvitation({ targetProfileId: crossBetTarget.profileId, betConfigProposal: betConfig });
+          }}
+        />
+      )}
 
       <UpgradeModal
         open={showUpgrade}

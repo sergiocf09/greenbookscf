@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFriendsLive } from '@/hooks/useFriendsLive';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
-import { Radio } from 'lucide-react';
+import { Radio, Swords } from 'lucide-react';
 
 /** Capitaliza cada palabra: "ALEJANDRO SERRANO" → "Alejandro Serrano" */
 const titleCase = (s: string) =>
@@ -40,7 +40,11 @@ const HighlightsLine: React.FC<{ birdies: number[]; eagles: number[] }> = ({ bir
   );
 };
 
-export const FriendsLiveHeaderBadge: React.FC = () => {
+interface FriendsLiveHeaderBadgeProps {
+  onCrossInvite?: (profileId: string, name: string, initials: string, color: string, courseName: string, holesPlayed: number) => void;
+}
+
+export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ onCrossInvite }) => {
   const { liveRounds, refresh } = useFriendsLive();
   const [open, setOpen] = useState(false);
 
@@ -124,6 +128,14 @@ export const FriendsLiveHeaderBadge: React.FC = () => {
                         ? `Hoyo ${r.holesPlayed}`
                         : 'Iniciando'}
                     </p>
+                    {onCrossInvite && (
+                      <button type="button"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onCrossInvite(r.profileId, r.displayName, r.initials, r.avatarColor, r.courseName, r.holesPlayed); }}
+                        className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-0.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors mt-1">
+                        <Swords className="h-3 w-3" />
+                        Cruzar
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

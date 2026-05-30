@@ -100,6 +100,7 @@ interface PlayViewsProps {
   onSetView: (v: AppView) => void;
   onResetRoundForReclose: () => void;
   onStartNewRound: () => void;
+  crossBets?: import('@/hooks/useCrossBets').CrossBet[];
 }
 
 export function PlayViews(props: PlayViewsProps) {
@@ -114,6 +115,7 @@ export function PlayViews(props: PlayViewsProps) {
     setCurrentHole, isHoleConfirmed, confirmHole, updateScore,
     setBetConfig, setCurrentBetSummaries, setQuickScorePlayer,
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
+    crossBets,
   } = props;
 
   const adminInfo = useIsRoundAdmin(roundState.id);
@@ -323,6 +325,7 @@ export function PlayViews(props: PlayViewsProps) {
               sixesHook={sixes}
               vegasHook={vegas}
               ninesHook={nines}
+              crossBets={crossBets}
             />
           </ErrorBoundary>
 
