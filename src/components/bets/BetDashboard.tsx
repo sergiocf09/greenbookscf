@@ -3624,6 +3624,35 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
+      {crossBets.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Swords className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Apuestas de Cruce</span>
+          </div>
+          {crossBets.map(cb => {
+            const isInitiator = cb.initiatorProfileId === basePlayerId;
+            const partner = isInitiator
+              ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
+              : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
+            const activeBets = Object.entries(cb.betConfig)
+              .filter(([, v]: any) => v?.enabled)
+              .map(([k, v]: any) => `${k} $${fmtMoney(v.amount ?? 0)}`);
+            return (
+              <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
+                  <div>
+                    <p className="text-sm font-medium">{partner.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{isInitiator ? 'Tú invitaste' : 'Te invitó'}</p>
+                  </div>
+                </div>
+                {activeBets.length > 0 && <p className="text-xs text-muted-foreground">{activeBets.join(' · ')}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
