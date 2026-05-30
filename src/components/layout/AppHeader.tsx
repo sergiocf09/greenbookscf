@@ -102,6 +102,8 @@ interface AppHeaderProps {
   // Audit log
   isRoundAdmin: boolean;
   onOpenAuditLog: () => void;
+  crossInvitationsCount: number;
+  onOpenCrossInvitations: () => void;
 
 
   // Handlers
