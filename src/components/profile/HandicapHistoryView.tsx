@@ -122,20 +122,21 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
         </div>
       </div>
 
-      {/* Attestation percentage line */}
+      {/* Attestation percentage line (over last 20 entries shown) */}
       {(() => {
-        const usedEntries = entries.slice(0, roundsUsed);
-        const attestedCount = usedEntries.filter(e => e.isAttested).length;
-        const total = usedEntries.length;
+        const last20 = entries.slice(0, 20);
+        const attestedCount = last20.filter(e => e.isAttested).length;
+        const total = last20.length;
         const pct = total > 0 ? Math.round((attestedCount / total) * 100) : 0;
-        const colorClass = pct >= 80
+        if (total === 0) return null;
+        const colorClass = pct === 100
           ? 'text-emerald-500'
           : pct >= 50
             ? 'text-yellow-500'
             : 'text-muted-foreground';
         return (
           <div className="text-xs text-muted-foreground px-1">
-            Atestadas: <span className={cn('font-medium', colorClass)}>{attestedCount} de {total} ({pct}%)</span>
+            Atestadas (últ. {total}): <span className={cn('font-medium', colorClass)}>{attestedCount} de {total} ({pct}%)</span>
           </div>
         );
       })()}
