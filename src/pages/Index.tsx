@@ -48,6 +48,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { AppDialogs } from '@/components/layout/AppDialogs';
 import { useCrossBets } from '@/hooks/useCrossBets';
 import { CrossBetInvitationsSheet } from '@/components/crossbet/CrossBetInvitationsSheet';
+import { CrossBetSetupSheet } from '@/components/crossbet/CrossBetSetupSheet';
 import { SetupView } from '@/components/views/SetupView';
 import { PlayViews } from '@/components/views/PlayViews';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
