@@ -1,83 +1,55 @@
-# Scores Attestation — Implementation Plan
+## Modelo conceptual (simplificado)
 
-Feature: allow a non-organizer participant to attest the scores of a completed round. Surface pending attestations in the header (badge) and profile menu, expose attestation status in the handicap history. Title displayed in English: **"Scores Attestation"**.
-
-## 1. Database migration
-
-Single migration adding:
-- `rounds.attested_by UUID REFERENCES profiles(id) ON DELETE SET NULL`
-- `rounds.attested_at TIMESTAMPTZ`
-- `handicap_history.is_attested BOOLEAN NOT NULL DEFAULT false`
-- RPC `attest_round(p_round_id UUID)` — SECURITY DEFINER, validates: round exists, status='completed', not yet attested, caller ≠ organizer, caller is a real (non-ghost) participant. Updates `rounds` and flips `handicap_history.is_attested=true` for that round.
-- RPC `get_pending_attestations()` — returns rows `{round_id, round_date, course_name, organizer_name, player_names[], my_total_strokes}` for completed rounds where the caller participated as a real account, is not the organizer, and the round is not yet attested.
-- `GRANT EXECUTE ... TO authenticated` for both RPCs.
-
-Note: `round_players.is_ghost` will be guarded with `(rp.is_ghost IS NULL OR rp.is_ghost = false)` — if the column does not exist we will simplify to `rp.profile_id IS NOT NULL` during execution. Existing SELECT RLS on `rounds` already covers the new columns.
-
-## 2. New hook `src/hooks/useAttestation.ts`
-
-React Query hook exposing:
-- `pendingRounds: AttestationRound[]` from `get_pending_attestations` RPC (staleTime 60s).
-- `attestRound(roundId)` mutation calling `attest_round` RPC; on success invalidates `pending-attestations` and `handicap-history` queries.
-- `isLoading`, `isAttesting`, `attestError`.
-
-`AttestationRound` interface: `{roundId, roundDate, courseName, organizerName, playerNames[], myTotalStrokes}`.
-
-## 3. New component `src/components/attestation/AttestationSheet.tsx`
-
-Bottom/right sheet titled **"Scores Attestation"** (English title, Spanish subtitle: "Confirma que los scores de estas rondas son correctos…"). Lists each pending round as a card with:
-- Course name + date
-- Organizer name + other player names (first 3 + overflow)
-- My total strokes
-- "Atestar" button → calls `onAttest(roundId)`, shows per-row loading state.
-Empty state when `rounds.length === 0`.
-
-## 4. Update `src/hooks/useHandicapHistory.ts`
-
-- Add `isAttested: boolean` to `HandicapHistoryEntry`.
-- Map `is_attested: row.is_attested ?? false` in **both** entry-construction blocks (materialized path and fallback path — fallback defaults to `false`).
-
-## 5. Update `src/components/profile/HandicapHistoryView.tsx`
-
-- Import `Check`, `Clock` from lucide-react; import `cn` from `@/lib/utils`.
-- In `RoundRow`, render small ✓ (emerald, attested) or ⏳ (muted, pending) icon beside course name.
-- Below the "X/Y diferenciales" summary, add a line: "Atestadas: N de M (P%)", color-coded (emerald ≥80%, yellow ≥50%, muted otherwise), computed over the differentials currently used for the index.
-
-## 6. Update `src/pages/Index.tsx`
-
-- Extend `DialogName` union with `'attestation'`; add `attestation: false` to `DIALOGS_INITIAL`.
-- Import + instantiate `useAttestation(profile?.id ?? null)`.
-- Pass `attestationCount={pendingAttestations.length}` and `onOpenAttestation={() => openDialog('attestation')}` to `<AppHeader/>`.
-- Render `<AttestationSheet open={dialogs.attestation} onClose={...} rounds={pendingAttestations} isAttesting={isAttesting} onAttest={attestRound} />` next to the other dialogs.
-
-## 7. Update `src/components/layout/AppDialogs.tsx`
-
-- Add `'attestation'` to the local `DialogName` union (the `DialogState` Record updates automatically).
-
-## 8. Update `src/components/layout/AppHeader.tsx`
-
-- Extend `AppHeaderProps` with `attestationCount: number` and `onOpenAttestation: () => void`; destructure both.
-- Import `ScrollText` from lucide-react.
-- In the right-hand actions area, before Friends, render a button with ScrollText icon and a red badge showing `attestationCount` (capped at "9+"), only when count > 0. Clicking calls `onOpenAttestation`.
-- In the profile dropdown, after "Rondas Pendientes", add a "Scores Attestation (N)" menu item, shown only when count > 0.
-
-## Files touched
+El cruce **no tiene su propia matriz de apuestas**. Hereda las apuestas individuales que ya están configuradas en la ronda (pestaña **Individuales** de la matriz). El sheet bilateral del cruce sólo permite **incluir/excluir** apuestas para ese par y **ajustar strokes** — sin duplicar amounts ni sub-configuración.
 
 ```text
-supabase/migrations/<new>.sql            (PART 1)
-src/hooks/useAttestation.ts              (NEW)
-src/components/attestation/AttestationSheet.tsx  (NEW)
-src/hooks/useHandicapHistory.ts          (edit)
-src/components/profile/HandicapHistoryView.tsx   (edit)
-src/pages/Index.tsx                      (edit)
-src/components/layout/AppDialogs.tsx     (edit)
-src/components/layout/AppHeader.tsx      (edit)
+Setup → Matriz de apuestas → Individuales      ← UNA sola fuente de verdad
+                                  │
+                                  ▼
+Dashboard → Apuestas de Cruce → [rival]        ← hereda; per-cross sólo on/off + strokes
 ```
 
-No bet calculators, scoring, or other unrelated components will be modified. Title text uses English "Scores Attestation" as requested; explanatory copy remains in Spanish.
+## 1. Botón "Cruzar" compacto en panel En Vivo
 
-## Technical notes
+Mover el `<button Cruzar>` a la **misma línea** que "Hoyo N", a la izquierda con `ml-2`, sin generar segundo renglón. Mantener altura de fila igual que antes del botón. Tamaño `text-[10px] px-2 py-0.5`.
 
-- The pasted JSX in the user instructions had stripped angle brackets (rendering glitch). The actual component code will use proper `<Sheet>`, `<Button>`, etc. JSX matching the project's shadcn `sheet` and `button` primitives.
-- The `attest_round` ghost check is best-effort: if `round_players.is_ghost` is absent, the guard falls back to `profile_id IS NOT NULL`.
-- React Query keys (`pending-attestations`, `handicap-history-materialized`) are invalidated on success so the badge and history refresh immediately.
+## 2. Invitación de un toque
+
+- Reemplazar `CrossBetSetupSheet` (selección de apuestas + montos) por un `AlertDialog` mínimo:
+  > **¿Cruzar tarjeta con {Nombre}?** — Cancelar / Enviar invitación
+- Al confirmar: `sendInvitation({ targetProfileId, betConfigProposal: {} })`. La invitación viaja sin apuestas; el rival sólo acepta el cruce, no apuestas específicas.
+- `CrossBetSetupSheet.tsx` queda sin uso (lo dejamos en el repo, sin importarlo).
+
+## 3. Sección "Apuestas de Cruce" en el Bet Dashboard
+
+Cada tarjeta de cruce activo se expande para mostrar:
+
+### (a) Apuestas heredadas — incluir/excluir
+
+- Listar **sólo las apuestas individuales habilitadas en la ronda** (Medal, Match Play, Putts, Manchas, Bloques, Unidades, Skins, etc., resolviendo overrides por grupo si aplica).
+- Cada una con un toggle "Incluir en este cruce" (default: incluida). El monto y la sub-configuración se muestran como **read-only** (heredan de Individuales).
+- Persistencia: el campo `bet_config` de `round_cross_bets` guarda `{ medal: { included: true }, putts: { included: false }, ... }` — sólo banderas por cruce.
+- Si la ronda **no tiene ninguna apuesta individual habilitada**, mostrar mensaje:
+  > "Aún no hay apuestas individuales configuradas. Ve a **Apuestas → Individuales** para activarlas."
+  > con botón directo a esa pestaña.
+
+### (b) Ajuste de strokes (bilateralidad cruzada)
+
+- Montar `CrossGroupHandicapWidget` usando el `round_player` sintético del rival (`target_round_player_id` que ya crea `accept_cross_bet_invitation`). Esto reutiliza el mismo patrón que cruces dentro de un setup multigrupo: sliding sugerido + override manual con +/−.
+
+## Cambios técnicos
+
+- **Migración Supabase** — RPC `update_cross_bet_config(p_cross_bet_id uuid, p_bet_config jsonb)` con `SECURITY DEFINER`, valida que `auth.uid()` sea iniciador o target.
+- `**src/hooks/useCrossBets.ts**` — añadir `updateCrossBetConfig` mutation.
+- `src/components/friends/FriendsLiveHeaderBadge.tsx` — relayout: botón "Cruzar" inline a laizquierda de "Hoyo N".
+- `**src/pages/Index.tsx**` — sustituir `CrossBetSetupSheet` por un `AlertDialog` simple de confirmación.
+- `**src/components/bets/BetDashboard.tsx**` — en la sección "Apuestas de Cruce":
+  - leer apuestas individuales activas del `BetConfig` resuelto para el grupo;
+  - render por cruce con toggles de inclusión, hint del monto heredado, `CrossGroupHandicapWidget`;
+  - mensaje + atajo si no hay apuestas configuradas.
+
+## No se hace
+
+- No se crea una pestaña "Cruce" nueva en la matriz.
+- No se duplica el editor de montos ni sub-modalidades en el sheet del cruce.
+- No se tocan los cálculos de balances (motor bilateral los procesa por las apuestas heredadas, filtradas por la bandera `included` por cruce).
