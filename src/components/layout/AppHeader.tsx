@@ -140,6 +140,7 @@ export function AppHeader(props: AppHeaderProps) {
     onOpenAuditLog,
     crossInvitationsCount,
     onOpenCrossInvitations,
+    onCrossInvite,
     roundState,
 
 
