@@ -2673,6 +2673,7 @@ const Index = () => {
             onSetView={setView}
             onResetRoundForReclose={resetRoundForReclose}
             onStartNewRound={startNewRound}
+            crossBets={crossBets}
           />
         )}
 
