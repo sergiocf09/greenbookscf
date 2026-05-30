@@ -432,23 +432,28 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
       const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
 
-      const entries: SlidingEntry[] = data.map((row: any) => {
-        const isUserA = row.player_a_profile_id === profile.id;
-        const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
-        const strokes = isUserA
-          ? row.strokes_a_gives_b_current
-          : -row.strokes_a_gives_b_current;
-        const rival: any = profilesMap.get(rivalId);
-        const lastDate = (row.last_round as any)?.date ?? null;
-        return {
-          rivalProfileId: rivalId,
-          rivalName: rival?.display_name ?? 'Jugador',
-          rivalInitials: rival?.initials ?? '?',
-          rivalColor: rival?.avatar_color ?? '#3B82F6',
-          strokes,
-          lastRoundDate: lastDate,
-        };
-      });
+      const entries: SlidingEntry[] = data
+        .map((row: any) => {
+          const isUserA = row.player_a_profile_id === profile.id;
+          const rivalId = isUserA ? row.player_b_profile_id : row.player_a_profile_id;
+          const strokes = isUserA
+            ? row.strokes_a_gives_b_current
+            : -row.strokes_a_gives_b_current;
+          const rival: any = profilesMap.get(rivalId);
+          const lastDate = (row.last_round as any)?.date ?? null;
+          // Filter out entries where the rival profile can't be resolved
+          // (deleted users, RLS-blocked, or orphaned snapshot data)
+          if (!rival?.display_name) return null;
+          return {
+            rivalProfileId: rivalId,
+            rivalName: rival.display_name,
+            rivalInitials: rival.initials ?? '?',
+            rivalColor: rival.avatar_color ?? '#3B82F6',
+            strokes,
+            lastRoundDate: lastDate,
+          };
+        })
+        .filter((e: SlidingEntry | null): e is SlidingEntry => e !== null);
 
       setSlidingEntries(entries);
     } catch (err) {
@@ -888,7 +893,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {evens.length > 0 && (
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">{evens.length}</span>
-                      <span>mano a mano</span>
+                      <span>scratch</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
@@ -953,7 +958,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   'flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border',
                   isReceive ? 'justify-start' : 'justify-end flex-row-reverse'
                 )}>
-                  <PlayerAvatar initials={entry.rivalInitials} background={entry.rivalColor} size="xs" />
                   <span className="text-[11px] font-medium truncate min-w-0 flex-1">{entry.rivalName}</span>
                   <span className={cn(
                     'text-xs font-bold tabular-nums shrink-0',
@@ -993,12 +997,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 {evens.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">
-                      Mano a mano ({evens.length})
+                      Scratch ({evens.length})
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {evens.map(e => (
                         <div key={e.rivalProfileId} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-card border border-border">
-                          <PlayerAvatar initials={e.rivalInitials} background={e.rivalColor} size="xs" />
                           <span className="text-[11px] font-medium truncate min-w-0 flex-1">{e.rivalName}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0">0</span>
                         </div>
