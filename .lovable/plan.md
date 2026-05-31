@@ -1,55 +1,65 @@
-## Modelo conceptual (simplificado)
+# Plan: Captura inline de Zoológico por jugador y por hoyo
 
-El cruce **no tiene su propia matriz de apuestas**. Hereda las apuestas individuales que ya están configuradas en la ronda (pestaña **Individuales** de la matriz). El sheet bilateral del cruce sólo permite **incluir/excluir** apuestas para ese par y **ajustar strokes** — sin duplicar amounts ni sub-configuración.
+## Validación previa (lo confirmé en el código)
 
-```text
-Setup → Matriz de apuestas → Individuales      ← UNA sola fuente de verdad
-                                  │
-                                  ▼
-Dashboard → Apuestas de Cruce → [rival]        ← hereda; per-cross sólo on/off + strokes
-```
+- **Modelo de datos**: `ZooEvent` ya incluye `count`, soporta múltiples eventos por jugador en el mismo hoyo. No requiere migración.
+- **Diálogo 🐾 (`ZoologicoDialog`)**: ya permite seleccionar varios jugadores y subir/bajar contador por animal — pero hay que abrirlo aparte.
+- **Cálculo (`lib/bets/zoologico.ts`)**: independiente de manchas. Los animales **no** se cuentan en `manchasSummary` ni en el chip de Manchas del Bet Dashboard (verificado).
+- **Detalle Zoológico en Bet Dashboard**: ya existe en `GroupBetsCard` (filas Camellos/Peces/Gorilas, igual que Pingüinos/Culebra).
 
-## 1. Botón "Cruzar" compacto en panel En Vivo
+**Conclusión**: lo único que falta es la **UI inline** dentro del input de captura del jugador, con un contador por animal habilitado. Los contadores ya son posibles a nivel datos; sólo no están expuestos en la fila de marcadores.
 
-Mover el `<button Cruzar>` a la **misma línea** que "Hoyo N", a la izquierda con `ml-2`, sin generar segundo renglón. Mantener altura de fila igual que antes del botón. Tamaño `text-[10px] px-2 py-0.5`.
+## Alcance
 
-## 2. Invitación de un toque
+Agregar, dentro de `PlayerScoreInput` (popover de captura por jugador), una sub-fila "Zoológico" con un botón por animal habilitado (`enabledAnimals` de la ronda), con contador inline tipo +/− que opere sobre los `ZooEvent` del jugador en el hoyo actual.
 
-- Reemplazar `CrossBetSetupSheet` (selección de apuestas + montos) por un `AlertDialog` mínimo:
-  > **¿Cruzar tarjeta con {Nombre}?** — Cancelar / Enviar invitación
-- Al confirmar: `sendInvitation({ targetProfileId, betConfigProposal: {} })`. La invitación viaja sin apuestas; el rival sólo acepta el cruce, no apuestas específicas.
-- `CrossBetSetupSheet.tsx` queda sin uso (lo dejamos en el repo, sin importarlo).
+No se toca:
+- Bet Dashboard chip de Manchas (queda intacto, no incluye zoológico).
+- Sección de detalle Zoológico en `GroupBetsCard` (sigue mostrando resultados).
+- Diálogo 🐾 global del `ScoringView` (se mantiene como acceso alternativo / vista de eventos).
+- Cálculos en `lib/bets/zoologico.ts`, balances, ledger, cierre de ronda.
 
-## 3. Sección "Apuestas de Cruce" en el Bet Dashboard
+## Cambios
 
-Cada tarjeta de cruce activo se expande para mostrar:
+### 1. `src/components/scoring/InlineMarkers.tsx`
+- Exportar un nuevo componente `ZooInlineCounters` que recibe:
+  - `enabledAnimals: ZooAnimalType[]`
+  - `holePlayerCounts: Record<ZooAnimalType, number>` (count actual de ese jugador en ese hoyo)
+  - `onChange(animal, newCount)`.
+- Renderiza un botón redondo por animal con emoji + badge de cantidad (idéntico al patrón de `CounterMarker` para `manchaGenerica`/`unidadGenerica`, pero con emojis 🐪🐟🦍 en lugar de íconos lucide).
+- Color/styling tipo `mancha` (rojo) para mantener coherencia, pero diferenciado por emoji.
 
-### (a) Apuestas heredadas — incluir/excluir
+### 2. `src/components/scoring/PlayerScoreInput.tsx`
+- Nuevas props opcionales:
+  - `zooEnabledAnimals?: ZooAnimalType[]`
+  - `zooEventsForPlayerHole?: ZooEvent[]`
+  - `onZooCountChange?: (animal: ZooAnimalType, newCount: number) => void`
+- Si `zooEnabledAnimals?.length > 0`, renderiza `ZooInlineCounters` dentro del popover, debajo de la fila de manchas (`manualStainMarkers`), con su propio label corto "🐾 Zoológico".
+- No modifica `markers` (los `ZooEvent` son independientes).
 
-- Listar **sólo las apuestas individuales habilitadas en la ronda** (Medal, Match Play, Putts, Manchas, Bloques, Unidades, Skins, etc., resolviendo overrides por grupo si aplica).
-- Cada una con un toggle "Incluir en este cruce" (default: incluida). El monto y la sub-configuración se muestran como **read-only** (heredan de Individuales).
-- Persistencia: el campo `bet_config` de `round_cross_bets` guarda `{ medal: { included: true }, putts: { included: false }, ... }` — sólo banderas por cruce.
-- Si la ronda **no tiene ninguna apuesta individual habilitada**, mostrar mensaje:
-  > "Aún no hay apuestas individuales configuradas. Ve a **Apuestas → Individuales** para activarlas."
-  > con botón directo a esa pestaña.
+### 3. `src/components/scoring/ScoringView.tsx`
+- Para cada `PlayerScoreInput` del hoyo actual:
+  - Pasar `zooEnabledAnimals = betConfig.zoologico?.enabled ? (betConfig.zoologico.enabledAnimals || ['camello','pez','gorila']) : undefined`.
+  - Filtrar `betConfig.zoologico?.events` por `playerId` + `currentHole` y agruparlos por `animalType` para construir `zooEventsForPlayerHole`.
+  - Implementar `onZooCountChange(animal, newCount)`:
+    - Si existe ya un `ZooEvent` para `(player, hole, animal)`, llamar `onUpdateZooEvent` con el nuevo `count` (o `onDeleteZooEvent` si `newCount === 0`).
+    - Si no existe y `newCount > 0`, llamar `onAddZooEvent` con un nuevo evento `{ count: newCount, ... }`.
+  - Sólo habilitado si `betConfig.zoologico?.enabled && onAddZooEvent`. Respetar permisos existentes (no-op en modo invitado/histórico — ya manejado por los callbacks).
 
-### (b) Ajuste de strokes (bilateralidad cruzada)
+### 4. (Opcional, sin cambios funcionales) `ZoologicoDialog`
+- Se mantiene como vista de lista/edición global; no se toca en este sprint.
 
-- Montar `CrossGroupHandicapWidget` usando el `round_player` sintético del rival (`target_round_player_id` que ya crea `accept_cross_bet_invitation`). Esto reutiliza el mismo patrón que cruces dentro de un setup multigrupo: sliding sugerido + override manual con +/−.
+## Comportamiento esperado
 
-## Cambios técnicos
+- En el popover de captura de cada jugador, debajo de las manchas, aparece una fila con los animales habilitados (1, 2 o 3 según setup).
+- Tap suma 1; botón "−" resta 1; al llegar a 0 se borra el `ZooEvent` del hoyo.
+- El contador refleja en tiempo real lo registrado en `betConfig.zoologico.events`.
+- El chip de Manchas del Bet Dashboard sigue **sin** incluir animales. La sección Zoológico del Bet Dashboard refleja los nuevos counts automáticamente (usa el mismo `events`).
 
-- **Migración Supabase** — RPC `update_cross_bet_config(p_cross_bet_id uuid, p_bet_config jsonb)` con `SECURITY DEFINER`, valida que `auth.uid()` sea iniciador o target.
-- `**src/hooks/useCrossBets.ts**` — añadir `updateCrossBetConfig` mutation.
-- `src/components/friends/FriendsLiveHeaderBadge.tsx` — relayout: botón "Cruzar" inline a laizquierda de "Hoyo N".
-- `**src/pages/Index.tsx**` — sustituir `CrossBetSetupSheet` por un `AlertDialog` simple de confirmación.
-- `**src/components/bets/BetDashboard.tsx**` — en la sección "Apuestas de Cruce":
-  - leer apuestas individuales activas del `BetConfig` resuelto para el grupo;
-  - render por cruce con toggles de inclusión, hint del monto heredado, `CrossGroupHandicapWidget`;
-  - mensaje + atajo si no hay apuestas configuradas.
+## Archivos a modificar
 
-## No se hace
+- `src/components/scoring/InlineMarkers.tsx` — agregar `ZooInlineCounters`.
+- `src/components/scoring/PlayerScoreInput.tsx` — nuevas props + render condicional.
+- `src/components/scoring/ScoringView.tsx` — wiring de props y handler add/update/delete.
 
-- No se crea una pestaña "Cruce" nueva en la matriz.
-- No se duplica el editor de montos ni sub-modalidades en el sheet del cruce.
-- No se tocan los cálculos de balances (motor bilateral los procesa por las apuestas heredadas, filtradas por la bandera `included` por cruce).
+Sin migraciones, sin cambios en cálculos ni balances.
