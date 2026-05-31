@@ -330,7 +330,40 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           const playerScores = scores.get(player.id) || [];
           const holeScore = playerScores.find(s => s.holeNumber === currentHole);
           const isBasePlayer = player.profileId === profile?.id;
-          
+
+          // Zoológico inline state per player+hole
+          const zooEnabled = betConfig.zoologico?.enabled && !!onAddZooEvent;
+          const zooEnabledAnimals = zooEnabled
+            ? (betConfig.zoologico?.enabledAnimals || ['camello', 'pez', 'gorila'])
+            : undefined;
+          const playerHoleZooEvents = zooEnabled
+            ? (betConfig.zoologico?.events || []).filter(e => e.playerId === player.id && e.holeNumber === currentHole)
+            : [];
+          const zooCounts: Partial<Record<import('@/types/golf').ZooAnimalType, number>> = {};
+          for (const e of playerHoleZooEvents) {
+            zooCounts[e.animalType] = (zooCounts[e.animalType] ?? 0) + (e.count || 1);
+          }
+          const handleZooCountChange = (animal: import('@/types/golf').ZooAnimalType, newCount: number) => {
+            if (!zooEnabled) return;
+            const existing = playerHoleZooEvents.find(e => e.animalType === animal);
+            if (newCount <= 0) {
+              if (existing && onDeleteZooEvent) onDeleteZooEvent(existing.id);
+              return;
+            }
+            if (existing && onUpdateZooEvent) {
+              onUpdateZooEvent({ ...existing, count: newCount });
+            } else if (onAddZooEvent) {
+              onAddZooEvent({
+                id: `zoo-${Date.now()}-${player.id}-${animal}`,
+                animalType: animal,
+                playerId: player.id,
+                holeNumber: currentHole,
+                count: newCount,
+                createdAt: new Date().toISOString(),
+              });
+            }
+          };
+
           return (
             <PlayerScoreInput
               key={player.id}
@@ -349,6 +382,9 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
               isBasePlayer={isBasePlayer}
               playerId={player.profileId || player.id}
               basePlayerId={profile?.id}
+              zooEnabledAnimals={zooEnabledAnimals}
+              zooCounts={zooCounts}
+              onZooCountChange={zooEnabled ? handleZooCountChange : undefined}
             />
           );
         })}
