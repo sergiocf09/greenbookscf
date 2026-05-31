@@ -9,7 +9,7 @@ import {
   manualStainMarkers,
   markerLabels,
 } from './InlineMarkers';
-import { MarkerState, defaultMarkerState } from '@/types/golf';
+import { MarkerState, defaultMarkerState, ZooAnimalType, ZOO_ANIMALS } from '@/types/golf';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { ScoreStepper } from './ScoreStepper';
 import { formatPlayerName } from '@/lib/playerInput';
