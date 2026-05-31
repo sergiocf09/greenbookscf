@@ -51,6 +51,9 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   isBasePlayer = false,
   playerId,
   basePlayerId,
+  zooEnabledAnimals,
+  zooCounts,
+  onZooCountChange,
 }) => {
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const isLoggedInUser = playerId && basePlayerId ? playerId === basePlayerId : false;
