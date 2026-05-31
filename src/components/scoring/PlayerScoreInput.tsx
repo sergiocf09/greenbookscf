@@ -30,6 +30,9 @@ interface PlayerScoreInputProps {
   isBasePlayer?: boolean;
   playerId?: string;
   basePlayerId?: string;
+  zooEnabledAnimals?: ZooAnimalType[];
+  zooCounts?: Partial<Record<ZooAnimalType, number>>;
+  onZooCountChange?: (animal: ZooAnimalType, newCount: number) => void;
 }
 
 export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
