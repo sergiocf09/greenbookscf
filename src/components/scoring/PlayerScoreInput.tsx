@@ -327,6 +327,44 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                     </button>
                   );
                 })}
+
+                {/* Zoológico inline counters — independientes de las manchas */}
+                {zooEnabledAnimals && zooEnabledAnimals.length > 0 && onZooCountChange && (
+                  <>
+                    <div className="border-t border-border my-1" />
+                    <div className="px-3 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      🐾 Zoológico
+                    </div>
+                    {(['camello', 'pez', 'gorila'] as ZooAnimalType[])
+                      .filter(a => zooEnabledAnimals.includes(a))
+                      .map(animal => {
+                        const info = ZOO_ANIMALS[animal];
+                        const val = zooCounts?.[animal] ?? 0;
+                        return (
+                          <div key={animal} className="flex items-center gap-2 px-3 py-1.5">
+                            <span>{info.emoji}</span>
+                            <span className="text-sm flex-1">{info.label}</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => onZooCountChange(animal, Math.max(0, val - 1))}
+                                disabled={val === 0}
+                                className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm font-bold disabled:opacity-30"
+                              >
+                                −
+                              </button>
+                              <span className={cn("w-5 text-center text-sm font-semibold", val > 0 ? "text-red-700 dark:text-red-300" : "text-muted-foreground")}>{val}</span>
+                              <button
+                                onClick={() => onZooCountChange(animal, val + 1)}
+                                className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 flex items-center justify-center text-sm font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </>
+                )}
               </div>
             </PopoverContent>
           </Popover>
