@@ -602,7 +602,9 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             players={scorecardPlayers}
             teeColor={displayData.teeColor}
             date={displayData.date}
+            roundHoles={((snapshot as any)?.betConfig?.roundHoles === 9 ? 9 : 18) as 9 | 18}
           />
+
         </TabsContent>
 
         <TabsContent value="bets" className="mt-4 space-y-3 overflow-x-hidden max-w-full min-w-0">

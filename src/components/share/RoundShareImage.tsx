@@ -302,17 +302,20 @@ function drawCanvas(
 
   // ── Highlight badges ──
   if (highlights) {
-    const badges: BadgeData[] = [highlights.medalTotal, highlights.front9, highlights.back9];
+    const badges: BadgeData[] = [highlights.medalTotal, highlights.front9, highlights.back9]
+      .filter((b): b is BadgeData => !!b);
+    if (badges.length > 0) {
     const maxNames = Math.max(...badges.map(b => b.names.length), 1);
     const nameLineH = 28;
     const labelAreaH = 30; // space for label at top
     const namesAreaH = maxNames * nameLineH;
     const paddingBottom = 14;
     const badgeH = labelAreaH + namesAreaH + paddingBottom;
-    const badgeW = 300;
+    const badgeW = badges.length === 1 ? 480 : 300;
     const gap = 20;
-    const totalBW = badgeW * 3 + gap * 2;
+    const totalBW = badgeW * badges.length + gap * (badges.length - 1);
     const bStartX = (W - totalBW) / 2;
+
 
     badges.forEach((badge, i) => {
       const bx = bStartX + i * (badgeW + gap);
@@ -360,7 +363,9 @@ function drawCanvas(
       }
     });
     curY += badgeH + 15;
+    }
   }
+
 
 
   // ── Bottom gold banner ──
