@@ -935,7 +935,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
 
     return results;
-  }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
+  }, [betConfig.carritos, betConfig.carritosTeams, betConfig.roundHoles, confirmedScores, players, course]);
 
   // Emit combined bet summaries (bilateral + Carritos) to parent so closeScorecard
   // can include ALL bet results in the snapshot ledger. This is the single source of
