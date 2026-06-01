@@ -181,6 +181,7 @@ export const calculateAllBets = (
             case 'units': return 'unidades';
             case 'pinguinos': return 'pingüinos';
             case 'medalgeneral': return 'medal general';
+            case 'zoologico': return 'zoológico';
             default: return rawOverrideType;
           }
         })();
