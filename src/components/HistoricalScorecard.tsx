@@ -21,6 +21,7 @@ interface HistoricalScorecardProps {
   players: PlayerScoreData[];
   teeColor: string;
   date: string;
+  roundHoles?: 9 | 18;
 }
 
 export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
@@ -28,7 +29,9 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
   players,
   teeColor,
   date,
+  roundHoles = 18,
 }) => {
+
   const getPlayerScoreForHole = (player: PlayerScoreData, holeNumber: number): number => {
     return player.scores.find(s => s.holeNumber === holeNumber)?.strokes || 0;
   };
@@ -145,69 +148,72 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
         </table>
       </div>
 
-      {/* Separator */}
-      <div className="h-1 bg-border" />
-
-      {/* Back 9 */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
-                Hoyo
-              </th>
-              {backNine.map(hole => (
-                <th 
-                  key={hole.number}
-                  className="px-0 py-1.5 font-medium min-w-[22px] text-center"
-                >
-                  {hole.number}
-                </th>
-              ))}
-              <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">IN</th>
-              <th className="px-1 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[30px]">TOT</th>
-            </tr>
-            <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
-              {backNine.map(hole => (
-                <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
-              ))}
-              <td className="text-center px-1 py-1 font-medium bg-muted/50">{backPar}</td>
-              <td className="text-center px-1 py-1 font-medium bg-primary/10">{frontPar + backPar}</td>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map(player => {
-              const frontTotal = getPlayerTotal(player, 1, 9);
-              const backTotal = getPlayerTotal(player, 10, 18);
-              return (
-                <tr key={player.playerId} className="border-t border-border/50">
-                  <td className="px-1 py-1 sticky left-0 bg-card">
-                    <span className="font-medium truncate max-w-[56px] block text-[11px]">{formatPlayerName(player.playerName).split(' ')[0]}</span>
-                  </td>
-                  {backNine.map(hole => {
-                    const strokes = getPlayerScoreForHole(player, hole.number);
-                    return (
-                      <td 
-                        key={hole.number}
-                        className="text-center px-0 py-1.5"
-                      >
-                        {renderScoreCell(strokes, hole.par)}
+      {/* Separator + Back 9 (only on 18-hole rounds) */}
+      {roundHoles !== 9 && (
+        <>
+          <div className="h-1 bg-border" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
+                    Hoyo
+                  </th>
+                  {backNine.map(hole => (
+                    <th
+                      key={hole.number}
+                      className="px-0 py-1.5 font-medium min-w-[22px] text-center"
+                    >
+                      {hole.number}
+                    </th>
+                  ))}
+                  <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">IN</th>
+                  <th className="px-1 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[30px]">TOT</th>
+                </tr>
+                <tr className="bg-muted/30 text-muted-foreground">
+                  <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
+                  {backNine.map(hole => (
+                    <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
+                  ))}
+                  <td className="text-center px-1 py-1 font-medium bg-muted/50">{backPar}</td>
+                  <td className="text-center px-1 py-1 font-medium bg-primary/10">{frontPar + backPar}</td>
+                </tr>
+              </thead>
+              <tbody>
+                {players.map(player => {
+                  const frontTotal = getPlayerTotal(player, 1, 9);
+                  const backTotal = getPlayerTotal(player, 10, 18);
+                  return (
+                    <tr key={player.playerId} className="border-t border-border/50">
+                      <td className="px-1 py-1 sticky left-0 bg-card">
+                        <span className="font-medium truncate max-w-[56px] block text-[11px]">{formatPlayerName(player.playerName).split(' ')[0]}</span>
                       </td>
+                      {backNine.map(hole => {
+                        const strokes = getPlayerScoreForHole(player, hole.number);
+                        return (
+                          <td
+                            key={hole.number}
+                            className="text-center px-0 py-1.5"
+                          >
+                            {renderScoreCell(strokes, hole.par)}
+                          </td>
+                      );
+                    })}
+                      <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
+                        {backTotal || '-'}
+                      </td>
+                      <td className="text-center px-1 py-1.5 font-bold bg-primary/10 text-primary">
+                        {(frontTotal + backTotal) || '-'}
+                      </td>
+                    </tr>
                   );
                 })}
-                  <td className="text-center px-1 py-1.5 font-semibold bg-muted/30">
-                    {backTotal || '-'}
-                  </td>
-                  <td className="text-center px-1 py-1.5 font-bold bg-primary/10 text-primary">
-                    {(frontTotal + backTotal) || '-'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
