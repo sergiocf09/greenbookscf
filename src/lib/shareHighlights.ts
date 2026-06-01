@@ -12,10 +12,11 @@ export interface BadgeData {
 }
 
 export interface ShareHighlights {
-  medalTotal: BadgeData;
+  medalTotal?: BadgeData;
   front9: BadgeData;
-  back9: BadgeData;
+  back9?: BadgeData;
 }
+
 
 type ScoreEntry = {
   id: string;
@@ -148,10 +149,20 @@ export function calcHighlightsFromSnapshot(s: any): ShareHighlights {
   const f = resolveBest(frontScores);
   const b = resolveBest(backScores);
 
+  const isNineHole = (s?.betConfig?.roundHoles ?? s?.roundHoles ?? 18) === 9;
+
+  if (isNineHole) {
+    // 9-hole round: only Front 9 (which IS the total). Skip Medal Total and Back 9.
+    return {
+      front9: { label: 'Mejor Front 9', names: f.names, score: f.score },
+    };
+  }
+
   return {
     medalTotal: { label: 'Medal Gross Total', names: t.names, score: t.score },
     front9: { label: 'Mejor Front 9', names: f.names, score: f.score },
     back9: { label: 'Mejor Back 9', names: b.names, score: b.score },
   };
 }
+
 
