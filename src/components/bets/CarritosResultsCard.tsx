@@ -418,6 +418,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               </div>
           </div>
 
+          {!isNineHole && (<>
           {/* Back 9 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
