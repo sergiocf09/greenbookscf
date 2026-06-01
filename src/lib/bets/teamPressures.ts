@@ -80,7 +80,8 @@ export const calculateTeamPressuresBets = (
 
     // ── Continúa mode: single 18-hole match with early-win ──
     if (isContinua) {
-      const allHoles = [...frontHoles, ...backHoles];
+      const isNineHoleCont = (config.roundHoles ?? 18) === 9;
+      const allHoles = isNineHoleCont ? [...frontHoles] : [...frontHoles, ...backHoles];
       let balance = 0;
       let matchConcluded = false;
       let holesPlayed = 0;
@@ -201,18 +202,19 @@ export const calculateTeamPressuresBets = (
       return bets;
     };
 
+    const isNineHole = (config.roundHoles ?? 18) === 9;
     const frontBets = processNine(frontHoles);
-    const backBets = processNine(backHoles);
+    const backBets = isNineHole ? [0] : processNine(backHoles);
 
     const frontIsTied = frontBets[0] === 0;
     const frontNetBets = frontBets.filter(b => b > 0).length - frontBets.filter(b => b < 0).length;
-    const backNetBets = backBets.filter(b => b > 0).length - backBets.filter(b => b < 0).length;
+    const backNetBets = isNineHole ? 0 : (backBets.filter(b => b > 0).length - backBets.filter(b => b < 0).length);
 
     const effectiveBackValue = frontIsTied ? (2 * bet.frontAmount + bet.totalAmount) : bet.backAmount;
     const frontMoney = frontNetBets * bet.frontAmount;
-    const backMoney = backNetBets * effectiveBackValue;
-    const matchTotal = frontBets[0] + backBets[0];
-    const matchMoney = frontIsTied ? 0 : (matchTotal > 0 ? 1 : matchTotal < 0 ? -1 : 0) * bet.totalAmount;
+    const backMoney = isNineHole ? 0 : (backNetBets * effectiveBackValue);
+    const matchTotal = frontBets[0] + (backBets[0] ?? 0);
+    const matchMoney = isNineHole || frontIsTied ? 0 : (matchTotal > 0 ? 1 : matchTotal < 0 ? -1 : 0) * bet.totalAmount;
 
     let pressureMoney = frontMoney + backMoney + matchMoney;
 

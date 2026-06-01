@@ -850,6 +850,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const pointsATotal = pointsAFront + pointsABack;
       const pointsBTotal = pointsBFront + pointsBBack;
       
+      // 9-hole rounds: only Front 9 counts; Back 9 and Total 18 are not played.
+      const isNineHoleRound = (betConfig.roundHoles ?? 18) === 9;
+      const effBackAmount = isNineHoleRound ? 0 : backAmount;
+      const effTotalAmount = isNineHoleRound ? 0 : totalAmount;
+      const effPointsABack = isNineHoleRound ? 0 : pointsABack;
+      const effPointsBBack = isNineHoleRound ? 0 : pointsBBack;
+      const effPointsATotal = isNineHoleRound ? pointsAFront : pointsATotal;
+      const effPointsBTotal = isNineHoleRound ? pointsBFront : pointsBTotal;
+
       // Money calculation based on who has more points per segment
       let moneyA = 0;
       
@@ -857,36 +866,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       if (pointsAFront > pointsBFront) moneyA += frontAmount;
       else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
       
-      // Back 9: who has more points wins
-      if (pointsABack > pointsBBack) moneyA += backAmount;
-      else if (pointsBBack > pointsABack) moneyA -= backAmount;
-      
-      // Total 18: who has more accumulated points wins
-      if (pointsATotal > pointsBTotal) moneyA += totalAmount;
-      else if (pointsBTotal > pointsATotal) moneyA -= totalAmount;
+      // Back 9: who has more points wins (skipped on 9-hole rounds)
+      if (!isNineHoleRound) {
+        if (pointsABack > pointsBBack) moneyA += backAmount;
+        else if (pointsBBack > pointsABack) moneyA -= backAmount;
+
+        // Total 18: who has more accumulated points wins (skipped on 9-hole rounds)
+        if (pointsATotal > pointsBTotal) moneyA += totalAmount;
+        else if (pointsBTotal > pointsATotal) moneyA -= totalAmount;
+      }
       
       return {
         teamA: resolvedTeamA,
         teamB: resolvedTeamB,
         scoringType,
         netByHoleFront: frontPoints.netByHole,
-        netByHoleBack: backPoints.netByHole,
+        netByHoleBack: isNineHoleRound ? backPoints.netByHole.map(() => null) : backPoints.netByHole,
         holeDetailsFront: frontPoints.details,
-        holeDetailsBack: backPoints.details,
+        holeDetailsBack: isNineHoleRound ? backPoints.details.map(() => null) : backPoints.details,
         pointsAFront,
         pointsBFront,
-        pointsABack,
-        pointsBBack,
-        pointsATotal,
-        pointsBTotal,
-        pointsAAccumulated: pointsATotal,
-        pointsBAccumulated: pointsBTotal,
+        pointsABack: effPointsABack,
+        pointsBBack: effPointsBBack,
+        pointsATotal: effPointsATotal,
+        pointsBTotal: effPointsBTotal,
+        pointsAAccumulated: effPointsATotal,
+        pointsBAccumulated: effPointsBTotal,
         moneyA,
         moneyB: -moneyA,
-        amount: frontAmount + backAmount + totalAmount,
+        amount: frontAmount + effBackAmount + effTotalAmount,
         frontAmount,
-        backAmount,
-        totalAmount,
+        backAmount: effBackAmount,
+        totalAmount: effTotalAmount,
         id,
       };
     };
@@ -924,7 +935,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     });
 
     return results;
-  }, [betConfig.carritos, betConfig.carritosTeams, confirmedScores, players, course]);
+  }, [betConfig.carritos, betConfig.carritosTeams, betConfig.roundHoles, confirmedScores, players, course]);
 
   // Emit combined bet summaries (bilateral + Carritos) to parent so closeScorecard
   // can include ALL bet results in the snapshot ledger. This is the single source of
@@ -2458,6 +2469,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               players={players}
               basePlayerId={basePlayer?.id}
               title={`Carritos ${idx + 1}`}
+              roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
             />
