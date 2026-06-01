@@ -155,6 +155,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
 
   // Determine display order based on starting hole
   // When starting at hole 10, show holes 10-18 first, then 1-9
+  const isNineHole = (betConfig?.roundHoles ?? 18) === 9;
   const firstNine = startingHole === 10 
     ? course.holes.slice(9, 18)  // holes 10-18
     : course.holes.slice(0, 9);   // holes 1-9
@@ -173,6 +174,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   const backNine = course.holes.slice(9, 18);
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
   const backPar = backNine.reduce((sum, h) => sum + h.par, 0);
+
 
   // Calculate Stableford points for each player if enabled
   const stablefordByPlayer = useMemo(() => {
@@ -367,8 +369,11 @@ export const Scorecard: React.FC<ScorecardProps> = ({
         </table>
       </div>
 
-      {/* Separator */}
+      {/* Separator + Second Nine — hidden for 9-hole rounds */}
+      {!isNineHole && (<>
       <div className="h-1 bg-border" />
+
+
 
       {/* Second Nine */}
       <div className="overflow-x-auto">
@@ -474,6 +479,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({
           </tbody>
         </table>
       </div>
+      </>)}
+      
+
       
       {/* Stableford Points Row */}
       {stablefordByPlayer && (
