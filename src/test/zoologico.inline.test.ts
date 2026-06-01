@@ -24,8 +24,8 @@ describe('zoologico — inline-counter events flow to engine', () => {
       enabledAnimals: ['camello', 'pez', 'gorila'],
       valuePerOccurrence: 25,
       events: [
-        { id: 'e1', playerId: 'p1', holeNumber: 1, animalType: 'camello', count: 2 },
-        { id: 'e2', playerId: 'p2', holeNumber: 1, animalType: 'camello', count: 1 },
+        { id: 'e1', playerId: 'p1', holeNumber: 1, animalType: 'camello', count: 2, createdAt: new Date().toISOString() },
+        { id: 'e2', playerId: 'p2', holeNumber: 1, animalType: 'camello', count: 1, createdAt: new Date().toISOString() },
       ],
     };
 
@@ -42,7 +42,7 @@ describe('zoologico — inline-counter events flow to engine', () => {
       enabled: true,
       enabledAnimals: ['pez'],
       valuePerOccurrence: 25,
-      events: [{ id: 'e1', playerId: 'p1', holeNumber: 1, animalType: 'camello', count: 1 }],
+      events: [{ id: 'e1', playerId: 'p1', holeNumber: 1, animalType: 'camello', count: 1, createdAt: new Date().toISOString() }],
     };
     expect(calculateZoologicoAnimalResult('camello', players, cfg, 1)).toBeNull();
   });
