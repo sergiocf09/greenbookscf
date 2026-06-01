@@ -120,12 +120,14 @@ interface CarritosResultsCardProps {
   players: Player[];
   basePlayerId?: string;
   title?: string;
+  roundHoles?: 9 | 18;
   onCancel?: () => void;
   isDisabled?: boolean;
   onToggleDisabled?: () => void;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', onCancel, isDisabled, onToggleDisabled }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled }) => {
+  const isNineHole = roundHoles === 9;
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
   const disambiguatedAbbrsCarritos = useMemo(() => disambiguateInitials(players), [players]);
