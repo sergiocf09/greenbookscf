@@ -1374,14 +1374,23 @@ export const useRoundManagement = ({
               sideBets: { bets: [], enabled: false },
             };
 
+            // Cross-group pair: confirmedHoles = holes where BOTH players confirmed
+            const pairConfirmedHoles = (() => {
+              const aScores = confirmedScoresForClose.get(playerA.id) || [];
+              const bScores = confirmedScoresForClose.get(playerB.id) || [];
+              const bSet = new Set(bScores.map(s => s.holeNumber));
+              return new Set(aScores.map(s => s.holeNumber).filter(h => bSet.has(h)));
+            })();
+
             const pairSummaries = calculateAllBets(
               [syntheticA, syntheticB],
               confirmedScoresForClose,
               crossGroupConfig,
               course,
               roundState.startingHole,
-              new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+              pairConfirmedHoles
             );
+
 
             pairSummaries.forEach(s => {
               crossGroupSummaries.push({
