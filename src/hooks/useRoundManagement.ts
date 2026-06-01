@@ -1250,6 +1250,25 @@ export const useRoundManagement = ({
           })()
         : normalizedBetConfig;
 
+      // Derive confirmedHoles consistently with the live BetDashboard: a hole is
+      // "confirmed" only when every player in the round has a confirmed score on it.
+      // Passing {1..18} unconditionally caused close-time bets (e.g. Coneja) to
+      // diverge from the live UI by a few dollars on certain bilateral pairs.
+      const confirmedHolesForClose: Set<number> = (() => {
+        const holeCounts = new Map<number, number>();
+        confirmedScoresForClose.forEach((playerScores) => {
+          playerScores.forEach((s) => {
+            holeCounts.set(s.holeNumber, (holeCounts.get(s.holeNumber) || 0) + 1);
+          });
+        });
+        const totalPlayers = sanitizedPlayers.length;
+        const set = new Set<number>();
+        holeCounts.forEach((count, hole) => {
+          if (count >= totalPlayers) set.add(hole);
+        });
+        return set;
+      })();
+
       // Intra-group bet calculation: resolve config per group when overrides exist
       let intraGroupBetResults: BetSummary[];
       const hasGroupOverrides = betConfigWithHandicaps.groupBetOverrides && 
@@ -1272,7 +1291,7 @@ export const useRoundManagement = ({
             resolvedConfig,
             course,
             roundState.startingHole,
-            new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+            confirmedHolesForClose
           );
           intraGroupBetResults.push(...groupResults);
         }
@@ -1284,9 +1303,10 @@ export const useRoundManagement = ({
           betConfigWithHandicaps,
           course,
           roundState.startingHole,
-          new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+          confirmedHolesForClose
         );
       }
+
 
       // ─── CROSS-GROUP BET CALCULATION ────────────────────────────────────────
       // The main engine skips cross-group pairs (different groupId). We must compute
@@ -1354,14 +1374,23 @@ export const useRoundManagement = ({
               sideBets: { bets: [], enabled: false },
             };
 
+            // Cross-group pair: confirmedHoles = holes where BOTH players confirmed
+            const pairConfirmedHoles = (() => {
+              const aScores = confirmedScoresForClose.get(playerA.id) || [];
+              const bScores = confirmedScoresForClose.get(playerB.id) || [];
+              const bSet = new Set(bScores.map(s => s.holeNumber));
+              return new Set(aScores.map(s => s.holeNumber).filter(h => bSet.has(h)));
+            })();
+
             const pairSummaries = calculateAllBets(
               [syntheticA, syntheticB],
               confirmedScoresForClose,
               crossGroupConfig,
               course,
               roundState.startingHole,
-              new Set(Array.from({ length: 18 }, (_, i) => i + 1))
+              pairConfirmedHoles
             );
+
 
             pairSummaries.forEach(s => {
               crossGroupSummaries.push({
