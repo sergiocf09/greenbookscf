@@ -472,8 +472,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
       if (!userPlayer) continue;
 
-      const userScores = snap.scores[userPlayer.id] || [];
-      const score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+      // Prefer the immutable balances.totalGross (respects 9H vs 18H segments).
+      // Fall back to summing scores for legacy snapshots without that field.
+      const userBalance = snap.balances.find((b: any) => b.playerId === userPlayer.id);
+      let score = Number((userBalance as any)?.totalGross) || 0;
+      if (!score) {
+        const userScores = snap.scores[userPlayer.id] || [];
+        score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
+      }
 
       const netAmount = getSnapshotTotalBalance(snap, userPlayer.id);
 
