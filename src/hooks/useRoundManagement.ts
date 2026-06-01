@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Player, BetConfig, PlayerScore, GolfCourse, defaultMarkerState, HoleInfo, MarkerState, PlayerGroup } from '@/types/golf';
-import { calculateStrokesPerHole } from '@/lib/handicapUtils';
+import { calculateStrokesPerHole, getSegmentHoleRanges } from '@/lib/handicapUtils';
 // calculateHandicapIndexFromDifferentials used via dynamic import in close logic
 import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
@@ -1114,6 +1114,13 @@ export const useRoundManagement = ({
       pushStageOk(report, 'canonicalNormalization');
       // ─── END CANONICAL NORMALIZATION ────────────────────────────────────────
 
+      const activeHoleNumbersForClose: Set<number> = (() => {
+        const roundHoles = ((normalizedBetConfig as any).roundHoles === 9 ? 9 : 18) as 9 | 18;
+        if (roundHoles === 18) return new Set(Array.from({ length: 18 }, (_, i) => i + 1));
+        const [start, end] = getSegmentHoleRanges(roundState.startingHole, 9).front;
+        return new Set(Array.from({ length: end - start + 1 }, (_, i) => start + i));
+      })();
+
       // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
       // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
       try {
@@ -1145,7 +1152,7 @@ export const useRoundManagement = ({
             net_score: score.netScore,
             oyes_proximity: score.oyesProximity,
             oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
-            confirmed: true,
+            confirmed: activeHoleNumbersForClose.has(score.holeNumber),
           });
         });
       }
@@ -1223,7 +1230,7 @@ export const useRoundManagement = ({
         confirmedScoresForClose.set(
           playerId,
           playerScores.filter(
-            (s) => s.confirmed && typeof s.strokes === 'number' && Number.isFinite(s.strokes)
+            (s) => activeHoleNumbersForClose.has(s.holeNumber) && s.confirmed && typeof s.strokes === 'number' && Number.isFinite(s.strokes)
           )
         );
       });
