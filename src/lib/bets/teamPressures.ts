@@ -80,7 +80,8 @@ export const calculateTeamPressuresBets = (
 
     // ── Continúa mode: single 18-hole match with early-win ──
     if (isContinua) {
-      const allHoles = [...frontHoles, ...backHoles];
+      const isNineHoleCont = (config.roundHoles ?? 18) === 9;
+      const allHoles = isNineHoleCont ? [...frontHoles] : [...frontHoles, ...backHoles];
       let balance = 0;
       let matchConcluded = false;
       let holesPlayed = 0;
