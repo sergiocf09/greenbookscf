@@ -515,6 +515,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   })()}
                 </div>
               </div>
+              </>)}
             </div>
 
 
