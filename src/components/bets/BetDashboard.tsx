@@ -2469,6 +2469,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               players={players}
               basePlayerId={basePlayer?.id}
               title={`Carritos ${idx + 1}`}
+              roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
             />
