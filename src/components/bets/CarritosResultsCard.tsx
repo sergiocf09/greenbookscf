@@ -307,16 +307,20 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             </div>
             {/* Results row */}
             <div className="flex items-center gap-2">
-              <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+              <div className={cn('flex-1 grid gap-1 text-center text-sm tabular-nums', isNineHole ? 'grid-cols-1' : 'grid-cols-3')}>
                 <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>
                   F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}
                 </span>
-                <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>
-                  B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}
-                </span>
-                <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>
-                  T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}
-                </span>
+                {!isNineHole && (
+                  <>
+                    <span className={cn('font-semibold', getNetTone(baseTeamNetBack))}>
+                      B9 {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack}
+                    </span>
+                    <span className={cn('font-bold', getNetTone(baseTeamNetTotal))}>
+                      T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}
+                    </span>
+                  </>
+                )}
               </div>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
