@@ -100,9 +100,10 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={8}
                 required
               />
+              <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirmar contraseña</Label>
@@ -112,7 +113,7 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={8}
                 required
               />
             </div>
