@@ -33,8 +33,20 @@ const ResetPassword = () => {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos una mayúscula');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos una minúscula');
+      return;
+    }
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos un número o signo');
       return;
     }
     if (password !== confirmPassword) {
