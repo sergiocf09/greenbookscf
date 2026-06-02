@@ -33,8 +33,20 @@ const ResetPassword = () => {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos una mayúscula');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos una minúscula');
+      return;
+    }
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      toast.error('La contraseña debe incluir al menos un número o signo');
       return;
     }
     if (password !== confirmPassword) {
@@ -100,9 +112,10 @@ const ResetPassword = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={8}
                 required
               />
+              <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirmar contraseña</Label>
@@ -112,7 +125,7 @@ const ResetPassword = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                minLength={6}
+                minLength={8}
                 required
               />
             </div>

@@ -31,6 +31,14 @@ const Auth = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const validatePassword = (pwd: string): { valid: boolean; message: string } => {
+    if (pwd.length < 8) return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
+    if (!/[A-Z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una mayúscula' };
+    if (!/[a-z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una minúscula' };
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número o signo' };
+    return { valid: true, message: '' };
+  };
+
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
   // Persist returnTo so it survives OAuth redirects and email confirmation
@@ -101,6 +109,11 @@ const Auth = () => {
     e.preventDefault();
     if (!displayName.trim()) {
       toast.error('Por favor ingresa tu nombre');
+      return;
+    }
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      toast.error(passwordValidation.message);
       return;
     }
     setIsLoading(true);
@@ -276,7 +289,7 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      minLength={6}
+                      minLength={8}
                       required
                       className="pr-10"
                     />
@@ -288,7 +301,7 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
                 </div>
                 <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input
