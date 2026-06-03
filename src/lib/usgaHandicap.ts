@@ -115,12 +115,12 @@ export const calculateHandicapIndexForProfile = async (
   const { calculateStrokesPerHole } = await import('@/lib/handicapUtils');
 
   // === QUERY 1: round_players with rounds + courses ===
-  const { data: roundPlayers, error: rpError } = await supabase
+  const { data: roundPlayersRaw, error: rpError } = await supabase
     .from('round_players')
     .select(`
       id, round_id, tee_color, handicap_for_round,
       rounds!inner (
-        id, date, status, course_id, tee_color,
+        id, date, status, course_id, tee_color, bet_config, starting_hole,
         golf_courses!inner ( id, name )
       )
     `)
@@ -129,7 +129,15 @@ export const calculateHandicapIndexForProfile = async (
     .order('rounds(date)', { ascending: false });
 
   if (rpError) throw rpError;
-  if (!roundPlayers?.length) return null;
+  if (!roundPlayersRaw?.length) return null;
+
+  // Exclude 9-hole rounds — hole_scores may carry padded back/front nine that
+  // would corrupt an 18-hole differential.
+  const roundPlayers = roundPlayersRaw.filter((rp: any) => {
+    const rh = Number((rp.rounds as any)?.bet_config?.roundHoles);
+    return rh !== 9;
+  });
+  if (!roundPlayers.length) return null;
 
   const recent = roundPlayers.slice(0, 20);
   const rpIds = recent.map(rp => rp.id);

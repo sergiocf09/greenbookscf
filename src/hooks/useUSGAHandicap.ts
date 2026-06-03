@@ -47,7 +47,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
       }
 
       // === QUERY 1: Fetch completed rounds for this player (1 request) ===
-      const { data: roundPlayers, error: rpError } = await supabase
+      const { data: roundPlayersRaw, error: rpError } = await supabase
         .from('round_players')
         .select(`
           id,
@@ -55,7 +55,7 @@ export const useUSGAHandicap = (profileId: string | null) => {
           tee_color,
           handicap_for_round,
           rounds!inner (
-            id, date, status, course_id, tee_color,
+            id, date, status, course_id, tee_color, bet_config, starting_hole,
             golf_courses!inner ( id, name )
           )
         `)
@@ -64,7 +64,16 @@ export const useUSGAHandicap = (profileId: string | null) => {
         .order('rounds(date)', { ascending: false });
 
       if (rpError) throw rpError;
-      if (!roundPlayers?.length) {
+      if (!roundPlayersRaw?.length) {
+        return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
+      }
+
+      // Exclude 9-hole rounds (padded back/front nine would corrupt 18H differential)
+      const roundPlayers = roundPlayersRaw.filter((rp: any) => {
+        const rh = Number((rp.rounds as any)?.bet_config?.roundHoles);
+        return rh !== 9;
+      });
+      if (!roundPlayers.length) {
         return { handicapIndex: null, differentials: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3 };
       }
 
