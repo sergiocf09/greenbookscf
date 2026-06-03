@@ -63,18 +63,28 @@ export const useHandicapHistory = (profileId: string | null) => {
       }
 
       // === PRIMARY: Batch calculate from raw scores ===
-      const { data: roundPlayers, error: rpError } = await supabase
+      const { data: roundPlayersRaw, error: rpError } = await supabase
         .from('round_players')
         .select(`
           id, round_id, tee_color, handicap_for_round,
-          rounds!inner ( id, date, status, course_id, tee_color, golf_courses!inner ( id, name ) )
+          rounds!inner ( id, date, status, course_id, tee_color, bet_config, starting_hole, golf_courses!inner ( id, name ) )
         `)
         .eq('profile_id', profileId)
         .eq('rounds.status', 'completed')
         .order('rounds(date)', { ascending: false });
 
       if (rpError) throw rpError;
-      if (!roundPlayers?.length) {
+      if (!roundPlayersRaw?.length) {
+        return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3, attestationStats };
+      }
+
+      // Exclude 9-hole rounds — their hole_scores may include padded holes that
+      // would falsely satisfy the 18-hole differential calculation.
+      const roundPlayers = roundPlayersRaw.filter((rp: any) => {
+        const rh = Number((rp.rounds as any)?.bet_config?.roundHoles);
+        return rh !== 9;
+      });
+      if (!roundPlayers.length) {
         return { handicapIndex: null, entries: [], roundsUsed: 0, totalRounds: 0, minimumRoundsNeeded: 3, attestationStats };
       }
 
