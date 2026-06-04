@@ -394,6 +394,12 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                             onClick={() => {
                               // Inherited values are now read-only, no click action
                               if (isReadOnlyInherited) return;
+                              // Single-winner mode: tapping #1 on a player clears any other player's #1 first.
+                              if (singleWinnerMode && !isActuallySetInThisTab) {
+                                Array.from(currentProximities.entries()).forEach(([pid, prox]) => {
+                                  if (pid !== player.id && prox === pos) onProximityChange(pid, null);
+                                });
+                              }
                               // Normal toggle behavior
                               onProximityChange(player.id, isActuallySetInThisTab ? null : pos);
                             }}
@@ -407,7 +413,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                                   ? "bg-muted/50 text-muted-foreground/50 cursor-not-allowed"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80"
                             )}
-                            disabled={isDisabled}
+                            disabled={isDisabled && !singleWinnerMode}
                           >
                             {pos}
                           </button>
