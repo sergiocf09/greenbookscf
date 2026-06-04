@@ -1011,6 +1011,33 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                 </div>
               </div>
 
+              {/* Generic Unit (incremental ⭐) */}
+              <div className="space-y-1 pt-2 border-t border-border/30">
+                <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                  <Checkbox
+                    checked={bet.unitsConfig?.includeGenericUnit ?? false}
+                    onCheckedChange={(checked) => onUpdate({
+                      unitsConfig: { ...bet.unitsConfig!, includeGenericUnit: !!checked },
+                    })}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span>⭐ Incluir Unidad genérica (incremental)</span>
+                </label>
+                {bet.unitsConfig?.includeGenericUnit && (
+                  <div className="flex items-center justify-between pl-5">
+                    <Label className="text-[10px] text-muted-foreground">Valor por Unidad genérica</Label>
+                    <AmountInput
+                      label=""
+                      value={bet.unitsConfig?.valuePerGenericUnit ?? bet.unitsConfig!.valuePerUnit}
+                      onChange={(v) => onUpdate({
+                        unitsConfig: { ...bet.unitsConfig!, valuePerGenericUnit: v },
+                      })}
+                    />
+                  </div>
+                )}
+              </div>
+
+
               {/* Ventaja de Unidades (foursome) */}
               <div className="space-y-1.5 pt-2 border-t border-border/30">
                 <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Ventaja de Unidades</Label>
