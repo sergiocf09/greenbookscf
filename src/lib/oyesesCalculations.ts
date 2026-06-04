@@ -377,6 +377,7 @@ export const calculateOyesesBets = (
   
   const summaries: BetSummary[] = [];
   const amount = config.oyeses.amount;
+  const singleWinnerMode = !!config.oyeses.singleWinner;
   
   // Find all Par 3 holes
   const par3Holes = course.holes
@@ -439,6 +440,69 @@ export const calculateOyesesBets = (
         const proximityB = pairModality === 'sangron'
           ? (proximitySangronB ?? proximityAcumuladoB)
           : proximityAcumuladoB;
+        
+        // ============= SINGLE-WINNER MODE =============
+        // Only #1 (closest) wins. The #1 globally collects from everyone.
+        // For this pair (A,B): if W ∈ {A,B}, W beats the other; if W ∉ {A,B}, neither
+        // wins from the other (the hole "carries" for the pair in acumulados, or is a wash in sangrón).
+        if (singleWinnerMode) {
+          // Find the global #1 across ALL players with the same proximity field as this pair's modality.
+          const findGlobalWinner = (): string | null => {
+            const winners: string[] = [];
+            for (const p of players) {
+              const ps = scores.get(p.id) || [];
+              const s = ps.find(x => x.holeNumber === holeNum);
+              const prox = pairModality === 'sangron'
+                ? (s?.oyesProximitySangron ?? s?.oyesProximity ?? null)
+                : (s?.oyesProximity ?? null);
+              if (prox === 1) winners.push(p.id);
+            }
+            return winners.length === 1 ? winners[0] : null;
+          };
+          const winnerId = findGlobalWinner();
+
+          if (pairModality === 'acumulados') {
+            totalPlayedHoles++;
+            if (!winnerId) {
+              accumulated += amount;
+              pendingAccumulatedHoles++;
+              continue;
+            }
+            const totalAmount = amount + accumulated;
+            const holesBeingWon = 1 + pendingAccumulatedHoles;
+            const acumLabel = accumulated > 0 ? ` (+$${accumulated} acum)` : '';
+            if (winnerId === playerA.id) {
+              holesWonByA += holesBeingWon;
+              pairSummaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Oyes', amount: totalAmount, segment: 'hole', holeNumber: holeNum, description: `#1 (único)${acumLabel}` });
+              pairSummaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Oyes', amount: -totalAmount, segment: 'hole', holeNumber: holeNum, description: `vs #1 (único)${acumLabel}` });
+            } else if (winnerId === playerB.id) {
+              holesWonByB += holesBeingWon;
+              pairSummaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Oyes', amount: totalAmount, segment: 'hole', holeNumber: holeNum, description: `#1 (único)${acumLabel}` });
+              pairSummaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Oyes', amount: -totalAmount, segment: 'hole', holeNumber: holeNum, description: `vs #1 (único)${acumLabel}` });
+            }
+            // If winner is a 3rd player, the pair (A,B) does NOT settle and pot keeps accumulating for them.
+            // But to mirror the global single-winner semantics, the pot resets globally — so reset for this pair too.
+            accumulated = 0;
+            pendingAccumulatedHoles = 0;
+          } else {
+            // Sangrón single-winner: settle each Par 3 immediately if a global #1 exists.
+            if (!winnerId) continue;
+            totalPlayedHoles++;
+            if (winnerId === playerA.id) {
+              holesWonByA++;
+              pairSummaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Oyes', amount, segment: 'hole', holeNumber: holeNum, description: '#1 (único)' });
+              pairSummaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Oyes', amount: -amount, segment: 'hole', holeNumber: holeNum, description: 'vs #1 (único)' });
+            } else if (winnerId === playerB.id) {
+              holesWonByB++;
+              pairSummaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Oyes', amount, segment: 'hole', holeNumber: holeNum, description: '#1 (único)' });
+              pairSummaries.push({ playerId: playerA.id, vsPlayer: playerB.id, betType: 'Oyes', amount: -amount, segment: 'hole', holeNumber: holeNum, description: 'vs #1 (único)' });
+            }
+            // Winner is a 3rd player: nothing changes for this pair (no money flows between A and B).
+          }
+          continue;
+        }
+        // ============= END SINGLE-WINNER MODE =============
+        
         
          if (pairModality === 'acumulados') {
            // In Acumulados, the hole counts as played even if both miss (carry).
