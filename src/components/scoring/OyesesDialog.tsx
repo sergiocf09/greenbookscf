@@ -177,8 +177,10 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
   }
 
   // Dynamic proximity options based on player count
-  const proximityOptions = Array.from({ length: players.length }, (_, i) => i + 1);
-  
+  // In single-winner mode, only the #1 position exists per Par 3.
+  const singleWinnerMode = !!betConfig.oyeses?.singleWinner && !!betConfig.oyeses?.enabled;
+  const proximityOptions = singleWinnerMode ? [1] : Array.from({ length: players.length }, (_, i) => i + 1);
+
   const onProximityChange = effectiveTab === 'acumulado' ? onProximityAcumuladoChange : onProximitySangronChange;
   
   // Count how many proximities are set
