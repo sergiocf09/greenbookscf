@@ -390,6 +390,8 @@ export interface TeamPressureUnitsConfig {
   enabledMarkers: (keyof MarkerState)[]; // Which markers count as units
   unitsAdvantage?: number;        // Fixed units advantage
   unitsAdvantageTeam?: 'a' | 'b' | 'none'; // Which team GIVES the advantage
+  includeGenericUnit?: boolean;   // Whether the incremental generic ⭐ marker counts as units
+  valuePerGenericUnit?: number;   // Value per generic unit (defaults to valuePerUnit)
 }
 
 // Team Pressure Oyeses sub-modality config
