@@ -1,77 +1,73 @@
-## Diagnóstico
-
-### Problema 1 — Carritos calcula Back 9 y Total 18 en ronda de 9 hoyos
-
-La ronda actual es `roundHoles = 9`, pero la tarjeta "Carritos 1" muestra:
-- Front 9: −$100 ✅
-- Back 9: −$100 ❌ (no debería existir)
-- Total 18: −$100 ❌ (no debería existir)
-
-El motor (`src/lib/bets/carritos.ts`) ya filtra correctamente:
-```
-if (!isNineHole && back.pA !== back.pB) segments.push(...'Carritos Back'...)
-if (!isNineHole && totalPtsA !== totalPtsB) segments.push(...'Carritos Total'...)
-```
-
-Pero la UI tiene su propio cálculo en `BetDashboard.tsx` (función `calculateCarritosResult`) y en `CarritosResultsCard.tsx`, y ninguno consulta `betConfig.roundHoles`. Resultado:
-- La UI suma front+back+total → moneyA inflado.
-- La UI emite `BetSummary` para los 3 segmentos.
-- El motor solo emite Front → discrepancia de $100/jugador → **el cierre se bloquea en `preValidation`**.
-
-Esto explica el reporte adjunto (Sergio/Antonio −$100, Carlos/Rodrigo +$100, Raul $0).
-
-### Problema 2 — Auditoría de otras apuestas de parejas en 9 hoyos
-
-- **Team Pressures** (`teamPressures.ts`): también acumula `frontMoney + backMoney + matchMoney` sin filtrar por 9 hoyos.
-- **Wolf / Sixes / Vegas / Loba**: son por hoyo, no tienen segmentos front/back/total → no afectados.
-- **Bilateral cards** (Medal, Putts, Pressures, Skins): leen `groupedSummaries` que ya vienen del motor (9-hoyos-aware) → muestran $0 automáticamente, OK.
-
-### Problema 3 — Zoo inline counters y snapshot
-
-Validado: los handlers `onAddZooEvent` / `onUpdateZooEvent` / `onDeleteZooEvent` del nuevo control inline en `PlayerScoreInput` están conectados en `PlayViews.tsx` a los mismos setters de `betConfig.zoologico.events` que usa `ZoologicoDialog`. Como el snapshot/motor calcula desde `betConfig.zoologico.events` vía `calculateZooBets`, los eventos capturados inline se contabilizan correctamente en el cierre. **No requiere cambios**, solo se agregará un test de regresión mínimo.
-
----
-
 ## Cambios
 
-### 1. `src/components/bets/BetDashboard.tsx`
+### 1. Oyeses individual — modalidad "Un solo ganador" + Zapato per-bilateralidad (confirmar)
 
-**a) `calculateCarritosResult` (~líneas 854-866):** cuando `betConfig.roundHoles === 9`, omitir el cálculo de back y total:
-```ts
-const isNineHole = (betConfig.roundHoles ?? 18) === 9;
-if (pointsAFront > pointsBFront) moneyA += frontAmount;
-else if (pointsBFront > pointsAFront) moneyA -= frontAmount;
-if (!isNineHole) {
-  // back y total solo en 18
-  ...
-}
-```
-Y en el objeto devuelto, forzar `pointsABack=0, pointsBBack=0, pointsATotal=pointsAFront, pointsBTotal=pointsBFront, backAmount:0, totalAmount:0` cuando es 9 hoyos, para que el card no muestre las secciones.
+**Setup / Matriz (Apuesta individual de Oyeses)**
 
-**b) Emisión de `carritosSummaries` (~líneas 971-975):** cuando `isNineHole`, filtrar el array `segments` para dejar solo `'Carritos Front'`. Así la UI deja de emitir summaries fantasma para back/total → la pre-validación cuadra con el motor.
+- Agregar un nuevo control a nivel de apuesta en `IndividualBets.tsx` dentro de la sección Oyeses:
+  - Toggle global **"Un solo ganador"** (`singleWinner: boolean`). Cuando está ON: en cada par 3 sólo se reconoce al #1 (el más cercano), quien cobra a TODOS los demás. Si además está la modalidad **Acumulados**, el #1 del próximo par 3 jugado cobra el pote acumulado a todos.
+  - Toggle global **"Zapato"** (ya existe `oyeses.zapatoEnabled`) — se mantiene; aclarar en helpText que sigue siendo accionable per-bilateralidad en BilateralDetail (ya implementado via `oyesPairZapatoOverrides`). No requiere cambios funcionales en el toggle bilateral.  El bilateral esta bien ... pero lo que hay que agregar es que este toggle tambien se pueda setear en la configuración global en la matriz y con ello no tener que hacer el cambio de selección de uno a uno las bilateralidades que por default traen el zapato, con este cambio, en la biltaralidad aparecera lo que este setado en esa configuración global, y siepre permitiendo el cambio en cada bilteralidad.
 
-### 2. `src/components/bets/CarritosResultsCard.tsx`
+**Tipos (`src/types/golf.ts`)**
 
-Aceptar prop `roundHoles?: 9 | 18` (default 18) y, cuando sea 9:
-- No renderizar el bloque "Back 9" (líneas ~415-490)
-- No renderizar el bloque "Total 18" (líneas ~493-525)
-- En el header, "T −13" se omite también; solo queda F9.
+- Añadir `singleWinner?: boolean` a `OyesesBetConfig` (default `false`).
 
-Pasar `roundHoles={betConfig.roundHoles}` desde `BetDashboard` donde se monta el card.
+**Persistencia**
 
-### 3. `src/lib/bets/teamPressures.ts` (audit menor)
+- Propagar `singleWinner` en `useBetConfigPersistence.ts` (read + write) junto a los otros campos de `oyeses`.
+- Incluirlo en `useBetTemplates.ts` al guardar/cargar plantillas.
 
-Aplicar el mismo guardia `isNineHole = (config.roundHoles ?? 18) === 9` y, cuando sea 9, omitir `backMoney` y `matchMoney`/`totalMoney`. Esto previene el mismo bug en "Presiones Parejas / Foursome" si en el futuro se usa con ronda de 9.
+**OyesesDialog (selector de orden por hoyo)**
 
-### 4. Test de regresión zoo
+- Si `betConfig.oyeses.singleWinner === true` y `oyeses.enabled`:
+  - Mostrar únicamente el botón `1` por jugador (ocultar 2..N).
+  - Sólo permitir que UN jugador tenga el #1 a la vez (deseleccionar el #1 previo si alguien más lo toma). Mantener la opción de dejar el hoyo sin ganador (carry en acumulados / vacío en sangrón).
+  - Mantener tabs Acumulado/Sangrón existentes; la regla "sólo #1" aplica a ambas en este modo.
+  - Validación: deshabilitar "duplicados" porque por construcción sólo existe un #1.
 
-Agregar a `src/test/snapshotIntegrity.test.ts` (o nuevo archivo `zoologico.test.ts`) un caso: dado un `betConfig.zoologico.events` con 3 eventos (camello, pez, gorila) en el mismo hoyo, `calculateZooBets` produce el monto esperado por animal y per-loser → confirma que los eventos creados desde los inline counters fluyen al motor sin pérdidas.
+**Cálculo bilateral (`src/lib/oyesesCalculations.ts`)**
+
+- En `calculateOyesesBets` (y replicar en `getOyesesPairResult` / `getOyesesDisplayData` lo necesario para que el display sea coherente):
+  - Si `config.oyeses.singleWinner === true`:
+    - Para cada par 3 ordenado, identificar al único jugador con proximidad `1` entre los participantes.
+    - Si nadie tiene `1` → acumular (modalidad acumulados) o pasar (sangrón), exactamente como hoy.
+    - Si existe ganador único W:
+      - Por cada pareja (W, otro): W gana `amount + accumulated` (acumulados) o `amount` (sangrón) sobre ese rival; emitir summaries simétricos con `holesWonByW += 1 + pendingAccumulatedHoles`.
+      - Reset de `accumulated` y `pendingAccumulatedHoles` después del settlement.
+    - Las parejas que NO incluyen a W no generan summary en ese hoyo (en singleWinner sólo el ganador cobra; los demás "pierden contra W" pero no entre sí).
+  - Mantener regla 100% (zapato/multiplicador) y los overrides `oyesPairZapatoOverrides` tal cual; sólo cambia quién acumula holesWon.
+- Documentar en el comentario del header del archivo.
+
+**No cambia**: BilateralDetail (zapato toggle per-bilateralidad ya funciona), Rayas, ni `teamPressures.oyesesConfig`.
 
 ---
 
-## Verificación
+### 2. Foursomes (Presiones por Parejas) — Unidades — agregar "Unidad genérica"
 
-1. Reproducir la ronda: cargar setup 9H con Carritos → la tarjeta muestra solo "Front 9", sin Back 9 ni Total 18.
-2. Intentar cerrar → el reporte ya no muestra discrepancia UI vs Motor ($0).
-3. Capturar 1 camello + 1 pez desde el popover de scoring inline → abrir Bet Dashboard → el conteo refleja correctamente en la tarjeta de Zoológico (Grupales).
-4. Cerrar la ronda → snapshot contiene los movimientos de zoo.
+**Tipos (`src/types/golf.ts`)**
+
+- Añadir a `TeamPressureUnitsConfig`:
+  - `includeGenericUnit?: boolean` (default false)
+  - `valuePerGenericUnit?: number` (default = `valuePerUnit`)
+
+**UI (`src/components/setup/bets/ParejasBets.tsx`)**
+
+- Dentro del bloque `unitsConfig`, agregar:
+  - Checkbox **"Incluir Unidad genérica ⭐"** que activa `includeGenericUnit`.
+  - Cuando esté activo, mostrar `AmountInput` "Valor por Unidad genérica" enlazado a `valuePerGenericUnit` (default al valor por unidad).
+- Mantener los checkboxes existentes para los marcadores booleanos (birdie/eagle/etc.).
+
+**Cálculo (`src/lib/bets/teamPressures.ts`)**
+
+- En la sección Units (continúa y normal, líneas ~120 y ~200) ajustar `countUnitsForTeam` para que, si `bet.unitsConfig?.includeGenericUnit`, también sume `s.markers.unidadGenerica ?? 0` (es contador numérico, no boolean) por cada score confirmado del equipo.
+- Si `valuePerGenericUnit !== valuePerUnit`, separar el cálculo: `unitsMoney = (stdA - stdB) * valuePerUnit + (genA - genB) * valuePerGenericUnit` (más el ajuste `netAdvantage` ya existente, que se aplica sólo a `valuePerUnit`).
+- Actualizar `descParts` para reflejar la unidad genérica cuando aporte.
+
+---
+
+## Detalles técnicos
+
+- `singleWinner` se persiste como columna JSON dentro del bloque `oyeses` ya serializado; no requiere migración SQL.
+- `TeamPressureUnitsConfig.includeGenericUnit` / `valuePerGenericUnit` viven dentro de `teamPressures.bets[i].unitsConfig` (JSON), no requiere migración SQL.
+- En `OyesesDialog`, derivar `proximityOptions = singleWinner ? [1] : Array(players.length)`.
+- `getOyesesPairResult` y `getOyesesDisplayData`: en modo singleWinner, el "ganador del hoyo" para el display de la pareja (A,B) será A si A==W, B si B==W, ninguno si W∉{A,B} (no se cuenta como hoyo ganado para ninguno en esa pareja, pero el `totalPlayedHoles` sí incrementa para mantener la regla 100%).

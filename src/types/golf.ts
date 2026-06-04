@@ -174,6 +174,9 @@ export interface OyesesBetConfig {
   enabled: boolean;
   amount: number;
   zapatoEnabled?: boolean; // Whether Zapato (x2 when one player wins all oyes) is active. Defaults to true.
+  // Single-winner mode: only #1 (closest) is recognized per Par 3, and that player collects from ALL others.
+  // In Acumulados, the #1 of the next played Par 3 also collects the accumulated pot. Defaults to false.
+  singleWinner?: boolean;
   playerConfigs: OyesesPlayerConfig[];
   participantIds?: string[];
 }
@@ -387,6 +390,8 @@ export interface TeamPressureUnitsConfig {
   enabledMarkers: (keyof MarkerState)[]; // Which markers count as units
   unitsAdvantage?: number;        // Fixed units advantage
   unitsAdvantageTeam?: 'a' | 'b' | 'none'; // Which team GIVES the advantage
+  includeGenericUnit?: boolean;   // Whether the incremental generic ⭐ marker counts as units
+  valuePerGenericUnit?: number;   // Value per generic unit (defaults to valuePerUnit)
 }
 
 // Team Pressure Oyeses sub-modality config

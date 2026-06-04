@@ -119,10 +119,12 @@ export const calculateTeamPressuresBets = (
 
       // Add units/oyeses sub-modalities money
       let unitsMoney = 0;
-      if (bet.unitsConfig?.enabled && bet.unitsConfig.enabledMarkers?.length > 0) {
-        const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers);
-        const countUnitsForTeam = (teamIds: string[]): number => {
-          let total = 0;
+      if (bet.unitsConfig?.enabled && (bet.unitsConfig.enabledMarkers?.length > 0 || bet.unitsConfig.includeGenericUnit)) {
+        const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers ?? []);
+        const includeGeneric = !!bet.unitsConfig.includeGenericUnit;
+        const valuePerGeneric = bet.unitsConfig.valuePerGenericUnit ?? bet.unitsConfig.valuePerUnit;
+        const countUnitsForTeam = (teamIds: string[]): { std: number; gen: number } => {
+          let std = 0; let gen = 0;
           teamIds.forEach(pid => {
             const playerScores = scores.get(pid) || [];
             playerScores.forEach(s => {
@@ -130,20 +132,23 @@ export const calculateTeamPressuresBets = (
               const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
               const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
               const merged = mergeMarkers(autoDetected, s.markers);
-              enabledMarkersSet.forEach(marker => { if (merged[marker as keyof MarkerState]) total++; });
+              enabledMarkersSet.forEach(marker => { if (merged[marker as keyof MarkerState]) std++; });
+              if (includeGeneric) gen += (s.markers?.unidadGenerica ?? 0);
             });
           });
-          return total;
+          return { std, gen };
         };
-        const unitsA = countUnitsForTeam(teamA);
-        const unitsB = countUnitsForTeam(teamB);
+        const a = countUnitsForTeam(teamA);
+        const b = countUnitsForTeam(teamB);
         const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
         const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
         // The team that GIVES the advantage starts "owing" that number of units
         const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
                            : unitsAdvTeam === 'b' ?  unitsAdv
                            : 0;
-        unitsMoney = ((unitsA - unitsB) + netAdvantage) * bet.unitsConfig.valuePerUnit;
+        const stdMoney = ((a.std - b.std) + netAdvantage) * bet.unitsConfig.valuePerUnit;
+        const genMoney = includeGeneric ? (a.gen - b.gen) * valuePerGeneric : 0;
+        unitsMoney = stdMoney + genMoney;
       }
 
       let oyesesMoney = 0;
@@ -220,10 +225,12 @@ export const calculateTeamPressuresBets = (
 
     // Team Units sub-modality
     let unitsMoney = 0;
-    if (bet.unitsConfig?.enabled && bet.unitsConfig.enabledMarkers?.length > 0) {
-      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers);
-      const countUnitsForTeam = (teamIds: string[]): number => {
-        let total = 0;
+    if (bet.unitsConfig?.enabled && (bet.unitsConfig.enabledMarkers?.length > 0 || bet.unitsConfig.includeGenericUnit)) {
+      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers ?? []);
+      const includeGeneric = !!bet.unitsConfig.includeGenericUnit;
+      const valuePerGeneric = bet.unitsConfig.valuePerGenericUnit ?? bet.unitsConfig.valuePerUnit;
+      const countUnitsForTeam = (teamIds: string[]): { std: number; gen: number } => {
+        let std = 0; let gen = 0;
         teamIds.forEach(pid => {
           const playerScores = scores.get(pid) || [];
           playerScores.forEach(s => {
@@ -231,20 +238,23 @@ export const calculateTeamPressuresBets = (
             const holePar = course.holes.find(h => h.number === s.holeNumber)?.par ?? 4;
             const autoDetected = detectScoreBasedMarkers(s.strokes, s.putts, holePar);
             const merged = mergeMarkers(autoDetected, s.markers);
-            enabledMarkersSet.forEach(marker => { if (merged[marker as keyof MarkerState]) total++; });
+            enabledMarkersSet.forEach(marker => { if (merged[marker as keyof MarkerState]) std++; });
+            if (includeGeneric) gen += (s.markers?.unidadGenerica ?? 0);
           });
         });
-        return total;
+        return { std, gen };
       };
-      const unitsA = countUnitsForTeam(teamA);
-      const unitsB = countUnitsForTeam(teamB);
+      const a = countUnitsForTeam(teamA);
+      const b = countUnitsForTeam(teamB);
       const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
       const unitsAdvTeam = bet.unitsConfig?.unitsAdvantageTeam ?? 'none';
       const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
                          : unitsAdvTeam === 'b' ?  unitsAdv
                          : 0;
-      unitsMoney = ((unitsA - unitsB) + netAdvantage) * bet.unitsConfig.valuePerUnit;
-      devLog(`[TeamPressures:Units] bet=${bet.id} unitsA=${unitsA} unitsB=${unitsB} adv=${netAdvantage} money=${unitsMoney}`);
+      const stdMoney = ((a.std - b.std) + netAdvantage) * bet.unitsConfig.valuePerUnit;
+      const genMoney = includeGeneric ? (a.gen - b.gen) * valuePerGeneric : 0;
+      unitsMoney = stdMoney + genMoney;
+      devLog(`[TeamPressures:Units] bet=${bet.id} stdA=${a.std} stdB=${b.std} genA=${a.gen} genB=${b.gen} adv=${netAdvantage} money=${unitsMoney}`);
     }
 
     // Team Oyeses sub-modality

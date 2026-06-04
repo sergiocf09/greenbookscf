@@ -79,6 +79,7 @@ interface RoundBetConfig {
     }>;
     participantIds?: string[];
     zapatoEnabled?: boolean;
+    singleWinner?: boolean;
   };
   oyesPairModalityOverrides?: Record<string, 'acumulados' | 'sangron'>;
   oyesPairZapatoOverrides?: Record<string, boolean>;
@@ -421,6 +422,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: dbConfig.oyeses.playerConfigs ?? prev.oyeses.playerConfigs,
           participantIds: 'participantIds' in dbConfig.oyeses ? dbConfig.oyeses.participantIds : prev.oyeses.participantIds,
           zapatoEnabled: 'zapatoEnabled' in dbConfig.oyeses ? dbConfig.oyeses.zapatoEnabled : prev.oyeses.zapatoEnabled,
+          singleWinner: 'singleWinner' in dbConfig.oyeses ? dbConfig.oyeses.singleWinner : prev.oyeses.singleWinner,
         };
       }
 
@@ -604,6 +606,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: config.oyeses.playerConfigs,
           participantIds: config.oyeses.participantIds,
           zapatoEnabled: config.oyeses.zapatoEnabled,
+          singleWinner: config.oyeses.singleWinner,
         },
         oyesPairModalityOverrides: config.oyesPairModalityOverrides,
         oyesPairZapatoOverrides: config.oyesPairZapatoOverrides,

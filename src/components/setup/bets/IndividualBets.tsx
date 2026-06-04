@@ -195,6 +195,35 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText="En hoyos par 3, gana quien queda más cerca al pin. Se registra el orden de proximidad al terminar el hoyo. Si hay acumulación activa, los hoyos empatados suman al siguiente. Ganar todos los oyeses del 9 da un bonus 2x (zapato)."
         >
           <AmountInput label="Importe por Oyes" value={config.oyeses.amount} onChange={(v) => onUpdateBet('oyeses', { amount: v })} />
+
+          {/* Global toggles: Un solo ganador + Zapato */}
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+              <div className="flex flex-col">
+                <Label className="text-xs font-medium">Un solo ganador</Label>
+                <span className="text-[10px] text-muted-foreground">
+                  Solo el #1 cobra a TODOS los demás. Si está activo Acumulados, gana el pote acumulado.
+                </span>
+              </div>
+              <Switch
+                checked={config.oyeses.singleWinner ?? false}
+                onCheckedChange={(v) => onUpdateBet('oyeses', { singleWinner: v })}
+              />
+            </div>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+              <div className="flex flex-col">
+                <Label className="text-xs font-medium">Zapato (default)</Label>
+                <span className="text-[10px] text-muted-foreground">
+                  Activa zapato (x2 al 100%) por default en todas las bilateralidades. Se puede cambiar en cada bilateralidad.
+                </span>
+              </div>
+              <Switch
+                checked={config.oyeses.zapatoEnabled !== false}
+                onCheckedChange={(v) => onUpdateBet('oyeses', { zapatoEnabled: v })}
+              />
+            </div>
+          </div>
+
           <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
             <div className="space-y-2">
               <p className="text-[10px] text-muted-foreground mb-2">Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.</p>
