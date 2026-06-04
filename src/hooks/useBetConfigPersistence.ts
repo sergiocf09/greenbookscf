@@ -606,6 +606,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: config.oyeses.playerConfigs,
           participantIds: config.oyeses.participantIds,
           zapatoEnabled: config.oyeses.zapatoEnabled,
+          singleWinner: config.oyeses.singleWinner,
         },
         oyesPairModalityOverrides: config.oyesPairModalityOverrides,
         oyesPairZapatoOverrides: config.oyesPairZapatoOverrides,
