@@ -422,6 +422,7 @@ export const useBetConfigPersistence = ({
           playerConfigs: dbConfig.oyeses.playerConfigs ?? prev.oyeses.playerConfigs,
           participantIds: 'participantIds' in dbConfig.oyeses ? dbConfig.oyeses.participantIds : prev.oyeses.participantIds,
           zapatoEnabled: 'zapatoEnabled' in dbConfig.oyeses ? dbConfig.oyeses.zapatoEnabled : prev.oyeses.zapatoEnabled,
+          singleWinner: 'singleWinner' in dbConfig.oyeses ? dbConfig.oyeses.singleWinner : prev.oyeses.singleWinner,
         };
       }
 
