@@ -1678,6 +1678,55 @@ export const useRoundManagement = ({
           .map(b => `${b.playerName}: UI=$${b.uiNet}, Engine=$${b.engineNet}, Δ=$${b.delta}`);
         discrepancies.forEach(d => devWarn(`  → ${d}`));
 
+        // ─── Build per-pair, per-bet-type breakdown ──────────────────────────
+        // Group summaries by canonical pair (sorted ids) + betType + segment, summing
+        // signed amounts from A's perspective (A is the lexicographically smaller id).
+        const aggregateByPairAndType = (summaries: BetSummary[]) => {
+          const map = new Map<string, { aId: string; bId: string; betType: string; segment?: string; netAtoB: number }>();
+          for (const s of summaries) {
+            if (!s.playerId || !s.vsPlayer || s.playerId === s.vsPlayer) continue;
+            const [aId, bId] = [s.playerId, s.vsPlayer].sort();
+            const seg = (s as any).segment ?? '';
+            const key = `${aId}|${bId}|${s.betType}|${seg}`;
+            const existing = map.get(key) ?? { aId, bId, betType: s.betType, segment: (s as any).segment, netAtoB: 0 };
+            // If summary is from A's perspective (playerId === aId), add as-is; else negate
+            const signedAmount = s.playerId === aId ? s.amount : -s.amount;
+            existing.netAtoB += signedAmount;
+            map.set(key, existing);
+          }
+          return map;
+        };
+        const engineMap = aggregateByPairAndType(allBetResults);
+        const uiMap = aggregateByPairAndType(normalizedUiBetResults);
+        const allKeys = new Set<string>([...engineMap.keys(), ...uiMap.keys()]);
+        const nameById = new Map(sanitizedPlayers.map((p) => [p.id, p.name]));
+        const breakdown: NonNullable<CloseAttemptReport['discrepancyBreakdown']> = [];
+        for (const key of allKeys) {
+          const e = engineMap.get(key);
+          const u = uiMap.get(key);
+          const eAmt = Math.round(((e?.netAtoB ?? 0) / 2) * 100) / 100;
+          const uAmt = Math.round(((u?.netAtoB ?? 0) / 2) * 100) / 100;
+          // Each pair appears twice in summaries (A→B and B→A), so divide by 2 to get net
+          const delta = Math.round((eAmt - uAmt) * 100) / 100;
+          if (Math.abs(delta) < 0.5) continue;
+          const ref = e ?? u!;
+          breakdown.push({
+            playerAName: nameById.get(ref.aId) ?? ref.aId,
+            playerBName: nameById.get(ref.bId) ?? ref.bId,
+            betType: ref.betType,
+            segment: ref.segment,
+            engineAmount: eAmt,
+            uiAmount: uAmt,
+            delta,
+          });
+        }
+        breakdown.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+        report.discrepancyBreakdown = breakdown;
+        breakdown.slice(0, 20).forEach((d) => {
+          devWarn(`  Δ$${d.delta} | ${d.playerAName}↔${d.playerBName} | ${d.betType}${d.segment ? ` (${d.segment})` : ''} | engine=$${d.engineAmount} ui=$${d.uiAmount}`);
+        });
+        // ─── End breakdown ───────────────────────────────────────────────────
+
         // BLOCKING GUARDRAIL: Abort closure if discrepancy exceeds $1
         const errorMsg = `Discrepancia UI vs Motor detectada (máx Δ$${maxDelta}):\n${discrepancies.join('\n')}\n\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.`;
         await fail('preValidation', new Error(errorMsg), report.attemptId);
