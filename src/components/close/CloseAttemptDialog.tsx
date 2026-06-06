@@ -65,6 +65,18 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
                   </ul>
                 </div>
               )}
+              {report.discrepancyBreakdown && report.discrepancyBreakdown.length > 0 && (
+                <div className="mt-2">
+                  <div className="text-muted-foreground font-medium">Apuestas con discrepancia UI vs Motor:</div>
+                  <ul className="list-disc pl-5">
+                    {report.discrepancyBreakdown.slice(0, 15).map((d, i) => (
+                      <li key={i}>
+                        <span className="font-mono">Δ${d.delta}</span> · {d.playerAName} ↔ {d.playerBName} · <strong>{d.betType}</strong>{d.segment ? ` (${d.segment})` : ''} · UI=${d.uiAmount} Motor=${d.engineAmount}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
