@@ -63,6 +63,16 @@ export interface CloseAttemptReport {
   overrideSummaries?: CloseOverrideSummary[];
   orphanedOverrides?: number;
   normalizedBets?: string[];  // List of bet types where guests were auto-added
+  // Per-pair, per-bet-type breakdown for discrepancies (only present when preValidation fails)
+  discrepancyBreakdown?: Array<{
+    playerAName: string;
+    playerBName: string;
+    betType: string;
+    segment?: string;
+    engineAmount: number;  // Net A→B in engine (positive = A wins)
+    uiAmount: number;      // Net A→B in UI (positive = A wins)
+    delta: number;         // engine - ui
+  }>;
 
   stages: CloseStageResult[];
   failedStage?: CloseStage;
