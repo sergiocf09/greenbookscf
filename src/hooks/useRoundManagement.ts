@@ -19,6 +19,7 @@ import { calculateNinesBets } from '@/lib/bets/nines';
 import { isSixesSettlementActive, isVegasSettlementActive, isWolfSettlementActive } from '@/lib/teamBetPersistence';
 import type { WolfConfig, WolfHoleState, SixesConfig, VegasConfig, NinesConfig } from '@/types/golf';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
+import { isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -1630,7 +1631,48 @@ export const useRoundManagement = ({
         return roundPlayerIdToLocalPlayerId.get(rawId);
       };
 
-      const normalizedUiBetResults: BetSummary[] = allBetResultsFromUI
+      const isUiSummaryDisabledByOverride = (summary: BetSummary): boolean => {
+        const summaryType = summary.betType.toLowerCase();
+        return (betConfigWithHandicaps.betOverrides ?? []).some((override) => {
+          if (override.enabled !== false) return false;
+          const matchesPair =
+            (override.playerAId === summary.playerId && override.playerBId === summary.vsPlayer) ||
+            (override.playerAId === summary.vsPlayer && override.playerBId === summary.playerId);
+          if (!matchesPair) return false;
+
+          const rawOverrideType = String(override.betType ?? '').toLowerCase();
+          const overrideType = (() => {
+            switch (rawOverrideType) {
+              case 'pressures': return 'presiones';
+              case 'oyeses': return 'oyes';
+              case 'units': return 'unidades';
+              case 'pinguinos': return 'pingüinos';
+              case 'medalgeneral': return 'medal general';
+              case 'zoologico': return 'zoológico';
+              default: return rawOverrideType;
+            }
+          })();
+
+          if (overrideType === 'medal' && (summaryType.includes('medal general') || summaryType.includes('rayas medal'))) return false;
+          if (overrideType === 'presiones' && summaryType.includes('presiones parejas')) return false;
+          return summaryType.includes(overrideType);
+        });
+      };
+
+      const shouldKeepUiSummaryForValidation = (summary: BetSummary): boolean => {
+        const playerA = sanitizedPlayers.find((p) => p.id === summary.playerId);
+        const playerB = sanitizedPlayers.find((p) => p.id === summary.vsPlayer);
+        if (!playerA || !playerB) return false;
+
+        const isCrossGroupPair = !!playerA.groupId && !!playerB.groupId && playerA.groupId !== playerB.groupId;
+        if (isCrossGroupPair && !isCrossGroupPairInMap(crossGroupRivalsMap, summary.playerId, summary.vsPlayer)) {
+          return false;
+        }
+
+        return !isUiSummaryDisabledByOverride(summary);
+      };
+
+      const resolvedUiBetResults: BetSummary[] = allBetResultsFromUI
         .map((result) => {
           const playerId = resolveUiPlayerIdForValidation(result.playerId);
           const vsPlayer = resolveUiPlayerIdForValidation(result.vsPlayer);
@@ -1639,9 +1681,11 @@ export const useRoundManagement = ({
         })
         .filter((result): result is BetSummary => result !== null);
 
+      const normalizedUiBetResults = resolvedUiBetResults.filter(shouldKeepUiSummaryForValidation);
+
       if (normalizedUiBetResults.length !== allBetResultsFromUI.length) {
         devWarn(
-          `[CLOSE] Filtered ${allBetResultsFromUI.length - normalizedUiBetResults.length} UI summaries with unresolved/stale player IDs before preValidation`
+          `[CLOSE] Filtered ${allBetResultsFromUI.length - normalizedUiBetResults.length} UI summaries with unresolved/stale IDs, non-rival cross-group pairs, or disabled overrides before preValidation`
         );
       }
 
