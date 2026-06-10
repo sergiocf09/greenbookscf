@@ -738,14 +738,18 @@ const getNetScoreForPlayerVsRivalWithDetails = (
     };
   }
   
-  // En modo bilateral/sliding, la matriz es autoritativa:
-  // si no hay entrada para el par (típico de invitados), se considera 0 golpes.
+  // Bilateral mode but no matrix entry: compute differential on the fly from individual HCPs.
   if (config.coneja?.handicapMode === 'bilateral') {
+    const diff = Math.abs(player.handicap - rival.handicap);
+    const receivedPerHole = calculateStrokesPerHole(diff, course);
+    const strokeOnHole = receivedPerHole[holeNumber - 1] || 0;
+    const playerReceived = player.handicap > rival.handicap ? strokeOnHole : 0;
+    const rivalReceived = rival.handicap > player.handicap ? strokeOnHole : 0;
     return {
-      playerNet: playerHoleScore.strokes,
-      rivalNet: rivalHoleScore.strokes,
-      playerReceived: false,
-      rivalReceived: false,
+      playerNet: playerHoleScore.strokes - playerReceived,
+      rivalNet: rivalHoleScore.strokes - rivalReceived,
+      playerReceived: playerReceived > 0,
+      rivalReceived: rivalReceived > 0,
     };
   }
 
