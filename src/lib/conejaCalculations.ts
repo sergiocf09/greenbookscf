@@ -61,7 +61,17 @@ const getNetScoreForPlayerVsRival = (
     };
   }
   
-  // Fallback to individual handicaps when no bilateral entry exists for this pair
+  // En modo bilateral/sliding, la matriz es autoritativa:
+  // si no hay entrada para el par (típico de invitados), se considera 0 golpes,
+  // NO se hace fallback al hándicap USGA individual.
+  if (config.coneja?.handicapMode === 'bilateral') {
+    return {
+      playerNet: playerHoleScore.strokes,
+      rivalNet: rivalHoleScore.strokes,
+    };
+  }
+
+  // Fallback to individual handicaps when in individual mode and no bilateral entry exists
   const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
   const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
   
@@ -723,7 +733,18 @@ const getNetScoreForPlayerVsRivalWithDetails = (
     };
   }
   
-  // Fallback to individual handicaps when no bilateral entry exists for this pair
+  // En modo bilateral/sliding, la matriz es autoritativa:
+  // si no hay entrada para el par (típico de invitados), se considera 0 golpes.
+  if (config.coneja?.handicapMode === 'bilateral') {
+    return {
+      playerNet: playerHoleScore.strokes,
+      rivalNet: rivalHoleScore.strokes,
+      playerReceived: false,
+      rivalReceived: false,
+    };
+  }
+
+  // Fallback to individual handicaps when in individual mode and no bilateral entry exists
   const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
   const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
   
@@ -832,8 +853,10 @@ export const getConejaHoleDetail = (
       }
     });
     
-    // Fall back to individual if no bilateral found
-    if (maxStrokesReceived === 0) {
+    // En modo bilateral, si no se encontró ninguna entrada en la matriz para este jugador,
+    // se considera 0 golpes (no se hace fallback al hándicap individual).
+    // Solo en modo 'individual' se usa el USGA del jugador.
+    if (maxStrokesReceived === 0 && config.coneja?.handicapMode !== 'bilateral') {
       const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
       maxStrokesReceived = strokesPerHole[holeNumber - 1] || 0;
     }
