@@ -1034,23 +1034,17 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
   // In that case, treat it as "all group players participate".
   const resolveGroupParticipants = (participantIds: string[] | undefined): typeof sameGroupPlayers => {
     if (!participantIds || participantIds.length === 0) return sameGroupPlayers;
-    
-    // Logic for late-joined guests: if all profile-based players of this group who are in the round
-    // are present in the participant list, we assume guests of the same group should also be included.
-    // This allows templates created for Group 1 to work for Group 2, and handles guests added after setup.
-    const groupProfilePlayers = sameGroupPlayers.filter(p => p.profileId);
-    const profilePlayersInList = groupProfilePlayers.filter(p => participantIds.includes(p.id));
+
     const groupPlayersInList = sameGroupPlayers.filter(p => participantIds.includes(p.id));
 
-    // Fallback 1: If ALL profile players from this group are in the list, include guests too.
-    if (profilePlayersInList.length === groupProfilePlayers.length && groupProfilePlayers.length > 0) {
-      return sameGroupPlayers;
-    }
-
-    // Fallback 2: if NONE of our group players are in the list, it's likely a template inheritance
-    // issue from a different group. Return ALL group players.
+    // Fallback: if NONE of our group players are in the list, it's likely a template inheritance
+    // issue from a different group (participantIds were saved for another group's player IDs).
+    // In that case fall back to ALL group players to avoid showing an empty bet.
+    // NOTE: We intentionally do NOT auto-include guests (or any unselected player) when at least
+    // one of our group players IS in the list — strict participation must be respected so guests
+    // who are not selected don't appear in occurrence tallies (Culebras / Pingüinos / Zoológico).
     if (groupPlayersInList.length === 0) return sameGroupPlayers;
-    
+
     return groupPlayersInList;
   };
 
