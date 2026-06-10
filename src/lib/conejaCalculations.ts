@@ -61,13 +61,18 @@ const getNetScoreForPlayerVsRival = (
     };
   }
   
-  // En modo bilateral/sliding, la matriz es autoritativa:
-  // si no hay entrada para el par (típico de invitados), se considera 0 golpes,
-  // NO se hace fallback al hándicap USGA individual.
+  // Bilateral mode but no matrix entry for this pair (typical for guests):
+  // compute bilateral differential on the fly from individual handicaps.
+  // The higher-HCP player receives |hcpA - hcpB| strokes distributed by stroke index.
   if (config.coneja?.handicapMode === 'bilateral') {
+    const diff = Math.abs(player.handicap - rival.handicap);
+    const receivedPerHole = calculateStrokesPerHole(diff, course);
+    const strokeOnHole = receivedPerHole[holeNumber - 1] || 0;
+    const playerReceived = player.handicap > rival.handicap ? strokeOnHole : 0;
+    const rivalReceived = rival.handicap > player.handicap ? strokeOnHole : 0;
     return {
-      playerNet: playerHoleScore.strokes,
-      rivalNet: rivalHoleScore.strokes,
+      playerNet: playerHoleScore.strokes - playerReceived,
+      rivalNet: rivalHoleScore.strokes - rivalReceived,
     };
   }
 
