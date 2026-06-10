@@ -733,7 +733,18 @@ const getNetScoreForPlayerVsRivalWithDetails = (
     };
   }
   
-  // Fallback to individual handicaps when no bilateral entry exists for this pair
+  // En modo bilateral/sliding, la matriz es autoritativa:
+  // si no hay entrada para el par (típico de invitados), se considera 0 golpes.
+  if (config.coneja?.handicapMode === 'bilateral') {
+    return {
+      playerNet: playerHoleScore.strokes,
+      rivalNet: rivalHoleScore.strokes,
+      playerReceived: false,
+      rivalReceived: false,
+    };
+  }
+
+  // Fallback to individual handicaps when in individual mode and no bilateral entry exists
   const playerStrokesPerHole = calculateStrokesPerHole(player.handicap, course);
   const rivalStrokesPerHole = calculateStrokesPerHole(rival.handicap, course);
   
