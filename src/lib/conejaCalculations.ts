@@ -853,8 +853,10 @@ export const getConejaHoleDetail = (
       }
     });
     
-    // Fall back to individual if no bilateral found
-    if (maxStrokesReceived === 0) {
+    // En modo bilateral, si no se encontró ninguna entrada en la matriz para este jugador,
+    // se considera 0 golpes (no se hace fallback al hándicap individual).
+    // Solo en modo 'individual' se usa el USGA del jugador.
+    if (maxStrokesReceived === 0 && config.coneja?.handicapMode !== 'bilateral') {
       const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
       maxStrokesReceived = strokesPerHole[holeNumber - 1] || 0;
     }
