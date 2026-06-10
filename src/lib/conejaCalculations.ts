@@ -859,12 +859,19 @@ export const getConejaHoleDetail = (
         const strokesPerHole = calculateStrokesPerHole(playerHcp, course);
         const received = strokesPerHole[holeNumber - 1] || 0;
         maxStrokesReceived = Math.max(maxStrokesReceived, received);
+      } else if (config.coneja?.handicapMode === 'bilateral') {
+        // No matrix entry (typical for guests): compute bilateral differential on the fly.
+        // The higher-HCP player receives |hcpA - hcpB| strokes distributed by stroke index.
+        if (player.handicap > rival.handicap) {
+          const diff = player.handicap - rival.handicap;
+          const receivedPerHole = calculateStrokesPerHole(diff, course);
+          const received = receivedPerHole[holeNumber - 1] || 0;
+          maxStrokesReceived = Math.max(maxStrokesReceived, received);
+        }
       }
     });
     
-    // En modo bilateral, si no se encontró ninguna entrada en la matriz para este jugador,
-    // se considera 0 golpes (no se hace fallback al hándicap individual).
-    // Solo en modo 'individual' se usa el USGA del jugador.
+    // En modo individual sin entradas bilaterales, fallback al USGA del jugador.
     if (maxStrokesReceived === 0 && config.coneja?.handicapMode !== 'bilateral') {
       const strokesPerHole = calculateStrokesPerHole(player.handicap, course);
       maxStrokesReceived = strokesPerHole[holeNumber - 1] || 0;
