@@ -111,5 +111,5 @@ export function usePreAppBalances() {
     return map;
   }, [entries]);
 
-  return { entries, loading, fetchAll, addEntry, deleteEntry, summaryByRival };
+  return { entries, loading, fetchAll, addEntry, deleteEntry, updateEntry, summaryByRival };
 }
