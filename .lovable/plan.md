@@ -1,73 +1,58 @@
-## Cambios
+# Plan: Balances Pre-GB — UX limpio y toggle de inclusión
 
-### 1. Oyeses individual — modalidad "Un solo ganador" + Zapato per-bilateralidad (confirmar)
+Ámbito: solo `src/components/HistoricalBalances.tsx` y `src/components/balances/PreAppBalanceSheet.tsx` (presentación). Sin cambios de lógica, datos, RLS ni cálculos compartidos. La data sigue siendo exclusiva del owner.
 
-**Setup / Matriz (Apuesta individual de Oyeses)**
+## 1. Arreglar el bug "no pasa nada al hacer clic"
 
-- Agregar un nuevo control a nivel de apuesta en `IndividualBets.tsx` dentro de la sección Oyeses:
-  - Toggle global **"Un solo ganador"** (`singleWinner: boolean`). Cuando está ON: en cada par 3 sólo se reconoce al #1 (el más cercano), quien cobra a TODOS los demás. Si además está la modalidad **Acumulados**, el #1 del próximo par 3 jugado cobra el pote acumulado a todos.
-  - Toggle global **"Zapato"** (ya existe `oyeses.zapatoEnabled`) — se mantiene; aclarar en helpText que sigue siendo accionable per-bilateralidad en BilateralDetail (ya implementado via `oyesPairZapatoOverrides`). No requiere cambios funcionales en el toggle bilateral.  El bilateral esta bien ... pero lo que hay que agregar es que este toggle tambien se pueda setear en la configuración global en la matriz y con ello no tener que hacer el cambio de selección de uno a uno las bilateralidades que por default traen el zapato, con este cambio, en la biltaralidad aparecera lo que este setado en esa configuración global, y siepre permitiendo el cambio en cada bilteralidad.
+**Causa:** la vista de detalle (`if (selectedRival) return ...`, línea 535) no incluye el `<PreAppBalanceSheet>`. El Sheet sólo está montado en el `return` principal al final del archivo, por eso aparece después de pulsar "Volver".
 
-**Tipos (`src/types/golf.ts`)**
+**Fix:** envolver el JSX de la vista de detalle en un `<>...</>` y renderizar el `<PreAppBalanceSheet>` adentro también (o extraer el bloque del Sheet a una función `renderPreAppSheet()` y llamarla en ambos returns). Así el clic abre el Sheet al instante sobre la vista del rival.
 
-- Añadir `singleWinner?: boolean` a `OyesesBetConfig` (default `false`).
+## 2. Renombrar "Pre-app" → "Pre-GB"
 
-**Persistencia**
+Cambiar todos los textos visibles:
+- Botón del header de detalle: `Pre-app` → `Pre-GB`
+- Badge en la lista de rivales: `+pre-app` → `+pre-GB`
+- Desglose bajo el monto combinado: `Pre: …` se mantiene corto; el título del Sheet pasa a `Balance Pre-GB vs {rival}`; texto auxiliar "Solo visible para ti…" igual.
+- Tooltip/`title` y placeholders dentro de `PreAppBalanceSheet.tsx` ("registro pre-app" → "registro pre-GB", "Sin registros pre-app" → "Sin registros pre-GB", "Total pre-app" → "Total pre-GB").
 
-- Propagar `singleWinner` en `useBetConfigPersistence.ts` (read + write) junto a los otros campos de `oyeses`.
-- Incluirlo en `useBetTemplates.ts` al guardar/cargar plantillas.
+No tocar nombres de tabla, hook, props ni tipos (`pre_app_balances`, `usePreAppBalances`, `PreAppBalance`, `summaryByRival`) — son internos.
 
-**OyesesDialog (selector de orden por hoyo)**
+## 3. Toggle incluir/excluir Pre-GB del total
 
-- Si `betConfig.oyeses.singleWinner === true` y `oyeses.enabled`:
-  - Mostrar únicamente el botón `1` por jugador (ocultar 2..N).
-  - Sólo permitir que UN jugador tenga el #1 a la vez (deseleccionar el #1 previo si alguien más lo toma). Mantener la opción de dejar el hoyo sin ganador (carry en acumulados / vacío en sangrón).
-  - Mantener tabs Acumulado/Sangrón existentes; la regla "sólo #1" aplica a ambas en este modo.
-  - Validación: deshabilitar "duplicados" porque por construcción sólo existe un #1.
+**Modelo:** un estado local en `HistoricalBalances`:
+```
+const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
+```
+La clave es `rival.id` (mismo `rivalKey` que usa `preAppMap`). No se persiste — es vista del momento, igual que `showGuests`.
 
-**Cálculo bilateral (`src/lib/oyesesCalculations.ts`)**
+**Vista de detalle (header del rival):**
+- Cuando `hasPreApp`:
+  - El número grande muestra `combined` si el rival NO está en `excludedPreApp`; muestra sólo `selectedRival.netAmount` (sólo app) si SÍ está excluido.
+  - Bajo el número, el chip `App: …  Pre: …` se convierte en dos botones inline:
+    - `App: ±$X` (informativo, no clickable)
+    - `Pre: ±$Y` clickable. Si está incluido → texto en color + `underline decoration-dotted`. Si está excluido → mismo color atenuado + `line-through decoration-dotted` y aria-pressed. Tap alterna `excludedPreApp` para esa clave.
+  - Microcopy debajo (text-[10px] muted): "Toca Pre para incluirlo/excluirlo del total".
+- Cuando NO hay pre-GB: el botón `Pre-GB` del header sirve únicamente para abrir el Sheet de captura (estado actual).
 
-- En `calculateOyesesBets` (y replicar en `getOyesesPairResult` / `getOyesesDisplayData` lo necesario para que el display sea coherente):
-  - Si `config.oyeses.singleWinner === true`:
-    - Para cada par 3 ordenado, identificar al único jugador con proximidad `1` entre los participantes.
-    - Si nadie tiene `1` → acumular (modalidad acumulados) o pasar (sangrón), exactamente como hoy.
-    - Si existe ganador único W:
-      - Por cada pareja (W, otro): W gana `amount + accumulated` (acumulados) o `amount` (sangrón) sobre ese rival; emitir summaries simétricos con `holesWonByW += 1 + pendingAccumulatedHoles`.
-      - Reset de `accumulated` y `pendingAccumulatedHoles` después del settlement.
-    - Las parejas que NO incluyen a W no generan summary en ese hoyo (en singleWinner sólo el ganador cobra; los demás "pierden contra W" pero no entre sí).
-  - Mantener regla 100% (zapato/multiplicador) y los overrides `oyesPairZapatoOverrides` tal cual; sólo cambia quién acumula holesWon.
-- Documentar en el comentario del header del archivo.
+**Vista de listado de rivales (Vs Rivales):**
+- Mantener el badge `+pre-GB` cuando hay registros.
+- Si el rival está en `excludedPreApp`, el monto grande muestra sólo `netAmount` (app) y el badge se ve atenuado con `line-through decoration-dotted` para indicar que está fuera del total. Tap en el badge alterna inclusión (sin abrir el detalle — `e.stopPropagation()`).
+- El "Balance Total" superior se recalcula sumando, por cada rival, `netAmount + (excluded ? 0 : preTotal)`.
 
-**No cambia**: BilateralDetail (zapato toggle per-bilateralidad ya funciona), Rayas, ni `teamPressures.oyesesConfig`.
+**Persistencia entre vistas:** como el estado vive en `HistoricalBalances`, navegar a detalle y volver mantiene la exclusión.
 
----
+## 4. QA manual
 
-### 2. Foursomes (Presiones por Parejas) — Unidades — agregar "Unidad genérica"
-
-**Tipos (`src/types/golf.ts`)**
-
-- Añadir a `TeamPressureUnitsConfig`:
-  - `includeGenericUnit?: boolean` (default false)
-  - `valuePerGenericUnit?: number` (default = `valuePerUnit`)
-
-**UI (`src/components/setup/bets/ParejasBets.tsx`)**
-
-- Dentro del bloque `unitsConfig`, agregar:
-  - Checkbox **"Incluir Unidad genérica ⭐"** que activa `includeGenericUnit`.
-  - Cuando esté activo, mostrar `AmountInput` "Valor por Unidad genérica" enlazado a `valuePerGenericUnit` (default al valor por unidad).
-- Mantener los checkboxes existentes para los marcadores booleanos (birdie/eagle/etc.).
-
-**Cálculo (`src/lib/bets/teamPressures.ts`)**
-
-- En la sección Units (continúa y normal, líneas ~120 y ~200) ajustar `countUnitsForTeam` para que, si `bet.unitsConfig?.includeGenericUnit`, también sume `s.markers.unidadGenerica ?? 0` (es contador numérico, no boolean) por cada score confirmado del equipo.
-- Si `valuePerGenericUnit !== valuePerUnit`, separar el cálculo: `unitsMoney = (stdA - stdB) * valuePerUnit + (genA - genB) * valuePerGenericUnit` (más el ajuste `netAdvantage` ya existente, que se aplica sólo a `valuePerUnit`).
-- Actualizar `descParts` para reflejar la unidad genérica cuando aporte.
-
----
+1. Abrir balances → entrar a un rival con pre-GB ya cargado → tap `Pre`: ahora el monto grande muestra sólo app y `Pre` aparece tachado punteado.
+2. Tap otra vez `Pre`: vuelve a sumar.
+3. Entrar a rival sin pre-GB → tap `Pre-GB` (header): el Sheet abre al instante, sin necesidad de volver.
+4. Capturar un registro → al cerrar Sheet, header muestra desglose App/Pre y badge en el listado.
+5. En listado, tap en `+pre-GB`: monto del rival y "Balance Total" se actualizan; no entra al detalle.
+6. Confirmar en otro usuario que sigue sin ver nada (RLS sin cambios).
 
 ## Detalles técnicos
 
-- `singleWinner` se persiste como columna JSON dentro del bloque `oyeses` ya serializado; no requiere migración SQL.
-- `TeamPressureUnitsConfig.includeGenericUnit` / `valuePerGenericUnit` viven dentro de `teamPressures.bets[i].unitsConfig` (JSON), no requiere migración SQL.
-- En `OyesesDialog`, derivar `proximityOptions = singleWinner ? [1] : Array(players.length)`.
-- `getOyesesPairResult` y `getOyesesDisplayData`: en modo singleWinner, el "ganador del hoyo" para el display de la pareja (A,B) será A si A==W, B si B==W, ninguno si W∉{A,B} (no se cuenta como hoyo ganado para ninguno en esa pareja, pero el `totalPlayedHoles` sí incrementa para mantener la regla 100%).
+- Archivos tocados: `HistoricalBalances.tsx` (render dual del Sheet + toggle + textos), `PreAppBalanceSheet.tsx` (textos `Pre-app` → `Pre-GB`).
+- Sin migraciones, sin cambios en `usePreAppBalances`, sin afectar `player_vs_player`, rankings, leaderboards ni bilateralidad.
+- Accesibilidad: el toggle Pre usa `<button aria-pressed={!isExcluded}>` con `title` "Incluir/Excluir Pre-GB del total".
