@@ -111,7 +111,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-base">
             <History className="h-4 w-4 text-primary" />
-            Balance Pre-App vs {rivalName}
+            Balance Pre-GB vs {rivalName}
           </SheetTitle>
           <SheetDescription className="text-xs">
             Solo visible para ti. No afecta rankings ni balances compartidos.
@@ -119,7 +119,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         </SheetHeader>
 
         <div className="flex items-center justify-between p-3 bg-muted/40 border border-border rounded-lg">
-          <span className="text-xs text-muted-foreground">Total pre-app:</span>
+          <span className="text-xs text-muted-foreground">Total pre-GB:</span>
           <span className={cn(
             'text-lg font-bold tabular-nums',
             total > 0 ? 'text-green-600 dark:text-green-500' :
@@ -133,7 +133,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           <div className="space-y-2 pr-2">
             {entries.length === 0 && !showForm && (
               <p className="text-xs text-muted-foreground text-center py-6 px-3">
-                Sin registros pre-app. Agrega el balance histórico que tenías con este rival antes de usar la app.
+                Sin registros pre-GB. Agrega el balance histórico que tenías con este rival antes de usar la app.
               </p>
             )}
 
@@ -252,7 +252,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         {!showForm && (
           <Button className="w-full" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Agregar registro pre-app
+            Agregar registro pre-GB
           </Button>
         )}
       </SheetContent>

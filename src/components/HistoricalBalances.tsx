@@ -144,6 +144,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     rivalName: string;
     rivalProfileId: string | null;
   } | null>(null);
+  const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
+  const togglePreApp = (key: string) => {
+    setExcludedPreApp(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
@@ -531,9 +539,24 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     );
   }
 
+  // Shared Sheet element used in both the detail view and the main view,
+  // so the sheet mounts immediately regardless of which view is active.
+  const preAppSheetEl = preAppSheet ? (
+    <PreAppBalanceSheet
+      open={!!preAppSheet}
+      onClose={() => setPreAppSheet(null)}
+      rivalName={preAppSheet.rivalName}
+      rivalProfileId={preAppSheet.rivalProfileId}
+      summary={preAppMap.get(preAppSheet.rivalKey)}
+      onAdd={addPreApp}
+      onDelete={deletePreApp}
+    />
+  ) : null;
+
   // Detail view for a specific rival
   if (selectedRival) {
     return (
+      <>
       <div className="space-y-4 w-full max-w-full overflow-hidden">
         {/* Back button */}
         <Button 
@@ -567,40 +590,56 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 rivalProfileId: selectedRival.profileId ?? null,
               })}
               className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors shrink-0"
-              title="Balance pre-app"
+              title="Balance pre-GB"
             >
               <History className="h-3 w-3" />
-              Pre-app
+              Pre-GB
             </button>
           </div>
           {(() => {
             const preApp = preAppMap.get(selectedRival.id);
             const preTotal = preApp?.totalAmount ?? 0;
-            const combined = selectedRival.netAmount + preTotal;
             const hasPreApp = preTotal !== 0;
+            const isExcluded = excludedPreApp.has(selectedRival.id);
+            const shown = hasPreApp && !isExcluded
+              ? selectedRival.netAmount + preTotal
+              : selectedRival.netAmount;
             return (
               <div className="flex flex-col items-end shrink-0">
                 <div className={cn(
                   'text-lg font-bold flex items-center gap-0.5 tabular-nums',
-                  combined > 0 ? 'text-green-600 dark:text-green-500' :
-                  combined < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  shown > 0 ? 'text-green-600 dark:text-green-500' :
+                  shown < 0 ? 'text-destructive' : 'text-muted-foreground'
                 )}>
-                  {combined > 0 && <TrendingUp className="h-4 w-4" />}
-                  {combined < 0 && <TrendingDown className="h-4 w-4" />}
-                  {combined === 0 && <Minus className="h-4 w-4" />}
-                  ${fmtMoney(Math.abs(combined))}
+                  {shown > 0 && <TrendingUp className="h-4 w-4" />}
+                  {shown < 0 && <TrendingDown className="h-4 w-4" />}
+                  {shown === 0 && <Minus className="h-4 w-4" />}
+                  ${fmtMoney(Math.abs(shown))}
                 </div>
                 {hasPreApp && (
-                  <div className="flex items-center gap-1 text-[10px] mt-0.5">
-                    <span className="text-muted-foreground">
-                      App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
+                  <>
+                    <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+                      <span className="text-muted-foreground">
+                        App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => togglePreApp(selectedRival.id)}
+                        aria-pressed={!isExcluded}
+                        title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
+                        className={cn(
+                          'underline decoration-dotted underline-offset-2 transition-opacity',
+                          isExcluded && 'line-through opacity-60',
+                          preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
+                        )}
+                      >
+                        Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
+                      </button>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground mt-0.5">
+                      Toca Pre para {isExcluded ? 'incluirlo en' : 'excluirlo de'} el total
                     </span>
-                    <span className={cn(
-                      preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
-                    )}>
-                      Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
-                    </span>
-                  </div>
+                  </>
                 )}
               </div>
             );
@@ -677,6 +716,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           )}
         </ScrollArea>
       </div>
+      {preAppSheetEl}
+      </>
     );
   }
 
@@ -690,6 +731,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       </div>
     );
   }
+
+  const displayedTotalNet = rivals.reduce((sum, r) => {
+    const pre = preAppMap.get(r.id)?.totalAmount ?? 0;
+    return sum + r.netAmount + (excludedPreApp.has(r.id) ? 0 : pre);
+  }, 0);
 
   return (
     <div className="space-y-3 overflow-hidden">
@@ -716,11 +762,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               </div>
               <div className={cn(
                 'text-xl font-bold flex items-center gap-1',
-                totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
+                displayedTotalNet > 0 ? 'text-green-600 dark:text-green-500' : displayedTotalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
-                {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(totalNet))}</span>
+                {displayedTotalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
+                {displayedTotalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
+                <span>{displayedTotalNet > 0 ? '+' : ''}{displayedTotalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(displayedTotalNet))}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -830,19 +876,41 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     {(() => {
                       const preApp = preAppMap.get(rival.id);
                       const preTotal = preApp?.totalAmount ?? 0;
-                      const combined = rival.netAmount + preTotal;
                       const hasPreApp = preTotal !== 0;
+                      const isExcluded = excludedPreApp.has(rival.id);
+                      const shown = hasPreApp && !isExcluded
+                        ? rival.netAmount + preTotal
+                        : rival.netAmount;
                       return (
                         <div className="ml-auto flex flex-col items-end flex-shrink-0">
                           <span className={cn(
                             'font-bold text-sm',
-                            combined > 0 ? 'text-green-600 dark:text-green-500' :
-                            combined < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            shown > 0 ? 'text-green-600 dark:text-green-500' :
+                            shown < 0 ? 'text-destructive' : 'text-muted-foreground'
                           )}>
-                            {combined >= 0 ? '+' : '-'}${fmtMoney(Math.abs(combined))}
+                            {shown >= 0 ? '+' : '-'}${fmtMoney(Math.abs(shown))}
                           </span>
                           {hasPreApp && (
-                            <span className="text-[9px] text-primary/70 leading-none">+pre-app</span>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              aria-pressed={!isExcluded}
+                              title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
+                              onClick={(e) => { e.stopPropagation(); togglePreApp(rival.id); }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  togglePreApp(rival.id);
+                                }
+                              }}
+                              className={cn(
+                                'text-[9px] leading-none mt-0.5 underline decoration-dotted underline-offset-2',
+                                isExcluded ? 'line-through opacity-50 text-muted-foreground' : 'text-primary/80'
+                              )}
+                            >
+                              +pre-GB
+                            </span>
                           )}
                         </div>
                       );
@@ -1065,17 +1133,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </TabsContent>
       </Tabs>
 
-      {preAppSheet && (
-        <PreAppBalanceSheet
-          open={!!preAppSheet}
-          onClose={() => setPreAppSheet(null)}
-          rivalName={preAppSheet.rivalName}
-          rivalProfileId={preAppSheet.rivalProfileId}
-          summary={preAppMap.get(preAppSheet.rivalKey)}
-          onAdd={addPreApp}
-          onDelete={deletePreApp}
-        />
-      )}
+      {preAppSheetEl}
     </div>
   );
 });
