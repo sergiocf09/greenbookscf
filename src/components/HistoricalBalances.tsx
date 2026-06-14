@@ -40,6 +40,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { devError, devLog } from '@/lib/logger';
+import { usePreAppBalances } from '@/hooks/usePreAppBalances';
+import { PreAppBalanceSheet } from '@/components/balances/PreAppBalanceSheet';
+import { History } from 'lucide-react';
 import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 import { formatPlayerName } from '@/lib/playerInput';
 
@@ -133,6 +136,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
+
+  const { summaryByRival, addEntry: addPreApp, deleteEntry: deletePreApp } = usePreAppBalances();
+  const preAppMap = summaryByRival();
+  const [preAppSheet, setPreAppSheet] = useState<{
+    rivalKey: string;
+    rivalName: string;
+    rivalProfileId: string | null;
+  } | null>(null);
 
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
@@ -549,17 +560,51 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
               </p>
             </div>
+            <button
+              onClick={() => setPreAppSheet({
+                rivalKey: selectedRival.id,
+                rivalName: selectedRival.rivalName,
+                rivalProfileId: selectedRival.profileId ?? null,
+              })}
+              className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors shrink-0"
+              title="Balance pre-app"
+            >
+              <History className="h-3 w-3" />
+              Pre-app
+            </button>
           </div>
-          <div className={cn(
-            'text-lg font-bold flex items-center gap-0.5 shrink-0 tabular-nums',
-            selectedRival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
-            selectedRival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
-          )}>
-            {selectedRival.netAmount > 0 && <TrendingUp className="h-4 w-4" />}
-            {selectedRival.netAmount < 0 && <TrendingDown className="h-4 w-4" />}
-            {selectedRival.netAmount === 0 && <Minus className="h-4 w-4" />}
-            ${fmtMoney(Math.abs(selectedRival.netAmount))}
-          </div>
+          {(() => {
+            const preApp = preAppMap.get(selectedRival.id);
+            const preTotal = preApp?.totalAmount ?? 0;
+            const combined = selectedRival.netAmount + preTotal;
+            const hasPreApp = preTotal !== 0;
+            return (
+              <div className="flex flex-col items-end shrink-0">
+                <div className={cn(
+                  'text-lg font-bold flex items-center gap-0.5 tabular-nums',
+                  combined > 0 ? 'text-green-600 dark:text-green-500' :
+                  combined < 0 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {combined > 0 && <TrendingUp className="h-4 w-4" />}
+                  {combined < 0 && <TrendingDown className="h-4 w-4" />}
+                  {combined === 0 && <Minus className="h-4 w-4" />}
+                  ${fmtMoney(Math.abs(combined))}
+                </div>
+                {hasPreApp && (
+                  <div className="flex items-center gap-1 text-[10px] mt-0.5">
+                    <span className="text-muted-foreground">
+                      App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
+                    </span>
+                    <span className={cn(
+                      preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
+                    )}>
+                      Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Shared rounds list */}
@@ -782,13 +827,26 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
                     </span>
                     <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
-                    <span className={cn(
-                      'font-bold text-sm ml-auto flex-shrink-0',
-                      rival.netAmount > 0 ? 'text-green-600 dark:text-green-500' : 
-                      rival.netAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                    )}>
-                      {rival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(rival.netAmount))}
-                    </span>
+                    {(() => {
+                      const preApp = preAppMap.get(rival.id);
+                      const preTotal = preApp?.totalAmount ?? 0;
+                      const combined = rival.netAmount + preTotal;
+                      const hasPreApp = preTotal !== 0;
+                      return (
+                        <div className="ml-auto flex flex-col items-end flex-shrink-0">
+                          <span className={cn(
+                            'font-bold text-sm',
+                            combined > 0 ? 'text-green-600 dark:text-green-500' :
+                            combined < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
+                            {combined >= 0 ? '+' : '-'}${fmtMoney(Math.abs(combined))}
+                          </span>
+                          {hasPreApp && (
+                            <span className="text-[9px] text-primary/70 leading-none">+pre-app</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   </button>
                 ))}
@@ -1006,6 +1064,18 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           })()}
         </TabsContent>
       </Tabs>
+
+      {preAppSheet && (
+        <PreAppBalanceSheet
+          open={!!preAppSheet}
+          onClose={() => setPreAppSheet(null)}
+          rivalName={preAppSheet.rivalName}
+          rivalProfileId={preAppSheet.rivalProfileId}
+          summary={preAppMap.get(preAppSheet.rivalKey)}
+          onAdd={addPreApp}
+          onDelete={deletePreApp}
+        />
+      )}
     </div>
   );
 });
