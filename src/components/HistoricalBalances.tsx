@@ -137,7 +137,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
 
-  const { summaryByRival, addEntry: addPreApp, deleteEntry: deletePreApp } = usePreAppBalances();
+  const { summaryByRival, addEntry: addPreApp, deleteEntry: deletePreApp, updateEntry: updatePreApp } = usePreAppBalances();
   const preAppMap = summaryByRival();
   const [preAppSheet, setPreAppSheet] = useState<{
     rivalKey: string;
