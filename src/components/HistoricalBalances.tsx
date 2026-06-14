@@ -1133,17 +1133,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         </TabsContent>
       </Tabs>
 
-      {preAppSheet && (
-        <PreAppBalanceSheet
-          open={!!preAppSheet}
-          onClose={() => setPreAppSheet(null)}
-          rivalName={preAppSheet.rivalName}
-          rivalProfileId={preAppSheet.rivalProfileId}
-          summary={preAppMap.get(preAppSheet.rivalKey)}
-          onAdd={addPreApp}
-          onDelete={deletePreApp}
-        />
-      )}
+      {preAppSheetEl}
     </div>
   );
 });
