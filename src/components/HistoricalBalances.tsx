@@ -144,14 +144,16 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     rivalName: string;
     rivalProfileId: string | null;
   } | null>(null);
-  const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
-  const togglePreApp = (key: string) => {
-    setExcludedPreApp(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  // Global persisted toggle: include Pre-GB in totals across all rivals.
+  const [includePreApp, setIncludePreApp] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem('gb:includePreApp');
+      return v === null ? true : v === '1';
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('gb:includePreApp', includePreApp ? '1' : '0'); } catch {}
+  }, [includePreApp]);
 
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
@@ -583,29 +585,16 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
               </p>
             </div>
-            <button
-              onClick={() => setPreAppSheet({
-                rivalKey: selectedRival.id,
-                rivalName: selectedRival.rivalName,
-                rivalProfileId: selectedRival.profileId ?? null,
-              })}
-              className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors shrink-0"
-              title="Balance pre-GB"
-            >
-              <History className="h-3 w-3" />
-              Pre-GB
-            </button>
           </div>
           {(() => {
             const preApp = preAppMap.get(selectedRival.id);
             const preTotal = preApp?.totalAmount ?? 0;
             const hasPreApp = preTotal !== 0;
-            const isExcluded = excludedPreApp.has(selectedRival.id);
-            const shown = hasPreApp && !isExcluded
+            const shown = hasPreApp && includePreApp
               ? selectedRival.netAmount + preTotal
               : selectedRival.netAmount;
             return (
-              <div className="flex flex-col items-end shrink-0">
+              <div className="flex flex-col items-end shrink-0 gap-1">
                 <div className={cn(
                   'text-lg font-bold flex items-center gap-0.5 tabular-nums',
                   shown > 0 ? 'text-green-600 dark:text-green-500' :
@@ -617,34 +606,36 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   ${fmtMoney(Math.abs(shown))}
                 </div>
                 {hasPreApp && (
-                  <>
-                    <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
-                      <span className="text-muted-foreground">
-                        App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => togglePreApp(selectedRival.id)}
-                        aria-pressed={!isExcluded}
-                        title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
-                        className={cn(
-                          'underline decoration-dotted underline-offset-2 transition-opacity',
-                          isExcluded && 'line-through opacity-60',
-                          preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
-                        )}
-                      >
-                        Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
-                      </button>
-                    </div>
-                    <span className="text-[9px] text-muted-foreground mt-0.5">
-                      Toca Pre para {isExcluded ? 'incluirlo en' : 'excluirlo de'} el total
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className="text-muted-foreground">
+                      App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
                     </span>
-                  </>
+                    <span className={cn(
+                      includePreApp
+                        ? (preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive')
+                        : 'line-through opacity-60 text-muted-foreground'
+                    )}>
+                      Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
+                    </span>
+                  </div>
                 )}
+                <button
+                  onClick={() => setPreAppSheet({
+                    rivalKey: selectedRival.id,
+                    rivalName: selectedRival.rivalName,
+                    rivalProfileId: selectedRival.profileId ?? null,
+                  })}
+                  className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+                  title="Cargar balance pre-GB"
+                >
+                  <History className="h-3 w-3" />
+                  Pre-GB
+                </button>
               </div>
             );
           })()}
         </div>
+
 
         {/* Shared rounds list */}
         <ScrollArea className="h-[350px]">
@@ -734,7 +725,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
   const displayedTotalNet = rivals.reduce((sum, r) => {
     const pre = preAppMap.get(r.id)?.totalAmount ?? 0;
-    return sum + r.netAmount + (excludedPreApp.has(r.id) ? 0 : pre);
+    return sum + r.netAmount + (includePreApp ? pre : 0);
   }, 0);
 
   return (
@@ -802,7 +793,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           {/* Rivals ranking */}
           <div className="space-y-1">
             <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
                 <button
                   onClick={() => {
@@ -822,6 +813,22 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
                   )}
                 </button>
+                {rivals.some(r => (preAppMap.get(r.id)?.totalAmount ?? 0) !== 0) && (
+                  <button
+                    onClick={() => setIncludePreApp(v => !v)}
+                    aria-pressed={includePreApp}
+                    title={includePreApp ? 'Ocultar Pre-GB del total' : 'Incluir Pre-GB en el total'}
+                    className={cn(
+                      'flex items-center gap-1 text-[10px] rounded-md border px-1.5 py-0.5 transition-colors',
+                      includePreApp
+                        ? 'border-primary/40 text-primary bg-primary/5'
+                        : 'border-border text-muted-foreground line-through opacity-70'
+                    )}
+                  >
+                    <History className="h-3 w-3" />
+                    Pre-GB
+                  </button>
+                )}
               </div>
               <div className="flex items-center mr-6">
                 <button
@@ -874,45 +881,16 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </span>
                     <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
                     {(() => {
-                      const preApp = preAppMap.get(rival.id);
-                      const preTotal = preApp?.totalAmount ?? 0;
-                      const hasPreApp = preTotal !== 0;
-                      const isExcluded = excludedPreApp.has(rival.id);
-                      const shown = hasPreApp && !isExcluded
-                        ? rival.netAmount + preTotal
-                        : rival.netAmount;
+                      const preTotal = preAppMap.get(rival.id)?.totalAmount ?? 0;
+                      const shown = includePreApp ? rival.netAmount + preTotal : rival.netAmount;
                       return (
-                        <div className="ml-auto flex flex-col items-end flex-shrink-0">
-                          <span className={cn(
-                            'font-bold text-sm',
-                            shown > 0 ? 'text-green-600 dark:text-green-500' :
-                            shown < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {shown >= 0 ? '+' : '-'}${fmtMoney(Math.abs(shown))}
-                          </span>
-                          {hasPreApp && (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              aria-pressed={!isExcluded}
-                              title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
-                              onClick={(e) => { e.stopPropagation(); togglePreApp(rival.id); }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  togglePreApp(rival.id);
-                                }
-                              }}
-                              className={cn(
-                                'text-[9px] leading-none mt-0.5 underline decoration-dotted underline-offset-2',
-                                isExcluded ? 'line-through opacity-50 text-muted-foreground' : 'text-primary/80'
-                              )}
-                            >
-                              +pre-GB
-                            </span>
-                          )}
-                        </div>
+                        <span className={cn(
+                          'ml-auto font-bold text-sm flex-shrink-0',
+                          shown > 0 ? 'text-green-600 dark:text-green-500' :
+                          shown < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        )}>
+                          {shown >= 0 ? '+' : '-'}${fmtMoney(Math.abs(shown))}
+                        </span>
                       );
                     })()}
                     <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
