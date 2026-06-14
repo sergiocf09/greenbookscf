@@ -589,40 +589,56 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 rivalProfileId: selectedRival.profileId ?? null,
               })}
               className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors shrink-0"
-              title="Balance pre-app"
+              title="Balance pre-GB"
             >
               <History className="h-3 w-3" />
-              Pre-app
+              Pre-GB
             </button>
           </div>
           {(() => {
             const preApp = preAppMap.get(selectedRival.id);
             const preTotal = preApp?.totalAmount ?? 0;
-            const combined = selectedRival.netAmount + preTotal;
             const hasPreApp = preTotal !== 0;
+            const isExcluded = excludedPreApp.has(selectedRival.id);
+            const shown = hasPreApp && !isExcluded
+              ? selectedRival.netAmount + preTotal
+              : selectedRival.netAmount;
             return (
               <div className="flex flex-col items-end shrink-0">
                 <div className={cn(
                   'text-lg font-bold flex items-center gap-0.5 tabular-nums',
-                  combined > 0 ? 'text-green-600 dark:text-green-500' :
-                  combined < 0 ? 'text-destructive' : 'text-muted-foreground'
+                  shown > 0 ? 'text-green-600 dark:text-green-500' :
+                  shown < 0 ? 'text-destructive' : 'text-muted-foreground'
                 )}>
-                  {combined > 0 && <TrendingUp className="h-4 w-4" />}
-                  {combined < 0 && <TrendingDown className="h-4 w-4" />}
-                  {combined === 0 && <Minus className="h-4 w-4" />}
-                  ${fmtMoney(Math.abs(combined))}
+                  {shown > 0 && <TrendingUp className="h-4 w-4" />}
+                  {shown < 0 && <TrendingDown className="h-4 w-4" />}
+                  {shown === 0 && <Minus className="h-4 w-4" />}
+                  ${fmtMoney(Math.abs(shown))}
                 </div>
                 {hasPreApp && (
-                  <div className="flex items-center gap-1 text-[10px] mt-0.5">
-                    <span className="text-muted-foreground">
-                      App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
+                  <>
+                    <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+                      <span className="text-muted-foreground">
+                        App: {selectedRival.netAmount >= 0 ? '+' : '-'}${fmtMoney(Math.abs(selectedRival.netAmount))}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => togglePreApp(selectedRival.id)}
+                        aria-pressed={!isExcluded}
+                        title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
+                        className={cn(
+                          'underline decoration-dotted underline-offset-2 transition-opacity',
+                          isExcluded && 'line-through opacity-60',
+                          preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
+                        )}
+                      >
+                        Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
+                      </button>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground mt-0.5">
+                      Toca Pre para {isExcluded ? 'incluirlo en' : 'excluirlo de'} el total
                     </span>
-                    <span className={cn(
-                      preTotal > 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'
-                    )}>
-                      Pre: {preTotal > 0 ? '+' : '-'}${fmtMoney(Math.abs(preTotal))}
-                    </span>
-                  </div>
+                  </>
                 )}
               </div>
             );
