@@ -556,6 +556,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   // Detail view for a specific rival
   if (selectedRival) {
     return (
+      <>
       <div className="space-y-4 w-full max-w-full overflow-hidden">
         {/* Back button */}
         <Button 
