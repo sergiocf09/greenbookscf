@@ -252,7 +252,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         {!showForm && (
           <Button className="w-full" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Agregar registro pre-app
+            Agregar registro pre-GB
           </Button>
         )}
       </SheetContent>
