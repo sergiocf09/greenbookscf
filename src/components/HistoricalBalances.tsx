@@ -881,45 +881,16 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </span>
                     <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
                     {(() => {
-                      const preApp = preAppMap.get(rival.id);
-                      const preTotal = preApp?.totalAmount ?? 0;
-                      const hasPreApp = preTotal !== 0;
-                      const isExcluded = excludedPreApp.has(rival.id);
-                      const shown = hasPreApp && !isExcluded
-                        ? rival.netAmount + preTotal
-                        : rival.netAmount;
+                      const preTotal = preAppMap.get(rival.id)?.totalAmount ?? 0;
+                      const shown = includePreApp ? rival.netAmount + preTotal : rival.netAmount;
                       return (
-                        <div className="ml-auto flex flex-col items-end flex-shrink-0">
-                          <span className={cn(
-                            'font-bold text-sm',
-                            shown > 0 ? 'text-green-600 dark:text-green-500' :
-                            shown < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {shown >= 0 ? '+' : '-'}${fmtMoney(Math.abs(shown))}
-                          </span>
-                          {hasPreApp && (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              aria-pressed={!isExcluded}
-                              title={isExcluded ? 'Incluir Pre-GB en el total' : 'Excluir Pre-GB del total'}
-                              onClick={(e) => { e.stopPropagation(); togglePreApp(rival.id); }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  togglePreApp(rival.id);
-                                }
-                              }}
-                              className={cn(
-                                'text-[9px] leading-none mt-0.5 underline decoration-dotted underline-offset-2',
-                                isExcluded ? 'line-through opacity-50 text-muted-foreground' : 'text-primary/80'
-                              )}
-                            >
-                              +pre-GB
-                            </span>
-                          )}
-                        </div>
+                        <span className={cn(
+                          'ml-auto font-bold text-sm flex-shrink-0',
+                          shown > 0 ? 'text-green-600 dark:text-green-500' :
+                          shown < 0 ? 'text-destructive' : 'text-muted-foreground'
+                        )}>
+                          {shown >= 0 ? '+' : '-'}${fmtMoney(Math.abs(shown))}
+                        </span>
                       );
                     })()}
                     <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
