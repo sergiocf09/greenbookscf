@@ -539,6 +539,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     );
   }
 
+  // Shared Sheet element used in both the detail view and the main view,
+  // so the sheet mounts immediately regardless of which view is active.
+  const preAppSheetEl = preAppSheet ? (
+    <PreAppBalanceSheet
+      open={!!preAppSheet}
+      onClose={() => setPreAppSheet(null)}
+      rivalName={preAppSheet.rivalName}
+      rivalProfileId={preAppSheet.rivalProfileId}
+      summary={preAppMap.get(preAppSheet.rivalKey)}
+      onAdd={addPreApp}
+      onDelete={deletePreApp}
+    />
+  ) : null;
+
   // Detail view for a specific rival
   if (selectedRival) {
     return (
