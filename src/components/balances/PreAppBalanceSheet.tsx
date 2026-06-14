@@ -133,7 +133,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           <div className="space-y-2 pr-2">
             {entries.length === 0 && !showForm && (
               <p className="text-xs text-muted-foreground text-center py-6 px-3">
-                Sin registros pre-app. Agrega el balance histórico que tenías con este rival antes de usar la app.
+                Sin registros pre-GB. Agrega el balance histórico que tenías con este rival antes de usar la app.
               </p>
             )}
 
