@@ -725,7 +725,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
   const displayedTotalNet = rivals.reduce((sum, r) => {
     const pre = preAppMap.get(r.id)?.totalAmount ?? 0;
-    return sum + r.netAmount + (excludedPreApp.has(r.id) ? 0 : pre);
+    return sum + r.netAmount + (includePreApp ? pre : 0);
   }, 0);
 
   return (
