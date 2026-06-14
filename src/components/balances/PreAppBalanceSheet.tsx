@@ -111,7 +111,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-base">
             <History className="h-4 w-4 text-primary" />
-            Balance Pre-App vs {rivalName}
+            Balance Pre-GB vs {rivalName}
           </SheetTitle>
           <SheetDescription className="text-xs">
             Solo visible para ti. No afecta rankings ni balances compartidos.
@@ -119,7 +119,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         </SheetHeader>
 
         <div className="flex items-center justify-between p-3 bg-muted/40 border border-border rounded-lg">
-          <span className="text-xs text-muted-foreground">Total pre-app:</span>
+          <span className="text-xs text-muted-foreground">Total pre-GB:</span>
           <span className={cn(
             'text-lg font-bold tabular-nums',
             total > 0 ? 'text-green-600 dark:text-green-500' :
