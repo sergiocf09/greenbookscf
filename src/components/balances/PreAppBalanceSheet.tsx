@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { fmtMoney } from '@/lib/formatMoney';
 import { cn } from '@/lib/utils';
-import { Loader2, Trash2, Plus, History } from 'lucide-react';
+import { Loader2, Trash2, Plus, History, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PreAppBalance, PreAppBalanceSummary } from '@/hooks/usePreAppBalances';
 
@@ -31,6 +31,11 @@ interface PreAppBalanceSheetProps {
     note?: string;
   }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpdate?: (id: string, params: {
+    year: number | null;
+    amount: number;
+    note?: string | null;
+  }) => Promise<void>;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -43,8 +48,10 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
   summary,
   onAdd,
   onDelete,
+  onUpdate,
 }) => {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [amountStr, setAmountStr] = useState('');
   const [yearStr, setYearStr] = useState('');
   const [note, setNote] = useState('');
@@ -61,9 +68,19 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     setNote('');
     setSign('pos');
     setShowForm(false);
+    setEditingId(null);
   };
 
-  const handleAdd = async () => {
+  const startEdit = (entry: PreAppBalance) => {
+    setEditingId(entry.id);
+    setShowForm(true);
+    setSign(entry.amount >= 0 ? 'pos' : 'neg');
+    setAmountStr(String(Math.abs(entry.amount)));
+    setYearStr(entry.year ? String(entry.year) : '');
+    setNote(entry.note ?? '');
+  };
+
+  const handleSubmit = async () => {
     const rawAmount = parseFloat(amountStr.replace(/,/g, ''));
     if (isNaN(rawAmount) || rawAmount <= 0) {
       toast.error('Ingresa un monto válido mayor a cero');
@@ -77,14 +94,23 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     }
     setSaving(true);
     try {
-      await onAdd({
-        rival_profile_id: rivalProfileId,
-        rival_name: rivalName,
-        year: yearNum,
-        amount,
-        note: note.trim() || undefined,
-      });
-      toast.success('Registro guardado');
+      if (editingId && onUpdate) {
+        await onUpdate(editingId, {
+          year: yearNum,
+          amount,
+          note: note.trim() || null,
+        });
+        toast.success('Registro actualizado');
+      } else {
+        await onAdd({
+          rival_profile_id: rivalProfileId,
+          rival_name: rivalName,
+          year: yearNum,
+          amount,
+          note: note.trim() || undefined,
+        });
+        toast.success('Registro guardado');
+      }
       resetForm();
     } catch {
       toast.error('Error guardando registro');
@@ -98,6 +124,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     try {
       await onDelete(id);
       toast.success('Registro eliminado');
+      if (editingId === id) resetForm();
     } catch {
       toast.error('Error eliminando registro');
     } finally {
@@ -141,7 +168,13 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
               .slice()
               .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
               .map((entry: PreAppBalance) => (
-                <div key={entry.id} className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg">
+                <div
+                  key={entry.id}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 bg-card border rounded-lg',
+                    editingId === entry.id ? 'border-primary' : 'border-border'
+                  )}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium">
@@ -158,10 +191,23 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                   )}>
                     {entry.amount > 0 ? '+' : '-'}${fmtMoney(Math.abs(entry.amount))}
                   </span>
+                  {onUpdate && (
+                    <button
+                      onClick={() => startEdit(entry)}
+                      disabled={deletingId === entry.id || saving}
+                      className="text-muted-foreground hover:text-primary transition-colors p-1 shrink-0"
+                      title="Editar registro"
+                      aria-label="Editar registro"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDelete(entry.id)}
                     disabled={deletingId === entry.id}
                     className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"
+                    title="Eliminar registro"
+                    aria-label="Eliminar registro"
                   >
                     {deletingId === entry.id
                       ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -172,6 +218,9 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
 
             {showForm && (
               <div className="p-3 bg-card border border-border rounded-lg space-y-3">
+                <div className="text-xs font-medium text-muted-foreground">
+                  {editingId ? 'Editando registro' : 'Nuevo registro'}
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -237,9 +286,9 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                   <Button variant="outline" className="flex-1" onClick={resetForm} disabled={saving}>
                     Cancelar
                   </Button>
-                  <Button className="flex-1" onClick={handleAdd} disabled={saving}>
+                  <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                    Guardar
+                    {editingId ? 'Actualizar' : 'Guardar'}
                   </Button>
                 </div>
               </div>
