@@ -552,6 +552,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       summary={preAppMap.get(preAppSheet.rivalKey)}
       onAdd={addPreApp}
       onDelete={deletePreApp}
+      onUpdate={updatePreApp}
     />
   ) : null;
 
