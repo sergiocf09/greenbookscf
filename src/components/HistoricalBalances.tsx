@@ -144,6 +144,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     rivalName: string;
     rivalProfileId: string | null;
   } | null>(null);
+  const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
+  const togglePreApp = (key: string) => {
+    setExcludedPreApp(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
