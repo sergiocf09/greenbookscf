@@ -77,6 +77,23 @@ export function usePreAppBalances() {
     await fetchAll();
   }, [fetchAll]);
 
+  const updateEntry = useCallback(async (id: string, params: {
+    year: number | null;
+    amount: number;
+    note?: string | null;
+  }) => {
+    const { error } = await supabase
+      .from('pre_app_balances')
+      .update({
+        year: params.year,
+        amount: params.amount,
+        note: params.note ?? null,
+      })
+      .eq('id', id);
+    if (error) throw error;
+    await fetchAll();
+  }, [fetchAll]);
+
   const summaryByRival = useCallback((): Map<string, PreAppBalanceSummary> => {
     const map = new Map<string, PreAppBalanceSummary>();
     for (const entry of entries) {
