@@ -1389,6 +1389,57 @@ export type Database = {
           },
         ]
       }
+      pre_app_balances: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          owner_profile_id: string
+          rival_name: string
+          rival_profile_id: string | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_profile_id: string
+          rival_name: string
+          rival_profile_id?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_profile_id?: string
+          rival_name?: string
+          rival_profile_id?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_app_balances_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_app_balances_rival_profile_id_fkey"
+            columns: ["rival_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_color: string
