@@ -793,7 +793,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           {/* Rivals ranking */}
           <div className="space-y-1">
             <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
                 <button
                   onClick={() => {
@@ -813,6 +813,22 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
                   )}
                 </button>
+                {rivals.some(r => (preAppMap.get(r.id)?.totalAmount ?? 0) !== 0) && (
+                  <button
+                    onClick={() => setIncludePreApp(v => !v)}
+                    aria-pressed={includePreApp}
+                    title={includePreApp ? 'Ocultar Pre-GB del total' : 'Incluir Pre-GB en el total'}
+                    className={cn(
+                      'flex items-center gap-1 text-[10px] rounded-md border px-1.5 py-0.5 transition-colors',
+                      includePreApp
+                        ? 'border-primary/40 text-primary bg-primary/5'
+                        : 'border-border text-muted-foreground line-through opacity-70'
+                    )}
+                  >
+                    <History className="h-3 w-3" />
+                    Pre-GB
+                  </button>
+                )}
               </div>
               <div className="flex items-center mr-6">
                 <button
