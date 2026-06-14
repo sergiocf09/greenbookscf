@@ -732,6 +732,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     );
   }
 
+  const displayedTotalNet = rivals.reduce((sum, r) => {
+    const pre = preAppMap.get(r.id)?.totalAmount ?? 0;
+    return sum + r.netAmount + (excludedPreApp.has(r.id) ? 0 : pre);
+  }, 0);
+
   return (
     <div className="space-y-3 overflow-hidden">
       {/* Tabs: Vs Rivales / Mis Rondas */}
