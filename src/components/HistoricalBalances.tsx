@@ -716,6 +716,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           )}
         </ScrollArea>
       </div>
+      {preAppSheetEl}
+      </>
     );
   }
 
