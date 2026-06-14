@@ -762,11 +762,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               </div>
               <div className={cn(
                 'text-xl font-bold flex items-center gap-1',
-                totalNet > 0 ? 'text-green-600 dark:text-green-500' : totalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
+                displayedTotalNet > 0 ? 'text-green-600 dark:text-green-500' : displayedTotalNet < 0 ? 'text-destructive' : 'text-muted-foreground'
               )}>
-                {totalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
-                {totalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
-                <span>{totalNet > 0 ? '+' : ''}{totalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(totalNet))}</span>
+                {displayedTotalNet > 0 && <TrendingUp className="h-4 w-4 flex-shrink-0" />}
+                {displayedTotalNet < 0 && <TrendingDown className="h-4 w-4 flex-shrink-0" />}
+                <span>{displayedTotalNet > 0 ? '+' : ''}{displayedTotalNet < 0 ? '-' : ''}${fmtMoney(Math.abs(displayedTotalNet))}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
