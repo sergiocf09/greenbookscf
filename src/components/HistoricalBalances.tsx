@@ -144,14 +144,16 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     rivalName: string;
     rivalProfileId: string | null;
   } | null>(null);
-  const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
-  const togglePreApp = (key: string) => {
-    setExcludedPreApp(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  // Global persisted toggle: include Pre-GB in totals across all rivals.
+  const [includePreApp, setIncludePreApp] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem('gb:includePreApp');
+      return v === null ? true : v === '1';
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('gb:includePreApp', includePreApp ? '1' : '0'); } catch {}
+  }, [includePreApp]);
 
 
   // Fetch ALL snapshots and compute balances from ledger + overrides
