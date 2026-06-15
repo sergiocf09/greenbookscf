@@ -860,7 +860,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       const cmp = a.rivalName.localeCompare(b.rivalName);
                       return sortDir === 'asc' ? cmp : -cmp;
                     }
-                    return sortDir === 'desc' ? b.netAmount - a.netAmount : a.netAmount - b.netAmount;
+                    const aTotal = a.netAmount + (includePreApp ? (preAppMap.get(a.id)?.totalAmount ?? 0) : 0);
+                    const bTotal = b.netAmount + (includePreApp ? (preAppMap.get(b.id)?.totalAmount ?? 0) : 0);
+                    return sortDir === 'desc' ? bTotal - aTotal : aTotal - bTotal;
                   })
                   .map((rival, index) => (
                   <button
