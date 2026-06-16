@@ -77,6 +77,11 @@ export const getOyesesPairResult = (
   startingHole: 1 | 10 = 1
 ): OyesesPairResult | null => {
   if (!config.oyeses.enabled) return null;
+
+  // oneVsAll: only pairs including the anchor settle
+  const _ovaOn = (config.oyeses as any)?.oneVsAll === true;
+  const _ovaAnchor: string | undefined = _ovaOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
+  if (_ovaOn && _ovaAnchor && playerAId !== _ovaAnchor && playerBId !== _ovaAnchor) return null;
   
   const amount = config.oyeses.amount;
   
