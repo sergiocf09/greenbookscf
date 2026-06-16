@@ -55,7 +55,8 @@ const analyzeActiveModalities = (
   
   // Check standalone Oyeses bet
   if (config.oyeses?.enabled) {
-    const participantIds = config.oyeses.participantIds ?? players.map(p => p.id);
+    const _ovaOn = (config.oyeses as any).oneVsAll === true && (config.oyeses as any).anchorPlayerId;
+    const participantIds = _ovaOn ? players.map(p => p.id) : (config.oyeses.participantIds ?? players.map(p => p.id));
     const playerConfigs = config.oyeses.playerConfigs ?? [];
     for (const pid of participantIds) {
       const pc = playerConfigs.find(c => c.playerId === pid);
