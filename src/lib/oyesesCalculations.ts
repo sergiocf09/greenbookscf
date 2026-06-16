@@ -40,7 +40,10 @@ const getEffectiveOyesesPlayerConfig = (
   // IMPORTANT: Check participantIds FIRST — it is the authoritative source of truth
   // from the Participation Matrix. A stale playerConfigs entry (e.g. from a guest added
   // mid-round) must NOT override an explicit matrix exclusion.
-  const participantIds = config.oyeses.participantIds ?? [];
+  // EXCEPTION: in oneVsAll mode, every player participates (anchor vs all others);
+  // pair filtering happens at the pair-loop level via shouldCalculatePair.
+  const oneVsAll = (config.oyeses as any)?.oneVsAll === true && (config.oyeses as any)?.anchorPlayerId;
+  const participantIds = oneVsAll ? [] : (config.oyeses.participantIds ?? []);
   if (participantIds.length > 0 && !participantIds.includes(playerId)) {
     return { enabled: false, modality: 'acumulados' };
   }
