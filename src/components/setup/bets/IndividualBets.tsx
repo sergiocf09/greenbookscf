@@ -229,9 +229,12 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
               <p className="text-[10px] text-muted-foreground mb-2">Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.</p>
               {(() => {
                 const participantIds = (config.oyeses as any).participantIds as string[] | undefined;
-                const filteredPlayers = participantIds && participantIds.length > 0
-                  ? players.filter(p => participantIds.includes(p.id))
-                  : players;
+                const _ovaOn = (config.oyeses as any).oneVsAll === true && (config.oyeses as any).anchorPlayerId;
+                const filteredPlayers = _ovaOn
+                  ? players
+                  : (participantIds && participantIds.length > 0
+                      ? players.filter(p => participantIds.includes(p.id))
+                      : players);
                 return filteredPlayers.map(player => {
                   const playerConfig = config.oyeses.playerConfigs.find(pc => pc.playerId === player.id);
                   const modality = playerConfig?.modality ?? 'acumulados';

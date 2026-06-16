@@ -31,7 +31,7 @@ type IndividualBetKey = typeof INDIVIDUAL_BETS[number]['key'];
 
 /** Bet keys that support oneVsAll mode */
 const ONE_VS_ALL_ELIGIBLE: IndividualBetKey[] = [
-  'medal', 'pressures', 'skins', 'caros', 'units', 'manchas', 'putts', 'matchPlay', 'bloques', 'rayas',
+  'medal', 'pressures', 'skins', 'caros', 'oyeses', 'units', 'manchas', 'putts', 'matchPlay', 'bloques', 'rayas',
 ];
 
 /** Get valid participant IDs for a bet, filtering stale IDs */

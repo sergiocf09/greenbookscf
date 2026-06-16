@@ -40,7 +40,10 @@ const getEffectiveOyesesPlayerConfig = (
   // IMPORTANT: Check participantIds FIRST — it is the authoritative source of truth
   // from the Participation Matrix. A stale playerConfigs entry (e.g. from a guest added
   // mid-round) must NOT override an explicit matrix exclusion.
-  const participantIds = config.oyeses.participantIds ?? [];
+  // EXCEPTION: in oneVsAll mode, every player participates (anchor vs all others);
+  // pair filtering happens at the pair-loop level via shouldCalculatePair.
+  const oneVsAll = (config.oyeses as any)?.oneVsAll === true && (config.oyeses as any)?.anchorPlayerId;
+  const participantIds = oneVsAll ? [] : (config.oyeses.participantIds ?? []);
   if (participantIds.length > 0 && !participantIds.includes(playerId)) {
     return { enabled: false, modality: 'acumulados' };
   }
@@ -74,6 +77,11 @@ export const getOyesesPairResult = (
   startingHole: 1 | 10 = 1
 ): OyesesPairResult | null => {
   if (!config.oyeses.enabled) return null;
+
+  // oneVsAll: only pairs including the anchor settle
+  const _ovaOn = (config.oyeses as any)?.oneVsAll === true;
+  const _ovaAnchor: string | undefined = _ovaOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
+  if (_ovaOn && _ovaAnchor && playerAId !== _ovaAnchor && playerBId !== _ovaAnchor) return null;
   
   const amount = config.oyeses.amount;
   
@@ -390,15 +398,21 @@ export const calculateOyesesBets = (
     return cfg.enabled ? cfg.modality : null;
   };
   
+  const oneVsAllOn = (config.oyeses as any)?.oneVsAll === true;
+  const anchorId: string | undefined = oneVsAllOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
+
   // Process each pair of players
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
-      
+
+      // oneVsAll filter: only pairs that include the anchor are settled
+      if (oneVsAllOn && anchorId && playerA.id !== anchorId && playerB.id !== anchorId) continue;
+
       const modalityA = getPlayerModality(playerA.id);
       const modalityB = getPlayerModality(playerB.id);
-      
+
       if (!modalityA || !modalityB) continue;
       
       // Determine the pair's effective modality
