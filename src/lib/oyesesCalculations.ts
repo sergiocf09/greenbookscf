@@ -393,15 +393,21 @@ export const calculateOyesesBets = (
     return cfg.enabled ? cfg.modality : null;
   };
   
+  const oneVsAllOn = (config.oyeses as any)?.oneVsAll === true;
+  const anchorId: string | undefined = oneVsAllOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
+
   // Process each pair of players
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       const playerA = players[i];
       const playerB = players[j];
-      
+
+      // oneVsAll filter: only pairs that include the anchor are settled
+      if (oneVsAllOn && anchorId && playerA.id !== anchorId && playerB.id !== anchorId) continue;
+
       const modalityA = getPlayerModality(playerA.id);
       const modalityB = getPlayerModality(playerB.id);
-      
+
       if (!modalityA || !modalityB) continue;
       
       // Determine the pair's effective modality
