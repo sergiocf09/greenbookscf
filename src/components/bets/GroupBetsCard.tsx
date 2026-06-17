@@ -1531,8 +1531,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     // Oyeses can be played directly OR as the Oyes segment inside Rayas.
     // The indicator must include both populations so Rayas-only Sangrón players appear here.
+    const oyesOneVsAll = standaloneOyesEnabled
+      && (effectiveBetConfig.oyeses as any)?.oneVsAll === true
+      && !!(effectiveBetConfig.oyeses as any)?.anchorPlayerId;
     const standalonePlayers = standaloneOyesEnabled
-      ? resolveGroupParticipants(effectiveBetConfig.oyeses?.participantIds)
+      ? (oyesOneVsAll
+          ? sameGroupPlayers
+          : resolveGroupParticipants(effectiveBetConfig.oyeses?.participantIds))
       : [];
     const rayasOyesPlayers = rayasOyesEnabled
       ? resolveGroupParticipants(effectiveBetConfig.rayas?.participantIds)
