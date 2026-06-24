@@ -1359,19 +1359,15 @@ export const useRoundManagement = ({
               return ids.includes(o.playerAId) && ids.includes(o.playerBId);
             });
 
+            // Preserve participantIds on pool bets so cross-group pairs respect
+            // exclusions configured by the organizer (e.g. Eduardo not in Medal
+            // General). If either player is excluded, the bet engine returns no
+            // summaries for that pair, matching the live BetDashboard.
             const crossGroupConfig: BetConfig = {
               ...betConfigWithHandicaps,
               bilateralHandicaps: [crossGroupBilateral],
               betOverrides: pairOverrides,
               groupBetOverrides: {},
-              medal: { ...betConfigWithHandicaps.medal, participantIds: undefined },
-              pressures: { ...betConfigWithHandicaps.pressures, participantIds: undefined },
-              skins: { ...betConfigWithHandicaps.skins, participantIds: undefined },
-              caros: { ...betConfigWithHandicaps.caros, participantIds: undefined },
-              units: { ...betConfigWithHandicaps.units, participantIds: undefined },
-              putts: { ...betConfigWithHandicaps.putts, participantIds: undefined },
-              stableford: { ...betConfigWithHandicaps.stableford, participantIds: undefined },
-              medalGeneral: { ...betConfigWithHandicaps.medalGeneral, participantIds: undefined },
               manchas: { ...betConfigWithHandicaps.manchas, enabled: false },
               culebras: { ...betConfigWithHandicaps.culebras, enabled: false },
               pinguinos: { ...betConfigWithHandicaps.pinguinos, enabled: false },
@@ -1381,6 +1377,7 @@ export const useRoundManagement = ({
               rayas: { ...betConfigWithHandicaps.rayas, enabled: false },
               sideBets: { bets: [], enabled: false },
             };
+
 
             // Cross-group pair: confirmedHoles = holes where BOTH players confirmed
             const pairConfirmedHoles = (() => {
