@@ -66,6 +66,48 @@ const getEffectiveOyesesPlayerConfig = (
 };
 
 /**
+ * Resolve the per-pair Oyes bet amount, honoring pair-level betOverrides.
+ * Falls back to the global config.oyeses.amount when no override exists.
+ * Matches overrides stored with either player.id or player.profileId.
+ */
+export const getOyesesPairAmount = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string,
+  players?: Player[]
+): number => {
+  const baseAmount = config.oyeses?.amount ?? 0;
+  const overrides = config.betOverrides;
+  if (!overrides || overrides.length === 0) return baseAmount;
+
+  const idsForPlayer = (pid: string): string[] => {
+    const ids = new Set<string>([pid]);
+    if (players) {
+      const p = players.find((x) => x.id === pid || x.profileId === pid);
+      if (p) {
+        ids.add(p.id);
+        if (p.profileId) ids.add(p.profileId);
+      }
+    }
+    return Array.from(ids);
+  };
+
+  const idsA = idsForPlayer(playerAId);
+  const idsB = idsForPlayer(playerBId);
+
+  const match = overrides.find((o) => {
+    if (o.enabled === false) return false;
+    if ((o.betType ?? '').toLowerCase() !== 'oyes') return false;
+    const pairMatches =
+      (idsA.includes(o.playerAId) && idsB.includes(o.playerBId)) ||
+      (idsA.includes(o.playerBId) && idsB.includes(o.playerAId));
+    return pairMatches && typeof o.amountOverride === 'number' && Number.isFinite(o.amountOverride);
+  });
+
+  return match?.amountOverride ?? baseAmount;
+};
+
+/**
  * Get Oyeses pair result for zapato detection
  */
 export const getOyesesPairResult = (
