@@ -3397,10 +3397,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     carryOverOnTie: bloquesOverride?.carryOverOnTie ?? betConfig.bloques?.carryOverOnTie,
                   };
                 }
+                case 'oyeses':
+                  return {
+                    total: byLabel('Oyes') ?? betConfig.oyeses.amount,
+                  };
                 default:
                   return undefined;
               }
-            })()}
             betConfig={betConfig}
             onSave={(overrides) => {
               if (!editingBetType || !onBetConfigChange) return;
