@@ -125,7 +125,8 @@ export const getOyesesPairResult = (
   const _ovaAnchor: string | undefined = _ovaOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
   if (_ovaOn && _ovaAnchor && playerAId !== _ovaAnchor && playerBId !== _ovaAnchor) return null;
   
-  const amount = config.oyeses.amount;
+  const amount = getOyesesPairAmount(config, playerAId, playerBId);
+
   
   // Find Par 3 holes
   const par3Holes = course.holes
