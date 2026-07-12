@@ -66,6 +66,48 @@ const getEffectiveOyesesPlayerConfig = (
 };
 
 /**
+ * Resolve the per-pair Oyes bet amount, honoring pair-level betOverrides.
+ * Falls back to the global config.oyeses.amount when no override exists.
+ * Matches overrides stored with either player.id or player.profileId.
+ */
+export const getOyesesPairAmount = (
+  config: BetConfig,
+  playerAId: string,
+  playerBId: string,
+  players?: Player[]
+): number => {
+  const baseAmount = config.oyeses?.amount ?? 0;
+  const overrides = config.betOverrides;
+  if (!overrides || overrides.length === 0) return baseAmount;
+
+  const idsForPlayer = (pid: string): string[] => {
+    const ids = new Set<string>([pid]);
+    if (players) {
+      const p = players.find((x) => x.id === pid || x.profileId === pid);
+      if (p) {
+        ids.add(p.id);
+        if (p.profileId) ids.add(p.profileId);
+      }
+    }
+    return Array.from(ids);
+  };
+
+  const idsA = idsForPlayer(playerAId);
+  const idsB = idsForPlayer(playerBId);
+
+  const match = overrides.find((o) => {
+    if (o.enabled === false) return false;
+    if ((o.betType ?? '').toLowerCase() !== 'oyes') return false;
+    const pairMatches =
+      (idsA.includes(o.playerAId) && idsB.includes(o.playerBId)) ||
+      (idsA.includes(o.playerBId) && idsB.includes(o.playerAId));
+    return pairMatches && typeof o.amountOverride === 'number' && Number.isFinite(o.amountOverride);
+  });
+
+  return match?.amountOverride ?? baseAmount;
+};
+
+/**
  * Get Oyeses pair result for zapato detection
  */
 export const getOyesesPairResult = (
@@ -83,7 +125,8 @@ export const getOyesesPairResult = (
   const _ovaAnchor: string | undefined = _ovaOn ? (config.oyeses as any)?.anchorPlayerId : undefined;
   if (_ovaOn && _ovaAnchor && playerAId !== _ovaAnchor && playerBId !== _ovaAnchor) return null;
   
-  const amount = config.oyeses.amount;
+  const amount = getOyesesPairAmount(config, playerAId, playerBId);
+
   
   // Find Par 3 holes
   const par3Holes = course.holes
@@ -236,7 +279,7 @@ export const getOyesesDisplayData = (
   // the individual Oyes bet isn't configured for this exact modality.
   if (!config.oyeses?.enabled && !forceModality) return { playerAHoles, playerBHoles };
   
-  const amount = config.oyeses?.amount ?? 0;
+  const amount = getOyesesPairAmount(config, playerAId, playerBId);
   
   // Find Par 3 holes
   const par3Holes = course.holes
@@ -384,8 +427,8 @@ export const calculateOyesesBets = (
   if (!config.oyeses.enabled) return [];
   
   const summaries: BetSummary[] = [];
-  const amount = config.oyeses.amount;
   const singleWinnerMode = !!config.oyeses.singleWinner;
+
   
   // Find all Par 3 holes
   const par3Holes = course.holes
@@ -409,6 +452,10 @@ export const calculateOyesesBets = (
 
       // oneVsAll filter: only pairs that include the anchor are settled
       if (oneVsAllOn && anchorId && playerA.id !== anchorId && playerB.id !== anchorId) continue;
+
+      // Per-pair bet amount (honors betOverrides for this specific pair)
+      const amount = getOyesesPairAmount(config, playerA.id, playerB.id, players);
+
 
       const modalityA = getPlayerModality(playerA.id);
       const modalityB = getPlayerModality(playerB.id);
