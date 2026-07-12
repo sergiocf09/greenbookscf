@@ -3404,6 +3404,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 default:
                   return undefined;
               }
+            })()}
+
             betConfig={betConfig}
             onSave={(overrides) => {
               if (!editingBetType || !onBetConfigChange) return;
