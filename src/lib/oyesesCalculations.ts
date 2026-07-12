@@ -453,6 +453,10 @@ export const calculateOyesesBets = (
       // oneVsAll filter: only pairs that include the anchor are settled
       if (oneVsAllOn && anchorId && playerA.id !== anchorId && playerB.id !== anchorId) continue;
 
+      // Per-pair bet amount (honors betOverrides for this specific pair)
+      const amount = getOyesesPairAmount(config, playerA.id, playerB.id, players);
+
+
       const modalityA = getPlayerModality(playerA.id);
       const modalityB = getPlayerModality(playerB.id);
 
