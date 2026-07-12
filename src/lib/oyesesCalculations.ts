@@ -279,7 +279,7 @@ export const getOyesesDisplayData = (
   // the individual Oyes bet isn't configured for this exact modality.
   if (!config.oyeses?.enabled && !forceModality) return { playerAHoles, playerBHoles };
   
-  const amount = config.oyeses?.amount ?? 0;
+  const amount = getOyesesPairAmount(config, playerAId, playerBId);
   
   // Find Par 3 holes
   const par3Holes = course.holes
