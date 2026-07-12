@@ -427,8 +427,8 @@ export const calculateOyesesBets = (
   if (!config.oyeses.enabled) return [];
   
   const summaries: BetSummary[] = [];
-  const amount = config.oyeses.amount;
   const singleWinnerMode = !!config.oyeses.singleWinner;
+
   
   // Find all Par 3 holes
   const par3Holes = course.holes
