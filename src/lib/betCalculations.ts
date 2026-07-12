@@ -211,6 +211,9 @@ export const calculateAllBets = (
                             summary.betType === 'Rayas Back' || 
                             summary.betType === 'Rayas Medal Total' ||
                             summary.betType === 'Rayas Oyes';
+        // Oyes amounts already reflect per-pair overrides (with accumulation/zapato)
+        // via calculateOyesesBets → getOyesesPairAmount. Skip flat replacement.
+        const isOyesType = summary.betType === 'Oyes';
         if (override.amountOverride !== undefined && summary.amount !== 0 && !isRayasType) {
           if (typeof summary.units === 'number') {
             const sign = summary.amount > 0 ? 1 : -1;
