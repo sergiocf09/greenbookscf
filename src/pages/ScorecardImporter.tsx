@@ -28,8 +28,8 @@ import {
 } from '@/hooks/useScorecardImporter';
 
 const TEE_OPTIONS: { value: TeeColorDbValue; label: string; swatch: string }[] = [
-  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
   { value: 'blue', label: 'Azul', swatch: '#3b82f6' },
+  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
   { value: 'yellow', label: 'Amarillo', swatch: '#eab308' },
   { value: 'red', label: 'Rojo', swatch: '#ef4444' },
 ];
@@ -404,13 +404,13 @@ function Step2Validate(props: {
                         <Input
                           value={p.nameInCard}
                           onChange={(e) => updatePlayerName(p.key, e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs flex-1 min-w-0"
                           placeholder="Nombre"
                         />
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive"
+                          className="h-7 w-7 text-destructive shrink-0"
                           onClick={() => removePlayer(p.key)}
                           title="Quitar jugador"
                         >
