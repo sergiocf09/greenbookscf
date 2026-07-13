@@ -28,8 +28,8 @@ import {
 } from '@/hooks/useScorecardImporter';
 
 const TEE_OPTIONS: { value: TeeColorDbValue; label: string; swatch: string }[] = [
-  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
   { value: 'blue', label: 'Azul', swatch: '#3b82f6' },
+  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
   { value: 'yellow', label: 'Amarillo', swatch: '#eab308' },
   { value: 'red', label: 'Rojo', swatch: '#ef4444' },
 ];
