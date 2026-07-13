@@ -439,7 +439,7 @@ const Index = () => {
     if (!roundState.id || isRestoring) return;
     if (!selectedCourseId) return;
 
-    const updates: Record<string, unknown> = {};
+    const updates: Record<string, any> = {};
     if (selectedCourseId !== roundState.courseId) updates.course_id = selectedCourseId;
     if (teeColor !== roundState.teeColor) updates.tee_color = teeColor;
     if (startingHole !== roundState.startingHole) updates.starting_hole = startingHole;
