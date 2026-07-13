@@ -384,7 +384,7 @@ export function useScorecardImporter() {
             initials: guestInitials,
             color: '#3B82F6',
             handicap: m.handicap ?? 0,
-            teeColor,
+            teeColor: teeFor(ep.key),
             groupId,
           });
         }
