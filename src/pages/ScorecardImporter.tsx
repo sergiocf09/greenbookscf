@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import {
   Upload, Image as ImageIcon, ArrowLeft, ArrowRight, Loader2, AlertTriangle,
   CheckCircle2, XCircle, Calendar as CalendarIcon, User, Users, UserPlus, Search,
+  Plus, Minus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,10 +21,18 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCourseSearch } from '@/hooks/useCourseSearch';
+import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useFriends } from '@/hooks/useFriends';
 import {
   useScorecardImporter, TeeColorDbValue, PlayerMappingKind,
 } from '@/hooks/useScorecardImporter';
+
+const TEE_OPTIONS: { value: TeeColorDbValue; label: string; swatch: string }[] = [
+  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
+  { value: 'blue', label: 'Azul', swatch: '#3b82f6' },
+  { value: 'yellow', label: 'Amarillo', swatch: '#eab308' },
+  { value: 'red', label: 'Rojo', swatch: '#ef4444' },
+];
 
 const TEE_LABEL: Record<TeeColorDbValue, string> = {
   white: 'Blanco',
