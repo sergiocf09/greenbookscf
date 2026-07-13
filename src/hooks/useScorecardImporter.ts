@@ -130,6 +130,10 @@ export function useScorecardImporter() {
   // Step 3 mappings, keyed by EditablePlayer.key
   const [mappings, setMappings] = useState<Record<string, PlayerMapping>>({});
 
+  // Whether the logged-in user is also one of the players on the card.
+  // When false, the user acts as an external capturist (organizer only, not a player).
+  const [capturistIsPlayer, setCapturistIsPlayer] = useState<boolean>(true);
+
   // Step 4 progress
   const [progress, setProgress] = useState<SaveProgress>({
     stage: 'idle',
