@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Upload, Image as ImageIcon, ArrowLeft, ArrowRight, Loader2, AlertTriangle,
   CheckCircle2, XCircle, Calendar as CalendarIcon, User, Users, UserPlus, Search,
+  Plus, Minus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,17 +21,19 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCourseSearch } from '@/hooks/useCourseSearch';
+import { useGolfCourses } from '@/hooks/useGolfCourses';
 import { useFriends } from '@/hooks/useFriends';
 import {
   useScorecardImporter, TeeColorDbValue, PlayerMappingKind,
 } from '@/hooks/useScorecardImporter';
 
-const TEE_LABEL: Record<TeeColorDbValue, string> = {
-  white: 'Blanco',
-  blue: 'Azul',
-  yellow: 'Amarillo',
-  red: 'Rojo',
-};
+const TEE_OPTIONS: { value: TeeColorDbValue; label: string; swatch: string }[] = [
+  { value: 'white', label: 'Blanco', swatch: '#ffffff' },
+  { value: 'blue', label: 'Azul', swatch: '#3b82f6' },
+  { value: 'yellow', label: 'Amarillo', swatch: '#eab308' },
+  { value: 'red', label: 'Rojo', swatch: '#ef4444' },
+];
+
 
 export default function ScorecardImporterPage() {
   const navigate = useNavigate();
@@ -43,7 +46,7 @@ export default function ScorecardImporterPage() {
     parsed,
     editablePlayers, updateScoreCell, updatePuttCell, updatePlayerName, removePlayer,
     courseId, setCourseId, courseName, setCourseName,
-    teeColor, setTeeColor,
+    teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     mappings, setMapping, mappingsValid,
     progress, runSave, reset,
@@ -96,6 +99,8 @@ export default function ScorecardImporterPage() {
             setCourseName={setCourseName}
             teeColor={teeColor}
             setTeeColor={setTeeColor}
+            playerTeeColors={playerTeeColors}
+            setPlayerTeeColor={setPlayerTeeColor}
             roundDate={roundDate}
             setRoundDate={setRoundDate}
             confidence={parsed?.confidence ?? 'low'}
@@ -246,6 +251,8 @@ function Step2Validate(props: {
   setCourseName: (name: string) => void;
   teeColor: TeeColorDbValue;
   setTeeColor: (t: TeeColorDbValue) => void;
+  playerTeeColors: Record<string, TeeColorDbValue>;
+  setPlayerTeeColor: (k: string, t: TeeColorDbValue) => void;
   roundDate: Date;
   setRoundDate: (d: Date) => void;
   confidence: 'high' | 'medium' | 'low';
@@ -255,11 +262,60 @@ function Step2Validate(props: {
   const {
     editablePlayers, updateScoreCell, updatePuttCell, updatePlayerName, removePlayer,
     courseId, setCourseId, courseName, setCourseName,
-    teeColor, setTeeColor, roundDate, setRoundDate,
+    teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
+    roundDate, setRoundDate,
     confidence, onBack, onContinue,
   } = props;
 
   const canContinue = !!courseId && editablePlayers.length > 0;
+
+  // Totals per player: F9, B9, Total (scores) + putts subtotals
+  const totals = useMemo(() => {
+    return editablePlayers.map(p => {
+      const sumRange = (arr: (number | null)[] | null | undefined, from: number, to: number) => {
+        if (!arr) return 0;
+        let s = 0;
+        for (let i = from; i < to; i++) {
+          const v = arr[i];
+          if (typeof v === 'number' && v > 0) s += v;
+        }
+        return s;
+      };
+      return {
+        key: p.key,
+        scoreF9: sumRange(p.scores, 0, 9),
+        scoreB9: sumRange(p.scores, 9, 18),
+        scoreTotal: sumRange(p.scores, 0, 18),
+        puttsF9: sumRange(p.putts, 0, 9),
+        puttsB9: sumRange(p.putts, 9, 18),
+        puttsTotal: sumRange(p.putts, 0, 18),
+      };
+    });
+  }, [editablePlayers]);
+
+  const renderSubtotalRow = (
+    label: string,
+    picker: (t: (typeof totals)[number]) => { score: number; putts: number }
+  ) => (
+    <tr className="bg-muted/40 border-y border-border font-semibold">
+      <td className="px-2 py-1.5 sticky left-0 bg-muted/40 z-10 text-xs uppercase tracking-wide">
+        {label}
+      </td>
+      {totals.map(t => {
+        const v = picker(t);
+        return (
+          <td key={t.key} className="px-1 py-1.5">
+            <div className="flex justify-around text-xs">
+              <span className="min-w-8 text-center">{v.score || '—'}</span>
+              <span className="min-w-8 text-center text-muted-foreground">
+                {v.putts || '—'}
+              </span>
+            </div>
+          </td>
+        );
+      })}
+    </tr>
+  );
 
   return (
     <div className="space-y-4">
@@ -287,18 +343,20 @@ function Step2Validate(props: {
             }}
           />
           <div>
-            <Label className="text-xs text-muted-foreground">Color de tee</Label>
+            <Label className="text-xs text-muted-foreground">Color de tee (por default)</Label>
             <Select value={teeColor} onValueChange={(v) => setTeeColor(v as TeeColorDbValue)}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="white">Blanco</SelectItem>
-                <SelectItem value="blue">Azul</SelectItem>
-                <SelectItem value="yellow">Amarillo</SelectItem>
-                <SelectItem value="red">Rojo</SelectItem>
+                {TEE_OPTIONS.map(t => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Se aplica a todos los jugadores; puedes cambiar el tee de cada jugador abajo.
+            </p>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Fecha de la ronda</Label>
@@ -329,89 +387,125 @@ function Step2Validate(props: {
       <Card>
         <CardHeader>
           <CardTitle>Scores detectados</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Score arriba, putts abajo. Si no capturas los putts, se guardarán 2 por hoyo.
+          </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left px-2 py-2 sticky left-0 bg-card z-10">Hoyo</th>
+                {editablePlayers.map((p) => {
+                  const currentTee = playerTeeColors[p.key] ?? teeColor;
+                  return (
+                    <th key={p.key} className="px-2 py-2 min-w-[170px] align-top">
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={p.nameInCard}
+                          onChange={(e) => updatePlayerName(p.key, e.target.value)}
+                          className="h-8 text-xs"
+                          placeholder="Nombre"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => removePlayer(p.key)}
+                          title="Quitar jugador"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 flex items-center justify-center gap-1.5">
+                        {TEE_OPTIONS.map(t => {
+                          const active = currentTee === t.value;
+                          return (
+                            <button
+                              key={t.value}
+                              type="button"
+                              onClick={() => setPlayerTeeColor(p.key, t.value)}
+                              title={`Tee ${t.label}`}
+                              aria-label={`Tee ${t.label}`}
+                              className={cn(
+                                'h-5 w-5 rounded-full border transition',
+                                active
+                                  ? 'ring-2 ring-primary ring-offset-1 ring-offset-background border-foreground/40 scale-110'
+                                  : 'border-border hover:scale-110'
+                              )}
+                              style={{ backgroundColor: t.swatch }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr className="border-b border-border/60 text-[10px] uppercase text-muted-foreground">
+                <th className="px-2 py-1 sticky left-0 bg-card z-10">#</th>
                 {editablePlayers.map((p) => (
-                  <th key={p.key} className="px-2 py-2 min-w-[140px]">
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={p.nameInCard}
-                        onChange={(e) => updatePlayerName(p.key, e.target.value)}
-                        className="h-8 text-xs"
-                        placeholder="Nombre"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => removePlayer(p.key)}
-                        title="Quitar jugador"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
+                  <th key={p.key} className="px-1 py-1">
+                    <div className="flex justify-around">
+                      <span>Score</span>
+                      <span>Putts</span>
                     </div>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 18 }).map((_, i) => (
-                <tr key={i} className="border-b border-border/60">
-                  <td className="px-2 py-1.5 font-medium sticky left-0 bg-card z-10">
-                    {i + 1}
-                  </td>
-                  {editablePlayers.map((p) => {
-                    const s = p.scores[i];
-                    const pu = p.putts?.[i] ?? null;
-                    return (
-                      <td key={p.key} className="px-1 py-1.5">
-                        <div className="flex gap-1">
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={1}
-                            max={20}
-                            value={s ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === '') {
-                                updateScoreCell(p.key, i, null);
-                              } else {
-                                const n = parseInt(raw, 10);
-                                if (Number.isFinite(n)) updateScoreCell(p.key, i, Math.max(1, Math.min(20, n)));
-                              }
-                            }}
-                            placeholder="—"
-                            className="h-8 text-xs px-1 text-center"
-                          />
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={0}
-                            max={10}
-                            value={pu ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === '') {
-                                updatePuttCell(p.key, i, null);
-                              } else {
-                                const n = parseInt(raw, 10);
-                                if (Number.isFinite(n)) updatePuttCell(p.key, i, Math.max(0, Math.min(10, n)));
-                              }
-                            }}
-                            placeholder="putt"
-                            className="h-8 text-xs px-1 text-center text-muted-foreground"
-                          />
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {Array.from({ length: 18 }).map((_, i) => {
+                const rows: React.ReactNode[] = [];
+                rows.push(
+                  <tr key={i} className="border-b border-border/60">
+                    <td className="px-2 py-1.5 font-medium sticky left-0 bg-card z-10">
+                      {i + 1}
+                    </td>
+                    {editablePlayers.map((p) => {
+                      const s = p.scores[i];
+                      const pu = p.putts?.[i] ?? null;
+                      return (
+                        <td key={p.key} className="px-1 py-1.5">
+                          <div className="flex justify-around gap-1">
+                            <StepperCell
+                              value={s}
+                              min={1}
+                              max={20}
+                              onChange={(v) => updateScoreCell(p.key, i, v)}
+                              placeholder="—"
+                            />
+                            <StepperCell
+                              value={pu}
+                              min={0}
+                              max={10}
+                              onChange={(v) => updatePuttCell(p.key, i, v)}
+                              placeholder="2"
+                              muted
+                            />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+                if (i === 8) {
+                  rows.push(
+                    <React.Fragment key="f9-sub">
+                      {renderSubtotalRow('OUT (F9)', t => ({ score: t.scoreF9, putts: t.puttsF9 }))}
+                    </React.Fragment>
+                  );
+                }
+                if (i === 17) {
+                  rows.push(
+                    <React.Fragment key="b9-sub">
+                      {renderSubtotalRow('IN (B9)', t => ({ score: t.scoreB9, putts: t.puttsB9 }))}
+                      {renderSubtotalRow('TOTAL', t => ({ score: t.scoreTotal, putts: t.puttsTotal }))}
+                    </React.Fragment>
+                  );
+                }
+                return <React.Fragment key={`row-${i}`}>{rows}</React.Fragment>;
+              })}
             </tbody>
           </table>
         </CardContent>
@@ -436,6 +530,64 @@ function Step2Validate(props: {
   );
 }
 
+// Compact stepper: −  [number]  +  with tap-and-type support.
+function StepperCell({
+  value, min, max, onChange, placeholder, muted,
+}: {
+  value: number | null;
+  min: number;
+  max: number;
+  onChange: (v: number | null) => void;
+  placeholder: string;
+  muted?: boolean;
+}) {
+  const clamp = (n: number) => Math.max(min, Math.min(max, n));
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-6 w-6 rounded-full shrink-0"
+        onClick={() => onChange(clamp((value ?? min) - 1))}
+        disabled={value !== null && value <= min}
+        tabIndex={-1}
+      >
+        <Minus className="h-3 w-3" />
+      </Button>
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        value={value ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (raw === '') { onChange(null); return; }
+          const n = parseInt(raw, 10);
+          if (Number.isFinite(n)) onChange(clamp(n));
+        }}
+        placeholder={placeholder}
+        className={cn(
+          'h-7 w-9 text-xs px-0.5 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+          muted && 'text-muted-foreground'
+        )}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-6 w-6 rounded-full shrink-0"
+        onClick={() => onChange(clamp((value ?? min - 1) + 1))}
+        disabled={value !== null && value >= max}
+        tabIndex={-1}
+      >
+        <Plus className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 function CoursePicker({
   courseId, courseName, onPick,
 }: {
@@ -443,8 +595,9 @@ function CoursePicker({
   courseName: string;
   onPick: (id: string, name: string) => void;
 }) {
+  const { courses: knownCourses, loading: loadingKnown } = useGolfCourses();
   const { results, searching, search, importCourse, clearResults } = useCourseSearch();
-  const [query, setQuery] = useState(courseName ?? '');
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -456,6 +609,15 @@ function CoursePicker({
     }, 300);
     return () => clearTimeout(t);
   }, [query, open, search, clearResults]);
+
+  const filteredKnown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return knownCourses;
+    return knownCourses.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.location || '').toLowerCase().includes(q)
+    );
+  }, [knownCourses, query]);
 
   return (
     <div>
@@ -469,59 +631,109 @@ function CoursePicker({
           >
             <Search className="mr-2 h-4 w-4 opacity-70" />
             <span className="truncate">
-              {courseId ? (courseName || 'Campo seleccionado') : 'Buscar campo…'}
+              {courseId ? (courseName || 'Campo seleccionado') : 'Selecciona un campo…'}
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
+        <PopoverContent className="w-[340px] p-0" align="start">
           <div className="p-2 border-b border-border">
             <Input
               autoFocus
-              placeholder="Nombre del campo…"
+              placeholder="Filtrar tus campos o buscar uno nuevo…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="h-8 text-sm"
             />
           </div>
-          <div className="max-h-64 overflow-auto">
-            {searching && (
+          <div className="max-h-72 overflow-auto">
+            {/* Section: user's known courses */}
+            <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Tus campos
+            </div>
+            {loadingKnown && (
               <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                <Loader2 className="h-3 w-3 animate-spin" /> Cargando…
               </div>
             )}
-            {!searching && results.length === 0 && query.length >= 2 && (
-              <div className="p-3 text-xs text-muted-foreground">Sin resultados</div>
+            {!loadingKnown && filteredKnown.length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">
+                {query ? 'Sin coincidencias en tus campos' : 'Aún no tienes campos guardados'}
+              </div>
             )}
-            {results.map((r) => (
+            {filteredKnown.map((c) => (
               <button
-                key={r.apiId}
+                key={c.id}
                 type="button"
-                disabled={importing}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40 last:border-0 disabled:opacity-60"
-                onClick={async () => {
-                  setImporting(true);
-                  try {
-                    const newId = await importCourse(r.apiId);
-                    if (newId) {
-                      onPick(newId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
-                      setOpen(false);
-                    }
-                  } finally {
-                    setImporting(false);
-                  }
+                className={cn(
+                  'w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40',
+                  courseId === c.id && 'bg-accent/60'
+                )}
+                onClick={() => {
+                  onPick(c.id, c.name);
+                  setOpen(false);
                 }}
               >
-                <div className="font-medium">{r.clubName}</div>
-                {r.courseName && (
-                  <div className="text-xs text-muted-foreground">{r.courseName}</div>
-                )}
-                {(r.city || r.state) && (
-                  <div className="text-[10px] text-muted-foreground">
-                    {[r.city, r.state, r.country].filter(Boolean).join(', ')}
-                  </div>
+                <div className="font-medium flex items-center gap-2">
+                  {c.name}
+                  {courseId === c.id && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                </div>
+                {c.location && (
+                  <div className="text-[10px] text-muted-foreground">{c.location}</div>
                 )}
               </button>
             ))}
+
+            {/* Section: online search (only when there's a query >= 2) */}
+            {query.trim().length >= 2 && (
+              <>
+                <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/60">
+                  Buscar y descargar
+                </div>
+                {searching && (
+                  <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                  </div>
+                )}
+                {!searching && results.length === 0 && (
+                  <div className="p-3 text-xs text-muted-foreground">Sin resultados en línea</div>
+                )}
+                {results.map((r) => (
+                  <button
+                    key={r.apiId}
+                    type="button"
+                    disabled={importing}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40 last:border-0 disabled:opacity-60"
+                    onClick={async () => {
+                      setImporting(true);
+                      try {
+                        const newId = await importCourse(r.apiId);
+                        if (newId) {
+                          onPick(newId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
+                          setOpen(false);
+                        }
+                      } finally {
+                        setImporting(false);
+                      }
+                    }}
+                  >
+                    <div className="font-medium">{r.clubName}</div>
+                    {r.courseName && (
+                      <div className="text-xs text-muted-foreground">{r.courseName}</div>
+                    )}
+                    {(r.city || r.state) && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {[r.city, r.state, r.country].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                  </button>
+                ))}
+                {importing && (
+                  <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Descargando campo…
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </PopoverContent>
       </Popover>

@@ -113,8 +113,19 @@ export function useScorecardImporter() {
   const [editablePlayers, setEditablePlayers] = useState<EditablePlayer[]>([]);
   const [courseId, setCourseId] = useState<string | null>(null);
   const [courseName, setCourseName] = useState<string>('');
-  const [teeColor, setTeeColor] = useState<TeeColorDbValue>('white');
+  const [teeColor, setTeeColorState] = useState<TeeColorDbValue>('white');
   const [roundDate, setRoundDate] = useState<Date>(new Date());
+  // Per-player tee color overrides (missing key = use global teeColor).
+  const [playerTeeColors, setPlayerTeeColors] = useState<Record<string, TeeColorDbValue>>({});
+
+  const setTeeColor = useCallback((t: TeeColorDbValue) => {
+    setTeeColorState(t);
+    setPlayerTeeColors({}); // reapply as new default for everyone
+  }, []);
+
+  const setPlayerTeeColor = useCallback((key: string, t: TeeColorDbValue) => {
+    setPlayerTeeColors(prev => ({ ...prev, [key]: t }));
+  }, []);
 
   // Step 3 mappings, keyed by EditablePlayer.key
   const [mappings, setMappings] = useState<Record<string, PlayerMapping>>({});
@@ -288,12 +299,14 @@ export function useScorecardImporter() {
       // Build list: { editableKey, roundPlayerId, playerObj }
       const playerRoundIds = new Map<string, string>(); // editableKey -> round_players.id
       const playerObjects = new Map<string, Player>();  // editableKey -> Player (for snapshot)
+      const teeFor = (key: string): TeeColorDbValue => playerTeeColors[key] ?? teeColor;
 
       for (const ep of editablePlayers) {
         const m = mappings[ep.key];
         if (!m) throw new Error(`Falta mapeo para ${ep.nameInCard}`);
 
         if (m.kind === 'self') {
+          const selfTee = teeFor(ep.key);
           playerRoundIds.set(ep.key, organizerRoundPlayerId);
           playerObjects.set(ep.key, {
             id: organizerRoundPlayerId,
@@ -302,16 +315,16 @@ export function useScorecardImporter() {
             color: profile.avatar_color,
             handicap: m.handicap ?? profile.current_handicap ?? 0,
             profileId: organizerProfileId,
-            teeColor,
+            teeColor: selfTee,
             groupId,
           });
-          // Sync organizer handicap if provided
-          if (typeof m.handicap === 'number') {
-            await supabase
-              .from('round_players')
-              .update({ handicap_for_round: m.handicap })
-              .eq('id', organizerRoundPlayerId);
-          }
+          // Sync organizer handicap + tee
+          const selfUpdate: { tee_color: TeeColorDbValue; handicap_for_round?: number } = { tee_color: selfTee };
+          if (typeof m.handicap === 'number') selfUpdate.handicap_for_round = m.handicap;
+          await supabase
+            .from('round_players')
+            .update(selfUpdate)
+            .eq('id', organizerRoundPlayerId);
         } else if (m.kind === 'registered') {
           if (!m.profileId) throw new Error(`Falta perfil registrado para ${ep.nameInCard}`);
           const { data, error } = await supabase
@@ -323,7 +336,7 @@ export function useScorecardImporter() {
               handicap_for_round: m.handicap ?? 0,
               is_organizer: false,
               is_admin: false,
-              tee_color: teeColor,
+              tee_color: teeFor(ep.key),
             })
             .select('id')
             .single();
@@ -336,7 +349,7 @@ export function useScorecardImporter() {
             color: '#3B82F6',
             handicap: m.handicap ?? 0,
             profileId: m.profileId,
-            teeColor,
+            teeColor: teeFor(ep.key),
             groupId,
           });
         } else {
@@ -359,7 +372,7 @@ export function useScorecardImporter() {
               guest_name: safeName,
               guest_initials: guestInitials,
               guest_color: '#3B82F6',
-              tee_color: teeColor,
+              tee_color: teeFor(ep.key),
             })
             .select('id')
             .single();
@@ -371,7 +384,7 @@ export function useScorecardImporter() {
             initials: guestInitials,
             color: '#3B82F6',
             handicap: m.handicap ?? 0,
-            teeColor,
+            teeColor: teeFor(ep.key),
             groupId,
           });
         }
@@ -514,6 +527,7 @@ export function useScorecardImporter() {
     profile,
     courseId,
     teeColor,
+    playerTeeColors,
     roundDate,
     editablePlayers,
     mappings,
@@ -531,7 +545,8 @@ export function useScorecardImporter() {
     setEditablePlayers([]);
     setCourseId(null);
     setCourseName('');
-    setTeeColor('white');
+    setTeeColorState('white');
+    setPlayerTeeColors({});
     setRoundDate(new Date());
     setMappings({});
     setProgress({ stage: 'idle', message: '', percent: 0 });
@@ -550,6 +565,7 @@ export function useScorecardImporter() {
     courseId, setCourseId,
     courseName, setCourseName,
     teeColor, setTeeColor,
+    playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     // step 3
     mappings, setMapping, mappingsValid,
