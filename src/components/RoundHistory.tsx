@@ -27,7 +27,7 @@ import {
 
 interface RoundHistoryItem {
   id: string;
-  roundPlayerId: string;
+  roundPlayerId: string | null;
   date: string;
   status: string;
   courseName: string;
@@ -38,6 +38,7 @@ interface RoundHistoryItem {
   handicapUsed: number;
   playersCount: number;
   isOrganizer: boolean;
+  capturedOnly: boolean; // organizer but not a participant
   roundHoles: 9 | 18;
 }
 
