@@ -2487,6 +2487,10 @@ export type Database = {
       can_access_full_history: { Args: never; Returns: boolean }
       can_create_leaderboard: { Args: never; Returns: boolean }
       can_create_round_as_organizer: { Args: never; Returns: boolean }
+      can_view_leaderboard: {
+        Args: { _leaderboard_id: string }
+        Returns: boolean
+      }
       cancel_cross_bet_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined
