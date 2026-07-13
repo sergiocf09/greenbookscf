@@ -46,7 +46,7 @@ export default function ScorecardImporterPage() {
     parsed,
     editablePlayers, updateScoreCell, updatePuttCell, updatePlayerName, removePlayer,
     courseId, setCourseId, courseName, setCourseName,
-    teeColor, setTeeColor,
+    teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     mappings, setMapping, mappingsValid,
     progress, runSave, reset,
