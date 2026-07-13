@@ -42,7 +42,7 @@ export default function ScorecardImporterPage() {
 
   const {
     step, setStep,
-    imageFile, imagePreviewUrl, analyzing, analyzeError, pickImage, analyze,
+    imageFile, imagePreviewUrl, imagePreparing, analyzing, analyzeError, pickImage, analyze,
     parsed,
     editablePlayers, updateScoreCell, updatePuttCell, updatePlayerName, removePlayer,
     courseId, setCourseId, courseName, setCourseName,
@@ -80,6 +80,7 @@ export default function ScorecardImporterPage() {
           <Step1Upload
             imagePreviewUrl={imagePreviewUrl}
             imageFile={imageFile}
+            imagePreparing={imagePreparing}
             analyzing={analyzing}
             analyzeError={analyzeError}
             onPick={pickImage}
@@ -149,10 +150,11 @@ export default function ScorecardImporterPage() {
 
 // ────────────────────────────── STEP 1 ──────────────────────────────
 function Step1Upload({
-  imagePreviewUrl, imageFile, analyzing, analyzeError, onPick, onAnalyze,
+  imagePreviewUrl, imageFile, imagePreparing, analyzing, analyzeError, onPick, onAnalyze,
 }: {
   imagePreviewUrl: string | null;
   imageFile: File | null;
+  imagePreparing: boolean;
   analyzing: boolean;
   analyzeError: string | null;
   onPick: (f: File | null) => void;
@@ -224,10 +226,15 @@ function Step1Upload({
 
         <Button
           onClick={onAnalyze}
-          disabled={!imageFile || analyzing}
+          disabled={!imageFile || imagePreparing || analyzing}
           className="w-full"
         >
-          {analyzing ? (
+          {imagePreparing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Preparando foto…
+            </>
+          ) : analyzing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Analizando tarjeta…
