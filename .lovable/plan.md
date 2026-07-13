@@ -1,58 +1,71 @@
-# Plan: Balances Pre-GB — UX limpio y toggle de inclusión
+## Diagnóstico
 
-Ámbito: solo `src/components/HistoricalBalances.tsx` y `src/components/balances/PreAppBalanceSheet.tsx` (presentación). Sin cambios de lógica, datos, RLS ni cálculos compartidos. La data sigue siendo exclusiva del owner.
+Confirmado: hoy el importador **exige** que el usuario logueado sea participante de la ronda.
 
-## 1. Arreglar el bug "no pasa nada al hacer clic"
+En `src/hooks/useScorecardImporter.ts`:
+- `mappingsValid` requiere **exactamente un** mapeo `kind: 'self'` entre los jugadores detectados.
+- El pipeline `runSave` usa `create_round` (RPC) que crea al organizador como `round_player` y luego reasigna ese `round_player_id` al jugador marcado como "self". Sin "self", el organizador queda como un participante fantasma.
 
-**Causa:** la vista de detalle (`if (selectedRival) return ...`, línea 535) no incluye el `<PreAppBalanceSheet>`. El Sheet sólo está montado en el `return` principal al final del archivo, por eso aparece después de pulsar "Volver".
+Esto bloquea el caso real (muy común): una persona ayuda a capturar la tarjeta pero no jugó.
 
-**Fix:** envolver el JSX de la vista de detalle en un `<>...</>` y renderizar el `<PreAppBalanceSheet>` adentro también (o extraer el bloque del Sheet a una función `renderPreAppSheet()` y llamarla en ambos returns). Así el clic abre el Sheet al instante sobre la vista del rival.
+## Solución propuesta
 
-## 2. Renombrar "Pre-app" → "Pre-GB"
+Permitir un modo **"Capturista no participante"** en el Paso 3 (Mapeo).
 
-Cambiar todos los textos visibles:
-- Botón del header de detalle: `Pre-app` → `Pre-GB`
-- Badge en la lista de rivales: `+pre-app` → `+pre-GB`
-- Desglose bajo el monto combinado: `Pre: …` se mantiene corto; el título del Sheet pasa a `Balance Pre-GB vs {rival}`; texto auxiliar "Solo visible para ti…" igual.
-- Tooltip/`title` y placeholders dentro de `PreAppBalanceSheet.tsx` ("registro pre-app" → "registro pre-GB", "Sin registros pre-app" → "Sin registros pre-GB", "Total pre-app" → "Total pre-GB").
+### Cambios de UX (Paso 3)
 
-No tocar nombres de tabla, hook, props ni tipos (`pre_app_balances`, `usePreAppBalances`, `PreAppBalance`, `summaryByRival`) — son internos.
+1. Añadir un **toggle/checkbox** al inicio del paso:
+   > ☐ "Yo también jugué esta ronda"
+   - **Activado (default)**: comportamiento actual — exige marcar exactamente un jugador como "Yo" (self).
+   - **Desactivado**: ninguna fila requiere ser "self"; el usuario logueado queda como **organizador no participante**. Todos los jugadores detectados se mapean como `registered` o `guest`.
 
-## 3. Toggle incluir/excluir Pre-GB del total
+2. En el selector por jugador, la opción "Yo" se oculta cuando el toggle está desactivado.
 
-**Modelo:** un estado local en `HistoricalBalances`:
-```
-const [excludedPreApp, setExcludedPreApp] = useState<Set<string>>(new Set());
-```
-La clave es `rival.id` (mismo `rivalKey` que usa `preAppMap`). No se persiste — es vista del momento, igual que `showGuests`.
+3. `mappingsValid` se ajusta:
+   - Si "Yo también jugué" → exige exactamente 1 self (como hoy).
+   - Si no → exige 0 self, y que todos sean `registered` o `guest` válidos.
 
-**Vista de detalle (header del rival):**
-- Cuando `hasPreApp`:
-  - El número grande muestra `combined` si el rival NO está en `excludedPreApp`; muestra sólo `selectedRival.netAmount` (sólo app) si SÍ está excluido.
-  - Bajo el número, el chip `App: …  Pre: …` se convierte en dos botones inline:
-    - `App: ±$X` (informativo, no clickable)
-    - `Pre: ±$Y` clickable. Si está incluido → texto en color + `underline decoration-dotted`. Si está excluido → mismo color atenuado + `line-through decoration-dotted` y aria-pressed. Tap alterna `excludedPreApp` para esa clave.
-  - Microcopy debajo (text-[10px] muted): "Toca Pre para incluirlo/excluirlo del total".
-- Cuando NO hay pre-GB: el botón `Pre-GB` del header sirve únicamente para abrir el Sheet de captura (estado actual).
+### Cambios en el pipeline `runSave`
 
-**Vista de listado de rivales (Vs Rivales):**
-- Mantener el badge `+pre-GB` cuando hay registros.
-- Si el rival está en `excludedPreApp`, el monto grande muestra sólo `netAmount` (app) y el badge se ve atenuado con `line-through decoration-dotted` para indicar que está fuera del total. Tap en el badge alterna inclusión (sin abrir el detalle — `e.stopPropagation()`).
-- El "Balance Total" superior se recalcula sumando, por cada rival, `netAmount + (excluded ? 0 : preTotal)`.
+- Si hay `self`: flujo actual sin cambios.
+- Si **no hay self** (capturista externo):
+  - Se crea la ronda igual con `create_round` (el usuario logueado queda como organizador dueño).
+  - El `organizerRoundPlayerId` creado por el RPC se **elimina** de `round_players` después de insertar a todos los jugadores reales, para que el organizador **no aparezca en el scorecard** ni en las apuestas.
+  - `rounds.organizer_id` / `created_by` permanecen apuntando al capturista (autoridad para editar/borrar).
+  - El snapshot se genera solo con los jugadores reales.
 
-**Persistencia entre vistas:** como el estado vive en `HistoricalBalances`, navegar a detalle y volver mantiene la exclusión.
+### Indicador visual "Organizador no participante"
 
-## 4. QA manual
+En consistencia con la convención existente de mostrar rol "organizador / no organizador":
 
-1. Abrir balances → entrar a un rival con pre-GB ya cargado → tap `Pre`: ahora el monto grande muestra sólo app y `Pre` aparece tachado punteado.
-2. Tap otra vez `Pre`: vuelve a sumar.
-3. Entrar a rival sin pre-GB → tap `Pre-GB` (header): el Sheet abre al instante, sin necesidad de volver.
-4. Capturar un registro → al cerrar Sheet, header muestra desglose App/Pre y badge en el listado.
-5. En listado, tap en `+pre-GB`: monto del rival y "Balance Total" se actualizan; no entra al detalle.
-6. Confirmar en otro usuario que sigue sin ver nada (RLS sin cambios).
+1. **Historial (`RoundHistory`)** y **vista histórica (`HistoricalRoundView`)**: mostrar un badge sutil junto al nombre del organizador cuando este no aparece en `round_players`:
+   > 📷 "Capturada por {Nombre}" (badge outline, tamaño `text-xs`)
+
+2. **Selector "Designar organizador real"** (opcional, se implementa como consecuencia natural del toggle):
+   - Si el capturista sí jugó → él es organizador y participante (comportamiento actual).
+   - Si el capturista designa a un jugador registrado como "responsable" (futuro, no en este cambio) → se maneja igual pero el capturista sigue siendo dueño técnico. **No se implementa transferencia de organizador en esta iteración** para mantener el cambio acotado; el capturista conserva autoridad de borrado, que es lo pedido.
+
+### Permisos y borrado
+
+- El capturista es siempre `rounds.organizer_id`, por lo que las RLS existentes de edición/cierre/borrado siguen funcionando sin cambios.
+- Si el capturista jugó (marcó self), además aparece como `round_player` con `is_organizer=true` — comportamiento actual.
+- Si no jugó, tiene autoridad vía `organizer_id` pero **no** figura como jugador — que es exactamente el comportamiento pedido.
+
+## Alcance
+
+- `src/hooks/useScorecardImporter.ts`: añadir estado `capturistIsPlayer` (bool, default `true`), ajustar `mappingsValid`, ajustar `runSave` para borrar el `round_player` del organizador cuando `capturistIsPlayer=false`.
+- `src/pages/ScorecardImporter.tsx`: añadir toggle en Paso 3, ocultar opción "Yo" cuando corresponde, mostrar hint contextual.
+- `src/components/RoundHistory.tsx` y `src/components/HistoricalRoundView.tsx`: badge "📷 Capturada por …" cuando `organizer_id` no está en la lista de `round_players`.
 
 ## Detalles técnicos
 
-- Archivos tocados: `HistoricalBalances.tsx` (render dual del Sheet + toggle + textos), `PreAppBalanceSheet.tsx` (textos `Pre-app` → `Pre-GB`).
-- Sin migraciones, sin cambios en `usePreAppBalances`, sin afectar `player_vs_player`, rankings, leaderboards ni bilateralidad.
-- Accesibilidad: el toggle Pre usa `<button aria-pressed={!isExcluded}>` con `title` "Incluir/Excluir Pre-GB del total".
+- No se toca `create_round` (RPC) ni el esquema; el borrado del `round_player` organizador es un simple `DELETE` posterior al insertar los jugadores reales, antes de guardar scores.
+- Los `hole_scores` del organizador nunca se llegan a insertar (el pipeline itera solo `editablePlayers`).
+- El snapshot ya se construye a partir de `editablePlayers` únicamente, por lo que queda consistente automáticamente.
+- El badge de "Capturada por" se calcula en cliente: `!round.players.some(p => p.profileId === round.organizerId)`.
+
+## Fuera de alcance
+
+- Transferencia de rol de organizador a otro jugador registrado.
+- Cambios en el flujo de ronda en vivo.
+- Cambios en RLS / migraciones.
