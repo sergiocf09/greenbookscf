@@ -55,11 +55,11 @@ export default function ScorecardImporterPage() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-            aria-label="Regresar"
+            onClick={() => navigate(-1)}
+            aria-label="Volver"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Volver
           </Button>
           <div>
             <h1 className="text-lg font-semibold">Importar tarjeta manual</h1>

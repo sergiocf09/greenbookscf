@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -86,6 +87,7 @@ interface RoundHistoryProps {
 }
 
 export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound, onCloneFullRound }) => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { canAccessHistory } = useSubscription();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
@@ -524,6 +526,17 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   return (
     <>
       <div className="space-y-3 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate('/import-scorecard')}
+          >
+            <ImagePlus className="h-4 w-4 mr-2" />
+            Importar tarjeta manual
+          </Button>
+        </div>
         <ScrollArea className="h-[400px]">
           <div className="space-y-2 pr-2">
             {rounds.map((round) => (
