@@ -404,13 +404,13 @@ function Step2Validate(props: {
                         <Input
                           value={p.nameInCard}
                           onChange={(e) => updatePlayerName(p.key, e.target.value)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs flex-1 min-w-0"
                           placeholder="Nombre"
                         />
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive"
+                          className="h-7 w-7 text-destructive shrink-0"
                           onClick={() => removePlayer(p.key)}
                           title="Quitar jugador"
                         >
