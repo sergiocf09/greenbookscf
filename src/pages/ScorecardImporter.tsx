@@ -49,6 +49,7 @@ export default function ScorecardImporterPage() {
     teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     mappings, setMapping, mappingsValid,
+    capturistIsPlayer, setCapturistIsPlayer,
     progress, runSave, reset,
   } = importer;
 
