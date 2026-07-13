@@ -557,6 +557,7 @@ export function useScorecardImporter() {
     editablePlayers,
     mappings,
     mappingsValid,
+    capturistIsPlayer,
   ]);
 
   const reset = useCallback(() => {
