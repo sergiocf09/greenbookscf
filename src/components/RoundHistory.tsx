@@ -523,8 +523,6 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     );
   }
 
-  const navigate = useNavigate();
-
   return (
     <>
       <div className="space-y-3 w-full max-w-full overflow-hidden">
