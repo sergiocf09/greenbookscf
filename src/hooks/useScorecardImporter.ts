@@ -319,7 +319,7 @@ export function useScorecardImporter() {
             groupId,
           });
           // Sync organizer handicap + tee
-          const selfUpdate: Record<string, any> = { tee_color: selfTee };
+          const selfUpdate: { tee_color: TeeColorDbValue; handicap_for_round?: number } = { tee_color: selfTee };
           if (typeof m.handicap === 'number') selfUpdate.handicap_for_round = m.handicap;
           await supabase
             .from('round_players')
