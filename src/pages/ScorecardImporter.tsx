@@ -818,22 +818,24 @@ function Step3Mapping(props: {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button
-                  variant={kind === 'self' ? 'default' : 'outline'}
-                  onClick={() =>
-                    setMapping(p.key, { kind: 'self' })
-                  }
-                  disabled={!!disableSelf}
-                  size="sm"
-                  className="justify-start"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Soy yo
-                  {disableSelf && (
-                    <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
-                  )}
-                </Button>
+              <div className={cn('grid gap-2 grid-cols-1', capturistIsPlayer ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+                {capturistIsPlayer && (
+                  <Button
+                    variant={kind === 'self' ? 'default' : 'outline'}
+                    onClick={() =>
+                      setMapping(p.key, { kind: 'self' })
+                    }
+                    disabled={!!disableSelf}
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Soy yo
+                    {disableSelf && (
+                      <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant={kind === 'registered' ? 'default' : 'outline'}
                   onClick={() => setMapping(p.key, { kind: 'registered', profileId: null })}
