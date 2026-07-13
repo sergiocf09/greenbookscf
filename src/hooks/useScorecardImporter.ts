@@ -105,6 +105,8 @@ export function useScorecardImporter() {
   const [step, setStep] = useState<ImporterStep>(1);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [imagePreparing, setImagePreparing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [parsed, setParsed] = useState<ParsedScorecard | null>(null);
@@ -144,17 +146,49 @@ export function useScorecardImporter() {
   // ────────────────────── STEP 1: Upload + analyze ──────────────────────
   const pickImage = useCallback((file: File | null) => {
     setImageFile(file);
+    setImageDataUrl(null);
     setAnalyzeError(null);
+    setImagePreparing(!!file);
     if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     setImagePreviewUrl(file ? URL.createObjectURL(file) : null);
+
+    if (!file) {
+      setImagePreparing(false);
+      return;
+    }
+
+    // Start reading the file immediately inside the input change gesture. On
+    // some Android/PWA photo pickers, keeping only the File reference and
+    // reading it later can lose permission to the original media item.
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        setImageDataUrl(result);
+        setAnalyzeError(null);
+      } else {
+        setAnalyzeError('No se pudo preparar la foto seleccionada. Intenta elegirla de nuevo.');
+      }
+      setImagePreparing(false);
+    };
+    reader.onerror = () => {
+      setImageDataUrl(null);
+      setImagePreparing(false);
+      setAnalyzeError('No se pudo leer la foto seleccionada. Intenta elegirla de nuevo desde el carrete.');
+    };
+    reader.readAsDataURL(file);
   }, [imagePreviewUrl]);
 
   const analyze = useCallback(async () => {
     if (!imageFile) return;
+    if (!imageDataUrl) {
+      setAnalyzeError('La foto todavía se está preparando. Espera un momento o vuelve a seleccionarla.');
+      return;
+    }
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
-      const result = await parseScorecard(imageFile as ScorecardInput);
+      const result = await parseScorecard(imageDataUrl as ScorecardInput);
       setParsed(result);
       // Seed step-2 editable state
       setEditablePlayers(
@@ -188,7 +222,7 @@ export function useScorecardImporter() {
     } finally {
       setAnalyzing(false);
     }
-  }, [imageFile]);
+  }, [imageFile, imageDataUrl]);
 
   // ────────────────────── STEP 2 helpers ──────────────────────
   const updateScoreCell = useCallback(
@@ -565,6 +599,8 @@ export function useScorecardImporter() {
     setStep(1);
     setImageFile(null);
     setImagePreviewUrl(null);
+    setImageDataUrl(null);
+    setImagePreparing(false);
     setAnalyzing(false);
     setAnalyzeError(null);
     setParsed(null);
@@ -597,7 +633,7 @@ export function useScorecardImporter() {
     // step control
     step, setStep,
     // step 1
-    imageFile, imagePreviewUrl, analyzing, analyzeError,
+    imageFile, imagePreviewUrl, imagePreparing, imageReady: !!imageDataUrl, analyzing, analyzeError,
     pickImage, analyze,
     // parsed data
     parsed,
