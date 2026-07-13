@@ -605,7 +605,18 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   {round.roundHoles === 9 && (
                     <RoundHolesBadge holes={9} className="flex-shrink-0 ml-1" />
                   )}
-                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">{round.totalStrokes}</span>
+                  {round.capturedOnly && (
+                    <span
+                      className="flex-shrink-0 ml-1 inline-flex items-center"
+                      title="Ronda capturada — no participaste como jugador"
+                      aria-label="Ronda capturada — no participaste"
+                    >
+                      <ImagePlus className="h-3 w-3 text-muted-foreground" />
+                    </span>
+                  )}
+                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
+                    {round.capturedOnly ? '—' : round.totalStrokes}
+                  </span>
                   {expandedRound === round.id ? (
                     <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   ) : (
