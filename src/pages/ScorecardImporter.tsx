@@ -34,12 +34,6 @@ const TEE_OPTIONS: { value: TeeColorDbValue; label: string; swatch: string }[] =
   { value: 'red', label: 'Rojo', swatch: '#ef4444' },
 ];
 
-const TEE_LABEL: Record<TeeColorDbValue, string> = {
-  white: 'Blanco',
-  blue: 'Azul',
-  yellow: 'Amarillo',
-  red: 'Rojo',
-};
 
 export default function ScorecardImporterPage() {
   const navigate = useNavigate();
