@@ -318,13 +318,12 @@ export function useScorecardImporter() {
             teeColor: selfTee,
             groupId,
           });
-          // Sync organizer handicap + tee if provided
+          // Sync organizer handicap + tee
+          const selfUpdate: Record<string, any> = { tee_color: selfTee };
+          if (typeof m.handicap === 'number') selfUpdate.handicap_for_round = m.handicap;
           await supabase
             .from('round_players')
-            .update({
-              handicap_for_round: typeof m.handicap === 'number' ? m.handicap : undefined as any,
-              tee_color: selfTee,
-            })
+            .update(selfUpdate)
             .eq('id', organizerRoundPlayerId);
         } else if (m.kind === 'registered') {
           if (!m.profileId) throw new Error(`Falta perfil registrado para ${ep.nameInCard}`);
