@@ -372,7 +372,7 @@ export function useScorecardImporter() {
               guest_name: safeName,
               guest_initials: guestInitials,
               guest_color: '#3B82F6',
-              tee_color: teeColor,
+              tee_color: teeFor(ep.key),
             })
             .select('id')
             .single();
