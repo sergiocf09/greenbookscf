@@ -87,6 +87,7 @@ interface RoundHistoryProps {
 }
 
 export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound, onCloneFullRound }) => {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { canAccessHistory } = useSubscription();
   const [rounds, setRounds] = useState<RoundHistoryItem[]>([]);
