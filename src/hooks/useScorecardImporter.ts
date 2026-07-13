@@ -380,7 +380,16 @@ export function useScorecardImporter() {
       // 4) SAVE SCORES for each player × 18 holes
       setProgress({ stage: 'saving_scores', message: 'Guardando scores…', percent: 45 });
 
-      const holeScoresRows: Array<Record<string, any>> = [];
+      type HoleScoreInsert = {
+        round_player_id: string;
+        hole_number: number;
+        strokes: number;
+        putts: number;
+        strokes_received: number;
+        net_score: number;
+        confirmed: boolean;
+      };
+      const holeScoresRows: HoleScoreInsert[] = [];
       const scoresMap = new Map<string, PlayerScore[]>();
 
       for (const ep of editablePlayers) {
