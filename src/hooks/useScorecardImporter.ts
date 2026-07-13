@@ -130,6 +130,10 @@ export function useScorecardImporter() {
   // Step 3 mappings, keyed by EditablePlayer.key
   const [mappings, setMappings] = useState<Record<string, PlayerMapping>>({});
 
+  // Whether the logged-in user is also one of the players on the card.
+  // When false, the user acts as an external capturist (organizer only, not a player).
+  const [capturistIsPlayer, setCapturistIsPlayer] = useState<boolean>(true);
+
   // Step 4 progress
   const [progress, setProgress] = useState<SaveProgress>({
     stage: 'idle',
@@ -254,7 +258,9 @@ export function useScorecardImporter() {
       if (m.kind === 'self') selfCount++;
       if (m.kind === 'registered' && !m.profileId) return false;
     }
-    return selfCount === 1;
+    if (capturistIsPlayer) return selfCount === 1;
+    // External capturist: nobody may be 'self'
+    return selfCount === 0;
   })();
 
   // ────────────────────── STEP 4: Save pipeline ──────────────────────
@@ -396,6 +402,17 @@ export function useScorecardImporter() {
             groupId,
           });
         }
+      }
+
+      // 3b) If the capturist is NOT a participant, remove the ghost organizer
+      // round_player created by create_round. The organizer stays on rounds.organizer_id
+      // (so RLS still lets them edit/delete/close), but doesn't appear as a player.
+      if (!capturistIsPlayer) {
+        const { error: delOrgErr } = await supabase
+          .from('round_players')
+          .delete()
+          .eq('id', organizerRoundPlayerId);
+        if (delOrgErr) throw new Error(`No se pudo remover al capturista de la lista de jugadores: ${delOrgErr.message}`);
       }
 
       // 4) SAVE SCORES for each player × 18 holes
@@ -540,6 +557,7 @@ export function useScorecardImporter() {
     editablePlayers,
     mappings,
     mappingsValid,
+    capturistIsPlayer,
   ]);
 
   const reset = useCallback(() => {
@@ -557,8 +575,23 @@ export function useScorecardImporter() {
     setPlayerTeeColors({});
     setRoundDate(new Date());
     setMappings({});
+    setCapturistIsPlayer(true);
     setProgress({ stage: 'idle', message: '', percent: 0 });
   }, [imagePreviewUrl]);
+
+  // Toggle wrapper: when switching to external mode, wipe any 'self' assignments.
+  const setCapturistIsPlayerSafe = useCallback((v: boolean) => {
+    setCapturistIsPlayer(v);
+    if (!v) {
+      setMappings(prev => {
+        const next: Record<string, PlayerMapping> = {};
+        for (const [k, m] of Object.entries(prev)) {
+          next[k] = m.kind === 'self' ? { kind: 'guest' } : m;
+        }
+        return next;
+      });
+    }
+  }, []);
 
   return {
     // step control
@@ -577,6 +610,7 @@ export function useScorecardImporter() {
     roundDate, setRoundDate,
     // step 3
     mappings, setMapping, mappingsValid,
+    capturistIsPlayer, setCapturistIsPlayer: setCapturistIsPlayerSafe,
     // step 4
     progress, runSave,
     // control

@@ -49,6 +49,7 @@ export default function ScorecardImporterPage() {
     teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     mappings, setMapping, mappingsValid,
+    capturistIsPlayer, setCapturistIsPlayer,
     progress, runSave, reset,
   } = importer;
 
@@ -115,6 +116,8 @@ export default function ScorecardImporterPage() {
             mappings={mappings}
             setMapping={setMapping}
             mappingsValid={mappingsValid}
+            capturistIsPlayer={capturistIsPlayer}
+            setCapturistIsPlayer={setCapturistIsPlayer}
             profileDisplayName={profile?.display_name ?? 'Yo'}
             onBack={() => setStep(2)}
             onConfirm={runSave}
@@ -750,11 +753,17 @@ function Step3Mapping(props: {
   mappings: ReturnType<typeof useScorecardImporter>['mappings'];
   setMapping: ReturnType<typeof useScorecardImporter>['setMapping'];
   mappingsValid: boolean;
+  capturistIsPlayer: boolean;
+  setCapturistIsPlayer: (v: boolean) => void;
   profileDisplayName: string;
   onBack: () => void;
   onConfirm: () => void;
 }) {
-  const { editablePlayers, mappings, setMapping, mappingsValid, profileDisplayName, onBack, onConfirm } = props;
+  const {
+    editablePlayers, mappings, setMapping, mappingsValid,
+    capturistIsPlayer, setCapturistIsPlayer,
+    profileDisplayName, onBack, onConfirm,
+  } = props;
   const selfAssignedKey = useMemo(() => {
     const entry = Object.entries(mappings).find(([, m]) => m.kind === 'self');
     return entry?.[0] ?? null;
@@ -762,11 +771,34 @@ function Step3Mapping(props: {
 
   return (
     <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-4 pb-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={capturistIsPlayer}
+              onChange={(e) => setCapturistIsPlayer(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-primary"
+            />
+            <div className="text-sm">
+              <div className="font-medium">Yo también jugué esta ronda</div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Desactívalo si solo estás capturando la tarjeta para ayudar al grupo.
+                Serás el organizador (podrás editar o borrar la ronda) pero no aparecerás como jugador.
+              </p>
+            </div>
+          </label>
+        </CardContent>
+      </Card>
+
       <Alert>
         <User className="h-4 w-4" />
         <AlertDescription>
-          Asigna cada nombre detectado a un jugador. Exactamente uno debe ser
-          <strong> "Soy yo"</strong> (serás el organizador de esta ronda).
+          {capturistIsPlayer ? (
+            <>Asigna cada nombre detectado a un jugador. Exactamente uno debe ser <strong>"Soy yo"</strong>.</>
+          ) : (
+            <>Asigna cada nombre detectado a un jugador registrado o invitado.</>
+          )}
         </AlertDescription>
       </Alert>
 
@@ -786,22 +818,24 @@ function Step3Mapping(props: {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button
-                  variant={kind === 'self' ? 'default' : 'outline'}
-                  onClick={() =>
-                    setMapping(p.key, { kind: 'self' })
-                  }
-                  disabled={!!disableSelf}
-                  size="sm"
-                  className="justify-start"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Soy yo
-                  {disableSelf && (
-                    <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
-                  )}
-                </Button>
+              <div className={cn('grid gap-2 grid-cols-1', capturistIsPlayer ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+                {capturistIsPlayer && (
+                  <Button
+                    variant={kind === 'self' ? 'default' : 'outline'}
+                    onClick={() =>
+                      setMapping(p.key, { kind: 'self' })
+                    }
+                    disabled={!!disableSelf}
+                    size="sm"
+                    className="justify-start"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Soy yo
+                    {disableSelf && (
+                      <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant={kind === 'registered' ? 'default' : 'outline'}
                   onClick={() => setMapping(p.key, { kind: 'registered', profileId: null })}
@@ -864,7 +898,9 @@ function Step3Mapping(props: {
       </div>
       {!mappingsValid && (
         <p className="text-xs text-muted-foreground text-right">
-          Cada jugador debe estar mapeado y uno debe ser "Soy yo".
+          {capturistIsPlayer
+            ? 'Cada jugador debe estar mapeado y uno debe ser "Soy yo".'
+            : 'Cada jugador debe estar mapeado como registrado o invitado.'}
         </p>
       )}
     </div>

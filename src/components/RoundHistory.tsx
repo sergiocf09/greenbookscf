@@ -27,7 +27,7 @@ import {
 
 interface RoundHistoryItem {
   id: string;
-  roundPlayerId: string;
+  roundPlayerId: string | null;
   date: string;
   status: string;
   courseName: string;
@@ -38,6 +38,7 @@ interface RoundHistoryItem {
   handicapUsed: number;
   playersCount: number;
   isOrganizer: boolean;
+  capturedOnly: boolean; // organizer but not a participant
   roundHoles: 9 | 18;
 }
 
@@ -169,12 +170,57 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
             isOrganizer: rp.is_organizer,
+            capturedOnly: false,
             roundHoles,
           };
         })
       );
 
-      setRounds(roundItems);
+      // Also fetch rounds this user ORGANIZED but did not play (external capturist mode)
+      const participantRoundIds = new Set(roundItems.map(r => r.id));
+      const { data: organizedRounds } = await supabase
+        .from('rounds')
+        .select(`
+          id, date, status, tee_color, course_id, bet_config, starting_hole,
+          golf_courses(name, location)
+        `)
+        .eq('organizer_id', profile.id)
+        .eq('status', 'completed')
+        .order('date', { ascending: false });
+
+      const extras: RoundHistoryItem[] = await Promise.all(
+        (organizedRounds || [])
+          .filter((r: any) => !participantRoundIds.has(r.id))
+          .map(async (r: any) => {
+            const course = r.golf_courses as any;
+            const roundHoles: 9 | 18 = (r.bet_config as any)?.roundHoles === 9 ? 9 : 18;
+            const { count } = await supabase
+              .from('round_players')
+              .select('id', { count: 'exact', head: true })
+              .eq('round_id', r.id);
+            return {
+              id: r.id,
+              roundPlayerId: null,
+              date: r.date,
+              status: r.status,
+              courseName: course?.name || 'Campo desconocido',
+              courseLocation: course?.location || '',
+              courseId: r.course_id,
+              teeColor: r.tee_color,
+              totalStrokes: 0,
+              handicapUsed: 0,
+              playersCount: count || 0,
+              isOrganizer: true,
+              capturedOnly: true,
+              roundHoles,
+            };
+          })
+      );
+
+      const merged = [...roundItems, ...extras].sort(
+        (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)
+      );
+      setRounds(merged);
     } catch (err) {
       devError('Error fetching round history:', err);
     } finally {
@@ -559,7 +605,18 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   {round.roundHoles === 9 && (
                     <RoundHolesBadge holes={9} className="flex-shrink-0 ml-1" />
                   )}
-                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">{round.totalStrokes}</span>
+                  {round.capturedOnly && (
+                    <span
+                      className="flex-shrink-0 ml-1 inline-flex items-center"
+                      title="Ronda capturada — no participaste como jugador"
+                      aria-label="Ronda capturada — no participaste"
+                    >
+                      <ImagePlus className="h-3 w-3 text-muted-foreground" />
+                    </span>
+                  )}
+                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
+                    {round.capturedOnly ? '—' : round.totalStrokes}
+                  </span>
                   {expandedRound === round.id ? (
                     <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   ) : (
@@ -579,6 +636,12 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
                       </span>
                     </div>
+                    {round.capturedOnly && (
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1 pt-0.5">
+                        <ImagePlus className="h-3 w-3" />
+                        <span>Capturada por ti — no participaste como jugador.</span>
+                      </div>
+                    )}
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
