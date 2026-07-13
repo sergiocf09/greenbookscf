@@ -898,7 +898,9 @@ function Step3Mapping(props: {
       </div>
       {!mappingsValid && (
         <p className="text-xs text-muted-foreground text-right">
-          Cada jugador debe estar mapeado y uno debe ser "Soy yo".
+          {capturistIsPlayer
+            ? 'Cada jugador debe estar mapeado y uno debe ser "Soy yo".'
+            : 'Cada jugador debe estar mapeado como registrado o invitado.'}
         </p>
       )}
     </div>
