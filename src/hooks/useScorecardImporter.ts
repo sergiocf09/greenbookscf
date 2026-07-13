@@ -565,6 +565,7 @@ export function useScorecardImporter() {
     courseId, setCourseId,
     courseName, setCourseName,
     teeColor, setTeeColor,
+    playerTeeColors, setPlayerTeeColor,
     roundDate, setRoundDate,
     // step 3
     mappings, setMapping, mappingsValid,
