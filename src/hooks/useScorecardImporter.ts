@@ -306,6 +306,7 @@ export function useScorecardImporter() {
         if (!m) throw new Error(`Falta mapeo para ${ep.nameInCard}`);
 
         if (m.kind === 'self') {
+          const selfTee = teeFor(ep.key);
           playerRoundIds.set(ep.key, organizerRoundPlayerId);
           playerObjects.set(ep.key, {
             id: organizerRoundPlayerId,
@@ -314,16 +315,17 @@ export function useScorecardImporter() {
             color: profile.avatar_color,
             handicap: m.handicap ?? profile.current_handicap ?? 0,
             profileId: organizerProfileId,
-            teeColor,
+            teeColor: selfTee,
             groupId,
           });
-          // Sync organizer handicap if provided
-          if (typeof m.handicap === 'number') {
-            await supabase
-              .from('round_players')
-              .update({ handicap_for_round: m.handicap })
-              .eq('id', organizerRoundPlayerId);
-          }
+          // Sync organizer handicap + tee if provided
+          await supabase
+            .from('round_players')
+            .update({
+              handicap_for_round: typeof m.handicap === 'number' ? m.handicap : undefined as any,
+              tee_color: selfTee,
+            })
+            .eq('id', organizerRoundPlayerId);
         } else if (m.kind === 'registered') {
           if (!m.profileId) throw new Error(`Falta perfil registrado para ${ep.nameInCard}`);
           const { data, error } = await supabase
