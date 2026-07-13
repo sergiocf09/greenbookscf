@@ -404,6 +404,17 @@ export function useScorecardImporter() {
         }
       }
 
+      // 3b) If the capturist is NOT a participant, remove the ghost organizer
+      // round_player created by create_round. The organizer stays on rounds.organizer_id
+      // (so RLS still lets them edit/delete/close), but doesn't appear as a player.
+      if (!capturistIsPlayer) {
+        const { error: delOrgErr } = await supabase
+          .from('round_players')
+          .delete()
+          .eq('id', organizerRoundPlayerId);
+        if (delOrgErr) throw new Error(`No se pudo remover al capturista de la lista de jugadores: ${delOrgErr.message}`);
+      }
+
       // 4) SAVE SCORES for each player × 18 holes
       setProgress({ stage: 'saving_scores', message: 'Guardando scores…', percent: 45 });
 
