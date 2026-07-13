@@ -336,7 +336,7 @@ export function useScorecardImporter() {
               handicap_for_round: m.handicap ?? 0,
               is_organizer: false,
               is_admin: false,
-              tee_color: teeColor,
+              tee_color: teeFor(ep.key),
             })
             .select('id')
             .single();
