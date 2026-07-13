@@ -99,6 +99,8 @@ export default function ScorecardImporterPage() {
             setCourseName={setCourseName}
             teeColor={teeColor}
             setTeeColor={setTeeColor}
+            playerTeeColors={playerTeeColors}
+            setPlayerTeeColor={setPlayerTeeColor}
             roundDate={roundDate}
             setRoundDate={setRoundDate}
             confidence={parsed?.confidence ?? 'low'}
