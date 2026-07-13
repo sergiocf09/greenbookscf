@@ -642,7 +642,6 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <span>Capturada por ti — no participaste como jugador.</span>
                       </div>
                     )}
-                    </div>
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
