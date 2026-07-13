@@ -116,6 +116,8 @@ export default function ScorecardImporterPage() {
             mappings={mappings}
             setMapping={setMapping}
             mappingsValid={mappingsValid}
+            capturistIsPlayer={capturistIsPlayer}
+            setCapturistIsPlayer={setCapturistIsPlayer}
             profileDisplayName={profile?.display_name ?? 'Yo'}
             onBack={() => setStep(2)}
             onConfirm={runSave}
