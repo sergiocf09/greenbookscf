@@ -299,6 +299,7 @@ export function useScorecardImporter() {
       // Build list: { editableKey, roundPlayerId, playerObj }
       const playerRoundIds = new Map<string, string>(); // editableKey -> round_players.id
       const playerObjects = new Map<string, Player>();  // editableKey -> Player (for snapshot)
+      const teeFor = (key: string): TeeColorDbValue => playerTeeColors[key] ?? teeColor;
 
       for (const ep of editablePlayers) {
         const m = mappings[ep.key];
