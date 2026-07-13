@@ -633,7 +633,7 @@ export function useScorecardImporter() {
     // step control
     step, setStep,
     // step 1
-    imageFile, imagePreviewUrl, imagePreparing, analyzing, analyzeError,
+    imageFile, imagePreviewUrl, imagePreparing, imageReady: !!imageDataUrl, analyzing, analyzeError,
     pickImage, analyze,
     // parsed data
     parsed,
