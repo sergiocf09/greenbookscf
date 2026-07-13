@@ -545,7 +545,8 @@ export function useScorecardImporter() {
     setEditablePlayers([]);
     setCourseId(null);
     setCourseName('');
-    setTeeColor('white');
+    setTeeColorState('white');
+    setPlayerTeeColors({});
     setRoundDate(new Date());
     setMappings({});
     setProgress({ stage: 'idle', message: '', percent: 0 });
