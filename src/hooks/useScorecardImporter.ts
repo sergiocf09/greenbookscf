@@ -349,7 +349,7 @@ export function useScorecardImporter() {
             color: '#3B82F6',
             handicap: m.handicap ?? 0,
             profileId: m.profileId,
-            teeColor,
+            teeColor: teeFor(ep.key),
             groupId,
           });
         } else {
