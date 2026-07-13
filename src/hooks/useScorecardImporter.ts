@@ -575,8 +575,23 @@ export function useScorecardImporter() {
     setPlayerTeeColors({});
     setRoundDate(new Date());
     setMappings({});
+    setCapturistIsPlayer(true);
     setProgress({ stage: 'idle', message: '', percent: 0 });
   }, [imagePreviewUrl]);
+
+  // Toggle wrapper: when switching to external mode, wipe any 'self' assignments.
+  const setCapturistIsPlayerSafe = useCallback((v: boolean) => {
+    setCapturistIsPlayer(v);
+    if (!v) {
+      setMappings(prev => {
+        const next: Record<string, PlayerMapping> = {};
+        for (const [k, m] of Object.entries(prev)) {
+          next[k] = m.kind === 'self' ? { kind: 'guest' } : m;
+        }
+        return next;
+      });
+    }
+  }, []);
 
   return {
     // step control
@@ -595,6 +610,7 @@ export function useScorecardImporter() {
     roundDate, setRoundDate,
     // step 3
     mappings, setMapping, mappingsValid,
+    capturistIsPlayer, setCapturistIsPlayer: setCapturistIsPlayerSafe,
     // step 4
     progress, runSave,
     // control
