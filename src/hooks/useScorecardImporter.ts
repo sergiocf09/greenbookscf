@@ -527,6 +527,7 @@ export function useScorecardImporter() {
     profile,
     courseId,
     teeColor,
+    playerTeeColors,
     roundDate,
     editablePlayers,
     mappings,
