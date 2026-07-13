@@ -27,6 +27,7 @@ const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
 const MultiDayLeaderboard = lazy(() => import("./pages/MultiDayLeaderboard"));
 const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
 const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
+const ScorecardImporter  = lazy(() => import("./pages/ScorecardImporter"));
 
 
 
@@ -88,6 +89,7 @@ const AppRoutes = () => (
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
+      <Route path="/import-scorecard" element={<ProtectedRoute><ScorecardImporter /></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
