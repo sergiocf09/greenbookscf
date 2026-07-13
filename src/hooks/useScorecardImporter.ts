@@ -154,12 +154,20 @@ export function useScorecardImporter() {
       setParsed(result);
       // Seed step-2 editable state
       setEditablePlayers(
-        result.detectedPlayers.map((p: DetectedPlayer, i) => ({
-          key: `p_${i}_${Date.now()}`,
-          nameInCard: p.nameInCard,
-          scores: p.scores.slice(0, 18).concat(Array(Math.max(0, 18 - p.scores.length)).fill(null)).slice(0, 18),
-          putts: p.putts ? p.putts.slice(0, 18).concat(Array(Math.max(0, 18 - p.putts.length)).fill(null)).slice(0, 18) : null,
-        }))
+        result.detectedPlayers.map((p: DetectedPlayer, i) => {
+          const scores = p.scores.slice(0, 18).concat(Array(Math.max(0, 18 - p.scores.length)).fill(null)).slice(0, 18);
+          // Putts default to 2 for every hole (as if pre-confirmed), matching live-round behavior.
+          const detectedPutts = p.putts
+            ? p.putts.slice(0, 18).concat(Array(Math.max(0, 18 - p.putts.length)).fill(null)).slice(0, 18)
+            : Array(18).fill(null);
+          const putts = detectedPutts.map((v: number | null) => (typeof v === 'number' && v >= 0 ? v : 2));
+          return {
+            key: `p_${i}_${Date.now()}`,
+            nameInCard: p.nameInCard,
+            scores,
+            putts,
+          };
+        })
       );
       setCourseName(result.detectedCourseName ?? '');
       setTeeColor(mapTeeColor(result.detectedTeeColor));
