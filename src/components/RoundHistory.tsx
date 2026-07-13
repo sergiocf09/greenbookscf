@@ -522,9 +522,22 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     );
   }
 
+  const navigate = useNavigate();
+
   return (
     <>
       <div className="space-y-3 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate('/import-scorecard')}
+          >
+            <ImagePlus className="h-4 w-4 mr-2" />
+            Importar tarjeta manual
+          </Button>
+        </div>
         <ScrollArea className="h-[400px]">
           <div className="space-y-2 pr-2">
             {rounds.map((round) => (
