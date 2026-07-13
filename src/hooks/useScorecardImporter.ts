@@ -258,7 +258,9 @@ export function useScorecardImporter() {
       if (m.kind === 'self') selfCount++;
       if (m.kind === 'registered' && !m.profileId) return false;
     }
-    return selfCount === 1;
+    if (capturistIsPlayer) return selfCount === 1;
+    // External capturist: nobody may be 'self'
+    return selfCount === 0;
   })();
 
   // ────────────────────── STEP 4: Save pipeline ──────────────────────
