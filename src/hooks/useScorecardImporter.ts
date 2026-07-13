@@ -113,8 +113,19 @@ export function useScorecardImporter() {
   const [editablePlayers, setEditablePlayers] = useState<EditablePlayer[]>([]);
   const [courseId, setCourseId] = useState<string | null>(null);
   const [courseName, setCourseName] = useState<string>('');
-  const [teeColor, setTeeColor] = useState<TeeColorDbValue>('white');
+  const [teeColor, setTeeColorState] = useState<TeeColorDbValue>('white');
   const [roundDate, setRoundDate] = useState<Date>(new Date());
+  // Per-player tee color overrides (missing key = use global teeColor).
+  const [playerTeeColors, setPlayerTeeColors] = useState<Record<string, TeeColorDbValue>>({});
+
+  const setTeeColor = useCallback((t: TeeColorDbValue) => {
+    setTeeColorState(t);
+    setPlayerTeeColors({}); // reapply as new default for everyone
+  }, []);
+
+  const setPlayerTeeColor = useCallback((key: string, t: TeeColorDbValue) => {
+    setPlayerTeeColors(prev => ({ ...prev, [key]: t }));
+  }, []);
 
   // Step 3 mappings, keyed by EditablePlayer.key
   const [mappings, setMappings] = useState<Record<string, PlayerMapping>>({});
