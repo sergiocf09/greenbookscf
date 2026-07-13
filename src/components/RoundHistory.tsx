@@ -636,6 +636,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         {round.playersCount} jugador{round.playersCount > 1 ? 'es' : ''}
                       </span>
                     </div>
+                    {round.capturedOnly && (
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1 pt-0.5">
+                        <ImagePlus className="h-3 w-3" />
+                        <span>Capturada por ti — no participaste como jugador.</span>
+                      </div>
+                    )}
+                    </div>
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
