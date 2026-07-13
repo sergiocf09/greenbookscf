@@ -251,6 +251,8 @@ function Step2Validate(props: {
   setCourseName: (name: string) => void;
   teeColor: TeeColorDbValue;
   setTeeColor: (t: TeeColorDbValue) => void;
+  playerTeeColors: Record<string, TeeColorDbValue>;
+  setPlayerTeeColor: (k: string, t: TeeColorDbValue) => void;
   roundDate: Date;
   setRoundDate: (d: Date) => void;
   confidence: 'high' | 'medium' | 'low';
@@ -260,11 +262,60 @@ function Step2Validate(props: {
   const {
     editablePlayers, updateScoreCell, updatePuttCell, updatePlayerName, removePlayer,
     courseId, setCourseId, courseName, setCourseName,
-    teeColor, setTeeColor, roundDate, setRoundDate,
+    teeColor, setTeeColor, playerTeeColors, setPlayerTeeColor,
+    roundDate, setRoundDate,
     confidence, onBack, onContinue,
   } = props;
 
   const canContinue = !!courseId && editablePlayers.length > 0;
+
+  // Totals per player: F9, B9, Total (scores) + putts subtotals
+  const totals = useMemo(() => {
+    return editablePlayers.map(p => {
+      const sumRange = (arr: (number | null)[] | null | undefined, from: number, to: number) => {
+        if (!arr) return 0;
+        let s = 0;
+        for (let i = from; i < to; i++) {
+          const v = arr[i];
+          if (typeof v === 'number' && v > 0) s += v;
+        }
+        return s;
+      };
+      return {
+        key: p.key,
+        scoreF9: sumRange(p.scores, 0, 9),
+        scoreB9: sumRange(p.scores, 9, 18),
+        scoreTotal: sumRange(p.scores, 0, 18),
+        puttsF9: sumRange(p.putts, 0, 9),
+        puttsB9: sumRange(p.putts, 9, 18),
+        puttsTotal: sumRange(p.putts, 0, 18),
+      };
+    });
+  }, [editablePlayers]);
+
+  const renderSubtotalRow = (
+    label: string,
+    picker: (t: (typeof totals)[number]) => { score: number; putts: number }
+  ) => (
+    <tr className="bg-muted/40 border-y border-border font-semibold">
+      <td className="px-2 py-1.5 sticky left-0 bg-muted/40 z-10 text-xs uppercase tracking-wide">
+        {label}
+      </td>
+      {totals.map(t => {
+        const v = picker(t);
+        return (
+          <td key={t.key} className="px-1 py-1.5">
+            <div className="flex justify-around text-xs">
+              <span className="min-w-8 text-center">{v.score || '—'}</span>
+              <span className="min-w-8 text-center text-muted-foreground">
+                {v.putts || '—'}
+              </span>
+            </div>
+          </td>
+        );
+      })}
+    </tr>
+  );
 
   return (
     <div className="space-y-4">
@@ -292,18 +343,20 @@ function Step2Validate(props: {
             }}
           />
           <div>
-            <Label className="text-xs text-muted-foreground">Color de tee</Label>
+            <Label className="text-xs text-muted-foreground">Color de tee (por default)</Label>
             <Select value={teeColor} onValueChange={(v) => setTeeColor(v as TeeColorDbValue)}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="white">Blanco</SelectItem>
-                <SelectItem value="blue">Azul</SelectItem>
-                <SelectItem value="yellow">Amarillo</SelectItem>
-                <SelectItem value="red">Rojo</SelectItem>
+                {TEE_OPTIONS.map(t => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Se aplica a todos los jugadores; puedes cambiar el tee de cada jugador abajo.
+            </p>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Fecha de la ronda</Label>
@@ -334,89 +387,125 @@ function Step2Validate(props: {
       <Card>
         <CardHeader>
           <CardTitle>Scores detectados</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Score arriba, putts abajo. Si no capturas los putts, se guardarán 2 por hoyo.
+          </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left px-2 py-2 sticky left-0 bg-card z-10">Hoyo</th>
+                {editablePlayers.map((p) => {
+                  const currentTee = playerTeeColors[p.key] ?? teeColor;
+                  return (
+                    <th key={p.key} className="px-2 py-2 min-w-[170px] align-top">
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={p.nameInCard}
+                          onChange={(e) => updatePlayerName(p.key, e.target.value)}
+                          className="h-8 text-xs"
+                          placeholder="Nombre"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => removePlayer(p.key)}
+                          title="Quitar jugador"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 flex items-center justify-center gap-1.5">
+                        {TEE_OPTIONS.map(t => {
+                          const active = currentTee === t.value;
+                          return (
+                            <button
+                              key={t.value}
+                              type="button"
+                              onClick={() => setPlayerTeeColor(p.key, t.value)}
+                              title={`Tee ${t.label}`}
+                              aria-label={`Tee ${t.label}`}
+                              className={cn(
+                                'h-5 w-5 rounded-full border transition',
+                                active
+                                  ? 'ring-2 ring-primary ring-offset-1 ring-offset-background border-foreground/40 scale-110'
+                                  : 'border-border hover:scale-110'
+                              )}
+                              style={{ backgroundColor: t.swatch }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr className="border-b border-border/60 text-[10px] uppercase text-muted-foreground">
+                <th className="px-2 py-1 sticky left-0 bg-card z-10">#</th>
                 {editablePlayers.map((p) => (
-                  <th key={p.key} className="px-2 py-2 min-w-[140px]">
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={p.nameInCard}
-                        onChange={(e) => updatePlayerName(p.key, e.target.value)}
-                        className="h-8 text-xs"
-                        placeholder="Nombre"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => removePlayer(p.key)}
-                        title="Quitar jugador"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
+                  <th key={p.key} className="px-1 py-1">
+                    <div className="flex justify-around">
+                      <span>Score</span>
+                      <span>Putts</span>
                     </div>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 18 }).map((_, i) => (
-                <tr key={i} className="border-b border-border/60">
-                  <td className="px-2 py-1.5 font-medium sticky left-0 bg-card z-10">
-                    {i + 1}
-                  </td>
-                  {editablePlayers.map((p) => {
-                    const s = p.scores[i];
-                    const pu = p.putts?.[i] ?? null;
-                    return (
-                      <td key={p.key} className="px-1 py-1.5">
-                        <div className="flex gap-1">
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={1}
-                            max={20}
-                            value={s ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === '') {
-                                updateScoreCell(p.key, i, null);
-                              } else {
-                                const n = parseInt(raw, 10);
-                                if (Number.isFinite(n)) updateScoreCell(p.key, i, Math.max(1, Math.min(20, n)));
-                              }
-                            }}
-                            placeholder="—"
-                            className="h-8 text-xs px-1 text-center"
-                          />
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={0}
-                            max={10}
-                            value={pu ?? ''}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === '') {
-                                updatePuttCell(p.key, i, null);
-                              } else {
-                                const n = parseInt(raw, 10);
-                                if (Number.isFinite(n)) updatePuttCell(p.key, i, Math.max(0, Math.min(10, n)));
-                              }
-                            }}
-                            placeholder="putt"
-                            className="h-8 text-xs px-1 text-center text-muted-foreground"
-                          />
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {Array.from({ length: 18 }).map((_, i) => {
+                const rows: React.ReactNode[] = [];
+                rows.push(
+                  <tr key={i} className="border-b border-border/60">
+                    <td className="px-2 py-1.5 font-medium sticky left-0 bg-card z-10">
+                      {i + 1}
+                    </td>
+                    {editablePlayers.map((p) => {
+                      const s = p.scores[i];
+                      const pu = p.putts?.[i] ?? null;
+                      return (
+                        <td key={p.key} className="px-1 py-1.5">
+                          <div className="flex justify-around gap-1">
+                            <StepperCell
+                              value={s}
+                              min={1}
+                              max={20}
+                              onChange={(v) => updateScoreCell(p.key, i, v)}
+                              placeholder="—"
+                            />
+                            <StepperCell
+                              value={pu}
+                              min={0}
+                              max={10}
+                              onChange={(v) => updatePuttCell(p.key, i, v)}
+                              placeholder="2"
+                              muted
+                            />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+                if (i === 8) {
+                  rows.push(
+                    <React.Fragment key="f9-sub">
+                      {renderSubtotalRow('OUT (F9)', t => ({ score: t.scoreF9, putts: t.puttsF9 }))}
+                    </React.Fragment>
+                  );
+                }
+                if (i === 17) {
+                  rows.push(
+                    <React.Fragment key="b9-sub">
+                      {renderSubtotalRow('IN (B9)', t => ({ score: t.scoreB9, putts: t.puttsB9 }))}
+                      {renderSubtotalRow('TOTAL', t => ({ score: t.scoreTotal, putts: t.puttsTotal }))}
+                    </React.Fragment>
+                  );
+                }
+                return <React.Fragment key={`row-${i}`}>{rows}</React.Fragment>;
+              })}
             </tbody>
           </table>
         </CardContent>
@@ -437,6 +526,64 @@ function Step2Validate(props: {
           Selecciona el campo para poder continuar.
         </p>
       )}
+    </div>
+  );
+}
+
+// Compact stepper: −  [number]  +  with tap-and-type support.
+function StepperCell({
+  value, min, max, onChange, placeholder, muted,
+}: {
+  value: number | null;
+  min: number;
+  max: number;
+  onChange: (v: number | null) => void;
+  placeholder: string;
+  muted?: boolean;
+}) {
+  const clamp = (n: number) => Math.max(min, Math.min(max, n));
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-6 w-6 rounded-full shrink-0"
+        onClick={() => onChange(clamp((value ?? min) - 1))}
+        disabled={value !== null && value <= min}
+        tabIndex={-1}
+      >
+        <Minus className="h-3 w-3" />
+      </Button>
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        value={value ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (raw === '') { onChange(null); return; }
+          const n = parseInt(raw, 10);
+          if (Number.isFinite(n)) onChange(clamp(n));
+        }}
+        placeholder={placeholder}
+        className={cn(
+          'h-7 w-9 text-xs px-0.5 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+          muted && 'text-muted-foreground'
+        )}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="h-6 w-6 rounded-full shrink-0"
+        onClick={() => onChange(clamp((value ?? min - 1) + 1))}
+        disabled={value !== null && value >= max}
+        tabIndex={-1}
+      >
+        <Plus className="h-3 w-3" />
+      </Button>
     </div>
   );
 }
