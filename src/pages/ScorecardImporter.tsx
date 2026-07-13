@@ -595,8 +595,9 @@ function CoursePicker({
   courseName: string;
   onPick: (id: string, name: string) => void;
 }) {
+  const { courses: knownCourses, loading: loadingKnown } = useGolfCourses();
   const { results, searching, search, importCourse, clearResults } = useCourseSearch();
-  const [query, setQuery] = useState(courseName ?? '');
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -608,6 +609,15 @@ function CoursePicker({
     }, 300);
     return () => clearTimeout(t);
   }, [query, open, search, clearResults]);
+
+  const filteredKnown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return knownCourses;
+    return knownCourses.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.location || '').toLowerCase().includes(q)
+    );
+  }, [knownCourses, query]);
 
   return (
     <div>
@@ -621,59 +631,109 @@ function CoursePicker({
           >
             <Search className="mr-2 h-4 w-4 opacity-70" />
             <span className="truncate">
-              {courseId ? (courseName || 'Campo seleccionado') : 'Buscar campo…'}
+              {courseId ? (courseName || 'Campo seleccionado') : 'Selecciona un campo…'}
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
+        <PopoverContent className="w-[340px] p-0" align="start">
           <div className="p-2 border-b border-border">
             <Input
               autoFocus
-              placeholder="Nombre del campo…"
+              placeholder="Filtrar tus campos o buscar uno nuevo…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="h-8 text-sm"
             />
           </div>
-          <div className="max-h-64 overflow-auto">
-            {searching && (
+          <div className="max-h-72 overflow-auto">
+            {/* Section: user's known courses */}
+            <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Tus campos
+            </div>
+            {loadingKnown && (
               <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                <Loader2 className="h-3 w-3 animate-spin" /> Cargando…
               </div>
             )}
-            {!searching && results.length === 0 && query.length >= 2 && (
-              <div className="p-3 text-xs text-muted-foreground">Sin resultados</div>
+            {!loadingKnown && filteredKnown.length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">
+                {query ? 'Sin coincidencias en tus campos' : 'Aún no tienes campos guardados'}
+              </div>
             )}
-            {results.map((r) => (
+            {filteredKnown.map((c) => (
               <button
-                key={r.apiId}
+                key={c.id}
                 type="button"
-                disabled={importing}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40 last:border-0 disabled:opacity-60"
-                onClick={async () => {
-                  setImporting(true);
-                  try {
-                    const newId = await importCourse(r.apiId);
-                    if (newId) {
-                      onPick(newId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
-                      setOpen(false);
-                    }
-                  } finally {
-                    setImporting(false);
-                  }
+                className={cn(
+                  'w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40',
+                  courseId === c.id && 'bg-accent/60'
+                )}
+                onClick={() => {
+                  onPick(c.id, c.name);
+                  setOpen(false);
                 }}
               >
-                <div className="font-medium">{r.clubName}</div>
-                {r.courseName && (
-                  <div className="text-xs text-muted-foreground">{r.courseName}</div>
-                )}
-                {(r.city || r.state) && (
-                  <div className="text-[10px] text-muted-foreground">
-                    {[r.city, r.state, r.country].filter(Boolean).join(', ')}
-                  </div>
+                <div className="font-medium flex items-center gap-2">
+                  {c.name}
+                  {courseId === c.id && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                </div>
+                {c.location && (
+                  <div className="text-[10px] text-muted-foreground">{c.location}</div>
                 )}
               </button>
             ))}
+
+            {/* Section: online search (only when there's a query >= 2) */}
+            {query.trim().length >= 2 && (
+              <>
+                <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/60">
+                  Buscar y descargar
+                </div>
+                {searching && (
+                  <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                  </div>
+                )}
+                {!searching && results.length === 0 && (
+                  <div className="p-3 text-xs text-muted-foreground">Sin resultados en línea</div>
+                )}
+                {results.map((r) => (
+                  <button
+                    key={r.apiId}
+                    type="button"
+                    disabled={importing}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b border-border/40 last:border-0 disabled:opacity-60"
+                    onClick={async () => {
+                      setImporting(true);
+                      try {
+                        const newId = await importCourse(r.apiId);
+                        if (newId) {
+                          onPick(newId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
+                          setOpen(false);
+                        }
+                      } finally {
+                        setImporting(false);
+                      }
+                    }}
+                  >
+                    <div className="font-medium">{r.clubName}</div>
+                    {r.courseName && (
+                      <div className="text-xs text-muted-foreground">{r.courseName}</div>
+                    )}
+                    {(r.city || r.state) && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {[r.city, r.state, r.country].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                  </button>
+                ))}
+                {importing && (
+                  <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Descargando campo…
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </PopoverContent>
       </Popover>
