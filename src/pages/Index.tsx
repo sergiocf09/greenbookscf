@@ -1091,20 +1091,31 @@ const Index = () => {
               if (currentPlayer.handicap !== newPlayer.handicap) {
                 updates.handicap_for_round = newPlayer.handicap;
               }
-              if (currentPlayer.teeColor !== newPlayer.teeColor && newPlayer.teeColor) {
+              const teeChanged = currentPlayer.teeColor !== newPlayer.teeColor && !!newPlayer.teeColor;
+              if (teeChanged) {
                 updates.tee_color = newPlayer.teeColor;
               }
 
               if (Object.keys(updates).length > 0) {
                 devLog(`[Handicap Persist G2+] Player ${newPlayer.name} (rpId: ${roundPlayerId}):`, updates);
-                supabase
+                const { data: updated, error } = await supabase
                   .from('round_players')
                   .update(updates)
                   .eq('id', roundPlayerId)
-                  .then(({ error }) => {
-                    if (error) devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
-                    else devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`);
-                  });
+                  .select('id, tee_color, handicap_for_round')
+                  .maybeSingle();
+                if (error) {
+                  devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
+                  toast.error(`No se pudo guardar el cambio de ${newPlayer.name}`);
+                } else if (!updated) {
+                  devError(`[Handicap Persist G2+] No row updated for ${newPlayer.name} (posible RLS)`);
+                  toast.error(`No tienes permiso para actualizar a ${newPlayer.name}`);
+                } else {
+                  devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`, updated);
+                  if (teeChanged) {
+                    toast.success(`Tee de ${newPlayer.name} actualizado. Recalcula HCP si aplica.`);
+                  }
+                }
                 if (currentPlayer.handicap !== newPlayer.handicap) {
                   logEvent('handicap_changed', {
                     prev_handicap: currentPlayer.handicap,
@@ -1116,6 +1127,7 @@ const Index = () => {
             } else {
               if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
                 devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
+                toast.error(`No se pudo guardar el cambio de ${newPlayer.name} (mapeo pendiente)`);
               }
             }
           }
@@ -1413,31 +1425,35 @@ const Index = () => {
           const roundPlayerId = roundPlayerIds.get(newPlayer.id);
           if (roundPlayerId) {
             const updates: { handicap_for_round?: number; tee_color?: string } = {};
-            
-            // Check handicap change
+
             if (currentPlayer.handicap !== newPlayer.handicap) {
               updates.handicap_for_round = newPlayer.handicap;
             }
-            
-            // Check tee color change
-            if (currentPlayer.teeColor !== newPlayer.teeColor && newPlayer.teeColor) {
+            const teeChanged = currentPlayer.teeColor !== newPlayer.teeColor && !!newPlayer.teeColor;
+            if (teeChanged) {
               updates.tee_color = newPlayer.teeColor;
             }
-            
-            // Only persist if there are changes
+
             if (Object.keys(updates).length > 0) {
               devLog(`[Handicap Persist] Player ${newPlayer.name} (rpId: ${roundPlayerId}):`, updates);
-              supabase
+              const { data: updated, error } = await supabase
                 .from('round_players')
                 .update(updates)
                 .eq('id', roundPlayerId)
-                .then(({ error }) => {
-                  if (error) {
-                    devError(`Error persisting player changes for ${newPlayer.name}:`, error);
-                  } else {
-                    devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`);
-                  }
-                });
+                .select('id, tee_color, handicap_for_round')
+                .maybeSingle();
+              if (error) {
+                devError(`Error persisting player changes for ${newPlayer.name}:`, error);
+                toast.error(`No se pudo guardar el cambio de ${newPlayer.name}`);
+              } else if (!updated) {
+                devError(`[Handicap Persist] No row updated for ${newPlayer.name} (posible RLS)`);
+                toast.error(`No tienes permiso para actualizar a ${newPlayer.name}`);
+              } else {
+                devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`, updated);
+                if (teeChanged) {
+                  toast.success(`Tee de ${newPlayer.name} actualizado. Recalcula HCP si aplica.`);
+                }
+              }
               if (currentPlayer.handicap !== newPlayer.handicap) {
                 logEvent('handicap_changed', {
                   prev_handicap: currentPlayer.handicap,
@@ -1447,9 +1463,9 @@ const Index = () => {
             }
 
           } else {
-            // Log when mapping is missing so we can catch timing issues
             if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
               devWarn(`[Handicap Persist] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist until mapping exists.`);
+              toast.error(`No se pudo guardar el cambio de ${newPlayer.name} (mapeo pendiente)`);
             }
           }
         }
