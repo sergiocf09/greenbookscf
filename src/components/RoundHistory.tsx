@@ -710,7 +710,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         </Button>
                       </div>
                       {/* Bottom row: Duplicar con scores + Reabrir, centered */}
-                      {round.isOrganizer && (
+                      {(round.isOrganizer || round.isCoAdmin) && (
                         <div className="flex justify-center gap-2">
                           {onCloneFullRound && (
                             <Button
