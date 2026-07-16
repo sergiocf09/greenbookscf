@@ -659,6 +659,11 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <span>Capturada por ti — no participaste como jugador.</span>
                       </div>
                     )}
+                    {round.isIncomplete && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Cerrada automáticamente. Reabre para completar scores y calcular handicap.
+                      </p>
+                    )}
                     
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 pt-1">
