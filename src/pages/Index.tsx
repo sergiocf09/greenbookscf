@@ -64,6 +64,7 @@ import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
 import { useAttestation } from '@/hooks/useAttestation';
 import { useRoundAuditLog } from '@/hooks/useRoundAuditLog';
+import { useAutoClose } from '@/hooks/useAutoClose';
 import { AttestationSheet } from '@/components/attestation/AttestationSheet';
 import { RoundAuditSheet } from '@/components/audit/RoundAuditSheet';
 
