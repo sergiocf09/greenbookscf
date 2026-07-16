@@ -219,6 +219,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               isOrganizer: true,
               capturedOnly: true,
               roundHoles,
+              isIncomplete: r.is_incomplete ?? false,
+              isCoAdmin: false,
             };
           })
       );
