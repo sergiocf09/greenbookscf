@@ -64,6 +64,7 @@ import { useVegas } from '@/hooks/useVegas';
 import { useNines } from '@/hooks/useNines';
 import { useAttestation } from '@/hooks/useAttestation';
 import { useRoundAuditLog } from '@/hooks/useRoundAuditLog';
+import { useAutoClose } from '@/hooks/useAutoClose';
 import { AttestationSheet } from '@/components/attestation/AttestationSheet';
 import { RoundAuditSheet } from '@/components/audit/RoundAuditSheet';
 
@@ -212,6 +213,28 @@ const Index = () => {
     setPlayerGroups,
     logEvent,
   });
+
+  // Auto-close abandoned rounds (runs once at login)
+  useAutoClose((roundId) => {
+    if (roundState?.id === roundId) {
+      setRoundState(null);
+    }
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { roundId, isComplete } = (e as CustomEvent).detail;
+      if (isComplete && roundState?.id === roundId && roundState?.status === 'in_progress') {
+        if (!isClosing) {
+          closeScorecard([], undefined);
+        }
+      }
+    };
+    window.addEventListener('greenbook:auto-close-round', handler);
+    return () => window.removeEventListener('greenbook:auto-close-round', handler);
+  }, [roundState, isClosing, closeScorecard]);
+
+
 
 
   // Sprint 3 bet hooks
