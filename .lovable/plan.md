@@ -1,71 +1,73 @@
-## Diagnóstico
+## Objetivo
 
-Confirmado: hoy el importador **exige** que el usuario logueado sea participante de la ronda.
+Que el cron sea quien efectivamente cierre las rondas abandonadas a las ~72h, sin depender de que un participante entre al app. Comportamiento según tu respuesta:
 
-En `src/hooks/useScorecardImporter.ts`:
-- `mappingsValid` requiere **exactamente un** mapeo `kind: 'self'` entre los jugadores detectados.
-- El pipeline `runSave` usa `create_round` (RPC) que crea al organizador como `round_player` y luego reasigna ese `round_player_id` al jugador marcado como "self". Sin "self", el organizador queda como un participante fantasma.
+- **Ronda con los 18 hoyos confirmados por todos** → cierre completo equivalente al que hoy ejecuta el organizador (snapshot, sliding, histórico, handicap, ledger, apuestas liquidadas).
+- **Ronda con hoyos sin confirmar** → cierre como `is_incomplete = true`, sin snapshot ni ajustes financieros. Queda visible en el histórico con badge "Incompleta" para que organizador o co-admin la reabran y completen si desean.
 
-Esto bloquea el caso real (muy común): una persona ayuda a capturar la tarjeta pero no jugó.
+No se cambia frontend salvo eliminar el listener del cliente que ya no es necesario.
 
-## Solución propuesta
+## Diseño
 
-Permitir un modo **"Capturista no participante"** en el Paso 3 (Mapeo).
+### 1. Nueva función edge `auto-close-abandoned-rounds`
+Invocada por `pg_cron` una vez al día. No requiere JWT. Usa `service_role`.
 
-### Cambios de UX (Paso 3)
+Flujo por cada ronda con `auto_close_pending = true` y `status = 'in_progress'`:
 
-1. Añadir un **toggle/checkbox** al inicio del paso:
-   > ☐ "Yo también jugué esta ronda"
-   - **Activado (default)**: comportamiento actual — exige marcar exactamente un jugador como "Yo" (self).
-   - **Desactivado**: ninguna fila requiere ser "self"; el usuario logueado queda como **organizador no participante**. Todos los jugadores detectados se mapean como `registered` o `guest`.
+```text
+1. Recalcular all_players_complete leyendo hole_scores confirmados
+   vs total de hoyos configurados por jugador.
+2. Si all_players_complete = true:
+     a. Reconstruir handicaps de ronda si falta algo (usar helpers existentes).
+     b. UPDATE rounds SET status='completed', closed_at=now(),
+        auto_closed=true, auto_close_pending=false.
+        → El trigger trg_fn_auto_ledger_on_close genera el ledger.
+     c. Ejecutar en orden:
+        - rebuild_snapshot_balances_from_ledger(round_id)
+        - rebuild_snapshot_bilateral_handicaps(round_id)
+        - rebuild_round_financials_from_snapshot(round_id)
+        - rebuild_sliding_history_from_snapshot(round_id)
+     d. Marcar is_incomplete=false.
+   Si all_players_complete = false:
+     a. Llamar close_round_as_incomplete(round_id) (ya existente).
+3. Log del resultado por ronda (éxito / error) para poder auditar.
+```
 
-2. En el selector por jugador, la opción "Yo" se oculta cuando el toggle está desactivado.
+### 2. Migración SQL
 
-3. `mappingsValid` se ajusta:
-   - Si "Yo también jugué" → exige exactamente 1 self (como hoy).
-   - Si no → exige 0 self, y que todos sean `registered` o `guest` válidos.
+- Añadir columna `rounds.auto_closed boolean NOT NULL DEFAULT false` para diferenciar cierres del cron vs cierres manuales (útil para soporte y para no repetir email en `mark_auto_close_pending`).
+- Nueva función `public.server_close_round_complete(p_round_id uuid)` (SECURITY DEFINER) que encapsula los pasos 2b–2d arriba, de modo que la edge function llame a un único RPC atómico por ronda completa.
+- Programar `pg_cron` para invocar la edge function `auto-close-abandoned-rounds` diariamente a las 09:15 UTC (15 min después del cron actual `mark_auto_close_pending` a las 09:00 UTC, para que las marcaciones ya estén hechas).
+- Endurecer `mark_auto_close_pending`: solo marcar rondas cuya última actividad (`updated_at` o último `hole_scores.updated_at`) sea ≥ 72h atrás; mantiene el email actual al organizador.
 
-### Cambios en el pipeline `runSave`
+### 3. Frontend (mínimo)
 
-- Si hay `self`: flujo actual sin cambios.
-- Si **no hay self** (capturista externo):
-  - Se crea la ronda igual con `create_round` (el usuario logueado queda como organizador dueño).
-  - El `organizerRoundPlayerId` creado por el RPC se **elimina** de `round_players` después de insertar a todos los jugadores reales, para que el organizador **no aparezca en el scorecard** ni en las apuestas.
-  - `rounds.organizer_id` / `created_by` permanecen apuntando al capturista (autoridad para editar/borrar).
-  - El snapshot se genera solo con los jugadores reales.
+- Eliminar `useAutoClose` de `src/pages/Index.tsx` y el listener `greenbook:auto-close-round` (ya no dependemos del cliente).
+- Borrar `src/hooks/useAutoClose.ts`.
+- El badge "Incompleta" y el permiso de reopen para co-admins ya están implementados y se mantienen.
 
-### Indicador visual "Organizador no participante"
+### 4. Consideraciones
 
-En consistencia con la convención existente de mostrar rol "organizador / no organizador":
-
-1. **Historial (`RoundHistory`)** y **vista histórica (`HistoricalRoundView`)**: mostrar un badge sutil junto al nombre del organizador cuando este no aparece en `round_players`:
-   > 📷 "Capturada por {Nombre}" (badge outline, tamaño `text-xs`)
-
-2. **Selector "Designar organizador real"** (opcional, se implementa como consecuencia natural del toggle):
-   - Si el capturista sí jugó → él es organizador y participante (comportamiento actual).
-   - Si el capturista designa a un jugador registrado como "responsable" (futuro, no en este cambio) → se maneja igual pero el capturista sigue siendo dueño técnico. **No se implementa transferencia de organizador en esta iteración** para mantener el cambio acotado; el capturista conserva autoridad de borrado, que es lo pedido.
-
-### Permisos y borrado
-
-- El capturista es siempre `rounds.organizer_id`, por lo que las RLS existentes de edición/cierre/borrado siguen funcionando sin cambios.
-- Si el capturista jugó (marcó self), además aparece como `round_player` con `is_organizer=true` — comportamiento actual.
-- Si no jugó, tiene autoridad vía `organizer_id` pero **no** figura como jugador — que es exactamente el comportamiento pedido.
-
-## Alcance
-
-- `src/hooks/useScorecardImporter.ts`: añadir estado `capturistIsPlayer` (bool, default `true`), ajustar `mappingsValid`, ajustar `runSave` para borrar el `round_player` del organizador cuando `capturistIsPlayer=false`.
-- `src/pages/ScorecardImporter.tsx`: añadir toggle en Paso 3, ocultar opción "Yo" cuando corresponde, mostrar hint contextual.
-- `src/components/RoundHistory.tsx` y `src/components/HistoricalRoundView.tsx`: badge "📷 Capturada por …" cuando `organizer_id` no está en la lista de `round_players`.
+- **Reversibilidad:** organizador y co-admin siguen pudiendo reabrir con `reset_round_for_reclose`, tanto para rondas cerradas completas como incompletas por el cron.
+- **Idempotencia:** la edge function ignora rondas que ya no están `in_progress` o no tienen `auto_close_pending=true`.
+- **Errores:** si el rebuild de snapshot falla en una ronda, se registra el error y se continúa con las demás; la ronda queda en `in_progress` con `auto_close_pending=true` para reintentarse al día siguiente.
+- **Email:** se mantiene únicamente el email actual al marcar `auto_close_pending` (según tu respuesta). No se envía email adicional al ejecutar el cierre.
 
 ## Detalles técnicos
 
-- No se toca `create_round` (RPC) ni el esquema; el borrado del `round_player` organizador es un simple `DELETE` posterior al insertar los jugadores reales, antes de guardar scores.
-- Los `hole_scores` del organizador nunca se llegan a insertar (el pipeline itera solo `editablePlayers`).
-- El snapshot ya se construye a partir de `editablePlayers` únicamente, por lo que queda consistente automáticamente.
-- El badge de "Capturada por" se calcula en cliente: `!round.players.some(p => p.profileId === round.organizerId)`.
+Archivos a crear/modificar:
 
-## Fuera de alcance
+- `supabase/migrations/<timestamp>_auto_close_execution.sql`
+  - `ALTER TABLE rounds ADD COLUMN auto_closed boolean NOT NULL DEFAULT false`
+  - `CREATE OR REPLACE FUNCTION public.server_close_round_complete(uuid)` (SECURITY DEFINER, search_path=public), que hace UPDATE status+ejecuta los 4 rebuilds en transacción.
+  - `GRANT EXECUTE ... TO service_role`.
+  - Reprogramar `mark_auto_close_pending` con filtro de última actividad ≥ 72h.
+  - `cron.schedule('auto-close-execute', '15 9 * * *', ...)` con `net.http_post` a la edge function usando el anon key.
+- `supabase/functions/auto-close-abandoned-rounds/index.ts` — nueva edge function con la lógica del flujo (consulta pendientes, recalcula completitud, llama a `server_close_round_complete` o `close_round_as_incomplete`).
+- `src/pages/Index.tsx` — quitar import y uso de `useAutoClose` y el listener del evento.
+- `src/hooks/useAutoClose.ts` — eliminar archivo.
 
-- Transferencia de rol de organizador a otro jugador registrado.
-- Cambios en el flujo de ronda en vivo.
-- Cambios en RLS / migraciones.
+Riesgos conocidos:
+
+- Los rebuilds SQL existentes cubren snapshot/sliding/handicap/ledger, pero **no** ejecutan la generación de imagen de compartir ni notificaciones push que hoy hace el cliente al cerrar. El cierre del cron será silencioso; los participantes lo verán la próxima vez que abran el histórico. Esto es aceptable dado el objetivo (evitar rondas abiertas por semanas).
+- La lógica de "todos con 18 hoyos confirmados" debe respetar el número de hoyos configurado por jugador en `round_players` (algunos pueden jugar 9). Se usa `round_players.holes_playing` (o equivalente) para el conteo esperado.
