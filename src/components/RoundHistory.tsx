@@ -187,7 +187,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       const { data: organizedRounds } = await supabase
         .from('rounds')
         .select(`
-          id, date, status, tee_color, course_id, bet_config, starting_hole,
+          id, date, status, tee_color, course_id, bet_config, starting_hole, is_incomplete,
           golf_courses(name, location)
         `)
         .eq('organizer_id', profile.id)
