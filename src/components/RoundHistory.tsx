@@ -40,6 +40,8 @@ interface RoundHistoryItem {
   isOrganizer: boolean;
   capturedOnly: boolean; // organizer but not a participant
   roundHoles: 9 | 18;
+  isIncomplete?: boolean;
+  isCoAdmin?: boolean;
 }
 
 interface PlayerScoreData {
