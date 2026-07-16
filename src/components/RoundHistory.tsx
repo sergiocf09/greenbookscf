@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock, ImagePlus } from 'lucide-react';
+import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock, ImagePlus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,8 @@ interface RoundHistoryItem {
   isOrganizer: boolean;
   capturedOnly: boolean; // organizer but not a participant
   roundHoles: 9 | 18;
+  isIncomplete?: boolean;
+  isCoAdmin?: boolean;
 }
 
 interface PlayerScoreData {
@@ -115,6 +117,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           handicap_for_round,
           round_id,
           is_organizer,
+          is_admin,
           rounds!inner(
             id,
             date,
@@ -123,6 +126,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             course_id,
             bet_config,
             starting_hole,
+            is_incomplete,
             golf_courses(name, location)
           )
         `)
@@ -172,6 +176,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             isOrganizer: rp.is_organizer,
             capturedOnly: false,
             roundHoles,
+            isIncomplete: round.is_incomplete ?? false,
+            isCoAdmin: (rp as any).is_admin ?? false,
           };
         })
       );
@@ -181,7 +187,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       const { data: organizedRounds } = await supabase
         .from('rounds')
         .select(`
-          id, date, status, tee_color, course_id, bet_config, starting_hole,
+          id, date, status, tee_color, course_id, bet_config, starting_hole, is_incomplete,
           golf_courses(name, location)
         `)
         .eq('organizer_id', profile.id)
@@ -213,6 +219,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               isOrganizer: true,
               capturedOnly: true,
               roundHoles,
+              isIncomplete: r.is_incomplete ?? false,
+              isCoAdmin: false,
             };
           })
       );
@@ -614,6 +622,15 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <ImagePlus className="h-3 w-3 text-muted-foreground" />
                     </span>
                   )}
+                  {round.isIncomplete && (
+                    <span
+                      className="flex-shrink-0 ml-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
+                      title="Cerrada automáticamente. Reabre para completar scores y calcular handicap."
+                    >
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                      Incompleta
+                    </span>
+                  )}
                   <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
                     {round.capturedOnly ? '—' : round.totalStrokes}
                   </span>
@@ -641,6 +658,11 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <ImagePlus className="h-3 w-3" />
                         <span>Capturada por ti — no participaste como jugador.</span>
                       </div>
+                    )}
+                    {round.isIncomplete && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Cerrada automáticamente. Reabre para completar scores y calcular handicap.
+                      </p>
                     )}
                     
                     {/* Action buttons */}
@@ -688,7 +710,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         </Button>
                       </div>
                       {/* Bottom row: Duplicar con scores + Reabrir, centered */}
-                      {round.isOrganizer && (
+                      {(round.isOrganizer || round.isCoAdmin) && (
                         <div className="flex justify-center gap-2">
                           {onCloneFullRound && (
                             <Button
