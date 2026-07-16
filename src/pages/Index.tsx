@@ -214,6 +214,28 @@ const Index = () => {
     logEvent,
   });
 
+  // Auto-close abandoned rounds (runs once at login)
+  useAutoClose((roundId) => {
+    if (roundState?.id === roundId) {
+      setRoundState(null);
+    }
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { roundId, isComplete } = (e as CustomEvent).detail;
+      if (isComplete && roundState?.id === roundId && roundState?.status === 'in_progress') {
+        if (!isClosing) {
+          closeScorecard([], undefined);
+        }
+      }
+    };
+    window.addEventListener('greenbook:auto-close-round', handler);
+    return () => window.removeEventListener('greenbook:auto-close-round', handler);
+  }, [roundState, isClosing, closeScorecard]);
+
+
+
 
   // Sprint 3 bet hooks
   const wolf  = useWolf(roundState?.id ?? null, players);
