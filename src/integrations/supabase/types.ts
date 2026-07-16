@@ -1865,11 +1865,14 @@ export type Database = {
         Row: {
           attested_at: string | null
           attested_by: string | null
+          auto_close_pending: boolean
+          auto_close_scheduled_at: string | null
           bet_config: Json | null
           course_id: string
           created_at: string
           date: string
           id: string
+          is_incomplete: boolean
           organizer_id: string
           starting_hole: number
           status: Database["public"]["Enums"]["round_status"]
@@ -1879,11 +1882,14 @@ export type Database = {
         Insert: {
           attested_at?: string | null
           attested_by?: string | null
+          auto_close_pending?: boolean
+          auto_close_scheduled_at?: string | null
           bet_config?: Json | null
           course_id: string
           created_at?: string
           date?: string
           id?: string
+          is_incomplete?: boolean
           organizer_id: string
           starting_hole?: number
           status?: Database["public"]["Enums"]["round_status"]
@@ -1893,11 +1899,14 @@ export type Database = {
         Update: {
           attested_at?: string | null
           attested_by?: string | null
+          auto_close_pending?: boolean
+          auto_close_scheduled_at?: string | null
           bet_config?: Json | null
           course_id?: string
           created_at?: string
           date?: string
           id?: string
+          is_incomplete?: boolean
           organizer_id?: string
           starting_hole?: number
           status?: Database["public"]["Enums"]["round_status"]
@@ -2500,6 +2509,10 @@ export type Database = {
         Args: { p_leaderboard_id: string }
         Returns: boolean
       }
+      close_round_as_incomplete: {
+        Args: { p_round_id: string }
+        Returns: undefined
+      }
       convert_ghost_to_profile: {
         Args: { p_auth_uid: string; p_session_id: string }
         Returns: string
@@ -2548,6 +2561,10 @@ export type Database = {
       }
       delete_user_account: { Args: never; Returns: undefined }
       email_queue_dispatch: { Args: never; Returns: undefined }
+      enqueue_auto_close_notification: {
+        Args: { p_round_id: string }
+        Returns: undefined
+      }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -2693,6 +2710,18 @@ export type Database = {
           friend_profile_id: string
           friendship_id: string
           initials: string
+        }[]
+      }
+      get_my_pending_auto_close_rounds: {
+        Args: never
+        Returns: {
+          all_players_complete: boolean
+          course_name: string
+          incomplete_player_names: string[]
+          organizer_email: string
+          organizer_name: string
+          round_date: string
+          round_id: string
         }[]
       }
       get_my_pending_cross_invitations: {
@@ -2891,6 +2920,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_auto_close_pending: { Args: never; Returns: number }
       move_to_dlq: {
         Args: {
           dlq_name: string
