@@ -235,7 +235,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   <div className={cn('w-8 text-center text-lg font-bold', positionColor(row.position))}>
                     {row.position}
                   </div>
-                  <PlayerAvatar name={row.display_name} initials={row.initials} color={row.avatar_color} size="sm" />
+                  <PlayerAvatar initials={row.initials} background={row.avatar_color} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{row.display_name}</div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
