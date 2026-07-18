@@ -1042,6 +1042,7 @@ export type Database = {
           net_total: number | null
           net_vs_par: number | null
           participant_id: string
+          points_earned: number | null
           round_id: string
           stableford_total: number | null
         }
@@ -1055,6 +1056,7 @@ export type Database = {
           net_total?: number | null
           net_vs_par?: number | null
           participant_id: string
+          points_earned?: number | null
           round_id: string
           stableford_total?: number | null
         }
@@ -1068,6 +1070,7 @@ export type Database = {
           net_total?: number | null
           net_vs_par?: number | null
           participant_id?: string
+          points_earned?: number | null
           round_id?: string
           stableford_total?: number | null
         }
@@ -2513,6 +2516,16 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      compute_league_jornada_standings: {
+        Args: { p_jornada_date: string; p_leaderboard_id: string }
+        Returns: {
+          display_name: string
+          participant_id: string
+          points_earned: number
+          position_rank: number
+          score_value: number
+        }[]
+      }
       convert_ghost_to_profile: {
         Args: { p_auth_uid: string; p_session_id: string }
         Returns: string
@@ -2647,6 +2660,22 @@ export type Database = {
           initials: string
           profile_id: string
           round_id: string
+        }[]
+      }
+      get_league_accumulated_standings: {
+        Args: { p_leaderboard_id: string }
+        Returns: {
+          avatar_color: string
+          display_name: string
+          initials: string
+          jornadas_jugadas: number
+          participant_id: string
+          points_acumulados: number
+          points_cuenta: number
+          position_rank: number
+          qualifies: boolean
+          score_acumulado: number
+          score_cuenta: number
         }[]
       }
       get_money_ranking_balances: {
