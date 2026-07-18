@@ -588,6 +588,20 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
 
       <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
 
+      <CreateLeagueDialog
+        open={showLeagueDialog}
+        onClose={() => setShowLeagueDialog(false)}
+        onCreate={async (params) => {
+          const result = await createEvent(params as any);
+          if (result) {
+            if (typeof onNavigateToDetail === 'function') {
+              handleOpenEvent(result.id, 'league');
+            }
+          }
+          return result;
+        }}
+      />
+
       {editTarget && (editTarget.competition_type === 'multi_day' ? (
         <EditMultiDayConfigDialog
           open={!!editTarget}
