@@ -223,6 +223,26 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     </div>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateDialog(false);
+                    setCreateType(null);
+                    setShowLeagueDialog(true);
+                  }}
+                  className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <div>
+                      <div className="font-medium text-foreground">Liga</div>
+                      <div className="text-sm text-muted-foreground">
+                        Puntos, strokes o stableford acumulado por jornadas
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             )}
 
