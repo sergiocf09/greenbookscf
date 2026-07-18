@@ -25,6 +25,7 @@ const TeamsCupDetail     = lazy(() => import("./pages/TeamsCupDetail"));
 const MoneyRankingDetail = lazy(() => import("./pages/MoneyRankingDetail"));
 const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
 const MultiDayLeaderboard = lazy(() => import("./pages/MultiDayLeaderboard"));
+const LeagueLeaderboard   = lazy(() => import("./pages/LeagueLeaderboard"));
 const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
 const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
 const ScorecardImporter  = lazy(() => import("./pages/ScorecardImporter"));
