@@ -243,21 +243,35 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
-        <p className="text-xs text-muted-foreground mb-2">Handicaps utilizados:</p>
+        <p className="text-xs text-muted-foreground mb-2">Handicaps y tees utilizados:</p>
         <div className="flex flex-wrap gap-2">
-          {players.map(player => (
-            <div 
-              key={player.playerId}
-              className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
-            >
-              <div 
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
-                style={{ backgroundColor: player.color }}
+          {players.map(player => {
+            const tee = player.teeColor;
+            const teeDot = tee ? TEE_DOT_COLOR[tee] ?? '#9ca3af' : null;
+            const teeName = tee ? TEE_LABEL[tee] ?? tee : null;
+            return (
+              <div
+                key={player.playerId}
+                className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
+                title={teeName ? `Tee ${teeName}` : undefined}
               >
-                {player.initials}
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
+                  style={{ backgroundColor: player.color }}
+                >
+                  {player.initials}
+                </div>
+                <span className="text-xs">{player.handicap}</span>
+                {teeDot && (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-foreground/30"
+                    style={{ backgroundColor: teeDot }}
+                    aria-label={teeName ?? undefined}
+                  />
+                )}
               </div>
-              <span className="text-xs">{player.handicap}</span>
-            </div>
+            );
+          })}
           ))}
         </div>
       </div>
