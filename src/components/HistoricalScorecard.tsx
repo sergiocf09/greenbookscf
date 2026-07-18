@@ -272,7 +272,6 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
               </div>
             );
           })}
-          ))}
         </div>
       </div>
     </div>
