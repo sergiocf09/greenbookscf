@@ -14,7 +14,26 @@ interface PlayerScoreData {
   handicap: number;
   scores: { holeNumber: number; strokes: number; putts: number }[];
   totalStrokes: number;
+  teeColor?: string;
 }
+
+const TEE_LABEL: Record<string, string> = {
+  blue: 'Azul',
+  white: 'Blanco',
+  yellow: 'Amarillo',
+  red: 'Rojo',
+  black: 'Negro',
+  gold: 'Dorado',
+};
+
+const TEE_DOT_COLOR: Record<string, string> = {
+  blue: '#2563eb',
+  white: '#ffffff',
+  yellow: '#eab308',
+  red: '#dc2626',
+  black: '#111111',
+  gold: '#d4af37',
+};
 
 interface HistoricalScorecardProps {
   course: GolfCourse;
