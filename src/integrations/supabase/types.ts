@@ -2569,6 +2569,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      execute_auto_close_pending: { Args: never; Returns: number }
       finalize_round_bets: {
         Args: { p_ledger: Json; p_round_id: string }
         Returns: undefined
