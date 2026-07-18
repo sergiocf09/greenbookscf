@@ -565,6 +565,11 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         TEAMS CUP
                       </Badge>
                     )}
+                    {(ev as any).competition_type === 'league' && (
+                      <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
+                        Liga
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0">
