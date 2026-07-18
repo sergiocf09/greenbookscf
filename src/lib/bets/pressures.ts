@@ -60,6 +60,20 @@ export const calculatePressureBets = (
     if (!match) return undefined;
     return typeof match.amountOverride === 'number' && Number.isFinite(match.amountOverride) ? match.amountOverride : undefined;
   };
+
+  const getPairBackCarryHardOverride = (playerAId: string, playerBId: string): boolean => {
+    const overrides = config.betOverrides;
+    if (!overrides || overrides.length === 0) return false;
+    const match = overrides.find((o) => {
+      const aId = resolveOverrideId(o.playerAId);
+      const bId = resolveOverrideId(o.playerBId);
+      const matchesPair = (aId === playerAId && bId === playerBId) || (aId === playerBId && bId === playerAId);
+      if (!matchesPair) return false;
+      if (o.enabled === false) return false;
+      return (o.betType ?? '').toLowerCase() === 'presiones back';
+    });
+    return match?.carryHardOverride === true && typeof match?.amountOverride === 'number';
+  };
   
   for (let i = 0; i < participatingPlayers.length; i++) {
     for (let j = i + 1; j < participatingPlayers.length; j++) {
