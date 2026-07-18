@@ -105,13 +105,20 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
   const backPar = backNine.reduce((sum, h) => sum + h.par, 0);
 
+  const distinctTees = Array.from(
+    new Set(players.map(p => p.teeColor).filter((t): t is string => !!t))
+  );
+  const teeLabel = distinctTees.length > 1
+    ? 'Tees varios'
+    : `Tee ${TEE_LABEL[distinctTees[0] ?? teeColor] ?? (distinctTees[0] ?? teeColor)}`;
+
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
         <h3 className="text-sm font-semibold text-primary">{course.name}</h3>
         <p className="text-[10px] text-muted-foreground">
-          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {teeColor}
+          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • {teeLabel}
         </p>
       </div>
 
