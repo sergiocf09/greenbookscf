@@ -660,9 +660,12 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       </div>
                     )}
                     {round.isIncomplete && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Cerrada automáticamente. Reabre para completar scores y calcular handicap.
-                      </p>
+                      <div className="text-[11px] text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-md p-2 mt-1 space-y-1">
+                        <p className="font-medium">Ronda no cerrada en tiempo</p>
+                        <p className="text-[10px] text-orange-700/90 dark:text-orange-400/90">
+                          Se cerró automáticamente a las 24h sin snapshots, cálculo de handicap ni liquidación de apuestas. Si el organizador o un co-admin la reabre y completa los scores, podrá cerrarla con el flujo tradicional para generar snapshot, sliding, handicap y ledger.
+                        </p>
+                      </div>
                     )}
                     
                     {/* Action buttons */}
