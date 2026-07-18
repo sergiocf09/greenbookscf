@@ -25,6 +25,7 @@ const TeamsCupDetail     = lazy(() => import("./pages/TeamsCupDetail"));
 const MoneyRankingDetail = lazy(() => import("./pages/MoneyRankingDetail"));
 const LeaderboardDetail  = lazy(() => import("./pages/LeaderboardDetail"));
 const MultiDayLeaderboard = lazy(() => import("./pages/MultiDayLeaderboard"));
+const LeagueLeaderboard   = lazy(() => import("./pages/LeagueLeaderboard"));
 const MoneyRankings      = lazy(() => import("./pages/MoneyRankings"));
 const Leaderboards       = lazy(() => import("./pages/Leaderboards"));
 const ScorecardImporter  = lazy(() => import("./pages/ScorecardImporter"));
@@ -81,7 +82,9 @@ const AppRoutes = () => (
       <Route path="/leaderboards" element={<ProtectedRoute><Leaderboards /></ProtectedRoute>} />
       <Route path="/leaderboards/cup/:id" element={<ProtectedRoute><TeamsCupDetail /></ProtectedRoute>} />
       <Route path="/leaderboards/multi/:id" element={<ProtectedRoute><MultiDayLeaderboard /></ProtectedRoute>} />
+      <Route path="/leaderboards/league/:id" element={<ProtectedRoute><LeagueLeaderboard /></ProtectedRoute>} />
       <Route path="/leaderboards/:id" element={<ProtectedRoute><LeaderboardDetail /></ProtectedRoute>} />
+
 
       <Route path="/leaderboards/join/:code" element={<JoinLeaderboard />} />
       <Route path="/rankings" element={<ProtectedRoute><MoneyRankings /></ProtectedRoute>} />

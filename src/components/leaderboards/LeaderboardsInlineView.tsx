@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
 import { toast } from 'sonner';
+import { CreateLeagueDialog } from '@/components/leaderboards/CreateLeagueDialog';
 
 
 
@@ -33,6 +34,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
+  const [showLeagueDialog, setShowLeagueDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createType, setCreateType] = useState<'standard' | 'multi_day' | null>(null);
   const [joinCode, setJoinCode] = useState('');
@@ -136,6 +138,10 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   };
 
   const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
+    if (competitionType === 'league') {
+      navigate(`/leaderboards/league/${eventId}`);
+      return;
+    }
     onNavigateToDetail(eventId, competitionType);
   };
 
@@ -213,6 +219,26 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                       <div className="font-medium text-foreground">Multi-día</div>
                       <div className="text-sm text-muted-foreground">
                         Varios días con standings por día y acumulado
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateDialog(false);
+                    setCreateType(null);
+                    setShowLeagueDialog(true);
+                  }}
+                  className="w-full rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <div>
+                      <div className="font-medium text-foreground">Liga</div>
+                      <div className="text-sm text-muted-foreground">
+                        Puntos, strokes o stableford acumulado por jornadas
                       </div>
                     </div>
                   </div>
@@ -464,6 +490,11 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                             TEAMS CUP
                           </Badge>
                         )}
+                        {(ev as any).competition_type === 'league' && (
+                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
+                            Liga
+                          </Badge>
+                        )}
                       </div>
                       {ev.description && (
                         <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
@@ -534,6 +565,11 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         TEAMS CUP
                       </Badge>
                     )}
+                    {(ev as any).competition_type === 'league' && (
+                      <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
+                        Liga
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-3 pt-0">
@@ -551,6 +587,20 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
       </Tabs>
 
       <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
+
+      <CreateLeagueDialog
+        open={showLeagueDialog}
+        onClose={() => setShowLeagueDialog(false)}
+        onCreate={async (params) => {
+          const result = await createEvent(params as any);
+          if (result) {
+            if (typeof onNavigateToDetail === 'function') {
+              handleOpenEvent(result.id, 'league');
+            }
+          }
+          return result;
+        }}
+      />
 
       {editTarget && (editTarget.competition_type === 'multi_day' ? (
         <EditMultiDayConfigDialog
