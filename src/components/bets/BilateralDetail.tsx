@@ -91,6 +91,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
+  const [pressuresCarryConfirm, setPressuresCarryConfirm] = useState<
+    | { overrides: any; formulaValue: number; newBack: number }
+    | null
+  >(null);
   
   const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
   const shortNamesLocal = useMemo(() => disambiguateShortNames(allPlayers), [allPlayers]);
