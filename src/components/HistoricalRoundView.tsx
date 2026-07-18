@@ -336,6 +336,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         handicap: p.handicap,
         profileId: p.profileId || undefined,
         groupId: p.groupId,
+        teeColor: p.teeColor,
       }));
     }
     return fallbackPlayers.map(p => ({
