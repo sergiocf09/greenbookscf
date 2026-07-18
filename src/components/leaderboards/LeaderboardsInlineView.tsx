@@ -138,6 +138,10 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   };
 
   const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
+    if (competitionType === 'league') {
+      navigate(`/leaderboards/league/${eventId}`);
+      return;
+    }
     onNavigateToDetail(eventId, competitionType);
   };
 
