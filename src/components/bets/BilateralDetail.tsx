@@ -22,6 +22,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
@@ -91,6 +101,145 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
 }) => {
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
+  const [pressuresCarryConfirm, setPressuresCarryConfirm] = useState<
+    | { overrides: any; formulaValue: number; newBack: number }
+    | null
+  >(null);
+
+  // Applies overrides captured from BetAmountEditor into betConfig.betOverrides.
+  // For pressures, `backCarryHard=true` marks the Back override as a hard override
+  // that breaks the Carry formula (2×Front + Total 18) and pays Total 18 separately.
+  const applyEditorOverrides = (betType: string, overrides: any, backCarryHard: boolean) => {
+    if (!onBetConfigChange) return;
+    const nextOverrides = [...(betConfig.betOverrides || [])];
+    const upsert = (
+      betTypeLabel: string,
+      amountOverride?: number,
+      extra?: Partial<BetOverride>,
+    ) => {
+      if (amountOverride === undefined && !extra) return;
+      const existingIdx = nextOverrides.findIndex(
+        (o) =>
+          o.betType === betTypeLabel &&
+          ((o.playerAId === player.id && o.playerBId === rival.id) ||
+            (o.playerAId === rival.id && o.playerBId === player.id))
+      );
+      if (existingIdx >= 0) {
+        nextOverrides[existingIdx] = {
+          ...nextOverrides[existingIdx],
+          enabled: true,
+          ...(amountOverride !== undefined ? { amountOverride } : {}),
+          ...(extra || {}),
+        };
+      } else if (amountOverride !== undefined) {
+        nextOverrides.push({
+          playerAId: player.id,
+          playerBId: rival.id,
+          betType: betTypeLabel,
+          enabled: true,
+          amountOverride,
+          ...(extra || {}),
+        });
+      }
+    };
+
+    switch (betType) {
+      case 'medal':
+        upsert('Medal Front 9', overrides.front);
+        upsert('Medal Back 9', overrides.back);
+        upsert('Medal Total', overrides.total);
+        break;
+      case 'pressures':
+        upsert('Presiones Front', overrides.front);
+        // Back carries the hard-override flag when requested; otherwise clear it.
+        upsert('Presiones Back', overrides.back, { carryHardOverride: backCarryHard });
+        upsert('Presiones Match 18', overrides.total);
+        break;
+      case 'skins':
+        upsert('Skins Front', overrides.front);
+        upsert('Skins Back', overrides.back);
+        break;
+      case 'rayas':
+        upsert('Rayas Front', overrides.front);
+        upsert('Rayas Back', overrides.back);
+        upsert('Rayas Medal Total', overrides.total);
+        break;
+      case 'putts':
+        upsert('Putts Front 9', overrides.front);
+        upsert('Putts Back 9', overrides.back);
+        upsert('Putts Total', overrides.total);
+        break;
+      case 'caros':
+        upsert('Caros', overrides.total);
+        break;
+      case 'oyeses':
+        upsert('Oyes', overrides.total);
+        break;
+      case 'units': {
+        upsert('Unidades', overrides.total);
+        if (overrides.unitsAdvantage !== undefined) {
+          const existingUnitIdx = nextOverrides.findIndex(
+            o => o.betType === 'Unidades' &&
+              ((o.playerAId === player.id && o.playerBId === rival.id) ||
+               (o.playerAId === rival.id && o.playerBId === player.id))
+          );
+          if (existingUnitIdx >= 0) {
+            const isInverted = nextOverrides[existingUnitIdx].playerAId === rival.id;
+            nextOverrides[existingUnitIdx] = {
+              ...nextOverrides[existingUnitIdx],
+              unitsAdvantage: isInverted ? -overrides.unitsAdvantage : overrides.unitsAdvantage,
+            };
+          } else if (overrides.unitsAdvantage !== 0) {
+            nextOverrides.push({
+              playerAId: player.id,
+              playerBId: rival.id,
+              betType: 'Unidades',
+              enabled: true,
+              unitsAdvantage: overrides.unitsAdvantage,
+            });
+          }
+        }
+        break;
+      }
+      case 'manchas':
+        upsert('Manchas', overrides.total);
+        break;
+      case 'culebras':
+        upsert('Culebras', overrides.total);
+        break;
+      case 'pinguinos':
+        upsert('Pinguinos', overrides.total);
+        break;
+      case 'matchPlay':
+        upsert('Match Play', overrides.total);
+        break;
+      case 'bloques': {
+        upsert('Bloques', overrides.total);
+        if (overrides.carryOverOnTie !== undefined) {
+          const idx = nextOverrides.findIndex(
+            o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
+              ((o.playerAId === player.id && o.playerBId === rival.id) ||
+               (o.playerAId === rival.id && o.playerBId === player.id))
+          );
+          if (idx >= 0) {
+            nextOverrides[idx] = { ...nextOverrides[idx], carryOverOnTie: overrides.carryOverOnTie };
+          } else {
+            nextOverrides.push({
+              playerAId: player.id,
+              playerBId: rival.id,
+              betType: 'Bloques',
+              enabled: true,
+              carryOverOnTie: overrides.carryOverOnTie,
+            });
+          }
+        }
+        break;
+      }
+    }
+
+    onBetConfigChange({ ...betConfig, betOverrides: nextOverrides });
+  };
+
   
   const disambiguatedAbbrsLocal = useMemo(() => disambiguateInitials(allPlayers), [allPlayers]);
   const shortNamesLocal = useMemo(() => disambiguateShortNames(allPlayers), [allPlayers]);
@@ -3410,143 +3559,83 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             onSave={(overrides) => {
               if (!editingBetType || !onBetConfigChange) return;
 
-              // IMPORTANT: amounts edited here must be per-pair.
-              // We persist them as BetOverrides (playerAId/playerBId + betType label substring)
-              // so they don't affect other pairs.
-              const nextOverrides = [...(betConfig.betOverrides || [])];
-              const upsert = (betTypeLabel: string, amountOverride?: number) => {
-                if (amountOverride === undefined) return;
-
-                const existingIdx = nextOverrides.findIndex(
-                  (o) =>
-                    o.betType === betTypeLabel &&
+              // Pressures: if Front is Carry and the user changed the Back amount,
+              // ask for explicit confirmation before applying a "hard override" that
+              // breaks the (2×Front + Total 18) Carry formula.
+              if (editingBetType === 'pressures' && overrides.back !== undefined) {
+                const carryDetected = !!groupedSummaries['Presiones Back (Carry x2+Match)']
+                  || (groupedSummaries['Presiones Match 18']?.details?.[0]?.description === 'Carry');
+                const existingBackOv = betConfig.betOverrides?.find(
+                  (o) => o.betType === 'Presiones Back' &&
                     ((o.playerAId === player.id && o.playerBId === rival.id) ||
-                      (o.playerAId === rival.id && o.playerBId === player.id))
+                     (o.playerAId === rival.id && o.playerBId === player.id))
                 );
+                const previousBack = existingBackOv?.amountOverride ?? betConfig.pressures.backAmount;
+                const backChanged = Number(overrides.back) !== Number(previousBack);
 
-                if (existingIdx >= 0) {
-                  nextOverrides[existingIdx] = {
-                    ...nextOverrides[existingIdx],
-                    enabled: true,
-                    amountOverride,
-                  };
-                } else {
-                  nextOverrides.push({
-                    playerAId: player.id,
-                    playerBId: rival.id,
-                    betType: betTypeLabel,
-                    enabled: true,
-                    amountOverride,
+                if (carryDetected && backChanged) {
+                  const frontEff = (overrides.front ?? betConfig.pressures.frontAmount);
+                  const totalEff = (overrides.total ?? betConfig.pressures.totalAmount);
+                  const formulaValue = 2 * Number(frontEff) + Number(totalEff);
+                  setPressuresCarryConfirm({
+                    overrides,
+                    formulaValue,
+                    newBack: Number(overrides.back),
                   });
-                }
-              };
-
-              switch (editingBetType) {
-                case 'medal':
-                  upsert('Medal Front 9', overrides.front);
-                  upsert('Medal Back 9', overrides.back);
-                  upsert('Medal Total', overrides.total);
-                  break;
-                case 'pressures':
-                  // IMPORTANT: must match betType strings produced by calculatePressureBets()
-                  // so overrides actually apply.
-                  upsert('Presiones Front', overrides.front);
-                  upsert('Presiones Back', overrides.back);
-                  upsert('Presiones Match 18', overrides.total);
-                  break;
-                case 'skins':
-                  // Bet engine uses "Skins Front" / "Skins Back" labels.
-                  upsert('Skins Front', overrides.front);
-                  upsert('Skins Back', overrides.back);
-                  break;
-                case 'rayas':
-                  upsert('Rayas Front', overrides.front);
-                  upsert('Rayas Back', overrides.back);
-                  upsert('Rayas Medal Total', overrides.total);
-                  break;
-                case 'putts':
-                  upsert('Putts Front 9', overrides.front);
-                  upsert('Putts Back 9', overrides.back);
-                  upsert('Putts Total', overrides.total);
-                  break;
-                case 'caros':
-                  upsert('Caros', overrides.total);
-                  break;
-                case 'oyeses':
-                  // Engine uses per-hole labels like "Oyes (Hole X)".
-                  upsert('Oyes', overrides.total);
-                  break;
-                case 'units': {
-                  upsert('Unidades', overrides.total);
-                  // Also persist unitsAdvantage on the same override row
-                  if (overrides.unitsAdvantage !== undefined) {
-                    const existingUnitIdx = nextOverrides.findIndex(
-                      o => o.betType === 'Unidades' &&
-                        ((o.playerAId === player.id && o.playerBId === rival.id) ||
-                         (o.playerAId === rival.id && o.playerBId === player.id))
-                    );
-                    if (existingUnitIdx >= 0) {
-                      // If stored with reversed pair order, negate before saving
-                      const isInverted = nextOverrides[existingUnitIdx].playerAId === rival.id;
-                      nextOverrides[existingUnitIdx] = {
-                        ...nextOverrides[existingUnitIdx],
-                        unitsAdvantage: isInverted ? -overrides.unitsAdvantage : overrides.unitsAdvantage,
-                      };
-                    } else if (overrides.unitsAdvantage !== 0) {
-                      nextOverrides.push({
-                        playerAId: player.id,
-                        playerBId: rival.id,
-                        betType: 'Unidades',
-                        enabled: true,
-                        unitsAdvantage: overrides.unitsAdvantage,
-                      });
-                    }
-                  }
-                  break;
-                }
-                case 'manchas':
-                  upsert('Manchas', overrides.total);
-                  break;
-                case 'culebras':
-                  upsert('Culebras', overrides.total);
-                  break;
-                case 'pinguinos':
-                  upsert('Pinguinos', overrides.total);
-                  break;
-                case 'matchPlay':
-                  upsert('Match Play', overrides.total);
-                  break;
-                case 'bloques': {
-                  upsert('Bloques', overrides.total);
-                  if (overrides.carryOverOnTie !== undefined) {
-                    const idx = nextOverrides.findIndex(
-                      o => (o.betType === 'Bloques' || o.betType === 'bloques') &&
-                        ((o.playerAId === player.id && o.playerBId === rival.id) ||
-                         (o.playerAId === rival.id && o.playerBId === player.id))
-                    );
-                    if (idx >= 0) {
-                      nextOverrides[idx] = { ...nextOverrides[idx], carryOverOnTie: overrides.carryOverOnTie };
-                    } else {
-                      nextOverrides.push({
-                        playerAId: player.id,
-                        playerBId: rival.id,
-                        betType: 'Bloques',
-                        enabled: true,
-                        carryOverOnTie: overrides.carryOverOnTie,
-                      });
-                    }
-                  }
-                  break;
+                  return;
                 }
               }
 
-              onBetConfigChange({ ...betConfig, betOverrides: nextOverrides });
+              applyEditorOverrides(editingBetType, overrides, false);
               setEditingBetType(null);
             }}
             onClose={() => setEditingBetType(null)}
           />
         </DialogContent>
       </Dialog>
+
+      {/* Confirmación de override fuerte en Back cuando el Front quedó Carry */}
+      <AlertDialog
+        open={!!pressuresCarryConfirm}
+        onOpenChange={(open) => { if (!open) setPressuresCarryConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>El match quedó Carry en el Front</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Con la fórmula normal, cada presión del Back valdría{' '}
+                  <strong>{fmtMoney(pressuresCarryConfirm?.formulaValue ?? 0)}</strong>{' '}
+                  (2×Front + Total 18).
+                </p>
+                <p>
+                  Si aplicas este cambio, cada presión del Back valdrá{' '}
+                  <strong>{fmtMoney(pressuresCarryConfirm?.newBack ?? 0)}</strong> y el{' '}
+                  <strong>Total 18 se paga por separado</strong> con su propio importe.
+                </p>
+                <p className="text-muted-foreground">
+                  Podrás revertir esto borrando el override del Back o restaurando el monto de la fórmula.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pressuresCarryConfirm && editingBetType) {
+                  applyEditorOverrides(editingBetType, pressuresCarryConfirm.overrides, true);
+                }
+                setPressuresCarryConfirm(null);
+                setEditingBetType(null);
+              }}
+            >
+              Aplicar override fuerte
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

@@ -130,6 +130,8 @@ export interface BetOverride {
                            // Negative = B gives advantage to A
                            // 0 or undefined = no advantage
   carryOverOnTie?: boolean; // Per-pair override for Bloques carry behavior
+  carryHardOverride?: boolean; // Presiones: when Front is Carry, force the Back amount to this override
+                               // (breaking the 2×Front+Total 18 formula) and pay Total 18 separately.
 }
 
 // Per-group bet override: partial config that overrides the organizer's template for a specific group
