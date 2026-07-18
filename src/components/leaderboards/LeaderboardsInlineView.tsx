@@ -34,6 +34,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
+  const [showLeagueDialog, setShowLeagueDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [createType, setCreateType] = useState<'standard' | 'multi_day' | null>(null);
   const [joinCode, setJoinCode] = useState('');
