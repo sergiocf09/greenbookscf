@@ -336,6 +336,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         handicap: p.handicap,
         profileId: p.profileId || undefined,
         groupId: p.groupId,
+        teeColor: p.teeColor,
       }));
     }
     return fallbackPlayers.map(p => ({
@@ -500,6 +501,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           initials: p.initials,
           color: p.color,
           handicap: p.handicap,
+          teeColor: (p as any).teeColor,
           scores: scores.map(s => ({
             holeNumber: s.holeNumber,
             strokes: s.strokes,

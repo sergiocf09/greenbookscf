@@ -14,7 +14,26 @@ interface PlayerScoreData {
   handicap: number;
   scores: { holeNumber: number; strokes: number; putts: number }[];
   totalStrokes: number;
+  teeColor?: string;
 }
+
+const TEE_LABEL: Record<string, string> = {
+  blue: 'Azul',
+  white: 'Blanco',
+  yellow: 'Amarillo',
+  red: 'Rojo',
+  black: 'Negro',
+  gold: 'Dorado',
+};
+
+const TEE_DOT_COLOR: Record<string, string> = {
+  blue: '#2563eb',
+  white: '#ffffff',
+  yellow: '#eab308',
+  red: '#dc2626',
+  black: '#111111',
+  gold: '#d4af37',
+};
 
 interface HistoricalScorecardProps {
   course: GolfCourse;
@@ -86,13 +105,20 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
   const backPar = backNine.reduce((sum, h) => sum + h.par, 0);
 
+  const distinctTees = Array.from(
+    new Set(players.map(p => p.teeColor).filter((t): t is string => !!t))
+  );
+  const teeLabel = distinctTees.length > 1
+    ? 'Tees varios'
+    : `Tee ${TEE_LABEL[distinctTees[0] ?? teeColor] ?? (distinctTees[0] ?? teeColor)}`;
+
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
         <h3 className="text-sm font-semibold text-primary">{course.name}</h3>
         <p className="text-[10px] text-muted-foreground">
-          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {teeColor}
+          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • {teeLabel}
         </p>
       </div>
 
@@ -217,22 +243,35 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
-        <p className="text-xs text-muted-foreground mb-2">Handicaps utilizados:</p>
+        <p className="text-xs text-muted-foreground mb-2">Handicaps y tees utilizados:</p>
         <div className="flex flex-wrap gap-2">
-          {players.map(player => (
-            <div 
-              key={player.playerId}
-              className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
-            >
-              <div 
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
-                style={{ backgroundColor: player.color }}
+          {players.map(player => {
+            const tee = player.teeColor;
+            const teeDot = tee ? TEE_DOT_COLOR[tee] ?? '#9ca3af' : null;
+            const teeName = tee ? TEE_LABEL[tee] ?? tee : null;
+            return (
+              <div
+                key={player.playerId}
+                className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
+                title={teeName ? `Tee ${teeName}` : undefined}
               >
-                {player.initials}
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
+                  style={{ backgroundColor: player.color }}
+                >
+                  {player.initials}
+                </div>
+                <span className="text-xs">{player.handicap}</span>
+                {teeDot && (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full border border-foreground/30"
+                    style={{ backgroundColor: teeDot }}
+                    aria-label={teeName ?? undefined}
+                  />
+                )}
               </div>
-              <span className="text-xs">{player.handicap}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
