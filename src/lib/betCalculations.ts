@@ -217,7 +217,7 @@ export const calculateAllBets = (
         // Carry-label summaries (e.g. "Presiones Back (Carry x2+Match)") carry a
         // derived baseUnitAmount computed by the engine (2*front + match18). A flat
         // "Presiones Back" amount override must NOT overwrite that derived value.
-        const isCarryDerived = isCarryLabel;
+        const isCarryDerived = summary.betType.toLowerCase().includes('(carry');
         if (override.amountOverride !== undefined && summary.amount !== 0 && !isRayasType && !isOyesType && !isCarryDerived) {
           if (typeof summary.units === 'number') {
             const sign = summary.amount > 0 ? 1 : -1;
