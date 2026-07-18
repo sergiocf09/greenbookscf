@@ -196,12 +196,17 @@ export const calculatePressureBets = (
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: 'Presiones Front', amount: -frontAmountA, segment: 'front', description: frontDisplayStrB, units: -frontNetBets, baseUnitAmount: frontUnit, multiplier: 1 });
       }
       
-      const effectiveBackValue = frontIsTied ? (2 * frontUnit + match18Unit) : backUnit;
+      // Hard override: when Front is Carry AND user explicitly forced a Back amount,
+      // break the (2×Front + Total 18) formula and use the override; also pay Total 18 separately.
+      const backCarryHard = frontIsTied && getPairBackCarryHardOverride(playerA.id, playerB.id);
+      const effectiveBackValue = frontIsTied
+        ? (backCarryHard ? backUnit : (2 * frontUnit + match18Unit))
+        : backUnit;
       const backBetsWonA = backBets.filter(b => b > 0).length;
       const backBetsLostA = backBets.filter(b => b < 0).length;
       const backNetBets = backBetsWonA - backBetsLostA;
       const backAmountA = backNetBets * effectiveBackValue;
-      const backLabel = frontIsTied ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
+      const backLabel = (frontIsTied && !backCarryHard) ? 'Presiones Back (Carry x2+Match)' : 'Presiones Back';
       const backDisplayStr = formatPressureResult(backBets);
       const backInvertedBets = backBets.map(b => -b);
       const backDisplayStrB = formatPressureResult(backInvertedBets);
@@ -211,9 +216,10 @@ export const calculatePressureBets = (
         summaries.push({ playerId: playerB.id, vsPlayer: playerA.id, betType: backLabel, amount: -backAmountA, segment: 'back', description: backDisplayStrB, units: -backNetBets, baseUnitAmount: effectiveBackValue, multiplier: 1 });
       }
       
-      // Always generate Match 18 summaries so the Total 18 row always displays
+      // Always generate Match 18 summaries so the Total 18 row always displays.
+      // With backCarryHard, Total 18 is paid separately even though Front was Carry.
       if (!isNineHole) {
-        if (!frontIsTied) {
+        if (!frontIsTied || backCarryHard) {
           const total18Balance = frontBets[0] + backBets[0];
           let matchWinner = 0;
           if (total18Balance > 0) matchWinner = 1;
