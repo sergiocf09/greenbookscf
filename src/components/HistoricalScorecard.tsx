@@ -20,7 +20,7 @@ interface PlayerScoreData {
 const TEE_LABEL: Record<string, string> = {
   blue: 'Azul',
   white: 'Blanco',
-  yellow: 'Amarillo',
+  yellow: 'Dorado',
   red: 'Rojo',
   black: 'Negro',
   gold: 'Dorado',
