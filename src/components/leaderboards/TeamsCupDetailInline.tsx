@@ -55,7 +55,7 @@ function formatRunning(delta: number): string {
 }
 
 const TEE_LABEL_ES: Record<string, string> = {
-  blue: 'Azul', white: 'Blanco', yellow: 'Amarillo', red: 'Rojo',
+  blue: 'Azul', white: 'Blanco', yellow: 'Dorado', red: 'Rojo',
 };
 
 function formatIndex(v: number): string {
