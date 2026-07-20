@@ -318,7 +318,7 @@ const JoinRound = () => {
   const teeColorNames: Record<string, string> = {
     blue: 'Azules',
     white: 'Blancas',
-    yellow: 'Amarillas',
+    yellow: 'Doradas',
     red: 'Rojas',
   };
 
