@@ -13,7 +13,7 @@ interface Props {
 const TEE_LABELS: Record<string, string> = {
   blue: 'Azules',
   white: 'Blancas',
-  yellow: 'Amarillas',
+  yellow: 'Doradas',
   red: 'Rojas',
 };
 
