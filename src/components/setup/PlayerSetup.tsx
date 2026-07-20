@@ -31,7 +31,7 @@ const playerColors = [
 const TEE_OPTIONS = [
   { value: 'blue', label: 'Azul', bgClass: 'bg-blue-600' },
   { value: 'white', label: 'Blanco', bgClass: 'bg-white border border-gray-300' },
-  { value: 'yellow', label: 'Amarillo', bgClass: 'bg-yellow-400' },
+  { value: 'yellow', label: 'Dorado', bgClass: 'bg-yellow-400' },
   { value: 'red', label: 'Rojo', bgClass: 'bg-red-600' },
 ];
 
