@@ -622,7 +622,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <ImagePlus className="h-3 w-3 text-muted-foreground" />
                     </span>
                   )}
-                  {round.isIncomplete ? (
+                  {round.capturedOnly ? (
+                    <span
+                      className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
+                      title="Creaste esta ronda pero no participaste como jugador."
+                    >
+                      Sin participación
+                    </span>
+                  ) : round.isIncomplete ? (
                     <span
                       className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
                       title="Cerrada automáticamente. Reabre para completar scores y calcular handicap."
@@ -632,7 +639,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     </span>
                   ) : (
                     <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
-                      {round.capturedOnly ? '—' : round.totalStrokes}
+                      {round.totalStrokes}
                     </span>
                   )}
                   {expandedRound === round.id ? (
