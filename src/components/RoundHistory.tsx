@@ -667,7 +667,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <span>Capturada por ti — no participaste como jugador.</span>
                       </div>
                     )}
-                    {round.isIncomplete && (
+                    {round.isIncomplete && !round.capturedOnly && (
                       <div className="text-[11px] text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-md p-2 mt-1 space-y-1">
                         <p className="font-medium">Ronda no cerrada en tiempo</p>
                         <p className="text-[10px] text-orange-700/90 dark:text-orange-400/90">
