@@ -613,7 +613,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   {round.roundHoles === 9 && (
                     <RoundHolesBadge holes={9} className="flex-shrink-0 ml-1" />
                   )}
-                  {round.capturedOnly && (
+                  {round.capturedOnly && !round.isIncomplete && (
                     <span
                       className="flex-shrink-0 ml-1 inline-flex items-center"
                       title="Ronda capturada — no participaste como jugador"
@@ -624,10 +624,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   )}
                   {round.capturedOnly ? (
                     <span
-                      className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
+                      className="ml-auto flex-shrink-0 mr-1 inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
                       title="Creaste esta ronda pero no participaste como jugador."
                     >
-                      Sin participación
+                      Sin jugar
                     </span>
                   ) : round.isIncomplete ? (
                     <span
