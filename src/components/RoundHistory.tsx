@@ -622,7 +622,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <ImagePlus className="h-3 w-3 text-muted-foreground" />
                     </span>
                   )}
-                  {round.isIncomplete ? (
+                  {round.capturedOnly ? (
+                    <span
+                      className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
+                      title="Creaste esta ronda pero no participaste como jugador."
+                    >
+                      Sin participación
+                    </span>
+                  ) : round.isIncomplete ? (
                     <span
                       className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
                       title="Cerrada automáticamente. Reabre para completar scores y calcular handicap."
@@ -632,7 +639,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     </span>
                   ) : (
                     <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
-                      {round.capturedOnly ? '—' : round.totalStrokes}
+                      {round.totalStrokes}
                     </span>
                   )}
                   {expandedRound === round.id ? (
@@ -660,7 +667,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                         <span>Capturada por ti — no participaste como jugador.</span>
                       </div>
                     )}
-                    {round.isIncomplete && (
+                    {round.isIncomplete && !round.capturedOnly && (
                       <div className="text-[11px] text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-md p-2 mt-1 space-y-1">
                         <p className="font-medium">Ronda no cerrada en tiempo</p>
                         <p className="text-[10px] text-orange-700/90 dark:text-orange-400/90">
