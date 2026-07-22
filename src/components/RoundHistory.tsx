@@ -622,18 +622,19 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <ImagePlus className="h-3 w-3 text-muted-foreground" />
                     </span>
                   )}
-                  {round.isIncomplete && (
+                  {round.isIncomplete ? (
                     <span
-                      className="flex-shrink-0 ml-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
+                      className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
                       title="Cerrada automáticamente. Reabre para completar scores y calcular handicap."
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
                       Incompleta
                     </span>
+                  ) : (
+                    <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
+                      {round.capturedOnly ? '—' : round.totalStrokes}
+                    </span>
                   )}
-                  <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
-                    {round.capturedOnly ? '—' : round.totalStrokes}
-                  </span>
                   {expandedRound === round.id ? (
                     <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   ) : (
