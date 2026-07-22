@@ -2507,6 +2507,7 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      cleanup_abandoned_setup_rounds: { Args: never; Returns: number }
       cleanup_expired_guest_sessions: { Args: never; Returns: undefined }
       close_leaderboard: {
         Args: { p_leaderboard_id: string }
