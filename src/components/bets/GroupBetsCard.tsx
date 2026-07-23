@@ -1527,7 +1527,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const standaloneOyesEnabled = effectiveBetConfig.oyeses?.enabled === true;
     const rayasOyesEnabled = effectiveBetConfig.rayas?.enabled === true && (effectiveBetConfig.rayas.segments?.oyes?.enabled ?? true);
 
-    if (!standaloneOyesEnabled && !rayasOyesEnabled) return null;
+    // Team pressures (foursomes) can also enable Oyeses as a sub-modality.
+    // Surface the indicator chip so the outcome is easy to see even when Oyeses
+    // is played ONLY inside the pairs bet, not as an individual bet.
+    const teamPressuresOyesBets = (effectiveBetConfig.teamPressures?.enabled === true
+      ? (effectiveBetConfig.teamPressures?.bets || []).filter(b => b.enabled && b.oyesesConfig?.enabled)
+      : []);
+    const teamOyesEnabled = teamPressuresOyesBets.length > 0;
+
+    if (!standaloneOyesEnabled && !rayasOyesEnabled && !teamOyesEnabled) return null;
 
     // Oyeses can be played directly OR as the Oyes segment inside Rayas.
     // The indicator must include both populations so Rayas-only Sangrón players appear here.
@@ -1542,7 +1550,13 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const rayasOyesPlayers = rayasOyesEnabled
       ? resolveGroupParticipants(effectiveBetConfig.rayas?.participantIds)
       : [];
-    const activePlayers = [...standalonePlayers, ...rayasOyesPlayers].filter(
+    // Include the 4 players from each team-pressures bet that has Oyeses enabled.
+    const teamOyesPlayerIds = new Set<string>();
+    teamPressuresOyesBets.forEach(b => {
+      [...b.teamA, ...b.teamB].forEach(id => teamOyesPlayerIds.add(id));
+    });
+    const teamOyesPlayers = sameGroupPlayers.filter(p => teamOyesPlayerIds.has(p.id));
+    const activePlayers = [...standalonePlayers, ...rayasOyesPlayers, ...teamOyesPlayers].filter(
       (player, index, arr) => arr.findIndex(p => p.id === player.id) === index
     );
 
@@ -1555,8 +1569,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       }
     }
 
-    const hasAcumulados = standaloneOyesEnabled || activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'acumulados');
-    const hasSangron = activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'sangron');
+    const teamHasAcumulados = teamPressuresOyesBets.some(b => (b.oyesesConfig?.modality || 'acumulados') === 'acumulados');
+    const teamHasSangron = teamPressuresOyesBets.some(b => b.oyesesConfig?.modality === 'sangron');
+    const hasAcumulados = standaloneOyesEnabled || teamHasAcumulados || activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'acumulados');
+    const hasSangron = teamHasSangron || activePairs.some(([a, b]) => getOyesModalityForPair(effectiveBetConfig, a.id, b.id) === 'sangron');
 
     // Get par 3 holes from course
     const par3Holes = course.holes.filter(h => h.par === 3).map(h => h.number);
