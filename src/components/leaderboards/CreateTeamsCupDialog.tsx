@@ -16,6 +16,14 @@ import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CupFormat } from '@/hooks/useTeamsCup';
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
+import { CupDaysEditor } from '@/components/leaderboards/CupDaysEditor';
+import type { CupDay } from '@/types/leaderboard';
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const defaultDays = (): CupDay[] => ([
+  { day_number: 1, date: todayISO(), label: '', sessions: [{ session_number: 1, format: 'match_individual' }] },
+]);
 
 const TEAM_COLORS = [
   { hex: '#ef4444', label: 'Rojo' },
