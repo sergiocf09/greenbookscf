@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { formatPlayerName } from '@/lib/playerInput';
 import type { CupMatch, CupFormat, CupTeam, CupParticipant } from '@/hooks/useTeamsCup';
-import { cupSessionLabel, cupSlotKey, type CupDay } from '@/types/leaderboard';
+import { cupSlotKey, type CupDay } from '@/types/leaderboard';
 
 interface Props {
   open: boolean;
