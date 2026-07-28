@@ -397,6 +397,26 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         <div className="space-y-4">
           {/* Step 1: course + meta */}
           <div className="space-y-3">
+            {isMultiSlot && (
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs">Jornada</Label>
+                <select
+                  value={`${slot.day}-${slot.session}`}
+                  onChange={e => {
+                    const opt = slotOptions.find(o => o.key === e.target.value);
+                    if (!opt) return;
+                    setSlot({ day: opt.day, session: opt.session });
+                    if (opt.date) setDate(new Date(`${opt.date}T12:00:00`));
+                  }}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[60%]"
+                >
+                  {slotOptions.map(o => (
+                    <option key={o.key} value={o.key}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-2">
               <Label className="text-xs">Fecha</Label>
               <Popover>
