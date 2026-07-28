@@ -21,6 +21,7 @@ import { createRoundFromCup, type ParticipantPlayOverride } from '@/lib/teamsCup
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import type { CupParticipant, CupTeam, CupMatch } from '@/hooks/useTeamsCup';
+import { cupSessionLabel, type CupDay } from '@/types/leaderboard';
 
 interface Props {
   open: boolean;
@@ -30,6 +31,11 @@ interface Props {
   participants: CupParticipant[];
   teams: CupTeam[];
   matches: CupMatch[];
+  /** Days/sessions configured for the cup (multi-day support). */
+  days?: CupDay[];
+  /** Slot preselected by the caller (chip currently active). */
+  defaultDay?: number;
+  defaultSession?: number;
   onCreated: (roundId: string) => void;
   /**
    * If set, the dialog rebuilds foursomes on this existing round instead of
@@ -43,7 +49,7 @@ const MAX_GROUPS = 6;
 
 export const CreateRoundFromCupDialog: React.FC<Props> = ({
   open, onClose, leaderboardId, organizerProfileId, participants, teams, matches, onCreated,
-  existingRoundId,
+  existingRoundId, days = [], defaultDay = 1, defaultSession = 1,
 }) => {
   // No router navigation here — caller decides via onCreated.
   const queryClient = useQueryClient();
@@ -68,6 +74,26 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     return m;
   });
 
+  const [slot, setSlot] = useState<{ day: number; session: number }>({ day: defaultDay, session: defaultSession });
+
+  const slotOptions = useMemo(
+    () => days.flatMap(d => d.sessions.map(sess => ({
+      key: `${d.day_number}-${sess.session_number}`,
+      day: d.day_number,
+      session: sess.session_number,
+      date: d.date ?? null,
+      label: cupSessionLabel(d, sess, d.sessions.length > 1),
+    }))),
+    [days],
+  );
+  const isMultiSlot = slotOptions.length > 1;
+
+  /** Matches of the targeted slot — used for foursome ordering. */
+  const slotMatches = useMemo(
+    () => matches.filter(m => (m.day_number ?? 1) === slot.day && (m.session_number ?? 1) === slot.session),
+    [matches, slot],
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState<'config' | 'review'>('config');
 
@@ -82,9 +108,12 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     });
     setGroupByPart(m);
     setTeeByPart(tm);
-    setDate(new Date());
+    const opt = slotOptions.find(o => o.day === defaultDay && o.session === defaultSession) ?? slotOptions[0];
+    setSlot({ day: opt?.day ?? 1, session: opt?.session ?? 1 });
+    setDate(opt?.date ? new Date(`${opt.date}T12:00:00`) : new Date());
     setPhase('config');
-  }, [open, participants]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, participants, defaultDay, defaultSession]);
 
   // Load tee rating/slope + course par when courseId changes.
   useEffect(() => {
@@ -128,7 +157,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     const byId = new Map(participants.map(p => [p.id, p]));
     const used = new Set<string>();
     const ordered: CupParticipant[] = [];
-    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    const sortedMatches = [...slotMatches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
     for (const m of sortedMatches) {
       const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
         .filter((x): x is string => !!x);
@@ -143,18 +172,18 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       .filter(p => !used.has(p.id))
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
     return [...ordered, ...rest];
-  }, [participants, matches]);
+  }, [participants, slotMatches]);
 
   /** Map participantId → match_order (first match they appear in). */
   const matchOrderByPart = useMemo(() => {
     const m = new Map<string, number>();
-    for (const match of matches) {
+    for (const match of slotMatches) {
       const ids = [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id]
         .filter((x): x is string => !!x);
       for (const id of ids) if (!m.has(id)) m.set(id, match.match_order ?? 0);
     }
     return m;
-  }, [matches]);
+  }, [slotMatches]);
 
   const setPartGroup = (partId: string, n: number | null) => {
     setGroupByPart(prev => new Map(prev).set(partId, n));
@@ -208,7 +237,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       }
     };
 
-    const sortedMatches = [...matches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
+    const sortedMatches = [...slotMatches].sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0));
     for (const m of sortedMatches) {
       const ids = [m.player_a1_id, m.player_a2_id, m.player_b1_id, m.player_b2_id]
         .filter((x): x is string => !!x);
@@ -285,6 +314,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         groups: groupsRaw,
         playerOverrides: overrides,
         existingRoundId: existingRoundId ?? null,
+        targetSlot: isMultiSlot ? slot : null,
       });
       toast.success(existingRoundId ? 'Foursomes recreados' : 'Ronda creada y vinculada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
